@@ -21,7 +21,7 @@ BMAD Method v6.0.4 installed. Two research reports completed. No code written ye
 ### 2. Technical Research — Windows Registry & System Locations
 `_bmad-output/planning-artifacts/research/technical-windows-registry-system-locations-research-2026-03-05.md`
 
-In-progress (steps 1–2 of 6 complete). Step 3 (integration patterns) is next.
+**Complete** (all 6 steps finished).
 
 #### Key findings by module:
 
@@ -86,7 +86,7 @@ In-progress (steps 1–2 of 6 complete). Step 3 (integration patterns) is next.
 | `%USERPROFILE%\NTUSER.DAT` | HKCU hive file |
 
 ## Next Steps
-- [ ] Complete technical research steps 3–6 (integration patterns, architecture, performance, synthesis)
+- [x] ~~Complete technical research steps 3–6 (integration patterns, architecture, performance, synthesis)~~
 - [ ] Create PRD (`/bmad-bmm-create-prd`)
 - [ ] Create architecture doc (`/bmad-bmm-create-architecture`)
 - [ ] Begin implementation planning
