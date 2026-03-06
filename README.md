@@ -42,7 +42,7 @@ If you want ThisIsMyPC to watch for new services infesting your registry and not
 
 ## Status
 
-**Pre-development** — planning and research phase. PRD complete, architecture and UX design in progress.
+**Pre-development** — planning and research phase. PRD complete and validated (4/5 quality rating), architecture and UX design in progress.
 
 ## License
 
