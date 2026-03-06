@@ -1,4 +1,4 @@
-# thisismypc
+# ThisIsMyPC
 
 A lightweight, open-source Windows desktop app that consolidates system control into a single interface. Replace Armoury Crate, Autoruns, HWiNFO's UI, OpenRGB, ExplorerPatcher, and a dozen other tools — with one app that respects your system.
 
@@ -10,7 +10,7 @@ The controls exist — they're just scattered across registry hives, buried in o
 
 ## The Solution
 
-thisismypc unifies everything into a single pane of glass:
+ThisIsMyPC unifies everything into a single pane of glass:
 
 - **Shell & Explorer Customization** — Context menu editing (no good tool exists for this), taskbar, widgets, Explorer preferences, notification suppression
 - **Startup & Services Management** — Registry run keys, startup folders, scheduled task auditing, service control
@@ -29,13 +29,13 @@ Export your entire system configuration as a portable preset. Fresh install to f
 
 **Zero bloat by default.** No startup entry, no tray icon, no notifications, no background processes — unless you explicitly enable them. The app that manages startup bloat must not *be* startup bloat.
 
-Every persistent behavior is opt-in. Minimize sends to tray; closing (X) kills everything. Both configurable.
+Every persistent behavior is opt-in. Minimize minimizes to taskbar. Close kills everything. Tray mode is opt-in. All three behaviors are configurable.
 
-If you want thisismypc to watch for new services infesting your registry and notify you — it can. But only if you ask.
+If you want ThisIsMyPC to watch for new services infesting your registry and notify you — it can. But only if you ask.
 
 ## Tech Stack
 
-- .NET 8 + Avalonia UI
+- .NET 10 (LTS) + Avalonia UI + C# 14, NativeAOT compilation target
 - C++ native modules via P/Invoke
 - Driver-free architecture: Win32, WMI, COM, DXVA2, SetupAPI
 - Vencord-inspired module plugin system — community-extensible

@@ -64,7 +64,7 @@ The application is built with .NET and Avalonia UI for a modern, responsive fron
 | Layer | Technology |
 |-------|-----------|
 | UI Framework | Avalonia UI (.NET) |
-| Core Logic | .NET 8+ (C#) |
+| Core Logic | .NET 10 LTS (C# 14), NativeAOT compilation target |
 | Native Modules | C++ with C++/CLI or P/Invoke interop |
 | Hardware APIs | Win32, WMI, ACPI, I2C/DDC, HID |
 | Build System | MSBuild / CMake (for native) |
