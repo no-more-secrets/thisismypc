@@ -7,17 +7,19 @@ namespace ThisIsMyPC.App.ViewModels;
 
 public partial class SidebarItemViewModel : ViewModelBase
 {
+    // Fluent UI System Icons (MIT, Microsoft) — 24x24 filled variants
     private static readonly FrozenDictionary<string, string> IconPaths = new Dictionary<string, string>
     {
-        // Shell & Explorer: folder/window icon
-        ["shell"] = "M4,4H20A2,2 0 0,1 22,6V18A2,2 0 0,1 20,20H4A2,2 0 0,1 2,18V6A2,2 0 0,1 4,4M4,6V18H20V8H14L12,6H4Z",
-        // Startup & Services: rocket/launch icon
-        ["startup"] = "M13.13,22.19L11.5,18.36C13.07,17.78 14.54,17 15.9,16.09L13.13,22.19M5.64,12.5L1.81,10.87L7.91,8.1C7,9.46 6.22,10.93 5.64,12.5M19.22,4C19.5,4 19.75,4 19.96,4.05C20.13,5.44 19.94,8.3 16.96,11.29C16.96,11.29 14.46,13.79 12.74,15.5L8.5,11.26C10.21,9.54 12.71,7.04 12.71,7.04C15.7,4.06 18.56,3.87 19.95,4.04C19.75,4 19.5,4 19.22,4M14.54,9.46C13.76,8.68 13.76,7.41 14.54,6.63C15.32,5.85 16.59,5.85 17.37,6.63C18.14,7.41 18.15,8.68 17.37,9.46C16.59,10.24 15.32,10.24 14.54,9.46M8.88,16.53L7.47,15.12L8.88,16.53M6.24,22L8.4,16.88L11.65,20.13L6.24,22Z",
-        // Power Plans: lightning bolt icon
-        ["power"] = "M11,21H7V13H3L12,3L21,13H17V21H13V17H11V21Z",
+        // Shell & Explorer: Fluent Folder 24 Filled
+        ["shell"] = "M2 8V6.25C2 4.45507 3.45507 3 5.25 3H8.12868C8.72542 3 9.29771 3.23705 9.71967 3.65901L11.25 5.18934L8.65901 7.78033C8.51836 7.92098 8.32759 8 8.12868 8H2ZM2 9.5V17.75C2 19.5449 3.45507 21 5.25 21H18.75C20.5449 21 22 19.5449 22 17.75V8.75C22 6.95507 20.5449 5.5 18.75 5.5H13.0607L9.71967 8.84099C9.29771 9.26295 8.72542 9.5 8.12868 9.5H2Z",
+        // Startup & Services: Fluent Play 24 Filled
+        ["startup"] = "M5 5.27368C5 3.56682 6.82609 2.48151 8.32538 3.2973L20.687 10.0235C22.2531 10.8756 22.2531 13.124 20.687 13.9762L8.32538 20.7024C6.82609 21.5181 5 20.4328 5 18.726V5.27368Z",
+        // Power Plans: Fluent Flash 24 Filled
+        ["power"] = "M7.42505 2.83052C7.60245 2.33254 8.07392 2 8.60256 2H15.0562C15.9094 2 16.5118 2.83587 16.242 3.64528L14.7905 8H18.7492C19.8534 8 20.4153 9.32682 19.647 10.1198L8.586 21.536C7.53226 22.6236 5.71405 21.6422 6.04495 20.1645L7.31418 14.4964L5.74573 14.4904C4.53898 14.4858 3.69895 13.2899 4.10392 12.1532L7.42505 2.83052Z",
     }.ToFrozenDictionary();
 
-    private const string DefaultIconPath = "M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z";
+    // Fluent Circle 24 Regular (outlined ring — clearly signals "no icon mapped")
+    private const string DefaultIconPath = "M12 3.5C7.30558 3.5 3.5 7.30558 3.5 12C3.5 16.6944 7.30558 20.5 12 20.5C16.6944 20.5 20.5 16.6944 20.5 12C20.5 7.30558 16.6944 3.5 12 3.5ZM2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C6.47715 22 2 17.5228 2 12Z";
 
     public required string Name { get; init; }
     public required string Icon { get; init; }
