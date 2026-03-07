@@ -147,6 +147,28 @@ Claude Code's built-in `Agent` tool supports specialized subagent types:
 
 ---
 
+## IDE Setup — Visual Studio 2026
+
+Primary IDE for building, debugging, XAML preview, and NativeAOT diagnostics. VS Code + Claude Code remains the agentic workflow environment.
+
+### Recommended Extensions
+
+| Extension | Purpose |
+|---|---|
+| **Avalonia for Visual Studio** | XAML previewer, IntelliSense for .axaml, control templates |
+| **CsWin32** | Source generator support for NativeMethods.txt editing |
+| **EditorConfig Language Service** | Syntax highlighting/validation for .editorconfig naming rules |
+| **SQLite/SQL Server Compact Toolbox** | Inspect history.db during development |
+| **Markdown Editor** | Edit story files and docs without leaving VS |
+| **Roslynator** | 500+ analyzers/refactorings on top of AnalysisLevel=latest-all |
+| **SonarLint** | Security issue detection (important for admin-level system tool) |
+| **Fine Code Coverage** | Inline test coverage visualization across 5 test projects |
+| **ILLink Analyzer** | Surfaces trimming/NativeAOT warnings in editor before publish (if available) |
+
+**Skip:** ReSharper (heavy; Roslynator + built-in analyzers covers it), GitHub Copilot (using Claude Code).
+
+---
+
 ## Best Practices for This Project
 
 ### When to invoke skills
