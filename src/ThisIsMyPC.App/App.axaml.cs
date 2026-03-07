@@ -6,8 +6,13 @@ using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using ThisIsMyPC.App.Services;
 using ThisIsMyPC.App.ViewModels;
 using ThisIsMyPC.App.Views;
+using ThisIsMyPC.Core.Modules;
+using ThisIsMyPC.Modules.Power;
+using ThisIsMyPC.Modules.Shell;
+using ThisIsMyPC.Modules.Startup;
 
 namespace ThisIsMyPC.App;
 
@@ -45,13 +50,25 @@ public partial class App : Application
 
     private static void ConfigureServices(IServiceCollection services)
     {
+        // Modules (explicit DI registration, NativeAOT-safe)
+        services.AddSingleton<IModule, ShellModule>();
+        services.AddSingleton<IModule, StartupModule>();
+        services.AddSingleton<IModule, PowerModule>();
+
+        // Navigation
+        services.AddSingleton<NavigationService>();
+
+        // ViewModels
         services.AddSingleton<MainWindowViewModel>();
     }
 
-    private void OnShutdownRequested(object? sender, ShutdownRequestedEventArgs e)
+    private async void OnShutdownRequested(object? sender, ShutdownRequestedEventArgs e)
     {
-        _serviceProvider?.Dispose();
-        _serviceProvider = null;
+        if (_serviceProvider is not null)
+        {
+            await _serviceProvider.DisposeAsync().ConfigureAwait(false);
+            _serviceProvider = null;
+        }
     }
 
     [UnconditionalSuppressMessage("Trimming", "IL2026",

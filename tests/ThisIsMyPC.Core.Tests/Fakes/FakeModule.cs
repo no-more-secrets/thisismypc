@@ -13,7 +13,9 @@ public sealed class FakeModule : IModule
         Name: "FakeModule",
         Icon: "test-icon",
         Description: "A fake module for testing the IModule contract",
-        RequiredCapabilities: [SystemCapability.Registry]);
+        RequiredCapabilities: [SystemCapability.Registry],
+        Group: ModuleGroup.Core,
+        LoadOrder: 0);
 
     public Task<ModuleAvailability> CheckAvailabilityAsync()
     {

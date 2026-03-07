@@ -1,3 +1,57 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Sidebar module item button -->
+    <Style Selector="Button.sidebar-item">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="3,0,0,0" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="Padding" Value="12,8" />
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+
+    <Style Selector="Button.sidebar-item:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource SidebarItemHoverBrush}" />
+    </Style>
+
+    <Style Selector="Button.sidebar-item.active">
+        <Setter Property="Background" Value="{StaticResource SidebarItemActiveBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+    </Style>
+
+    <Style Selector="Button.sidebar-item.active /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource SidebarItemActiveBrush}" />
+    </Style>
+
+    <Style Selector="Button.sidebar-item.unavailable">
+        <Setter Property="Opacity" Value="0.4" />
+        <Setter Property="Cursor" Value="Arrow" />
+    </Style>
+
+    <!-- Sidebar group header -->
+    <Style Selector="TextBlock.sidebar-group-header">
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{StaticResource SidebarGroupHeaderBrush}" />
+        <Setter Property="Margin" Value="15,16,0,4" />
+        <Setter Property="LetterSpacing" Value="1.5" />
+    </Style>
+
+    <!-- Sidebar toggle button -->
+    <Style Selector="Button.sidebar-toggle">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="12,8" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+
+    <Style Selector="Button.sidebar-toggle:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource SidebarItemHoverBrush}" />
+    </Style>
 </Styles>

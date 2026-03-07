@@ -3,19 +3,116 @@
         xmlns:vm="using:ThisIsMyPC.App.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="600"
+        mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
         x:Class="ThisIsMyPC.App.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Title="ThisIsMyPC"
         MinWidth="900" MinHeight="600"
-        Width="1200" Height="800">
+        Width="1200" Height="800"
+        Background="{StaticResource BaseBrush}"
+        FontFamily="{StaticResource BodyFont}">
 
-    <Design.DataContext>
-        <vm:MainWindowViewModel/>
-    </Design.DataContext>
+    <Grid ColumnDefinitions="Auto,*">
 
-    <TextBlock Text="ThisIsMyPC"
-               HorizontalAlignment="Center"
-               VerticalAlignment="Center"
-               FontSize="24" />
+        <!-- Sidebar -->
+        <Border Grid.Column="0"
+                Background="{StaticResource SidebarBackgroundBrush}"
+                BorderBrush="{StaticResource SidebarBorderBrush}"
+                BorderThickness="0,0,1,0"
+                Width="{Binding IsSidebarCollapsed, Converter={x:Static vm:SidebarWidthConverter.Instance}}">
+
+            <DockPanel>
+                <!-- Sidebar toggle -->
+                <Button DockPanel.Dock="Top"
+                        Classes="sidebar-toggle"
+                        Command="{Binding ToggleSidebarCommand}"
+                        ToolTip.Tip="Toggle sidebar">
+                    <PathIcon Data="M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z"
+                              Width="16" Height="16"
+                              Foreground="{StaticResource TextSecondaryBrush}" />
+                </Button>
+
+                <!-- Module groups -->
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding SidebarGroups}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:SidebarGroupViewModel">
+                                <StackPanel>
+                                    <!-- Group header -->
+                                    <TextBlock Text="{Binding GroupName}"
+                                               Classes="sidebar-group-header"
+                                               IsVisible="{Binding !$parent[Window].((vm:MainWindowViewModel)DataContext).IsSidebarCollapsed}" />
+
+                                    <!-- Module items -->
+                                    <ItemsControl ItemsSource="{Binding Items}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:SidebarItemViewModel">
+                                                <Button Classes="sidebar-item"
+                                                        Classes.active="{Binding IsActive}"
+                                                        Classes.unavailable="{Binding !IsAvailable}"
+                                                        Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).NavigateToModuleCommand}"
+                                                        CommandParameter="{Binding}"
+                                                        IsEnabled="{Binding IsAvailable}"
+                                                        ToolTip.Tip="{Binding TooltipText}">
+                                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                                        <PathIcon Width="18" Height="18"
+                                                                  Foreground="{StaticResource TextSecondaryBrush}"
+                                                                  Data="{Binding IconGeometry}" />
+                                                        <TextBlock Text="{Binding Name}"
+                                                                   VerticalAlignment="Center"
+                                                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                                                   IsVisible="{Binding !$parent[Window].((vm:MainWindowViewModel)DataContext).IsSidebarCollapsed}" />
+                                                    </StackPanel>
+                                                </Button>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+
+        <!-- Content Area -->
+        <DockPanel Grid.Column="1" Margin="24,16">
+            <!-- Module header -->
+            <StackPanel DockPanel.Dock="Top" Margin="0,0,0,24">
+                <TextBlock Text="{Binding ContentTitle}"
+                           FontFamily="{StaticResource DisplayFont}"
+                           FontSize="28"
+                           Foreground="{StaticResource TextPrimaryBrush}" />
+                <TextBlock Text="{Binding ContentDescription}"
+                           FontSize="14"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Margin="0,4,0,0" />
+            </StackPanel>
+
+            <!-- Module content area -->
+            <Border Background="{StaticResource SurfaceBrush}"
+                    CornerRadius="8"
+                    Padding="24">
+                <Panel>
+                    <ContentControl Content="{Binding CurrentContent}" />
+                    <!-- Placeholder shown when no module view is loaded -->
+                    <StackPanel IsVisible="{Binding CurrentContent, Converter={x:Static ObjectConverters.IsNull}}"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Spacing="8">
+                        <TextBlock Text="{Binding ContentTitle}"
+                                   FontSize="18"
+                                   FontWeight="SemiBold"
+                                   HorizontalAlignment="Center"
+                                   Foreground="{StaticResource TextSecondaryBrush}" />
+                        <TextBlock Text="Module content coming in future stories"
+                                   FontSize="14"
+                                   HorizontalAlignment="Center"
+                                   Foreground="{StaticResource TextTertiaryBrush}" />
+                    </StackPanel>
+                </Panel>
+            </Border>
+        </DockPanel>
+    </Grid>
 </Window>

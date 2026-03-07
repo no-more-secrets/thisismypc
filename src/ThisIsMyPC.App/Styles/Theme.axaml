@@ -1,7 +1,50 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Styles.Resources>
+        <!-- Accent -->
         <Color x:Key="AccentColor">#5b8dd9</Color>
         <Color x:Key="AccentColorLight">#4a78c0</Color>
+        <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
+
+        <!-- Background Tiers (dark theme) -->
+        <Color x:Key="BaseColor">#1a1a2e</Color>
+        <Color x:Key="RaisedColor">#242438</Color>
+        <Color x:Key="SurfaceColor">#2d2d42</Color>
+        <Color x:Key="OverlayColor">#383850</Color>
+        <SolidColorBrush x:Key="BaseBrush" Color="{StaticResource BaseColor}" />
+        <SolidColorBrush x:Key="RaisedBrush" Color="{StaticResource RaisedColor}" />
+        <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}" />
+        <SolidColorBrush x:Key="OverlayBrush" Color="{StaticResource OverlayColor}" />
+
+        <!-- Sidebar -->
+        <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="{StaticResource RaisedColor}" />
+        <SolidColorBrush x:Key="SidebarItemHoverBrush" Color="#333348" />
+        <SolidColorBrush x:Key="SidebarItemActiveBrush" Color="#3d5a80" />
+        <SolidColorBrush x:Key="SidebarGroupHeaderBrush" Color="#8888aa" />
+        <SolidColorBrush x:Key="SidebarBorderBrush" Color="#2a2a3e" />
+
+        <!-- Semantic Colors -->
+        <Color x:Key="SuccessColor">#4caf50</Color>
+        <Color x:Key="SuccessMutedColor">#2d4a2e</Color>
+        <Color x:Key="WarningColor">#ffb74d</Color>
+        <Color x:Key="WarningMutedColor">#4a3a1e</Color>
+        <Color x:Key="DangerColor">#ef5350</Color>
+        <Color x:Key="DangerMutedColor">#4a2020</Color>
+        <Color x:Key="InfoColor">#29b6f6</Color>
+        <Color x:Key="InfoMutedColor">#1e3a4a</Color>
+        <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}" />
+        <SolidColorBrush x:Key="SuccessMutedBrush" Color="{StaticResource SuccessMutedColor}" />
+        <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}" />
+        <SolidColorBrush x:Key="WarningMutedBrush" Color="{StaticResource WarningMutedColor}" />
+        <SolidColorBrush x:Key="DangerBrush" Color="{StaticResource DangerColor}" />
+        <SolidColorBrush x:Key="DangerMutedBrush" Color="{StaticResource DangerMutedColor}" />
+        <SolidColorBrush x:Key="InfoBrush" Color="{StaticResource InfoColor}" />
+        <SolidColorBrush x:Key="InfoMutedBrush" Color="{StaticResource InfoMutedColor}" />
+
+        <!-- Text (alpha-channel white for proper adaptation across background tiers) -->
+        <SolidColorBrush x:Key="TextPrimaryBrush" Color="#FFFFFF" />
+        <SolidColorBrush x:Key="TextSecondaryBrush" Color="#CCFFFFFF" />
+        <SolidColorBrush x:Key="TextTertiaryBrush" Color="#99FFFFFF" />
+        <SolidColorBrush x:Key="TextDisabledBrush" Color="#66FFFFFF" />
     </Styles.Resources>
 </Styles>

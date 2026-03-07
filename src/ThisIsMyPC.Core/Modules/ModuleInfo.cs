@@ -4,4 +4,6 @@ public record ModuleInfo(
     string Name,
     string Icon,
     string Description,
-    IReadOnlyList<SystemCapability> RequiredCapabilities);
+    IReadOnlyList<SystemCapability> RequiredCapabilities,
+    ModuleGroup Group = ModuleGroup.Core,
+    int LoadOrder = 0);
