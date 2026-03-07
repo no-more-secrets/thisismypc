@@ -1,0 +1,138 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ThisIsMyPC.App.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="450" d:DesignHeight="500"
+             x:Class="ThisIsMyPC.App.Views.ReviewPanelView"
+             x:DataType="vm:ReviewPanelViewModel">
+
+    <Border Background="{StaticResource RaisedBrush}"
+            BorderBrush="{StaticResource SidebarBorderBrush}"
+            BorderThickness="1"
+            CornerRadius="8"
+            Width="450"
+            MaxHeight="500"
+            Padding="0">
+
+        <DockPanel>
+            <!-- Header -->
+            <Border DockPanel.Dock="Top"
+                    Padding="16,12"
+                    BorderBrush="{StaticResource SidebarBorderBrush}"
+                    BorderThickness="0,0,0,1">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Right"
+                               Text="{Binding ReviewItems.Count, StringFormat='{}{0} item(s)'}"
+                               Foreground="{StaticResource TextTertiaryBrush}"
+                               FontSize="12"
+                               VerticalAlignment="Center" />
+                    <TextBlock Text="Review Pending Changes"
+                               FontWeight="SemiBold"
+                               FontSize="15"
+                               Foreground="{StaticResource TextPrimaryBrush}"
+                               VerticalAlignment="Center" />
+                </DockPanel>
+            </Border>
+
+            <!-- Footer: status message + action buttons -->
+            <Border DockPanel.Dock="Bottom"
+                    Padding="16,10"
+                    BorderBrush="{StaticResource SidebarBorderBrush}"
+                    BorderThickness="0,1,0,0">
+                <StackPanel Spacing="8">
+                    <!-- Error/status feedback -->
+                    <TextBlock Text="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).StatusMessage}"
+                               FontSize="12"
+                               TextWrapping="Wrap"
+                               Foreground="{StaticResource DangerBrush}"
+                               IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                    <DockPanel>
+                        <Button DockPanel.Dock="Left"
+                                Classes="apply-bar-discard"
+                                Content="Discard All"
+                                Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).DiscardAllCommand}"
+                                IsEnabled="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).CanModifyPending}" />
+                        <Button DockPanel.Dock="Right"
+                                Classes="apply-bar-apply"
+                                Content="Apply All"
+                                HorizontalAlignment="Right"
+                                Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ApplyAllCommand}"
+                                IsEnabled="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).CanModifyPending}" />
+                    </DockPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Change list or empty state -->
+            <Panel>
+                <!-- Empty state -->
+                <StackPanel IsVisible="{Binding !ReviewItems.Count}"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Spacing="4">
+                    <TextBlock Text="No pending changes"
+                               FontSize="14"
+                               HorizontalAlignment="Center"
+                               Foreground="{StaticResource TextSecondaryBrush}" />
+                    <TextBlock Text="Make changes in a module to see them here"
+                               FontSize="12"
+                               HorizontalAlignment="Center"
+                               Foreground="{StaticResource TextTertiaryBrush}" />
+                </StackPanel>
+
+                <!-- Change items -->
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto"
+                              IsVisible="{Binding !!ReviewItems.Count}">
+                    <ItemsControl ItemsSource="{Binding ReviewItems}" Margin="8,4">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:ReviewItemViewModel">
+                                <Border Margin="0,2"
+                                        Padding="12,8"
+                                        CornerRadius="4"
+                                        Classes.pending-enable="{Binding IsEnableOrCreate}"
+                                        Classes.pending-disable="{Binding IsDisableOrDelete}"
+                                        Classes.pending-modify="{Binding IsModifyCategory}">
+                                    <StackPanel Spacing="2">
+                                        <!-- Setting name -->
+                                        <TextBlock Text="{Binding DisplayName}"
+                                                   FontWeight="SemiBold"
+                                                   FontSize="13"
+                                                   Foreground="{StaticResource TextPrimaryBrush}" />
+
+                                        <!-- Description -->
+                                        <TextBlock Text="{Binding Description}"
+                                                   FontSize="12"
+                                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                                   TextWrapping="Wrap" />
+
+                                        <!-- System location -->
+                                        <TextBlock Text="{Binding SystemLocation}"
+                                                   FontFamily="{StaticResource MonoFont}"
+                                                   FontSize="11"
+                                                   Foreground="{StaticResource TextTertiaryBrush}" />
+
+                                        <!-- Before -> After values -->
+                                        <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,4,0,0">
+                                            <TextBlock Text="{Binding BeforeDisplay}"
+                                                       FontSize="12"
+                                                       Foreground="{StaticResource TextSecondaryBrush}" />
+                                            <TextBlock Text="&#x2192;"
+                                                       FontSize="12"
+                                                       Foreground="{StaticResource TextTertiaryBrush}" />
+                                            <TextBlock Text="{Binding AfterDisplay}"
+                                                       FontSize="12"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{StaticResource TextPrimaryBrush}" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Panel>
+        </DockPanel>
+    </Border>
+</UserControl>

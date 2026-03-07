@@ -10,6 +10,7 @@ using ThisIsMyPC.App.Services;
 using ThisIsMyPC.App.ViewModels;
 using ThisIsMyPC.App.Views;
 using ThisIsMyPC.Core.Modules;
+using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Modules.Power;
 using ThisIsMyPC.Modules.Shell;
 using ThisIsMyPC.Modules.Startup;
@@ -55,11 +56,15 @@ public partial class App : Application
         services.AddSingleton<IModule, StartupModule>();
         services.AddSingleton<IModule, PowerModule>();
 
+        // Core Services
+        services.AddSingleton<IPendingChangesService, PendingChangesService>();
+
         // Navigation
         services.AddSingleton<NavigationService>();
 
         // ViewModels
         services.AddSingleton<MainWindowViewModel>();
+        services.AddSingleton<ReviewPanelViewModel>();
     }
 
     private async void OnShutdownRequested(object? sender, ShutdownRequestedEventArgs e)

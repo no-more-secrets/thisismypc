@@ -1,0 +1,40 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Reusable Advanced section expander pattern for modules.
+         Modules should use this pattern when they have settings that are:
+         - Rarely used
+         - Potentially dangerous
+         - Only relevant to advanced users
+
+         Usage: Place an Expander with this style around advanced controls.
+         The expander starts collapsed by default to keep the main view clean. -->
+
+    <DataTemplate x:Key="AdvancedExpanderTemplate">
+        <Expander Margin="0,16,0,0"
+                  IsExpanded="False"
+                  HorizontalAlignment="Stretch">
+            <Expander.Header>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="Advanced"
+                               FontWeight="SemiBold"
+                               FontSize="13"
+                               Foreground="{StaticResource TextSecondaryBrush}" />
+                    <TextBlock Text="(rarely needed)"
+                               FontSize="12"
+                               Foreground="{StaticResource TextTertiaryBrush}"
+                               VerticalAlignment="Center" />
+                </StackPanel>
+            </Expander.Header>
+
+            <!-- Module-specific advanced controls go here -->
+            <Border Padding="0,8"
+                    Margin="0,4,0,0"
+                    BorderBrush="{StaticResource SidebarBorderBrush}"
+                    BorderThickness="0,1,0,0">
+                <ContentPresenter />
+            </Border>
+        </Expander>
+    </DataTemplate>
+
+</ResourceDictionary>

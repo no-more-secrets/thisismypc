@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IsPackable>false</IsPackable>
+    <NoWarn>CA1707;CA1062;CA1307</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

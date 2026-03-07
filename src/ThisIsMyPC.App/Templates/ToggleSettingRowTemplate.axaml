@@ -1,0 +1,52 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    x:CompileBindings="False">
+
+    <!-- Reusable toggle setting row template for module controls.
+         Modules should use this DataTemplate for settings that can be enabled/disabled.
+         Expected DataContext properties:
+           - string Label: Setting name
+           - string Description: What the setting does
+           - string SystemPath: Registry path or service name (shown in monospace)
+           - bool IsEnabled: Current toggle state
+         Note: Compiled bindings are disabled here because this template is generic.
+         Module-specific templates should set x:DataType for their concrete ViewModel. -->
+
+    <DataTemplate x:Key="ToggleSettingRowTemplate">
+        <Border Padding="16,12"
+                Margin="0,2"
+                CornerRadius="6"
+                Background="{StaticResource SurfaceBrush}">
+            <DockPanel>
+                <!-- Toggle switch on the right -->
+                <ToggleSwitch DockPanel.Dock="Right"
+                              IsChecked="{Binding IsEnabled}"
+                              VerticalAlignment="Top"
+                              Margin="16,0,0,0" />
+
+                <!-- Setting info on the left -->
+                <StackPanel Spacing="2">
+                    <!-- Label -->
+                    <TextBlock Text="{Binding Label}"
+                               FontWeight="SemiBold"
+                               FontSize="14"
+                               Foreground="{StaticResource TextPrimaryBrush}" />
+
+                    <!-- Description -->
+                    <TextBlock Text="{Binding Description}"
+                               FontSize="12"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               TextWrapping="Wrap" />
+
+                    <!-- System path (monospace) -->
+                    <TextBlock Text="{Binding SystemPath}"
+                               FontFamily="{StaticResource MonoFont}"
+                               FontSize="11"
+                               Foreground="{StaticResource TextTertiaryBrush}"
+                               Margin="0,2,0,0" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
+    </DataTemplate>
+
+</ResourceDictionary>

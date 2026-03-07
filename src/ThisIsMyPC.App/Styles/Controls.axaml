@@ -54,4 +54,66 @@
     <Style Selector="Button.sidebar-toggle:pointerover /template/ ContentPresenter">
         <Setter Property="Background" Value="{StaticResource SidebarItemHoverBrush}" />
     </Style>
+
+    <!-- Apply bar: Pending count button (transparent, clickable) -->
+    <Style Selector="Button.apply-bar-count">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+
+    <Style Selector="Button.apply-bar-count /template/ ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+
+    <!-- Apply bar: Apply button -->
+    <Style Selector="Button.apply-bar-apply">
+        <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+        <Setter Property="Padding" Value="16,8" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <Style Selector="Button.apply-bar-apply:disabled">
+        <Setter Property="Opacity" Value="0.4" />
+    </Style>
+
+    <Style Selector="Button.apply-bar-apply:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource AccentColorLight}" />
+    </Style>
+
+    <!-- Apply bar: Discard button -->
+    <Style Selector="Button.apply-bar-discard">
+        <Setter Property="Background" Value="{StaticResource OverlayBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+        <Setter Property="Padding" Value="16,8" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+
+    <Style Selector="Button.apply-bar-discard:disabled">
+        <Setter Property="Opacity" Value="0.4" />
+    </Style>
+
+    <Style Selector="Button.apply-bar-discard:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+    </Style>
+
+    <!-- Pending state tinting: enable/create (green-ish) -->
+    <Style Selector="Border.pending-enable">
+        <Setter Property="Background" Value="{StaticResource SuccessMutedBrush}" />
+    </Style>
+
+    <!-- Pending state tinting: disable/delete (red-ish, slightly more prominent) -->
+    <Style Selector="Border.pending-disable">
+        <Setter Property="Background" Value="{StaticResource DangerMutedBrush}" />
+    </Style>
+
+    <!-- Pending state tinting: modify (neutral warning) -->
+    <Style Selector="Border.pending-modify">
+        <Setter Property="Background" Value="{StaticResource WarningMutedBrush}" />
+    </Style>
 </Styles>

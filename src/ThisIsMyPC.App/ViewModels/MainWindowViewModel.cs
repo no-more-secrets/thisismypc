@@ -1,13 +1,19 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Avalonia.Threading;
 using ThisIsMyPC.App.Services;
+using ThisIsMyPC.Core.Changes;
+using ThisIsMyPC.Core.Results;
+using ThisIsMyPC.Core.Services;
 
 namespace ThisIsMyPC.App.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase
 {
     private readonly NavigationService _navigationService;
+    private readonly IPendingChangesService _pendingChangesService;
 
     public ObservableCollection<SidebarGroupViewModel> SidebarGroups { get; } = [];
 
@@ -26,9 +32,48 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isSidebarCollapsed;
 
-    public MainWindowViewModel(NavigationService navigationService)
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasPendingChanges))]
+    [NotifyPropertyChangedFor(nameof(PendingCountText))]
+    [NotifyPropertyChangedFor(nameof(CanModifyPending))]
+    private int _pendingCount;
+
+    public bool HasPendingChanges => PendingCount > 0;
+
+    public string PendingCountText => PendingCount == 0
+        ? "No pending changes"
+        : $"{PendingCount} change{(PendingCount == 1 ? "" : "s")} pending";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanModifyPending))]
+    private bool _isApplying;
+
+    public bool CanModifyPending => HasPendingChanges && !IsApplying;
+
+    public ReviewPanelViewModel ReviewPanel { get; }
+
+    public MainWindowViewModel(
+        NavigationService navigationService,
+        IPendingChangesService pendingChangesService,
+        ReviewPanelViewModel reviewPanel)
     {
         _navigationService = navigationService;
+        _pendingChangesService = pendingChangesService;
+        ReviewPanel = reviewPanel;
+
+        _pendingChangesService.PropertyChanged += OnPendingChangesPropertyChanged;
+        PendingCount = _pendingChangesService.PendingCount;
+    }
+
+    private void OnPendingChangesPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(IPendingChangesService.PendingCount))
+        {
+            if (Dispatcher.UIThread.CheckAccess())
+                PendingCount = _pendingChangesService.PendingCount;
+            else
+                Dispatcher.UIThread.Post(() => PendingCount = _pendingChangesService.PendingCount);
+        }
     }
 
     public async Task InitializeAsync()
@@ -87,6 +132,117 @@ public partial class MainWindowViewModel : ViewModelBase
     private void ToggleSidebar()
     {
         IsSidebarCollapsed = !IsSidebarCollapsed;
+    }
+
+    [ObservableProperty]
+    private bool _isReviewPanelOpen;
+
+    [RelayCommand]
+    private void OpenReviewPanel()
+    {
+        IsReviewPanelOpen = true;
+    }
+
+    [RelayCommand]
+    private void CloseReviewPanel()
+    {
+        IsReviewPanelOpen = false;
+    }
+
+    [RelayCommand]
+    private void DiscardAll()
+    {
+        _pendingChangesService.DiscardAll();
+        IsReviewPanelOpen = false;
+    }
+
+    [ObservableProperty]
+    private string _statusMessage = string.Empty;
+
+    [RelayCommand]
+    private async Task ApplyAllAsync()
+    {
+        if (!HasPendingChanges || IsApplying)
+            return;
+
+        IsApplying = true;
+        StatusMessage = string.Empty;
+
+        try
+        {
+            var result = await _pendingChangesService.ApplyAllAsync(
+                ApplyChangeToModule,
+                RevertChangeOnModule).ConfigureAwait(true);
+
+            if (result.IsSuccess)
+            {
+                IsReviewPanelOpen = false;
+                StatusMessage = "Changes applied successfully";
+            }
+            else
+            {
+                StatusMessage = FormatApplyError(result);
+            }
+        }
+        finally
+        {
+            IsApplying = false;
+            PendingCount = _pendingChangesService.PendingCount;
+        }
+    }
+
+    private async Task<OperationResult<bool>> ApplyChangeToModule(ChangeDescriptor change)
+    {
+        var module = _navigationService.Modules
+            .FirstOrDefault(m => m.Module.Info.Name == change.ModuleId)?.Module;
+
+        if (module is null)
+        {
+            return OperationResult<bool>.Failure(
+                $"Module '{change.ModuleId}' not found",
+                ErrorCategory.NotFound);
+        }
+
+        return await module.ApplyChangeAsync(change).ConfigureAwait(false);
+    }
+
+    private async Task<OperationResult<bool>> RevertChangeOnModule(ChangeDescriptor change)
+    {
+        var module = _navigationService.Modules
+            .FirstOrDefault(m => m.Module.Info.Name == change.ModuleId)?.Module;
+
+        if (module is null)
+        {
+            return OperationResult<bool>.Failure(
+                $"Module '{change.ModuleId}' not found for revert",
+                ErrorCategory.NotFound);
+        }
+
+        return await module.RevertChangeAsync(change).ConfigureAwait(false);
+    }
+
+    private static string FormatApplyError(MutationResult result)
+    {
+        var parts = new List<string>();
+
+        if (result.Failed is not null)
+            parts.Add($"Failed: {result.Failed.DisplayName} ({result.Failed.SystemLocation})");
+
+        if (result.ErrorMessage is not null)
+            parts.Add(result.ErrorMessage);
+
+        if (result.ErrorCategory is not null)
+            parts.Add(Helpers.ErrorCategoryExtensions.ToGuidance(result.ErrorCategory.Value));
+
+        return parts.Count > 0
+            ? string.Join(" - ", parts)
+            : "An unknown error occurred while applying changes.";
+    }
+
+    [System.Diagnostics.Conditional("DEBUG")]
+    public void StageDebugChange(ChangeDescriptor change)
+    {
+        _pendingChangesService.Stage(change);
     }
 
     private void SyncSelectedModule()

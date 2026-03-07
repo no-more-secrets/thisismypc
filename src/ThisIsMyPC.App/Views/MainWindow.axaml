@@ -3,6 +3,7 @@
         xmlns:vm="using:ThisIsMyPC.App.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:views="using:ThisIsMyPC.App.Views"
         mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
         x:Class="ThisIsMyPC.App.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
@@ -89,6 +90,71 @@
                            Foreground="{StaticResource TextSecondaryBrush}"
                            Margin="0,4,0,0" />
             </StackPanel>
+
+            <!-- Apply bar with review panel popup -->
+            <Panel DockPanel.Dock="Bottom" Margin="0,16,0,0">
+                <Border x:Name="ApplyBar"
+                        Background="{StaticResource RaisedBrush}"
+                        BorderBrush="{StaticResource SidebarBorderBrush}"
+                        BorderThickness="0,1,0,0"
+                        Padding="16,10"
+                        CornerRadius="8">
+                    <DockPanel>
+                        <!-- Right side: buttons -->
+                        <StackPanel DockPanel.Dock="Right"
+                                    Orientation="Horizontal"
+                                    Spacing="8">
+                            <Button Classes="apply-bar-discard"
+                                    Content="Discard"
+                                    Command="{Binding DiscardAllCommand}"
+                                    IsEnabled="{Binding CanModifyPending}" />
+                            <Button Classes="apply-bar-apply"
+                                    Command="{Binding OpenReviewPanelCommand}"
+                                    IsEnabled="{Binding CanModifyPending}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Text="Apply" VerticalAlignment="Center" />
+                                    <Border Background="{StaticResource OverlayBrush}"
+                                            CornerRadius="10"
+                                            Padding="7,2"
+                                            IsVisible="{Binding HasPendingChanges}">
+                                        <TextBlock Text="{Binding PendingCount}"
+                                                   FontSize="12"
+                                                   Foreground="{StaticResource TextPrimaryBrush}" />
+                                    </Border>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+
+                        <!-- Left side: pending count text (clickable to open review panel) -->
+                        <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                            <Button Classes="apply-bar-count"
+                                    Command="{Binding OpenReviewPanelCommand}">
+                                <TextBlock Text="{Binding PendingCountText}"
+                                           Foreground="{StaticResource TextSecondaryBrush}"
+                                           FontSize="13" />
+                            </Button>
+
+                            <!-- Status message (success/error feedback) -->
+                            <TextBlock Text="{Binding StatusMessage}"
+                                       FontSize="12"
+                                       VerticalAlignment="Center"
+                                       TextTrimming="CharacterEllipsis"
+                                       IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                       Foreground="{StaticResource WarningBrush}" />
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <!-- Review panel popup -->
+                <Popup IsOpen="{Binding IsReviewPanelOpen, Mode=TwoWay}"
+                       PlacementTarget="{Binding #ApplyBar}"
+                       Placement="Top"
+                       HorizontalOffset="-16"
+                       IsLightDismissEnabled="True"
+                       WindowManagerAddShadowHint="False">
+                    <views:ReviewPanelView DataContext="{Binding ReviewPanel}" />
+                </Popup>
+            </Panel>
 
             <!-- Module content area -->
             <Border Background="{StaticResource SurfaceBrush}"
