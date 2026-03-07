@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\ThisIsMyPC.Core\ThisIsMyPC.Core.csproj" />
+    <ProjectReference Include="..\ThisIsMyPC.Interop.Win32\ThisIsMyPC.Interop.Win32.csproj" />
+    <ProjectReference Include="..\ThisIsMyPC.Interop.Com\ThisIsMyPC.Interop.Com.csproj" />
+  </ItemGroup>
+</Project>

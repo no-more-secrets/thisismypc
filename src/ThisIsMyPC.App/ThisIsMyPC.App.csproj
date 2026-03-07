@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <!-- CA1515: Avalonia XAML requires public types for views/viewmodels -->
+    <!-- CA1724: App class name conflicts with ThisIsMyPC.App namespace (unavoidable convention) -->
+    <NoWarn>CA1515;CA1724</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="Avalonia.Diagnostics">
+      <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
+      <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Serilog" />
+    <PackageReference Include="Serilog.Sinks.File" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ThisIsMyPC.Core\ThisIsMyPC.Core.csproj" />
+    <ProjectReference Include="..\ThisIsMyPC.Modules.Shell\ThisIsMyPC.Modules.Shell.csproj" />
+    <ProjectReference Include="..\ThisIsMyPC.Modules.Startup\ThisIsMyPC.Modules.Startup.csproj" />
+    <ProjectReference Include="..\ThisIsMyPC.Modules.Power\ThisIsMyPC.Modules.Power.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,40 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <ItemGroup Label="Avalonia">
+    <PackageVersion Include="Avalonia" Version="11.3.12" />
+    <PackageVersion Include="Avalonia.Desktop" Version="11.3.12" />
+    <PackageVersion Include="Avalonia.Themes.Fluent" Version="11.3.12" />
+    <PackageVersion Include="Avalonia.Diagnostics" Version="11.3.12" />
+  </ItemGroup>
+
+  <ItemGroup Label="MVVM">
+    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+  </ItemGroup>
+
+  <ItemGroup Label="DI">
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup Label="Data">
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.3" />
+  </ItemGroup>
+
+  <ItemGroup Label="Interop">
+    <PackageVersion Include="Microsoft.Windows.CsWin32" Version="0.3.269" />
+  </ItemGroup>
+
+  <ItemGroup Label="Logging">
+    <PackageVersion Include="Serilog" Version="4.3.1" />
+    <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
+  </ItemGroup>
+
+  <ItemGroup Label="Testing">
+    <PackageVersion Include="coverlet.collector" Version="6.0.4" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.4" />
+  </ItemGroup>
+</Project>

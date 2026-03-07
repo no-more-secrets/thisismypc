@@ -1,0 +1,11 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="ThisIsMyPC.App.App"
+             RequestedThemeVariant="Dark">
+
+    <Application.Styles>
+        <FluentTheme />
+        <StyleInclude Source="avares://ThisIsMyPC.App/Styles/Theme.axaml" />
+        <StyleInclude Source="avares://ThisIsMyPC.App/Styles/Typography.axaml" />
+    </Application.Styles>
+</Application>
