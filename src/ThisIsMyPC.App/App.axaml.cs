@@ -39,6 +39,8 @@ public partial class App : Application
         }
 
         base.OnFrameworkInitializationCompleted();
+
+        this.AttachDevTools();
     }
 
     private static void ConfigureServices(IServiceCollection services)
