@@ -70,7 +70,7 @@ Each entry gets one of these tags in its heading:
 
 ---
 
-## Shell & Explorer (Epic 2)
+## Explorer & Context Menus (Epic 2)
 
 ### Taskbar
 

@@ -65,7 +65,7 @@ BMAD Method v6.0.4 installed. Two research reports completed. No code written ye
 - Key GUIDs: Balanced `381b4222-...`, High Perf `8c5e7fda-...`, Ultimate `e9a42b02-...`
 - Use `powrprof.dll` API (`PowerGetActiveScheme`, `PowerSetActiveScheme`) over direct registry writes
 
-**Shell & Explorer Customization (ExplorerPatcher scope)**
+**Explorer & Context Menus Customization (ExplorerPatcher scope)**
 - ExplorerPatcher config: `HKCU\Software\ExplorerPatcher`
 - Explorer prefs: `HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced` (`TaskbarAl`, etc.)
 - Explorer policies: `HKLM\SOFTWARE\Policies\Microsoft\Windows\Explorer`

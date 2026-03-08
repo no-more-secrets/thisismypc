@@ -22,7 +22,9 @@ ThisIsMyPC unifies everything into a single pane of glass. One install. One inte
 
 ### Core Modules
 
-**Shell & Explorer Customization** — The flagship module, and the one no other tool does well. Enumerate, visualize, and control every registered context menu handler on your system — see the source file, publisher, and toggle them on or off. Restore the Windows 10 context menu, move the taskbar left, disable Widgets, suppress tips and ads, manage Explorer preferences (hidden files, file extensions, folder views), and edit environment variables with a proper PATH editor. Context menu creation and editing in v1.0.
+**Explorer** — Restore the Windows 10 context menu, move the taskbar left, disable Widgets, suppress tips and ads, manage Explorer preferences (hidden files, file extensions, folder views), and edit environment variables with a proper PATH editor.
+
+**Context Menus** — The flagship module, and the one no other tool does well. Enumerate, visualize, and control every registered context menu handler on your system — see the source file, publisher, classification, and toggle them on or off across all registration surfaces. Tab-based UI organized by context menu surface (File, Folder, Folder Background, Desktop, Misc). Context menu creation and editing in v1.0.
 
 **Startup & Services Management** — The "Autoruns replacement" angle. See every startup entry across registry run keys (including WOW6432Node mirrors and policy run keys), startup folders, Winlogon chains, and scheduled tasks — with file location, publisher, and description for each. Filter scheduled tasks by classification: telemetry, OEM bloatware, compatibility diagnostics, maintenance. Control Windows services: view state, change startup type, start/stop/restart. Covers all 200+ autostart extensibility points (ASEPs) that Windows provides.
 
@@ -158,7 +160,7 @@ src/
   ThisIsMyPC.Interop.Win32/    — P/Invoke wrappers via CsWin32 (SCM, powrprof, DXVA2, SetupAPI)
   ThisIsMyPC.Interop.Com/      — COM interop (ITaskService, shell extension handlers)
   ThisIsMyPC.Interop.Wmi/      — WMI query abstractions (system info, ASUS ATKACPI)
-  ThisIsMyPC.Modules.Shell/    — Shell & Explorer Customization module
+  ThisIsMyPC.Modules.Shell/    — Explorer + Context Menus modules (ShellModule + ContextMenuModule)
   ThisIsMyPC.Modules.Startup/  — Startup & Services Management module
   ThisIsMyPC.Modules.Power/    — Power Plan Management module
   ThisIsMyPC.Modules.Display/  — Display Control module (v1.0)
@@ -198,7 +200,7 @@ Single UAC prompt at launch. No split-process model. Users who decline elevation
 
 Three first-party modules that prove the architecture while delivering immediate utility:
 
-1. **Shell & Explorer Customization** — context menu control is the unique hook that no other tool provides
+1. **Explorer & Context Menus** — context menu control is the unique hook that no other tool provides
 2. **Startup & Services Management** — high daily-use value, the "Autoruns replacement" angle
 3. **Power Plan Management** — quick win, validates the module interface end-to-end
 

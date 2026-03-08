@@ -1,6 +1,6 @@
 # Epic 2: Registry Path Research
 
-**ThisIsMyPC — Shell & Explorer Customization**
+**ThisIsMyPC — Explorer & Context Menus Customization**
 **Researched March 2026 — Target: Windows 11 25H2**
 
 ---
