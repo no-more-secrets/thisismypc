@@ -57,6 +57,16 @@ public sealed class RegistryService : IRegistryService
         Execute<bool>(() =>
         {
             var (root, subKeyPath) = ParseKeyPath(keyPath);
+
+            // Guard: block recursive deletion of top-level keys under HKLM/HKCR (e.g., "SOFTWARE", "SYSTEM")
+            if (recursive && !subKeyPath.Contains('\\') &&
+                (root == Microsoft.Win32.Registry.LocalMachine || root == Microsoft.Win32.Registry.ClassesRoot))
+            {
+                return OperationResult<bool>.Failure(
+                    $"Refusing to recursively delete top-level key: {keyPath}",
+                    ErrorCategory.AccessDenied);
+            }
+
             if (recursive)
                 root.DeleteSubKeyTree(subKeyPath, throwOnMissingSubKey: false);
             else

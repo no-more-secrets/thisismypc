@@ -10,7 +10,6 @@ namespace ThisIsMyPC.Modules.Shell;
 
 public sealed class ShellModule : IModule
 {
-    private const string ClassicContextMenuKeyPath = @"HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32";
 
     private readonly IRegistryService _registryService;
     private readonly ExplorerSettingsReader _explorerSettingsReader;
@@ -44,26 +43,46 @@ public sealed class ShellModule : IModule
         return Task.FromResult(new ModuleAvailability(IsAvailable: true));
     }
 
-    public Task<OperationResult<object>> ScanSystemStateAsync()
+    public async Task<OperationResult<object>> ScanSystemStateAsync()
     {
-        try
+        return await Task.Run(() =>
         {
-            var scanData = new ShellScanData(
-                ContextMenuHandlers: _contextMenuScanner.Scan(),
-                ExplorerPreferences: _explorerSettingsReader.ReadAll(),
-                Taskbar: _taskbarSettingsReader.Read(),
-                NotificationSettings: _notificationSettingsReader.ReadAll(),
-                UserEnvironmentVariables: _environmentVariableReader.ReadUserVariables(),
-                SystemEnvironmentVariables: _environmentVariableReader.ReadSystemVariables());
+            try
+            {
+                // Scan each section independently so partial results are returned on failure
+                IReadOnlyList<ContextMenuHandler> contextMenuHandlers = [];
+                try { contextMenuHandlers = _contextMenuScanner.Scan(); }
+                catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Context menu scan failed: {ex.Message}"); }
 
-            return Task.FromResult(OperationResult<object>.Success(scanData));
-        }
-        catch (Exception ex)
-        {
-            return Task.FromResult(OperationResult<object>.Failure(
-                $"Shell scan failed: {ex.Message}",
-                ErrorCategory.ServiceUnavailable, ex));
-        }
+                var explorerPreferences = _explorerSettingsReader.ReadAll();
+                var taskbar = _taskbarSettingsReader.Read();
+                var notificationSettings = _notificationSettingsReader.ReadAll();
+
+                IReadOnlyList<EnvironmentVariable> userEnvVars = [];
+                try { userEnvVars = _environmentVariableReader.ReadUserVariables(); }
+                catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"User env var scan failed: {ex.Message}"); }
+
+                IReadOnlyList<EnvironmentVariable> systemEnvVars = [];
+                try { systemEnvVars = _environmentVariableReader.ReadSystemVariables(); }
+                catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"System env var scan failed: {ex.Message}"); }
+
+                var scanData = new ShellScanData(
+                    ContextMenuHandlers: contextMenuHandlers,
+                    ExplorerPreferences: explorerPreferences,
+                    Taskbar: taskbar,
+                    NotificationSettings: notificationSettings,
+                    UserEnvironmentVariables: userEnvVars,
+                    SystemEnvironmentVariables: systemEnvVars);
+
+                return OperationResult<object>.Success(scanData);
+            }
+            catch (Exception ex)
+            {
+                return OperationResult<object>.Failure(
+                    $"Shell scan failed: {ex.Message}",
+                    ErrorCategory.ServiceUnavailable, ex);
+            }
+        }).ConfigureAwait(false);
     }
 
     public Task<OperationResult<bool>> ApplyChangeAsync(ChangeDescriptor change)
@@ -71,7 +90,7 @@ public sealed class ShellModule : IModule
         try
         {
             // Special case: classic context menu toggle (key presence-based)
-            if (change.SystemLocation == ClassicContextMenuKeyPath)
+            if (change.SystemLocation == ShellRegistryPaths.ClassicContextMenuKeyPath)
             {
                 return Task.FromResult(ApplyClassicContextMenuChange(change));
             }
@@ -83,10 +102,10 @@ public sealed class ShellModule : IModule
                 ChangeValueType.Registry_ExpandString => ApplyExpandStringChange(change),
                 ChangeValueType.Environment_Variable => OperationResult<bool>.Failure(
                     $"Environment variable changes are not yet implemented (Story 2.5)",
-                    ErrorCategory.NotFound),
+                    ErrorCategory.ServiceUnavailable),
                 _ => OperationResult<bool>.Failure(
                     $"Unsupported value type: {change.ValueType}",
-                    ErrorCategory.NotFound),
+                    ErrorCategory.ServiceUnavailable),
             };
 
             return Task.FromResult(result);
@@ -112,7 +131,7 @@ public sealed class ShellModule : IModule
         {
             return OperationResult<bool>.Failure(
                 $"Cannot parse DWord value '{change.AfterValue}' for {change.SystemLocation}",
-                ErrorCategory.NotFound);
+                ErrorCategory.ServiceUnavailable);
         }
 
         return _registryService.WriteDWord(keyPath, valueName, intValue);
@@ -132,16 +151,16 @@ public sealed class ShellModule : IModule
 
     private OperationResult<bool> ApplyClassicContextMenuChange(ChangeDescriptor change)
     {
-        if (change.AfterValue == "__absent__")
+        if (change.AfterValue == ShellRegistryPaths.AbsentValue)
         {
             // Disable: delete the CLSID key tree
-            var parentKeyPath = @"HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}";
+            var parentKeyPath = ShellRegistryPaths.ClassicContextMenuClsidKeyPath;
             return _registryService.DeleteKey(parentKeyPath, recursive: true);
         }
         else
         {
             // Enable: create the InprocServer32 key with empty Default value
-            return _registryService.WriteString(ClassicContextMenuKeyPath, string.Empty, string.Empty);
+            return _registryService.WriteString(ShellRegistryPaths.ClassicContextMenuKeyPath, string.Empty, string.Empty);
         }
     }
 

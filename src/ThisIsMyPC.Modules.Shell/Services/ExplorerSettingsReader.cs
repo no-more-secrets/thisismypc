@@ -6,8 +6,6 @@ namespace ThisIsMyPC.Modules.Shell.Services;
 
 public sealed class ExplorerSettingsReader
 {
-    private const string AdvancedKeyPath = @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced";
-    private const string ExplorerKeyPath = @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer";
 
     private readonly IRegistryService _registryService;
 
@@ -25,7 +23,7 @@ public sealed class ExplorerSettingsReader
             id: "hidden-files",
             displayName: "Show hidden files and folders",
             description: "Display files and folders that are normally hidden",
-            keyPath: AdvancedKeyPath,
+            keyPath: ShellRegistryPaths.AdvancedKeyPath,
             valueName: "Hidden",
             enabledValue: "1",
             disabledValue: "2",
@@ -37,7 +35,7 @@ public sealed class ExplorerSettingsReader
             id: "file-extensions",
             displayName: "Show file name extensions",
             description: "Display file extensions (e.g., .txt, .exe) in Explorer",
-            keyPath: AdvancedKeyPath,
+            keyPath: ShellRegistryPaths.AdvancedKeyPath,
             valueName: "HideFileExt",
             enabledValue: "0",
             disabledValue: "1",
@@ -49,7 +47,7 @@ public sealed class ExplorerSettingsReader
             id: "protected-os-files",
             displayName: "Show protected operating system files",
             description: "Display hidden OS files (caution: modifying these can break Windows)",
-            keyPath: AdvancedKeyPath,
+            keyPath: ShellRegistryPaths.AdvancedKeyPath,
             valueName: "ShowSuperHidden",
             enabledValue: "1",
             disabledValue: "0",
@@ -61,7 +59,7 @@ public sealed class ExplorerSettingsReader
             id: "separate-process",
             displayName: "Launch folder windows in a separate process",
             description: "Run each Explorer folder in its own process for stability",
-            keyPath: AdvancedKeyPath,
+            keyPath: ShellRegistryPaths.AdvancedKeyPath,
             valueName: "SeparateProcess",
             enabledValue: "1",
             disabledValue: "0",
@@ -73,7 +71,7 @@ public sealed class ExplorerSettingsReader
             id: "sync-provider-notifications",
             displayName: "Show sync provider notifications",
             description: "Display notifications from cloud sync providers like OneDrive in Explorer",
-            keyPath: AdvancedKeyPath,
+            keyPath: ShellRegistryPaths.AdvancedKeyPath,
             valueName: "ShowSyncProviderNotifications",
             enabledValue: "1",
             disabledValue: "0",
@@ -85,7 +83,7 @@ public sealed class ExplorerSettingsReader
             id: "launch-to",
             displayName: "Open Explorer to This PC",
             description: "Launch Explorer to 'This PC' instead of Home/Quick Access",
-            keyPath: ExplorerKeyPath,
+            keyPath: ShellRegistryPaths.ExplorerKeyPath,
             valueName: "LaunchTo",
             enabledValue: "1",
             disabledValue: "2",

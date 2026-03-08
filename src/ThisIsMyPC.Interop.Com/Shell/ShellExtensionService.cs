@@ -28,6 +28,7 @@ public sealed class ShellExtensionService : IShellExtensionService
         {
             var handlers = new List<ShellExtensionInfo>();
             var dllPathCache = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+            var publisherCache = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var (basePath, appliesTo) in HandlerRegistrations)
             {
@@ -53,7 +54,13 @@ public sealed class ShellExtensionService : IShellExtensionService
                         dllPathCache[cleanClsid] = dllPath;
                     }
 
-                    var publisher = ResolvePublisher(dllPath);
+                    // Cache publisher per DLL path to avoid redundant FileVersionInfo reads
+                    string? publisher = null;
+                    if (dllPath is not null && !publisherCache.TryGetValue(dllPath, out publisher))
+                    {
+                        publisher = ResolvePublisher(dllPath);
+                        publisherCache[dllPath] = publisher;
+                    }
 
                     handlers.Add(new ShellExtensionInfo(
                         HandlerName: handlerName,

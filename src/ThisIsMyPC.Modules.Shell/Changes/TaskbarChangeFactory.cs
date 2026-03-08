@@ -6,17 +6,18 @@ namespace ThisIsMyPC.Modules.Shell.Changes;
 public static class TaskbarChangeFactory
 {
     private const string ModuleId = "Shell & Explorer";
-    private const string AdvancedKeyPath = @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced";
-    private const string ClassicContextMenuKeyPath = @"HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32";
 
     public static ChangeDescriptor CreateAlignmentChange(TaskbarSettings current, int newAlignment)
     {
+        if (newAlignment is not (0 or 1))
+            throw new ArgumentOutOfRangeException(nameof(newAlignment), newAlignment, "Taskbar alignment must be 0 (Left) or 1 (Center).");
+
         return new ChangeDescriptor
         {
             ModuleId = ModuleId,
             SettingId = "taskbar-alignment",
             DisplayName = "Taskbar alignment",
-            SystemLocation = $@"{AdvancedKeyPath}\TaskbarAl",
+            SystemLocation = $@"{ShellRegistryPaths.AdvancedKeyPath}\TaskbarAl",
             BeforeValue = current.Alignment.ToString(),
             AfterValue = newAlignment.ToString(),
             BeforeDisplay = current.Alignment == 0 ? "Left" : "Center",
@@ -33,7 +34,7 @@ public static class TaskbarChangeFactory
             ModuleId = ModuleId,
             SettingId = "taskbar-widgets",
             DisplayName = "Taskbar widgets",
-            SystemLocation = $@"{AdvancedKeyPath}\TaskbarDa",
+            SystemLocation = $@"{ShellRegistryPaths.AdvancedKeyPath}\TaskbarDa",
             BeforeValue = current.WidgetsEnabled ? "1" : "0",
             AfterValue = enable ? "1" : "0",
             BeforeDisplay = current.WidgetsEnabled ? "Shown" : "Hidden",
@@ -51,9 +52,9 @@ public static class TaskbarChangeFactory
             ModuleId = ModuleId,
             SettingId = "classic-context-menu",
             DisplayName = "Classic context menu",
-            SystemLocation = ClassicContextMenuKeyPath,
-            BeforeValue = current.ClassicContextMenu ? "" : "__absent__",
-            AfterValue = enable ? "" : "__absent__",
+            SystemLocation = ShellRegistryPaths.ClassicContextMenuKeyPath,
+            BeforeValue = current.ClassicContextMenu ? "" : ShellRegistryPaths.AbsentValue,
+            AfterValue = enable ? "" : ShellRegistryPaths.AbsentValue,
             BeforeDisplay = current.ClassicContextMenu ? "Enabled" : "Disabled",
             AfterDisplay = enable ? "Enabled" : "Disabled",
             ValueType = ChangeValueType.Registry_String,

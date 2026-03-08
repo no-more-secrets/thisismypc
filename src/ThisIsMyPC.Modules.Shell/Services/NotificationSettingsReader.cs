@@ -110,7 +110,7 @@ public sealed class NotificationSettingsReader
         if (result.IsSuccess)
             isEnabled = invertLogic ? result.Value! == 0 : result.Value! == 1;
         else
-            isEnabled = !invertLogic; // default: enabled (or disabled for inverted)
+            isEnabled = true; // default: Windows features are enabled when their registry value is absent
 
         settings.Add(new NotificationSetting(id, displayName, description, keyPath, valueName, isEnabled));
     }

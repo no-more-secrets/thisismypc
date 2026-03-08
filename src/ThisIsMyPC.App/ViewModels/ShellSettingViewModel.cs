@@ -6,7 +6,7 @@ using ThisIsMyPC.Modules.Shell.Models;
 
 namespace ThisIsMyPC.App.ViewModels;
 
-public partial class ShellSettingViewModel : ViewModelBase
+public sealed partial class ShellSettingViewModel : ViewModelBase, IDisposable
 {
     private readonly IPendingChangesService _pendingChangesService;
     private readonly ExplorerPreference? _preference;
@@ -88,6 +88,7 @@ public partial class ShellSettingViewModel : ViewModelBase
 
         // Cancel any in-flight debounce so only the final toggle state is processed
         _debounceCts?.Cancel();
+        _debounceCts?.Dispose();
         _debounceCts = new CancellationTokenSource();
         _ = DebounceToggleAsync(value, _debounceCts.Token);
     }
@@ -103,32 +104,39 @@ public partial class ShellSettingViewModel : ViewModelBase
             return;
         }
 
-        // Refresh baseline from registry (source of truth)
-        if (_readRegistryState is not null)
-            _registryIsEnabled = _readRegistryState();
+        try
+        {
+            // Refresh baseline from registry (source of truth)
+            if (_readRegistryState is not null)
+                _registryIsEnabled = _readRegistryState();
 
-        // Build the change descriptor
-        ChangeDescriptor? change = null;
-        if (_preference is not null)
-            change = ExplorerChangeFactory.CreateToggle(_preference, desiredState);
-        else if (_changeFactory is not null)
-            change = _changeFactory(desiredState);
+            // Build the change descriptor
+            ChangeDescriptor? change = null;
+            if (_preference is not null)
+                change = ExplorerChangeFactory.CreateToggle(_preference, desiredState);
+            else if (_changeFactory is not null)
+                change = _changeFactory(desiredState);
 
-        if (change is null)
-            return;
+            if (change is null)
+                return;
 
-        // Unstage any existing pending change for the same setting
-        var existing = _pendingChangesService.PendingGroups
-            .FirstOrDefault(g => g.Changes.Any(c => c.SettingId == change.SettingId));
-        if (existing is not null)
-            _pendingChangesService.Unstage(existing.GroupId);
+            // Unstage any existing pending change for the same setting
+            var existing = _pendingChangesService.PendingGroups
+                .FirstOrDefault(g => g.Changes.Any(c => c.SettingId == change.SettingId));
+            if (existing is not null)
+                _pendingChangesService.Unstage(existing.GroupId);
 
-        // Only stage if the desired state differs from the real registry value
-        if (desiredState != _registryIsEnabled)
-            _pendingChangesService.Stage(change);
+            // Only stage if the desired state differs from the real registry value
+            if (desiredState != _registryIsEnabled)
+                _pendingChangesService.Stage(change);
 
-        // Update pending state properties for UI binding
-        UpdatePendingState();
+            // Update pending state properties for UI binding
+            UpdatePendingState();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Toggle staging failed for {Label}: {ex.Message}");
+        }
     }
 
     private void UpdatePendingState()
@@ -136,5 +144,12 @@ public partial class ShellSettingViewModel : ViewModelBase
         HasPendingChange = IsEnabled != _registryIsEnabled;
         IsPendingEnable = HasPendingChange && IsEnabled;
         IsPendingDisable = HasPendingChange && !IsEnabled;
+    }
+
+    public void Dispose()
+    {
+        _debounceCts?.Cancel();
+        _debounceCts?.Dispose();
+        _debounceCts = null;
     }
 }
