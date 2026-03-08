@@ -17,5 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\ThisIsMyPC.App\ThisIsMyPC.App.csproj" />
+    <ProjectReference Include="..\..\src\ThisIsMyPC.Interop.Win32\ThisIsMyPC.Interop.Win32.csproj" />
+    <ProjectReference Include="..\..\src\ThisIsMyPC.Interop.Com\ThisIsMyPC.Interop.Com.csproj" />
   </ItemGroup>
 </Project>

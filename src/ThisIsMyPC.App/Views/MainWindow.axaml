@@ -188,7 +188,13 @@
                     CornerRadius="8"
                     Padding="24">
                 <Panel>
-                    <ContentControl Content="{Binding CurrentContent}" />
+                    <ContentControl Content="{Binding CurrentContent}">
+                        <ContentControl.DataTemplates>
+                            <DataTemplate DataType="{x:Type vm:ShellViewModel}">
+                                <views:ShellView />
+                            </DataTemplate>
+                        </ContentControl.DataTemplates>
+                    </ContentControl>
                     <!-- Placeholder shown when no module view is loaded -->
                     <StackPanel IsVisible="{Binding CurrentContent, Converter={x:Static ObjectConverters.IsNull}}"
                                 HorizontalAlignment="Center"

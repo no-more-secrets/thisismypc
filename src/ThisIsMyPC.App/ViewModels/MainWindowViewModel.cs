@@ -7,6 +7,8 @@ using ThisIsMyPC.App.Services;
 using ThisIsMyPC.Core.Changes;
 using ThisIsMyPC.Core.Results;
 using ThisIsMyPC.Core.Services;
+using ThisIsMyPC.Modules.Shell;
+using ThisIsMyPC.Modules.Shell.Models;
 
 namespace ThisIsMyPC.App.ViewModels;
 
@@ -74,6 +76,7 @@ public partial class MainWindowViewModel : ViewModelBase
             ApplyChangeToModule);
 
         _pendingChangesService.PropertyChanged += OnPendingChangesPropertyChanged;
+        _navigationService.PropertyChanged += OnNavigationPropertyChanged;
         PendingCount = _pendingChangesService.PendingCount;
     }
 
@@ -85,6 +88,31 @@ public partial class MainWindowViewModel : ViewModelBase
                 PendingCount = _pendingChangesService.PendingCount;
             else
                 Dispatcher.UIThread.Post(() => PendingCount = _pendingChangesService.PendingCount);
+        }
+    }
+
+    private async void OnNavigationPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is not nameof(NavigationService.CurrentModule))
+            return;
+
+        var current = _navigationService.CurrentModule;
+        if (current?.Module is ShellModule)
+        {
+            var scanResult = await current.Module.ScanSystemStateAsync().ConfigureAwait(true);
+            if (scanResult.IsSuccess && scanResult.Value is ShellScanData scanData)
+            {
+                CurrentContent = new ShellViewModel(scanData, _pendingChangesService);
+            }
+            else
+            {
+                CurrentContent = null;
+                StatusMessage = scanResult.ErrorMessage ?? "Failed to scan shell settings";
+            }
+        }
+        else
+        {
+            CurrentContent = null;
         }
     }
 

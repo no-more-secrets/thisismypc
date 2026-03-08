@@ -1,0 +1,44 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ThisIsMyPC.App.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="ThisIsMyPC.App.Views.ShellView"
+             x:DataType="vm:ShellViewModel">
+
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="24" Margin="0,0,0,16">
+
+            <!-- Explorer Preferences Section -->
+            <StackPanel Spacing="8">
+                <TextBlock Text="Explorer Preferences"
+                           FontSize="18"
+                           FontWeight="SemiBold"
+                           Foreground="{StaticResource TextPrimaryBrush}" />
+                <TextBlock Text="Control how Windows Explorer displays files and folders"
+                           FontSize="13"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Margin="0,0,0,4" />
+                <ItemsControl ItemsSource="{Binding ExplorerSettings}"
+                              ItemTemplate="{StaticResource ToggleSettingRowTemplate}" />
+            </StackPanel>
+
+            <!-- Taskbar Section -->
+            <StackPanel Spacing="8">
+                <TextBlock Text="Taskbar"
+                           FontSize="18"
+                           FontWeight="SemiBold"
+                           Foreground="{StaticResource TextPrimaryBrush}" />
+                <TextBlock Text="Customize taskbar alignment, widgets, and context menu style"
+                           FontSize="13"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Margin="0,0,0,4" />
+                <ItemsControl ItemsSource="{Binding TaskbarSettings}"
+                              ItemTemplate="{StaticResource ToggleSettingRowTemplate}" />
+            </StackPanel>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

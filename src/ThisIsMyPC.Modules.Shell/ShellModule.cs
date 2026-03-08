@@ -1,11 +1,36 @@
 using ThisIsMyPC.Core.Changes;
 using ThisIsMyPC.Core.Modules;
 using ThisIsMyPC.Core.Results;
+using ThisIsMyPC.Core.Services;
+using ThisIsMyPC.Interop.Com.Shell;
+using ThisIsMyPC.Modules.Shell.Models;
+using ThisIsMyPC.Modules.Shell.Services;
 
 namespace ThisIsMyPC.Modules.Shell;
 
 public sealed class ShellModule : IModule
 {
+    private const string ClassicContextMenuKeyPath = @"HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32";
+
+    private readonly IRegistryService _registryService;
+    private readonly ExplorerSettingsReader _explorerSettingsReader;
+    private readonly TaskbarSettingsReader _taskbarSettingsReader;
+    private readonly NotificationSettingsReader _notificationSettingsReader;
+    private readonly EnvironmentVariableReader _environmentVariableReader;
+    private readonly ContextMenuScanner _contextMenuScanner;
+
+    public ShellModule(
+        IRegistryService registryService,
+        IShellExtensionService shellExtensionService)
+    {
+        _registryService = registryService;
+        _explorerSettingsReader = new ExplorerSettingsReader(registryService);
+        _taskbarSettingsReader = new TaskbarSettingsReader(registryService);
+        _notificationSettingsReader = new NotificationSettingsReader(registryService);
+        _environmentVariableReader = new EnvironmentVariableReader(registryService);
+        _contextMenuScanner = new ContextMenuScanner(shellExtensionService);
+    }
+
     public ModuleInfo Info { get; } = new(
         Name: "Shell & Explorer",
         Icon: "shell",
@@ -21,16 +46,108 @@ public sealed class ShellModule : IModule
 
     public Task<OperationResult<object>> ScanSystemStateAsync()
     {
-        return Task.FromResult(OperationResult<object>.Success(new object()));
+        try
+        {
+            var scanData = new ShellScanData(
+                ContextMenuHandlers: _contextMenuScanner.Scan(),
+                ExplorerPreferences: _explorerSettingsReader.ReadAll(),
+                Taskbar: _taskbarSettingsReader.Read(),
+                NotificationSettings: _notificationSettingsReader.ReadAll(),
+                UserEnvironmentVariables: _environmentVariableReader.ReadUserVariables(),
+                SystemEnvironmentVariables: _environmentVariableReader.ReadSystemVariables());
+
+            return Task.FromResult(OperationResult<object>.Success(scanData));
+        }
+        catch (Exception ex)
+        {
+            return Task.FromResult(OperationResult<object>.Failure(
+                $"Shell scan failed: {ex.Message}",
+                ErrorCategory.ServiceUnavailable, ex));
+        }
     }
 
     public Task<OperationResult<bool>> ApplyChangeAsync(ChangeDescriptor change)
     {
-        return Task.FromResult(OperationResult<bool>.Success(true));
+        try
+        {
+            // Special case: classic context menu toggle (key presence-based)
+            if (change.SystemLocation == ClassicContextMenuKeyPath)
+            {
+                return Task.FromResult(ApplyClassicContextMenuChange(change));
+            }
+
+            var result = change.ValueType switch
+            {
+                ChangeValueType.Registry_DWord => ApplyDWordChange(change),
+                ChangeValueType.Registry_String => ApplyStringChange(change),
+                ChangeValueType.Registry_ExpandString => ApplyExpandStringChange(change),
+                _ => OperationResult<bool>.Failure(
+                    $"Unsupported value type: {change.ValueType}",
+                    ErrorCategory.ServiceUnavailable),
+            };
+
+            return Task.FromResult(result);
+        }
+        catch (Exception ex)
+        {
+            return Task.FromResult(OperationResult<bool>.Failure(
+                $"Failed to apply change '{change.DisplayName}': {ex.Message}",
+                ErrorCategory.ServiceUnavailable, ex));
+        }
     }
 
     public Task<OperationResult<bool>> RevertChangeAsync(ChangeDescriptor change)
     {
-        return Task.FromResult(OperationResult<bool>.Success(true));
+        // PendingChangesService constructs a swapped descriptor — just apply it
+        return ApplyChangeAsync(change);
+    }
+
+    private OperationResult<bool> ApplyDWordChange(ChangeDescriptor change)
+    {
+        var (keyPath, valueName) = ParseSystemLocation(change.SystemLocation);
+        if (!int.TryParse(change.AfterValue, out var intValue))
+        {
+            return OperationResult<bool>.Failure(
+                $"Cannot parse DWord value '{change.AfterValue}' for {change.SystemLocation}",
+                ErrorCategory.ServiceUnavailable);
+        }
+
+        return _registryService.WriteDWord(keyPath, valueName, intValue);
+    }
+
+    private OperationResult<bool> ApplyStringChange(ChangeDescriptor change)
+    {
+        var (keyPath, valueName) = ParseSystemLocation(change.SystemLocation);
+        return _registryService.WriteString(keyPath, valueName, change.AfterValue ?? string.Empty);
+    }
+
+    private OperationResult<bool> ApplyExpandStringChange(ChangeDescriptor change)
+    {
+        var (keyPath, valueName) = ParseSystemLocation(change.SystemLocation);
+        return _registryService.WriteExpandString(keyPath, valueName, change.AfterValue ?? string.Empty);
+    }
+
+    private OperationResult<bool> ApplyClassicContextMenuChange(ChangeDescriptor change)
+    {
+        if (change.AfterValue == "__absent__")
+        {
+            // Disable: delete the CLSID key tree
+            var parentKeyPath = @"HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}";
+            return _registryService.DeleteKey(parentKeyPath, recursive: true);
+        }
+        else
+        {
+            // Enable: create the InprocServer32 key with empty Default value
+            return _registryService.WriteString(ClassicContextMenuKeyPath, string.Empty, string.Empty);
+        }
+    }
+
+    private static (string KeyPath, string ValueName) ParseSystemLocation(string systemLocation)
+    {
+        var lastSep = systemLocation.LastIndexOf('\\');
+        if (lastSep < 0)
+            throw new ArgumentException($"Invalid system location (no separator): {systemLocation}");
+
+        return (systemLocation[..lastSep], systemLocation[(lastSep + 1)..]);
     }
 }

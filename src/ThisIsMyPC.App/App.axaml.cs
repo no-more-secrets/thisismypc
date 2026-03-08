@@ -12,6 +12,8 @@ using ThisIsMyPC.App.Views;
 using ThisIsMyPC.Core.Modules;
 using ThisIsMyPC.Core.Data;
 using ThisIsMyPC.Core.Services;
+using ThisIsMyPC.Interop.Win32.Registry;
+using ThisIsMyPC.Interop.Com.Shell;
 using ThisIsMyPC.Modules.Power;
 using ThisIsMyPC.Modules.Shell;
 using ThisIsMyPC.Modules.Startup;
@@ -52,6 +54,10 @@ public partial class App : Application
 
     private static void ConfigureServices(IServiceCollection services)
     {
+        // Interop services
+        services.AddSingleton<IRegistryService, RegistryService>();
+        services.AddSingleton<IShellExtensionService, ShellExtensionService>();
+
         // Modules (explicit DI registration, NativeAOT-safe)
         services.AddSingleton<IModule, ShellModule>();
         services.AddSingleton<IModule, StartupModule>();

@@ -1,0 +1,110 @@
+using System.Diagnostics;
+using ThisIsMyPC.Core.Results;
+using ThisIsMyPC.Core.Services;
+
+namespace ThisIsMyPC.Interop.Com.Shell;
+
+public sealed class ShellExtensionService : IShellExtensionService
+{
+    private static readonly string[] HandlerPaths =
+    [
+        @"HKCR\*\shellex\ContextMenuHandlers",
+        @"HKCR\AllFilesystemObjects\shellex\ContextMenuHandlers",
+        @"HKCR\Directory\shellex\ContextMenuHandlers",
+        @"HKCR\Directory\Background\shellex\ContextMenuHandlers",
+        @"HKCR\Folder\shellex\ContextMenuHandlers",
+    ];
+
+    private static readonly Dictionary<string, string> PathToAppliesTo = new(StringComparer.OrdinalIgnoreCase)
+    {
+        [@"HKCR\*\shellex\ContextMenuHandlers"] = "All files",
+        [@"HKCR\AllFilesystemObjects\shellex\ContextMenuHandlers"] = "All filesystem objects",
+        [@"HKCR\Directory\shellex\ContextMenuHandlers"] = "Directories",
+        [@"HKCR\Directory\Background\shellex\ContextMenuHandlers"] = "Folder background",
+        [@"HKCR\Folder\shellex\ContextMenuHandlers"] = "Folders",
+    };
+
+    private readonly IRegistryService _registryService;
+
+    public ShellExtensionService(IRegistryService registryService)
+    {
+        _registryService = registryService;
+    }
+
+    public OperationResult<IReadOnlyList<ShellExtensionInfo>> EnumerateContextMenuHandlers()
+    {
+        try
+        {
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var handlers = new List<ShellExtensionInfo>();
+
+            foreach (var basePath in HandlerPaths)
+            {
+                var subKeysResult = _registryService.EnumerateSubKeys(basePath);
+                if (!subKeysResult.IsSuccess)
+                    continue;
+
+                var appliesTo = PathToAppliesTo.GetValueOrDefault(basePath, "Unknown");
+
+                foreach (var handlerName in subKeysResult.Value!)
+                {
+                    var handlerKeyPath = $@"{basePath}\{handlerName}";
+                    var clsidResult = _registryService.ReadString(handlerKeyPath, string.Empty);
+                    if (!clsidResult.IsSuccess || string.IsNullOrWhiteSpace(clsidResult.Value))
+                        continue;
+
+                    var rawClsid = clsidResult.Value!;
+                    var isEnabled = !rawClsid.StartsWith('-');
+                    var cleanClsid = isEnabled ? rawClsid : rawClsid[1..];
+
+                    // Deduplicate by CLSID
+                    if (!seen.Add(cleanClsid))
+                        continue;
+
+                    var dllPath = ResolveDllPath(cleanClsid);
+                    var publisher = ResolvePublisher(dllPath);
+
+                    handlers.Add(new ShellExtensionInfo(
+                        HandlerName: handlerName,
+                        Clsid: cleanClsid,
+                        RegistryPath: handlerKeyPath,
+                        AppliesTo: appliesTo,
+                        DllPath: dllPath,
+                        Publisher: publisher,
+                        IsEnabled: isEnabled));
+                }
+            }
+
+            return OperationResult<IReadOnlyList<ShellExtensionInfo>>.Success(handlers);
+        }
+        catch (Exception ex)
+        {
+            return OperationResult<IReadOnlyList<ShellExtensionInfo>>.Failure(
+                $"Failed to enumerate context menu handlers: {ex.Message}",
+                ErrorCategory.ServiceUnavailable, ex);
+        }
+    }
+
+    private string? ResolveDllPath(string clsid)
+    {
+        var inprocKeyPath = $@"HKCR\CLSID\{clsid}\InprocServer32";
+        var result = _registryService.ReadString(inprocKeyPath, string.Empty);
+        return result.IsSuccess ? result.Value : null;
+    }
+
+    private static string? ResolvePublisher(string? dllPath)
+    {
+        if (string.IsNullOrEmpty(dllPath) || !File.Exists(dllPath))
+            return null;
+
+        try
+        {
+            var versionInfo = FileVersionInfo.GetVersionInfo(dllPath);
+            return versionInfo.CompanyName;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+}
