@@ -2,6 +2,12 @@
 
 External research documents produced via deep-research tools (Gemini, etc.) for architectural and implementation decisions. Original PDFs preserved in `pdf-originals/`.
 
+## Master Summary
+
+| Document | Lines | Purpose |
+|---|---|---|
+| [SUMMARY.md](./SUMMARY.md) | 311 | Unified synthesis of all 5 research documents (119 pages) into a single reference covering the Windows 11 trust model, enforcement drivers, IPC/kernel attack surfaces, bytecode interpreter security, supply chain threats, context menu architecture, and configuration surface mapping with prioritized user sentiment analysis. |
+
 ## Security Architecture
 
 | Document | Pages | Purpose |
