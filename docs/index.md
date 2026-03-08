@@ -18,6 +18,20 @@
 | [research/Shell_Extensions_List.html](research/Shell_Extensions_List.html) | ShellExView raw export from Windows 11 25H2 install. Ground truth for context menu handler enumeration (story 2.2). Lists all registered shell extensions with CLSIDs, DLL paths, and handler types. See context-menu-handlers-analysis.md for the processed version. |
 | [research/autoruns.csv](research/autoruns.csv) | Sysinternals Autoruns raw export from 25H2 install. Ground truth for startup entries, boot execute, scheduled tasks, services, and shell extensions (Epic 3). Large file — load selectively by Category column. See autoruns-analysis.md for the processed version. |
 
+## Deep Research (External)
+
+Extensive research documents produced via deep-research tools. See [deep-research/index.md](deep-research/index.md) for full index.
+
+| Document | Purpose |
+|---|---|
+| [deep-research/](deep-research/index.md) | 5 research documents (119 pages total, now in markdown): threat modeling, kernel driver security, context menu architecture, Windows 11 control surface mapping. Original PDFs in `deep-research/pdf-originals/`. |
+
+## Architecture
+
+| Document | Purpose |
+|---|---|
+| [source-split-considerations.md](source-split-considerations.md) | Public/private repository boundary definition for GPLv2 compliance. Defines what goes in the open-source repo vs proprietary Session 0 security service, IOCTL security layer, and anti-tampering components. |
+
 ## Project Management
 
 | Document | Purpose |
