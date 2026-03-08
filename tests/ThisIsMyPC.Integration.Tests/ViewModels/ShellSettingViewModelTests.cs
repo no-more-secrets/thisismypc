@@ -121,7 +121,7 @@ public sealed class ShellSettingViewModelTests : IDisposable
             pendingChangesService: _pendingService,
             changeFactory: enable => new ChangeDescriptor
             {
-                ModuleId = "Shell & Explorer",
+                ModuleId = "Explorer",
                 SettingId = "widgets",
                 DisplayName = "Widgets",
                 SystemLocation = @"HKCU\test\path",

@@ -1,0 +1,87 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ThisIsMyPC.App.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="ThisIsMyPC.App.Views.ContextMenuView"
+             x:DataType="vm:ContextMenuViewModel">
+
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="8">
+
+            <!-- Registry Info toggle -->
+            <StackPanel Orientation="Horizontal" Spacing="8"
+                        HorizontalAlignment="Right" Margin="0,0,16,4">
+                <TextBlock Text="Registry Info"
+                           FontSize="13"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           VerticalAlignment="Center" />
+                <ToggleSwitch IsChecked="{Binding IsRegistryViewMode}"
+                              OffContent=""
+                              OnContent=""
+                              VerticalAlignment="Center" />
+            </StackPanel>
+
+            <TabControl>
+                <!-- File Tab -->
+                <TabItem>
+                    <TabItem.Header>
+                        <TextBlock Text="{Binding FileHandlerCount}" FontSize="13" />
+                    </TabItem.Header>
+                    <ItemsControl ItemsSource="{Binding FileHandlers}"
+                                  ItemTemplate="{StaticResource ToggleSettingRowTemplate}"
+                                  Margin="0,8,0,0" />
+                </TabItem>
+
+                <!-- Folder Tab -->
+                <TabItem>
+                    <TabItem.Header>
+                        <TextBlock Text="{Binding FolderHandlerCount}" FontSize="13" />
+                    </TabItem.Header>
+                    <ItemsControl ItemsSource="{Binding FolderHandlers}"
+                                  ItemTemplate="{StaticResource ToggleSettingRowTemplate}"
+                                  Margin="0,8,0,0" />
+                </TabItem>
+
+                <!-- Folder Background Tab -->
+                <TabItem>
+                    <TabItem.Header>
+                        <TextBlock Text="{Binding FolderBackgroundHandlerCount}" FontSize="13" />
+                    </TabItem.Header>
+                    <ItemsControl ItemsSource="{Binding FolderBackgroundHandlers}"
+                                  ItemTemplate="{StaticResource ToggleSettingRowTemplate}"
+                                  Margin="0,8,0,0" />
+                </TabItem>
+
+                <!-- Desktop Tab -->
+                <TabItem>
+                    <TabItem.Header>
+                        <TextBlock Text="{Binding DesktopHandlerCount}" FontSize="13" />
+                    </TabItem.Header>
+                    <StackPanel Spacing="8" Margin="0,8,0,0">
+                        <TextBlock Text="System entries like Display settings and Personalize are built-in and not toggleable."
+                                   FontSize="12"
+                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                   FontStyle="Italic"
+                                   TextWrapping="Wrap" />
+                        <ItemsControl ItemsSource="{Binding DesktopHandlers}"
+                                      ItemTemplate="{StaticResource ToggleSettingRowTemplate}" />
+                    </StackPanel>
+                </TabItem>
+
+                <!-- Misc Tab -->
+                <TabItem>
+                    <TabItem.Header>
+                        <TextBlock Text="{Binding MiscHandlerCount}" FontSize="13" />
+                    </TabItem.Header>
+                    <ItemsControl ItemsSource="{Binding MiscHandlers}"
+                                  ItemTemplate="{StaticResource ToggleSettingRowTemplate}"
+                                  Margin="0,8,0,0" />
+                </TabItem>
+            </TabControl>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

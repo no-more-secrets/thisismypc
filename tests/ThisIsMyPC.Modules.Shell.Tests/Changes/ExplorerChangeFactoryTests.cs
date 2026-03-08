@@ -31,7 +31,7 @@ public sealed class ExplorerChangeFactoryTests
         var pref = MakePreference(currentValue: "2", isEnabled: false);
         var change = ExplorerChangeFactory.CreateToggle(pref, enable: true);
 
-        Assert.Equal("Shell & Explorer", change.ModuleId);
+        Assert.Equal("Explorer", change.ModuleId);
         Assert.Equal("hidden-files", change.SettingId);
         Assert.Equal("Show hidden files", change.DisplayName);
         Assert.Equal(@"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\Hidden", change.SystemLocation);

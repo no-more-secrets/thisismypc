@@ -1,16 +1,26 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using Avalonia;
+using Avalonia.Media;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Avalonia.Threading;
 using ThisIsMyPC.App.Services;
 using ThisIsMyPC.Core.Changes;
 using ThisIsMyPC.Core.Results;
 using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Modules.Shell;
 using ThisIsMyPC.Modules.Shell.Models;
+using ContextMenuHandlerList = System.Collections.Generic.IReadOnlyList<ThisIsMyPC.Modules.Shell.Models.ContextMenuHandler>;
 
 namespace ThisIsMyPC.App.ViewModels;
+
+public enum StatusSeverity
+{
+    Success,
+    Warning,
+    Error,
+}
 
 public partial class MainWindowViewModel : ViewModelBase
 {
@@ -109,24 +119,52 @@ public partial class MainWindowViewModel : ViewModelBase
                 {
                     if (scanResult.IsSuccess && scanResult.Value is ShellScanData scanData)
                     {
+                        ContentTitle = current.Module.Info.Name;
+                        ContentDescription = current.Module.Info.Description;
                         CurrentContent = new ShellViewModel(scanData, _pendingChangesService, _registryService);
                     }
                     else
                     {
                         CurrentContent = null;
-                        StatusMessage = scanResult.ErrorMessage ?? "Failed to scan shell settings";
+                        SetStatus(scanResult.ErrorMessage ?? "Failed to scan shell settings", StatusSeverity.Error);
+                    }
+                });
+            }
+            else if (current?.Module is ContextMenuModule)
+            {
+                var scanResult = await current.Module.ScanSystemStateAsync().ConfigureAwait(false);
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    if (scanResult.IsSuccess && scanResult.Value is ContextMenuHandlerList handlers)
+                    {
+                        ContentTitle = current.Module.Info.Name;
+                        ContentDescription = current.Module.Info.Description;
+                        CurrentContent = new ContextMenuViewModel(handlers, _pendingChangesService, _registryService);
+                    }
+                    else
+                    {
+                        CurrentContent = null;
+                        SetStatus(scanResult.ErrorMessage ?? "Failed to scan context menu handlers", StatusSeverity.Error);
                     }
                 });
             }
             else
             {
-                await Dispatcher.UIThread.InvokeAsync(() => CurrentContent = null);
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    if (current is not null)
+                    {
+                        ContentTitle = current.Module.Info.Name;
+                        ContentDescription = current.Module.Info.Description;
+                    }
+                    CurrentContent = null;
+                });
             }
         }
         catch (Exception ex)
         {
             await Dispatcher.UIThread.InvokeAsync(() =>
-                StatusMessage = $"Failed to load module: {ex.Message}");
+                SetStatus($"Failed to load module: {ex.Message}", StatusSeverity.Error));
         }
     }
 
@@ -227,6 +265,31 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private string _statusMessage = string.Empty;
 
+    [ObservableProperty]
+    private IBrush _statusBrush = Brushes.Transparent;
+
+    private void SetStatus(string message, StatusSeverity severity)
+    {
+        StatusMessage = message;
+        StatusBrush = GetBrush(severity switch
+        {
+            StatusSeverity.Success => "SuccessBrush",
+            StatusSeverity.Error => "DangerBrush",
+            StatusSeverity.Warning => "WarningBrush",
+            _ => "WarningBrush",
+        });
+    }
+
+    private static IBrush GetBrush(string key)
+    {
+        if (Application.Current?.TryGetResource(key, Application.Current.ActualThemeVariant, out var resource) == true
+            && resource is IBrush brush)
+        {
+            return brush;
+        }
+        return Brushes.White;
+    }
+
     [RelayCommand]
     private async Task ApplyAllAsync()
     {
@@ -246,11 +309,11 @@ public partial class MainWindowViewModel : ViewModelBase
             {
                 await _changeHistoryService.RecordChangesAsync(result).ConfigureAwait(true);
                 IsReviewPanelOpen = false;
-                StatusMessage = "Changes applied successfully";
+                SetStatus("Changes applied successfully", StatusSeverity.Success);
             }
             else
             {
-                StatusMessage = FormatApplyError(result);
+                SetStatus(FormatApplyError(result), StatusSeverity.Error);
             }
         }
         finally
@@ -332,9 +395,6 @@ public partial class MainWindowViewModel : ViewModelBase
             SelectedModule = SidebarGroups
                 .SelectMany(g => g.Items)
                 .FirstOrDefault(i => i.Module == current.Module);
-
-            ContentTitle = current.Module.Info.Name;
-            ContentDescription = current.Module.Info.Description;
         }
     }
 }

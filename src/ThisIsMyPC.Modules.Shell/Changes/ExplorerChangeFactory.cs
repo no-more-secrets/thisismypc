@@ -5,7 +5,7 @@ namespace ThisIsMyPC.Modules.Shell.Changes;
 
 public static class ExplorerChangeFactory
 {
-    private const string ModuleId = "Shell & Explorer";
+    private const string ModuleId = "Explorer";
 
     public static ChangeDescriptor CreateToggle(ExplorerPreference pref, bool enable)
     {

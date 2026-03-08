@@ -5,7 +5,7 @@ namespace ThisIsMyPC.Modules.Shell.Changes;
 // Stub for Story 2.5 — environment variable change creation
 public static class EnvironmentVariableChangeFactory
 {
-    private const string ModuleId = "Shell & Explorer";
+    private const string ModuleId = "Explorer";
 
     public static ChangeDescriptor CreateModify(
         string name,

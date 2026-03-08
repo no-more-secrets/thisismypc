@@ -27,7 +27,6 @@ public sealed class ShellViewModelTests
         IReadOnlyList<ExplorerPreference>? prefs = null,
         TaskbarSettings? taskbar = null) =>
         new(
-            ContextMenuHandlers: [],
             ExplorerPreferences: prefs ?? TestPreferences,
             Taskbar: taskbar ?? new TaskbarSettings(1, true, false),
             NotificationSettings: [],

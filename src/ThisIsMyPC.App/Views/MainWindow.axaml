@@ -158,7 +158,7 @@
                                    Margin="12,0,12,0"
                                    TextTrimming="CharacterEllipsis"
                                    IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                                   Foreground="{StaticResource WarningBrush}" />
+                                   Foreground="{Binding StatusBrush}" />
                     </DockPanel>
                 </Border>
 
@@ -192,6 +192,9 @@
                         <ContentControl.DataTemplates>
                             <DataTemplate DataType="{x:Type vm:ShellViewModel}">
                                 <views:ShellView />
+                            </DataTemplate>
+                            <DataTemplate DataType="{x:Type vm:ContextMenuViewModel}">
+                                <views:ContextMenuView />
                             </DataTemplate>
                         </ContentControl.DataTemplates>
                     </ContentControl>

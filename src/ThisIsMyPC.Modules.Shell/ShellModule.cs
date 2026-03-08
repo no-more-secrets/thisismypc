@@ -2,7 +2,6 @@ using ThisIsMyPC.Core.Changes;
 using ThisIsMyPC.Core.Modules;
 using ThisIsMyPC.Core.Results;
 using ThisIsMyPC.Core.Services;
-using ThisIsMyPC.Interop.Com.Shell;
 using ThisIsMyPC.Modules.Shell.Models;
 using ThisIsMyPC.Modules.Shell.Services;
 
@@ -16,24 +15,20 @@ public sealed class ShellModule : IModule
     private readonly TaskbarSettingsReader _taskbarSettingsReader;
     private readonly NotificationSettingsReader _notificationSettingsReader;
     private readonly EnvironmentVariableReader _environmentVariableReader;
-    private readonly ContextMenuScanner _contextMenuScanner;
 
-    public ShellModule(
-        IRegistryService registryService,
-        IShellExtensionService shellExtensionService)
+    public ShellModule(IRegistryService registryService)
     {
         _registryService = registryService;
         _explorerSettingsReader = new ExplorerSettingsReader(registryService);
         _taskbarSettingsReader = new TaskbarSettingsReader(registryService);
         _notificationSettingsReader = new NotificationSettingsReader(registryService);
         _environmentVariableReader = new EnvironmentVariableReader(registryService);
-        _contextMenuScanner = new ContextMenuScanner(shellExtensionService);
     }
 
     public ModuleInfo Info { get; } = new(
-        Name: "Shell & Explorer",
+        Name: "Explorer",
         Icon: "shell",
-        Description: "Customize Windows shell, context menus, taskbar, and Explorer settings",
+        Description: "Customize Windows Explorer, taskbar, and shell settings",
         RequiredCapabilities: [SystemCapability.Registry, SystemCapability.Com],
         Group: ModuleGroup.Core,
         LoadOrder: 1);
@@ -49,11 +44,6 @@ public sealed class ShellModule : IModule
         {
             try
             {
-                // Scan each section independently so partial results are returned on failure
-                IReadOnlyList<ContextMenuHandler> contextMenuHandlers = [];
-                try { contextMenuHandlers = _contextMenuScanner.Scan(); }
-                catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Context menu scan failed: {ex.Message}"); }
-
                 var explorerPreferences = _explorerSettingsReader.ReadAll();
                 var taskbar = _taskbarSettingsReader.Read();
                 var notificationSettings = _notificationSettingsReader.ReadAll();
@@ -67,7 +57,6 @@ public sealed class ShellModule : IModule
                 catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"System env var scan failed: {ex.Message}"); }
 
                 var scanData = new ShellScanData(
-                    ContextMenuHandlers: contextMenuHandlers,
                     ExplorerPreferences: explorerPreferences,
                     Taskbar: taskbar,
                     NotificationSettings: notificationSettings,

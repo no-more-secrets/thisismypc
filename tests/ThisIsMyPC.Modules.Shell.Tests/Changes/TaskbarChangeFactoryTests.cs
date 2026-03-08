@@ -15,7 +15,7 @@ public sealed class TaskbarChangeFactoryTests
         var taskbar = MakeTaskbar(alignment: 0);
         var change = TaskbarChangeFactory.CreateAlignmentChange(taskbar, newAlignment: 1);
 
-        Assert.Equal("Shell & Explorer", change.ModuleId);
+        Assert.Equal("Explorer", change.ModuleId);
         Assert.Equal("taskbar-alignment", change.SettingId);
         Assert.Equal("0", change.BeforeValue);
         Assert.Equal("1", change.AfterValue);

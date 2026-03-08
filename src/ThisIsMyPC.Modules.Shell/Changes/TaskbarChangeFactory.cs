@@ -5,7 +5,7 @@ namespace ThisIsMyPC.Modules.Shell.Changes;
 
 public static class TaskbarChangeFactory
 {
-    private const string ModuleId = "Shell & Explorer";
+    private const string ModuleId = "Explorer";
 
     public static ChangeDescriptor CreateAlignmentChange(TaskbarSettings current, int newAlignment)
     {

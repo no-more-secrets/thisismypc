@@ -7,4 +7,7 @@ public sealed record ContextMenuHandler(
     string AppliesTo,
     string? DllPath,
     string? Publisher,
-    bool IsEnabled);
+    bool IsEnabled,
+    HandlerClassification Classification = HandlerClassification.ThirdParty,
+    IReadOnlyList<string>? AllRegistryPaths = null,
+    IReadOnlyList<string>? AllScopes = null);

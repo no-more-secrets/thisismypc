@@ -45,7 +45,7 @@
                     <TextBlock Text="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).StatusMessage}"
                                FontSize="12"
                                TextWrapping="Wrap"
-                               Foreground="{StaticResource DangerBrush}"
+                               Foreground="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).StatusBrush}"
                                IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
                     <DockPanel>

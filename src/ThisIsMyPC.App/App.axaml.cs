@@ -62,6 +62,7 @@ public partial class App : Application
 
         // Modules (explicit DI registration, NativeAOT-safe)
         services.AddSingleton<IModule, ShellModule>();
+        services.AddSingleton<IModule, ContextMenuModule>();
         services.AddSingleton<IModule, StartupModule>();
         services.AddSingleton<IModule, PowerModule>();
 
