@@ -1,3 +1,8 @@
+---
+author: Gemini 3.1 Pro (Deep Research mode)
+date: 2026-03-08
+---
+
 # Core Component Threat Modeling and Security Architecture Analysis for ThisIsMyPC
 
 ## 1. Introduction and Architectural Context
@@ -180,7 +185,7 @@ By enforcing these rigorous architectural constraints, ThisIsMyPC can successful
 
 ## Works Cited
 
-1. windows-kernel-driver-security-research.pdf
+1. [Windows 11 Kernel Architecture and Ring 0 Driver Landscape](./windows-kernel-driver-security-research.md)
 2. CVE-2024-51324 | INCIBE-CERT, accessed March 8, 2026, https://www.incibe.es/en/incibe-cert/early-warning/vulnerabilities/cve-2024-51324
 3. CVE-2025-3464: Armoury Crate Auth Bypass Vulnerability, accessed March 8, 2026, https://www.sentinelone.com/vulnerability-database/cve-2025-3464/
 4. Named Pipe Client Impersonation - HackTricks, accessed March 8, 2026, https://book.hacktricks.xyz/windows-hardening/windows-local-privilege-escalation/named-pipe-client-impersonation

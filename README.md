@@ -116,6 +116,7 @@ Advanced or potentially dangerous controls are available but behind a disclosure
 | **ExplorerPatcher** | Classic context menu, shell fixes | ThisIsMyPC covers the same shell customizations plus context menu handler management — something ExplorerPatcher doesn't touch and no standalone tool does well. |
 | **FanControl** | Fan curve editor | Covered by the ASUS Platform Tuning module. Additional vendor support (MSI, Gigabyte, Lenovo) via community-contributed modules. |
 | **NirSoft ShellExView** | Context menu handler enumeration | The closest thing to what ThisIsMyPC's Shell module does — but it looks like 2005, hasn't been updated for modern Windows, and doesn't integrate with anything else. |
+| **Bulk Crap Uninstaller** | Deep uninstaller — catches leftover files, registry keys, and services that Windows "Apps & Features" misses | ThisIsMyPC doesn't replace BCUninstaller — it prevents you from needing it. Startup entries, services, scheduled tasks, and context menu handlers are all visible and controllable before they become entrenched. BCUninstaller cleans up after the damage; ThisIsMyPC stops the damage from landing. |
 | **O&O ShutUp10++** | Privacy toggles, telemetry control | Phase 2 scope — ThisIsMyPC will cover privacy, telemetry, debloating, and Windows feature management. |
 
 The point isn't that any individual capability is novel. **Unification is the feature.** The value is in consolidating 10+ tools into one coherent experience where settings are tracked, changes are reversible, and your entire configuration is exportable.

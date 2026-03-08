@@ -1,3 +1,8 @@
+---
+author: Gemini 3.1 Pro (Deep Research mode)
+date: 2026-03-08
+---
+
 # Architectural Threat Synthesis and External Risk Analysis for ThisIsMyPC
 
 ## 1. Introduction and Architectural Context
@@ -215,7 +220,7 @@ The viability of ThisIsMyPC's security architecture can be effectively benchmark
 
 ## Works Cited
 
-[^1]: windows-kernel-driver-security-research.pdf
+[^1]: [Windows 11 Kernel Architecture and Ring 0 Driver Landscape](./windows-kernel-driver-security-research.md)
 [^2]: Software Supply Chain Attacks - ODNI, accessed March 8, 2026, https://www.dni.gov/files/NCSC/documents/supplychain/Software-Supply-Chain-Attacks.pdf
 [^3]: What Supply Chain Attacks Teach Incident Responders - Mitiga, accessed March 8, 2026, https://www.mitiga.io/blog/what-supply-chain-attacks-teach-incident-responders
 [^4]: The aftermath of the Gentoo GitHub hack - Network World, accessed March 8, 2026, https://www.networkworld.com/article/966022/the-aftermath-of-the-gentoo-github-hack.html

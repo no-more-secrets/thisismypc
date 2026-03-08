@@ -1,3 +1,8 @@
+---
+author: Gemini 3.1 Pro (Deep Research mode)
+date: 2026-03-08
+---
+
 # Windows 11 Control Surface Architecture and Behavioral Friction Analysis
 
 The Windows 11 operating system introduces a fundamental paradigm shift in configuration management and system governance. Historically, the Windows Registry served as a static, definitive source of truth where user and administrative intents were recorded and universally respected by the operating system shell and underlying services. However, the modern Windows 11 control architecture relies on a dynamic, multi-layered enforcement matrix. Standard registry keys are now frequently superseded by kernel-level filter drivers, cloud-synchronized policy caches, telemetry enforcement services, and aggressive scheduled tasks designed to restore Microsoft's preferred ecosystem baselines.

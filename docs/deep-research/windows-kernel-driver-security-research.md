@@ -1,3 +1,8 @@
+---
+author: Gemini 3.1 Pro (Deep Research mode)
+date: 2026-03-08
+---
+
 # Windows 11 Kernel Architecture and Ring 0 Driver Landscape
 
 ## Introduction to the Modern Windows Kernel Trust Model
