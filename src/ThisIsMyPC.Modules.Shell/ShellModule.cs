@@ -81,9 +81,12 @@ public sealed class ShellModule : IModule
                 ChangeValueType.Registry_DWord => ApplyDWordChange(change),
                 ChangeValueType.Registry_String => ApplyStringChange(change),
                 ChangeValueType.Registry_ExpandString => ApplyExpandStringChange(change),
+                ChangeValueType.Environment_Variable => OperationResult<bool>.Failure(
+                    $"Environment variable changes are not yet implemented (Story 2.5)",
+                    ErrorCategory.NotFound),
                 _ => OperationResult<bool>.Failure(
                     $"Unsupported value type: {change.ValueType}",
-                    ErrorCategory.ServiceUnavailable),
+                    ErrorCategory.NotFound),
             };
 
             return Task.FromResult(result);
@@ -109,7 +112,7 @@ public sealed class ShellModule : IModule
         {
             return OperationResult<bool>.Failure(
                 $"Cannot parse DWord value '{change.AfterValue}' for {change.SystemLocation}",
-                ErrorCategory.ServiceUnavailable);
+                ErrorCategory.NotFound);
         }
 
         return _registryService.WriteDWord(keyPath, valueName, intValue);
@@ -148,6 +151,12 @@ public sealed class ShellModule : IModule
         if (lastSep < 0)
             throw new ArgumentException($"Invalid system location (no separator): {systemLocation}");
 
-        return (systemLocation[..lastSep], systemLocation[(lastSep + 1)..]);
+        var valueName = systemLocation[(lastSep + 1)..];
+
+        // Map "(Default)" to empty string — the Windows registry API convention for the default value
+        if (valueName == "(Default)")
+            valueName = string.Empty;
+
+        return (systemLocation[..lastSep], valueName);
     }
 }

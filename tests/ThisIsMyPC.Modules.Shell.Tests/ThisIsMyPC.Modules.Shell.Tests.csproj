@@ -17,5 +17,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\ThisIsMyPC.Modules.Shell\ThisIsMyPC.Modules.Shell.csproj" />
+    <ProjectReference Include="..\..\src\ThisIsMyPC.Interop.Com\ThisIsMyPC.Interop.Com.csproj" />
   </ItemGroup>
 </Project>

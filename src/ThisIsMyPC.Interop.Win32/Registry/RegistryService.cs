@@ -7,59 +7,42 @@ namespace ThisIsMyPC.Interop.Win32.Registry;
 
 public sealed class RegistryService : IRegistryService
 {
-    public OperationResult<int> ReadDWord(string keyPath, string valueName)
-    {
-        return ReadValue(keyPath, valueName, raw =>
+    public OperationResult<int> ReadDWord(string keyPath, string valueName) =>
+        Execute(() => ReadValueCore(keyPath, valueName, raw =>
         {
             if (raw is int intVal)
                 return intVal;
             return Convert.ToInt32(raw, System.Globalization.CultureInfo.InvariantCulture);
-        });
-    }
+        }), keyPath);
 
-    public OperationResult<string> ReadString(string keyPath, string valueName)
-    {
-        return ReadValue(keyPath, valueName, raw => raw?.ToString() ?? string.Empty);
-    }
+    public OperationResult<string> ReadString(string keyPath, string valueName) =>
+        Execute(() => ReadValueCore(keyPath, valueName, raw => raw?.ToString() ?? string.Empty), keyPath);
 
-    public OperationResult<string> ReadExpandString(string keyPath, string valueName)
-    {
-        return ReadValue(keyPath, valueName, raw => raw?.ToString() ?? string.Empty, doNotExpand: true);
-    }
+    public OperationResult<string> ReadExpandString(string keyPath, string valueName) =>
+        Execute(() => ReadValueCore(keyPath, valueName, raw => raw?.ToString() ?? string.Empty, doNotExpand: true), keyPath);
 
-    public OperationResult<string[]> ReadMultiString(string keyPath, string valueName)
-    {
-        return ReadValue(keyPath, valueName, raw =>
+    public OperationResult<string[]> ReadMultiString(string keyPath, string valueName) =>
+        Execute(() => ReadValueCore(keyPath, valueName, raw =>
         {
             if (raw is string[] arr)
                 return arr;
             return [raw?.ToString() ?? string.Empty];
-        });
-    }
+        }), keyPath);
 
-    public OperationResult<bool> WriteDWord(string keyPath, string valueName, int value)
-    {
-        return WriteValue(keyPath, valueName, value, RegistryValueKind.DWord);
-    }
+    public OperationResult<bool> WriteDWord(string keyPath, string valueName, int value) =>
+        Execute(() => WriteValueCore(keyPath, valueName, value, RegistryValueKind.DWord), keyPath);
 
-    public OperationResult<bool> WriteString(string keyPath, string valueName, string value)
-    {
-        return WriteValue(keyPath, valueName, value, RegistryValueKind.String);
-    }
+    public OperationResult<bool> WriteString(string keyPath, string valueName, string value) =>
+        Execute(() => WriteValueCore(keyPath, valueName, value, RegistryValueKind.String), keyPath);
 
-    public OperationResult<bool> WriteExpandString(string keyPath, string valueName, string value)
-    {
-        return WriteValue(keyPath, valueName, value, RegistryValueKind.ExpandString);
-    }
+    public OperationResult<bool> WriteExpandString(string keyPath, string valueName, string value) =>
+        Execute(() => WriteValueCore(keyPath, valueName, value, RegistryValueKind.ExpandString), keyPath);
 
-    public OperationResult<bool> WriteMultiString(string keyPath, string valueName, string[] values)
-    {
-        return WriteValue(keyPath, valueName, values, RegistryValueKind.MultiString);
-    }
+    public OperationResult<bool> WriteMultiString(string keyPath, string valueName, string[] values) =>
+        Execute(() => WriteValueCore(keyPath, valueName, values, RegistryValueKind.MultiString), keyPath);
 
-    public OperationResult<bool> DeleteValue(string keyPath, string valueName)
-    {
-        try
+    public OperationResult<bool> DeleteValue(string keyPath, string valueName) =>
+        Execute<bool>(() =>
         {
             var (root, subKeyPath) = ParseKeyPath(keyPath);
             using var key = root.OpenSubKey(subKeyPath, writable: true);
@@ -68,24 +51,10 @@ public sealed class RegistryService : IRegistryService
 
             key.DeleteValue(valueName, throwOnMissingValue: false);
             return OperationResult<bool>.Success(true);
-        }
-        catch (SecurityException ex)
-        {
-            return OperationResult<bool>.Failure($"Access denied: {keyPath}", ErrorCategory.AccessDenied, ex);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return OperationResult<bool>.Failure($"Access denied: {keyPath}", ErrorCategory.AccessDenied, ex);
-        }
-        catch (Exception ex)
-        {
-            return OperationResult<bool>.Failure($"Failed to delete value '{valueName}' in {keyPath}: {ex.Message}", ErrorCategory.ServiceUnavailable, ex);
-        }
-    }
+        }, keyPath);
 
-    public OperationResult<bool> DeleteKey(string keyPath, bool recursive = false)
-    {
-        try
+    public OperationResult<bool> DeleteKey(string keyPath, bool recursive = false) =>
+        Execute<bool>(() =>
         {
             var (root, subKeyPath) = ParseKeyPath(keyPath);
             if (recursive)
@@ -94,46 +63,18 @@ public sealed class RegistryService : IRegistryService
                 root.DeleteSubKey(subKeyPath, throwOnMissingSubKey: false);
 
             return OperationResult<bool>.Success(true);
-        }
-        catch (SecurityException ex)
-        {
-            return OperationResult<bool>.Failure($"Access denied: {keyPath}", ErrorCategory.AccessDenied, ex);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return OperationResult<bool>.Failure($"Access denied: {keyPath}", ErrorCategory.AccessDenied, ex);
-        }
-        catch (Exception ex)
-        {
-            return OperationResult<bool>.Failure($"Failed to delete key {keyPath}: {ex.Message}", ErrorCategory.ServiceUnavailable, ex);
-        }
-    }
+        }, keyPath);
 
-    public OperationResult<bool> KeyExists(string keyPath)
-    {
-        try
+    public OperationResult<bool> KeyExists(string keyPath) =>
+        Execute<bool>(() =>
         {
             var (root, subKeyPath) = ParseKeyPath(keyPath);
             using var key = root.OpenSubKey(subKeyPath, writable: false);
             return OperationResult<bool>.Success(key is not null);
-        }
-        catch (SecurityException ex)
-        {
-            return OperationResult<bool>.Failure($"Access denied: {keyPath}", ErrorCategory.AccessDenied, ex);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return OperationResult<bool>.Failure($"Access denied: {keyPath}", ErrorCategory.AccessDenied, ex);
-        }
-        catch (Exception ex)
-        {
-            return OperationResult<bool>.Failure($"Failed to check key existence: {keyPath}: {ex.Message}", ErrorCategory.ServiceUnavailable, ex);
-        }
-    }
+        }, keyPath);
 
-    public OperationResult<bool> ValueExists(string keyPath, string valueName)
-    {
-        try
+    public OperationResult<bool> ValueExists(string keyPath, string valueName) =>
+        Execute<bool>(() =>
         {
             var (root, subKeyPath) = ParseKeyPath(keyPath);
             using var key = root.OpenSubKey(subKeyPath, writable: false);
@@ -141,24 +82,10 @@ public sealed class RegistryService : IRegistryService
                 return OperationResult<bool>.Success(false);
 
             return OperationResult<bool>.Success(key.GetValue(valueName) is not null);
-        }
-        catch (SecurityException ex)
-        {
-            return OperationResult<bool>.Failure($"Access denied: {keyPath}", ErrorCategory.AccessDenied, ex);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return OperationResult<bool>.Failure($"Access denied: {keyPath}", ErrorCategory.AccessDenied, ex);
-        }
-        catch (Exception ex)
-        {
-            return OperationResult<bool>.Failure($"Failed to check value existence: {keyPath}\\{valueName}: {ex.Message}", ErrorCategory.ServiceUnavailable, ex);
-        }
-    }
+        }, keyPath);
 
-    public OperationResult<IReadOnlyList<string>> EnumerateSubKeys(string keyPath)
-    {
-        try
+    public OperationResult<IReadOnlyList<string>> EnumerateSubKeys(string keyPath) =>
+        Execute<IReadOnlyList<string>>(() =>
         {
             var (root, subKeyPath) = ParseKeyPath(keyPath);
             using var key = root.OpenSubKey(subKeyPath, writable: false);
@@ -166,24 +93,10 @@ public sealed class RegistryService : IRegistryService
                 return OperationResult<IReadOnlyList<string>>.Failure($"Key not found: {keyPath}", ErrorCategory.NotFound);
 
             return OperationResult<IReadOnlyList<string>>.Success(key.GetSubKeyNames());
-        }
-        catch (SecurityException ex)
-        {
-            return OperationResult<IReadOnlyList<string>>.Failure($"Access denied: {keyPath}", ErrorCategory.AccessDenied, ex);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return OperationResult<IReadOnlyList<string>>.Failure($"Access denied: {keyPath}", ErrorCategory.AccessDenied, ex);
-        }
-        catch (Exception ex)
-        {
-            return OperationResult<IReadOnlyList<string>>.Failure($"Failed to enumerate subkeys: {keyPath}: {ex.Message}", ErrorCategory.ServiceUnavailable, ex);
-        }
-    }
+        }, keyPath);
 
-    public OperationResult<IReadOnlyList<string>> EnumerateValues(string keyPath)
-    {
-        try
+    public OperationResult<IReadOnlyList<string>> EnumerateValues(string keyPath) =>
+        Execute<IReadOnlyList<string>>(() =>
         {
             var (root, subKeyPath) = ParseKeyPath(keyPath);
             using var key = root.OpenSubKey(subKeyPath, writable: false);
@@ -191,24 +104,10 @@ public sealed class RegistryService : IRegistryService
                 return OperationResult<IReadOnlyList<string>>.Failure($"Key not found: {keyPath}", ErrorCategory.NotFound);
 
             return OperationResult<IReadOnlyList<string>>.Success(key.GetValueNames());
-        }
-        catch (SecurityException ex)
-        {
-            return OperationResult<IReadOnlyList<string>>.Failure($"Access denied: {keyPath}", ErrorCategory.AccessDenied, ex);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return OperationResult<IReadOnlyList<string>>.Failure($"Access denied: {keyPath}", ErrorCategory.AccessDenied, ex);
-        }
-        catch (Exception ex)
-        {
-            return OperationResult<IReadOnlyList<string>>.Failure($"Failed to enumerate values: {keyPath}: {ex.Message}", ErrorCategory.ServiceUnavailable, ex);
-        }
-    }
+        }, keyPath);
 
-    public OperationResult<string> ReadValueBeforeWrite(string keyPath, string valueName)
-    {
-        try
+    public OperationResult<string> ReadValueBeforeWrite(string keyPath, string valueName) =>
+        Execute<string>(() =>
         {
             var (root, subKeyPath) = ParseKeyPath(keyPath);
             using var key = root.OpenSubKey(subKeyPath, writable: false);
@@ -224,71 +123,56 @@ public sealed class RegistryService : IRegistryService
                 string[] arr => string.Join('\0', arr),
                 _ => value.ToString() ?? string.Empty
             });
-        }
-        catch (SecurityException ex)
-        {
-            return OperationResult<string>.Failure($"Access denied: {keyPath}", ErrorCategory.AccessDenied, ex);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return OperationResult<string>.Failure($"Access denied: {keyPath}", ErrorCategory.AccessDenied, ex);
-        }
-        catch (Exception ex)
-        {
-            return OperationResult<string>.Failure($"Failed to read value: {keyPath}\\{valueName}: {ex.Message}", ErrorCategory.ServiceUnavailable, ex);
-        }
+        }, keyPath);
+
+    private static OperationResult<T> ReadValueCore<T>(string keyPath, string valueName, Func<object, T> convert, bool doNotExpand = false)
+    {
+        var (root, subKeyPath) = ParseKeyPath(keyPath);
+        using var key = root.OpenSubKey(subKeyPath, writable: false);
+        if (key is null)
+            return OperationResult<T>.Failure($"Key not found: {keyPath}", ErrorCategory.NotFound);
+
+        var options = doNotExpand ? RegistryValueOptions.DoNotExpandEnvironmentNames : RegistryValueOptions.None;
+        var raw = key.GetValue(valueName, defaultValue: null, options);
+        if (raw is null)
+            return OperationResult<T>.Failure($"Value not found: {keyPath}\\{valueName}", ErrorCategory.NotFound);
+
+        return OperationResult<T>.Success(convert(raw));
     }
 
-    private static OperationResult<T> ReadValue<T>(string keyPath, string valueName, Func<object, T> convert, bool doNotExpand = false)
+    private static OperationResult<bool> WriteValueCore(string keyPath, string valueName, object value, RegistryValueKind kind)
+    {
+        var (root, subKeyPath) = ParseKeyPath(keyPath);
+        using var key = root.CreateSubKey(subKeyPath, writable: true);
+        key.SetValue(valueName, value, kind);
+        return OperationResult<bool>.Success(true);
+    }
+
+    private static OperationResult<T> Execute<T>(Func<OperationResult<T>> operation, string context)
     {
         try
         {
-            var (root, subKeyPath) = ParseKeyPath(keyPath);
-            using var key = root.OpenSubKey(subKeyPath, writable: false);
-            if (key is null)
-                return OperationResult<T>.Failure($"Key not found: {keyPath}", ErrorCategory.NotFound);
-
-            var options = doNotExpand ? RegistryValueOptions.DoNotExpandEnvironmentNames : RegistryValueOptions.None;
-            var raw = key.GetValue(valueName, defaultValue: null, options);
-            if (raw is null)
-                return OperationResult<T>.Failure($"Value not found: {keyPath}\\{valueName}", ErrorCategory.NotFound);
-
-            return OperationResult<T>.Success(convert(raw));
+            return operation();
+        }
+        catch (ArgumentException ex)
+        {
+            return OperationResult<T>.Failure(
+                $"Invalid registry path: {context}: {ex.Message}", ErrorCategory.NotFound, ex);
         }
         catch (SecurityException ex)
         {
-            return OperationResult<T>.Failure($"Access denied: {keyPath}", ErrorCategory.AccessDenied, ex);
+            return OperationResult<T>.Failure(
+                $"Access denied: {context}", ErrorCategory.AccessDenied, ex);
         }
         catch (UnauthorizedAccessException ex)
         {
-            return OperationResult<T>.Failure($"Access denied: {keyPath}", ErrorCategory.AccessDenied, ex);
+            return OperationResult<T>.Failure(
+                $"Access denied: {context}", ErrorCategory.AccessDenied, ex);
         }
         catch (Exception ex)
         {
-            return OperationResult<T>.Failure($"Failed to read {keyPath}\\{valueName}: {ex.Message}", ErrorCategory.ServiceUnavailable, ex);
-        }
-    }
-
-    private static OperationResult<bool> WriteValue(string keyPath, string valueName, object value, RegistryValueKind kind)
-    {
-        try
-        {
-            var (root, subKeyPath) = ParseKeyPath(keyPath);
-            using var key = root.CreateSubKey(subKeyPath, writable: true);
-            key.SetValue(valueName, value, kind);
-            return OperationResult<bool>.Success(true);
-        }
-        catch (SecurityException ex)
-        {
-            return OperationResult<bool>.Failure($"Access denied: {keyPath}", ErrorCategory.AccessDenied, ex);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return OperationResult<bool>.Failure($"Access denied: {keyPath}", ErrorCategory.AccessDenied, ex);
-        }
-        catch (Exception ex)
-        {
-            return OperationResult<bool>.Failure($"Failed to write {keyPath}\\{valueName}: {ex.Message}", ErrorCategory.ServiceUnavailable, ex);
+            return OperationResult<T>.Failure(
+                $"Registry operation failed on {context}: {ex.Message}", ErrorCategory.ServiceUnavailable, ex);
         }
     }
 

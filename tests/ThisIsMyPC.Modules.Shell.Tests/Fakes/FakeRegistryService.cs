@@ -99,12 +99,36 @@ public sealed class FakeRegistryService : IRegistryService
 
     public OperationResult<bool> DeleteValue(string keyPath, string valueName)
     {
+        if (!_keys.Contains(keyPath))
+            return OperationResult<bool>.Failure($"Key not found: {keyPath}", ErrorCategory.NotFound);
+
         _values.Remove(MakeKey(keyPath, valueName));
         return OperationResult<bool>.Success(true);
     }
 
     public OperationResult<bool> DeleteKey(string keyPath, bool recursive = false)
     {
+        if (recursive)
+        {
+            // Remove all child keys and their values
+            var prefix = keyPath + "\\";
+            var childKeys = _keys.Where(k => k.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)).ToList();
+            foreach (var childKey in childKeys)
+            {
+                _keys.Remove(childKey);
+                // Remove values under the child key
+                var childPrefix = childKey + "\\";
+                var childValues = _values.Keys.Where(k => k.StartsWith(childPrefix, StringComparison.OrdinalIgnoreCase)).ToList();
+                foreach (var v in childValues)
+                    _values.Remove(v);
+            }
+
+            // Remove values directly under this key
+            var keyValues = _values.Keys.Where(k => k.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)).ToList();
+            foreach (var v in keyValues)
+                _values.Remove(v);
+        }
+
         _keys.Remove(keyPath);
         return OperationResult<bool>.Success(true);
     }
@@ -136,7 +160,10 @@ public sealed class FakeRegistryService : IRegistryService
         if (children.Length > 0)
             return OperationResult<IReadOnlyList<string>>.Success(children);
 
-        return OperationResult<IReadOnlyList<string>>.Failure("Not found", ErrorCategory.NotFound);
+        if (!_keys.Contains(keyPath))
+            return OperationResult<IReadOnlyList<string>>.Failure("Not found", ErrorCategory.NotFound);
+
+        return OperationResult<IReadOnlyList<string>>.Success(Array.Empty<string>());
     }
 
     public OperationResult<IReadOnlyList<string>> EnumerateValues(string keyPath)

@@ -49,7 +49,9 @@ public partial class App : Application
 
         base.OnFrameworkInitializationCompleted();
 
+#if DEBUG
         this.AttachDevTools();
+#endif
     }
 
     private static void ConfigureServices(IServiceCollection services)
@@ -78,10 +80,17 @@ public partial class App : Application
 
     private async void OnShutdownRequested(object? sender, ShutdownRequestedEventArgs e)
     {
-        if (_serviceProvider is not null)
+        try
         {
-            await _serviceProvider.DisposeAsync().ConfigureAwait(false);
-            _serviceProvider = null;
+            if (_serviceProvider is not null)
+            {
+                await _serviceProvider.DisposeAsync().ConfigureAwait(false);
+                _serviceProvider = null;
+            }
+        }
+        catch (Exception)
+        {
+            // Swallow shutdown cleanup failures to prevent crash during exit
         }
     }
 

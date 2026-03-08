@@ -6,23 +6,14 @@ namespace ThisIsMyPC.Interop.Com.Shell;
 
 public sealed class ShellExtensionService : IShellExtensionService
 {
-    private static readonly string[] HandlerPaths =
+    private static readonly (string Path, string AppliesTo)[] HandlerRegistrations =
     [
-        @"HKCR\*\shellex\ContextMenuHandlers",
-        @"HKCR\AllFilesystemObjects\shellex\ContextMenuHandlers",
-        @"HKCR\Directory\shellex\ContextMenuHandlers",
-        @"HKCR\Directory\Background\shellex\ContextMenuHandlers",
-        @"HKCR\Folder\shellex\ContextMenuHandlers",
+        (@"HKCR\*\shellex\ContextMenuHandlers", "All files"),
+        (@"HKCR\AllFilesystemObjects\shellex\ContextMenuHandlers", "All filesystem objects"),
+        (@"HKCR\Directory\shellex\ContextMenuHandlers", "Directories"),
+        (@"HKCR\Directory\Background\shellex\ContextMenuHandlers", "Folder background"),
+        (@"HKCR\Folder\shellex\ContextMenuHandlers", "Folders"),
     ];
-
-    private static readonly Dictionary<string, string> PathToAppliesTo = new(StringComparer.OrdinalIgnoreCase)
-    {
-        [@"HKCR\*\shellex\ContextMenuHandlers"] = "All files",
-        [@"HKCR\AllFilesystemObjects\shellex\ContextMenuHandlers"] = "All filesystem objects",
-        [@"HKCR\Directory\shellex\ContextMenuHandlers"] = "Directories",
-        [@"HKCR\Directory\Background\shellex\ContextMenuHandlers"] = "Folder background",
-        [@"HKCR\Folder\shellex\ContextMenuHandlers"] = "Folders",
-    };
 
     private readonly IRegistryService _registryService;
 
@@ -38,13 +29,11 @@ public sealed class ShellExtensionService : IShellExtensionService
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var handlers = new List<ShellExtensionInfo>();
 
-            foreach (var basePath in HandlerPaths)
+            foreach (var (basePath, appliesTo) in HandlerRegistrations)
             {
                 var subKeysResult = _registryService.EnumerateSubKeys(basePath);
                 if (!subKeysResult.IsSuccess)
                     continue;
-
-                var appliesTo = PathToAppliesTo.GetValueOrDefault(basePath, "Unknown");
 
                 foreach (var handlerName in subKeysResult.Value!)
                 {
@@ -102,7 +91,7 @@ public sealed class ShellExtensionService : IShellExtensionService
             var versionInfo = FileVersionInfo.GetVersionInfo(dllPath);
             return versionInfo.CompanyName;
         }
-        catch
+        catch (Exception)
         {
             return null;
         }

@@ -96,23 +96,34 @@ public partial class MainWindowViewModel : ViewModelBase
         if (e.PropertyName is not nameof(NavigationService.CurrentModule))
             return;
 
-        var current = _navigationService.CurrentModule;
-        if (current?.Module is ShellModule)
+        try
         {
-            var scanResult = await current.Module.ScanSystemStateAsync().ConfigureAwait(true);
-            if (scanResult.IsSuccess && scanResult.Value is ShellScanData scanData)
+            var current = _navigationService.CurrentModule;
+            if (current?.Module is ShellModule)
             {
-                CurrentContent = new ShellViewModel(scanData, _pendingChangesService);
+                var scanResult = await current.Module.ScanSystemStateAsync().ConfigureAwait(false);
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    if (scanResult.IsSuccess && scanResult.Value is ShellScanData scanData)
+                    {
+                        CurrentContent = new ShellViewModel(scanData, _pendingChangesService);
+                    }
+                    else
+                    {
+                        CurrentContent = null;
+                        StatusMessage = scanResult.ErrorMessage ?? "Failed to scan shell settings";
+                    }
+                });
             }
             else
             {
-                CurrentContent = null;
-                StatusMessage = scanResult.ErrorMessage ?? "Failed to scan shell settings";
+                await Dispatcher.UIThread.InvokeAsync(() => CurrentContent = null);
             }
         }
-        else
+        catch (Exception ex)
         {
-            CurrentContent = null;
+            await Dispatcher.UIThread.InvokeAsync(() =>
+                StatusMessage = $"Failed to load module: {ex.Message}");
         }
     }
 

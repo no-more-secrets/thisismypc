@@ -10,7 +10,8 @@ public partial class ShellSettingViewModel : ViewModelBase
 {
     private readonly IPendingChangesService _pendingChangesService;
     private readonly ExplorerPreference? _preference;
-    private readonly string _originalValue;
+    private readonly Func<bool, ChangeDescriptor>? _changeFactory;
+    private readonly bool _originalIsEnabled;
     private bool _suppressStaging;
 
     [ObservableProperty]
@@ -28,7 +29,7 @@ public partial class ShellSettingViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(IsPendingDisable))]
     private bool _isEnabled;
 
-    public bool HasPendingChange => IsEnabled.ToString() != _originalValue;
+    public bool HasPendingChange => IsEnabled != _originalIsEnabled;
     public bool IsPendingEnable => HasPendingChange && IsEnabled;
     public bool IsPendingDisable => HasPendingChange && !IsEnabled;
 
@@ -38,7 +39,7 @@ public partial class ShellSettingViewModel : ViewModelBase
     {
         _pendingChangesService = pendingChangesService;
         _preference = preference;
-        _originalValue = preference.IsEnabled.ToString();
+        _originalIsEnabled = preference.IsEnabled;
 
         Label = preference.DisplayName;
         Description = preference.Description;
@@ -61,7 +62,7 @@ public partial class ShellSettingViewModel : ViewModelBase
         _pendingChangesService = pendingChangesService;
         _preference = null;
         _changeFactory = changeFactory;
-        _originalValue = isEnabled.ToString();
+        _originalIsEnabled = isEnabled;
 
         Label = label;
         Description = description;
@@ -71,8 +72,6 @@ public partial class ShellSettingViewModel : ViewModelBase
         IsEnabled = isEnabled;
         _suppressStaging = false;
     }
-
-    private readonly Func<bool, ChangeDescriptor>? _changeFactory;
 
     partial void OnIsEnabledChanged(bool value)
     {
@@ -93,6 +92,14 @@ public partial class ShellSettingViewModel : ViewModelBase
             return;
         }
 
-        _pendingChangesService.Stage(change);
+        // Remove any existing pending change for the same setting before staging
+        var existing = _pendingChangesService.PendingGroups
+            .FirstOrDefault(g => g.Changes.Any(c => c.SettingId == change.SettingId));
+        if (existing is not null)
+            _pendingChangesService.Unstage(existing.GroupId);
+
+        // Only stage if the value differs from the original
+        if (HasPendingChange)
+            _pendingChangesService.Stage(change);
     }
 }
