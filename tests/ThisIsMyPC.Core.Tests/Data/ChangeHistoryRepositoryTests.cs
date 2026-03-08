@@ -189,6 +189,40 @@ public class ChangeHistoryRepositoryTests : IDisposable
     }
 
     [Fact]
+    public async Task InsertBatchAsync_InsertsAllEntriesAtomically()
+    {
+        await _repository.InitializeDatabaseAsync(_dbPath);
+
+        var entries = new[]
+        {
+            CreateTestEntry(settingId: "batch-1"),
+            CreateTestEntry(settingId: "batch-2"),
+            CreateTestEntry(settingId: "batch-3"),
+        };
+
+        await _repository.InsertBatchAsync(entries);
+
+        var count = await _repository.GetEntryCountAsync();
+        Assert.Equal(3, count);
+
+        var all = await _repository.GetAllAsync();
+        Assert.Contains(all, e => e.SettingId == "batch-1");
+        Assert.Contains(all, e => e.SettingId == "batch-2");
+        Assert.Contains(all, e => e.SettingId == "batch-3");
+    }
+
+    [Fact]
+    public async Task InsertBatchAsync_EmptyListIsNoOp()
+    {
+        await _repository.InitializeDatabaseAsync(_dbPath);
+
+        await _repository.InsertBatchAsync([]);
+
+        var count = await _repository.GetEntryCountAsync();
+        Assert.Equal(0, count);
+    }
+
+    [Fact]
     public async Task InsertAsync_PreservesAllFields()
     {
         await _repository.InitializeDatabaseAsync(_dbPath);

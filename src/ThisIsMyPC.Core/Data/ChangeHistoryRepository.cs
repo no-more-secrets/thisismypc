@@ -175,6 +175,37 @@ public sealed class ChangeHistoryRepository
         await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
     }
 
+    public async Task InsertBatchAsync(IReadOnlyList<ChangeHistoryEntry> entries)
+    {
+        if (entries.Count == 0)
+            return;
+
+        await using var connection = await OpenConnectionAsync().ConfigureAwait(false);
+        await using var transaction = await connection.BeginTransactionAsync().ConfigureAwait(false);
+
+        foreach (var entry in entries)
+        {
+            await using var cmd = connection.CreateCommand();
+            cmd.CommandText = """
+                INSERT INTO change_history (
+                    module_id, setting_id, display_name, system_location,
+                    before_value, after_value, before_display, after_display,
+                    value_type, category, group_id, applied_at,
+                    reverted_at, reverted_by_entry_id, redo_of_entry_id
+                ) VALUES (
+                    @module_id, @setting_id, @display_name, @system_location,
+                    @before_value, @after_value, @before_display, @after_display,
+                    @value_type, @category, @group_id, @applied_at,
+                    @reverted_at, @reverted_by_entry_id, @redo_of_entry_id
+                )
+                """;
+            AddEntryParameters(cmd, entry);
+            await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+        }
+
+        await transaction.CommitAsync().ConfigureAwait(false);
+    }
+
     public async Task<int> GetEntryCountAsync()
     {
         await using var connection = await OpenConnectionAsync().ConfigureAwait(false);

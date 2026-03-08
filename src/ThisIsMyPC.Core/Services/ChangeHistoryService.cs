@@ -31,26 +31,23 @@ public sealed class ChangeHistoryService : IChangeHistoryService
         var now = DateTimeOffset.UtcNow;
         var groupId = Guid.NewGuid().ToString("N");
 
-        foreach (var change in result.Applied)
+        var entries = result.Applied.Select(change => new ChangeHistoryEntry
         {
-            var entry = new ChangeHistoryEntry
-            {
-                ModuleId = change.ModuleId,
-                SettingId = change.SettingId,
-                DisplayName = change.DisplayName,
-                SystemLocation = change.SystemLocation,
-                BeforeValue = change.BeforeValue,
-                AfterValue = change.AfterValue,
-                BeforeDisplay = change.BeforeDisplay,
-                AfterDisplay = change.AfterDisplay,
-                ValueType = change.ValueType,
-                Category = change.Category,
-                GroupId = groupId,
-                AppliedAt = now,
-            };
+            ModuleId = change.ModuleId,
+            SettingId = change.SettingId,
+            DisplayName = change.DisplayName,
+            SystemLocation = change.SystemLocation,
+            BeforeValue = change.BeforeValue,
+            AfterValue = change.AfterValue,
+            BeforeDisplay = change.BeforeDisplay,
+            AfterDisplay = change.AfterDisplay,
+            ValueType = change.ValueType,
+            Category = change.Category,
+            GroupId = groupId,
+            AppliedAt = now,
+        }).ToList();
 
-            await _repository.InsertAsync(entry).ConfigureAwait(false);
-        }
+        await _repository.InsertBatchAsync(entries).ConfigureAwait(false);
     }
 
     public async Task<IReadOnlyList<ChangeHistoryEntry>> GetHistoryAsync(int? limit = null, int? offset = null)
@@ -84,9 +81,9 @@ public sealed class ChangeHistoryService : IChangeHistoryService
             SettingId = entry.SettingId,
             DisplayName = entry.DisplayName,
             SystemLocation = entry.SystemLocation,
-            BeforeValue = entry.AfterValue ?? entry.BeforeValue!,
+            BeforeValue = entry.AfterValue ?? string.Empty,
             AfterValue = entry.BeforeValue,
-            BeforeDisplay = entry.AfterDisplay ?? entry.BeforeDisplay!,
+            BeforeDisplay = entry.AfterDisplay ?? string.Empty,
             AfterDisplay = entry.BeforeDisplay,
             ValueType = entry.ValueType,
             Category = entry.Category,
@@ -101,6 +98,8 @@ public sealed class ChangeHistoryService : IChangeHistoryService
                 result.ErrorCategory ?? ErrorCategory.ServiceUnavailable);
         }
 
+        var now = DateTimeOffset.UtcNow;
+
         var revertEntry = new ChangeHistoryEntry
         {
             ModuleId = entry.ModuleId,
@@ -114,11 +113,11 @@ public sealed class ChangeHistoryService : IChangeHistoryService
             ValueType = entry.ValueType,
             Category = entry.Category,
             GroupId = entry.GroupId,
-            AppliedAt = DateTimeOffset.UtcNow,
+            AppliedAt = now,
         };
 
         var insertedRevert = await _repository.InsertAsync(revertEntry).ConfigureAwait(false);
-        await _repository.UpdateRevertedAtAsync(historyId, DateTimeOffset.UtcNow, insertedRevert.Id)
+        await _repository.UpdateRevertedAtAsync(historyId, now, insertedRevert.Id)
             .ConfigureAwait(false);
 
         return OperationResult<bool>.Success(true);
@@ -144,15 +143,22 @@ public sealed class ChangeHistoryService : IChangeHistoryService
                 ErrorCategory.NotFound);
         }
 
+        if (entry.BeforeValue is null || entry.BeforeDisplay is null)
+        {
+            return OperationResult<bool>.Failure(
+                "Cannot redo: original before-state is missing",
+                ErrorCategory.NotFound);
+        }
+
         var redoDescriptor = new ChangeDescriptor
         {
             ModuleId = entry.ModuleId,
             SettingId = entry.SettingId,
             DisplayName = entry.DisplayName,
             SystemLocation = entry.SystemLocation,
-            BeforeValue = entry.BeforeValue!,
+            BeforeValue = entry.BeforeValue,
             AfterValue = entry.AfterValue,
-            BeforeDisplay = entry.BeforeDisplay!,
+            BeforeDisplay = entry.BeforeDisplay,
             AfterDisplay = entry.AfterDisplay,
             ValueType = entry.ValueType,
             Category = entry.Category,

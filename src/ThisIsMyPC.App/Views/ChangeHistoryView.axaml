@@ -23,7 +23,7 @@
                     BorderThickness="0,0,0,1">
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Right"
-                               Text="{Binding TotalEntryCount, StringFormat='{}{0} entry(ies)'}"
+                               Text="{Binding EntryCountText}"
                                Foreground="{StaticResource TextTertiaryBrush}"
                                FontSize="12"
                                VerticalAlignment="Center" />

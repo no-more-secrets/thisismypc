@@ -18,7 +18,10 @@ public partial class ChangeHistoryViewModel : ViewModelBase
     public ObservableCollection<ChangeHistoryGroupViewModel> HistoryGroups { get; } = [];
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(EntryCountText))]
     private int _totalEntryCount;
+
+    public string EntryCountText => TotalEntryCount == 1 ? "1 entry" : $"{TotalEntryCount} entries";
 
     [ObservableProperty]
     private string? _errorMessage;
