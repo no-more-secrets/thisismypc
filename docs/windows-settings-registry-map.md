@@ -413,7 +413,192 @@ All under `HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager
 
 ### Startup & Services (Epic 3)
 
-_To be populated as settings are ProcMon-validated._
+#### Startup — User Run Key `[RESEARCHED]`
+
+| Field | Value |
+|---|---|
+| **UI Location** | `Settings → Apps → Startup` (partial), `Task Manager → Startup` |
+| **Key** | `HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run` |
+| **Value** | (entry name, e.g., `Steam`, `Discord`, `OneDrive`) |
+| **Type** | REG_SZ |
+| **Data** | Full command line to the executable (e.g., `"C:\Program Files\Steam\steam.exe" -silent`) |
+| **Default** | Varies per installed software |
+| **Scope** | HKCU (per-user, no admin required) |
+| **Effect** | Next logon |
+| **Writer** | Application installers, user configuration |
+| **Watchers** | Explorer.EXE (at logon), Task Manager |
+| **Validated** | Not yet ProcMon-validated |
+| **Gotchas** | This is the most common startup location for user-installed apps. Autoruns export shows 13 entries on a power-user machine. Task Manager uses `StartupApproved\Run` (see below) to disable entries without deleting them. |
+
+#### Startup — Machine Run Key `[RESEARCHED]`
+
+| Field | Value |
+|---|---|
+| **UI Location** | `Task Manager → Startup` (machine-wide entries also appear here) |
+| **Key** | `HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run` |
+| **Value** | (entry name) |
+| **Type** | REG_SZ |
+| **Data** | Full command line |
+| **Default** | Varies |
+| **Scope** | HKLM (requires admin to modify) |
+| **Effect** | Next logon (applies to all users) |
+| **Writer** | Application installers |
+| **Watchers** | Explorer.EXE (at logon) |
+| **Validated** | Not yet ProcMon-validated |
+| **Gotchas** | Typically has fewer entries than HKCU Run. Autoruns export shows 1 entry here. |
+
+#### Startup — Machine Run Key (32-bit) `[RESEARCHED]`
+
+| Field | Value |
+|---|---|
+| **UI Location** | `Task Manager → Startup` |
+| **Key** | `HKLM\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Run` |
+| **Value** | (entry name) |
+| **Type** | REG_SZ |
+| **Data** | Full command line |
+| **Default** | Varies |
+| **Scope** | HKLM (requires admin to modify) |
+| **Effect** | Next logon |
+| **Writer** | 32-bit application installers |
+| **Watchers** | Explorer.EXE (at logon) |
+| **Validated** | Not yet ProcMon-validated |
+| **Gotchas** | On 64-bit Windows, 32-bit installers often write here instead of the native Run key. Autoruns export shows 13 entries -- more than the native HKLM Run key. |
+
+#### Startup — User Startup Folder `[RESEARCHED]`
+
+| Field | Value |
+|---|---|
+| **UI Location** | `shell:startup` in Explorer address bar |
+| **Key** | `HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders\Startup` |
+| **Value** | `Startup` |
+| **Type** | REG_SZ |
+| **Data** | Path to user Startup folder (typically `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup`) |
+| **Default** | `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup` |
+| **Scope** | HKCU |
+| **Effect** | Next logon |
+| **Writer** | Windows shell |
+| **Watchers** | Explorer.EXE (at logon) |
+| **Validated** | Not yet ProcMon-validated |
+| **Gotchas** | The registry value points to the folder path. The actual startup items are `.lnk` shortcuts in that folder. To disable, Autoruns moves shortcuts to an `AutorunsDisabled` subfolder. 4 entries in export. |
+
+#### Startup — Common Startup Folder `[RESEARCHED]`
+
+| Field | Value |
+|---|---|
+| **UI Location** | `shell:common startup` in Explorer address bar |
+| **Key** | `HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders\Common Startup` |
+| **Value** | `Common Startup` |
+| **Type** | REG_SZ |
+| **Data** | Path to all-users Startup folder (typically `%ProgramData%\Microsoft\Windows\Start Menu\Programs\Startup`) |
+| **Default** | `%ProgramData%\Microsoft\Windows\Start Menu\Programs\Startup` |
+| **Scope** | HKLM (requires admin to modify contents) |
+| **Effect** | Next logon (all users) |
+| **Writer** | Application installers |
+| **Watchers** | Explorer.EXE (at logon) |
+| **Validated** | Not yet ProcMon-validated |
+| **Gotchas** | Same `AutorunsDisabled` subfolder convention for disabling. 5 entries in export. |
+
+#### Startup — StartupApproved (Task Manager Disable State) `[RESEARCHED]`
+
+| Field | Value |
+|---|---|
+| **UI Location** | `Task Manager → Startup → right-click → Disable` |
+| **Key** | `HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run` |
+| **Value** | (matches the entry name in the corresponding Run key) |
+| **Type** | REG_BINARY |
+| **Data** | 12-byte blob: first byte `02` = enabled, `03` = disabled; remaining bytes are a FILETIME timestamp |
+| **Default** | Value absent (entry enabled) or `02 00 00 ...` |
+| **Scope** | HKCU |
+| **Effect** | Next logon |
+| **Writer** | Task Manager, Settings app |
+| **Watchers** | Explorer.EXE (at logon) |
+| **Validated** | Not yet ProcMon-validated -- confirm byte format on 25H2 |
+| **Gotchas** | This is how Task Manager disables startup items without deleting the Run key entry. Critical for compatibility -- ThisIsMyPC must read and honor these values. Additional variants exist: `StartupApproved\Run32` (HKCU and HKLM), `StartupApproved\Run` (HKLM), `StartupApproved\StartupFolder` (HKLM). |
+
+#### Startup — Active Setup `[RESEARCHED]`
+
+| Field | Value |
+|---|---|
+| **UI Location** | None — no Windows UI for Active Setup |
+| **Key** | `HKLM\SOFTWARE\Microsoft\Active Setup\Installed Components\{GUID}` |
+| **Value** | `StubPath` (REG_SZ — command to run), `IsInstalled` (REG_DWORD), `Version` (REG_SZ) |
+| **Type** | Multiple values per subkey |
+| **Data** | `StubPath` = command line; `IsInstalled` = `1` (active) or `0` (inactive); `Version` = version string |
+| **Default** | Varies per component |
+| **Scope** | HKLM (requires admin) |
+| **Effect** | Next first-logon for a new user profile |
+| **Writer** | Application installers, Windows Setup |
+| **Watchers** | Explorer.EXE (at first logon per user) |
+| **Validated** | Not yet ProcMon-validated |
+| **Gotchas** | Active Setup runs commands once per user at first logon. Each user profile tracks which components have run via `HKCU\Software\Microsoft\Active Setup\Installed Components`. 32-bit variant at `HKLM\SOFTWARE\Wow6432Node\Microsoft\Active Setup\Installed Components`. 8 + 2 entries in export. Display as read-only unless specifically targeting Active Setup management. |
+
+#### Startup — Winlogon Shell `[RESEARCHED]`
+
+| Field | Value |
+|---|---|
+| **UI Location** | None — no Windows UI |
+| **Key** | `HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon` |
+| **Value** | `Shell` |
+| **Type** | REG_SZ |
+| **Data** | `explorer.exe` (default Windows shell) |
+| **Default** | `explorer.exe` |
+| **Scope** | HKLM |
+| **Effect** | Next logon |
+| **Writer** | Windows Setup |
+| **Watchers** | Winlogon.exe |
+| **Validated** | Not yet ProcMon-validated |
+| **Gotchas** | Modifying this replaces the Windows shell entirely. Display as read-only / informational in the UI. Malware sometimes appends additional executables here. |
+
+#### Startup — Winlogon Userinit `[RESEARCHED]`
+
+| Field | Value |
+|---|---|
+| **UI Location** | None — no Windows UI |
+| **Key** | `HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon` |
+| **Value** | `Userinit` |
+| **Type** | REG_SZ |
+| **Data** | `C:\Windows\system32\userinit.exe,` (note trailing comma) |
+| **Default** | `C:\Windows\system32\userinit.exe,` |
+| **Scope** | HKLM |
+| **Effect** | Next logon |
+| **Writer** | Windows Setup |
+| **Watchers** | Winlogon.exe |
+| **Validated** | Not yet ProcMon-validated |
+| **Gotchas** | System-critical. Modifying or deleting this prevents user logon. Display as read-only / informational. The trailing comma allows additional programs to be appended (comma-separated). |
+
+#### Services — Service Registry Location `[RESEARCHED]`
+
+| Field | Value |
+|---|---|
+| **UI Location** | `services.msc`, `Task Manager → Services` |
+| **Key** | `HKLM\System\CurrentControlSet\Services\<ServiceName>` |
+| **Value** | `Start` (REG_DWORD), `Type` (REG_DWORD), `ImagePath` (REG_EXPAND_SZ), `DisplayName` (REG_SZ), `Description` (REG_SZ), `ObjectName` (REG_SZ) |
+| **Type** | Multiple values per subkey |
+| **Data** | `Start`: `0`=Boot, `1`=System, `2`=Automatic, `3`=Manual, `4`=Disabled |
+| **Default** | Varies per service |
+| **Scope** | HKLM (requires admin) |
+| **Effect** | Next service start or reboot (depending on start type) |
+| **Writer** | Service Control Manager (SCM), application installers |
+| **Watchers** | services.exe (SCM) |
+| **Validated** | Not yet ProcMon-validated |
+| **Gotchas** | **Prefer the SCM API** (`OpenSCManager`/`OpenService`/`ChangeServiceConfig`) over direct registry writes. Direct registry modification bypasses SCM validation and can cause inconsistencies. The registry path is documented here for read-only scanning and as the underlying storage reference. 327 entries in export (296 Microsoft, 29 third-party). |
+
+#### Scheduled Tasks — Task Scheduler (API, Not Registry) `[RESEARCHED]`
+
+| Field | Value |
+|---|---|
+| **UI Location** | `taskschd.msc`, `schtasks.exe` |
+| **Key** | N/A — not stored in registry |
+| **Value** | N/A |
+| **Type** | XML files in `%SystemRoot%\System32\Tasks\<TaskPath>` |
+| **Data** | Task definitions (triggers, actions, conditions, settings) |
+| **Default** | Varies |
+| **Scope** | Machine-wide (admin required for most operations) |
+| **Effect** | Immediate (Task Scheduler service picks up changes) |
+| **Writer** | Task Scheduler service, `schtasks.exe`, application installers |
+| **Watchers** | Schedule service (svsvc) |
+| **Validated** | N/A — API-based, no registry to validate |
+| **Gotchas** | Use the Task Scheduler COM API (`ITaskService`, `ITaskFolder`, `IRegisteredTask`) or the `Microsoft.Win32.TaskScheduler` NuGet package. Do NOT parse XML files directly. 278 entries in export (249 Microsoft, 16 third-party). Many third-party tasks have empty Company fields — fall back to executable version info. |
 
 ### Power Plans (Epic 4)
 
