@@ -47,7 +47,7 @@ public class ShellExtensionServiceTests
     }
 
     [Fact]
-    public void EnumerateContextMenuHandlers_deduplicates_by_clsid()
+    public void EnumerateContextMenuHandlers_returns_all_registrations_for_same_clsid_across_paths()
     {
         var clsid = "{11111111-2222-3333-4444-555555555555}";
 
@@ -63,8 +63,15 @@ public class ShellExtensionServiceTests
         var result = _sut.EnumerateContextMenuHandlers();
 
         Assert.True(result.IsSuccess);
-        Assert.Single(result.Value!);
-        Assert.Equal("All files", result.Value![0].AppliesTo);
+        Assert.Equal(2, result.Value!.Count);
+
+        var allFiles = result.Value!.First(h => h.AppliesTo == "All files");
+        var directories = result.Value!.First(h => h.AppliesTo == "Directories");
+
+        Assert.Equal(clsid, allFiles.Clsid);
+        Assert.Equal(clsid, directories.Clsid);
+        Assert.Contains(@"HKCR\*\", allFiles.RegistryPath);
+        Assert.Contains(@"HKCR\Directory\", directories.RegistryPath);
     }
 
     [Fact]
@@ -104,8 +111,8 @@ public class ShellExtensionServiceTests
 
         Assert.True(result.IsSuccess);
         Assert.Single(result.Value!);
-        // DllPath depends on File.Exists, which won't find our fake path, so it should be null
-        // But the registry lookup for InprocServer32 should succeed
+        Assert.Equal(@"C:\Windows\System32\test.dll", result.Value![0].DllPath);
+        Assert.Equal(clsid, result.Value![0].Clsid);
     }
 
     [Fact]

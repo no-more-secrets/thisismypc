@@ -26,8 +26,8 @@ public sealed class ShellExtensionService : IShellExtensionService
     {
         try
         {
-            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var handlers = new List<ShellExtensionInfo>();
+            var dllPathCache = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var (basePath, appliesTo) in HandlerRegistrations)
             {
@@ -46,11 +46,13 @@ public sealed class ShellExtensionService : IShellExtensionService
                     var isEnabled = !rawClsid.StartsWith('-');
                     var cleanClsid = isEnabled ? rawClsid : rawClsid[1..];
 
-                    // Deduplicate by CLSID
-                    if (!seen.Add(cleanClsid))
-                        continue;
+                    // Cache DLL path lookups to avoid repeated InprocServer32 reads for the same CLSID
+                    if (!dllPathCache.TryGetValue(cleanClsid, out var dllPath))
+                    {
+                        dllPath = ResolveDllPath(cleanClsid);
+                        dllPathCache[cleanClsid] = dllPath;
+                    }
 
-                    var dllPath = ResolveDllPath(cleanClsid);
                     var publisher = ResolvePublisher(dllPath);
 
                     handlers.Add(new ShellExtensionInfo(
