@@ -30,7 +30,7 @@ Extensive research documents produced via deep-research tools. See [deep-researc
 
 | Document | Purpose |
 |---|---|
-| [source-split-considerations.md](source-split-considerations.md) | Public/private repository boundary definition for GPLv2 compliance. Defines what goes in the open-source repo vs proprietary Session 0 security service, IOCTL security layer, and anti-tampering components. |
+| ~~[source-split-considerations.md](old/source-split-considerations.md)~~ | **SUPERSEDED** by docs/why-gplv2.md — the source-split model was abandoned. All code including Session 0 service is fully GPLv2 open-source. Original doc preserved in `old/` for historical reference. |
 
 ## Project Management
 
