@@ -81,17 +81,7 @@ public sealed class ContextMenuModule : IModule
 
     private OperationResult<bool> ApplyStringChange(ChangeDescriptor change)
     {
-        var lastSep = change.SystemLocation.LastIndexOf('\\');
-        if (lastSep < 0)
-            throw new ArgumentException($"Invalid system location (no separator): {change.SystemLocation}");
-
-        var keyPath = change.SystemLocation[..lastSep];
-        var valueName = change.SystemLocation[(lastSep + 1)..];
-
-        // Map "(Default)" to empty string — the Windows registry API convention for the default value
-        if (valueName == "(Default)")
-            valueName = string.Empty;
-
+        var (keyPath, valueName) = ShellRegistryPaths.ParseSystemLocation(change.SystemLocation);
         return _registryService.WriteString(keyPath, valueName, change.AfterValue ?? string.Empty);
     }
 }

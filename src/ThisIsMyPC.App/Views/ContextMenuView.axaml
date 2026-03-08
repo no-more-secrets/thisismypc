@@ -76,9 +76,58 @@
                     <TabItem.Header>
                         <TextBlock Text="{Binding MiscHandlerCount}" FontSize="13" />
                     </TabItem.Header>
-                    <ItemsControl ItemsSource="{Binding MiscHandlers}"
-                                  ItemTemplate="{StaticResource ToggleSettingRowTemplate}"
-                                  Margin="0,8,0,0" />
+                    <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                                  VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="12" Margin="0,8,0,0">
+                            <!-- Drive -->
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Drive" FontSize="14" FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextSecondaryBrush}" />
+                                <ItemsControl ItemsSource="{Binding DriveMiscHandlers}"
+                                              ItemTemplate="{StaticResource ToggleSettingRowTemplate}" />
+                                <TextBlock Text="No third-party handlers detected"
+                                           FontSize="12" FontStyle="Italic"
+                                           Foreground="{StaticResource TextTertiaryBrush}"
+                                           IsVisible="{Binding !DriveMiscHandlers.Count}" />
+                            </StackPanel>
+
+                            <!-- This PC -->
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="This PC" FontSize="14" FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextSecondaryBrush}" />
+                                <ItemsControl ItemsSource="{Binding ThisPcMiscHandlers}"
+                                              ItemTemplate="{StaticResource ToggleSettingRowTemplate}" />
+                                <TextBlock Text="No third-party handlers detected"
+                                           FontSize="12" FontStyle="Italic"
+                                           Foreground="{StaticResource TextTertiaryBrush}"
+                                           IsVisible="{Binding !ThisPcMiscHandlers.Count}" />
+                            </StackPanel>
+
+                            <!-- Network -->
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Network" FontSize="14" FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextSecondaryBrush}" />
+                                <ItemsControl ItemsSource="{Binding NetworkMiscHandlers}"
+                                              ItemTemplate="{StaticResource ToggleSettingRowTemplate}" />
+                                <TextBlock Text="No third-party handlers detected"
+                                           FontSize="12" FontStyle="Italic"
+                                           Foreground="{StaticResource TextTertiaryBrush}"
+                                           IsVisible="{Binding !NetworkMiscHandlers.Count}" />
+                            </StackPanel>
+
+                            <!-- Recycle Bin -->
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Recycle Bin" FontSize="14" FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextSecondaryBrush}" />
+                                <ItemsControl ItemsSource="{Binding RecycleBinMiscHandlers}"
+                                              ItemTemplate="{StaticResource ToggleSettingRowTemplate}" />
+                                <TextBlock Text="No third-party handlers detected"
+                                           FontSize="12" FontStyle="Italic"
+                                           Foreground="{StaticResource TextTertiaryBrush}"
+                                           IsVisible="{Binding !RecycleBinMiscHandlers.Count}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </ScrollViewer>
                 </TabItem>
             </TabControl>
 

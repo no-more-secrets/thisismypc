@@ -8,6 +8,7 @@ using CommunityToolkit.Mvvm.Input;
 using ThisIsMyPC.App.Services;
 using ThisIsMyPC.Core.Changes;
 using ThisIsMyPC.Core.Results;
+using ThisIsMyPC.Core.Modules;
 using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Modules.Shell;
 using ThisIsMyPC.Modules.Shell.Models;
@@ -323,10 +324,29 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
-    private async Task<OperationResult<bool>> ApplyChangeToModule(ChangeDescriptor change)
+    // Legacy module name mappings for change history entries created before module renames
+    private static readonly Dictionary<string, string> LegacyModuleNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Shell & Explorer"] = "Explorer",
+    };
+
+    private IModule? ResolveModule(string moduleId)
     {
         var module = _navigationService.Modules
-            .FirstOrDefault(m => m.Module.Info.Name == change.ModuleId)?.Module;
+            .FirstOrDefault(m => m.Module.Info.Name == moduleId)?.Module;
+
+        if (module is null && LegacyModuleNames.TryGetValue(moduleId, out var currentName))
+        {
+            module = _navigationService.Modules
+                .FirstOrDefault(m => m.Module.Info.Name == currentName)?.Module;
+        }
+
+        return module;
+    }
+
+    private async Task<OperationResult<bool>> ApplyChangeToModule(ChangeDescriptor change)
+    {
+        var module = ResolveModule(change.ModuleId);
 
         if (module is null)
         {
@@ -340,8 +360,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private async Task<OperationResult<bool>> RevertChangeOnModule(ChangeDescriptor change)
     {
-        var module = _navigationService.Modules
-            .FirstOrDefault(m => m.Module.Info.Name == change.ModuleId)?.Module;
+        var module = ResolveModule(change.ModuleId);
 
         if (module is null)
         {

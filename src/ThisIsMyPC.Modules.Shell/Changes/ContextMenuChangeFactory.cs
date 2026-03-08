@@ -14,24 +14,31 @@ public static class ContextMenuChangeFactory
     /// </summary>
     public static IReadOnlyList<ChangeDescriptor> CreateToggle(ContextMenuHandler handler, bool enable)
     {
-        var beforeClsid = handler.IsEnabled ? handler.Clsid : $"-{handler.Clsid}";
         var afterClsid = enable ? handler.Clsid : $"-{handler.Clsid}";
         var settingId = MakeSettingId(handler.Clsid);
 
         var registryPaths = handler.AllRegistryPaths ?? [handler.RegistryPath];
 
-        return registryPaths.Select(path => new ChangeDescriptor
+        return registryPaths.Select(path =>
         {
-            ModuleId = ModuleId,
-            SettingId = settingId,
-            DisplayName = $"Context menu: {handler.Name}",
-            SystemLocation = $@"{path}\(Default)",
-            BeforeValue = beforeClsid,
-            AfterValue = afterClsid,
-            BeforeDisplay = handler.IsEnabled ? "Enabled" : "Disabled",
-            AfterDisplay = enable ? "Enabled" : "Disabled",
-            ValueType = ChangeValueType.Registry_String,
-            Category = enable ? ChangeCategory.Enable : ChangeCategory.Disable,
+            // Use per-path enabled state when available (handles inconsistent multi-path state)
+            var pathEnabled = handler.PathEnabledStates?.GetValueOrDefault(path, handler.IsEnabled)
+                              ?? handler.IsEnabled;
+            var beforeClsid = pathEnabled ? handler.Clsid : $"-{handler.Clsid}";
+
+            return new ChangeDescriptor
+            {
+                ModuleId = ModuleId,
+                SettingId = settingId,
+                DisplayName = $"Context menu: {handler.Name}",
+                SystemLocation = $@"{path}\(Default)",
+                BeforeValue = beforeClsid,
+                AfterValue = afterClsid,
+                BeforeDisplay = pathEnabled ? "Enabled" : "Disabled",
+                AfterDisplay = enable ? "Enabled" : "Disabled",
+                ValueType = ChangeValueType.Registry_String,
+                Category = enable ? ChangeCategory.Enable : ChangeCategory.Disable,
+            };
         }).ToList();
     }
 

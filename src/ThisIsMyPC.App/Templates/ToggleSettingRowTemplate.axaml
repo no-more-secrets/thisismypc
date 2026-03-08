@@ -16,7 +16,9 @@
         <Border Padding="16,12"
                 Margin="0,2"
                 CornerRadius="6"
-                Background="{StaticResource SurfaceBrush}">
+                Background="{StaticResource SurfaceBrush}"
+                Classes.pending-enable="{Binding IsPendingEnable}"
+                Classes.pending-disable="{Binding IsPendingDisable}">
             <DockPanel>
                 <!-- Toggle switch on the right -->
                 <ToggleSwitch DockPanel.Dock="Right"
@@ -37,6 +39,13 @@
                                FontSize="12"
                                Foreground="{StaticResource TextSecondaryBrush}"
                                TextWrapping="Wrap" />
+
+                    <!-- Warning text (Critical/System handlers) -->
+                    <TextBlock Text="{Binding WarningText}"
+                               FontSize="12"
+                               Foreground="{StaticResource DangerBrush}"
+                               TextWrapping="Wrap"
+                               IsVisible="{Binding WarningText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
                     <!-- System path (monospace) -->
                     <TextBlock Text="{Binding SystemPath}"

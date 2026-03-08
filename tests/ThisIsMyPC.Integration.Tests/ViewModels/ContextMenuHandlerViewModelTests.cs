@@ -89,9 +89,9 @@ public sealed class ContextMenuHandlerViewModelTests : IDisposable
     public void SetScopeNote_updates_description_with_scope_text()
     {
         var vm = CreateVm(classification: HandlerClassification.ThirdParty, publisher: "Igor Pavlov");
-        vm.SetScopeNote("also in: Folders");
+        vm.SetScopeNote("appears in: File, Folders");
 
-        Assert.Contains("also in: Folders", vm.Description);
+        Assert.Contains("appears in: File, Folders", vm.Description);
         Assert.Contains("Igor Pavlov", vm.Description);
     }
 

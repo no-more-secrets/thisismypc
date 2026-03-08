@@ -36,6 +36,12 @@ public sealed class ContextMenuScanner
             // IsEnabled is true only if ALL registration entries are enabled (consistent state)
             var isEnabled = entries.All(e => e.IsEnabled);
 
+            // Track per-path enabled state for accurate ChangeDescriptor BeforeValue
+            var pathEnabledStates = entries.ToDictionary(
+                e => e.RegistryPath,
+                e => e.IsEnabled,
+                StringComparer.OrdinalIgnoreCase);
+
             var classification = ContextMenuHandlerClassifier.Classify(first.Clsid, first.DllPath, first.Publisher);
 
             handlers.Add(new ContextMenuHandler(
@@ -48,7 +54,8 @@ public sealed class ContextMenuScanner
                 IsEnabled: isEnabled,
                 Classification: classification,
                 AllRegistryPaths: allRegistryPaths,
-                AllScopes: allScopes));
+                AllScopes: allScopes,
+                PathEnabledStates: pathEnabledStates));
         }
 
         return handlers;

@@ -142,4 +142,39 @@ public sealed class ContextMenuChangeFactoryTests
         Assert.Single(changes);
         Assert.Equal(@"HKCR\*\shellex\ContextMenuHandlers\Simple\(Default)", changes[0].SystemLocation);
     }
+
+    [Fact]
+    public void CreateToggle_multi_path_mixed_state_uses_per_path_before_value()
+    {
+        // Path 1 enabled, path 2 disabled -- handler.IsEnabled = false (All must be enabled)
+        var handler = new ContextMenuHandler(
+            Name: "MixedHandler",
+            Clsid: "{AAAA-BBBB-CCCC}",
+            RegistryPath: @"HKCR\*\shellex\ContextMenuHandlers\Mixed",
+            AppliesTo: "All files",
+            DllPath: null,
+            Publisher: null,
+            IsEnabled: false,
+            AllRegistryPaths:
+            [
+                @"HKCR\*\shellex\ContextMenuHandlers\Mixed",
+                @"HKCR\Directory\shellex\ContextMenuHandlers\Mixed",
+            ],
+            AllScopes: ["All files", "Directories"],
+            PathEnabledStates: new Dictionary<string, bool>
+            {
+                [@"HKCR\*\shellex\ContextMenuHandlers\Mixed"] = true,
+                [@"HKCR\Directory\shellex\ContextMenuHandlers\Mixed"] = false,
+            });
+
+        var changes = ContextMenuChangeFactory.CreateToggle(handler, enable: false);
+
+        // Path 1 was enabled -> BeforeValue should be clean CLSID
+        Assert.Equal("{AAAA-BBBB-CCCC}", changes[0].BeforeValue);
+        Assert.Equal("Enabled", changes[0].BeforeDisplay);
+
+        // Path 2 was disabled -> BeforeValue should have dash prefix
+        Assert.Equal("-{AAAA-BBBB-CCCC}", changes[1].BeforeValue);
+        Assert.Equal("Disabled", changes[1].BeforeDisplay);
+    }
 }

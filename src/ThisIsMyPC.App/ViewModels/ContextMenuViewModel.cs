@@ -14,12 +14,13 @@ public partial class ContextMenuViewModel : ViewModelBase
     public ObservableCollection<ContextMenuHandlerViewModel> DesktopHandlers { get; } = [];
     public ObservableCollection<ContextMenuHandlerViewModel> MiscHandlers { get; } = [];
 
+    // Misc tab sub-groups by surface
+    public ObservableCollection<ContextMenuHandlerViewModel> DriveMiscHandlers { get; } = [];
+    public ObservableCollection<ContextMenuHandlerViewModel> ThisPcMiscHandlers { get; } = [];
+    public ObservableCollection<ContextMenuHandlerViewModel> NetworkMiscHandlers { get; } = [];
+    public ObservableCollection<ContextMenuHandlerViewModel> RecycleBinMiscHandlers { get; } = [];
+
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(FileHandlerCount))]
-    [NotifyPropertyChangedFor(nameof(FolderHandlerCount))]
-    [NotifyPropertyChangedFor(nameof(FolderBackgroundHandlerCount))]
-    [NotifyPropertyChangedFor(nameof(DesktopHandlerCount))]
-    [NotifyPropertyChangedFor(nameof(MiscHandlerCount))]
     private bool _isRegistryViewMode;
 
     public string FileHandlerCount => $"File ({FileHandlers.Count})";
@@ -86,7 +87,20 @@ public partial class ContextMenuViewModel : ViewModelBase
             if (tabs.Contains(ContextMenuTab.Desktop))
                 DesktopHandlers.Add(vm);
             if (tabs.Contains(ContextMenuTab.Misc))
+            {
                 MiscHandlers.Add(vm);
+
+                // Sub-group by surface
+                var collection = vm.MiscGroup switch
+                {
+                    MiscSurfaceGroup.Drive => DriveMiscHandlers,
+                    MiscSurfaceGroup.ThisPc => ThisPcMiscHandlers,
+                    MiscSurfaceGroup.Network => NetworkMiscHandlers,
+                    MiscSurfaceGroup.RecycleBin => RecycleBinMiscHandlers,
+                    _ => null,
+                };
+                collection?.Add(vm);
+            }
         }
 
         // Generate ScopeNote for each VM based on which tabs it appears in
@@ -106,7 +120,7 @@ public partial class ContextMenuViewModel : ViewModelBase
                 _ => t.ToString(),
             });
 
-            vm.SetScopeNote($"also in: {string.Join(", ", tabNames)}");
+            vm.SetScopeNote($"appears in: {string.Join(", ", tabNames)}");
         }
     }
 
@@ -127,10 +141,16 @@ public partial class ContextMenuViewModel : ViewModelBase
 
     partial void OnIsRegistryViewModeChanged(bool value)
     {
-        foreach (var vm in FileHandlers) vm.SetRegistryViewMode(value);
-        foreach (var vm in FolderHandlers) vm.SetRegistryViewMode(value);
-        foreach (var vm in FolderBackgroundHandlers) vm.SetRegistryViewMode(value);
-        foreach (var vm in DesktopHandlers) vm.SetRegistryViewMode(value);
-        foreach (var vm in MiscHandlers) vm.SetRegistryViewMode(value);
+        // Deduplicate: shared VM instances appear in multiple tab collections
+        var seen = new HashSet<ContextMenuHandlerViewModel>(ReferenceEqualityComparer.Instance);
+        foreach (var collection in (ObservableCollection<ContextMenuHandlerViewModel>[])
+            [FileHandlers, FolderHandlers, FolderBackgroundHandlers, DesktopHandlers, MiscHandlers])
+        {
+            foreach (var vm in collection)
+            {
+                if (seen.Add(vm))
+                    vm.SetRegistryViewMode(value);
+            }
+        }
     }
 }

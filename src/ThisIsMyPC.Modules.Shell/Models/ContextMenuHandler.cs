@@ -10,4 +10,5 @@ public sealed record ContextMenuHandler(
     bool IsEnabled,
     HandlerClassification Classification = HandlerClassification.ThirdParty,
     IReadOnlyList<string>? AllRegistryPaths = null,
-    IReadOnlyList<string>? AllScopes = null);
+    IReadOnlyList<string>? AllScopes = null,
+    IReadOnlyDictionary<string, bool>? PathEnabledStates = null);

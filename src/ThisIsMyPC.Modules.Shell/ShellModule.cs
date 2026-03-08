@@ -154,17 +154,5 @@ public sealed class ShellModule : IModule
     }
 
     private static (string KeyPath, string ValueName) ParseSystemLocation(string systemLocation)
-    {
-        var lastSep = systemLocation.LastIndexOf('\\');
-        if (lastSep < 0)
-            throw new ArgumentException($"Invalid system location (no separator): {systemLocation}");
-
-        var valueName = systemLocation[(lastSep + 1)..];
-
-        // Map "(Default)" to empty string — the Windows registry API convention for the default value
-        if (valueName == "(Default)")
-            valueName = string.Empty;
-
-        return (systemLocation[..lastSep], valueName);
-    }
+        => ShellRegistryPaths.ParseSystemLocation(systemLocation);
 }
