@@ -13,8 +13,9 @@ public class MainWindowViewModelTests
     {
         var navigationService = new NavigationService(modules);
         pendingChangesService = new PendingChangesService();
+        var historyService = new Fakes.FakeChangeHistoryService();
         var reviewPanel = new ReviewPanelViewModel(pendingChangesService);
-        return new MainWindowViewModel(navigationService, pendingChangesService, reviewPanel);
+        return new MainWindowViewModel(navigationService, pendingChangesService, historyService, reviewPanel);
     }
 
     private static ChangeDescriptor CreateTestChange(string moduleId = "test", string settingId = "setting1") => new()

@@ -14,6 +14,7 @@ public partial class MainWindowViewModel : ViewModelBase
 {
     private readonly NavigationService _navigationService;
     private readonly IPendingChangesService _pendingChangesService;
+    private readonly IChangeHistoryService _changeHistoryService;
 
     public ObservableCollection<SidebarGroupViewModel> SidebarGroups { get; } = [];
 
@@ -52,14 +53,25 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public ReviewPanelViewModel ReviewPanel { get; }
 
+    public ChangeHistoryViewModel ChangeHistory { get; }
+
+    [ObservableProperty]
+    private bool _isHistoryPanelOpen;
+
     public MainWindowViewModel(
         NavigationService navigationService,
         IPendingChangesService pendingChangesService,
+        IChangeHistoryService changeHistoryService,
         ReviewPanelViewModel reviewPanel)
     {
         _navigationService = navigationService;
         _pendingChangesService = pendingChangesService;
+        _changeHistoryService = changeHistoryService;
         ReviewPanel = reviewPanel;
+        ChangeHistory = new ChangeHistoryViewModel(
+            changeHistoryService,
+            RevertChangeOnModule,
+            ApplyChangeToModule);
 
         _pendingChangesService.PropertyChanged += OnPendingChangesPropertyChanged;
         PendingCount = _pendingChangesService.PendingCount;
@@ -78,6 +90,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public async Task InitializeAsync()
     {
+        await _changeHistoryService.InitializeAsync().ConfigureAwait(true);
         await _navigationService.InitializeAsync().ConfigureAwait(true);
 
         PopulateSidebar();
@@ -150,6 +163,19 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private void OpenHistoryPanel()
+    {
+        IsHistoryPanelOpen = true;
+        ChangeHistory.LoadHistoryCommand.Execute(null);
+    }
+
+    [RelayCommand]
+    private void CloseHistoryPanel()
+    {
+        IsHistoryPanelOpen = false;
+    }
+
+    [RelayCommand]
     private void DiscardAll()
     {
         _pendingChangesService.DiscardAll();
@@ -176,6 +202,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
             if (result.IsSuccess)
             {
+                await _changeHistoryService.RecordChangesAsync(result).ConfigureAwait(true);
                 IsReviewPanelOpen = false;
                 StatusMessage = "Changes applied successfully";
             }

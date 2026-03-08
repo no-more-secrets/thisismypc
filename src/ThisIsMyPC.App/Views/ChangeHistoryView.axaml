@@ -1,0 +1,177 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ThisIsMyPC.App.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="450" d:DesignHeight="600"
+             x:Class="ThisIsMyPC.App.Views.ChangeHistoryView"
+             x:DataType="vm:ChangeHistoryViewModel">
+
+    <Border Background="{StaticResource RaisedBrush}"
+            BorderBrush="{StaticResource SidebarBorderBrush}"
+            BorderThickness="1"
+            CornerRadius="8"
+            Width="450"
+            MaxHeight="600"
+            Padding="0">
+
+        <DockPanel>
+            <!-- Header -->
+            <Border DockPanel.Dock="Top"
+                    Padding="16,12"
+                    BorderBrush="{StaticResource SidebarBorderBrush}"
+                    BorderThickness="0,0,0,1">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Right"
+                               Text="{Binding TotalEntryCount, StringFormat='{}{0} entry(ies)'}"
+                               Foreground="{StaticResource TextTertiaryBrush}"
+                               FontSize="12"
+                               VerticalAlignment="Center" />
+                    <TextBlock Text="Change History"
+                               FontWeight="SemiBold"
+                               FontSize="15"
+                               Foreground="{StaticResource TextPrimaryBrush}"
+                               VerticalAlignment="Center" />
+                </DockPanel>
+            </Border>
+
+            <!-- Error message -->
+            <Border DockPanel.Dock="Bottom"
+                    Padding="16,8"
+                    IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <TextBlock Text="{Binding ErrorMessage}"
+                           FontSize="12"
+                           TextWrapping="Wrap"
+                           Foreground="{StaticResource DangerBrush}" />
+            </Border>
+
+            <!-- Content -->
+            <Panel>
+                <!-- Empty state -->
+                <StackPanel IsVisible="{Binding !TotalEntryCount}"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Spacing="4"
+                            Margin="16">
+                    <TextBlock Text="No changes recorded yet"
+                               FontSize="14"
+                               HorizontalAlignment="Center"
+                               Foreground="{StaticResource TextSecondaryBrush}" />
+                    <TextBlock Text="Changes applied through ThisIsMyPC will appear here."
+                               FontSize="12"
+                               HorizontalAlignment="Center"
+                               TextWrapping="Wrap"
+                               Foreground="{StaticResource TextTertiaryBrush}" />
+                </StackPanel>
+
+                <!-- Grouped history list -->
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto"
+                              IsVisible="{Binding !!TotalEntryCount}">
+                    <ItemsControl ItemsSource="{Binding HistoryGroups}" Margin="8,4">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:ChangeHistoryGroupViewModel">
+                                <StackPanel Margin="0,4">
+                                    <!-- Date group header -->
+                                    <TextBlock Text="{Binding DateHeader}"
+                                               FontSize="12"
+                                               FontWeight="SemiBold"
+                                               Foreground="{StaticResource TextTertiaryBrush}"
+                                               Margin="4,8,0,4"
+                                               LetterSpacing="0.5" />
+
+                                    <!-- Entries in this group -->
+                                    <ItemsControl ItemsSource="{Binding Entries}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:ChangeHistoryEntryViewModel">
+                                                <Border Margin="0,2"
+                                                        Padding="12,8"
+                                                        CornerRadius="4"
+                                                        Opacity="{Binding IsReverted, Converter={x:Static vm:RevertedOpacityConverter.Instance}}"
+                                                        Classes.pending-enable="{Binding IsEnableOrCreate}"
+                                                        Classes.pending-disable="{Binding IsDisableOrDelete}"
+                                                        Classes.pending-modify="{Binding IsModifyCategory}">
+                                                    <DockPanel>
+                                                        <!-- Action buttons (right side) -->
+                                                        <StackPanel DockPanel.Dock="Right"
+                                                                    VerticalAlignment="Center"
+                                                                    Margin="8,0,0,0">
+                                                            <Button Classes="apply-bar-discard"
+                                                                    Content="Revert"
+                                                                    FontSize="11"
+                                                                    Padding="8,4"
+                                                                    IsVisible="{Binding !IsReverted}"
+                                                                    Command="{Binding $parent[UserControl].((vm:ChangeHistoryViewModel)DataContext).RevertCommand}"
+                                                                    CommandParameter="{Binding}" />
+                                                            <Button Classes="apply-bar-discard"
+                                                                    Content="Redo"
+                                                                    FontSize="11"
+                                                                    Padding="8,4"
+                                                                    IsVisible="{Binding IsReverted}"
+                                                                    Command="{Binding $parent[UserControl].((vm:ChangeHistoryViewModel)DataContext).RedoCommand}"
+                                                                    CommandParameter="{Binding}" />
+                                                        </StackPanel>
+
+                                                        <!-- Entry details (left side) -->
+                                                        <StackPanel Spacing="2">
+                                                            <DockPanel>
+                                                                <!-- Time -->
+                                                                <TextBlock DockPanel.Dock="Right"
+                                                                           Text="{Binding AppliedAtDisplay}"
+                                                                           FontSize="11"
+                                                                           Foreground="{StaticResource TextTertiaryBrush}"
+                                                                           VerticalAlignment="Center" />
+
+                                                                <!-- Display name + reverted label -->
+                                                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                                                    <TextBlock Text="{Binding DisplayName}"
+                                                                               FontWeight="SemiBold"
+                                                                               FontSize="13"
+                                                                               Foreground="{StaticResource TextPrimaryBrush}" />
+                                                                    <TextBlock Text="Reverted"
+                                                                               FontSize="11"
+                                                                               Foreground="{StaticResource WarningBrush}"
+                                                                               VerticalAlignment="Center"
+                                                                               IsVisible="{Binding IsReverted}" />
+                                                                </StackPanel>
+                                                            </DockPanel>
+
+                                                            <!-- Module badge -->
+                                                            <TextBlock Text="{Binding ModuleId}"
+                                                                       FontSize="11"
+                                                                       Foreground="{StaticResource TextSecondaryBrush}" />
+
+                                                            <!-- System location -->
+                                                            <TextBlock Text="{Binding SystemLocation}"
+                                                                       FontFamily="{StaticResource MonoFont}"
+                                                                       FontSize="11"
+                                                                       Foreground="{StaticResource TextTertiaryBrush}" />
+
+                                                            <!-- Before -> After values -->
+                                                            <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,4,0,0">
+                                                                <TextBlock Text="{Binding BeforeDisplay}"
+                                                                           FontSize="12"
+                                                                           Foreground="{StaticResource TextSecondaryBrush}" />
+                                                                <TextBlock Text="&#x2192;"
+                                                                           FontSize="12"
+                                                                           Foreground="{StaticResource TextTertiaryBrush}" />
+                                                                <TextBlock Text="{Binding AfterDisplay}"
+                                                                           FontSize="12"
+                                                                           FontWeight="SemiBold"
+                                                                           Foreground="{StaticResource TextPrimaryBrush}" />
+                                                            </StackPanel>
+                                                        </StackPanel>
+                                                    </DockPanel>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Panel>
+        </DockPanel>
+    </Border>
+</UserControl>

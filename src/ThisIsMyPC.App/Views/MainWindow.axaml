@@ -125,23 +125,40 @@
                             </Button>
                         </StackPanel>
 
-                        <!-- Left side: pending count text (clickable to open review panel) -->
-                        <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                        <!-- Left side: history button + pending count text -->
+                        <StackPanel DockPanel.Dock="Left"
+                                    Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                            <Button Classes="apply-bar-discard"
+                                    Command="{Binding OpenHistoryPanelCommand}"
+                                    Padding="10,6"
+                                    ToolTip.Tip="View all past changes applied through ThisIsMyPC — revert or redo any change">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <!-- Fluent UI: Clock icon -->
+                                    <PathIcon Data="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"
+                                              Width="14" Height="14"
+                                              Foreground="{StaticResource TextSecondaryBrush}" />
+                                    <TextBlock Text="History"
+                                               VerticalAlignment="Center"
+                                               FontSize="13" />
+                                </StackPanel>
+                            </Button>
+
                             <Button Classes="apply-bar-count"
                                     Command="{Binding OpenReviewPanelCommand}">
                                 <TextBlock Text="{Binding PendingCountText}"
                                            Foreground="{StaticResource TextSecondaryBrush}"
                                            FontSize="13" />
                             </Button>
-
-                            <!-- Status message (success/error feedback) -->
-                            <TextBlock Text="{Binding StatusMessage}"
-                                       FontSize="12"
-                                       VerticalAlignment="Center"
-                                       TextTrimming="CharacterEllipsis"
-                                       IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                                       Foreground="{StaticResource WarningBrush}" />
                         </StackPanel>
+
+                        <!-- Status message (fills remaining space, truncates with ellipsis) -->
+                        <TextBlock Text="{Binding StatusMessage}"
+                                   FontSize="12"
+                                   VerticalAlignment="Center"
+                                   Margin="12,0,12,0"
+                                   TextTrimming="CharacterEllipsis"
+                                   IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                   Foreground="{StaticResource WarningBrush}" />
                     </DockPanel>
                 </Border>
 
@@ -153,6 +170,16 @@
                        IsLightDismissEnabled="True"
                        WindowManagerAddShadowHint="False">
                     <views:ReviewPanelView DataContext="{Binding ReviewPanel}" />
+                </Popup>
+
+                <!-- History panel popup -->
+                <Popup IsOpen="{Binding IsHistoryPanelOpen, Mode=TwoWay}"
+                       PlacementTarget="{Binding #ApplyBar}"
+                       Placement="Top"
+                       HorizontalOffset="-16"
+                       IsLightDismissEnabled="True"
+                       WindowManagerAddShadowHint="False">
+                    <views:ChangeHistoryView DataContext="{Binding ChangeHistory}" />
                 </Popup>
             </Panel>
 

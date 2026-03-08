@@ -10,6 +10,7 @@ using ThisIsMyPC.App.Services;
 using ThisIsMyPC.App.ViewModels;
 using ThisIsMyPC.App.Views;
 using ThisIsMyPC.Core.Modules;
+using ThisIsMyPC.Core.Data;
 using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Modules.Power;
 using ThisIsMyPC.Modules.Shell;
@@ -58,6 +59,8 @@ public partial class App : Application
 
         // Core Services
         services.AddSingleton<IPendingChangesService, PendingChangesService>();
+        services.AddSingleton<ChangeHistoryRepository>();
+        services.AddSingleton<IChangeHistoryService, ChangeHistoryService>();
 
         // Navigation
         services.AddSingleton<NavigationService>();
