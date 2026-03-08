@@ -127,7 +127,7 @@ The point isn't that any individual capability is novel. **Unification is the fe
 - **.NET 10 (LTS)** + **C# 14** — released November 2025, supported through ~2028
 - **Avalonia UI 11.3.x** — cross-platform UI framework used here for Windows-only. Hardware-accelerated rendering, sub-1s cold start, NativeAOT support since 11.1
 - **NativeAOT compilation** — single-file self-contained binary. No .NET runtime dependency for end users. Trimmed, ahead-of-time compiled
-- **CommunityToolkit.Mvvm 8.4.0** — source-generated ObservableProperty, RelayCommand. Minimal MVVM boilerplate
+- **CommunityToolkit.Mvvm** — source-generated ObservableProperty, RelayCommand. Minimal MVVM boilerplate
 - **CsWin32 (Microsoft.Windows.CsWin32)** — source-generated P/Invoke bindings from NativeMethods.txt declarations. SafeHandle support, friendly overloads
 - **C++ native modules** — via P/Invoke for OpenRGB fork integration. CMake build
 - **SQLite (Microsoft.Data.Sqlite)** — change history persistence. No ORM, no EF Core
@@ -173,6 +173,7 @@ tests/
   ThisIsMyPC.Modules.Shell.Tests/
   ThisIsMyPC.Modules.Startup.Tests/
   ThisIsMyPC.Modules.Power.Tests/
+  ThisIsMyPC.Integration.Tests/
 native/                        — C++ native modules (CMake — OpenRGB fork)
 ```
 
@@ -200,11 +201,18 @@ Single UAC prompt at launch. No split-process model. Users who decline elevation
 
 Three first-party modules that prove the architecture while delivering immediate utility:
 
-1. **Explorer & Context Menus** — context menu control is the unique hook that no other tool provides
+1. **Explorer & Context Menus** — context menu control is the unique hook that no other tool provides. Expanded to cover all three handler types: dynamic COM handlers, static verb entries, and modern IExplorerCommand registrations.
 2. **Startup & Services Management** — high daily-use value, the "Autoruns replacement" angle
 3. **Power Plan Management** — quick win, validates the module interface end-to-end
 
-Plus the cross-cutting infrastructure: module plugin system, change history with undo/redo, settings persistence, zero-footprint defaults, and the Avalonia UI shell.
+Plus cross-cutting infrastructure that must land before module UI work:
+
+4. **Security Hardening** — DLL search path hardening, data directory DACL, structured logging, update integrity, installation path enforcement. Pre-release blockers from threat modeling research.
+5. **Enforcement-Aware Mutation Layer** — registry writes alone are insufficient for many Win11 settings. Kernel filter drivers (ucpd.sys), cloud policy caches (GPCache), TrustedInstaller ACL locks, and Defender Tamper Protection can silently revert changes. The enforcement layer models multi-step mutations (registry write + service disable + GPCache clear) with atomic rollback, and gates settings by Windows SKU.
+6. **Module UI Template System** — card-based setting renderer with 4 display modes (default, registry data, compact, compact + registry data), Owner Mode degradation pattern, and enforcement-resistant setting indicators. Consumed by all modules.
+7. **Windows Annoyances** — highest user-value, lowest effort. SCOOBE suppression, Bing search disable, Edge shortcut blocking, advertising/tracking toggles. The "download and get value in 30 seconds" features.
+
+Plus the module plugin system, change history with undo/redo, settings persistence, zero-footprint defaults, and the Avalonia UI shell.
 
 **Beta bar:** A power user can manage their shell, startup entries, and power plans from one app with full change tracking and undo support. Context menu handler control is the headline feature.
 
@@ -217,6 +225,8 @@ All 7+ modules functional. The "Armoury Crate replacement" release:
 - **ASUS Platform Tuning** — fan curves, GPU MUX, battery limit, performance profiles
 - **RGB Lighting** — device control via OpenRGB
 - **Driver Management** — signing status, auto-update control
+- **Session 0 Service & IPC** — SYSTEM-level background service with named pipe IPC for drift detection and future PawnIO integration. Anti-squatting, anti-impersonation, authenticated RPC.
+- **Configuration Drift Watchdog** — post-reboot detection of settings that Windows silently reverted. Elevated from Phase 3 — without reapplication after updates, the core value proposition erodes.
 - Opt-in tray mode, opt-out update check notifications
 - Context menu creation and editing (graduated from beta's enumerate-and-toggle)
 - System restore point creation before bulk changes
@@ -240,23 +250,23 @@ All 7+ modules functional. The "Armoury Crate replacement" release:
 
 - **System Policy & Privacy expansion** — debloating, Windows feature management, privacy hardening (winutil / O&O ShutUp10++ territory)
 - **Community profile library** — shareable configuration presets
-- **Configuration drift detection** — alerts when Windows updates or software installs change your preferences
+- **Continuous drift monitoring** — real-time alerts when Windows updates or software installs change your preferences (drift detection core is v1.0; continuous monitoring is Phase 3)
 - **Software Installation Engine** — curated catalog, package management (Linux package manager UX for Windows)
 
 ## Project Status
 
-**Pre-development** — planning and research phase complete. All foundational documents finalized:
+**In development** — foundational architecture shipped, implementing Beta modules.
 
 - [x] Domain research — Windows system control ecosystem, competitive landscape, API mechanisms
 - [x] Technical research — registry locations, WMI classes, and API patterns for every planned module
+- [x] Deep research — 119 pages across 5 documents covering threat modeling, kernel driver security, Win11 context menu architecture, and control surface enforcement mapping
 - [x] Product brief
-- [x] PRD — 99 functional requirements across 17 categories, phased across Beta/v1.0/Phase 2+
+- [x] PRD — 138 functional requirements across 21 categories, phased across Beta/v1.0/Phase 2+
 - [x] UX design specification
 - [x] Architecture decision document
-- [ ] Epics and stories
-- [ ] Implementation
-
-No code has been written yet. The next step is breaking the PRD into epics and user stories for sprint planning.
+- [x] Epics and stories — 28 epics across Beta/v1.0/Phase 2/Phase 3
+- [x] **Epic 1: Project Foundation & Application Shell** — solution scaffold, module interface contract, navigation shell, pending changes service, change history with undo/redo
+- [ ] **Epic 2: Explorer & Context Menus** — in progress (registry interop and context menu handler management shipped; taskbar, preferences, environment variables, static verbs, modern handlers, orphan detection, blocked list remaining)
 
 ## Contributing
 
@@ -274,7 +284,7 @@ The project follows a benevolent-dictator governance model. Community contribute
 
 ## License
 
-[GPLv2](LICENSE) — required by upstream dependencies (OpenRGB, etc.). Fully open-source, auditable, and transparent.
+[GPLv2](LICENSE) — every component, permanently. The architecture's security is provable, not secret. See [Why GPLv2](docs/why-gplv2.md) for the full rationale.
 
 ---
 
