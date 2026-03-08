@@ -1,5 +1,5 @@
 ---
-author: Claude Opus 4.6 (synthesis of 5 Gemini 3.1 Pro Deep Research documents)
+author: Claude Opus 4.6 (synthesis of 6 Gemini 3.1 Pro Deep Research documents)
 date: 2026-03-08
 source_documents:
   - threat-modeling-research-part1.md (tm1) — 21 pages
@@ -7,12 +7,13 @@ source_documents:
   - windows-kernel-driver-security-research.md (kd) — 21 pages
   - windows11-context-menu-research.md (cm) — 20 pages
   - windows11-control-surface-research.md (cs) — 34 pages
+  - nativeaot-runtime-integrity-research.md (ri) — 17 pages
 citation_format: "[abbreviation:line(s)]"
 ---
 
 # Deep Research Synthesis: Windows 11 Architecture and ThisIsMyPC Security Posture
 
-This document synthesizes 119 pages of deep research into a unified reference for the ThisIsMyPC project. It covers the Windows 11 platform constraints, security architecture, and implementation implications across four domains: kernel security, IPC hardening, shell integration, and configuration surface management.
+This document synthesizes 136 pages of deep research into a unified reference for the ThisIsMyPC project. It covers the Windows 11 platform constraints, security architecture, and implementation implications across five domains: kernel security, IPC hardening, shell integration, configuration surface management, and user-mode runtime integrity.
 
 ## 1. The Windows 11 Trust Model
 
@@ -187,16 +188,53 @@ Drawing from the Linux eBPF verifier architecture: [tm1:122-123]
 - **Mandatory**: All CsWin32 P/Invoke bindings must use `[DefaultDllImportSearchPaths(DllImportSearchPath.System32)]` [tm2:100]
 - Application must reside in `C:\Program Files\` (admin-only write access), never user-writable directories [tm1:50]
 
-### 7.2 User-Mode Runtime Integrity
+### 7.2 User-Mode Runtime Integrity (CFG + ACG + CIG)
 
-The source research covers kernel-side protections extensively (ObRegisterCallbacks, registry callbacks, minifilter persistence) but does not address runtime hardening for the user-mode NativeAOT binaries. The following mitigations are identified as gaps requiring investigation:
+Dedicated research confirms that .NET 10 NativeAOT is fully compatible with all three Windows 11 user-mode exploit mitigations, closing the gap between kernel-side protections and in-process defense. [ri:§1-7]
 
-- **Control Flow Guard (CFG)**: NativeAOT compilation should enable `/guard:cf` if the toolchain supports it. CFG validates indirect call targets at runtime, preventing ROP/JOP attacks against the elevated GUI or Session 0 service. *Status: requires verification of .NET 10 NativeAOT CFG support.*
-- **Arbitrary Code Guard (ACG)**: `SetProcessMitigationPolicy` with `ProcessDynamicCodePolicy` prevents runtime code generation and modification of executable pages. Since NativeAOT does not use JIT compilation, ACG can be enabled without functional impact — this should be set on process startup for both the GUI and service.
-- **Code Integrity Guard (CIG)**: `ProcessSignaturePolicy` blocks unsigned DLLs from being loaded into the process. This hardens against in-process DLL injection attacks that bypass handle-level protections (ObRegisterCallbacks only strips handle access rights; it cannot prevent an attacker who is already in-process from modifying executable pages).
-- **Note on coverage gap**: ObRegisterCallbacks protects against external handle acquisition but provides no defense against an attacker who has already achieved code execution within the process (e.g., via DLL injection before CIG is enabled). The combination of CIG + ACG + CFG provides layered in-process defense that the kernel callbacks cannot.
+**Control Flow Guard (CFG):**
+- NativeAOT fully supports CFG via `<ControlFlowGuard>Guard</ControlFlowGuard>` in `.csproj` [ri:§2.1]
+- The ILCompiler/RyuJIT pipeline accurately enumerates all valid indirect call targets and populates the GFIDS table in the PE load configuration directory — no false-positive terminations [ri:§2.2]
+- CsWin32 P/Invoke boundaries are statically analyzed; `[UnmanagedCallersOnly]` callbacks are automatically registered as valid CFG targets [ri:§2.3]
+- CET Shadow Stack (`CetCompat`) is enabled by default, providing hardware-backed ROP mitigation alongside CFG [ri:§2.1]
+- Performance overhead: <1-2% CPU, imperceptible to end users [ri:§6.2]
 
-### 7.3 Data Storage Hardening
+**Arbitrary Code Guard (ACG):**
+- NativeAOT eliminates the JIT compiler entirely, making ACG (`ProcessDynamicCodePolicy`) safe to enable — GC, exception handling, and interop thunks are all statically compiled [ri:§3.1]
+- `System.Reflection.Emit` and unbounded generics are disabled under NativeAOT; ACG enforcement will not crash the app [ri:§3.1]
+- ACG has **zero execution-time overhead** since NativeAOT never calls `VirtualAlloc` for executable memory [ri:§6.2]
+- **WinUI 3 constraint**: Must use compiled bindings (`{x:Bind}` not `{Binding}`); Windows App SDK 1.6+ supports NativeAOT paths [ri:§3.2]
+- **WebView2**: If used, its JIT runs in an isolated out-of-process sandbox — host process ACG is unaffected [ri:§3.2]
+
+**Code Integrity Guard (CIG):**
+- NativeAOT bundles all managed dependencies into a single native binary — CIG enforcement requires signing only the main `.exe` plus Microsoft-signed WinUI 3 DLLs [ri:§4.1]
+- Blocks all unsigned DLL injection (classic, reflective, `LoadLibrary`-based) at the kernel memory manager level [ri:§4.2]
+- Side effect: GPU overlays (RivaTuner, NVIDIA), AV hooks, and accessibility injectors will silently fail [ri:§4.2]
+- For required unsigned third-party DLLs: use WDAC Supplemental Policies with SHA-256 hash allowlisting — `SetProcessMitigationPolicy` does not support exceptions [ri:§4.3]
+
+**The "Already In-Process" Attack Chain:**
+ObRegisterCallbacks protects against external handle acquisition but provides no defense against an attacker who has already achieved code execution within the process (e.g., via BYOVD or pre-initialization DLL injection). The CFG+ACG+CIG triad creates layered in-process defense: [ri:§5.1]
+1. ACG prevents `VirtualAlloc`/`VirtualProtect` for new executable regions or code modification
+2. Attacker is forced into ROP/JOP using existing gadgets
+3. CFG bitmap validation detects invalid indirect call targets and terminates the process (`STATUS_STACK_BUFFER_OVERRUN`)
+
+### 7.3 Enforcement Timing: IFEO over SetProcessMitigationPolicy
+
+A critical finding: calling `SetProcessMitigationPolicy` in `Main()` leaves a TOCTOU vulnerability window. The OS loader executes `DllMain` for all statically linked dependencies *before* `Main()` runs — any `AppInit_DLLs` or DLL search-order hijacking payload executes unprotected. [ri:§3.3]
+
+| Enforcement Method | Timing | Security Rating | Notes | Source |
+|---|---|---|---|---|
+| `SetProcessMitigationPolicy` (API) | Post-initialization | Low | TOCTOU vulnerable to early injection | [ri:§3.3] |
+| `UpdateProcThreadAttribute` (Launcher) | Process creation | Medium | Requires trusted launcher binary | [ri:§5.2] |
+| PE/Appx Manifest | Pre-initialization | High | No XML schema for ACG/CIG | [ri:§5.2] |
+| **IFEO Registry Keys** | Pre-initialization | **Optimal** | OS loader enforces before first instruction | [ri:§5.2] |
+| **WDAC (App Control)** | OS-Level | **Optimal** | Hypervisor-enforced, survives admin tampering | [ri:§6.3] |
+
+**Recommended approach**: Configure IFEO `MitigationOptions` QWORD at `HKLM\...\Image File Execution Options\ThisIsMyPC.exe` during installation. WDAC policies serve as the ultimate fallback for enterprise/hardened environments — compiled to `.cip` files, loaded into EFI partition, enforced by HVCI. [ri:§5.2, §6.3]
+
+**Bootstrapper timing constraint**: Unpackaged WinUI 3 apps use `Microsoft.WindowsAppRuntime.Bootstrap.dll` to dynamically load Windows App SDK framework DLLs via `LoadLibrary`. CIG must allow these Microsoft-signed DLLs to load before the bootstrapper initializes. IFEO enforcement handles this correctly since Microsoft-signed DLLs pass CIG validation natively. [ri:§3.2]
+
+### 7.4 Data Storage Hardening
 
 - `%APPDATA%\ThisIsMyPC` is user-writable by default — any standard, non-elevated process has full read/write/execute permissions [tm2:120]
 - **Config poisoning**: malware modifies `settings.json` to alter update URLs, inject malicious command-line arguments, or flip boolean flags to silently initiate Owner Mode on next launch [tm2:122]
@@ -207,7 +245,7 @@ The source research covers kernel-side protections extensively (ObRegisterCallba
 - Programmatically set DACL on `%APPDATA%\ThisIsMyPC`: disable inheritance, restrict Write/Modify to Administrators + SYSTEM only
 - Validate config file integrity on load (hash or signature check)
 
-### 7.4 Log Injection Prevention (CWE-117)
+### 7.5 Log Injection Prevention (CWE-117)
 
 - Serilog with unstructured text output is vulnerable to CRLF injection (`\r\n`); attacker injects fake log entries like `\r\n[INFO] User authenticated successfully` to forge audit trails [tm2:138-140]
 - Disk exhaustion DoS: attacker bombards application with massive strings, exploiting the file sink [tm2:142]
@@ -336,7 +374,7 @@ From exhaustive analysis of r/Windows11, r/sysadmin, Microsoft Answers, and spec
 - UI: Mandatory 5-second delay timer + randomized visual CAPTCHA for Owner Mode transition [tm2:201]
 - Builds: Reproducible NativeAOT compilation in containerized CI/CD [tm2:202]
 - Context Menu: Orphan detection + dual-handler (static verb + COM extension) management [cm:256-258]
-- User-mode hardening: Enable CFG, ACG (`ProcessDynamicCodePolicy`), and CIG (`ProcessSignaturePolicy`) on both GUI and service processes [gap — not covered in source research]
+- User-mode hardening: `<ControlFlowGuard>Guard</ControlFlowGuard>` in `.csproj`; IFEO-based ACG (`ProcessDynamicCodePolicy`) + CIG (`ProcessSignaturePolicy`) enforcement on both GUI and service processes; WDAC Supplemental Policy for any unsigned DLL dependencies [ri:§2.1, §5.2, §4.3]
 
 ### Tier 3: Defense-in-Depth [tm2:204-206]
 

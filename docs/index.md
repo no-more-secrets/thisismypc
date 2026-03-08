@@ -24,7 +24,7 @@ Extensive research documents produced via deep-research tools. See [deep-researc
 
 | Document | Purpose |
 |---|---|
-| [deep-research/](deep-research/index.md) | 5 research documents (119 pages total, now in markdown): threat modeling, kernel driver security, context menu architecture, Windows 11 control surface mapping. Original PDFs in `deep-research/pdf-originals/`. |
+| [deep-research/](deep-research/index.md) | 6 research documents (136 pages total, now in markdown): threat modeling, kernel driver security, context menu architecture, Windows 11 control surface mapping, NativeAOT user-mode runtime integrity (CFG/ACG/CIG). Original PDFs in `deep-research/pdf-originals/`. |
 
 ## Architecture
 

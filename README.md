@@ -260,7 +260,7 @@ All 7+ modules functional. The "Armoury Crate replacement" release:
 
 - [x] Domain research — Windows system control ecosystem, competitive landscape, API mechanisms
 - [x] Technical research — registry locations, WMI classes, and API patterns for every planned module
-- [x] Deep research — 119 pages across 5 documents covering threat modeling, kernel driver security, Win11 context menu architecture, and control surface enforcement mapping ([master summary](docs/deep-research/SUMMARY.md) | [full documents](docs/deep-research/index.md))
+- [x] Deep research — 136 pages across 6 documents covering threat modeling, kernel driver security, Win11 context menu architecture, control surface enforcement mapping, and NativeAOT user-mode runtime integrity (CFG/ACG/CIG) ([master summary](docs/deep-research/SUMMARY.md) | [full documents](docs/deep-research/index.md))
 - [x] Product brief
 - [x] PRD — 138 functional requirements across 21 categories, phased across Beta/v1.0/Phase 2+
 - [x] UX design specification

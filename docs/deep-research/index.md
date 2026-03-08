@@ -6,7 +6,7 @@ External research documents produced via deep-research tools (Gemini, etc.) for 
 
 | Document | Lines | Purpose |
 |---|---|---|
-| [SUMMARY.md](./SUMMARY.md) | 311 | Unified synthesis of all 5 research documents (119 pages) into a single reference covering the Windows 11 trust model, enforcement drivers, IPC/kernel attack surfaces, bytecode interpreter security, supply chain threats, context menu architecture, and configuration surface mapping with prioritized user sentiment analysis. |
+| [SUMMARY.md](./SUMMARY.md) | ~400 | Unified synthesis of all 6 research documents (136 pages) into a single reference covering the Windows 11 trust model, enforcement drivers, IPC/kernel attack surfaces, bytecode interpreter security, supply chain threats, context menu architecture, configuration surface mapping, and user-mode runtime integrity (CFG/ACG/CIG). |
 
 ## Security Architecture
 
@@ -15,6 +15,7 @@ External research documents produced via deep-research tools (Gemini, etc.) for 
 | [threat-modeling-research-part1.md](./threat-modeling-research-part1.md) | 21 | Core component threat modeling: VBS/HVCI implications, kernel trust boundaries, attack surface analysis for a system configuration utility operating under modern Windows 11 security constraints. |
 | [threat-modeling-research-part2.md](./threat-modeling-research-part2.md) | 23 | Architectural threat synthesis and external risk analysis: dual-mode trust model (Admin Mode vs Owner Mode), Session 0 service security, PawnIO driver integration threats, supply chain and update integrity. |
 | [windows-kernel-driver-security-research.md](./windows-kernel-driver-security-research.md) | 21 | Windows 11 kernel driver landscape: Ring 0 trust model under VBS/HVCI, driver signing requirements (Attestation vs EV), IPC models, hardware abstraction layers, and implications for PawnIO-based hardware control. |
+| [nativeaot-runtime-integrity-research.md](./nativeaot-runtime-integrity-research.md) | 17 | NativeAOT user-mode runtime integrity: CFG/ACG/CIG compatibility with .NET 10 NativeAOT, CsWin32 interop metadata preservation, enforcement timing (IFEO vs API), WDAC supplemental policies, WinUI 3 dynamic code conflicts, and performance analytics. Closes the user-mode hardening gap identified in prior research. |
 
 ## Windows Platform Research
 
