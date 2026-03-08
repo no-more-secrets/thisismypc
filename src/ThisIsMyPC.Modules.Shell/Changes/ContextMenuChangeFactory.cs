@@ -38,6 +38,7 @@ public static class ContextMenuChangeFactory
                 AfterDisplay = enable ? "Enabled" : "Disabled",
                 ValueType = ChangeValueType.Registry_String,
                 Category = enable ? ChangeCategory.Enable : ChangeCategory.Disable,
+                RestartRequirement = RestartRequirement.ExplorerRestart,
             };
         }).ToList();
     }

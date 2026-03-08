@@ -12,6 +12,7 @@ using ThisIsMyPC.App.Views;
 using ThisIsMyPC.Core.Modules;
 using ThisIsMyPC.Core.Data;
 using ThisIsMyPC.Core.Services;
+using ThisIsMyPC.Interop.Win32;
 using ThisIsMyPC.Interop.Win32.Registry;
 using ThisIsMyPC.Interop.Com.Shell;
 using ThisIsMyPC.Modules.Power;
@@ -59,6 +60,7 @@ public partial class App : Application
         // Interop services
         services.AddSingleton<IRegistryService, RegistryService>();
         services.AddSingleton<IShellExtensionService, ShellExtensionService>();
+        services.AddSingleton<IExplorerRestartService, ExplorerRestartService>();
 
         // Modules (explicit DI registration, NativeAOT-safe)
         services.AddSingleton<IModule, ShellModule>();

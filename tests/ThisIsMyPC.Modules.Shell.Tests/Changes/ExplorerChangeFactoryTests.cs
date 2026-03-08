@@ -39,6 +39,7 @@ public sealed class ExplorerChangeFactoryTests
         Assert.Equal("1", change.AfterValue);
         Assert.Equal(ChangeValueType.Registry_DWord, change.ValueType);
         Assert.Equal(ChangeCategory.Enable, change.Category);
+        Assert.Equal(RestartRequirement.ExplorerRefresh, change.RestartRequirement);
     }
 
     [Fact]

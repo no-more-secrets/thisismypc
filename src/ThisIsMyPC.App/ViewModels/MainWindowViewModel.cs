@@ -29,6 +29,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IPendingChangesService _pendingChangesService;
     private readonly IChangeHistoryService _changeHistoryService;
     private readonly IRegistryService _registryService;
+    private readonly IExplorerRestartService _explorerRestartService;
 
     public ObservableCollection<SidebarGroupViewModel> SidebarGroups { get; } = [];
 
@@ -72,17 +73,28 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isHistoryPanelOpen;
 
+    [ObservableProperty]
+    private bool _isRestartNotificationVisible;
+
+    [ObservableProperty]
+    private string _restartNotificationMessage = string.Empty;
+
+    [ObservableProperty]
+    private bool _isRestartingExplorer;
+
     public MainWindowViewModel(
         NavigationService navigationService,
         IPendingChangesService pendingChangesService,
         IChangeHistoryService changeHistoryService,
         IRegistryService registryService,
+        IExplorerRestartService explorerRestartService,
         ReviewPanelViewModel reviewPanel)
     {
         _navigationService = navigationService;
         _pendingChangesService = pendingChangesService;
         _changeHistoryService = changeHistoryService;
         _registryService = registryService;
+        _explorerRestartService = explorerRestartService;
         ReviewPanel = reviewPanel;
         ChangeHistory = new ChangeHistoryViewModel(
             changeHistoryService,
@@ -257,6 +269,41 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private async Task RestartExplorerAsync()
+    {
+        if (IsRestartingExplorer)
+            return;
+
+        IsRestartingExplorer = true;
+        SetStatus("Restarting Explorer...", StatusSeverity.Warning);
+
+        try
+        {
+            var result = await _explorerRestartService.RestartExplorerAsync().ConfigureAwait(true);
+
+            if (result.IsSuccess)
+            {
+                IsRestartNotificationVisible = false;
+                SetStatus("Explorer restarted successfully", StatusSeverity.Success);
+            }
+            else
+            {
+                SetStatus($"Failed to restart Explorer: {result.ErrorMessage}", StatusSeverity.Error);
+            }
+        }
+        finally
+        {
+            IsRestartingExplorer = false;
+        }
+    }
+
+    [RelayCommand]
+    private void DismissRestartNotification()
+    {
+        IsRestartNotificationVisible = false;
+    }
+
+    [RelayCommand]
     private void DiscardAll()
     {
         _pendingChangesService.DiscardAll();
@@ -310,7 +357,17 @@ public partial class MainWindowViewModel : ViewModelBase
             {
                 await _changeHistoryService.RecordChangesAsync(result).ConfigureAwait(true);
                 IsReviewPanelOpen = false;
-                SetStatus("Changes applied successfully", StatusSeverity.Success);
+
+                if (result.RequiredRestarts.Contains(RestartRequirement.ExplorerRestart))
+                {
+                    RestartNotificationMessage = "Explorer restart required for changes to take effect. Open file explorer windows may close.";
+                    IsRestartNotificationVisible = true;
+                    SetStatus("Changes applied — Explorer restart needed", StatusSeverity.Warning);
+                }
+                else
+                {
+                    SetStatus("Changes applied successfully", StatusSeverity.Success);
+                }
             }
             else
             {

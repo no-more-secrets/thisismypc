@@ -10,4 +10,5 @@ public record MutationResult
     public required IReadOnlyList<ChangeDescriptor> RolledBack { get; init; }
     public string? ErrorMessage { get; init; }
     public ErrorCategory? ErrorCategory { get; init; }
+    public IReadOnlyList<RestartRequirement> RequiredRestarts { get; init; } = [];
 }

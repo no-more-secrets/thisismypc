@@ -12,4 +12,5 @@ public record ChangeDescriptor
     public required string? AfterDisplay { get; init; }
     public required ChangeValueType ValueType { get; init; }
     public ChangeCategory Category { get; init; }
+    public RestartRequirement RestartRequirement { get; init; }
 }

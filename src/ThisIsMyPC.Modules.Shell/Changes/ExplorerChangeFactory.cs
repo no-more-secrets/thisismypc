@@ -21,6 +21,7 @@ public static class ExplorerChangeFactory
             AfterDisplay = enable ? "Enabled" : "Disabled",
             ValueType = pref.ValueType,
             Category = enable ? ChangeCategory.Enable : ChangeCategory.Disable,
+            RestartRequirement = pref.RestartRequirement,
         };
     }
 }

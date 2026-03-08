@@ -23,6 +23,7 @@ public sealed class TaskbarChangeFactoryTests
         Assert.Equal("Center", change.AfterDisplay);
         Assert.Equal(ChangeValueType.Registry_DWord, change.ValueType);
         Assert.Equal(ChangeCategory.Modify, change.Category);
+        Assert.Equal(RestartRequirement.None, change.RestartRequirement);
     }
 
     [Fact]
@@ -66,6 +67,7 @@ public sealed class TaskbarChangeFactoryTests
         Assert.Equal("Hidden", change.BeforeDisplay);
         Assert.Equal("Shown", change.AfterDisplay);
         Assert.Equal(ChangeCategory.Enable, change.Category);
+        Assert.Equal(RestartRequirement.None, change.RestartRequirement);
     }
 
     [Fact]
@@ -91,6 +93,7 @@ public sealed class TaskbarChangeFactoryTests
         Assert.Equal("Disabled", change.BeforeDisplay);
         Assert.Equal("Enabled", change.AfterDisplay);
         Assert.Equal(ChangeCategory.Enable, change.Category);
+        Assert.Equal(RestartRequirement.ExplorerRestart, change.RestartRequirement);
     }
 
     [Fact]
@@ -104,6 +107,7 @@ public sealed class TaskbarChangeFactoryTests
         Assert.Equal("Enabled", change.BeforeDisplay);
         Assert.Equal("Disabled", change.AfterDisplay);
         Assert.Equal(ChangeCategory.Disable, change.Category);
+        Assert.Equal(RestartRequirement.ExplorerRestart, change.RestartRequirement);
     }
 
     [Fact]

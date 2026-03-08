@@ -43,6 +43,7 @@ public sealed class ContextMenuChangeFactoryTests
         Assert.Equal("{12345678-1234-1234-1234-123456789ABC}", changes[0].AfterValue);
         Assert.Equal("-{12345678-1234-1234-1234-123456789ABC}", changes[0].BeforeValue);
         Assert.Equal(ChangeCategory.Enable, changes[0].Category);
+        Assert.Equal(RestartRequirement.ExplorerRestart, changes[0].RestartRequirement);
     }
 
     [Fact]
@@ -55,6 +56,7 @@ public sealed class ContextMenuChangeFactoryTests
         Assert.Equal("-{12345678-1234-1234-1234-123456789ABC}", changes[0].AfterValue);
         Assert.Equal("{12345678-1234-1234-1234-123456789ABC}", changes[0].BeforeValue);
         Assert.Equal(ChangeCategory.Disable, changes[0].Category);
+        Assert.Equal(RestartRequirement.ExplorerRestart, changes[0].RestartRequirement);
     }
 
     [Fact]

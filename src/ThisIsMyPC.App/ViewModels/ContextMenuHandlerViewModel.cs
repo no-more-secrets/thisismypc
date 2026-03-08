@@ -114,9 +114,9 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
     private static string BuildWarningText(ContextMenuHandler handler) => handler.Classification switch
     {
         HandlerClassification.Critical =>
-            $"Disabling removes {handler.Name} from all right-click menus. Explorer restart required.",
+            $"Disabling removes {handler.Name} from all right-click menus.",
         HandlerClassification.System =>
-            "This is a Windows feature. Explorer restart required.",
+            "This is a Windows feature.",
         _ => string.Empty,
     };
 

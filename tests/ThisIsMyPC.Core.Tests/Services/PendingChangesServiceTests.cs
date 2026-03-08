@@ -254,4 +254,80 @@ public class PendingChangesServiceTests
         Assert.Equal(1, service.PendingCount);
         Assert.Equal("g2", service.PendingGroups[0].GroupId);
     }
+
+    [Fact]
+    public async Task ApplyAll_AggregatesRequiredRestarts_FromAppliedChanges()
+    {
+        var service = new PendingChangesService();
+        var explorerRestartChange = new ChangeDescriptor
+        {
+            ModuleId = "Explorer",
+            SettingId = "classic-menu",
+            DisplayName = "Classic menu",
+            SystemLocation = @"HKCU\Test",
+            BeforeValue = "0",
+            AfterValue = "1",
+            BeforeDisplay = "Off",
+            AfterDisplay = "On",
+            ValueType = ChangeValueType.Registry_String,
+            Category = ChangeCategory.Enable,
+            RestartRequirement = RestartRequirement.ExplorerRestart,
+        };
+
+        service.Stage(CreateTestChange("no-restart")); // RestartRequirement.None (default)
+        service.Stage(explorerRestartChange);
+
+        var result = await service.ApplyAllAsync(
+            applyFunc: _ => Task.FromResult(OperationResult<bool>.Success(true)),
+            revertFunc: _ => Task.FromResult(OperationResult<bool>.Success(true)));
+
+        Assert.True(result.IsSuccess);
+        Assert.Single(result.RequiredRestarts);
+        Assert.Contains(RestartRequirement.ExplorerRestart, result.RequiredRestarts);
+    }
+
+    [Fact]
+    public async Task ApplyAll_RequiredRestarts_Empty_WhenNoRestartRequired()
+    {
+        var service = new PendingChangesService();
+        service.Stage(CreateTestChange("s1"));
+        service.Stage(CreateTestChange("s2"));
+
+        var result = await service.ApplyAllAsync(
+            applyFunc: _ => Task.FromResult(OperationResult<bool>.Success(true)),
+            revertFunc: _ => Task.FromResult(OperationResult<bool>.Success(true)));
+
+        Assert.True(result.IsSuccess);
+        Assert.Empty(result.RequiredRestarts);
+    }
+
+    [Fact]
+    public async Task ApplyAll_RequiredRestarts_Deduplicates()
+    {
+        var service = new PendingChangesService();
+
+        for (var i = 0; i < 3; i++)
+        {
+            service.Stage(new ChangeDescriptor
+            {
+                ModuleId = "Explorer",
+                SettingId = $"ctx-handler-{i}",
+                DisplayName = $"Handler {i}",
+                SystemLocation = @"HKCU\Test",
+                BeforeValue = "0",
+                AfterValue = "1",
+                BeforeDisplay = "Off",
+                AfterDisplay = "On",
+                ValueType = ChangeValueType.Registry_String,
+                Category = ChangeCategory.Enable,
+                RestartRequirement = RestartRequirement.ExplorerRestart,
+            });
+        }
+
+        var result = await service.ApplyAllAsync(
+            applyFunc: _ => Task.FromResult(OperationResult<bool>.Success(true)),
+            revertFunc: _ => Task.FromResult(OperationResult<bool>.Success(true)));
+
+        Assert.Single(result.RequiredRestarts);
+    }
 }

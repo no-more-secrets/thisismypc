@@ -141,11 +141,18 @@ public sealed class PendingChangesService : IPendingChangesService
         OnPropertyChanged(nameof(PendingCount));
         OnPropertyChanged(nameof(PendingGroups));
 
+        var requiredRestarts = allApplied
+            .Select(c => c.RestartRequirement)
+            .Where(r => r != Changes.RestartRequirement.None)
+            .Distinct()
+            .ToList();
+
         return new MutationResult
         {
             IsSuccess = true,
             Applied = allApplied.AsReadOnly(),
-            RolledBack = []
+            RolledBack = [],
+            RequiredRestarts = requiredRestarts,
         };
     }
 

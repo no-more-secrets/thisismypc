@@ -100,7 +100,7 @@ public sealed class ContextMenuHandlerViewModelTests : IDisposable
     {
         var vm = CreateVm(classification: HandlerClassification.Critical, name: "Open With");
         Assert.Contains("Disabling removes", vm.WarningText);
-        Assert.Contains("Explorer restart required", vm.WarningText);
+        Assert.Contains("Open With", vm.WarningText);
     }
 
     [Fact]

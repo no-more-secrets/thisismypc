@@ -16,7 +16,8 @@ public class MainWindowViewModelTests
         var historyService = new Fakes.FakeChangeHistoryService();
         var reviewPanel = new ReviewPanelViewModel(pendingChangesService);
         var registryService = new Fakes.FakeRegistryService();
-        return new MainWindowViewModel(navigationService, pendingChangesService, historyService, registryService, reviewPanel);
+        var explorerRestartService = new Fakes.FakeExplorerRestartService();
+        return new MainWindowViewModel(navigationService, pendingChangesService, historyService, registryService, explorerRestartService, reviewPanel);
     }
 
     private static ChangeDescriptor CreateTestChange(string moduleId = "test", string settingId = "setting1") => new()
@@ -170,5 +171,63 @@ public class MainWindowViewModelTests
         await vm.ApplyAllCommand.ExecuteAsync(null);
 
         Assert.Equal(string.Empty, vm.StatusMessage);
+    }
+
+    [Fact]
+    public async Task ApplyAllCommand_ShowsRestartNotification_WhenExplorerRestartRequired()
+    {
+        var fakeModule = new Fakes.FakeModule("Explorer", _ =>
+            Task.FromResult(OperationResult<bool>.Success(true)));
+
+        var vm = CreateViewModel(out var service, fakeModule);
+        await vm.InitializeAsync();
+
+        service.Stage(new ChangeDescriptor
+        {
+            ModuleId = "Explorer",
+            SettingId = "classic-menu",
+            DisplayName = "Classic context menu",
+            SystemLocation = @"HKCU\Test",
+            BeforeValue = "0",
+            AfterValue = "1",
+            BeforeDisplay = "Disabled",
+            AfterDisplay = "Enabled",
+            ValueType = ChangeValueType.Registry_String,
+            Category = ChangeCategory.Enable,
+            RestartRequirement = RestartRequirement.ExplorerRestart,
+        });
+
+        await vm.ApplyAllCommand.ExecuteAsync(null);
+
+        Assert.True(vm.IsRestartNotificationVisible);
+        Assert.Contains("Explorer restart required", vm.RestartNotificationMessage);
+    }
+
+    [Fact]
+    public async Task ApplyAllCommand_NoRestartNotification_WhenNoRestartRequired()
+    {
+        var fakeModule = new Fakes.FakeModule("TestModule", _ =>
+            Task.FromResult(OperationResult<bool>.Success(true)));
+
+        var vm = CreateViewModel(out var service, fakeModule);
+        await vm.InitializeAsync();
+
+        service.Stage(CreateTestChange("TestModule", "s1"));
+
+        await vm.ApplyAllCommand.ExecuteAsync(null);
+
+        Assert.False(vm.IsRestartNotificationVisible);
+        Assert.Equal("Changes applied successfully", vm.StatusMessage);
+    }
+
+    [Fact]
+    public void DismissRestartNotificationCommand_HidesNotification()
+    {
+        var vm = CreateViewModel(out _);
+        vm.IsRestartNotificationVisible = true;
+
+        vm.DismissRestartNotificationCommand.Execute(null);
+
+        Assert.False(vm.IsRestartNotificationVisible);
     }
 }
