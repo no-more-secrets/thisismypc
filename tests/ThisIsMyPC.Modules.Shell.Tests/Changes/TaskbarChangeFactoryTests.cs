@@ -93,7 +93,7 @@ public sealed class TaskbarChangeFactoryTests
         Assert.Equal("Disabled", change.BeforeDisplay);
         Assert.Equal("Enabled", change.AfterDisplay);
         Assert.Equal(ChangeCategory.Enable, change.Category);
-        Assert.Equal(RestartRequirement.ExplorerRestart, change.RestartRequirement);
+        Assert.Equal(RestartRequirement.None, change.RestartRequirement);
     }
 
     [Fact]
@@ -107,7 +107,7 @@ public sealed class TaskbarChangeFactoryTests
         Assert.Equal("Enabled", change.BeforeDisplay);
         Assert.Equal("Disabled", change.AfterDisplay);
         Assert.Equal(ChangeCategory.Disable, change.Category);
-        Assert.Equal(RestartRequirement.ExplorerRestart, change.RestartRequirement);
+        Assert.Equal(RestartRequirement.None, change.RestartRequirement);
     }
 
     [Fact]

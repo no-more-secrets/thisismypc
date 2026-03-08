@@ -78,7 +78,7 @@ public sealed class ShellModuleApplyTests
             AfterDisplay = "Enabled",
             ValueType = ChangeValueType.Registry_String,
             Category = ChangeCategory.Enable,
-            RestartRequirement = RestartRequirement.ExplorerRestart,
+            RestartRequirement = RestartRequirement.None,
         };
 
         var result = await _module.ApplyChangeAsync(change);
@@ -107,7 +107,7 @@ public sealed class ShellModuleApplyTests
             AfterDisplay = "Disabled",
             ValueType = ChangeValueType.Registry_String,
             Category = ChangeCategory.Disable,
-            RestartRequirement = RestartRequirement.ExplorerRestart,
+            RestartRequirement = RestartRequirement.None,
         };
 
         var result = await _module.ApplyChangeAsync(change);
