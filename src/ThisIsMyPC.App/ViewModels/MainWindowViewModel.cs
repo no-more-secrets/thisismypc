@@ -17,6 +17,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly NavigationService _navigationService;
     private readonly IPendingChangesService _pendingChangesService;
     private readonly IChangeHistoryService _changeHistoryService;
+    private readonly IRegistryService _registryService;
 
     public ObservableCollection<SidebarGroupViewModel> SidebarGroups { get; } = [];
 
@@ -64,11 +65,13 @@ public partial class MainWindowViewModel : ViewModelBase
         NavigationService navigationService,
         IPendingChangesService pendingChangesService,
         IChangeHistoryService changeHistoryService,
+        IRegistryService registryService,
         ReviewPanelViewModel reviewPanel)
     {
         _navigationService = navigationService;
         _pendingChangesService = pendingChangesService;
         _changeHistoryService = changeHistoryService;
+        _registryService = registryService;
         ReviewPanel = reviewPanel;
         ChangeHistory = new ChangeHistoryViewModel(
             changeHistoryService,
@@ -106,7 +109,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 {
                     if (scanResult.IsSuccess && scanResult.Value is ShellScanData scanData)
                     {
-                        CurrentContent = new ShellViewModel(scanData, _pendingChangesService);
+                        CurrentContent = new ShellViewModel(scanData, _pendingChangesService, _registryService);
                     }
                     else
                     {

@@ -11,8 +11,10 @@ public partial class ShellSettingViewModel : ViewModelBase
     private readonly IPendingChangesService _pendingChangesService;
     private readonly ExplorerPreference? _preference;
     private readonly Func<bool, ChangeDescriptor>? _changeFactory;
-    private readonly bool _originalIsEnabled;
+    private readonly Func<bool>? _readRegistryState;
+    private bool _registryIsEnabled;
     private bool _suppressStaging;
+    private CancellationTokenSource? _debounceCts;
 
     [ObservableProperty]
     private string _label = string.Empty;
@@ -24,22 +26,26 @@ public partial class ShellSettingViewModel : ViewModelBase
     private string _systemPath = string.Empty;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasPendingChange))]
-    [NotifyPropertyChangedFor(nameof(IsPendingEnable))]
-    [NotifyPropertyChangedFor(nameof(IsPendingDisable))]
     private bool _isEnabled;
 
-    public bool HasPendingChange => IsEnabled != _originalIsEnabled;
-    public bool IsPendingEnable => HasPendingChange && IsEnabled;
-    public bool IsPendingDisable => HasPendingChange && !IsEnabled;
+    [ObservableProperty]
+    private bool _hasPendingChange;
+
+    [ObservableProperty]
+    private bool _isPendingEnable;
+
+    [ObservableProperty]
+    private bool _isPendingDisable;
 
     public ShellSettingViewModel(
         ExplorerPreference preference,
-        IPendingChangesService pendingChangesService)
+        IPendingChangesService pendingChangesService,
+        Func<bool> readRegistryState)
     {
         _pendingChangesService = pendingChangesService;
         _preference = preference;
-        _originalIsEnabled = preference.IsEnabled;
+        _readRegistryState = readRegistryState;
+        _registryIsEnabled = preference.IsEnabled;
 
         Label = preference.DisplayName;
         Description = preference.Description;
@@ -57,12 +63,14 @@ public partial class ShellSettingViewModel : ViewModelBase
         string systemPath,
         bool isEnabled,
         IPendingChangesService pendingChangesService,
-        Func<bool, ChangeDescriptor> changeFactory)
+        Func<bool, ChangeDescriptor> changeFactory,
+        Func<bool> readRegistryState)
     {
         _pendingChangesService = pendingChangesService;
         _preference = null;
         _changeFactory = changeFactory;
-        _originalIsEnabled = isEnabled;
+        _readRegistryState = readRegistryState;
+        _registryIsEnabled = isEnabled;
 
         Label = label;
         Description = description;
@@ -78,28 +86,55 @@ public partial class ShellSettingViewModel : ViewModelBase
         if (_suppressStaging)
             return;
 
-        ChangeDescriptor change;
-        if (_preference is not null)
+        // Cancel any in-flight debounce so only the final toggle state is processed
+        _debounceCts?.Cancel();
+        _debounceCts = new CancellationTokenSource();
+        _ = DebounceToggleAsync(value, _debounceCts.Token);
+    }
+
+    private async Task DebounceToggleAsync(bool desiredState, CancellationToken token)
+    {
+        try
         {
-            change = ExplorerChangeFactory.CreateToggle(_preference, value);
+            await Task.Delay(250, token).ConfigureAwait(true);
         }
-        else if (_changeFactory is not null)
-        {
-            change = _changeFactory(value);
-        }
-        else
+        catch (TaskCanceledException)
         {
             return;
         }
 
-        // Remove any existing pending change for the same setting before staging
+        // Refresh baseline from registry (source of truth)
+        if (_readRegistryState is not null)
+            _registryIsEnabled = _readRegistryState();
+
+        // Build the change descriptor
+        ChangeDescriptor? change = null;
+        if (_preference is not null)
+            change = ExplorerChangeFactory.CreateToggle(_preference, desiredState);
+        else if (_changeFactory is not null)
+            change = _changeFactory(desiredState);
+
+        if (change is null)
+            return;
+
+        // Unstage any existing pending change for the same setting
         var existing = _pendingChangesService.PendingGroups
             .FirstOrDefault(g => g.Changes.Any(c => c.SettingId == change.SettingId));
         if (existing is not null)
             _pendingChangesService.Unstage(existing.GroupId);
 
-        // Only stage if the value differs from the original
-        if (HasPendingChange)
+        // Only stage if the desired state differs from the real registry value
+        if (desiredState != _registryIsEnabled)
             _pendingChangesService.Stage(change);
+
+        // Update pending state properties for UI binding
+        UpdatePendingState();
+    }
+
+    private void UpdatePendingState()
+    {
+        HasPendingChange = IsEnabled != _registryIsEnabled;
+        IsPendingEnable = HasPendingChange && IsEnabled;
+        IsPendingDisable = HasPendingChange && !IsEnabled;
     }
 }
