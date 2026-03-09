@@ -1,6 +1,6 @@
 ---
-author: Claude Opus 4.6 (synthesis of 8 Gemini 3.1 Pro Deep Research documents)
-date: 2026-03-08
+author: Claude Opus 4.6 (synthesis of 9 Gemini 3.1 Pro Deep Research documents)
+date: 2026-03-09
 source_documents:
   - threat-modeling-research-part1.md (tm1) — 21 pages
   - threat-modeling-research-part2.md (tm2) — 23 pages
@@ -8,14 +8,15 @@ source_documents:
   - windows11-context-menu-research-part1.md (cm) — 20 pages
   - windows11-context-menu-research-part2.md (cm2) — 16 pages
   - windows11-context-menu-research-part3.md (cm3) — 17 pages
+  - windows11-context-menu-research-part4.md (cm4) — 21 pages
   - windows11-control-surface-research.md (cs) — 34 pages
   - nativeaot-runtime-integrity-research.md (ri) — 17 pages
-citation_format: "[abbreviation:line(s)]"
+citation_format: "[abbreviation:line(s) or §section]"
 ---
 
 # Deep Research Synthesis: Windows 11 Architecture and ThisIsMyPC Security Posture
 
-This document synthesizes 169 pages of deep research into a unified reference for the ThisIsMyPC project. It covers the Windows 11 platform constraints, security architecture, and implementation implications across five domains: kernel security, IPC hardening, shell integration, configuration surface management, and user-mode runtime integrity.
+This document synthesizes 190 pages of deep research into a unified reference for the ThisIsMyPC project. It covers the Windows 11 platform constraints, security architecture, and implementation implications across five domains: kernel security, IPC hardening, shell integration, configuration surface management, and user-mode runtime integrity.
 
 ## 1. The Windows 11 Trust Model
 
@@ -412,6 +413,87 @@ Concrete registry paths and architecture types for background-surface handlers �
 - **MS Copilot**: "Ask Copilot" forcibly injected via system-level extension; removal requires adding `{CB3B0003-8088-4EDE-8769-8B354AB2FF8C}` to Blocked list [cm:217]
 - **OneDrive FileSyncEx**: Orphaned `{CB3D0F55-BC2C-4C1A-85ED-23ED75B5106B}` keys cause slow right-click when DLL is missing or AppLocker-blocked [cm2:§3.2]
 - **NVIDIA NvCplDesktopContext**: Registered at `Directory\Background\shellex` but only shows on desktop — uses `IObjectWithSite` PIDL chain to suppress on folder backgrounds; fail-open when site chain absent [cm3:§2]
+- **NVIDIA dual-registration**: Installing NVIDIA App over existing drivers leaves legacy `NvCplDesktopContext` keys intact; OS renders both "NVIDIA Control Panel" and "NVIDIA App" simultaneously; legacy handler inherits UAC state from `explorer.exe` causing crashes under WinXP Compat Mode, while Packaged COM handler declares its own elevation requirements [cm4:§5.3]
+
+### 8.13 DragDropHandlers: The Right-Drag Invocation Path
+
+Right-click drag-and-drop constitutes an entirely separate context menu pipeline from standard right-click, governed by `DragDropHandlers` (not `ContextMenuHandlers`): [cm4:§1]
+
+- **Registry locations**: `HKCR\*\shellex\DragDropHandlers` (files), `HKCR\Directory\shellex\DragDropHandlers` (folders), `HKCR\Folder\ShellEx\DragDropHandlers` [cm4:§1.2]
+- **OS baseline verbs**: "Copy here", "Move here", "Create shortcut here", "Cancel" — "Move here" conditionally omitted when dragging within the same folder [cm4:§1.1]
+- **COM pipeline**: `IQueryAssociations` → `IDropTarget` → `IDataObject` → `IShellExtInit::Initialize` (receives both source PIDL and target `IDataObject`) → `IContextMenu::QueryContextMenu` [cm4:§1.2]
+- **Left-drag defaults**: Same volume = Move; cross-volume = Copy; `Shift+Drag` = forced Move; `Ctrl+Drag` = forced Copy [cm4:§1.1]
+- **Pixel threshold**: Right-drag recognized only after cursor moves past `DragHeight`/`DragWidth` registry values (default 4px) [cm4:§1.1]
+- **Interception difficulty**: Menu is constructed in-memory at the microsecond of drop event; external interception requires `SetWindowsHookEx` on `WM_RBUTTONUP` or custom DragDropHandlers that capture `QueryContextMenu` state [cm4:§1.3]
+- **Implication for ThisIsMyPC**: DragDropHandlers are a separate scan target from ContextMenuHandlers — the context menu module must enumerate `shellex\DragDropHandlers` keys independently
+
+### 8.14 Cloud Provider Injection: OneDrive FileSyncEx Deep Architecture
+
+OneDrive's context menu integration operates via the Cloud Files API (`cfapi.dll`) rather than simple static registry verbs, enabling real-time context-aware menu population: [cm4:§2]
+
+- **Handler CLSIDs**: `{CB3D0F55-BC2C-4C1A-85ED-23ED75B5106B}` or `{A3B3D3B0-1B3C-4B3D-8B3C-3B3D3B3D3B3D}` registered at `HKCR\*\shellex\ContextMenuHandlers\FileSyncEx` [cm4:§2.1]
+- **Servicing DLL**: `FileSyncShell64.dll` or `cfapi.dll` framework [cm4:§2.1]
+- **State-aware verb switching**: FileSyncEx evaluates `SyncRootManager` sync state at invocation time [cm4:§2.1]:
+  - File inside sync root, local → "Free up space"
+  - File inside sync root, cloud-only placeholder (reparse point) → "Always keep on this device"
+  - File outside sync root → "Move to OneDrive"
+  - Folder inside sync root → "Share", "Copy Link", "Manage access", "View online", "Folder color"
+  - File inside sync root → "Share", "Copy Link", "Manage access", "View online", "Version history"
+- **Hardcoded mnemonics**: Menu text strings are compiled into `FileSyncShell64.dll` — cannot be modified via `MUIVerb` registry values; 'M' in "Move to OneDrive" collides with 'R' in "Rename" causing keyboard navigation conflicts [cm4:§2.2]
+- **Self-healing**: Deleting the FileSyncEx registry key is futile — `onedrive.exe` monitors its own shell integrations and rewrites missing keys on next update/init cycle [cm4:§2.2]
+- **Permanent suppression**: Must add CLSID to `HKLM\...\Shell Extensions\Blocked` (same mechanism as other shell extensions) [cm4:§2.2]
+- **Folder color mechanism**: Abandons legacy `IconOverlayHandlers` entirely; uses Shell Property (PKEY) metadata via Cloud Files API → XAML/WinUI 3 rendering engine dynamically tints vector folder icon at zero latency cost; avoids the hard limit of 15 overlays and the 12-19% Explorer crash rate increase from legacy overlay DLL injection [cm4:§2.3]
+- **Implication for ThisIsMyPC**: OneDrive entries cannot be predicted from static registry alone — the context menu module needs OneDrive sync root detection to accurately catalog entries; suppression strategy must use Shell Extension Blocklist, not key deletion
+
+### 8.15 Content-Aware Handlers: WMP Legacy and Synchronous I/O
+
+Windows Media Player Legacy represents a distinct handler subtype that performs synchronous file-system content inspection during context menu rendering: [cm4:§3]
+
+- **Registration**: `HKCR\SystemFileAssociations\Directory.Audio\shellex\ContextMenuHandlers` and `Directory.Video` — not standard folder keys [cm4:§3.1]
+- **Inspection logic**: First reads `desktop.ini` for `DirectoryClass` strings; if absent, performs heuristic scan of file allocation table for media extensions (MP3, MP4, WAV, FLAC) [cm4:§3.1]
+- **Performance impact**: Synchronous I/O on `explorer.exe` UI thread blocks entire context menu rendering pipeline; produces multi-second hangs on HDDs, NAS, and deeply nested directories [cm4:§3.2]
+- **Mitigation**: `ProgrammaticAccessOnly` empty string value at `HKCR\SystemFileAssociations\audio\shell\Play` — hides verb from GUI but preserves programmatic API availability [cm4:§3.2]
+- **Implication for ThisIsMyPC**: Content-inspecting handlers are a separate diagnostic category; the context menu module should flag `SystemFileAssociations\Directory.*` registrations as potential performance hazards and offer the `ProgrammaticAccessOnly` mitigation
+
+### 8.16 Tier 1 Promotion Hack: ContextMenuIExplorerCommandShim
+
+The modern Win11 compact context menu is instantiated via a specific COM shim that can be deliberately broken to restore the full legacy menu: [cm4:§4]
+
+- **Shim CLSID**: `{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}` (`ContextMenuIExplorerCommandShim`) — loaded by `ExplorerFrame.dll` and `shell32.dll` [cm4:§4.1]
+- **Hack mechanism**: `reg.exe add "HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32" /f /ve` — creates blank `(Default)` value in HKCU, exploiting registry hive precedence (HKCU read before HKLM); COM fails to instantiate → Shell gracefully degrades to legacy GDI-based `IContextMenu` pipeline [cm4:§4.2]
+- **No admin required**: Operates entirely in HKCU user profile [cm4:§4.2]
+- **Revert**: Delete the overriding key to restore modern menu [cm4:§4.2]
+- **Related hack**: CLSID `{d93ed569-3b3e-4bff-8355-3c44f6a52bb5}` restores legacy Windows 10 ribbon command bar [cm4:§4.2]
+- **Implication for ThisIsMyPC**: Detection of this hack is essential for the context menu module — if the shim is nullified, the Tier 1/Tier 2 menu distinction collapses and all legacy handlers become visible by default; must check for HKCU CLSID override presence
+
+### 8.17 Unified Eight-Tier Handler Classification Taxonomy
+
+Synthesizing all four context menu research documents, the complete taxonomy of context menu handler types in Windows 11 is: [cm4:§6]
+
+| Tier | Category | Mechanism | Performance | Disable Strategy |
+|---|---|---|---|---|
+| 1 | **Hardcoded Native** | Compiled into `shell32.dll`/`ExplorerFrame.dll` | Highest (in-memory) | Cannot be disabled by end-users |
+| 2 | **Static Registry** | `HKCR\ProgID\shell\<verb>\command` strings | High (no DLL load) | Delete key or `ProgrammaticAccessOnly` |
+| 3 | **Dynamic Legacy COM** | `IContextMenu` + `IShellExtInit` via `ContextMenuHandlers` | Low (in-process, UI thread) | Shell Extension Blocklist or dash-prefix CLSID |
+| 4 | **Content-Inspecting** | `SystemFileAssociations` with synchronous I/O scan | Severe (blocks rendering) | `ProgrammaticAccessOnly` string value |
+| 5 | **Drag-and-Drop** | `DragDropHandlers` via `IDropTarget`/`IDataObject` OLE | Moderate (source/target negotiation) | Remove from `shellex\DragDropHandlers` key |
+| 6 | **Cloud / Virtualized** | `FileSyncEx` + `SyncRootManager` + `cfapi.dll` PKEYs | High (kernel cloud filter) | Shell Extension Blocklist on FileSyncEx CLSID |
+| 7 | **Modern UWP / Win32** | `IExplorerCommand` out-of-process with app identity | High (decoupled from shell) | Uninstall package or disable via app settings |
+| 8 | **Packaged Manifest** | `desktop5:ItemType` + `desktop5:Verb` in `AppxManifest.xml` | High (XML-only until invoked) | Uninstall package or registry CLSID override |
+
+### 8.18 Gap Closure: Deductive Findings
+
+Five open questions resolved through deductive analysis of the full research corpus (see [context-menu-gap-closure.md](./context-menu-gap-closure.md) for full reasoning chains):
+
+1. **Per-handler Tier 1 promotion does not exist** [CONFIRMED]. No OS-provided mechanism to promote a single legacy `IContextMenu` handler into the modern Tier 1 menu. Each vendor must adopt PackagedCom/Sparse Manifest or build a proprietary bridge DLL (as Adobe did with `ContextMenuShim64.dll`). The `{86ca1aa0}` hack is all-or-nothing. [cm:199] [cm2:52-63] [cm3:111-114] [cm4:§4]
+
+2. **OneDrive uses a single handler** [INFERRED — HIGH]. All entries (Share, Copy Link, Manage access, View online, Version history, Folder color, Free up space, Move to OneDrive) are injected by the single `FileSyncEx` CLSID `{CB3D0F55-BC2C-4C1A-85ED-23ED75B5106B}` during one `QueryContextMenu` pass. Verb set determined by sync state evaluation at `IShellExtInit::Initialize` time. The "Folder color" PKEY write happens at `InvokeCommand`, not during menu construction. [cm3:117-135] [cm4:§2.1-2.3]
+
+3. **Content-inspecting scan is top-level only, no timeout** [INFERRED — HIGH/MODERATE]. WMP Legacy's `desktop.ini` → heuristic scan operates on the immediate directory only — synchronous UI-thread execution makes recursion infeasible. No framework-enforced timeout exists; latency bounded only by I/O throughput. `SystemFileAssociations\Directory.Image` and `Directory.Document` also exist but are unlikely to carry aggressive handlers on stock Windows 11. [cm4:§3]
+
+4. **NVIDIA App CLSID `{F2E8B4A1...}` is likely hallucinated** [REQUIRES VERIFICATION]. Suspiciously clean hex pattern. Verification PowerShell commands provided in gap closure doc. The primary OneDrive CLSID `{CB3D0F55...}` is confirmed authentic across multiple independent sources. [cm4:§5.2]
+
+5. **Drag-drop menu is permanently legacy-only** [INFERRED — HIGH]. `DragDropHandlers` require `IShellExtInit` + `IContextMenu` (legacy interfaces). `IExplorerCommand` handlers don't implement these. The `ContextMenuIExplorerCommandShim` intercepts static right-click only, not drag-drop. No `desktop5:ItemType` schema exists for drag-drop surfaces. No modern handler has ever been observed in the drag-drop menu. [cm4:§1, §4.1]
 
 ## 9. Configuration Surface: Enforcement Mechanisms
 
@@ -479,7 +561,7 @@ From exhaustive analysis of r/Windows11, r/sysadmin, Microsoft Answers, and spec
 - Bytecode: Cryptographic signing + in-kernel static verifier + `__try`/`__except` [tm2:200]
 - UI: Mandatory 5-second delay timer + randomized visual CAPTCHA for Owner Mode transition [tm2:201]
 - Builds: Reproducible NativeAOT compilation in containerized CI/CD [tm2:202]
-- Context Menu: Orphan detection (4 ghost handler types incl. `MFS_HIDDEN` state evaluation) + dual-handler management + "New" submenu validation + PackagedCom enumeration via `AppExtensionCatalog` API + mock `IShellBrowser` site chain for legacy surface-aware probe accuracy [cm:256-258] [cm2:§3, §5] [cm3:§2-4, §6]
+- Context Menu: Orphan detection (4 ghost handler types incl. `MFS_HIDDEN` state evaluation) + dual-handler management + "New" submenu validation + PackagedCom enumeration via `AppExtensionCatalog` API + mock `IShellBrowser` site chain for legacy surface-aware probe accuracy + DragDropHandler enumeration + OneDrive sync root detection for FileSyncEx state-aware verbs + content-inspecting handler flagging (`SystemFileAssociations\Directory.*`) + Tier 1 shim nullification detection (`{86ca1aa0...}` HKCU override check) + eight-tier handler taxonomy for classification [cm:256-258] [cm2:§3, §5] [cm3:§2-4, §6] [cm4:§1-6]
 - User-mode hardening: `<ControlFlowGuard>Guard</ControlFlowGuard>` in `.csproj`; IFEO-based ACG (`ProcessDynamicCodePolicy`) + CIG (`ProcessSignaturePolicy`) enforcement on both GUI and service processes; WDAC Supplemental Policy for any unsigned DLL dependencies [ri:§2.1, §5.2, §4.3]
 
 ### Tier 3: Defense-in-Depth [tm2:204-206]
