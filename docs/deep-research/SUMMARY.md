@@ -1,11 +1,12 @@
 ---
-author: Claude Opus 4.6 (synthesis of 6 Gemini 3.1 Pro Deep Research documents)
+author: Claude Opus 4.6 (synthesis of 7 Gemini 3.1 Pro Deep Research documents)
 date: 2026-03-08
 source_documents:
   - threat-modeling-research-part1.md (tm1) — 21 pages
   - threat-modeling-research-part2.md (tm2) — 23 pages
   - windows-kernel-driver-security-research.md (kd) — 21 pages
-  - windows11-context-menu-research.md (cm) — 20 pages
+  - windows11-context-menu-research-part1.md (cm) — 20 pages
+  - windows11-context-menu-research-part2.md (cm2) — 16 pages
   - windows11-control-surface-research.md (cs) — 34 pages
   - nativeaot-runtime-integrity-research.md (ri) — 17 pages
 citation_format: "[abbreviation:line(s)]"
@@ -13,7 +14,7 @@ citation_format: "[abbreviation:line(s)]"
 
 # Deep Research Synthesis: Windows 11 Architecture and ThisIsMyPC Security Posture
 
-This document synthesizes 136 pages of deep research into a unified reference for the ThisIsMyPC project. It covers the Windows 11 platform constraints, security architecture, and implementation implications across five domains: kernel security, IPC hardening, shell integration, configuration surface management, and user-mode runtime integrity.
+This document synthesizes 152 pages of deep research into a unified reference for the ThisIsMyPC project. It covers the Windows 11 platform constraints, security architecture, and implementation implications across five domains: kernel security, IPC hardening, shell integration, configuration surface management, and user-mode runtime integrity.
 
 ## 1. The Windows 11 Trust Model
 
@@ -262,7 +263,43 @@ A critical finding: calling `SetProcessMitigationPolicy` in `Main()` leaves a TO
 - **Latency cause**: Cross-process marshaling + GPU swap chain initialization for XAML/Acrylic + redundant invisible animation frames during cold start [cm:57-60]
 - Single-item flyout rule: each application package gets exactly one top-level entry; multiple verbs are collapsed into a cascading submenu [cm:176]
 
-### 8.2 Implementation Model for ThisIsMyPC
+### 8.2 Contribution Taxonomy
+
+Four architectural categories populate context menus: [cm2:§1]
+
+1. **Hardcoded/Canonical Verbs**: Cut/Copy/Paste/Rename/Share/Delete are hardcoded into `Windows.UI.FileExplorer.dll`; canonical verbs (`open`, `opennew`, `print`, `explore`, `properties`) are translated at runtime via MUI resource files and invoked programmatically via `ShellExecuteEx` with `lpVerb` [cm2:§1.1]
+2. **Static Registry Verbs**: Registry-driven (`\shell\<verb>\command`), support `%1` (file path) and `%V` (directory path) arguments, conditional logic via `Extended`, `AppliesTo` (AQS), `HasLUAShield`; cascading via `SubCommands` or `ExtendedSubCommandsKey` pointing to `CommandStore\shell` [cm2:§1.2]
+3. **Dynamic COM Handlers** (`IContextMenu`): In-process DLLs loaded into `explorer.exe`; receive `IDataObject` via `IShellExtInit::Initialize`; full `HMENU` access during `QueryContextMenu` with `idCmdFirst`/`idCmdLast` range; `IContextMenu2`/`IContextMenu3` for owner-drawn UI [cm2:§1.3]
+4. **Modern IExplorerCommand**: Out-of-process via PackagedCom; declarative stateless methods (`GetTitle`, `GetIcon`, `GetState`, `GetFlags`); 1 top-level item per app identity, strict 1-level-deep submenus (via `ECF_HASSUBCOMMANDS` + `IEnumExplorerCommand`); deeper nesting silently discarded [cm2:§1.4, §7.2]
+
+### 8.3 Explorer Filtering Pipeline
+
+The Shell filters contributions in two phases: [cm2:§2]
+
+1. **Pre-instantiation registry filtering**: Computationally inexpensive triage based on the class of the selected object; handlers not registered in the targeted taxonomy are categorically ignored before any COM loading occurs [cm2:§2.1]
+2. **Post-instantiation programmatic filtering**: COM object is instantiated and fed selection context via `IShellExtInit::Initialize` (legacy) or `IObjectWithSelection` (modern); handler self-suppresses via `ECS_HIDDEN` (`IExplorerCommand::GetState`) or by returning 0 items during `QueryContextMenu` [cm2:§2.2]
+
+**Background surface fallback**: When right-clicking `Directory\Background`, the `IShellItemArray`/`IDataObject` is empty. Handlers must implement `IObjectWithSite`, query `SID_STopLevelBrowser` → `IShellBrowser` → `IShellView::GetFolder` to retrieve the current directory path. Critical for "Open Terminal Here"-style commands. [cm2:§2.3]
+
+**PowerRename case study**: Demonstrates post-instantiation keyboard-state filtering — inspects `CMF_EXTENDEDVERBS` flag during `QueryContextMenu` to conditionally suppress itself when user has not held SHIFT [cm2:§2.4]
+
+### 8.4 Ghost Handlers
+
+Three distinct vectors produce invisible-but-registered handlers: [cm2:§3]
+
+1. **Benign (programmatic self-suppression)**: Globally registered handlers that self-suppress via `ECS_HIDDEN` when irrelevant to current context; still incurs DLL load + query performance penalty [cm2:§3.1]
+2. **Malignant (orphaned registry pointers)**: Uninstallers fail to clean up `shellex` keys pointing to deleted DLLs (e.g., OneDrive `FileSyncEx` `{CB3D0F55-BC2C-4C1A-85ED-23ED75B5106B}`); Explorer waits for I/O timeout per orphan — compounding "slow right-click" latency [cm2:§3.2]
+3. **Architectural (Win11 segregation)**: Legacy `IContextMenu` handlers are instantiated and queried by the modern menu engine, then silently suppressed from the top-level view; they remain as ghosts, appearing only in "Show more options" [cm2:§3.3]
+
+- **Implication**: ThisIsMyPC's orphan detection must scan for all three types — not just missing DLLs but also IContextMenu-only registrations that are invisible in the modern menu [cm2:§3]
+
+### 8.5 Surface Inheritance: DesktopBackground vs. Directory\Background
+
+- `DesktopBackground` inherits all registrations from `Directory\Background` (desktop is treated as a specialized folder view mapped to `CSIDL_DESKTOP`) [cm2:§4]
+- Inheritance is strictly **unidirectional**: `Directory\Background` → `DesktopBackground` (union merge), but NOT reverse [cm2:§4]
+- Desktop-exclusive commands (Display Settings, Personalize) must target `HKCR\DesktopBackground\shellex` specifically; they will not appear in folder backgrounds [cm2:§4]
+
+### 8.6 Implementation Model for ThisIsMyPC
 
 For managing context menu entries, the app needs to handle two handler types:
 
@@ -279,14 +316,28 @@ For managing context menu entries, the app needs to handle two handler types:
 - Safe disable: add CLSID to `HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Shell Extensions\Blocked` (absolute master override, system-wide) [cm:250]
 - Alternative: prepend `-` to the CLSID string value (dash prefix method, legacy) [cm:248]
 
-### 8.3 Orphan Detection
+### 8.7 The "New" Submenu Architecture
 
-- Uninstalled software frequently fails to clean up orphaned `shellex` keys or `ShellNew` values pointing to deleted DLLs [cm:256]
-- Explorer wastes cyclic resources attempting to resolve missing binaries before timing out — causes severe menu lag and ghost icons [cm:256]
-- Microsoft provides no native graphical context menu manager in Settings [cm:258]
-- ThisIsMyPC should scan for and flag these orphaned entries [cm:256-258]
+The "New" submenu operates on a separate framework from standard verbs/handlers, governed by the `ShellNew` registry key under `HKCR\.ext\ShellNew`: [cm2:§5]
 
-### 8.4 Registry Scope Hierarchy
+| Value Type | Behavior |
+|---|---|
+| `NullFile` | Creates empty 0-byte file [cm2:§5] |
+| `FileName` | Copies template from `%Windir%\ShellNew` (Office formats) [cm2:§5] |
+| `Data` | Injects raw `REG_BINARY`/`REG_SZ` data into new file [cm2:§5] |
+| `Command` | Executes custom command-line to generate file [cm2:§5] |
+
+- **Windows 11 breaking change**: Requires `FriendlyTypeName` value in the ProgID's `auto_file` key (not in `ShellNew` itself); without it, the XAML engine suppresses the entry entirely [cm2:§5.1]
+- **Implication**: ThisIsMyPC's "New" submenu management must validate both the `ShellNew` key and the `FriendlyTypeName` in the associated ProgID
+
+### 8.8 Multi-Selection Logic
+
+- Shell uses **strict set intersection** (not union) to determine visible verbs for mixed-type selections; only verbs universally applicable to every selected item are shown [cm2:§6.1]
+- Mixed selections rapidly reduce to generic `HKCR\*` / `HKCR\AllFileSystemObjects` verbs (Cut, Copy, Delete, Properties) [cm2:§6.1]
+- Static verbs spawn one process per file; 15-file threshold (`MultipleInvokePromptMinimum`) suppresses static verbs to prevent fork bombs [cm2:§6.2]
+- Dynamic COM handlers receive all selected items as a single `IDataObject`/`IShellItemArray` array — bypass the 15-file limit entirely [cm2:§6.2]
+
+### 8.9 Registry Scope Hierarchy
 
 File resolution cascade (most specific to broadest): [cm:139-148]
 1. `HKCR\.ext\shell` — specific extension (absolute highest priority) [cm:143]
@@ -302,14 +353,15 @@ Directory resolution cascade: [cm:149-155]
 
 Additional scopes: [cm:84-96]
 - `HKCR\Directory\Background\shell` — whitespace inside a folder (not clicking an item) [cm:84]
-- `HKCR\DesktopBackground\shell` — desktop right-click [cm:92]
+- `HKCR\DesktopBackground\shell` — desktop right-click (inherits from `Directory\Background`) [cm:92] [cm2:§4]
 - `HKCR\Drive\shell` — root volumes (`C:\`, `D:\`) [cm:87]
 
-### 8.5 Vendor Anomalies
+### 8.10 Vendor Anomalies
 
 - **7-Zip vs NanaZip**: 7-Zip refuses Sparse Manifests, relegated to legacy menu; community fork NanaZip wraps 7-Zip in AppX manifest with `IExplorerCommand` for top-level integration [cm:205-206]
 - **PowerToys double-registration**: Dual registration in both `PackagedCom` and `shellex\ContextMenuHandlers` causes duplicate entries when classic menu hack is applied [cm:219-230]
 - **MS Copilot**: "Ask Copilot" forcibly injected via system-level extension; removal requires adding `{CB3B0003-8088-4EDE-8769-8B354AB2FF8C}` to Blocked list [cm:217]
+- **OneDrive FileSyncEx**: Orphaned `{CB3D0F55-BC2C-4C1A-85ED-23ED75B5106B}` keys cause slow right-click when DLL is missing or AppLocker-blocked [cm2:§3.2]
 
 ## 9. Configuration Surface: Enforcement Mechanisms
 
@@ -373,7 +425,7 @@ From exhaustive analysis of r/Windows11, r/sysadmin, Microsoft Answers, and spec
 - Bytecode: Cryptographic signing + in-kernel static verifier + `__try`/`__except` [tm2:200]
 - UI: Mandatory 5-second delay timer + randomized visual CAPTCHA for Owner Mode transition [tm2:201]
 - Builds: Reproducible NativeAOT compilation in containerized CI/CD [tm2:202]
-- Context Menu: Orphan detection + dual-handler (static verb + COM extension) management [cm:256-258]
+- Context Menu: Orphan detection (3 ghost handler types) + dual-handler (static verb + COM extension) management + "New" submenu validation [cm:256-258] [cm2:§3, §5]
 - User-mode hardening: `<ControlFlowGuard>Guard</ControlFlowGuard>` in `.csproj`; IFEO-based ACG (`ProcessDynamicCodePolicy`) + CIG (`ProcessSignaturePolicy`) enforcement on both GUI and service processes; WDAC Supplemental Policy for any unsigned DLL dependencies [ri:§2.1, §5.2, §4.3]
 
 ### Tier 3: Defense-in-Depth [tm2:204-206]

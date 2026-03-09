@@ -6,7 +6,7 @@ External research documents produced via deep-research tools (Gemini, etc.) for 
 
 | Document | Lines | Purpose |
 |---|---|---|
-| [SUMMARY.md](./SUMMARY.md) | ~400 | Unified synthesis of all 6 research documents (136 pages) into a single reference covering the Windows 11 trust model, enforcement drivers, IPC/kernel attack surfaces, bytecode interpreter security, supply chain threats, context menu architecture, configuration surface mapping, and user-mode runtime integrity (CFG/ACG/CIG). |
+| [SUMMARY.md](./SUMMARY.md) | ~400 | Unified synthesis of all 7 research documents (152 pages) into a single reference covering the Windows 11 trust model, enforcement drivers, IPC/kernel attack surfaces, bytecode interpreter security, supply chain threats, context menu architecture (contribution taxonomy, Explorer pipeline, ghost handlers, surface inheritance, "New" submenu, multi-selection logic), configuration surface mapping, and user-mode runtime integrity (CFG/ACG/CIG). |
 
 ## Security Architecture
 
@@ -21,7 +21,8 @@ External research documents produced via deep-research tools (Gemini, etc.) for 
 
 | Document | Pages | Purpose |
 |---|---|---|
-| [windows11-context-menu-research.md](./windows11-context-menu-research.md) | 20 | Windows 11 context menu architecture internals: bifurcated menu system (modern vs legacy), IContextMenu COM interface, shell extension isolation, registry registration patterns, rendering pipeline, and third-party integration constraints. Directly relevant to Epic 2. |
+| [windows11-context-menu-research-part1.md](./windows11-context-menu-research-part1.md) | 20 | Windows 11 context menu architecture internals: bifurcated menu system (modern vs legacy), IExplorerCommand/Sparse Manifests, CLSID override, rendering pipeline latency, exhaustive registry location mapping, static verbs vs dynamic COM, inheritance/priority resolution, vendor implementations (Adobe, 7-Zip, WinRAR, OneDrive, Copilot, PowerToys), and programmatic lifecycle management. Directly relevant to Epic 2. |
+| [windows11-context-menu-research-part2.md](./windows11-context-menu-research-part2.md) | 16 | Windows 11 context menu deep architecture: contribution taxonomy (hardcoded/canonical verbs, static verbs, dynamic COM, IExplorerCommand/PackagedCom), Explorer filtering pipeline (pre/post-instantiation), IObjectWithSite fallback for backgrounds, ghost handler taxonomy (benign/malignant/architectural), DesktopBackground vs Directory\Background inheritance, "New" submenu ShellNew architecture, multi-selection set intersection logic, and legacy menu topology/cascading. Directly relevant to Epic 2. |
 | [windows11-control-surface-research.md](./windows11-control-surface-research.md) | 34 | Windows 11 control surface mapping and behavioral friction analysis: comprehensive registry/GPO pathways across all subsystems, enforcement mechanisms that resist user modification (filter drivers, cloud policy caches, telemetry services, scheduled tasks), and user sentiment data for feature prioritization. |
 
 ## Original PDFs
