@@ -6,10 +6,12 @@ namespace ThisIsMyPC.Modules.Shell.Services;
 public sealed class ContextMenuScanner
 {
     private readonly IShellExtensionService _shellExtensionService;
+    private readonly IContextMenuProbe? _contextMenuProbe;
 
-    public ContextMenuScanner(IShellExtensionService shellExtensionService)
+    public ContextMenuScanner(IShellExtensionService shellExtensionService, IContextMenuProbe? contextMenuProbe = null)
     {
         _shellExtensionService = shellExtensionService;
+        _contextMenuProbe = contextMenuProbe;
     }
 
     public IReadOnlyList<ContextMenuHandler> Scan()
@@ -44,6 +46,9 @@ public sealed class ContextMenuScanner
 
             var classification = ContextMenuHandlerClassifier.Classify(first.Clsid, first.DllPath, first.Publisher);
 
+            // Probe surface visibility for background handlers
+            var visibleSurfaces = ProbeSurfaceVisibility(first.Clsid, allScopes);
+
             handlers.Add(new ContextMenuHandler(
                 Name: first.HandlerName,
                 Clsid: first.Clsid,
@@ -55,9 +60,33 @@ public sealed class ContextMenuScanner
                 Classification: classification,
                 AllRegistryPaths: allRegistryPaths,
                 AllScopes: allScopes,
-                PathEnabledStates: pathEnabledStates));
+                PathEnabledStates: pathEnabledStates,
+                VisibleSurfaces: visibleSurfaces));
         }
 
         return handlers;
+    }
+
+    private IReadOnlySet<ContextMenuSurface>? ProbeSurfaceVisibility(string clsid, List<string> scopes)
+    {
+        // Only probe handlers registered under Directory\Background
+        if (_contextMenuProbe is null || !scopes.Contains("Folder background", StringComparer.OrdinalIgnoreCase))
+            return null;
+
+        var surfaces = new HashSet<ContextMenuSurface>();
+
+        var folderResult = _contextMenuProbe.HandlerAppearsOnSurface(clsid, ContextMenuSurface.FolderBackground);
+        if (folderResult.IsSuccess && folderResult.Value)
+            surfaces.Add(ContextMenuSurface.FolderBackground);
+
+        var desktopResult = _contextMenuProbe.HandlerAppearsOnSurface(clsid, ContextMenuSurface.DesktopBackground);
+        if (desktopResult.IsSuccess && desktopResult.Value)
+            surfaces.Add(ContextMenuSurface.DesktopBackground);
+
+        // If handler is also explicitly registered under DesktopBackground path, ensure Desktop is included
+        if (scopes.Contains("Desktop background", StringComparer.OrdinalIgnoreCase))
+            surfaces.Add(ContextMenuSurface.DesktopBackground);
+
+        return surfaces;
     }
 }

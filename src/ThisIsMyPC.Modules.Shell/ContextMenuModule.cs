@@ -15,10 +15,11 @@ public sealed class ContextMenuModule : IModule
 
     public ContextMenuModule(
         IRegistryService registryService,
-        IShellExtensionService shellExtensionService)
+        IShellExtensionService shellExtensionService,
+        IContextMenuProbe contextMenuProbe)
     {
         _registryService = registryService;
-        _contextMenuScanner = new ContextMenuScanner(shellExtensionService);
+        _contextMenuScanner = new ContextMenuScanner(shellExtensionService, contextMenuProbe);
     }
 
     public ModuleInfo Info { get; } = new(

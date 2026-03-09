@@ -60,6 +60,7 @@ public partial class App : Application
         // Interop services
         services.AddSingleton<IRegistryService, RegistryService>();
         services.AddSingleton<IShellExtensionService, ShellExtensionService>();
+        services.AddSingleton<IContextMenuProbe, ContextMenuProbe>();
         services.AddSingleton<IExplorerRestartService, ExplorerRestartService>();
 
         // Modules (explicit DI registration, NativeAOT-safe)

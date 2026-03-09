@@ -17,6 +17,25 @@ public sealed class ContextMenuScannerTests
             => OperationResult<IReadOnlyList<ShellExtensionInfo>>.Success(_handlers);
     }
 
+    private sealed class FakeContextMenuProbe : IContextMenuProbe
+    {
+        private readonly Dictionary<(string Clsid, ContextMenuSurface Surface), bool> _results = [];
+
+        public void SetResult(string clsid, ContextMenuSurface surface, bool appears)
+            => _results[(clsid, surface)] = appears;
+
+        public OperationResult<bool> HandlerAppearsOnSurface(string clsid, ContextMenuSurface surface)
+        {
+            // Case-insensitive CLSID lookup
+            foreach (var (key, value) in _results)
+            {
+                if (string.Equals(key.Clsid, clsid, StringComparison.OrdinalIgnoreCase) && key.Surface == surface)
+                    return OperationResult<bool>.Success(value);
+            }
+            return OperationResult<bool>.Success(true); // default: appears
+        }
+    }
+
     [Fact]
     public void Scan_deduplicates_handlers_by_CLSID()
     {
@@ -116,6 +135,102 @@ public sealed class ContextMenuScannerTests
         var result = scanner.Scan();
 
         Assert.Empty(result);
+    }
+
+    [Fact]
+    public void Scan_probes_folder_background_handlers_for_surface_visibility()
+    {
+        var fake = new FakeShellExtensionService();
+        var probe = new FakeContextMenuProbe();
+
+        // Handler appears on folder background but NOT desktop
+        var clsid = "{0440049F-D1DC-4E46-B27B-98393D79486B}";
+        fake.AddHandler(new ShellExtensionInfo("PowerRenameExt", clsid,
+            @"HKCR\Directory\Background\shellex\ContextMenuHandlers\PowerRenameExt", "Folder background",
+            @"C:\PowerToys\PowerRenameExt.dll", "Microsoft Corporation", true));
+        probe.SetResult(clsid, ContextMenuSurface.FolderBackground, true);
+        probe.SetResult(clsid, ContextMenuSurface.DesktopBackground, false);
+
+        var scanner = new ContextMenuScanner(fake, probe);
+        var result = scanner.Scan();
+
+        Assert.NotNull(result[0].VisibleSurfaces);
+        Assert.Contains(ContextMenuSurface.FolderBackground, result[0].VisibleSurfaces!);
+        Assert.DoesNotContain(ContextMenuSurface.DesktopBackground, result[0].VisibleSurfaces!);
+    }
+
+    [Fact]
+    public void Scan_probes_desktop_only_handler()
+    {
+        var fake = new FakeShellExtensionService();
+        var probe = new FakeContextMenuProbe();
+
+        // NVIDIA handler appears on desktop but NOT folder background
+        var clsid = "{F2E8B4A1-9C7D-4F6E-B3A5-8D2C1F4E9B7A}";
+        fake.AddHandler(new ShellExtensionInfo("NvAppDesktopContext", clsid,
+            @"HKCR\Directory\Background\shellex\ContextMenuHandlers\NvAppDesktopContext", "Folder background",
+            @"C:\NVIDIA\nvcpl.dll", "NVIDIA Corporation", true));
+        probe.SetResult(clsid, ContextMenuSurface.FolderBackground, false);
+        probe.SetResult(clsid, ContextMenuSurface.DesktopBackground, true);
+
+        var scanner = new ContextMenuScanner(fake, probe);
+        var result = scanner.Scan();
+
+        Assert.NotNull(result[0].VisibleSurfaces);
+        Assert.DoesNotContain(ContextMenuSurface.FolderBackground, result[0].VisibleSurfaces!);
+        Assert.Contains(ContextMenuSurface.DesktopBackground, result[0].VisibleSurfaces!);
+    }
+
+    [Fact]
+    public void Scan_no_probe_for_non_background_handlers()
+    {
+        var fake = new FakeShellExtensionService();
+        var probe = new FakeContextMenuProbe();
+
+        fake.AddHandler(new ShellExtensionInfo("7-Zip", "{23170F69-40C1-278A-1000-000100020000}",
+            @"HKCR\*\shellex\ContextMenuHandlers\7-Zip", "All files",
+            @"C:\Program Files\7-Zip\7-zip.dll", "Igor Pavlov", true));
+
+        var scanner = new ContextMenuScanner(fake, probe);
+        var result = scanner.Scan();
+
+        Assert.Null(result[0].VisibleSurfaces);
+    }
+
+    [Fact]
+    public void Scan_no_probe_when_probe_is_null()
+    {
+        var fake = new FakeShellExtensionService();
+
+        fake.AddHandler(new ShellExtensionInfo("PowerRenameExt", "{0440049F-D1DC-4E46-B27B-98393D79486B}",
+            @"HKCR\Directory\Background\shellex\ContextMenuHandlers\PowerRenameExt", "Folder background",
+            @"C:\PowerToys\PowerRenameExt.dll", "Microsoft Corporation", true));
+
+        var scanner = new ContextMenuScanner(fake, contextMenuProbe: null);
+        var result = scanner.Scan();
+
+        Assert.Null(result[0].VisibleSurfaces);
+    }
+
+    [Fact]
+    public void Scan_both_surfaces_when_handler_appears_on_both()
+    {
+        var fake = new FakeShellExtensionService();
+        var probe = new FakeContextMenuProbe();
+
+        var clsid = "{D969A300-E7FF-11d0-A93B-00A0C90F2719}";
+        fake.AddHandler(new ShellExtensionInfo("New", clsid,
+            @"HKCR\Directory\Background\shellex\ContextMenuHandlers\New", "Folder background",
+            @"C:\Windows\System32\shell32.dll", "Microsoft Corporation", true));
+        probe.SetResult(clsid, ContextMenuSurface.FolderBackground, true);
+        probe.SetResult(clsid, ContextMenuSurface.DesktopBackground, true);
+
+        var scanner = new ContextMenuScanner(fake, probe);
+        var result = scanner.Scan();
+
+        Assert.NotNull(result[0].VisibleSurfaces);
+        Assert.Contains(ContextMenuSurface.FolderBackground, result[0].VisibleSurfaces!);
+        Assert.Contains(ContextMenuSurface.DesktopBackground, result[0].VisibleSurfaces!);
     }
 
     private sealed class FailingShellExtensionService : IShellExtensionService

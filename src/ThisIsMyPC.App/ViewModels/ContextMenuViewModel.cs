@@ -62,7 +62,7 @@ public partial class ContextMenuViewModel : ViewModelBase
             // Assign to tabs based on all scopes
             foreach (var scope in handler.AllScopes ?? [handler.AppliesTo])
             {
-                var tabs = ContextMenuTabMapper.GetTabs(scope);
+                var tabs = ContextMenuTabMapper.GetTabs(scope, handler.VisibleSurfaces);
                 foreach (var tab in tabs)
                     vmTabs[handler.Clsid].Add(tab);
 

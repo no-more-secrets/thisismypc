@@ -1,4 +1,5 @@
 using ThisIsMyPC.App.ViewModels;
+using ThisIsMyPC.Interop.Com.Shell;
 
 namespace ThisIsMyPC.Integration.Tests.ViewModels;
 
@@ -23,10 +24,58 @@ public sealed class ContextMenuTabMapperTests
     }
 
     [Fact]
-    public void GetTabs_folder_background_maps_to_both_tabs()
+    public void GetTabs_folder_background_maps_to_both_tabs_when_no_probe_data()
     {
         var tabs = ContextMenuTabMapper.GetTabs("Folder background");
         Assert.Contains(ContextMenuTab.FolderBackground, tabs);
+        Assert.Contains(ContextMenuTab.Desktop, tabs);
+    }
+
+    [Fact]
+    public void GetTabs_folder_background_uses_probe_data_folder_only()
+    {
+        var surfaces = new HashSet<ContextMenuSurface> { ContextMenuSurface.FolderBackground };
+        var tabs = ContextMenuTabMapper.GetTabs("Folder background", surfaces);
+        Assert.Contains(ContextMenuTab.FolderBackground, tabs);
+        Assert.DoesNotContain(ContextMenuTab.Desktop, tabs);
+    }
+
+    [Fact]
+    public void GetTabs_folder_background_uses_probe_data_desktop_only()
+    {
+        var surfaces = new HashSet<ContextMenuSurface> { ContextMenuSurface.DesktopBackground };
+        var tabs = ContextMenuTabMapper.GetTabs("Folder background", surfaces);
+        Assert.DoesNotContain(ContextMenuTab.FolderBackground, tabs);
+        Assert.Contains(ContextMenuTab.Desktop, tabs);
+    }
+
+    [Fact]
+    public void GetTabs_folder_background_uses_probe_data_both_surfaces()
+    {
+        var surfaces = new HashSet<ContextMenuSurface>
+        {
+            ContextMenuSurface.FolderBackground,
+            ContextMenuSurface.DesktopBackground,
+        };
+        var tabs = ContextMenuTabMapper.GetTabs("Folder background", surfaces);
+        Assert.Contains(ContextMenuTab.FolderBackground, tabs);
+        Assert.Contains(ContextMenuTab.Desktop, tabs);
+    }
+
+    [Fact]
+    public void GetTabs_folder_background_empty_probe_falls_back_to_both()
+    {
+        var surfaces = new HashSet<ContextMenuSurface>();
+        var tabs = ContextMenuTabMapper.GetTabs("Folder background", surfaces);
+        Assert.Contains(ContextMenuTab.FolderBackground, tabs);
+        Assert.Contains(ContextMenuTab.Desktop, tabs);
+    }
+
+    [Fact]
+    public void GetTabs_desktop_background_maps_to_desktop_only()
+    {
+        var tabs = ContextMenuTabMapper.GetTabs("Desktop background");
+        Assert.Single(tabs);
         Assert.Contains(ContextMenuTab.Desktop, tabs);
     }
 

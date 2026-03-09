@@ -14,6 +14,7 @@ public sealed class ShellExtensionService : IShellExtensionService
         (@"HKCR\Directory\Background\shellex\ContextMenuHandlers", "Folder background"),
         (@"HKCR\Folder\shellex\ContextMenuHandlers", "Folders"),
         (@"HKCR\Drive\shellex\ContextMenuHandlers", "Drives"),
+        (@"HKCR\DesktopBackground\shellex\ContextMenuHandlers", "Desktop background"),
         (@"HKCR\CLSID\{645FF040-5081-101B-9F08-00AA002F954E}\shellex\ContextMenuHandlers", "Recycle Bin"),
         (@"HKCR\CLSID\{20D04FE0-3AEA-1069-A2D8-08002B30309D}\shellex\ContextMenuHandlers", "This PC"),
         (@"HKCR\CLSID\{F02C1A0D-BE21-4350-88B0-7367FC96EF3C}\shellex\ContextMenuHandlers", "Network"),

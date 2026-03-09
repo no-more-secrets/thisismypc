@@ -1,3 +1,5 @@
+using ThisIsMyPC.Interop.Com.Shell;
+
 namespace ThisIsMyPC.Modules.Shell.Models;
 
 public sealed record ContextMenuHandler(
@@ -11,4 +13,5 @@ public sealed record ContextMenuHandler(
     HandlerClassification Classification = HandlerClassification.ThirdParty,
     IReadOnlyList<string>? AllRegistryPaths = null,
     IReadOnlyList<string>? AllScopes = null,
-    IReadOnlyDictionary<string, bool>? PathEnabledStates = null);
+    IReadOnlyDictionary<string, bool>? PathEnabledStates = null,
+    IReadOnlySet<ContextMenuSurface>? VisibleSurfaces = null);

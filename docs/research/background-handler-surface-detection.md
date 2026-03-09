@@ -4,6 +4,7 @@
 **Epic:** 2 (Explorer & Context Menus)
 **Scope:** Bug fix — Desktop and Folder Background tabs show wrong handlers
 **Priority:** Must-fix before Epic 2 can ship
+**Status:** IMPLEMENTED (2026-03-08)
 
 ---
 
@@ -173,16 +174,55 @@ But WizTree is NOT in any of our scanned `shellex\ContextMenuHandlers` paths:
 
 ### Broader scanner gaps summary
 
-| Gap | Impact | Fix location |
-|-----|--------|-------------|
-| Desktop/FolderBackground split | Tabs show wrong handlers | This plan (COM probing) |
-| Missing `DesktopBackground\shellex` path | DesktopSlideshow handler not shown | This plan (add to HandlerRegistrations) |
-| WizTree / IExplorerCommand handlers | Missing from all tabs | Story 2.8 + research |
-| `HKCR\SystemFileAssociations` per-type handlers | Unknown — may explain image-specific handlers | Needs investigation |
-| `HKCR\<ProgID>\shellex` per-program handlers | Unknown — may explain Adobe per-type entries | Needs investigation |
+| Gap | Impact | Fix location | Status |
+|-----|--------|-------------|--------|
+| Desktop/FolderBackground split | Tabs show wrong handlers | This plan (COM probing) | DONE |
+| Missing `DesktopBackground\shellex` path | DesktopSlideshow handler not shown | This plan (add to HandlerRegistrations) | DONE |
+| WizTree / IExplorerCommand handlers | Missing from all tabs | Story 2.8 + research | Open |
+| `HKCR\SystemFileAssociations` per-type handlers | Unknown — may explain image-specific handlers | Needs investigation | Open |
+| `HKCR\<ProgID>\shellex` per-program handlers | Unknown — may explain Adobe per-type entries | Needs investigation | Open |
 
 ### Reference
 
 - Deep research: `docs/deep-research/windows11-context-menu-research.md` (Sections 1.1, 3.1-3.3, 4.x)
 - Real-world catalog: `docs/research/context-menu-catalog.md`
 - Registry dump: captured 2026-03-08, inline above
+
+---
+
+## Implementation Notes (2026-03-08)
+
+### Deviations from plan
+
+1. **Interface location:** `IContextMenuProbe` placed in `Interop.Com.Shell` (alongside `IShellExtensionService`) rather than `Core.Services`. Follows existing pattern — COM-specific interfaces live in the COM interop project.
+2. **P/Invoke approach:** Used `[LibraryImport]` with raw unsafe COM vtable calls instead of CsWin32. This avoids adding a CsWin32 dependency to `Interop.Com` and is fully NativeAOT-safe with no runtime reflection.
+3. **No `NativeMethods.txt`:** Not needed — P/Invoke signatures are declared directly in `ContextMenuProbe.cs` via `[LibraryImport]` source generation.
+
+### Files actually changed
+
+**New:**
+- `src/ThisIsMyPC.Interop.Com/Shell/IContextMenuProbe.cs` — Interface + `ContextMenuSurface` enum
+- `src/ThisIsMyPC.Interop.Com/Shell/ContextMenuProbe.cs` — COM vtable-based implementation
+
+**Modified:**
+- `src/ThisIsMyPC.Interop.Com/ThisIsMyPC.Interop.Com.csproj` — `AllowUnsafeBlocks`
+- `src/ThisIsMyPC.Interop.Com/Shell/ShellExtensionService.cs` — Added `DesktopBackground` path
+- `src/ThisIsMyPC.Modules.Shell/Models/ContextMenuHandler.cs` — Added `VisibleSurfaces` property
+- `src/ThisIsMyPC.Modules.Shell/Services/ContextMenuScanner.cs` — Probes background handlers
+- `src/ThisIsMyPC.Modules.Shell/ContextMenuModule.cs` — Takes `IContextMenuProbe` dependency
+- `src/ThisIsMyPC.App/ViewModels/ContextMenuTab.cs` — Mapper uses probe data + "Desktop background" scope
+- `src/ThisIsMyPC.App/ViewModels/ContextMenuViewModel.cs` — Passes `VisibleSurfaces` to mapper
+- `src/ThisIsMyPC.App/App.axaml.cs` — DI registration
+
+### Safety model
+
+| Failure point | Behavior | Rationale |
+|---|---|---|
+| `CoCreateInstance` fails | Show on both surfaces | Can't probe — preserve current behavior |
+| `SHGetKnownFolderIDList` fails | Show on both surfaces | Infrastructure failure |
+| `IShellExtInit::Initialize` fails | Don't show on this surface | Matches Windows behavior |
+| `QueryContextMenu` fails | Show on surface | Ambiguous — safe fallback |
+| Items added = 0 | Don't show on this surface | Handler filtered itself out |
+| Exception/crash | Show on both surfaces | Unknown state — safe fallback |
+| Empty probe result set | Show on both surfaces | Defensive fallback in mapper |
+| Null probe (no DI) | Show on both surfaces | Backward compatible |
