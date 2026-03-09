@@ -29,9 +29,7 @@ public sealed class ShellViewModelTests
         new(
             ExplorerPreferences: prefs ?? TestPreferences,
             Taskbar: taskbar ?? new TaskbarSettings(1, true, false),
-            NotificationSettings: [],
-            UserEnvironmentVariables: [],
-            SystemEnvironmentVariables: []);
+            NotificationSettings: []);
 
     [Fact]
     public void Constructor_creates_correct_number_of_explorer_settings()

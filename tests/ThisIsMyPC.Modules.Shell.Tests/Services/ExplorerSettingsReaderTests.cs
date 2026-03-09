@@ -10,7 +10,7 @@ public sealed class ExplorerSettingsReaderTests
     private const string AdvancedKeyPath = @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced";
     private const string ExplorerKeyPath = @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer";
 
-private readonly FakeRegistryService _registry = new();
+    private readonly FakeRegistryService _registry = new();
     private readonly ExplorerSettingsReader _sut;
 
     public ExplorerSettingsReaderTests()

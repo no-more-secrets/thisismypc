@@ -62,10 +62,12 @@ public partial class App : Application
         services.AddSingleton<IShellExtensionService, ShellExtensionService>();
         services.AddSingleton<IContextMenuProbe, ContextMenuProbe>();
         services.AddSingleton<IExplorerRestartService, ExplorerRestartService>();
+        services.AddSingleton<IEnvironmentBroadcaster, EnvironmentBroadcaster>();
 
         // Modules (explicit DI registration, NativeAOT-safe)
         services.AddSingleton<IModule, ShellModule>();
         services.AddSingleton<IModule, ContextMenuModule>();
+        services.AddSingleton<IModule, EnvironmentModule>();
         services.AddSingleton<IModule, StartupModule>();
         services.AddSingleton<IModule, PowerModule>();
 

@@ -14,7 +14,6 @@ public sealed class ShellModule : IModule
     private readonly ExplorerSettingsReader _explorerSettingsReader;
     private readonly TaskbarSettingsReader _taskbarSettingsReader;
     private readonly NotificationSettingsReader _notificationSettingsReader;
-    private readonly EnvironmentVariableReader _environmentVariableReader;
 
     public ShellModule(IRegistryService registryService)
     {
@@ -22,7 +21,6 @@ public sealed class ShellModule : IModule
         _explorerSettingsReader = new ExplorerSettingsReader(registryService);
         _taskbarSettingsReader = new TaskbarSettingsReader(registryService);
         _notificationSettingsReader = new NotificationSettingsReader(registryService);
-        _environmentVariableReader = new EnvironmentVariableReader(registryService);
     }
 
     public ModuleInfo Info { get; } = new(
@@ -48,20 +46,10 @@ public sealed class ShellModule : IModule
                 var taskbar = _taskbarSettingsReader.Read();
                 var notificationSettings = _notificationSettingsReader.ReadAll();
 
-                IReadOnlyList<EnvironmentVariable> userEnvVars = [];
-                try { userEnvVars = _environmentVariableReader.ReadUserVariables(); }
-                catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"User env var scan failed: {ex.Message}"); }
-
-                IReadOnlyList<EnvironmentVariable> systemEnvVars = [];
-                try { systemEnvVars = _environmentVariableReader.ReadSystemVariables(); }
-                catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"System env var scan failed: {ex.Message}"); }
-
                 var scanData = new ShellScanData(
                     ExplorerPreferences: explorerPreferences,
                     Taskbar: taskbar,
-                    NotificationSettings: notificationSettings,
-                    UserEnvironmentVariables: userEnvVars,
-                    SystemEnvironmentVariables: systemEnvVars);
+                    NotificationSettings: notificationSettings);
 
                 return OperationResult<object>.Success(scanData);
             }
@@ -89,9 +77,6 @@ public sealed class ShellModule : IModule
                 ChangeValueType.Registry_DWord => ApplyDWordChange(change),
                 ChangeValueType.Registry_String => ApplyStringChange(change),
                 ChangeValueType.Registry_ExpandString => ApplyExpandStringChange(change),
-                ChangeValueType.Environment_Variable => OperationResult<bool>.Failure(
-                    $"Environment variable changes are not yet implemented (Story 2.5)",
-                    ErrorCategory.ServiceUnavailable),
                 _ => OperationResult<bool>.Failure(
                     $"Unsupported value type: {change.ValueType}",
                     ErrorCategory.ServiceUnavailable),

@@ -5,8 +5,8 @@ namespace ThisIsMyPC.Modules.Shell.Services;
 
 public sealed class EnvironmentVariableReader
 {
-    private const string UserEnvKeyPath = @"HKCU\Environment";
-    private const string SystemEnvKeyPath = @"HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment";
+    public const string UserEnvKeyPath = @"HKCU\Environment";
+    public const string SystemEnvKeyPath = @"HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment";
 
     private readonly IRegistryService _registryService;
 

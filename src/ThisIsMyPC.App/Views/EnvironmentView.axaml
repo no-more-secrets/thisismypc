@@ -1,0 +1,194 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ThisIsMyPC.App.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="ThisIsMyPC.App.Views.EnvironmentView"
+             x:DataType="vm:EnvironmentViewModel">
+
+    <UserControl.Resources>
+        <DataTemplate x:Key="EnvVarRowTemplate" x:DataType="vm:EnvironmentVariableItemViewModel">
+            <Border Padding="12,8" Margin="0,2" CornerRadius="4"
+                    Background="{StaticResource CardBrush}">
+                <Grid ColumnDefinitions="*,2*,Auto">
+                    <!-- Display mode -->
+                    <TextBlock Grid.Column="0" Text="{Binding Name}"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource TextPrimaryBrush}"
+                               VerticalAlignment="Center"
+                               IsVisible="{Binding !IsEditing}" />
+                    <TextBlock Grid.Column="1" Text="{Binding Value}"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis"
+                               Margin="8,0"
+                               IsVisible="{Binding !IsEditing}" />
+
+                    <!-- Edit mode -->
+                    <TextBox Grid.Column="0" Text="{Binding EditName}"
+                             Watermark="Variable name"
+                             IsVisible="{Binding IsEditing}"
+                             IsEnabled="{Binding IsNew}" />
+                    <TextBox Grid.Column="1" Text="{Binding EditValue}"
+                             Watermark="Value"
+                             Margin="8,0"
+                             IsVisible="{Binding IsEditing}" />
+
+                    <!-- Action buttons -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4">
+                        <!-- Display mode buttons -->
+                        <Button Content="Edit" Command="{Binding BeginEditCommand}"
+                                IsVisible="{Binding !IsEditing}"
+                                Padding="8,4" FontSize="12" />
+                        <Button Content="PATH" Command="{Binding $parent[ItemsControl].((vm:EnvironmentViewModel)DataContext).EditPathCommand}"
+                                CommandParameter="{Binding}"
+                                IsVisible="{Binding IsPathVariable}"
+                                Padding="8,4" FontSize="12" />
+                        <Button Content="Delete" Command="{Binding DeleteCommand}"
+                                IsVisible="{Binding !IsEditing}"
+                                Foreground="{StaticResource DangerBrush}"
+                                Padding="8,4" FontSize="12" />
+
+                        <!-- Edit mode buttons -->
+                        <Button Content="Save" Command="{Binding ConfirmEditCommand}"
+                                IsVisible="{Binding IsEditing}"
+                                Padding="8,4" FontSize="12" />
+                        <Button Content="Cancel" Command="{Binding CancelEditCommand}"
+                                IsVisible="{Binding IsEditing}"
+                                Padding="8,4" FontSize="12" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="24" Margin="0,0,0,16">
+
+            <!-- User Variables Section -->
+            <StackPanel Spacing="8">
+                <DockPanel>
+                    <TextBlock Text="User Variables"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource TextPrimaryBrush}"
+                               VerticalAlignment="Center" />
+                    <Button Content="Add Variable"
+                            Command="{Binding AddUserVariableCommand}"
+                            HorizontalAlignment="Right"
+                            Padding="12,6"
+                            FontSize="12" />
+                </DockPanel>
+                <TextBlock Text="Environment variables for the current user"
+                           FontSize="13"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Margin="0,0,0,4" />
+                <TextBlock Text="{Binding UserScanError, StringFormat='Failed to read user variables: {0}'}"
+                           IsVisible="{Binding UserScanError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                           Foreground="{StaticResource WarningBrush}"
+                           FontSize="12" Margin="0,0,0,4" />
+                <ItemsControl ItemsSource="{Binding UserVariables}"
+                              ItemTemplate="{StaticResource EnvVarRowTemplate}" />
+            </StackPanel>
+
+            <!-- System Variables Section -->
+            <StackPanel Spacing="8">
+                <DockPanel>
+                    <TextBlock Text="System Variables"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource TextPrimaryBrush}"
+                               VerticalAlignment="Center" />
+                    <Button Content="Add Variable"
+                            Command="{Binding AddSystemVariableCommand}"
+                            HorizontalAlignment="Right"
+                            Padding="12,6"
+                            FontSize="12" />
+                </DockPanel>
+                <TextBlock Text="System-wide environment variables (requires elevation to modify)"
+                           FontSize="13"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Margin="0,0,0,4" />
+                <TextBlock Text="{Binding SystemScanError, StringFormat='Failed to read system variables: {0}'}"
+                           IsVisible="{Binding SystemScanError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                           Foreground="{StaticResource WarningBrush}"
+                           FontSize="12" Margin="0,0,0,4" />
+                <ItemsControl ItemsSource="{Binding SystemVariables}"
+                              ItemTemplate="{StaticResource EnvVarRowTemplate}" />
+            </StackPanel>
+
+            <!-- PATH Editor (inline, shown when active) -->
+            <StackPanel IsVisible="{Binding IsPathEditorOpen}" Spacing="8">
+                <DockPanel>
+                    <TextBlock Text="PATH Editor"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource TextPrimaryBrush}"
+                               VerticalAlignment="Center" />
+                    <Button Content="Close"
+                            Command="{Binding ClosePathEditorCommand}"
+                            HorizontalAlignment="Right"
+                            Padding="12,6"
+                            FontSize="12" />
+                </DockPanel>
+                <ContentControl Content="{Binding ActivePathEditor}">
+                    <ContentControl.DataTemplates>
+                        <DataTemplate DataType="{x:Type vm:PathEditorViewModel}">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="{Binding CharacterCountText}"
+                                           FontSize="12"
+                                           Foreground="{StaticResource TextTertiaryBrush}" />
+                                <ItemsControl ItemsSource="{Binding Entries}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:PathEntryViewModel">
+                                            <Border Padding="8,4" Margin="0,1" CornerRadius="4"
+                                                    Background="{StaticResource CardBrush}">
+                                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                                    <TextBlock Grid.Column="0" Text="{Binding Index}"
+                                                               Width="24" VerticalAlignment="Center"
+                                                               Foreground="{StaticResource TextTertiaryBrush}"
+                                                               FontSize="12" />
+                                                    <TextBox Grid.Column="1" Text="{Binding Path}"
+                                                             Margin="4,0" FontSize="13" />
+                                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2">
+                                                        <Button Content="Up"
+                                                                Command="{Binding $parent[ItemsControl].((vm:PathEditorViewModel)DataContext).MoveUpCommand}"
+                                                                CommandParameter="{Binding}"
+                                                                Padding="6,2" FontSize="11" />
+                                                        <Button Content="Down"
+                                                                Command="{Binding $parent[ItemsControl].((vm:PathEditorViewModel)DataContext).MoveDownCommand}"
+                                                                CommandParameter="{Binding}"
+                                                                Padding="6,2" FontSize="11" />
+                                                        <Button Content="X"
+                                                                Command="{Binding $parent[ItemsControl].((vm:PathEditorViewModel)DataContext).RemoveEntryCommand}"
+                                                                CommandParameter="{Binding}"
+                                                                Foreground="{StaticResource DangerBrush}"
+                                                                Padding="6,2" FontSize="11" />
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Button Content="Add Entry"
+                                            Command="{Binding AddEntryCommand}"
+                                            Padding="12,6"
+                                            FontSize="12" />
+                                    <Button Content="Save PATH"
+                                            Command="{Binding SavePathCommand}"
+                                            Padding="12,6"
+                                            FontSize="12"
+                                            FontWeight="SemiBold" />
+                                </StackPanel>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ContentControl.DataTemplates>
+                </ContentControl>
+            </StackPanel>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

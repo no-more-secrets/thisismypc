@@ -3,6 +3,4 @@ namespace ThisIsMyPC.Modules.Shell.Models;
 public sealed record ShellScanData(
     IReadOnlyList<ExplorerPreference> ExplorerPreferences,
     TaskbarSettings Taskbar,
-    IReadOnlyList<NotificationSetting> NotificationSettings,
-    IReadOnlyList<EnvironmentVariable> UserEnvironmentVariables,
-    IReadOnlyList<EnvironmentVariable> SystemEnvironmentVariables);
+    IReadOnlyList<NotificationSetting> NotificationSettings);
