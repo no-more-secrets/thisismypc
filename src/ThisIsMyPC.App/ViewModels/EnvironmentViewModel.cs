@@ -10,14 +10,18 @@ public partial class EnvironmentViewModel : ViewModelBase
 {
     private readonly IPendingChangesService _pendingChangesService;
 
+    // PATH tab — inline editors for user and system PATH
+    public PathEditorViewModel? UserPathEditor { get; }
+    public PathEditorViewModel? SystemPathEditor { get; }
+
+    // User tab (excluding PATH)
     public ObservableCollection<EnvironmentVariableItemViewModel> UserVariables { get; } = [];
+
+    // System tab (excluding PATH)
     public ObservableCollection<EnvironmentVariableItemViewModel> SystemVariables { get; } = [];
 
-    [ObservableProperty]
-    private PathEditorViewModel? _activePathEditor;
-
-    [ObservableProperty]
-    private bool _isPathEditorOpen;
+    public string UserTabHeader => $"User ({UserVariables.Count})";
+    public string SystemTabHeader => $"System ({SystemVariables.Count})";
 
     [ObservableProperty]
     private string? _userScanError;
@@ -35,16 +39,30 @@ public partial class EnvironmentViewModel : ViewModelBase
 
         foreach (var envVar in scanData.UserVariables)
         {
-            var item = new EnvironmentVariableItemViewModel(envVar, pendingChangesService);
-            item.RequestRemoval += OnItemRequestRemoval;
-            UserVariables.Add(item);
+            if (envVar.Name.Equals("Path", StringComparison.OrdinalIgnoreCase))
+            {
+                UserPathEditor = new PathEditorViewModel(envVar.Value, "User", pendingChangesService);
+            }
+            else
+            {
+                var item = new EnvironmentVariableItemViewModel(envVar, pendingChangesService);
+                item.RequestRemoval += OnItemRequestRemoval;
+                UserVariables.Add(item);
+            }
         }
 
         foreach (var envVar in scanData.SystemVariables)
         {
-            var item = new EnvironmentVariableItemViewModel(envVar, pendingChangesService);
-            item.RequestRemoval += OnItemRequestRemoval;
-            SystemVariables.Add(item);
+            if (envVar.Name.Equals("Path", StringComparison.OrdinalIgnoreCase))
+            {
+                SystemPathEditor = new PathEditorViewModel(envVar.Value, "System", pendingChangesService);
+            }
+            else
+            {
+                var item = new EnvironmentVariableItemViewModel(envVar, pendingChangesService);
+                item.RequestRemoval += OnItemRequestRemoval;
+                SystemVariables.Add(item);
+            }
         }
     }
 
@@ -55,6 +73,7 @@ public partial class EnvironmentViewModel : ViewModelBase
             name => !UserVariables.Any(v => !v.IsNew && v.Name.Equals(name, StringComparison.OrdinalIgnoreCase)));
         item.RequestRemoval += OnItemRequestRemoval;
         UserVariables.Add(item);
+        OnPropertyChanged(nameof(UserTabHeader));
     }
 
     [RelayCommand]
@@ -64,26 +83,15 @@ public partial class EnvironmentViewModel : ViewModelBase
             name => !SystemVariables.Any(v => !v.IsNew && v.Name.Equals(name, StringComparison.OrdinalIgnoreCase)));
         item.RequestRemoval += OnItemRequestRemoval;
         SystemVariables.Add(item);
-    }
-
-    [RelayCommand]
-    private void EditPath(EnvironmentVariableItemViewModel item)
-    {
-        ActivePathEditor = new PathEditorViewModel(item.Value, item.Scope, _pendingChangesService);
-        IsPathEditorOpen = true;
-    }
-
-    [RelayCommand]
-    private void ClosePathEditor()
-    {
-        IsPathEditorOpen = false;
-        ActivePathEditor = null;
+        OnPropertyChanged(nameof(SystemTabHeader));
     }
 
     private void OnItemRequestRemoval(EnvironmentVariableItemViewModel item)
     {
         item.RequestRemoval -= OnItemRequestRemoval;
-        UserVariables.Remove(item);
-        SystemVariables.Remove(item);
+        if (UserVariables.Remove(item))
+            OnPropertyChanged(nameof(UserTabHeader));
+        else if (SystemVariables.Remove(item))
+            OnPropertyChanged(nameof(SystemTabHeader));
     }
 }

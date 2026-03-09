@@ -8,6 +8,7 @@
              x:DataType="vm:EnvironmentViewModel">
 
     <UserControl.Resources>
+        <!-- Shared row template for variable lists (User/System tabs) -->
         <DataTemplate x:Key="EnvVarRowTemplate" x:DataType="vm:EnvironmentVariableItemViewModel">
             <Border Padding="12,8" Margin="0,2" CornerRadius="4"
                     Background="{StaticResource CardBrush}">
@@ -41,10 +42,6 @@
                         <Button Content="Edit" Command="{Binding BeginEditCommand}"
                                 IsVisible="{Binding !IsEditing}"
                                 Padding="8,4" FontSize="12" />
-                        <Button Content="PATH" Command="{Binding $parent[ItemsControl].((vm:EnvironmentViewModel)DataContext).EditPathCommand}"
-                                CommandParameter="{Binding}"
-                                IsVisible="{Binding IsPathVariable}"
-                                Padding="8,4" FontSize="12" />
                         <Button Content="Delete" Command="{Binding DeleteCommand}"
                                 IsVisible="{Binding !IsEditing}"
                                 Foreground="{StaticResource DangerBrush}"
@@ -61,134 +58,167 @@
                 </Grid>
             </Border>
         </DataTemplate>
+
+        <!-- Shared PATH editor template -->
+        <DataTemplate x:Key="PathEditorTemplate" x:DataType="vm:PathEditorViewModel">
+            <StackPanel Spacing="4">
+                <TextBlock Text="{Binding CharacterCountText}"
+                           FontSize="12"
+                           Foreground="{StaticResource TextTertiaryBrush}" />
+                <ItemsControl ItemsSource="{Binding Entries}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:PathEntryViewModel">
+                            <Border Padding="8,4" Margin="0,1" CornerRadius="4"
+                                    Background="{StaticResource CardBrush}">
+                                <Grid ColumnDefinitions="Auto,*,Auto">
+                                    <TextBlock Grid.Column="0" Text="{Binding Index}"
+                                               Width="24" VerticalAlignment="Center"
+                                               Foreground="{StaticResource TextTertiaryBrush}"
+                                               FontSize="12" />
+                                    <TextBox Grid.Column="1" Text="{Binding Path}"
+                                             Margin="4,0" FontSize="13" />
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2">
+                                        <Button Content="Up"
+                                                Command="{Binding $parent[ItemsControl].((vm:PathEditorViewModel)DataContext).MoveUpCommand}"
+                                                CommandParameter="{Binding}"
+                                                Padding="6,2" FontSize="11" />
+                                        <Button Content="Down"
+                                                Command="{Binding $parent[ItemsControl].((vm:PathEditorViewModel)DataContext).MoveDownCommand}"
+                                                CommandParameter="{Binding}"
+                                                Padding="6,2" FontSize="11" />
+                                        <Button Content="X"
+                                                Command="{Binding $parent[ItemsControl].((vm:PathEditorViewModel)DataContext).RemoveEntryCommand}"
+                                                CommandParameter="{Binding}"
+                                                Foreground="{StaticResource DangerBrush}"
+                                                Padding="6,2" FontSize="11" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+                    <Button Content="Add Entry"
+                            Command="{Binding AddEntryCommand}"
+                            Padding="12,6"
+                            FontSize="12" />
+                    <Button Content="Save PATH"
+                            Command="{Binding SavePathCommand}"
+                            Padding="12,6"
+                            FontSize="12"
+                            FontWeight="SemiBold" />
+                </StackPanel>
+            </StackPanel>
+        </DataTemplate>
     </UserControl.Resources>
 
-    <ScrollViewer HorizontalScrollBarVisibility="Disabled"
-                  VerticalScrollBarVisibility="Auto">
-        <StackPanel Spacing="24" Margin="0,0,0,16">
+    <TabControl>
 
-            <!-- User Variables Section -->
-            <StackPanel Spacing="8">
-                <DockPanel>
-                    <TextBlock Text="User Variables"
-                               FontSize="18"
-                               FontWeight="SemiBold"
-                               Foreground="{StaticResource TextPrimaryBrush}"
-                               VerticalAlignment="Center" />
-                    <Button Content="Add Variable"
-                            Command="{Binding AddUserVariableCommand}"
-                            HorizontalAlignment="Right"
-                            Padding="12,6"
-                            FontSize="12" />
-                </DockPanel>
-                <TextBlock Text="Environment variables for the current user"
-                           FontSize="13"
-                           Foreground="{StaticResource TextSecondaryBrush}"
-                           Margin="0,0,0,4" />
-                <TextBlock Text="{Binding UserScanError, StringFormat='Failed to read user variables: {0}'}"
-                           IsVisible="{Binding UserScanError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                           Foreground="{StaticResource WarningBrush}"
-                           FontSize="12" Margin="0,0,0,4" />
-                <ItemsControl ItemsSource="{Binding UserVariables}"
-                              ItemTemplate="{StaticResource EnvVarRowTemplate}" />
-            </StackPanel>
+        <!-- PATH Tab -->
+        <TabItem Header="PATH">
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                          VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="24" Margin="0,8,0,16">
 
-            <!-- System Variables Section -->
-            <StackPanel Spacing="8">
-                <DockPanel>
-                    <TextBlock Text="System Variables"
-                               FontSize="18"
-                               FontWeight="SemiBold"
-                               Foreground="{StaticResource TextPrimaryBrush}"
-                               VerticalAlignment="Center" />
-                    <Button Content="Add Variable"
-                            Command="{Binding AddSystemVariableCommand}"
-                            HorizontalAlignment="Right"
-                            Padding="12,6"
-                            FontSize="12" />
-                </DockPanel>
-                <TextBlock Text="System-wide environment variables (requires elevation to modify)"
-                           FontSize="13"
-                           Foreground="{StaticResource TextSecondaryBrush}"
-                           Margin="0,0,0,4" />
-                <TextBlock Text="{Binding SystemScanError, StringFormat='Failed to read system variables: {0}'}"
-                           IsVisible="{Binding SystemScanError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                           Foreground="{StaticResource WarningBrush}"
-                           FontSize="12" Margin="0,0,0,4" />
-                <ItemsControl ItemsSource="{Binding SystemVariables}"
-                              ItemTemplate="{StaticResource EnvVarRowTemplate}" />
-            </StackPanel>
+                    <!-- User PATH -->
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="User PATH"
+                                   FontSize="16"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextPrimaryBrush}" />
+                        <TextBlock Text="Appended to System PATH for the current user"
+                                   FontSize="13"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   Margin="0,0,0,4" />
+                        <ContentControl Content="{Binding UserPathEditor}"
+                                        ContentTemplate="{StaticResource PathEditorTemplate}"
+                                        IsVisible="{Binding UserPathEditor, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                        <TextBlock Text="No user PATH variable found"
+                                   FontSize="12" FontStyle="Italic"
+                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                   IsVisible="{Binding UserPathEditor, Converter={x:Static ObjectConverters.IsNull}}" />
+                    </StackPanel>
 
-            <!-- PATH Editor (inline, shown when active) -->
-            <StackPanel IsVisible="{Binding IsPathEditorOpen}" Spacing="8">
-                <DockPanel>
-                    <TextBlock Text="PATH Editor"
-                               FontSize="18"
-                               FontWeight="SemiBold"
-                               Foreground="{StaticResource TextPrimaryBrush}"
-                               VerticalAlignment="Center" />
-                    <Button Content="Close"
-                            Command="{Binding ClosePathEditorCommand}"
-                            HorizontalAlignment="Right"
-                            Padding="12,6"
-                            FontSize="12" />
-                </DockPanel>
-                <ContentControl Content="{Binding ActivePathEditor}">
-                    <ContentControl.DataTemplates>
-                        <DataTemplate DataType="{x:Type vm:PathEditorViewModel}">
-                            <StackPanel Spacing="4">
-                                <TextBlock Text="{Binding CharacterCountText}"
-                                           FontSize="12"
-                                           Foreground="{StaticResource TextTertiaryBrush}" />
-                                <ItemsControl ItemsSource="{Binding Entries}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:PathEntryViewModel">
-                                            <Border Padding="8,4" Margin="0,1" CornerRadius="4"
-                                                    Background="{StaticResource CardBrush}">
-                                                <Grid ColumnDefinitions="Auto,*,Auto">
-                                                    <TextBlock Grid.Column="0" Text="{Binding Index}"
-                                                               Width="24" VerticalAlignment="Center"
-                                                               Foreground="{StaticResource TextTertiaryBrush}"
-                                                               FontSize="12" />
-                                                    <TextBox Grid.Column="1" Text="{Binding Path}"
-                                                             Margin="4,0" FontSize="13" />
-                                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2">
-                                                        <Button Content="Up"
-                                                                Command="{Binding $parent[ItemsControl].((vm:PathEditorViewModel)DataContext).MoveUpCommand}"
-                                                                CommandParameter="{Binding}"
-                                                                Padding="6,2" FontSize="11" />
-                                                        <Button Content="Down"
-                                                                Command="{Binding $parent[ItemsControl].((vm:PathEditorViewModel)DataContext).MoveDownCommand}"
-                                                                CommandParameter="{Binding}"
-                                                                Padding="6,2" FontSize="11" />
-                                                        <Button Content="X"
-                                                                Command="{Binding $parent[ItemsControl].((vm:PathEditorViewModel)DataContext).RemoveEntryCommand}"
-                                                                CommandParameter="{Binding}"
-                                                                Foreground="{StaticResource DangerBrush}"
-                                                                Padding="6,2" FontSize="11" />
-                                                    </StackPanel>
-                                                </Grid>
-                                            </Border>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <Button Content="Add Entry"
-                                            Command="{Binding AddEntryCommand}"
-                                            Padding="12,6"
-                                            FontSize="12" />
-                                    <Button Content="Save PATH"
-                                            Command="{Binding SavePathCommand}"
-                                            Padding="12,6"
-                                            FontSize="12"
-                                            FontWeight="SemiBold" />
-                                </StackPanel>
-                            </StackPanel>
-                        </DataTemplate>
-                    </ContentControl.DataTemplates>
-                </ContentControl>
-            </StackPanel>
+                    <!-- System PATH -->
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="System PATH"
+                                   FontSize="16"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextPrimaryBrush}" />
+                        <TextBlock Text="Base PATH inherited by all users (requires elevation to modify)"
+                                   FontSize="13"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   Margin="0,0,0,4" />
+                        <ContentControl Content="{Binding SystemPathEditor}"
+                                        ContentTemplate="{StaticResource PathEditorTemplate}"
+                                        IsVisible="{Binding SystemPathEditor, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                        <TextBlock Text="No system PATH variable found"
+                                   FontSize="12" FontStyle="Italic"
+                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                   IsVisible="{Binding SystemPathEditor, Converter={x:Static ObjectConverters.IsNull}}" />
+                    </StackPanel>
 
-        </StackPanel>
-    </ScrollViewer>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+
+        <!-- User Tab -->
+        <TabItem>
+            <TabItem.Header>
+                <TextBlock Text="{Binding UserTabHeader}" FontSize="13" />
+            </TabItem.Header>
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                          VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="8" Margin="0,8,0,16">
+                    <DockPanel>
+                        <TextBlock Text="User environment variables (excluding PATH)"
+                                   FontSize="13"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" />
+                        <Button Content="Add Variable"
+                                Command="{Binding AddUserVariableCommand}"
+                                HorizontalAlignment="Right"
+                                Padding="12,6"
+                                FontSize="12" />
+                    </DockPanel>
+                    <TextBlock Text="{Binding UserScanError, StringFormat='Failed to read user variables: {0}'}"
+                               IsVisible="{Binding UserScanError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                               Foreground="{StaticResource WarningBrush}"
+                               FontSize="12" Margin="0,0,0,4" />
+                    <ItemsControl ItemsSource="{Binding UserVariables}"
+                                  ItemTemplate="{StaticResource EnvVarRowTemplate}" />
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+
+        <!-- System Tab -->
+        <TabItem>
+            <TabItem.Header>
+                <TextBlock Text="{Binding SystemTabHeader}" FontSize="13" />
+            </TabItem.Header>
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                          VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="8" Margin="0,8,0,16">
+                    <DockPanel>
+                        <TextBlock Text="System-wide variables (requires elevation to modify)"
+                                   FontSize="13"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" />
+                        <Button Content="Add Variable"
+                                Command="{Binding AddSystemVariableCommand}"
+                                HorizontalAlignment="Right"
+                                Padding="12,6"
+                                FontSize="12" />
+                    </DockPanel>
+                    <TextBlock Text="{Binding SystemScanError, StringFormat='Failed to read system variables: {0}'}"
+                               IsVisible="{Binding SystemScanError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                               Foreground="{StaticResource WarningBrush}"
+                               FontSize="12" Margin="0,0,0,4" />
+                    <ItemsControl ItemsSource="{Binding SystemVariables}"
+                                  ItemTemplate="{StaticResource EnvVarRowTemplate}" />
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+
+    </TabControl>
 </UserControl>
