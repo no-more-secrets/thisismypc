@@ -44,6 +44,22 @@ public sealed class StaticVerbService : IStaticVerbService
     {
         // Read verb metadata values
         var muiVerb = ReadStringOrNull(verbKeyPath, "MUIVerb");
+
+        // Fall back to the verb key's default value as display name.
+        // Some apps (VS Code, WizTree, Notepad++) set the display name here
+        // instead of MUIVerb. Skip indirect string references (@dll,-ID) since
+        // resolving them requires P/Invoke. Strip & mnemonic markers for display.
+        if (muiVerb is null)
+        {
+            var defaultValue = ReadStringOrNull(verbKeyPath, string.Empty);
+            if (defaultValue is not null &&
+                !defaultValue.StartsWith('@') &&
+                !defaultValue.Equals(verbName, StringComparison.OrdinalIgnoreCase))
+            {
+                muiVerb = StripMnemonics(defaultValue);
+            }
+        }
+
         var icon = ReadStringOrNull(verbKeyPath, "Icon");
         var position = ReadStringOrNull(verbKeyPath, "Position");
         var appliesTo = ReadStringOrNull(verbKeyPath, "AppliesTo");
@@ -107,5 +123,34 @@ public sealed class StaticVerbService : IStaticVerbService
     {
         var result = _registryService.ReadString(keyPath, valueName);
         return result.IsSuccess ? result.Value : null;
+    }
+
+    /// <summary>
+    /// Strips Windows &amp; mnemonic markers from display names.
+    /// Single &amp; is removed; &amp;&amp; becomes a literal &amp;.
+    /// </summary>
+    private static string StripMnemonics(string value)
+    {
+        if (!value.Contains('&'))
+            return value;
+
+        var sb = new System.Text.StringBuilder(value.Length);
+        for (var i = 0; i < value.Length; i++)
+        {
+            if (value[i] == '&' && i + 1 < value.Length)
+            {
+                if (value[i + 1] == '&')
+                {
+                    sb.Append('&');
+                    i++; // skip second &
+                }
+                // else: skip the single & (mnemonic marker)
+            }
+            else
+            {
+                sb.Append(value[i]);
+            }
+        }
+        return sb.ToString();
     }
 }

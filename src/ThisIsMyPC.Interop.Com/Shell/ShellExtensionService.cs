@@ -54,6 +54,16 @@ public sealed class ShellExtensionService : IShellExtensionService
                     var isEnabled = !rawClsid.StartsWith('-');
                     var cleanClsid = isEnabled ? rawClsid : rawClsid[1..];
 
+                    // Some handlers use an inverted registration: key name is the CLSID,
+                    // default value is the friendly name (e.g., Taskband Pin, Start Menu Pin).
+                    // Detect this and swap so Clsid always holds the actual CLSID.
+                    var resolvedName = handlerName;
+                    if (!LooksLikeClsid(cleanClsid) && LooksLikeClsid(handlerName))
+                    {
+                        resolvedName = cleanClsid;
+                        cleanClsid = handlerName;
+                    }
+
                     // Cache DLL path lookups to avoid repeated InprocServer32 reads for the same CLSID
                     if (!dllPathCache.TryGetValue(cleanClsid, out var dllPath))
                     {
@@ -70,7 +80,7 @@ public sealed class ShellExtensionService : IShellExtensionService
                     }
 
                     handlers.Add(new ShellExtensionInfo(
-                        HandlerName: handlerName,
+                        HandlerName: resolvedName,
                         Clsid: cleanClsid,
                         RegistryPath: handlerKeyPath,
                         AppliesTo: appliesTo,
@@ -116,6 +126,9 @@ public sealed class ShellExtensionService : IShellExtensionService
         var result = _registryService.ReadString(inprocKeyPath, string.Empty);
         return result.IsSuccess ? result.Value : null;
     }
+
+    private static bool LooksLikeClsid(string value) =>
+        value.Length > 2 && value[0] == '{' && value[^1] == '}';
 
     private static string? ResolvePublisher(string? dllPath)
     {

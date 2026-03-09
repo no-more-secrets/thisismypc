@@ -388,6 +388,7 @@ These entries appear on every file right-click and are registered on `HKCR\*` or
 | Include in library → | | | | ✓ | | | | | ✓ |
 | Pin to Start | | | | ✓ | | | | | ✓ |
 | NVIDIA App → | | | | | | ✓ | | | |
+| NVIDIA Control Panel | | | | | | ✓ | | | |
 | Display settings | | | | | | ✓ | | | |
 | Personalize | | | | | | ✓ | | | |
 | Copy here | | | | | | | ✓ | | |
@@ -418,7 +419,7 @@ These entries appear on every file right-click and are registered on `HKCR\*` or
 | **Notepad++** | Edit with Notepad++ | Global (files) |
 | **VS Code** | Open with Code | Global (files) + folders |
 | **Visual Studio** | Open with Visual Studio | Folders + folder background + desktop background |
-| **NVIDIA** | NVIDIA App →, NVIDIA Control Panel | Desktop background |
+| **NVIDIA** | NVIDIA App →, NVIDIA Control Panel | Desktop background (registered at Directory\Background, COM-probe filtered to desktop only) |
 
 ### Duplicate Entry Bug
 - **File Locksmith** appears twice in every file context menu (Sections 1 and 5) and twice in the folder context menu (Sections 1 and 5). This is a PowerToys registration issue.
@@ -430,7 +431,56 @@ These entries appear on every file right-click and are registered on `HKCR\*` or
 3. PowerToys is the worst offender for duplicate entries, registering File Locksmith in two different handler locations.
 4. Background context menus (folder and desktop) are significantly cleaner than file or folder menus — fewer apps register background handlers.
 5. The global `*` registrations (WinRAR, 7-Zip, Notepad++, etc.) are the primary bloat contributors since they appear on every single file type.
-6. The desktop background menu is the leanest context (13 items), and is the only place NVIDIA registers a shell extension. It also lacks several folder-background entries like Customize, Rename with PowerRename, and Give access to.
+6. The desktop background menu is the leanest visual context (13 items). NVIDIA registers its shell extension at `Directory\Background` (not `DesktopBackground`), but the COM handler filters itself to only inject items on the desktop surface — making it appear desktop-exclusive despite the shared registration path. Similarly, PowerRename and several other handlers are registered at `Directory\Background` but their COM probes exclude them from the desktop, so the desktop lacks Customize, Rename with PowerRename, and Give access to.
 7. **Drag-right-click is a distinct invocation path** with its own minimal menu (6 items). Only compression vendors (7-Zip, WinRAR) register DragDropHandlers here, plus the OS-native Copy/Move/Shortcut operations. "Move here" is conditionally omitted when the drag target is empty space in the same folder.
 8. **OneDrive injects a context-dependent section** into file and folder menus when the item lives in a synced folder. This replaces "Move to OneDrive" with 5 cloud-specific entries (Share, Copy Link, Manage access, View online, + Version history for files or Folder color for folders). ThisIsMyPC must detect OneDrive sync state to accurately catalog entries.
 9. **WMP Legacy handlers persist on folders** even on modern Windows 11 installs — "Add to Windows Media Player Legacy list" and "Play with Windows Media Player Legacy" appear in the folder legacy menu. These are likely orphaned registrations on many systems where WMP is not actively used.
+
+### Scanner Cross-Reference (March 9, 2026)
+
+Scanner output: 62 unique handlers (25 COM, 37 static verbs). Tab counts: File (22), Folder (26), Folder Background (12), Desktop (18), Misc (18).
+
+**Catalog → Scanner handler mapping:**
+| Catalog Entry | Scanner Handler | Type | Notes |
+|---|---|---|---|
+| Edit with Notepad++ | `Notepad++ Context menu` (ANotepad++64) | Static Verb | Display name from verb key default value |
+| Add to Favorites | `@shell32.dll,-51608` (pintohomefile) | Static Verb | Indirect string, unresolved |
+| Open with Code (files) | `Open with Code` (VSCode) | Static Verb | Display name from default value "Open w&ith Code" |
+| Open with VS Code (folders) | `Open with VS Code` (Open with Code) | Static Verb | Display name from default value |
+| Open with Visual Studio | `AnyCode` | Static Verb | Default value is indirect string `@VSLauncherUI.dll,-1002`, unresolved |
+| 7-Zip → | `7-Zip` | COM Handler | Currently disabled (blocked list + dash-prefix) |
+| Scan with Microsoft Defender... | `EPP` | COM Handler | Windows Defender shell extension |
+| Open with | `Open With` | COM Handler | Critical — `{09799AFB-AD67-11d1-ABCD-00C04FC30936}` |
+| Give access to → | `Sharing` | COM Handler | Critical — `{f81e9010-6ea4-11ce-a7ff-00aa003ca9f6}` |
+| Copy as path | `CopyAsPathMenu` | COM Handler | Critical — `{f3d06e7c-1e45-4a26-847e-f9fcdee59be0}` |
+| Change Attributes | `ACShell` | COM Handler | Romain Petges — File tab only |
+| Share | `ModernSharing` | COM Handler | Modern Win11 share dialog |
+| Send to → | `SendTo` | COM Handler | Critical — `{7BA4C740-9E81-11CF-99D3-00AA004AE837}` |
+| Unlock with File Locksmith | `FileLocksmithExt` | COM Handler | PowerToys — File + Misc tabs |
+| Rename with PowerRename | `PowerRenameExt` | COM Handler | PowerToys — File + Background + Desktop tabs |
+| Pin to Start | `PintoStartScreen` | COM Handler | Folder tab only |
+| Pin to taskbar | `Taskband Pin` | COM Handler | Critical — `{90AA3A4E-1CBA-4233-B8BB-535773D48449}`, inverted CLSID registration |
+| Pin to Start (files) | `Start Menu Pin` | COM Handler | Critical — `{a2a9545d-a0c2-42b4-9708-a0b2badd77c8}`, inverted CLSID registration |
+| NVIDIA App → | `NvAppDesktopContext` | COM Handler | Registered at Directory\Background, COM-probe filtered |
+| NVIDIA Control Panel | `NvCplDesktopContext` | COM Handler | Registered at Directory\Background, COM-probe filtered |
+| WizTree | `WizTree` | Static Verb | Folders + Background + Desktop + Misc |
+| New → | `New` | COM Handler | Critical — `{D969A300-E7FF-11d0-A93B-00A0C90F2719}` |
+
+**Handlers found by scanner but not in catalog** (hidden, conditional, or Shift-only):
+- `Taskband Pin`, `Start Menu Pin` — inverted CLSID registrations, conditionally visible per file type
+- `WorkFolders`, `FileSyncEx` — background COM handlers that inject items conditionally (e.g., OneDrive)
+- `DesktopSlideshow` — only visible when desktop slideshow is active
+- `.SpotlightLearnMore`, `.SpotlightNextImage` — Windows Spotlight entries, conditional on wallpaper source
+- `EditStickers` — Win11 desktop sticker feature
+- `cmd`, `Powershell`, `WSL` — Shift-only (Extended) entries, not visible in normal right-click
+- `removeproperties`, `WorkfoldersControl`, `OfflineFilesLaunchSyncCenter` — ProgrammaticAccessOnly (hidden)
+- `Open With EncryptionMenu` — EFS encryption variant of Open With
+- `EnhancedStorageShell` — hardware encryption (Misc/Drive tab)
+- BitLocker verbs (`encrypt-bde`, `manage-bde`, etc.) — Drive-specific, Misc tab
+
+**Entries in catalog not tracked by scanner** (out of scope for current scanner):
+- Shell built-ins: View, Sort by, Group by, Refresh, Paste, Undo, Cut, Copy, Delete, Rename, Properties, Create shortcut, Customize this folder
+- Modern/IExplorerCommand handlers: Open in Terminal, Edit in Notepad, Ask Copilot, Create with Designer
+- File-type-specific verbs: Edit with Photos, Edit with Paint, Set as desktop background, Print, Rotate, Cast to Device
+- DragDropHandlers: 7-Zip drag, WinRAR drag, Copy/Move/Shortcut here
+- OneDrive injected items: Share, Copy Link, Manage access, View online, Version history, Folder color

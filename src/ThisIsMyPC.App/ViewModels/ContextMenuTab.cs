@@ -39,7 +39,9 @@ public static class ContextMenuTabMapper
             "All files" or "All filesystem objects" => [ContextMenuTab.File],
             "Directories" => [ContextMenuTab.Folder],
             "Folders" => [ContextMenuTab.Folder],
-            "Folder background" => [ContextMenuTab.FolderBackground],
+            // Static verbs at Directory\Background always appear on both folder backgrounds
+            // and the desktop — unlike COM handlers, there is no probe filtering mechanism.
+            "Folder background" => [ContextMenuTab.FolderBackground, ContextMenuTab.Desktop],
             "Desktop background" => [ContextMenuTab.Desktop],
             "Drives" => [ContextMenuTab.Misc],
             _ => [ContextMenuTab.File],

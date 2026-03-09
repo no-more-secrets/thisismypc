@@ -130,11 +130,11 @@ public sealed class ContextMenuTabMapperTests
     }
 
     [Fact]
-    public void GetTabsForStaticVerbScope_directory_background_maps_to_FolderBackground()
+    public void GetTabsForStaticVerbScope_directory_background_maps_to_both_tabs()
     {
         var tabs = ContextMenuTabMapper.GetTabsForStaticVerbScope("Folder background");
         Assert.Contains(ContextMenuTab.FolderBackground, tabs);
-        Assert.DoesNotContain(ContextMenuTab.Desktop, tabs);
+        Assert.Contains(ContextMenuTab.Desktop, tabs);
     }
 
     [Fact]
