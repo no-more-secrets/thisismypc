@@ -57,3 +57,7 @@ $RECYCLE.BIN/
 # Cursor / Windsurf
 .cursor/
 .windsurf/
+
+# Dependency study repos — only README.md and *-STUDY.md are tracked.
+# Cloned repos are ignored to prevent gitlink/submodule references.
+deps/*/
