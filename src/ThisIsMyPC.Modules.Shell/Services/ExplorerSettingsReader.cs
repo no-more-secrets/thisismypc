@@ -90,6 +90,42 @@ public sealed class ExplorerSettingsReader
             defaultValue: "2",
             restart: RestartRequirement.None));
 
+        // Navigation pane: show all folders
+        preferences.Add(ReadPreference(
+            id: "nav-pane-show-all-folders",
+            displayName: "Show all folders in navigation pane",
+            description: "Display all folders including Control Panel and Recycle Bin in the navigation pane",
+            keyPath: ShellRegistryPaths.AdvancedKeyPath,
+            valueName: "NavPaneShowAllFolders",
+            enabledValue: "1",
+            disabledValue: "0",
+            defaultValue: "0",
+            restart: RestartRequirement.ExplorerRestart));
+
+        // Navigation pane: expand to current folder
+        preferences.Add(ReadPreference(
+            id: "nav-pane-expand-to-current",
+            displayName: "Expand navigation pane to current folder",
+            description: "Automatically expand the navigation tree to show the current folder location",
+            keyPath: ShellRegistryPaths.AdvancedKeyPath,
+            valueName: "NavPaneExpandToCurrentFolder",
+            enabledValue: "1",
+            disabledValue: "0",
+            defaultValue: "0",
+            restart: RestartRequirement.ExplorerRestart));
+
+        // Compact view: UseCompactMode=1 compact spacing, 0 normal spacing
+        preferences.Add(ReadPreference(
+            id: "compact-view",
+            displayName: "Use compact view in Explorer",
+            description: "Reduce spacing between items in Explorer for a denser file list",
+            keyPath: ShellRegistryPaths.AdvancedKeyPath,
+            valueName: "UseCompactMode",
+            enabledValue: "1",
+            disabledValue: "0",
+            defaultValue: "0",
+            restart: RestartRequirement.None));
+
         return preferences;
     }
 

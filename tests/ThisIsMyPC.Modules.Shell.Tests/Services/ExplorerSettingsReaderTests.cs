@@ -10,7 +10,7 @@ public sealed class ExplorerSettingsReaderTests
     private const string AdvancedKeyPath = @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced";
     private const string ExplorerKeyPath = @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer";
 
-    private readonly FakeRegistryService _registry = new();
+private readonly FakeRegistryService _registry = new();
     private readonly ExplorerSettingsReader _sut;
 
     public ExplorerSettingsReaderTests()
@@ -19,11 +19,11 @@ public sealed class ExplorerSettingsReaderTests
     }
 
     [Fact]
-    public void ReadAll_returns_all_six_preferences()
+    public void ReadAll_returns_all_nine_preferences()
     {
         SetDefaults();
         var prefs = _sut.ReadAll();
-        Assert.Equal(6, prefs.Count);
+        Assert.Equal(9, prefs.Count);
     }
 
     [Fact]
@@ -94,6 +94,90 @@ public sealed class ExplorerSettingsReaderTests
         var hidden = prefs.First(p => p.Id == "hidden-files");
         Assert.Equal("2", hidden.CurrentValue); // default is "2" (disabled)
         Assert.False(hidden.IsEnabled);
+    }
+
+    // --- Navigation Pane Preferences (Task 2) ---
+
+    [Fact]
+    public void NavPaneShowAllFolders_enabled_when_value_is_1()
+    {
+        _registry.SetDWord(AdvancedKeyPath, "NavPaneShowAllFolders", 1);
+        var prefs = _sut.ReadAll();
+        var pref = prefs.First(p => p.Id == "nav-pane-show-all-folders");
+
+        Assert.True(pref.IsEnabled);
+        Assert.Equal("1", pref.CurrentValue);
+        Assert.Equal(RestartRequirement.ExplorerRestart, pref.RestartRequirement);
+    }
+
+    [Fact]
+    public void NavPaneShowAllFolders_disabled_when_value_is_0()
+    {
+        _registry.SetDWord(AdvancedKeyPath, "NavPaneShowAllFolders", 0);
+        var prefs = _sut.ReadAll();
+        var pref = prefs.First(p => p.Id == "nav-pane-show-all-folders");
+
+        Assert.False(pref.IsEnabled);
+        Assert.Equal("0", pref.CurrentValue);
+    }
+
+    [Fact]
+    public void NavPaneExpandToCurrentFolder_enabled_when_value_is_1()
+    {
+        _registry.SetDWord(AdvancedKeyPath, "NavPaneExpandToCurrentFolder", 1);
+        var prefs = _sut.ReadAll();
+        var pref = prefs.First(p => p.Id == "nav-pane-expand-to-current");
+
+        Assert.True(pref.IsEnabled);
+        Assert.Equal("1", pref.CurrentValue);
+        Assert.Equal(RestartRequirement.ExplorerRestart, pref.RestartRequirement);
+    }
+
+    [Fact]
+    public void NavPaneExpandToCurrentFolder_disabled_when_value_is_0()
+    {
+        _registry.SetDWord(AdvancedKeyPath, "NavPaneExpandToCurrentFolder", 0);
+        var prefs = _sut.ReadAll();
+        var pref = prefs.First(p => p.Id == "nav-pane-expand-to-current");
+
+        Assert.False(pref.IsEnabled);
+        Assert.Equal("0", pref.CurrentValue);
+    }
+
+    // --- Compact View (Task 3) ---
+
+    [Fact]
+    public void UseCompactMode_enabled_when_value_is_1()
+    {
+        _registry.SetDWord(AdvancedKeyPath, "UseCompactMode", 1);
+        var prefs = _sut.ReadAll();
+        var pref = prefs.First(p => p.Id == "compact-view");
+
+        Assert.True(pref.IsEnabled);
+        Assert.Equal("1", pref.CurrentValue);
+        Assert.Equal(RestartRequirement.None, pref.RestartRequirement);
+    }
+
+    [Fact]
+    public void UseCompactMode_disabled_when_value_is_0()
+    {
+        _registry.SetDWord(AdvancedKeyPath, "UseCompactMode", 0);
+        var prefs = _sut.ReadAll();
+        var pref = prefs.First(p => p.Id == "compact-view");
+
+        Assert.False(pref.IsEnabled);
+        Assert.Equal("0", pref.CurrentValue);
+    }
+
+    [Fact]
+    public void UseCompactMode_defaults_to_disabled()
+    {
+        // No value set — should default to 0 (normal spacing)
+        var prefs = _sut.ReadAll();
+        var pref = prefs.First(p => p.Id == "compact-view");
+
+        Assert.False(pref.IsEnabled);
+        Assert.Equal("0", pref.CurrentValue);
     }
 
     private void SetDefaults()

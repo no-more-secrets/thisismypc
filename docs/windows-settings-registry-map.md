@@ -146,7 +146,7 @@ Each entry gets one of these tags in its heading:
 
 ### Explorer Preferences
 
-#### Show Hidden Files `[RESEARCHED]`
+#### Show Hidden Files `[CONFIRMED]`
 
 | Field | Value |
 |---|---|
@@ -160,10 +160,10 @@ Each entry gets one of these tags in its heading:
 | **Effect** | Explorer refresh (F5) |
 | **Writer** | Explorer.EXE |
 | **Watchers** | Explorer.EXE |
-| **Validated** | Not yet ProcMon-validated |
+| **Validated** | 2026-03-08, 25H2 (ProcMon + reg export diff) |
 | **Gotchas** | Value is `1`/`2`, not `0`/`1` — easy mistake |
 
-#### Show File Extensions `[RESEARCHED]`
+#### Show File Extensions `[CONFIRMED]`
 
 | Field | Value |
 |---|---|
@@ -177,10 +177,10 @@ Each entry gets one of these tags in its heading:
 | **Effect** | Explorer refresh (F5) |
 | **Writer** | Explorer.EXE |
 | **Watchers** | Explorer.EXE |
-| **Validated** | Not yet ProcMon-validated |
+| **Validated** | 2026-03-08, 25H2 (ProcMon + reg export diff) |
 | **Gotchas** | Inverted logic — `0` means show, `1` means hide |
 
-#### Show Protected OS Files `[RESEARCHED]`
+#### Show Protected OS Files `[CONFIRMED]`
 
 | Field | Value |
 |---|---|
@@ -194,10 +194,10 @@ Each entry gets one of these tags in its heading:
 | **Effect** | Explorer refresh (F5) |
 | **Writer** | Explorer.EXE |
 | **Watchers** | Explorer.EXE |
-| **Validated** | Not yet ProcMon-validated |
+| **Validated** | 2026-03-08, 25H2 (ProcMon + reg export diff) |
 | **Gotchas** | There's also a `SuperHidden` value in the same key — it's inert (a legacy typo). Only `ShowSuperHidden` does anything. |
 
-#### Launch Explorer To `[RESEARCHED]`
+#### Launch Explorer To `[CONFIRMED]`
 
 | Field | Value |
 |---|---|
@@ -208,13 +208,13 @@ Each entry gets one of these tags in its heading:
 | **Data** | `1` = This PC, `2` = Quick Access, `3` = Home (Win11 22H2+) |
 | **Default** | `2` or `3` depending on build |
 | **Scope** | HKCU |
-| **Effect** | Next Explorer window opened |
+| **Effect** | Immediate (applies to newly opened windows) |
 | **Writer** | Explorer.EXE |
 | **Watchers** | Explorer.EXE |
-| **Validated** | Not yet ProcMon-validated |
+| **Validated** | 2026-03-08, 25H2 (reg export diff) |
 | **Gotchas** | Value `3` (Home) was added in 22H2. Older docs only list 1 and 2. |
 
-#### Separate Process for Folders `[RESEARCHED]`
+#### Separate Process for Folders `[CONFIRMED]`
 
 | Field | Value |
 |---|---|
@@ -228,7 +228,7 @@ Each entry gets one of these tags in its heading:
 | **Effect** | Explorer restart |
 | **Writer** | Explorer.EXE |
 | **Watchers** | Explorer.EXE |
-| **Validated** | Not yet ProcMon-validated |
+| **Validated** | 2026-03-08, 25H2 (ProcMon + reg export diff) |
 | **Gotchas** | None known |
 
 #### Sync Provider Notifications (Explorer Ads) `[RESEARCHED]`
@@ -354,22 +354,73 @@ All under `HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager
 | **Validated** | 2026-03-07, 25H2 (observed as watcher, not directly toggled) |
 | **Gotchas** | No Settings UI toggle for this — it's a companion value. Set it alongside SubscribedContent-338389Enabled for complete suppression. |
 
-#### Confirm File Delete Dialog `[RESEARCHED]`
+#### Navigation Pane — Show All Folders `[CONFIRMED]`
 
 | Field | Value |
 |---|---|
-| **UI Location** | `Recycle Bin → Properties → Display delete confirmation dialog` |
-| **Key** | `HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer` |
-| **Value** | `ConfirmFileDelete` |
+| **UI Location** | `Folder Options → View → Navigation pane → Show all folders` |
+| **Key** | `HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced` |
+| **Value** | `NavPaneShowAllFolders` |
 | **Type** | REG_DWORD |
-| **Data** | `1` = Show prompt, `0` = Skip prompt |
-| **Default** | Depends on Recycle Bin properties (typically `0` on clean install) |
+| **Data** | `1` = Show all folders, `0` = Default folders only |
+| **Default** | `0` |
+| **Scope** | HKCU |
+| **Effect** | Explorer restart |
+| **Writer** | Explorer.EXE |
+| **Watchers** | Explorer.EXE |
+| **Validated** | 2026-03-08, 25H2 (reg export diff) |
+| **Gotchas** | Shows Control Panel, Recycle Bin, and other virtual folders in the nav pane tree. Requires Explorer restart — not visible in already-open windows. |
+
+#### Navigation Pane — Expand to Current Folder `[CONFIRMED]`
+
+| Field | Value |
+|---|---|
+| **UI Location** | `Folder Options → View → Navigation pane → Expand to open folder` |
+| **Key** | `HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced` |
+| **Value** | `NavPaneExpandToCurrentFolder` |
+| **Type** | REG_DWORD |
+| **Data** | `1` = Auto-expand, `0` = Manual expansion |
+| **Default** | `0` |
+| **Scope** | HKCU |
+| **Effect** | Explorer restart |
+| **Writer** | Explorer.EXE |
+| **Watchers** | Explorer.EXE |
+| **Validated** | 2026-03-08, 25H2 (reg export diff) |
+| **Gotchas** | Requires Explorer restart — not visible in already-open windows. |
+
+#### Compact View Mode `[CONFIRMED]`
+
+| Field | Value |
+|---|---|
+| **UI Location** | `File Explorer → View → Compact view` (Win11) or `Folder Options → View → Decrease space between items (compact view)` |
+| **Key** | `HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced` |
+| **Value** | `UseCompactMode` |
+| **Type** | REG_DWORD |
+| **Data** | `1` = Compact spacing, `0` = Normal spacing |
+| **Default** | `0` |
 | **Scope** | HKCU |
 | **Effect** | Immediate |
 | **Writer** | Explorer.EXE |
 | **Watchers** | Explorer.EXE |
-| **Validated** | Not yet ProcMon-validated |
-| **Gotchas** | This is a policy-level override. The primary control is the Recycle Bin properties dialog, which writes this value. The `Policies\Explorer` key may not exist until the user changes this setting. |
+| **Validated** | 2026-03-08, 25H2 (ProcMon RegQueryValue on Explorer startup + reg export diff) |
+| **Gotchas** | Win11 default is normal (touch-friendly) spacing. This restores Win10-density spacing. Change visible instantly in open Explorer windows. |
+
+#### Confirm File Delete Dialog `[BLOCKED]`
+
+| Field | Value |
+|---|---|
+| **UI Location** | `Recycle Bin → Properties → Display delete confirmation dialog` |
+| **Key** | `HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\ShellState` |
+| **Value** | `ShellState` |
+| **Type** | REG_BINARY |
+| **Data** | Bit 2 of byte index 4 controls delete confirmation (observed: `0x37` = off, `0x33` = on, difference = `0x04`) |
+| **Default** | Off (no confirmation) on clean install |
+| **Scope** | HKCU |
+| **Effect** | Immediate |
+| **Writer** | Explorer.EXE |
+| **Watchers** | Explorer.EXE |
+| **Validated** | 2026-03-08, 25H2 — ProcMon + full registry diff confirmed |
+| **Gotchas** | **NOT a standalone DWORD.** The widely-cited `Policies\Explorer\ConfirmFileDelete` DWORD does not exist on Win11 25H2. The setting is stored as a bit flag inside the `ShellState` binary blob. Implementation requires reading the blob, flipping bit 2 of byte 4, and writing back. Same binary format also stores folder view defaults. The `SHGetSetSettings` Shell API may abstract this. Deferred from Story 2.4 — requires new `ChangeValueType` and binary blob read/write infrastructure. |
 
 ### Environment Variables (Story 2.5)
 

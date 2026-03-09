@@ -250,18 +250,23 @@
 
 ### Section 2
 - Paste
-- Undo Rename (Ctrl+Z)
+- Undo Rename (Ctrl+Z) [any undo/redo appears here, if no recent action, nothing appears]
 
-### Section 3
+### Section 3 (visually unified with Section 2)
 - Open in Terminal
 - Open with Visual Studio
 - WizTree
-- NVIDIA App →
 
 ### Section 4
-- New →
+- NVIDIA App →
 
 ### Section 5
+- NVIDIA Control Panel
+
+### Section 6
+- New →
+
+### Section 7
 - Display settings
 - Personalize
 
