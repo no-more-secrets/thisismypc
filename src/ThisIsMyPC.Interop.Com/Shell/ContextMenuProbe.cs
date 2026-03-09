@@ -40,13 +40,15 @@ public sealed partial class ContextMenuProbe : IContextMenuProbe
             if (hr < 0)
                 return OperationResult<bool>.Success(true); // COM activation failed → safe fallback
 
-            // 2. Get PIDL for the target surface
+            // 2. Get PIDL for the target surface (virtual namespace PIDLs)
             Guid folderId = surface == ContextMenuSurface.DesktopBackground ? FOLDERID_Desktop : FOLDERID_Documents;
             hr = SHGetKnownFolderIDList(in folderId, 0, 0, out pidl);
             if (hr < 0)
                 return OperationResult<bool>.Success(true); // PIDL failed → safe fallback
 
             // 3. Call IShellExtInit::Initialize via vtable
+            //    Pass null for pdtobj and hkeyProgID — handlers that check these
+            //    parameters will use the PIDL alone for surface determination
             var vtable = *(nint**)pShellExtInit;
             var initFn = (delegate* unmanaged[Stdcall]<nint, nint, nint, nint, int>)vtable[VtblInitialize];
             hr = initFn(pShellExtInit, pidl, 0, 0);
@@ -107,21 +109,27 @@ public sealed partial class ContextMenuProbe : IContextMenuProbe
     }
 
     [LibraryImport("ole32.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static partial int CoCreateInstance(in Guid rclsid, nint pUnkOuter, uint dwClsContext, in Guid riid, out nint ppv);
 
     [LibraryImport("shell32.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static partial int SHGetKnownFolderIDList(in Guid rfid, uint dwFlags, nint hToken, out nint ppidl);
 
     [LibraryImport("ole32.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static partial void CoTaskMemFree(nint pv);
 
     [LibraryImport("user32.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static partial nint CreatePopupMenu();
 
     [LibraryImport("user32.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool DestroyMenu(nint hMenu);
 
     [LibraryImport("user32.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static partial int GetMenuItemCount(nint hMenu);
 }
