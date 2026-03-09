@@ -27,10 +27,10 @@ public sealed class PathEditorViewModelTests
     }
 
     [Fact]
-    public void MoveUp_swaps_entries()
+    public void MoveEntry_swaps_entries()
     {
         var vm = new PathEditorViewModel("A;B;C", "User", _pendingService);
-        vm.MoveUpCommand.Execute(vm.Entries[1]);
+        vm.MoveEntry(1, 0);
 
         Assert.Equal("B", vm.Entries[0].Path);
         Assert.Equal("A", vm.Entries[1].Path);
@@ -38,10 +38,10 @@ public sealed class PathEditorViewModelTests
     }
 
     [Fact]
-    public void MoveDown_swaps_entries()
+    public void MoveEntry_down()
     {
         var vm = new PathEditorViewModel("A;B;C", "User", _pendingService);
-        vm.MoveDownCommand.Execute(vm.Entries[0]);
+        vm.MoveEntry(0, 1);
 
         Assert.Equal("B", vm.Entries[0].Path);
         Assert.Equal("A", vm.Entries[1].Path);
@@ -49,21 +49,24 @@ public sealed class PathEditorViewModelTests
     }
 
     [Fact]
-    public void MoveUp_first_entry_no_op()
+    public void MoveEntry_same_index_no_op()
     {
         var vm = new PathEditorViewModel("A;B;C", "User", _pendingService);
-        vm.MoveUpCommand.Execute(vm.Entries[0]);
+        vm.MoveEntry(0, 0);
 
         Assert.Equal("A", vm.Entries[0].Path);
         Assert.Equal("B", vm.Entries[1].Path);
     }
 
     [Fact]
-    public void MoveDown_last_entry_no_op()
+    public void MoveEntry_out_of_range_no_op()
     {
         var vm = new PathEditorViewModel("A;B;C", "User", _pendingService);
-        vm.MoveDownCommand.Execute(vm.Entries[2]);
+        vm.MoveEntry(-1, 0);
+        vm.MoveEntry(0, 5);
 
+        Assert.Equal("A", vm.Entries[0].Path);
+        Assert.Equal("B", vm.Entries[1].Path);
         Assert.Equal("C", vm.Entries[2].Path);
     }
 

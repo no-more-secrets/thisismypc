@@ -43,25 +43,13 @@ public partial class PathEditorViewModel : ViewModelBase
         UpdateCharacterCount();
     }
 
-    [RelayCommand]
-    private void MoveUp(PathEntryViewModel entry)
+    public void MoveEntry(int fromIndex, int toIndex)
     {
-        var index = Entries.IndexOf(entry);
-        if (index <= 0)
-            return;
+        if (fromIndex < 0 || fromIndex >= Entries.Count) return;
+        if (toIndex < 0 || toIndex >= Entries.Count) return;
+        if (fromIndex == toIndex) return;
 
-        Entries.Move(index, index - 1);
-        ReindexAndStage();
-    }
-
-    [RelayCommand]
-    private void MoveDown(PathEntryViewModel entry)
-    {
-        var index = Entries.IndexOf(entry);
-        if (index < 0 || index >= Entries.Count - 1)
-            return;
-
-        Entries.Move(index, index + 1);
+        Entries.Move(fromIndex, toIndex);
         ReindexAndStage();
     }
 
