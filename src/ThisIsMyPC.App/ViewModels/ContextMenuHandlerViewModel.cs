@@ -153,7 +153,11 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
             if (_readRegistryState is not null)
                 _registryIsEnabled = _readRegistryState();
 
-            var changes = ContextMenuChangeFactory.CreateToggle(_handler, desiredState);
+            // Blocked list for universal coverage + dash-prefix for immediate Explorer effect
+            var blockedListChange = ContextMenuChangeFactory.CreateBlockedListToggle(_handler, desiredState);
+            var dashPrefixChanges = ContextMenuChangeFactory.CreateToggle(_handler, desiredState);
+            var allChanges = new List<ChangeDescriptor> { blockedListChange };
+            allChanges.AddRange(dashPrefixChanges);
 
             _isStagingChange = true;
             try
@@ -173,7 +177,7 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
                         GroupId = Guid.NewGuid().ToString("N"),
                         DisplayName = $"Context menu: {_handler.Name}",
                         Description = $"Toggle {_handler.Name} context menu handler",
-                        Changes = changes,
+                        Changes = allChanges,
                     };
                     _pendingChangesService.Stage(group);
                     _stagedGroupId = group.GroupId;
@@ -199,14 +203,25 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
         if (e.PropertyName is not nameof(IPendingChangesService.PendingGroups))
             return;
 
-        // Our staged change was removed externally (DiscardAll or Unstage) — reset toggle
+        // Our staged change was removed — either applied or discarded
         if (_stagedGroupId is not null &&
             !_pendingChangesService.PendingGroups.Any(g => g.GroupId == _stagedGroupId))
         {
             _stagedGroupId = null;
-            _suppressStaging = true;
-            IsEnabled = _registryIsEnabled;
-            _suppressStaging = false;
+
+            if (_pendingChangesService.IsApplying)
+            {
+                // Change was applied — keep toggle position, update baseline to match
+                _registryIsEnabled = IsEnabled;
+            }
+            else
+            {
+                // Change was discarded — reset toggle to registry state
+                _suppressStaging = true;
+                IsEnabled = _registryIsEnabled;
+                _suppressStaging = false;
+            }
+
             UpdatePendingState();
         }
     }

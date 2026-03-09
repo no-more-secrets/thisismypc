@@ -126,6 +126,12 @@ public partial class ContextMenuViewModel : ViewModelBase
 
     private static bool ReadHandlerRegistryState(IRegistryService registryService, ContextMenuHandler handler)
     {
+        // Check blocked list first — if CLSID is in the blocked list, handler is disabled
+        var blockedResult = registryService.ValueExists(
+            Modules.Shell.ShellRegistryPaths.BlockedListKeyPath, handler.Clsid);
+        if (blockedResult.IsSuccess && blockedResult.Value)
+            return false;
+
         // Check all registry paths -- handler is enabled only if ALL paths have non-dash-prefixed CLSID
         var paths = handler.AllRegistryPaths ?? [handler.RegistryPath];
         foreach (var path in paths)

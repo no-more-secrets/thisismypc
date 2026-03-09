@@ -6,6 +6,8 @@ namespace ThisIsMyPC.Interop.Com.Shell;
 
 public sealed class ShellExtensionService : IShellExtensionService
 {
+    private const string BlockedListKeyPath = @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Shell Extensions\Blocked";
+
     private static readonly (string Path, string AppliesTo)[] HandlerRegistrations =
     [
         (@"HKCR\*\shellex\ContextMenuHandlers", "All files"),
@@ -78,6 +80,19 @@ public sealed class ShellExtensionService : IShellExtensionService
                 }
             }
 
+            // Check blocked list and mark any blocked handlers as disabled
+            var blockedClsids = GetBlockedClsids();
+            if (blockedClsids.Count > 0)
+            {
+                for (var i = 0; i < handlers.Count; i++)
+                {
+                    if (blockedClsids.Contains(handlers[i].Clsid))
+                    {
+                        handlers[i] = handlers[i] with { IsEnabled = false };
+                    }
+                }
+            }
+
             return OperationResult<IReadOnlyList<ShellExtensionInfo>>.Success(handlers);
         }
         catch (Exception ex)
@@ -86,6 +101,21 @@ public sealed class ShellExtensionService : IShellExtensionService
                 $"Failed to enumerate context menu handlers: {ex.Message}",
                 ErrorCategory.ServiceUnavailable, ex);
         }
+    }
+
+    public bool IsBlockedByCLSID(string clsid)
+    {
+        var result = _registryService.ValueExists(BlockedListKeyPath, clsid);
+        return result.IsSuccess && result.Value;
+    }
+
+    public IReadOnlySet<string> GetBlockedClsids()
+    {
+        var result = _registryService.EnumerateValues(BlockedListKeyPath);
+        if (!result.IsSuccess)
+            return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        return new HashSet<string>(result.Value!, StringComparer.OrdinalIgnoreCase);
     }
 
     private string? ResolveDllPath(string clsid)

@@ -19,29 +19,28 @@ public class ChangeHistoryViewModelTests
     }
 
     [Fact]
-    public async Task LoadHistory_PopulatesHistoryGroupsWithDateGrouping()
+    public async Task LoadHistory_EmptyState()
     {
         var service = new Fakes.FakeChangeHistoryService();
         var vm = CreateViewModel(service);
 
         await vm.LoadHistoryCommand.ExecuteAsync(null);
 
-        // Empty history — no groups
         Assert.Empty(vm.HistoryGroups);
-        Assert.Equal(0, vm.TotalEntryCount);
+        Assert.Equal(0, vm.TotalGroupCount);
     }
 
     [Fact]
-    public async Task LoadHistory_GroupsEntriesByDate()
+    public async Task LoadHistory_GroupsByDateThenBatch()
     {
         var today = DateTimeOffset.Now;
         var yesterday = today.AddDays(-1);
 
         var service = new Fakes.FakeChangeHistoryServiceWithEntries(
         [
-            CreateEntry(1, "today1", today),
-            CreateEntry(2, "today2", today.AddMinutes(-5)),
-            CreateEntry(3, "yesterday1", yesterday),
+            CreateEntry(1, "today1", today, groupId: "g1"),
+            CreateEntry(2, "today2", today.AddMinutes(-5), groupId: "g2"),
+            CreateEntry(3, "yesterday1", yesterday, groupId: "g3"),
         ]);
 
         var vm = CreateViewModel(service);
@@ -49,20 +48,62 @@ public class ChangeHistoryViewModelTests
 
         Assert.Equal(2, vm.HistoryGroups.Count);
         Assert.Equal("Today", vm.HistoryGroups[0].DateHeader);
-        Assert.Equal(2, vm.HistoryGroups[0].Entries.Count);
+        Assert.Equal(2, vm.HistoryGroups[0].Batches.Count);
         Assert.Equal("Yesterday", vm.HistoryGroups[1].DateHeader);
-        Assert.Single(vm.HistoryGroups[1].Entries);
-        Assert.Equal(3, vm.TotalEntryCount);
+        Assert.Single(vm.HistoryGroups[1].Batches);
     }
 
     [Fact]
-    public async Task RevertCommand_CallsServiceAndRefreshesList()
+    public async Task LoadHistory_MultiEntryBatchShowsAsOneBatch()
+    {
+        var now = DateTimeOffset.Now;
+
+        var service = new Fakes.FakeChangeHistoryServiceWithEntries(
+        [
+            CreateEntry(1, "ctx-7zip", now, groupId: "g1", displayName: "Context menu: 7-Zip"),
+            CreateEntry(2, "ctx-7zip", now, groupId: "g1", displayName: "Context menu: 7-Zip"),
+            CreateEntry(3, "ctx-7zip", now, groupId: "g1", displayName: "Context menu: 7-Zip"),
+        ]);
+
+        var vm = CreateViewModel(service);
+        await vm.LoadHistoryCommand.ExecuteAsync(null);
+
+        Assert.Single(vm.HistoryGroups);
+        Assert.Single(vm.HistoryGroups[0].Batches);
+
+        var batch = vm.HistoryGroups[0].Batches[0];
+        Assert.Equal("Context menu: 7-Zip", batch.DisplayName);
+        Assert.Equal(3, batch.DetailCount);
+        Assert.True(batch.HasMultipleDetails);
+    }
+
+    [Fact]
+    public async Task LoadHistory_MixedBatchShowsCommaNames()
+    {
+        var now = DateTimeOffset.Now;
+
+        var service = new Fakes.FakeChangeHistoryServiceWithEntries(
+        [
+            CreateEntry(1, "s1", now, groupId: "g1", displayName: "Context menu: 7-Zip"),
+            CreateEntry(2, "s2", now, groupId: "g1", displayName: "Show Hidden Files"),
+        ]);
+
+        var vm = CreateViewModel(service);
+        await vm.LoadHistoryCommand.ExecuteAsync(null);
+
+        var batch = vm.HistoryGroups[0].Batches[0];
+        Assert.Contains("7-Zip", batch.DisplayName);
+        Assert.Contains("Show Hidden Files", batch.DisplayName);
+    }
+
+    [Fact]
+    public async Task RestoreCommand_CallsServiceAndRefreshesList()
     {
         var revertCalled = false;
 
         var service = new Fakes.FakeChangeHistoryServiceWithEntries(
         [
-            CreateEntry(1, "test", DateTimeOffset.Now),
+            CreateEntry(1, "test", DateTimeOffset.Now, groupId: "g1"),
         ]);
 
         var vm = CreateViewModel(
@@ -74,9 +115,9 @@ public class ChangeHistoryViewModelTests
             });
 
         await vm.LoadHistoryCommand.ExecuteAsync(null);
-        var entry = vm.HistoryGroups[0].Entries[0];
+        var entry = vm.HistoryGroups[0].Batches[0].Details[0];
 
-        await vm.RevertCommand.ExecuteAsync(entry);
+        await vm.RestoreCommand.ExecuteAsync(entry);
 
         Assert.True(revertCalled);
         Assert.Null(vm.ErrorMessage);
@@ -89,7 +130,7 @@ public class ChangeHistoryViewModelTests
 
         var service = new Fakes.FakeChangeHistoryServiceWithEntries(
         [
-            CreateEntry(1, "test", DateTimeOffset.Now, isReverted: true),
+            CreateEntry(1, "test", DateTimeOffset.Now, isReverted: true, groupId: "g1"),
         ]);
 
         var vm = CreateViewModel(
@@ -101,7 +142,7 @@ public class ChangeHistoryViewModelTests
             });
 
         await vm.LoadHistoryCommand.ExecuteAsync(null);
-        var entry = vm.HistoryGroups[0].Entries[0];
+        var entry = vm.HistoryGroups[0].Batches[0].Details[0];
 
         await vm.RedoCommand.ExecuteAsync(entry);
 
@@ -110,18 +151,18 @@ public class ChangeHistoryViewModelTests
     }
 
     [Fact]
-    public async Task RevertCommand_ShowsErrorOnFailure()
+    public async Task RestoreCommand_ShowsErrorOnFailure()
     {
         var service = new Fakes.FakeChangeHistoryServiceWithEntries(
         [
-            CreateEntry(1, "test", DateTimeOffset.Now),
+            CreateEntry(1, "test", DateTimeOffset.Now, groupId: "g1"),
         ],
         revertResult: OperationResult<bool>.Failure("Access denied", ErrorCategory.AccessDenied));
 
         var vm = CreateViewModel(service);
         await vm.LoadHistoryCommand.ExecuteAsync(null);
 
-        await vm.RevertCommand.ExecuteAsync(vm.HistoryGroups[0].Entries[0]);
+        await vm.RestoreCommand.ExecuteAsync(vm.HistoryGroups[0].Batches[0].Details[0]);
 
         Assert.NotNull(vm.ErrorMessage);
         Assert.Contains("administrator", vm.ErrorMessage);
@@ -132,25 +173,31 @@ public class ChangeHistoryViewModelTests
     {
         var service = new Fakes.FakeChangeHistoryServiceWithEntries(
         [
-            CreateEntry(1, "test", DateTimeOffset.Now, isReverted: true),
+            CreateEntry(1, "test", DateTimeOffset.Now, isReverted: true, groupId: "g1"),
         ],
         redoResult: OperationResult<bool>.Failure("Service unavailable", ErrorCategory.ServiceUnavailable));
 
         var vm = CreateViewModel(service);
         await vm.LoadHistoryCommand.ExecuteAsync(null);
 
-        await vm.RedoCommand.ExecuteAsync(vm.HistoryGroups[0].Entries[0]);
+        await vm.RedoCommand.ExecuteAsync(vm.HistoryGroups[0].Batches[0].Details[0]);
 
         Assert.NotNull(vm.ErrorMessage);
         Assert.Contains("not available", vm.ErrorMessage);
     }
 
-    private static ChangeHistoryEntry CreateEntry(long id, string settingId, DateTimeOffset appliedAt, bool isReverted = false) => new()
+    private static ChangeHistoryEntry CreateEntry(
+        long id,
+        string settingId,
+        DateTimeOffset appliedAt,
+        bool isReverted = false,
+        string? groupId = null,
+        string? displayName = null) => new()
     {
         Id = id,
         ModuleId = "TestModule",
         SettingId = settingId,
-        DisplayName = $"Test {settingId}",
+        DisplayName = displayName ?? $"Test {settingId}",
         SystemLocation = @"HKCU\Test",
         BeforeValue = "0",
         AfterValue = "1",
@@ -158,6 +205,7 @@ public class ChangeHistoryViewModelTests
         AfterDisplay = "Enabled",
         ValueType = ChangeValueType.Registry_DWord,
         Category = ChangeCategory.Enable,
+        GroupId = groupId,
         AppliedAt = appliedAt,
         RevertedAt = isReverted ? appliedAt.AddMinutes(1) : null,
     };

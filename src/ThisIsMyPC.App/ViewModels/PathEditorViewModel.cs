@@ -120,12 +120,17 @@ public partial class PathEditorViewModel : ViewModelBase
         if (e.PropertyName is not nameof(IPendingChangesService.PendingGroups))
             return;
 
-        // Our staged change was removed externally (Unstage or DiscardAll) — reset to original
+        // Our staged change was removed — either applied or discarded
         if (_stagedGroupId is not null &&
             !_pendingChangesService.PendingGroups.Any(g => g.GroupId == _stagedGroupId))
         {
             _stagedGroupId = null;
-            Reset();
+
+            if (!_pendingChangesService.IsApplying)
+            {
+                // Change was discarded — reset to original
+                Reset();
+            }
         }
     }
 

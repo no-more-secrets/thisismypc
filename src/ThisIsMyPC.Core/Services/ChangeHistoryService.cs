@@ -196,8 +196,23 @@ public sealed class ChangeHistoryService : IChangeHistoryService
         return OperationResult<bool>.Success(true);
     }
 
+    public async Task<IReadOnlyList<ChangeHistoryEntry>> GetRecentGroupedAsync(int groupLimit = 50)
+    {
+        return await _repository.GetRecentGroupedAsync(groupLimit).ConfigureAwait(false);
+    }
+
+    public async Task<int> GetGroupCountAsync()
+    {
+        return await _repository.GetGroupCountAsync().ConfigureAwait(false);
+    }
+
     public async Task<int> GetEntryCountAsync()
     {
         return await _repository.GetEntryCountAsync().ConfigureAwait(false);
+    }
+
+    public async Task ClearHistoryAsync()
+    {
+        await _repository.DeleteAllAsync().ConfigureAwait(false);
     }
 }

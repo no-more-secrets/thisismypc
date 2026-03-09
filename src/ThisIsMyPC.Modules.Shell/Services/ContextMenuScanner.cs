@@ -20,6 +20,8 @@ public sealed class ContextMenuScanner
         if (!result.IsSuccess)
             return [];
 
+        var blockedClsids = _shellExtensionService.GetBlockedClsids();
+
         // Group by CLSID (strip dash prefix for comparison) to deduplicate multi-registration handlers
         var grouped = result.Value!
             .GroupBy(info => info.Clsid, StringComparer.OrdinalIgnoreCase);
@@ -35,14 +37,25 @@ public sealed class ContextMenuScanner
             var allRegistryPaths = entries.Select(e => e.RegistryPath).ToList();
             var allScopes = entries.Select(e => e.AppliesTo).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
 
-            // IsEnabled is true only if ALL registration entries are enabled (consistent state)
-            var isEnabled = entries.All(e => e.IsEnabled);
-
             // Track per-path enabled state for accurate ChangeDescriptor BeforeValue
             var pathEnabledStates = entries.ToDictionary(
                 e => e.RegistryPath,
                 e => e.IsEnabled,
                 StringComparer.OrdinalIgnoreCase);
+
+            // Determine disable method
+            var hasDashPrefix = entries.Any(e => !e.IsEnabled);
+            var isBlockedList = blockedClsids.Contains(first.Clsid);
+            var disableMethod = (hasDashPrefix, isBlockedList) switch
+            {
+                (true, true) => DisableMethod.Both,
+                (true, false) => DisableMethod.DashPrefix,
+                (false, true) => DisableMethod.BlockedList,
+                _ => DisableMethod.None,
+            };
+
+            // IsEnabled is true only if ALL registration entries are enabled AND not blocked
+            var isEnabled = entries.All(e => e.IsEnabled) && !isBlockedList;
 
             var classification = ContextMenuHandlerClassifier.Classify(first.Clsid, first.DllPath, first.Publisher);
 
@@ -61,7 +74,8 @@ public sealed class ContextMenuScanner
                 AllRegistryPaths: allRegistryPaths,
                 AllScopes: allScopes,
                 PathEnabledStates: pathEnabledStates,
-                VisibleSurfaces: visibleSurfaces));
+                VisibleSurfaces: visibleSurfaces,
+                DisableMethod: disableMethod));
         }
 
         return handlers;

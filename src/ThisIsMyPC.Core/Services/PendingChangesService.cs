@@ -12,6 +12,8 @@ public sealed class PendingChangesService : IPendingChangesService
 
     public IReadOnlyList<ChangeGroup> PendingGroups => _pendingGroups.AsReadOnly();
 
+    public bool IsApplying { get; private set; }
+
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public void Stage(ChangeDescriptor change)
@@ -88,6 +90,7 @@ public sealed class PendingChangesService : IPendingChangesService
         ArgumentNullException.ThrowIfNull(applyFunc);
         ArgumentNullException.ThrowIfNull(revertFunc);
 
+        IsApplying = true;
         var allApplied = new List<ChangeDescriptor>();
 
         for (var gi = 0; gi < _pendingGroups.Count; gi++)
@@ -121,6 +124,7 @@ public sealed class PendingChangesService : IPendingChangesService
 
                     OnPropertyChanged(nameof(PendingCount));
                     OnPropertyChanged(nameof(PendingGroups));
+                    IsApplying = false;
 
                     var failureRestarts = allApplied
                         .Select(c => c.RestartRequirement)
@@ -147,6 +151,7 @@ public sealed class PendingChangesService : IPendingChangesService
         _pendingGroups.Clear();
         OnPropertyChanged(nameof(PendingCount));
         OnPropertyChanged(nameof(PendingGroups));
+        IsApplying = false;
 
         var requiredRestarts = allApplied
             .Select(c => c.RestartRequirement)

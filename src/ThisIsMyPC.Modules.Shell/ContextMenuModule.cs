@@ -3,7 +3,7 @@ using ThisIsMyPC.Core.Modules;
 using ThisIsMyPC.Core.Results;
 using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Interop.Com.Shell;
-using ThisIsMyPC.Modules.Shell.Models;
+
 using ThisIsMyPC.Modules.Shell.Services;
 
 namespace ThisIsMyPC.Modules.Shell;
@@ -83,6 +83,10 @@ public sealed class ContextMenuModule : IModule
     private OperationResult<bool> ApplyStringChange(ChangeDescriptor change)
     {
         var (keyPath, valueName) = ShellRegistryPaths.ParseSystemLocation(change.SystemLocation);
-        return _registryService.WriteString(keyPath, valueName, change.AfterValue ?? string.Empty);
+
+        // AbsentValue signals delete (remove from blocked list = re-enable handler)
+        return change.AfterValue == ShellRegistryPaths.AbsentValue
+            ? _registryService.DeleteValue(keyPath, valueName)
+            : _registryService.WriteString(keyPath, valueName, change.AfterValue ?? string.Empty);
     }
 }

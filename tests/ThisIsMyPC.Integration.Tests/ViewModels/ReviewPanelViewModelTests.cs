@@ -24,34 +24,37 @@ public class ReviewPanelViewModelTests
     };
 
     [Fact]
-    public void ReviewItems_PopulatesFromPendingChangesService()
+    public void ReviewGroups_PopulatesFromPendingChangesService()
     {
         var service = new PendingChangesService();
         service.Stage(CreateTestChange());
         var vm = new ReviewPanelViewModel(service);
 
-        Assert.Single(vm.ReviewItems);
-        Assert.Equal("Test Setting", vm.ReviewItems[0].DisplayName);
-        Assert.Equal(@"HKLM\Test", vm.ReviewItems[0].SystemLocation);
-        Assert.Equal("Disabled", vm.ReviewItems[0].BeforeDisplay);
-        Assert.Equal("Enabled", vm.ReviewItems[0].AfterDisplay);
+        Assert.Single(vm.ReviewGroups);
+        Assert.Equal("Test Setting", vm.ReviewGroups[0].DisplayName);
+        Assert.Equal("Disabled", vm.ReviewGroups[0].BeforeDisplay);
+        Assert.Equal("Enabled", vm.ReviewGroups[0].AfterDisplay);
+
+        // Detail items still accessible
+        Assert.Single(vm.ReviewGroups[0].Details);
+        Assert.Equal(@"HKLM\Test", vm.ReviewGroups[0].Details[0].SystemLocation);
     }
 
     [Fact]
-    public void ReviewItems_UpdatesWhenChangeStaged()
+    public void ReviewGroups_UpdatesWhenChangeStaged()
     {
         var service = new PendingChangesService();
         var vm = new ReviewPanelViewModel(service);
 
-        Assert.Empty(vm.ReviewItems);
+        Assert.Empty(vm.ReviewGroups);
 
         service.Stage(CreateTestChange());
 
-        Assert.Single(vm.ReviewItems);
+        Assert.Single(vm.ReviewGroups);
     }
 
     [Fact]
-    public void ReviewItems_ClearsWhenDiscardAll()
+    public void ReviewGroups_ClearsWhenDiscardAll()
     {
         var service = new PendingChangesService();
         service.Stage(CreateTestChange());
@@ -59,16 +62,60 @@ public class ReviewPanelViewModelTests
 
         service.DiscardAll();
 
-        Assert.Empty(vm.ReviewItems);
+        Assert.Empty(vm.ReviewGroups);
     }
 
     [Fact]
-    public void ReviewItems_PreservesTintClassFromCategory()
+    public void ReviewGroups_PreservesCategoryFromPrimaryChange()
     {
         var service = new PendingChangesService();
         service.Stage(CreateTestChange(category: ChangeCategory.Disable));
         var vm = new ReviewPanelViewModel(service);
 
-        Assert.Equal("pending-disable", vm.ReviewItems[0].TintClass);
+        Assert.True(vm.ReviewGroups[0].IsDisableOrDelete);
+    }
+
+    [Fact]
+    public void ReviewGroups_MultiChangeGroupShowsAllDetails()
+    {
+        var service = new PendingChangesService();
+        var group = new ChangeGroup
+        {
+            GroupId = "g1",
+            DisplayName = "Context menu: 7-Zip",
+            Description = "Toggle 7-Zip",
+            Changes =
+            [
+                new ChangeDescriptor
+                {
+                    ModuleId = "shell", SettingId = "s1",
+                    DisplayName = "Context menu: 7-Zip",
+                    SystemLocation = @"HKLM\...\Blocked\{clsid}",
+                    BeforeValue = "__absent__", AfterValue = "",
+                    BeforeDisplay = "Enabled", AfterDisplay = "Disabled",
+                    ValueType = ChangeValueType.Registry_String,
+                    Category = ChangeCategory.Disable,
+                },
+                new ChangeDescriptor
+                {
+                    ModuleId = "shell", SettingId = "s2",
+                    DisplayName = "Context menu: 7-Zip",
+                    SystemLocation = @"HKCR\*\shellex\7-Zip",
+                    BeforeValue = "{clsid}", AfterValue = "-{clsid}",
+                    BeforeDisplay = "Enabled", AfterDisplay = "Disabled",
+                    ValueType = ChangeValueType.Registry_String,
+                    Category = ChangeCategory.Disable,
+                },
+            ],
+        };
+        service.Stage(group);
+        var vm = new ReviewPanelViewModel(service);
+
+        Assert.Single(vm.ReviewGroups);
+        var reviewGroup = vm.ReviewGroups[0];
+        Assert.Equal("Context menu: 7-Zip", reviewGroup.DisplayName);
+        Assert.Equal(2, reviewGroup.DetailCount);
+        Assert.True(reviewGroup.HasMultipleDetails);
+        Assert.False(reviewGroup.IsExpanded);
     }
 }

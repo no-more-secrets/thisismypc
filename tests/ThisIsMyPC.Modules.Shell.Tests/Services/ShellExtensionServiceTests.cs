@@ -153,4 +153,79 @@ public class ShellExtensionServiceTests
         Assert.Equal("{AAAABBBB-CCCC-DDDD-EEEE-FFFFFFFFFFFF}", result.Value![0].Clsid);
         Assert.False(result.Value![0].IsEnabled);
     }
+
+    [Fact]
+    public void IsBlockedByCLSID_returns_true_when_clsid_in_blocked_list()
+    {
+        var blockedPath = @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Shell Extensions\Blocked";
+        var clsid = "{12345678-1234-1234-1234-123456789012}";
+        _registry.AddKey(blockedPath);
+        _registry.SetString(blockedPath, clsid, "");
+
+        Assert.True(_sut.IsBlockedByCLSID(clsid));
+    }
+
+    [Fact]
+    public void IsBlockedByCLSID_returns_false_when_clsid_not_in_blocked_list()
+    {
+        Assert.False(_sut.IsBlockedByCLSID("{12345678-1234-1234-1234-123456789012}"));
+    }
+
+    [Fact]
+    public void GetBlockedClsids_returns_all_blocked_clsids()
+    {
+        var blockedPath = @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Shell Extensions\Blocked";
+        _registry.AddKey(blockedPath);
+        _registry.SetString(blockedPath, "{AAAA-1111}", "");
+        _registry.SetString(blockedPath, "{BBBB-2222}", "");
+
+        var blocked = _sut.GetBlockedClsids();
+
+        Assert.Equal(2, blocked.Count);
+        Assert.Contains("{AAAA-1111}", blocked);
+        Assert.Contains("{BBBB-2222}", blocked);
+    }
+
+    [Fact]
+    public void GetBlockedClsids_returns_empty_set_when_no_blocked_key()
+    {
+        var blocked = _sut.GetBlockedClsids();
+        Assert.Empty(blocked);
+    }
+
+    [Fact]
+    public void EnumerateContextMenuHandlers_marks_blocked_handler_as_disabled()
+    {
+        var basePath = @"HKCR\*\shellex\ContextMenuHandlers";
+        var clsid = "{12345678-1234-1234-1234-123456789012}";
+        _registry.AddSubKeys(basePath, "TestHandler");
+        _registry.SetString($@"{basePath}\TestHandler", string.Empty, clsid);
+
+        // Add CLSID to blocked list
+        var blockedPath = @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Shell Extensions\Blocked";
+        _registry.AddKey(blockedPath);
+        _registry.SetString(blockedPath, clsid, "");
+
+        var result = _sut.EnumerateContextMenuHandlers();
+
+        Assert.True(result.IsSuccess);
+        Assert.Single(result.Value!);
+        Assert.False(result.Value![0].IsEnabled);
+        Assert.Equal(clsid, result.Value![0].Clsid);
+    }
+
+    [Fact]
+    public void EnumerateContextMenuHandlers_handler_not_in_blocked_list_stays_enabled()
+    {
+        var basePath = @"HKCR\*\shellex\ContextMenuHandlers";
+        var clsid = "{12345678-1234-1234-1234-123456789012}";
+        _registry.AddSubKeys(basePath, "TestHandler");
+        _registry.SetString($@"{basePath}\TestHandler", string.Empty, clsid);
+
+        var result = _sut.EnumerateContextMenuHandlers();
+
+        Assert.True(result.IsSuccess);
+        Assert.Single(result.Value!);
+        Assert.True(result.Value![0].IsEnabled);
+    }
 }

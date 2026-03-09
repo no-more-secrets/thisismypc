@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using ThisIsMyPC.Core.Results;
 using ThisIsMyPC.Interop.Com.Shell;
 using ThisIsMyPC.Modules.Shell.Models;
@@ -10,11 +11,16 @@ public sealed class ContextMenuScannerTests
     private sealed class FakeShellExtensionService : IShellExtensionService
     {
         private readonly List<ShellExtensionInfo> _handlers = [];
+        private readonly HashSet<string> _blockedClsids = new(StringComparer.OrdinalIgnoreCase);
 
         public void AddHandler(ShellExtensionInfo handler) => _handlers.Add(handler);
+        public void AddBlockedClsid(string clsid) => _blockedClsids.Add(clsid);
 
         public OperationResult<IReadOnlyList<ShellExtensionInfo>> EnumerateContextMenuHandlers()
             => OperationResult<IReadOnlyList<ShellExtensionInfo>>.Success(_handlers);
+
+        public bool IsBlockedByCLSID(string clsid) => _blockedClsids.Contains(clsid);
+        public IReadOnlySet<string> GetBlockedClsids() => _blockedClsids;
     }
 
     private sealed class FakeContextMenuProbe : IContextMenuProbe
@@ -233,9 +239,83 @@ public sealed class ContextMenuScannerTests
         Assert.Contains(ContextMenuSurface.DesktopBackground, result[0].VisibleSurfaces!);
     }
 
+    [Fact]
+    public void Scan_handler_dash_prefix_only_gets_DisableMethod_DashPrefix()
+    {
+        var fake = new FakeShellExtensionService();
+        fake.AddHandler(new ShellExtensionInfo("TestHandler", "{AAAA-1111}",
+            @"HKCR\*\shellex\ContextMenuHandlers\TestHandler", "All files",
+            null, null, false)); // IsEnabled=false from dash-prefix
+
+        var scanner = new ContextMenuScanner(fake);
+        var result = scanner.Scan();
+
+        Assert.Single(result);
+        Assert.Equal(DisableMethod.DashPrefix, result[0].DisableMethod);
+        Assert.False(result[0].IsEnabled);
+        Assert.False(result[0].IsBlockedListDisabled);
+    }
+
+    [Fact]
+    public void Scan_handler_blocked_list_only_gets_DisableMethod_BlockedList()
+    {
+        var fake = new FakeShellExtensionService();
+        var clsid = "{BBBB-2222}";
+        fake.AddHandler(new ShellExtensionInfo("TestHandler", clsid,
+            @"HKCR\*\shellex\ContextMenuHandlers\TestHandler", "All files",
+            null, null, true)); // IsEnabled=true (no dash-prefix, but blocked)
+        fake.AddBlockedClsid(clsid);
+
+        var scanner = new ContextMenuScanner(fake);
+        var result = scanner.Scan();
+
+        Assert.Single(result);
+        Assert.Equal(DisableMethod.BlockedList, result[0].DisableMethod);
+        Assert.False(result[0].IsEnabled);
+        Assert.True(result[0].IsBlockedListDisabled);
+    }
+
+    [Fact]
+    public void Scan_handler_both_methods_gets_DisableMethod_Both()
+    {
+        var fake = new FakeShellExtensionService();
+        var clsid = "{CCCC-3333}";
+        fake.AddHandler(new ShellExtensionInfo("TestHandler", clsid,
+            @"HKCR\*\shellex\ContextMenuHandlers\TestHandler", "All files",
+            null, null, false)); // dash-prefixed
+        fake.AddBlockedClsid(clsid);
+
+        var scanner = new ContextMenuScanner(fake);
+        var result = scanner.Scan();
+
+        Assert.Single(result);
+        Assert.Equal(DisableMethod.Both, result[0].DisableMethod);
+        Assert.False(result[0].IsEnabled);
+        Assert.True(result[0].IsBlockedListDisabled);
+    }
+
+    [Fact]
+    public void Scan_enabled_handler_gets_DisableMethod_None()
+    {
+        var fake = new FakeShellExtensionService();
+        fake.AddHandler(new ShellExtensionInfo("TestHandler", "{DDDD-4444}",
+            @"HKCR\*\shellex\ContextMenuHandlers\TestHandler", "All files",
+            null, null, true));
+
+        var scanner = new ContextMenuScanner(fake);
+        var result = scanner.Scan();
+
+        Assert.Single(result);
+        Assert.Equal(DisableMethod.None, result[0].DisableMethod);
+        Assert.True(result[0].IsEnabled);
+    }
+
     private sealed class FailingShellExtensionService : IShellExtensionService
     {
         public OperationResult<IReadOnlyList<ShellExtensionInfo>> EnumerateContextMenuHandlers()
             => OperationResult<IReadOnlyList<ShellExtensionInfo>>.Failure("Failed", ErrorCategory.ServiceUnavailable);
+
+        public bool IsBlockedByCLSID(string clsid) => false;
+        public IReadOnlySet<string> GetBlockedClsids() => new HashSet<string>();
     }
 }

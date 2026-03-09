@@ -216,6 +216,54 @@ public sealed class ChangeHistoryRepository
         return Convert.ToInt32(result);
     }
 
+    public async Task<int> GetGroupCountAsync()
+    {
+        await using var connection = await OpenConnectionAsync().ConfigureAwait(false);
+        await using var cmd = connection.CreateCommand();
+
+        cmd.CommandText = "SELECT COUNT(DISTINCT group_id) FROM change_history WHERE group_id IS NOT NULL";
+        var result = await cmd.ExecuteScalarAsync().ConfigureAwait(false);
+        return Convert.ToInt32(result);
+    }
+
+    public async Task<IReadOnlyList<ChangeHistoryEntry>> GetRecentGroupedAsync(int groupLimit)
+    {
+        await using var connection = await OpenConnectionAsync().ConfigureAwait(false);
+        await using var cmd = connection.CreateCommand();
+
+        cmd.CommandText = """
+            SELECT * FROM change_history
+            WHERE group_id IN (
+                SELECT group_id FROM change_history
+                WHERE group_id IS NOT NULL
+                GROUP BY group_id
+                ORDER BY MAX(applied_at) DESC
+                LIMIT @group_limit
+            )
+            ORDER BY applied_at DESC
+            """;
+        cmd.Parameters.AddWithValue("@group_limit", groupLimit);
+
+        await using var reader = await cmd.ExecuteReaderAsync().ConfigureAwait(false);
+        var entries = new List<ChangeHistoryEntry>();
+
+        while (await reader.ReadAsync().ConfigureAwait(false))
+        {
+            entries.Add(ReadEntry(reader));
+        }
+
+        return entries;
+    }
+
+    public async Task DeleteAllAsync()
+    {
+        await using var connection = await OpenConnectionAsync().ConfigureAwait(false);
+        await using var cmd = connection.CreateCommand();
+
+        cmd.CommandText = "DELETE FROM change_history";
+        await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+    }
+
     private async Task<SqliteConnection> OpenConnectionAsync()
     {
         if (_connectionString is null)

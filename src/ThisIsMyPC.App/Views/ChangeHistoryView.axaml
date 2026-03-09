@@ -22,11 +22,21 @@
                     BorderBrush="{StaticResource SidebarBorderBrush}"
                     BorderThickness="0,0,0,1">
                 <DockPanel>
-                    <TextBlock DockPanel.Dock="Right"
-                               Text="{Binding EntryCountText}"
-                               Foreground="{StaticResource TextTertiaryBrush}"
-                               FontSize="12"
-                               VerticalAlignment="Center" />
+                    <StackPanel DockPanel.Dock="Right"
+                                Orientation="Horizontal"
+                                Spacing="8"
+                                VerticalAlignment="Center">
+                        <TextBlock Text="{Binding EntryCountText}"
+                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                   FontSize="12"
+                                   VerticalAlignment="Center" />
+                        <Button Classes="apply-bar-discard"
+                                Content="Clear"
+                                FontSize="11"
+                                Padding="8,3"
+                                Command="{Binding ClearHistoryCommand}"
+                                IsVisible="{Binding !!TotalGroupCount}" />
+                    </StackPanel>
                     <TextBlock Text="Change History"
                                FontWeight="SemiBold"
                                FontSize="15"
@@ -48,7 +58,7 @@
             <!-- Content -->
             <Panel>
                 <!-- Empty state -->
-                <StackPanel IsVisible="{Binding !TotalEntryCount}"
+                <StackPanel IsVisible="{Binding !TotalGroupCount}"
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center"
                             Spacing="4"
@@ -67,7 +77,7 @@
                 <!-- Grouped history list -->
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                               VerticalScrollBarVisibility="Auto"
-                              IsVisible="{Binding !!TotalEntryCount}">
+                              IsVisible="{Binding !!TotalGroupCount}">
                     <ItemsControl ItemsSource="{Binding HistoryGroups}" Margin="8,4">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:ChangeHistoryGroupViewModel">
@@ -80,10 +90,10 @@
                                                Margin="4,8,0,4"
                                                LetterSpacing="0.5" />
 
-                                    <!-- Entries in this group -->
-                                    <ItemsControl ItemsSource="{Binding Entries}">
+                                    <!-- Batches in this date group -->
+                                    <ItemsControl ItemsSource="{Binding Batches}">
                                         <ItemsControl.ItemTemplate>
-                                            <DataTemplate x:DataType="vm:ChangeHistoryEntryViewModel">
+                                            <DataTemplate x:DataType="vm:HistoryBatchViewModel">
                                                 <Border Margin="0,2"
                                                         Padding="12,8"
                                                         CornerRadius="4"
@@ -92,75 +102,134 @@
                                                         Classes.pending-disable="{Binding IsDisableOrDelete}"
                                                         Classes.pending-modify="{Binding IsModifyCategory}">
                                                     <DockPanel>
-                                                        <!-- Action buttons (right side) -->
+                                                        <!-- Restore/Redo button on batch row -->
                                                         <StackPanel DockPanel.Dock="Right"
                                                                     VerticalAlignment="Center"
                                                                     Margin="8,0,0,0">
                                                             <Button Classes="apply-bar-discard"
-                                                                    Content="Revert"
+                                                                    Content="Restore"
                                                                     FontSize="11"
                                                                     Padding="8,4"
                                                                     IsVisible="{Binding !IsReverted}"
-                                                                    Command="{Binding $parent[UserControl].((vm:ChangeHistoryViewModel)DataContext).RevertCommand}"
-                                                                    CommandParameter="{Binding}" />
+                                                                    Command="{Binding $parent[UserControl].((vm:ChangeHistoryViewModel)DataContext).RestoreCommand}"
+                                                                    CommandParameter="{Binding PrimaryEntry}" />
                                                             <Button Classes="apply-bar-discard"
                                                                     Content="Redo"
                                                                     FontSize="11"
                                                                     Padding="8,4"
                                                                     IsVisible="{Binding IsReverted}"
                                                                     Command="{Binding $parent[UserControl].((vm:ChangeHistoryViewModel)DataContext).RedoCommand}"
-                                                                    CommandParameter="{Binding}" />
+                                                                    CommandParameter="{Binding PrimaryEntry}" />
                                                         </StackPanel>
 
-                                                        <!-- Entry details (left side) -->
-                                                        <StackPanel Spacing="2">
-                                                            <DockPanel>
-                                                                <!-- Time -->
-                                                                <TextBlock DockPanel.Dock="Right"
-                                                                           Text="{Binding AppliedAtDisplay}"
-                                                                           FontSize="11"
-                                                                           Foreground="{StaticResource TextTertiaryBrush}"
-                                                                           VerticalAlignment="Center" />
-
-                                                                <!-- Display name + reverted label -->
-                                                                <StackPanel Orientation="Horizontal" Spacing="6">
-                                                                    <TextBlock Text="{Binding DisplayName}"
-                                                                               FontWeight="SemiBold"
-                                                                               FontSize="13"
-                                                                               Foreground="{StaticResource TextPrimaryBrush}" />
-                                                                    <TextBlock Text="Reverted"
-                                                                               FontSize="11"
-                                                                               Foreground="{StaticResource WarningBrush}"
-                                                                               VerticalAlignment="Center"
-                                                                               IsVisible="{Binding IsReverted}" />
-                                                                </StackPanel>
-                                                            </DockPanel>
-
-                                                            <!-- Module badge -->
-                                                            <TextBlock Text="{Binding ModuleId}"
+                                                    <StackPanel Spacing="2">
+                                                        <!-- Batch summary row -->
+                                                        <DockPanel>
+                                                            <!-- Time -->
+                                                            <TextBlock DockPanel.Dock="Right"
+                                                                       Text="{Binding AppliedAtDisplay}"
                                                                        FontSize="11"
+                                                                       Margin="8,0,0,0"
+                                                                       Foreground="{StaticResource TextTertiaryBrush}"
+                                                                       VerticalAlignment="Center" />
+
+                                                            <TextBlock DockPanel.Dock="Right"
+                                                                       Text="Restored"
+                                                                       FontSize="11"
+                                                                       Margin="6,0,0,0"
+                                                                       Foreground="{StaticResource WarningBrush}"
+                                                                       VerticalAlignment="Center"
+                                                                       IsVisible="{Binding IsReverted}" />
+
+                                                            <!-- Display name — fills remaining space, ellipsis on overflow -->
+                                                            <TextBlock Text="{Binding DisplayName}"
+                                                                       FontWeight="SemiBold"
+                                                                       FontSize="13"
+                                                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                                                       TextTrimming="CharacterEllipsis"
+                                                                       ToolTip.Tip="{Binding DisplayName}" />
+                                                        </DockPanel>
+
+                                                        <!-- Before -> After + detail toggle -->
+                                                        <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2,0,0">
+                                                            <TextBlock Text="{Binding BeforeDisplay}"
+                                                                       FontSize="12"
                                                                        Foreground="{StaticResource TextSecondaryBrush}" />
-
-                                                            <!-- System location -->
-                                                            <TextBlock Text="{Binding SystemLocation}"
-                                                                       FontFamily="{StaticResource MonoFont}"
-                                                                       FontSize="11"
+                                                            <TextBlock Text="&#x2192;"
+                                                                       FontSize="12"
                                                                        Foreground="{StaticResource TextTertiaryBrush}" />
-
-                                                            <!-- Before -> After values -->
-                                                            <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,4,0,0">
-                                                                <TextBlock Text="{Binding BeforeDisplay}"
-                                                                           FontSize="12"
-                                                                           Foreground="{StaticResource TextSecondaryBrush}" />
-                                                                <TextBlock Text="&#x2192;"
-                                                                           FontSize="12"
+                                                            <TextBlock Text="{Binding AfterDisplay}"
+                                                                       FontSize="12"
+                                                                       FontWeight="SemiBold"
+                                                                       Foreground="{StaticResource TextPrimaryBrush}" />
+                                                            <!-- Clickable registry detail count -->
+                                                            <ToggleButton IsChecked="{Binding IsExpanded}"
+                                                                          Padding="4,0"
+                                                                          VerticalAlignment="Center"
+                                                                          Background="Transparent"
+                                                                          BorderThickness="0"
+                                                                          Cursor="Hand">
+                                                                <TextBlock Text="{Binding DetailCountText}"
+                                                                           FontSize="11"
                                                                            Foreground="{StaticResource TextTertiaryBrush}" />
-                                                                <TextBlock Text="{Binding AfterDisplay}"
-                                                                           FontSize="12"
-                                                                           FontWeight="SemiBold"
-                                                                           Foreground="{StaticResource TextPrimaryBrush}" />
-                                                            </StackPanel>
+                                                            </ToggleButton>
                                                         </StackPanel>
+
+                                                        <!-- Expandable detail section -->
+                                                        <ItemsControl ItemsSource="{Binding Details}"
+                                                                      IsVisible="{Binding IsExpanded}"
+                                                                      Margin="0,6,0,0">
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate x:DataType="vm:ChangeHistoryEntryViewModel">
+                                                                    <Border Margin="0,1"
+                                                                            Padding="8,4"
+                                                                            CornerRadius="2"
+                                                                            Background="#08FFFFFF">
+                                                                        <DockPanel>
+                                                                            <!-- Restore/Redo button per entry -->
+                                                                            <StackPanel DockPanel.Dock="Right"
+                                                                                        VerticalAlignment="Center"
+                                                                                        Margin="6,0,0,0">
+                                                                                <Button Classes="apply-bar-discard"
+                                                                                        Content="Restore"
+                                                                                        FontSize="10"
+                                                                                        Padding="6,2"
+                                                                                        IsVisible="{Binding !IsReverted}"
+                                                                                        Command="{Binding $parent[UserControl].((vm:ChangeHistoryViewModel)DataContext).RestoreCommand}"
+                                                                                        CommandParameter="{Binding}" />
+                                                                                <Button Classes="apply-bar-discard"
+                                                                                        Content="Redo"
+                                                                                        FontSize="10"
+                                                                                        Padding="6,2"
+                                                                                        IsVisible="{Binding IsReverted}"
+                                                                                        Command="{Binding $parent[UserControl].((vm:ChangeHistoryViewModel)DataContext).RedoCommand}"
+                                                                                        CommandParameter="{Binding}" />
+                                                                            </StackPanel>
+
+                                                                            <StackPanel Spacing="1">
+                                                                                <TextBlock Text="{Binding SystemLocation}"
+                                                                                           FontFamily="{StaticResource MonoFont}"
+                                                                                           FontSize="11"
+                                                                                           Foreground="{StaticResource TextTertiaryBrush}" />
+                                                                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                                                                    <TextBlock Text="{Binding BeforeDisplay}"
+                                                                                               FontSize="11"
+                                                                                               Foreground="{StaticResource TextSecondaryBrush}" />
+                                                                                    <TextBlock Text="&#x2192;"
+                                                                                               FontSize="11"
+                                                                                               Foreground="{StaticResource TextTertiaryBrush}" />
+                                                                                    <TextBlock Text="{Binding AfterDisplay}"
+                                                                                               FontSize="11"
+                                                                                               FontWeight="SemiBold"
+                                                                                               Foreground="{StaticResource TextPrimaryBrush}" />
+                                                                                </StackPanel>
+                                                                            </StackPanel>
+                                                                        </DockPanel>
+                                                                    </Border>
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                    </StackPanel>
                                                     </DockPanel>
                                                 </Border>
                                             </DataTemplate>

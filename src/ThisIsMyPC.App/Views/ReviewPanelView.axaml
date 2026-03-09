@@ -23,7 +23,7 @@
                     BorderThickness="0,0,0,1">
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Right"
-                               Text="{Binding ReviewItems.Count, StringFormat='{}{0} item(s)'}"
+                               Text="{Binding ReviewGroups.Count, StringFormat='{}{0} change(s)'}"
                                Foreground="{StaticResource TextTertiaryBrush}"
                                FontSize="12"
                                VerticalAlignment="Center" />
@@ -65,9 +65,9 @@
             </Border>
 
             <!-- Change list or empty state -->
-            <Panel>
+            <Panel MinHeight="80">
                 <!-- Empty state -->
-                <StackPanel IsVisible="{Binding !ReviewItems.Count}"
+                <StackPanel IsVisible="{Binding !ReviewGroups.Count}"
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center"
                             Spacing="4">
@@ -81,13 +81,13 @@
                                Foreground="{StaticResource TextTertiaryBrush}" />
                 </StackPanel>
 
-                <!-- Change items -->
+                <!-- Grouped change items -->
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                               VerticalScrollBarVisibility="Auto"
-                              IsVisible="{Binding !!ReviewItems.Count}">
-                    <ItemsControl ItemsSource="{Binding ReviewItems}" Margin="8,4">
+                              IsVisible="{Binding !!ReviewGroups.Count}">
+                    <ItemsControl ItemsSource="{Binding ReviewGroups}" Margin="8,8">
                         <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="vm:ReviewItemViewModel">
+                            <DataTemplate x:DataType="vm:ReviewGroupViewModel">
                                 <Border Margin="0,2"
                                         Padding="12,8"
                                         CornerRadius="4"
@@ -95,26 +95,14 @@
                                         Classes.pending-disable="{Binding IsDisableOrDelete}"
                                         Classes.pending-modify="{Binding IsModifyCategory}">
                                     <StackPanel Spacing="2">
-                                        <!-- Setting name -->
+                                        <!-- Group display name -->
                                         <TextBlock Text="{Binding DisplayName}"
                                                    FontWeight="SemiBold"
                                                    FontSize="13"
                                                    Foreground="{StaticResource TextPrimaryBrush}" />
 
-                                        <!-- Description -->
-                                        <TextBlock Text="{Binding Description}"
-                                                   FontSize="12"
-                                                   Foreground="{StaticResource TextSecondaryBrush}"
-                                                   TextWrapping="Wrap" />
-
-                                        <!-- System location -->
-                                        <TextBlock Text="{Binding SystemLocation}"
-                                                   FontFamily="{StaticResource MonoFont}"
-                                                   FontSize="11"
-                                                   Foreground="{StaticResource TextTertiaryBrush}" />
-
-                                        <!-- Before -> After values -->
-                                        <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,4,0,0">
+                                        <!-- Before -> After -->
+                                        <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2,0,0">
                                             <TextBlock Text="{Binding BeforeDisplay}"
                                                        FontSize="12"
                                                        Foreground="{StaticResource TextSecondaryBrush}" />
@@ -125,7 +113,53 @@
                                                        FontSize="12"
                                                        FontWeight="SemiBold"
                                                        Foreground="{StaticResource TextPrimaryBrush}" />
+                                            <!-- Clickable registry detail count -->
+                                            <ToggleButton IsVisible="{Binding HasMultipleDetails}"
+                                                          IsChecked="{Binding IsExpanded}"
+                                                          Classes="review-detail-toggle"
+                                                          Padding="4,0"
+                                                          VerticalAlignment="Center"
+                                                          Background="Transparent"
+                                                          BorderThickness="0"
+                                                          Cursor="Hand">
+                                                <TextBlock Text="{Binding DetailCount, StringFormat='({0} registry operations)'}"
+                                                           FontSize="11"
+                                                           Foreground="{StaticResource TextTertiaryBrush}" />
+                                            </ToggleButton>
                                         </StackPanel>
+
+                                        <!-- Expandable detail section -->
+                                        <ItemsControl ItemsSource="{Binding Details}"
+                                                      IsVisible="{Binding IsExpanded}"
+                                                      Margin="0,6,0,0">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="vm:ReviewItemViewModel">
+                                                    <Border Margin="0,1"
+                                                            Padding="8,4"
+                                                            CornerRadius="2"
+                                                            Background="#08FFFFFF">
+                                                        <StackPanel Spacing="1">
+                                                            <TextBlock Text="{Binding SystemLocation}"
+                                                                       FontFamily="{StaticResource MonoFont}"
+                                                                       FontSize="11"
+                                                                       Foreground="{StaticResource TextTertiaryBrush}" />
+                                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                                <TextBlock Text="{Binding BeforeDisplay}"
+                                                                           FontSize="11"
+                                                                           Foreground="{StaticResource TextSecondaryBrush}" />
+                                                                <TextBlock Text="&#x2192;"
+                                                                           FontSize="11"
+                                                                           Foreground="{StaticResource TextTertiaryBrush}" />
+                                                                <TextBlock Text="{Binding AfterDisplay}"
+                                                                           FontSize="11"
+                                                                           FontWeight="SemiBold"
+                                                                           Foreground="{StaticResource TextPrimaryBrush}" />
+                                                            </StackPanel>
+                                                        </StackPanel>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
                                     </StackPanel>
                                 </Border>
                             </DataTemplate>

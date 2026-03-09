@@ -8,6 +8,7 @@ public interface IPendingChangesService : INotifyPropertyChanged
 {
     int PendingCount { get; }
     IReadOnlyList<ChangeGroup> PendingGroups { get; }
+    bool IsApplying { get; }
 
     void Stage(ChangeDescriptor change);
     void Stage(ChangeGroup group);

@@ -19,6 +19,11 @@ internal sealed class FakeChangeHistoryService : IChangeHistoryService
     public Task<IReadOnlyList<ChangeHistoryEntry>> GetHistoryAsync(int? limit = null, int? offset = null)
         => Task.FromResult<IReadOnlyList<ChangeHistoryEntry>>([]);
 
+    public Task<IReadOnlyList<ChangeHistoryEntry>> GetRecentGroupedAsync(int groupLimit = 50)
+        => Task.FromResult<IReadOnlyList<ChangeHistoryEntry>>([]);
+
+    public Task<int> GetGroupCountAsync() => Task.FromResult(0);
+
     public Task<OperationResult<bool>> RevertChangeAsync(long historyId, Func<ChangeDescriptor, Task<OperationResult<bool>>> revertFunc)
         => Task.FromResult(OperationResult<bool>.Success(true));
 
@@ -26,6 +31,8 @@ internal sealed class FakeChangeHistoryService : IChangeHistoryService
         => Task.FromResult(OperationResult<bool>.Success(true));
 
     public Task<int> GetEntryCountAsync() => Task.FromResult(0);
+
+    public Task ClearHistoryAsync() => Task.CompletedTask;
 }
 
 internal sealed class FakeChangeHistoryServiceWithEntries : IChangeHistoryService
@@ -50,6 +57,15 @@ internal sealed class FakeChangeHistoryServiceWithEntries : IChangeHistoryServic
 
     public Task<IReadOnlyList<ChangeHistoryEntry>> GetHistoryAsync(int? limit = null, int? offset = null)
         => Task.FromResult(_entries);
+
+    public Task<IReadOnlyList<ChangeHistoryEntry>> GetRecentGroupedAsync(int groupLimit = 50)
+        => Task.FromResult(_entries);
+
+    public Task<int> GetGroupCountAsync()
+    {
+        var count = _entries.Select(e => e.GroupId ?? e.Id.ToString()).Distinct().Count();
+        return Task.FromResult(count);
+    }
 
     public async Task<OperationResult<bool>> RevertChangeAsync(long historyId, Func<ChangeDescriptor, Task<OperationResult<bool>>> revertFunc)
     {
@@ -104,4 +120,6 @@ internal sealed class FakeChangeHistoryServiceWithEntries : IChangeHistoryServic
     }
 
     public Task<int> GetEntryCountAsync() => Task.FromResult(_entries.Count);
+
+    public Task ClearHistoryAsync() => Task.CompletedTask;
 }

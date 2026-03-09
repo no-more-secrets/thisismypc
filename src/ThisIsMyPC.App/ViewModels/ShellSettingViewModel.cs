@@ -172,14 +172,25 @@ public sealed partial class ShellSettingViewModel : ViewModelBase, IDisposable
         if (e.PropertyName is not nameof(IPendingChangesService.PendingGroups))
             return;
 
-        // Our staged change was removed externally (DiscardAll or Unstage) — reset toggle
+        // Our staged change was removed — either applied or discarded
         if (_stagedGroupId is not null &&
             !_pendingChangesService.PendingGroups.Any(g => g.GroupId == _stagedGroupId))
         {
             _stagedGroupId = null;
-            _suppressStaging = true;
-            IsEnabled = _registryIsEnabled;
-            _suppressStaging = false;
+
+            if (_pendingChangesService.IsApplying)
+            {
+                // Change was applied — keep toggle position, update baseline to match
+                _registryIsEnabled = IsEnabled;
+            }
+            else
+            {
+                // Change was discarded — reset toggle to registry state
+                _suppressStaging = true;
+                IsEnabled = _registryIsEnabled;
+                _suppressStaging = false;
+            }
+
             UpdatePendingState();
         }
     }
