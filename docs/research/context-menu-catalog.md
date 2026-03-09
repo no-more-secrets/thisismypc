@@ -241,6 +241,34 @@
 
 ---
 
+## Desktop Background
+
+### Section 1
+- View →
+- Sort by →
+- Refresh
+
+### Section 2
+- Paste
+- Undo Rename (Ctrl+Z)
+
+### Section 3
+- Open in Terminal
+- Open with Visual Studio
+- WizTree
+- NVIDIA App →
+
+### Section 4
+- New →
+
+### Section 5
+- Display settings
+- Personalize
+
+**Total items: 13**
+
+---
+
 ## Analysis
 
 ### Global Entries (Present on All File Types: PNG, HTML, PDF)
@@ -270,28 +298,31 @@ These entries appear on every file right-click and are registered on `HKCR\*` or
 
 ### File-Type-Specific Entries
 
-| Entry | PNG | HTML | PDF | Folder | Folder BG |
-|---|---|---|---|---|---|
-| Edit with Photos | ✓ | | | | |
-| Convert to Adobe PDF | ✓ | ✓ | | | |
-| Create with Designer | ✓ | | | | |
-| Ask Copilot | ✓ | | ✓ | | |
-| Edit with Paint | ✓ | | | | |
-| Set as desktop background | ✓ | | | | |
-| Print | ✓ | | | | |
-| Resize with Image Resizer | ✓ (x2) | | | | |
-| Rotate right/left | ✓ | | | | |
-| Cast to Device → | ✓ | | | | |
-| Edit with Adobe Acrobat | | | ✓ | | |
-| Combine files in Acrobat... | | | | ✓ | |
-| Open in new tab/window | | | | ✓ | |
-| Pin to Quick access | | | | ✓ | |
-| WizTree | | | | ✓ | ✓ |
-| Open in Terminal | | | | ✓ | ✓ |
-| Open with Visual Studio | | | | ✓ | ✓ |
-| Open with VS Code | | | | ✓ | |
-| Include in library → | | | | ✓ | |
-| Pin to Start | | | | ✓ | |
+| Entry | PNG | HTML | PDF | Folder | Folder BG | Desktop BG |
+|---|---|---|---|---|---|---|
+| Edit with Photos | ✓ | | | | | |
+| Convert to Adobe PDF | ✓ | ✓ | | | | |
+| Create with Designer | ✓ | | | | | |
+| Ask Copilot | ✓ | | ✓ | | | |
+| Edit with Paint | ✓ | | | | | |
+| Set as desktop background | ✓ | | | | | |
+| Print | ✓ | | | | | |
+| Resize with Image Resizer | ✓ (x2) | | | | | |
+| Rotate right/left | ✓ | | | | | |
+| Cast to Device → | ✓ | | | | | |
+| Edit with Adobe Acrobat | | | ✓ | | | |
+| Combine files in Acrobat... | | | | ✓ | | |
+| Open in new tab/window | | | | ✓ | | |
+| Pin to Quick access | | | | ✓ | | |
+| WizTree | | | | ✓ | ✓ | ✓ |
+| Open in Terminal | | | | ✓ | ✓ | ✓ |
+| Open with Visual Studio | | | | ✓ | ✓ | ✓ |
+| Open with VS Code | | | | ✓ | | |
+| Include in library → | | | | ✓ | | |
+| Pin to Start | | | | ✓ | | |
+| NVIDIA App → | | | | | | ✓ |
+| Display settings | | | | | | ✓ |
+| Personalize | | | | | | ✓ |
 
 ### Vendor Footprint Summary
 
@@ -302,10 +333,11 @@ These entries appear on every file right-click and are registered on `HKCR\*` or
 | **PowerToys** | Unlock with File Locksmith (x2!), Rename with PowerRename, Resize with Image Resizer (x2 on PNG) | Global + image-specific |
 | **WinRAR** | WinRAR → | Global (files + folders) |
 | **7-Zip** | 7-Zip → | Global (files + folders) |
-| **WizTree** | WizTree | Folders + folder background |
+| **WizTree** | WizTree | Folders + folder background + desktop background |
 | **Notepad++** | Edit with Notepad++ | Global (files) |
 | **VS Code** | Open with Code | Global (files) + folders |
-| **Visual Studio** | Open with Visual Studio | Folders + folder background |
+| **Visual Studio** | Open with Visual Studio | Folders + folder background + desktop background |
+| **NVIDIA** | NVIDIA App → | Desktop background |
 
 ### Duplicate Entry Bug
 - **File Locksmith** appears twice in every file context menu (Sections 1 and 5) and twice in the folder context menu (Sections 1 and 5). This is a PowerToys registration issue.
@@ -315,5 +347,6 @@ These entries appear on every file right-click and are registered on `HKCR\*` or
 1. The bottom half of every file context menu (Give access to → Properties) is essentially identical regardless of file type — this is the "persistent core."
 2. Adobe registers different handlers per file type rather than one global entry, making it harder to clean up with a single toggle.
 3. PowerToys is the worst offender for duplicate entries, registering File Locksmith in two different handler locations.
-4. Folder background context menus are significantly cleaner than file or folder menus — fewer apps register background handlers.
+4. Background context menus (folder and desktop) are significantly cleaner than file or folder menus — fewer apps register background handlers.
 5. The global `*` registrations (WinRAR, 7-Zip, Notepad++, etc.) are the primary bloat contributors since they appear on every single file type.
+6. The desktop background menu is the leanest context (13 items), and is the only place NVIDIA registers a shell extension. It also lacks several folder-background entries like Customize, Rename with PowerRename, and Give access to.
