@@ -19,6 +19,8 @@ This document synthesizes 169 pages of deep research into a unified reference fo
 
 ## 1. The Windows 11 Trust Model
 
+*The hypervisor is king. Any approach that requires raw hardware access, writable+executable memory, or unsigned kernel drivers is architecturally dead on Windows 11 — the platform assumes Ring 0 is untrusted.*
+
 Windows 11 has fundamentally restructured the kernel trust hierarchy. The hypervisor (Ring -1) now sits above the OS kernel (Ring 0) as the ultimate arbiter of execution privileges. [kd:10-14] [tm1:10]
 
 ### 1.1 VBS/HVCI Architecture
@@ -45,6 +47,8 @@ Windows 11 has fundamentally restructured the kernel trust hierarchy. The hyperv
 - SMBus/I2C communication should use the native SpbCx framework, not manual port bit-banging [kd:268] [tm2:162]
 
 ## 2. Microsoft's Enforcement Drivers
+
+*Windows 11 ships kernel-mode drivers and scheduled tasks that actively resist configuration changes — even from SYSTEM. ThisIsMyPC must neutralize these enforcement mechanisms before its own registry writes will stick.*
 
 Windows 11 ships enforcement drivers that actively resist user configuration changes — even from Administrator/SYSTEM processes. Understanding these is critical for ThisIsMyPC's enforcement layer. [kd:50-52]
 
@@ -74,6 +78,8 @@ Windows 11 ships enforcement drivers that actively resist user configuration cha
 - **Open question — sync timing**: The source research does not document whether the Update Orchestrator uses registry change notifications or polls on a schedule. If it polls, there is a race window between ThisIsMyPC writing the GPCache and the Orchestrator's next read cycle. Investigation is needed to determine whether restarting `UsoSvc` forces an immediate re-read. This matters for UX: if a user toggles "disable auto-updates" and the setting doesn't take effect for hours, it undermines trust in the tool.
 
 ## 3. Attack Surface Analysis: IPC and Kernel Boundaries
+
+*The GUI-to-Service IPC channel and any kernel device interfaces are high-value attack targets with real CVE precedent. Every boundary must assume an adversary controls the other side.*
 
 ### 3.1 Named Pipe Vulnerabilities
 
@@ -113,6 +119,8 @@ Three attack classes target the GUI-to-Service IPC channel:
 
 ## 4. Bytecode Interpreter Security (PawnPP)
 
+*The CrowdStrike incident proves that parsing complex data in the kernel is catastrophically dangerous. PawnPP must follow the eBPF model: cryptographic validation and static verification in user-space, structured exception handling in the kernel.*
+
 PawnIO replaces WinRing0 by using a bytecode interpreter instead of exposing raw hardware access. [kd:88-94] This is architecturally sound but introduces its own risks.
 
 ### 4.1 The CrowdStrike Warning
@@ -135,6 +143,8 @@ Drawing from the Linux eBPF verifier architecture: [tm1:122-123]
 4. **Hardcoded Public Key**: Kernel embeds public key and rejects any unsigned/tampered bytecode outright [tm2:80]
 
 ## 5. Callback Weaponization Risks
+
+*Registry and filesystem callbacks are powerful defensive tools, but accepting dynamic target lists from user-space turns them into weaponizable rootkit primitives. All protected targets must be statically compiled into the signed driver binary.*
 
 ### 5.1 CmRegisterCallbackEx
 
@@ -162,6 +172,8 @@ Drawing from the Linux eBPF verifier architecture: [tm1:122-123]
 
 ## 6. Supply Chain and Distribution Security
 
+*Checksums and Authenticode are necessary but insufficient — a compromised build pipeline can produce legitimately signed malware. Out-of-band GPG verification with an offline key is the last line of defense.*
+
 ### 6.1 Known Attack Patterns
 
 | Attack | Technique | Duration Undetected | Source |
@@ -181,6 +193,8 @@ Drawing from the Linux eBPF verifier architecture: [tm1:122-123]
 5. **Checksum Insufficiency**: SHA-256 checksums hosted alongside binaries prove nothing if both are compromised — they verify integrity, not origin [tm2:48]
 
 ## 7. NativeAOT-Specific Security
+
+*NativeAOT unlocks the full Windows 11 exploit mitigation stack (CFG+ACG+CIG) that traditional .NET cannot use, but DLL sideloading and data storage poisoning remain critical attack vectors that must be addressed at the application level.*
 
 ### 7.1 DLL Sideloading (MITRE T1574.001)
 
@@ -238,6 +252,8 @@ A critical finding: calling `SetProcessMitigationPolicy` in `Main()` leaves a TO
 
 ### 7.4 Data Storage Hardening
 
+While the executable binary resides in `C:\Program Files\` (admin-only, per §7.1), runtime configuration and the SQLite database live in `%APPDATA%\ThisIsMyPC` and require their own hardening.
+
 - `%APPDATA%\ThisIsMyPC` is user-writable by default — any standard, non-elevated process has full read/write/execute permissions [tm2:120]
 - **Config poisoning**: malware modifies `settings.json` to alter update URLs, inject malicious command-line arguments, or flip boolean flags to silently initiate Owner Mode on next launch [tm2:122]
 - **SQLite tampering**: forged `ChangeGroup` records could make the elevated ThisIsMyPC service write attacker-controlled values to `HKLM\...\Run` — a "confused deputy" attack requiring no zero-day [tm2:124]
@@ -255,6 +271,8 @@ A critical finding: calling `SetProcessMitigationPolicy` in `Main()` leaves a TO
 - Enforce rolling file limits (10MB/file, 7-day retention) [tm2:144]
 
 ## 8. Context Menu Architecture
+
+*The Win11 context menu system is a bifurcated legacy/modern hybrid with four handler taxonomies, three filtering layers, four ghost handler types, and broken surface inheritance — there are no shortcuts to correct enumeration.*
 
 ### 8.1 Win11 Bifurcated Menu System
 
@@ -397,6 +415,8 @@ Concrete registry paths and architecture types for background-surface handlers �
 
 ## 9. Configuration Surface: Enforcement Mechanisms
 
+*Registry writes alone are insufficient for most high-impact settings. Each configuration category has its own enforcement mechanism, and ThisIsMyPC must match its mutation strategy to the specific resistance layer protecting each setting.*
+
 The research identifies that registry writes alone are insufficient for many settings. Windows 11 uses multiple enforcement layers that actively resist user modifications. [cs:8-12]
 
 ### 9.1 Enforcement Mechanisms That Resist Modification
@@ -442,6 +462,8 @@ From exhaustive analysis of r/Windows11, r/sysadmin, Microsoft Answers, and spec
 
 ## 10. Architectural Blueprint Summary
 
+*The implementation tiers define a clear security maturity path: Tier 1 items are non-negotiable for any public release, Tier 2 hardens against sophisticated adversaries, and Tier 3 provides defense-in-depth at the kernel boundary.*
+
 ### Tier 1: Mandatory (Pre-Release Blockers) [tm2:190-196]
 
 - IPC: `FILE_FLAG_FIRST_PIPE_INSTANCE` + authenticated RPC with `PKT_PRIVACY` [tm1:84-88]
@@ -473,7 +495,7 @@ From exhaustive analysis of r/Windows11, r/sysadmin, Microsoft Answers, and spec
 | Load Time | Boot-start (ELAM) [kd:128-132] | Boot-start minifilter [kd:140] | Dynamic load (explicit opt-in) |
 | Data Parsing | Proprietary encrypted [tm2:216] | Unsigned dynamic templates (caused BSOD) [tm2:216] | Cryptographically verified bytecode [tm2:216] |
 | Persistence | KiCpuTracingFlags, ObRegisterCallbacks [tm2:215] | File system + registry minifilters [tm2:215] | Static CmRegisterCallbackEx (app hives only) [tm2:215] |
-| Auditability | Closed-source, obfuscated [tm2:217] | Closed-source, proprietary [tm2:217] | Open-source (GPLv2), reproducible builds [tm2:217] |
+| Auditability | Closed-source, obfuscated [tm2:217] | Closed-source, proprietary [tm2:217] | Open-source (GPLv2), reproducible builds (no formal audit yet) [tm2:217] |
 
 **On auditability**: Open source provides the *property* of auditability — it does not constitute a *guarantee* that the code has been audited. Until a formal security audit or bug bounty program is established, the transparency claim is aspirational. The project should publish a `security.txt` (RFC 9116), a coordinated disclosure policy, and a CVE request workflow before v1.0 to make the auditability claim actionable.
 
@@ -482,3 +504,15 @@ From exhaustive analysis of r/Windows11, r/sysadmin, Microsoft Answers, and spec
 ThisIsMyPC cannot achieve boot-start loading. ELAM certification requires HLK test passage and explicit Microsoft approval for the ELAM-specific EKU [kd:72-76] — Attestation signing (which PawnIO uses) does not qualify [kd:37]. Microsoft will not grant ELAM certification to a tool designed to override their own enforcement mechanisms. Any alternative boot-start technique would require rootkit-level methods (disabling Secure Boot, unsigned boot drivers, kernel patching) — exactly the kind of opaque, unauditable behavior the project exists to oppose.
 
 The enforcement model is therefore **reactive**: a demand-start service (`start= demand`) that detects and re-applies user-chosen configuration after boot. For the settings ThisIsMyPC targets (telemetry, default apps, update policy, UI preferences), the consuming components don't read these values until well after the user reaches the desktop, so the brief window between boot and service start is invisible in practice.
+
+## 11. Executive Summary
+
+Windows 11's hypervisor-first trust model fundamentally constrains what ThisIsMyPC can be. The hypervisor sits above the OS kernel as the ultimate arbiter of execution privileges, and VBS/HVCI enforce strict W^X memory protections via Extended Page Tables. Any approach requiring raw hardware access, writable+executable memory, or unsigned kernel drivers is dead on arrival. Boot-start loading via ELAM requires explicit Microsoft approval that will never be granted to a tool designed to override their own enforcement mechanisms. ThisIsMyPC therefore operates as a guest of Microsoft's enforcement stack, not a peer — and every architectural decision must accept that ceiling.
+
+The IPC and kernel attack surface carries real CVE precedent across every boundary the application exposes. The GUI-to-Service named pipe channel is vulnerable to pipe squatting (unprivileged user pre-creates the pipe with permissive ACLs), token impersonation (attacker forces SYSTEM to connect and steals the token), and MITM relay via DLL injection into the trusted GUI process. Kernel device interfaces face namespace traversal, buffer overflow, and TOCTOU hard-link attacks. Non-negotiable mitigations include `FILE_FLAG_FIRST_PIPE_INSTANCE` to prevent squatting, authenticated RPC with `PKT_PRIVACY` for mutual authentication, `IoCreateDeviceSecure` with restrictive SDDLs, and `METHOD_BUFFERED` exclusively for all IOCTLs.
+
+Supply chain and runtime integrity require defense at multiple layers. Authenticode signing is necessary but insufficient — a compromised build pipeline produces legitimately signed malware, as SolarWinds demonstrated. Out-of-band GPG verification with an offline private key provides a second, independent trust root. At runtime, NativeAOT unlocks the full Windows 11 exploit mitigation stack: Control Flow Guard validates indirect call targets, Arbitrary Code Guard blocks dynamic code generation, and Code Integrity Guard prevents unsigned DLL injection. Critically, these must be enforced via IFEO registry keys at process creation time, not via `SetProcessMitigationPolicy` in `Main()`, which leaves a TOCTOU window where early-loading DLLs execute unprotected.
+
+Registry writes alone are insufficient for most high-impact settings. Windows 11 deploys multiple enforcement layers that actively resist modification: ucpd.sys kernel-filters default app association changes even from SYSTEM, GPCache duplication causes the Update Orchestrator to ignore direct policy edits, Tamper Protection silently reverts Defender registry modifications, and scheduled tasks re-enable disabled drivers and services on reboot. ThisIsMyPC must identify and neutralize the specific enforcement mechanism protecting each setting — there is no universal bypass.
+
+The project's positioning is deliberately honest. Enforcement is reactive: a demand-start service that re-applies user-chosen configuration after boot, effective because the Windows components consuming these settings don't read them until well after the desktop loads. Open-source licensing (GPLv2) provides the property of auditability but not a guarantee that the code has been audited — no formal security audit or bug bounty program exists yet. Reproducible builds, a coordinated disclosure policy, and a CVE request workflow must be established before v1.0 to make the transparency claim actionable rather than aspirational.

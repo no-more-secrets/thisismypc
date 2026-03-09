@@ -104,6 +104,12 @@ Every control displays what it does and where it lives in the system — the reg
 
 Advanced or potentially dangerous controls are available but behind a disclosure section. Nothing is hidden or locked behind "are you sure?" chains — but dangerous operations are clearly flagged.
 
+### Honest About Constraints
+
+ThisIsMyPC operates as a guest of Microsoft's enforcement stack, not a peer. It cannot achieve boot-start loading, cannot bypass hypervisor-enforced protections, and cannot prevent Windows from reading a setting before the app's service starts. The enforcement model is reactive: a demand-start service that re-applies your configuration after boot. This works because the Windows components consuming the settings ThisIsMyPC targets — telemetry endpoints, default app handlers, update orchestrators — don't read their configuration until well after you reach the desktop.
+
+Open-source licensing means the code is inspectable. It does not mean the code has been formally audited. Until a security audit or bug bounty program is established, the transparency claim is a property of the project, not a guarantee of its correctness.
+
 ## Why Not Just Use...?
 
 | Tool | What it does well | What ThisIsMyPC adds |
@@ -119,7 +125,7 @@ Advanced or potentially dangerous controls are available but behind a disclosure
 | **Bulk Crap Uninstaller** | Deep uninstaller — catches leftover files, registry keys, and services that Windows "Apps & Features" misses | ThisIsMyPC doesn't replace BCUninstaller — it prevents you from needing it. Startup entries, services, scheduled tasks, and context menu handlers are all visible and controllable before they become entrenched. BCUninstaller cleans up after the damage; ThisIsMyPC stops the damage from landing. |
 | **O&O ShutUp10++** | Privacy toggles, telemetry control | Phase 2 scope — ThisIsMyPC will cover privacy, telemetry, debloating, and Windows feature management. |
 
-The point isn't that any individual capability is novel. **Unification is the feature.** The value is in consolidating 10+ tools into one coherent experience where settings are tracked, changes are reversible, and your entire configuration is exportable.
+The point isn't that any individual capability is novel. **Unification is the feature.** The value is in consolidating 10+ tools into one coherent experience where settings are tracked, changes are reversible, and your entire configuration is exportable. Most of the tools above were built before Windows 11's enforcement mechanisms existed. ThisIsMyPC is designed around them.
 
 ## Architecture
 
@@ -127,7 +133,7 @@ The point isn't that any individual capability is novel. **Unification is the fe
 
 - **.NET 10 (LTS)** + **C# 14** — released November 2025, supported through ~2028
 - **Avalonia UI 11.3.x** — cross-platform UI framework used here for Windows-only. Hardware-accelerated rendering, sub-1s cold start, NativeAOT support since 11.1
-- **NativeAOT compilation** — single-file self-contained binary. No .NET runtime dependency for end users. Trimmed, ahead-of-time compiled
+- **NativeAOT compilation** — single-file self-contained binary. No .NET runtime dependency for end users. Trimmed, ahead-of-time compiled. Enables Windows exploit mitigations (Control Flow Guard, Arbitrary Code Guard, Code Integrity Guard) that traditional .NET JIT apps cannot use
 - **CommunityToolkit.Mvvm** — source-generated ObservableProperty, RelayCommand. Minimal MVVM boilerplate
 - **CsWin32 (Microsoft.Windows.CsWin32)** — source-generated P/Invoke bindings from NativeMethods.txt declarations. SafeHandle support, friendly overloads
 - **C++ native modules** — via P/Invoke for OpenRGB fork integration. CMake build
@@ -260,7 +266,7 @@ All 7+ modules functional. The "Armoury Crate replacement" release:
 
 - [x] Domain research — Windows system control ecosystem, competitive landscape, API mechanisms
 - [x] Technical research — registry locations, WMI classes, and API patterns for every planned module
-- [x] Deep research — 136 pages across 6 documents covering threat modeling, kernel driver security, Win11 context menu architecture, control surface enforcement mapping, and NativeAOT user-mode runtime integrity (CFG/ACG/CIG) ([master summary](docs/deep-research/SUMMARY.md) | [full documents](docs/deep-research/index.md))
+- [x] Deep research — 169 pages across 8 documents covering threat modeling, kernel driver security, Win11 context menu architecture, control surface enforcement mapping, and NativeAOT user-mode runtime integrity (CFG/ACG/CIG) ([master summary](docs/deep-research/SUMMARY.md) | [full documents](docs/deep-research/index.md))
 - [x] Product brief
 - [x] PRD — 138 functional requirements across 21 categories, phased across Beta/v1.0/Phase 2+
 - [x] UX design specification
@@ -285,8 +291,8 @@ The project follows a benevolent-dictator governance model. Community contribute
 
 ## License
 
-[GPLv2](LICENSE) — every component, permanently. The architecture's security is provable, not secret. See [Why GPLv2](docs/why-gplv2.md) for the full rationale.
+[GPLv2](LICENSE) — every component, permanently. Open source provides the *property* of auditability — anyone can inspect the code, verify the build, and confirm the binary matches the source. It does not constitute a guarantee that the code has been formally audited. The architecture's security is provable, not secret. See [Why GPLv2](docs/why-gplv2.md) for the full rationale.
 
 ---
 
-*ThisIsMyPC is the anti-bloatware. It's the first piece of software on your PC that genuinely practices what it preaches about respecting that it's YOUR PC.*
+*ThisIsMyPC is the anti-bloatware. It operates within Windows 11's constraints honestly and transparently, and never claims to do more than it can prove. The first piece of software on your PC that genuinely practices what it preaches.*
