@@ -194,8 +194,10 @@ public class ShellExtensionServiceTests
     }
 
     [Fact]
-    public void EnumerateContextMenuHandlers_marks_blocked_handler_as_disabled()
+    public void EnumerateContextMenuHandlers_does_not_conflate_blocked_list_with_IsEnabled()
     {
+        // IsEnabled on ShellExtensionInfo reflects only dash-prefix state.
+        // Blocked list detection is handled by the scanner via GetBlockedClsids().
         var basePath = @"HKCR\*\shellex\ContextMenuHandlers";
         var clsid = "{12345678-1234-1234-1234-123456789012}";
         _registry.AddSubKeys(basePath, "TestHandler");
@@ -210,8 +212,11 @@ public class ShellExtensionServiceTests
 
         Assert.True(result.IsSuccess);
         Assert.Single(result.Value!);
-        Assert.False(result.Value![0].IsEnabled);
+        // IsEnabled reflects dash-prefix state only — no dash prefix, so enabled
+        Assert.True(result.Value![0].IsEnabled);
         Assert.Equal(clsid, result.Value![0].Clsid);
+        // Blocked list detection is separate
+        Assert.True(_sut.IsBlockedByCLSID(clsid));
     }
 
     [Fact]

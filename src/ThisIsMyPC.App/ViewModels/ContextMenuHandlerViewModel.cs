@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using ThisIsMyPC.Core.Changes;
 using ThisIsMyPC.Core.Services;
@@ -15,6 +16,7 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
     private bool _registryIsEnabled;
     private bool _suppressStaging;
     private bool _isStagingChange;
+    private bool _disposed;
     private string? _stagedGroupId;
     private CancellationTokenSource? _debounceCts;
 
@@ -149,6 +151,9 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
 
         try
         {
+            if (_disposed)
+                return;
+
             // Refresh baseline from registry (source of truth)
             if (_readRegistryState is not null)
                 _registryIsEnabled = _readRegistryState();
@@ -203,6 +208,14 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
         if (e.PropertyName is not nameof(IPendingChangesService.PendingGroups))
             return;
 
+        if (Dispatcher.UIThread.CheckAccess())
+            HandlePendingGroupsChanged();
+        else
+            Dispatcher.UIThread.Post(HandlePendingGroupsChanged);
+    }
+
+    private void HandlePendingGroupsChanged()
+    {
         // Our staged change was removed — either applied or discarded
         if (_stagedGroupId is not null &&
             !_pendingChangesService.PendingGroups.Any(g => g.GroupId == _stagedGroupId))
@@ -235,6 +248,7 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
 
     public void Dispose()
     {
+        _disposed = true;
         _pendingChangesService.PropertyChanged -= OnPendingChangesPropertyChanged;
         _debounceCts?.Cancel();
         _debounceCts?.Dispose();

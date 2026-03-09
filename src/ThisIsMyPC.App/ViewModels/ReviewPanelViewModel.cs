@@ -5,7 +5,7 @@ using ThisIsMyPC.Core.Services;
 
 namespace ThisIsMyPC.App.ViewModels;
 
-public partial class ReviewPanelViewModel : ViewModelBase
+public partial class ReviewPanelViewModel : ViewModelBase, IDisposable
 {
     private readonly IPendingChangesService _pendingChangesService;
 
@@ -35,6 +35,9 @@ public partial class ReviewPanelViewModel : ViewModelBase
 
         foreach (var group in _pendingChangesService.PendingGroups)
         {
+            if (group.Changes.Count == 0)
+                continue;
+
             var details = group.Changes.Select(change => new ReviewItemViewModel
             {
                 DisplayName = change.DisplayName,
@@ -59,5 +62,10 @@ public partial class ReviewPanelViewModel : ViewModelBase
                 Details = details,
             });
         }
+    }
+
+    public void Dispose()
+    {
+        _pendingChangesService.PropertyChanged -= OnPendingChangesPropertyChanged;
     }
 }

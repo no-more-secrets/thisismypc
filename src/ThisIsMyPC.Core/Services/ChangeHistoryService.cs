@@ -112,7 +112,7 @@ public sealed class ChangeHistoryService : IChangeHistoryService
             AfterDisplay = entry.BeforeDisplay,
             ValueType = entry.ValueType,
             Category = entry.Category,
-            GroupId = entry.GroupId,
+            GroupId = Guid.NewGuid().ToString("N"),
             AppliedAt = now,
         };
 
@@ -185,7 +185,7 @@ public sealed class ChangeHistoryService : IChangeHistoryService
             AfterDisplay = entry.AfterDisplay,
             ValueType = entry.ValueType,
             Category = entry.Category,
-            GroupId = entry.GroupId,
+            GroupId = Guid.NewGuid().ToString("N"),
             AppliedAt = DateTimeOffset.UtcNow,
             RedoOfEntryId = historyId,
         };

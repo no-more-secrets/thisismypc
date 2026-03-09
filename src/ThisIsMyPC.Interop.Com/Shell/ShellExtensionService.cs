@@ -80,18 +80,10 @@ public sealed class ShellExtensionService : IShellExtensionService
                 }
             }
 
-            // Check blocked list and mark any blocked handlers as disabled
-            var blockedClsids = GetBlockedClsids();
-            if (blockedClsids.Count > 0)
-            {
-                for (var i = 0; i < handlers.Count; i++)
-                {
-                    if (blockedClsids.Contains(handlers[i].Clsid))
-                    {
-                        handlers[i] = handlers[i] with { IsEnabled = false };
-                    }
-                }
-            }
+            // Note: blocked list state is NOT merged into IsEnabled here.
+            // IsEnabled reflects only dash-prefix state from the registry value.
+            // The scanner independently checks GetBlockedClsids() to determine
+            // DisableMethod, avoiding conflation of two independent disable signals.
 
             return OperationResult<IReadOnlyList<ShellExtensionInfo>>.Success(handlers);
         }

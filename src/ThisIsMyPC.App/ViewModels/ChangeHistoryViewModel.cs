@@ -41,6 +41,9 @@ public partial class ChangeHistoryViewModel : ViewModelBase
     [ObservableProperty]
     private string? _errorMessage;
 
+    [ObservableProperty]
+    private bool _isConfirmingClear;
+
     public ChangeHistoryViewModel(
         IChangeHistoryService historyService,
         Func<ChangeDescriptor, Task<OperationResult<bool>>> revertFunc,
@@ -169,7 +172,20 @@ public partial class ChangeHistoryViewModel : ViewModelBase
     [RelayCommand]
     private async Task ClearHistoryAsync()
     {
+        if (!IsConfirmingClear)
+        {
+            IsConfirmingClear = true;
+            return;
+        }
+
+        IsConfirmingClear = false;
         await _historyService.ClearHistoryAsync().ConfigureAwait(true);
         await LoadHistoryAsync().ConfigureAwait(true);
+    }
+
+    [RelayCommand]
+    private void CancelClear()
+    {
+        IsConfirmingClear = false;
     }
 }

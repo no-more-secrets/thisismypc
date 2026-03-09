@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.Data.Sqlite;
 using ThisIsMyPC.Core.Changes;
 
@@ -32,6 +33,7 @@ public sealed class ChangeHistoryRepository
         );
         CREATE INDEX IF NOT EXISTS ix_change_history_applied_at ON change_history(applied_at DESC);
         CREATE INDEX IF NOT EXISTS ix_change_history_module_id ON change_history(module_id);
+        CREATE INDEX IF NOT EXISTS ix_change_history_group_id ON change_history(group_id);
         """;
 
     private string? _connectionString;
@@ -340,8 +342,8 @@ public sealed class ChangeHistoryRepository
             ValueType = Enum.Parse<ChangeValueType>((string)reader["value_type"]),
             Category = Enum.Parse<ChangeCategory>((string)reader["category"]),
             GroupId = reader["group_id"] as string,
-            AppliedAt = DateTimeOffset.Parse((string)reader["applied_at"]),
-            RevertedAt = revertedAtStr is not null ? DateTimeOffset.Parse(revertedAtStr) : null,
+            AppliedAt = DateTimeOffset.Parse((string)reader["applied_at"], CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind),
+            RevertedAt = revertedAtStr is not null ? DateTimeOffset.Parse(revertedAtStr, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind) : null,
             RevertedByEntryId = revertedByRaw is long rbei ? rbei : null,
             RedoOfEntryId = redoOfRaw is long roei ? roei : null,
         };

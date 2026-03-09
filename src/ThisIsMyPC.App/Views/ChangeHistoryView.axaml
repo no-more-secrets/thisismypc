@@ -31,11 +31,24 @@
                                    FontSize="12"
                                    VerticalAlignment="Center" />
                         <Button Classes="apply-bar-discard"
-                                Content="Clear"
+                                Content="Cancel"
+                                FontSize="11"
+                                Padding="8,3"
+                                Command="{Binding CancelClearCommand}"
+                                IsVisible="{Binding IsConfirmingClear}" />
+                        <Button Classes="apply-bar-discard"
                                 FontSize="11"
                                 Padding="8,3"
                                 Command="{Binding ClearHistoryCommand}"
-                                IsVisible="{Binding !!TotalGroupCount}" />
+                                IsVisible="{Binding !!TotalGroupCount}">
+                            <Button.Content>
+                                <Panel>
+                                    <TextBlock Text="Clear" IsVisible="{Binding !IsConfirmingClear}" />
+                                    <TextBlock Text="Confirm Clear" IsVisible="{Binding IsConfirmingClear}"
+                                               Foreground="{StaticResource DangerBrush}" />
+                                </Panel>
+                            </Button.Content>
+                        </Button>
                     </StackPanel>
                     <TextBlock Text="Change History"
                                FontWeight="SemiBold"
@@ -163,7 +176,8 @@
                                                                        FontWeight="SemiBold"
                                                                        Foreground="{StaticResource TextPrimaryBrush}" />
                                                             <!-- Clickable registry detail count -->
-                                                            <ToggleButton IsChecked="{Binding IsExpanded}"
+                                                            <ToggleButton IsVisible="{Binding HasMultipleDetails}"
+                                                                          IsChecked="{Binding IsExpanded}"
                                                                           Padding="4,0"
                                                                           VerticalAlignment="Center"
                                                                           Background="Transparent"

@@ -6,7 +6,7 @@ using ThisIsMyPC.Modules.Shell.Models;
 
 namespace ThisIsMyPC.App.ViewModels;
 
-public partial class ContextMenuViewModel : ViewModelBase
+public partial class ContextMenuViewModel : ViewModelBase, IDisposable
 {
     public ObservableCollection<ContextMenuHandlerViewModel> FileHandlers { get; } = [];
     public ObservableCollection<ContextMenuHandlerViewModel> FolderHandlers { get; } = [];
@@ -143,6 +143,21 @@ public partial class ContextMenuViewModel : ViewModelBase
                 return false;
         }
         return true;
+    }
+
+    public void Dispose()
+    {
+        // Dispose all child handler VMs to unsubscribe from PendingChangesService
+        var disposed = new HashSet<ContextMenuHandlerViewModel>(ReferenceEqualityComparer.Instance);
+        foreach (var collection in (ObservableCollection<ContextMenuHandlerViewModel>[])
+            [FileHandlers, FolderHandlers, FolderBackgroundHandlers, DesktopHandlers, MiscHandlers])
+        {
+            foreach (var vm in collection)
+            {
+                if (disposed.Add(vm))
+                    vm.Dispose();
+            }
+        }
     }
 
     partial void OnIsRegistryViewModeChanged(bool value)

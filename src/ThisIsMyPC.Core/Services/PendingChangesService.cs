@@ -7,10 +7,17 @@ namespace ThisIsMyPC.Core.Services;
 public sealed class PendingChangesService : IPendingChangesService
 {
     private readonly List<ChangeGroup> _pendingGroups = [];
+    private readonly object _lock = new();
 
-    public int PendingCount => _pendingGroups.Count;
+    public int PendingCount
+    {
+        get { lock (_lock) return _pendingGroups.Count; }
+    }
 
-    public IReadOnlyList<ChangeGroup> PendingGroups => _pendingGroups.AsReadOnly();
+    public IReadOnlyList<ChangeGroup> PendingGroups
+    {
+        get { lock (_lock) return _pendingGroups.ToList().AsReadOnly(); }
+    }
 
     public bool IsApplying { get; private set; }
 
@@ -50,7 +57,11 @@ public sealed class PendingChangesService : IPendingChangesService
             }
         }
 
-        _pendingGroups.Add(group);
+        lock (_lock)
+        {
+            _pendingGroups.Add(group);
+        }
+
         OnPropertyChanged(nameof(PendingCount));
         OnPropertyChanged(nameof(PendingGroups));
     }
@@ -59,10 +70,17 @@ public sealed class PendingChangesService : IPendingChangesService
     {
         ArgumentNullException.ThrowIfNull(groupId);
 
-        var index = _pendingGroups.FindIndex(g => g.GroupId == groupId);
-        if (index >= 0)
+        bool removed;
+        lock (_lock)
         {
-            _pendingGroups.RemoveAt(index);
+            var index = _pendingGroups.FindIndex(g => g.GroupId == groupId);
+            removed = index >= 0;
+            if (removed)
+                _pendingGroups.RemoveAt(index);
+        }
+
+        if (removed)
+        {
             OnPropertyChanged(nameof(PendingCount));
             OnPropertyChanged(nameof(PendingGroups));
         }
@@ -70,10 +88,14 @@ public sealed class PendingChangesService : IPendingChangesService
 
     public void DiscardAll()
     {
-        if (_pendingGroups.Count == 0)
-            return;
+        lock (_lock)
+        {
+            if (_pendingGroups.Count == 0)
+                return;
 
-        _pendingGroups.Clear();
+            _pendingGroups.Clear();
+        }
+
         OnPropertyChanged(nameof(PendingCount));
         OnPropertyChanged(nameof(PendingGroups));
     }
@@ -91,11 +113,20 @@ public sealed class PendingChangesService : IPendingChangesService
         ArgumentNullException.ThrowIfNull(revertFunc);
 
         IsApplying = true;
+        OnPropertyChanged(nameof(IsApplying));
+
         var allApplied = new List<ChangeDescriptor>();
 
-        for (var gi = 0; gi < _pendingGroups.Count; gi++)
+        // Snapshot pending groups under lock to avoid mutation during iteration
+        List<ChangeGroup> snapshot;
+        lock (_lock)
         {
-            var group = _pendingGroups[gi];
+            snapshot = [.. _pendingGroups];
+        }
+
+        for (var gi = 0; gi < snapshot.Count; gi++)
+        {
+            var group = snapshot[gi];
             var groupApplied = new List<ChangeDescriptor>();
 
             foreach (var change in group.Changes)
@@ -112,19 +143,31 @@ public sealed class PendingChangesService : IPendingChangesService
                     var rolledBack = new List<ChangeDescriptor>();
                     for (var i = groupApplied.Count - 1; i >= 0; i--)
                     {
-                        await revertFunc(groupApplied[i]).ConfigureAwait(false);
-                        rolledBack.Add(groupApplied[i]);
+                        var rollbackResult = await revertFunc(groupApplied[i]).ConfigureAwait(false);
+                        if (rollbackResult.IsSuccess)
+                        {
+                            rolledBack.Add(groupApplied[i]);
+                        }
+                        else
+                        {
+                            System.Diagnostics.Debug.WriteLine(
+                                $"Rollback failed for '{groupApplied[i].SettingId}': {rollbackResult.ErrorMessage}");
+                        }
                     }
 
                     // Remove successfully applied groups so pending state is consistent
-                    if (gi > 0)
+                    lock (_lock)
                     {
-                        _pendingGroups.RemoveRange(0, gi);
+                        if (gi > 0)
+                        {
+                            _pendingGroups.RemoveRange(0, gi);
+                        }
                     }
 
                     OnPropertyChanged(nameof(PendingCount));
                     OnPropertyChanged(nameof(PendingGroups));
                     IsApplying = false;
+                    OnPropertyChanged(nameof(IsApplying));
 
                     var failureRestarts = allApplied
                         .Select(c => c.RestartRequirement)
@@ -148,10 +191,15 @@ public sealed class PendingChangesService : IPendingChangesService
             allApplied.AddRange(groupApplied);
         }
 
-        _pendingGroups.Clear();
+        lock (_lock)
+        {
+            _pendingGroups.Clear();
+        }
+
         OnPropertyChanged(nameof(PendingCount));
         OnPropertyChanged(nameof(PendingGroups));
         IsApplying = false;
+        OnPropertyChanged(nameof(IsApplying));
 
         var requiredRestarts = allApplied
             .Select(c => c.RestartRequirement)

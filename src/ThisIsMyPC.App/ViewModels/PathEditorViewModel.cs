@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Text;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ThisIsMyPC.Core.Changes;
@@ -10,15 +11,16 @@ using ThisIsMyPC.Modules.Shell.Services;
 
 namespace ThisIsMyPC.App.ViewModels;
 
-public partial class PathEditorViewModel : ViewModelBase
+public partial class PathEditorViewModel : ViewModelBase, IDisposable
 {
     private readonly string _scope;
     private readonly string _registryKeyPath;
-    private readonly string _originalPath;
+    private string _originalPath;
     private readonly IPendingChangesService _pendingChangesService;
 
     private string? _stagedGroupId;
     private bool _isStagingChange;
+    private CancellationTokenSource? _debounceCts;
 
     public ObservableCollection<PathEntryViewModel> Entries { get; } = [];
 
@@ -120,13 +122,26 @@ public partial class PathEditorViewModel : ViewModelBase
         if (e.PropertyName is not nameof(IPendingChangesService.PendingGroups))
             return;
 
+        if (Dispatcher.UIThread.CheckAccess())
+            HandlePendingGroupsChanged();
+        else
+            Dispatcher.UIThread.Post(HandlePendingGroupsChanged);
+    }
+
+    private void HandlePendingGroupsChanged()
+    {
         // Our staged change was removed — either applied or discarded
         if (_stagedGroupId is not null &&
             !_pendingChangesService.PendingGroups.Any(g => g.GroupId == _stagedGroupId))
         {
             _stagedGroupId = null;
 
-            if (!_pendingChangesService.IsApplying)
+            if (_pendingChangesService.IsApplying)
+            {
+                // Change was applied — update baseline to the applied path
+                _originalPath = string.Join(';', Entries.Select(e => e.Path));
+            }
+            else
             {
                 // Change was discarded — reset to original
                 Reset();
@@ -137,7 +152,28 @@ public partial class PathEditorViewModel : ViewModelBase
     private void OnEntryPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(PathEntryViewModel.Path))
-            ReindexAndStage();
+        {
+            // Debounce typing to avoid re-staging on every keystroke
+            _debounceCts?.Cancel();
+            _debounceCts?.Dispose();
+            _debounceCts = new CancellationTokenSource();
+            var token = _debounceCts.Token;
+            _ = DebounceStagingAsync(token);
+        }
+    }
+
+    private async Task DebounceStagingAsync(CancellationToken token)
+    {
+        try
+        {
+            await Task.Delay(300, token).ConfigureAwait(true);
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+
+        ReindexAndStage();
     }
 
     private void SubscribeToEntry(PathEntryViewModel entry)
@@ -197,5 +233,16 @@ public partial class PathEditorViewModel : ViewModelBase
             sb.AppendLine("Reordered entries");
 
         return sb.ToString().TrimEnd();
+    }
+
+    public void Dispose()
+    {
+        _pendingChangesService.PropertyChanged -= OnPendingChangesPropertyChanged;
+        _debounceCts?.Cancel();
+        _debounceCts?.Dispose();
+        _debounceCts = null;
+
+        foreach (var entry in Entries)
+            UnsubscribeFromEntry(entry);
     }
 }
