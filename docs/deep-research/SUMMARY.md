@@ -308,7 +308,7 @@ Four distinct vectors produce invisible-but-registered handlers: [cm2:§3] [cm3:
 
 ### 8.5 Surface Inheritance: DesktopBackground vs. Directory\Background
 
-- **Legacy (static verbs + shellex)**: `DesktopBackground` inherits all registrations from `Directory\Background` (desktop is `CSIDL_DESKTOP`, treated as directory). Unidirectional: `Directory\Background` → `DesktopBackground`, NOT reverse. [cm2:§4] [cm3:§5.1]
+- **Legacy (static verbs + shellex)**: Desktop inherits from `Directory\Background` (desktop is `CSIDL_DESKTOP`, treated as directory); `Directory\Background` does NOT inherit from `DesktopBackground`. [cm2:§4] [cm3:§5.1]
 - **Modern (PackagedCom)**: Inheritance is **broken** — `AppxManifest.xml` `ItemType="Directory\Background"` does NOT cascade to Desktop. Modern handlers must explicitly declare each surface. [cm3:§1.3]
 - Desktop-exclusive commands (Display Settings, Personalize) must target `HKCR\DesktopBackground\shell` specifically [cm2:§4] [cm3:§5.2]
 
@@ -318,7 +318,7 @@ Four distinct vectors produce invisible-but-registered handlers: [cm2:§3] [cm3:
 - Surface scope lives exclusively in `AppxManifest.xml`, compiled to AppModel State Repository (protected SQLite DB) [cm3:§4.2]
 - **Enumeration API**: `AppExtensionCatalog.Open("windows.fileExplorerContextMenus")` → iterate `AppExtension` → `GetExtensionPropertiesAsync` → parse `ItemType` key for surface scope + `Verb` node for CLSID. Bypasses COM instantiation entirely. [cm3:§4.3]
 
-### 8.6 Implementation Model for ThisIsMyPC
+### 8.7 Implementation Model for ThisIsMyPC
 
 For managing context menu entries, the app needs to handle two handler types:
 
@@ -335,7 +335,7 @@ For managing context menu entries, the app needs to handle two handler types:
 - Safe disable: add CLSID to `HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Shell Extensions\Blocked` (absolute master override, system-wide) [cm:250]
 - Alternative: prepend `-` to the CLSID string value (dash prefix method, legacy) [cm:248]
 
-### 8.7 The "New" Submenu Architecture
+### 8.8 The "New" Submenu Architecture
 
 The "New" submenu operates on a separate framework from standard verbs/handlers, governed by the `ShellNew` registry key under `HKCR\.ext\ShellNew`: [cm2:§5]
 
@@ -349,14 +349,14 @@ The "New" submenu operates on a separate framework from standard verbs/handlers,
 - **Windows 11 breaking change**: Requires `FriendlyTypeName` value in the ProgID's `auto_file` key (not in `ShellNew` itself); without it, the XAML engine suppresses the entry entirely [cm2:§5.1]
 - **Implication**: ThisIsMyPC's "New" submenu management must validate both the `ShellNew` key and the `FriendlyTypeName` in the associated ProgID
 
-### 8.8 Multi-Selection Logic
+### 8.9 Multi-Selection Logic
 
 - Shell uses **strict set intersection** (not union) to determine visible verbs for mixed-type selections; only verbs universally applicable to every selected item are shown [cm2:§6.1]
 - Mixed selections rapidly reduce to generic `HKCR\*` / `HKCR\AllFileSystemObjects` verbs (Cut, Copy, Delete, Properties) [cm2:§6.1]
 - Static verbs spawn one process per file; 15-file threshold (`MultipleInvokePromptMinimum`) suppresses static verbs to prevent fork bombs [cm2:§6.2]
 - Dynamic COM handlers receive all selected items as a single `IDataObject`/`IShellItemArray` array — bypass the 15-file limit entirely [cm2:§6.2]
 
-### 8.9 Registry Scope Hierarchy
+### 8.10 Registry Scope Hierarchy
 
 File resolution cascade (most specific to broadest): [cm:139-148]
 1. `HKCR\.ext\shell` — specific extension (absolute highest priority) [cm:143]
@@ -375,7 +375,19 @@ Additional scopes: [cm:84-96]
 - `HKCR\DesktopBackground\shell` — desktop right-click (inherits from `Directory\Background`) [cm:92] [cm2:§4]
 - `HKCR\Drive\shell` — root volumes (`C:\`, `D:\`) [cm:87]
 
-### 8.10 Vendor Anomalies
+### 8.11 Background Surface Registration Map
+
+Concrete registry paths and architecture types for background-surface handlers — directly actionable for scan implementation: [cm3:§5.3]
+
+| Handler | Architecture | Registration Path | Scope |
+|---|---|---|---|
+| **Visual Studio** ("Open with VS") | Static verb | `HKCR\Directory\Background\shell\AnyCode` | Folder backgrounds + Desktop (inherits) |
+| **WizTree** | Static verb (dual) | `HKCR\Directory\shell\WizTree` + `HKCR\Directory\Background\shell\WizTree` | Folder icons + Folder backgrounds |
+| **Windows Terminal** | PackagedCom | `windows.fileExplorerContextMenus` manifest, CLSID `{9F156763-7844-4DC4-B2B1-901F640F5155}` | AppModel: `Directory\Background` + `Directory` |
+| **PowerRename** | PackagedCom | `windows.fileExplorerContextMenus` manifest, CLSID `{044004...}` | AppModel: strictly folders (no desktop) |
+| **NVIDIA Control Panel** | Legacy `IContextMenu` | `HKCR\Directory\Background\shellex\ContextMenuHandlers\NvCplDesktopContext` | Desktop only (self-suppresses on folders via `IObjectWithSite`) |
+
+### 8.12 Vendor Anomalies
 
 - **7-Zip vs NanaZip**: 7-Zip refuses Sparse Manifests, relegated to legacy menu; community fork NanaZip wraps 7-Zip in AppX manifest with `IExplorerCommand` for top-level integration [cm:205-206]
 - **PowerToys double-registration**: Dual registration in both `PackagedCom` and `shellex\ContextMenuHandlers` causes duplicate entries when classic menu hack is applied [cm:219-230]
@@ -445,7 +457,7 @@ From exhaustive analysis of r/Windows11, r/sysadmin, Microsoft Answers, and spec
 - Bytecode: Cryptographic signing + in-kernel static verifier + `__try`/`__except` [tm2:200]
 - UI: Mandatory 5-second delay timer + randomized visual CAPTCHA for Owner Mode transition [tm2:201]
 - Builds: Reproducible NativeAOT compilation in containerized CI/CD [tm2:202]
-- Context Menu: Orphan detection (4 ghost handler types incl. `MFS_HIDDEN` state evaluation) + dual-handler management + "New" submenu validation + PackagedCom enumeration via `AppExtensionCatalog` API [cm:256-258] [cm2:§3, §5] [cm3:§3-4]
+- Context Menu: Orphan detection (4 ghost handler types incl. `MFS_HIDDEN` state evaluation) + dual-handler management + "New" submenu validation + PackagedCom enumeration via `AppExtensionCatalog` API + mock `IShellBrowser` site chain for legacy surface-aware probe accuracy [cm:256-258] [cm2:§3, §5] [cm3:§2-4, §6]
 - User-mode hardening: `<ControlFlowGuard>Guard</ControlFlowGuard>` in `.csproj`; IFEO-based ACG (`ProcessDynamicCodePolicy`) + CIG (`ProcessSignaturePolicy`) enforcement on both GUI and service processes; WDAC Supplemental Policy for any unsigned DLL dependencies [ri:§2.1, §5.2, §4.3]
 
 ### Tier 3: Defense-in-Depth [tm2:204-206]
