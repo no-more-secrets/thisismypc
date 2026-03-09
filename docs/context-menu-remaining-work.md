@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-08
 **Context:** Post-synthesis of Parts 1–3 of Gemini Deep Research on Windows 11 context menu architecture
-**Status:** Open — all items unresolved
+**Status:** V4 completed (2026-03-09). V1, V2, V3, V5, D1, D2, D3 remain open.
 
 ---
 
@@ -77,30 +77,30 @@ These are hands-on tasks that the research couldn't answer. Each requires runnin
 
 ---
 
-### V4. Audit Static Verb Registry Paths
+### V4. Audit Static Verb Registry Paths -- COMPLETED 2026-03-09
 
-**Why:** The research identifies static verbs as one of the four menu contribution sources, but the actual registry contents on the system were never fully enumerated. The context menu catalog (real menu observations) found items like Open in Terminal, Open with Visual Studio, and WizTree that aren't in the shellex layer. Part 3 provides expected paths, but these need ground-truth confirmation.
+**Status:** DONE. Automated via `docs/research/audit-static-verbs.ps1`. Full results at `docs/research/static-verb-registry-audit.md`.
 
-**Task:**
-1. Open regedit and enumerate:
-   - `HKCR\Directory\Background\shell\` — all subkeys (expected: AnyCode for VS, WizTree, possibly others)
-   - `HKCR\DesktopBackground\shell\` — all subkeys (expected: Display Settings, Personalize, possibly others)
-   - `HKCR\Directory\shell\` — all subkeys (expected: WizTree, cmd, PowerShell, etc.)
-2. For each entry, note:
-   - Subkey name (verb identifier)
-   - `MUIVerb` or `(Default)` value (display text)
-   - `Icon` value if present
-   - `command` subkey contents (executable path + arguments)
-   - Any modifier values: `Extended`, `Position`, `NeverDefault`, `ProgrammaticAccessOnly`
-3. Confirm Part 3's specific claims:
-   - Visual Studio at `Directory\Background\shell\AnyCode`
-   - WizTree at both `Directory\shell\WizTree` AND `Directory\Background\shell\WizTree`
-   - Open in Terminal as PackagedCom (should NOT appear in `shell\` keys)
-4. Document anything unexpected — entries not in the catalog, or catalog entries not found in any registry path
+**Scope exceeded original task:** Script scanned all 10 AC#1 scope paths (not just the 3 originally listed), covering 1507 file extensions and 6408 ProgIDs in addition to the 7 fixed scope paths.
 
-**Expected outcome:** A complete static verb map for background surfaces that can be merged with the shellex handler data and the PackagedCom enumeration (V3) to produce a full menu reconstruction.
+**SUMMARY.md prediction results:**
+- Visual Studio at `Directory\Background\shell\AnyCode` -- **Confirmed.** Also found at `Directory\shell\AnyCode`, `Directory\shell\Open with Code`, and `*\shell\VSCode`.
+- WizTree dual registration -- **Exceeded.** Quad-registered: `Directory\shell`, `Folder\shell`, `Directory\Background\shell`, `Drive\shell`.
+- Windows Terminal as PackagedCom only (no `shell\` entry) -- **Confirmed.** The `opennewtab` at `Folder\shell` is Explorer's native tab feature (CLSID `{11dbb47c-a525-400b-9e80-a54615a090c0}`), not Windows Terminal.
 
-**Impact:** Low risk, high value. This is a 10-minute regedit task that provides immediate ground truth for the static verb layer. Any discrepancies between the registry and the real menu catalog will surface additional undocumented behavior.
+**Critical corrections to SUMMARY.md assumptions:**
+
+1. **DelegateExecute location.** SUMMARY.md implies `DelegateExecute` is a value on the verb key itself. **Actual:** it lives inside the `command` subkey (`verb\command\DelegateExecute`). The scanner must read `command\DelegateExecute`, not `verb\DelegateExecute`.
+
+2. **DelegateExecute prevalence.** SUMMARY.md treats DelegateExecute as an alternative to `command\(Default)`. **Actual:** 55% of all static verbs (43 of 78) use DelegateExecute. It is the dominant execution mechanism for Windows system verbs, not an edge case. 13 verbs have BOTH a command line and DelegateExecute (Shell prefers DelegateExecute when present).
+
+3. **DropTarget execution mechanism.** Not mentioned in SUMMARY.md. `removeproperties` at `HKCR\*\shell` uses a `DropTarget` subkey instead of `command` or `DelegateExecute`. This is a third execution mechanism the scanner must detect.
+
+4. **Shell-internal verbs.** `.SpotlightLearnMore`, `.SpotlightNextImage`, `EditStickers` at `DesktopBackground\shell` have no `command` subkey, no `DelegateExecute`, no `SubCommands`, no `DropTarget` -- zero execution data. These are dispatched via undocumented Shell internals.
+
+5. **Empty scopes.** `.ext\shell` (0 of 1507 extensions) and `<ProgID>\shell` (0 of 6408 ProgIDs) are completely empty on modern Win11 26200. The scanner must still check them for completeness but should not expect results.
+
+**78 total verbs found:** 41 Command-only, 30 DelegateExecute-only, 13 Both, 2 Cascading, 5 Unknown. 2 LegacyDisabled, 10 Extended, 4 ProgrammaticAccessOnly, 2 HasLUAShield.
 
 ---
 

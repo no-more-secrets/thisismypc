@@ -3,6 +3,7 @@ using ThisIsMyPC.Core.Modules;
 using ThisIsMyPC.Core.Results;
 using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Interop.Com.Shell;
+using ThisIsMyPC.Interop.Win32.Registry;
 
 using ThisIsMyPC.Modules.Shell.Services;
 
@@ -19,7 +20,8 @@ public sealed class ContextMenuModule : IModule
         IContextMenuProbe contextMenuProbe)
     {
         _registryService = registryService;
-        _contextMenuScanner = new ContextMenuScanner(shellExtensionService, contextMenuProbe);
+        var staticVerbService = new StaticVerbService(registryService, ShellRegistryPaths.StaticVerbScopePaths);
+        _contextMenuScanner = new ContextMenuScanner(shellExtensionService, contextMenuProbe, staticVerbService);
     }
 
     public ModuleInfo Info { get; } = new(
@@ -77,7 +79,24 @@ public sealed class ContextMenuModule : IModule
 
     public Task<OperationResult<bool>> RevertChangeAsync(ChangeDescriptor change)
     {
-        return ApplyChangeAsync(change);
+        try
+        {
+            var result = change.ValueType switch
+            {
+                ChangeValueType.Registry_String => RevertStringChange(change),
+                _ => OperationResult<bool>.Failure(
+                    $"Unsupported value type: {change.ValueType}",
+                    ErrorCategory.ServiceUnavailable),
+            };
+
+            return Task.FromResult(result);
+        }
+        catch (Exception ex)
+        {
+            return Task.FromResult(OperationResult<bool>.Failure(
+                $"Failed to revert change '{change.DisplayName}': {ex.Message}",
+                ErrorCategory.ServiceUnavailable, ex));
+        }
     }
 
     private OperationResult<bool> ApplyStringChange(ChangeDescriptor change)
@@ -88,5 +107,15 @@ public sealed class ContextMenuModule : IModule
         return change.AfterValue == ShellRegistryPaths.AbsentValue
             ? _registryService.DeleteValue(keyPath, valueName)
             : _registryService.WriteString(keyPath, valueName, change.AfterValue ?? string.Empty);
+    }
+
+    private OperationResult<bool> RevertStringChange(ChangeDescriptor change)
+    {
+        var (keyPath, valueName) = ShellRegistryPaths.ParseSystemLocation(change.SystemLocation);
+
+        // Write BeforeValue to restore original state (opposite of ApplyStringChange)
+        return change.BeforeValue == ShellRegistryPaths.AbsentValue
+            ? _registryService.DeleteValue(keyPath, valueName)
+            : _registryService.WriteString(keyPath, valueName, change.BeforeValue ?? string.Empty);
     }
 }

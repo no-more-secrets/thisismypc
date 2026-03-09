@@ -23,6 +23,9 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private bool _isRegistryViewMode;
 
+    [ObservableProperty]
+    private HandlerType? _handlerTypeFilter;
+
     public string FileHandlerCount => $"File ({FileHandlers.Count})";
     public string FolderHandlerCount => $"Folder ({FolderHandlers.Count})";
     public string FolderBackgroundHandlerCount => $"Folder Background ({FolderBackgroundHandlers.Count})";
@@ -42,29 +45,34 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
         IPendingChangesService pendingChangesService,
         IRegistryService registryService)
     {
-        // One VM per unique CLSID (already deduped by scanner)
+        // Unique key: CLSID for COM handlers, verb dedup key for static verbs
         var vmMap = new Dictionary<string, ContextMenuHandlerViewModel>(StringComparer.OrdinalIgnoreCase);
-        // Track which tabs each VM belongs to
         var vmTabs = new Dictionary<string, HashSet<ContextMenuTab>>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var handler in handlers)
         {
-            if (!vmMap.TryGetValue(handler.Clsid, out var vm))
+            var key = MakeHandlerKey(handler);
+
+            if (!vmMap.TryGetValue(key, out var vm))
             {
                 vm = new ContextMenuHandlerViewModel(
                     handler,
                     pendingChangesService,
-                    readRegistryState: () => ReadHandlerRegistryState(registryService, handler));
-                vmMap[handler.Clsid] = vm;
-                vmTabs[handler.Clsid] = [];
+                    readRegistryState: handler.HandlerType == HandlerType.StaticVerb
+                        ? () => ReadStaticVerbRegistryState(registryService, handler)
+                        : () => ReadHandlerRegistryState(registryService, handler));
+                vmMap[key] = vm;
+                vmTabs[key] = [];
             }
 
             // Assign to tabs based on all scopes
             foreach (var scope in handler.AllScopes ?? [handler.AppliesTo])
             {
-                var tabs = ContextMenuTabMapper.GetTabs(scope, handler.VisibleSurfaces);
+                var tabs = handler.HandlerType == HandlerType.StaticVerb
+                    ? ContextMenuTabMapper.GetTabsForStaticVerbScope(scope)
+                    : ContextMenuTabMapper.GetTabs(scope, handler.VisibleSurfaces);
                 foreach (var tab in tabs)
-                    vmTabs[handler.Clsid].Add(tab);
+                    vmTabs[key].Add(tab);
 
                 // Set misc group if applicable
                 var miscGroup = ContextMenuTabMapper.GetMiscGroup(scope);
@@ -74,9 +82,9 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
         }
 
         // Populate tab collections with shared VM instances
-        foreach (var (clsid, vm) in vmMap)
+        foreach (var (key, vm) in vmMap)
         {
-            var tabs = vmTabs[clsid];
+            var tabs = vmTabs[key];
 
             if (tabs.Contains(ContextMenuTab.File))
                 FileHandlers.Add(vm);
@@ -90,7 +98,6 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
             {
                 MiscHandlers.Add(vm);
 
-                // Sub-group by surface
                 var collection = vm.MiscGroup switch
                 {
                     MiscSurfaceGroup.Drive => DriveMiscHandlers,
@@ -104,9 +111,9 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
         }
 
         // Generate ScopeNote for each VM based on which tabs it appears in
-        foreach (var (clsid, vm) in vmMap)
+        foreach (var (key, vm) in vmMap)
         {
-            var tabs = vmTabs[clsid];
+            var tabs = vmTabs[key];
             if (tabs.Count <= 1)
                 continue;
 
@@ -122,6 +129,16 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
 
             vm.SetScopeNote($"appears in: {string.Join(", ", tabNames)}");
         }
+    }
+
+    private static string MakeHandlerKey(ContextMenuHandler handler)
+    {
+        if (handler.HandlerType == HandlerType.StaticVerb)
+        {
+            var exec = handler.VerbInfo?.CommandLine ?? handler.VerbInfo?.DelegateExecuteClsid ?? "no-exec";
+            return $"verb|{handler.VerbInfo?.VerbName ?? handler.Name}|{exec}";
+        }
+        return handler.Clsid;
     }
 
     private static bool ReadHandlerRegistryState(IRegistryService registryService, ContextMenuHandler handler)
@@ -141,6 +158,19 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
                 return handler.IsEnabled; // fallback to scan value
             if (result.Value!.StartsWith('-'))
                 return false;
+        }
+        return true;
+    }
+
+    private static bool ReadStaticVerbRegistryState(IRegistryService registryService, ContextMenuHandler handler)
+    {
+        // Static verbs: check LegacyDisable value at each registry path
+        var paths = handler.AllRegistryPaths ?? [handler.RegistryPath];
+        foreach (var path in paths)
+        {
+            var result = registryService.ValueExists(path, "LegacyDisable");
+            if (result.IsSuccess && result.Value)
+                return false; // LegacyDisable exists = disabled
         }
         return true;
     }

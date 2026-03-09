@@ -1,4 +1,5 @@
 using ThisIsMyPC.Interop.Com.Shell;
+using ThisIsMyPC.Interop.Win32.Registry;
 using ThisIsMyPC.Modules.Shell.Models;
 
 namespace ThisIsMyPC.Modules.Shell.Services;
@@ -7,14 +8,33 @@ public sealed class ContextMenuScanner
 {
     private readonly IShellExtensionService _shellExtensionService;
     private readonly IContextMenuProbe? _contextMenuProbe;
+    private readonly IStaticVerbService? _staticVerbService;
 
-    public ContextMenuScanner(IShellExtensionService shellExtensionService, IContextMenuProbe? contextMenuProbe = null)
+    public ContextMenuScanner(
+        IShellExtensionService shellExtensionService,
+        IContextMenuProbe? contextMenuProbe = null,
+        IStaticVerbService? staticVerbService = null)
     {
         _shellExtensionService = shellExtensionService;
         _contextMenuProbe = contextMenuProbe;
+        _staticVerbService = staticVerbService;
     }
 
     public IReadOnlyList<ContextMenuHandler> Scan()
+    {
+        var handlers = new List<ContextMenuHandler>();
+
+        // COM handlers
+        handlers.AddRange(ScanComHandlers());
+
+        // Static verbs
+        if (_staticVerbService is not null)
+            handlers.AddRange(ScanStaticVerbs());
+
+        return handlers;
+    }
+
+    private IReadOnlyList<ContextMenuHandler> ScanComHandlers()
     {
         var result = _shellExtensionService.EnumerateContextMenuHandlers();
         if (!result.IsSuccess)
@@ -75,10 +95,84 @@ public sealed class ContextMenuScanner
                 AllScopes: allScopes,
                 PathEnabledStates: pathEnabledStates,
                 VisibleSurfaces: visibleSurfaces,
-                DisableMethod: disableMethod));
+                DisableMethod: disableMethod,
+                HandlerType: HandlerType.ComHandler));
         }
 
         return handlers;
+    }
+
+    private IReadOnlyList<ContextMenuHandler> ScanStaticVerbs()
+    {
+        var result = _staticVerbService!.EnumerateStaticVerbs();
+        if (!result.IsSuccess)
+            return [];
+
+        // Group by verb name + command (case-insensitive) for deduplication
+        // Same verb at multiple scope levels = same logical verb
+        var grouped = result.Value!
+            .GroupBy(e => MakeVerbDeduplicationKey(e), StringComparer.OrdinalIgnoreCase);
+
+        var handlers = new List<ContextMenuHandler>();
+
+        foreach (var group in grouped)
+        {
+            var entries = group.ToList();
+            var first = entries[0];
+
+            var allRegistryPaths = entries.Select(e => e.RegistryPath).ToList();
+            var allScopes = entries.Select(e => e.Scope).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+
+            // Per-path LegacyDisable state tracking
+            var pathEnabledStates = entries.ToDictionary(
+                e => e.RegistryPath,
+                e => !e.IsLegacyDisabled,
+                StringComparer.OrdinalIgnoreCase);
+
+            // IsEnabled is true only if no path has LegacyDisable
+            var isEnabled = entries.All(e => !e.IsLegacyDisabled);
+
+            var displayName = first.MuiVerb ?? first.VerbName;
+            var classification = ContextMenuHandlerClassifier.ClassifyStaticVerb(
+                first.VerbName, first.CommandLine);
+
+            var verbInfo = new StaticVerbInfo(
+                VerbName: first.VerbName,
+                MuiVerb: first.MuiVerb,
+                Icon: first.Icon,
+                Position: first.Position,
+                IsExtended: first.IsExtended,
+                CommandLine: first.CommandLine,
+                DelegateExecuteClsid: first.DelegateExecuteClsid,
+                IsLegacyDisabled: !isEnabled,
+                AppliesTo: first.AppliesTo,
+                HasLuaShield: first.HasLuaShield,
+                IsProgrammaticAccessOnly: first.IsProgrammaticAccessOnly);
+
+            handlers.Add(new ContextMenuHandler(
+                Name: displayName,
+                Clsid: string.Empty,
+                RegistryPath: first.RegistryPath,
+                AppliesTo: first.Scope,
+                DllPath: null,
+                Publisher: null,
+                IsEnabled: isEnabled,
+                Classification: classification,
+                AllRegistryPaths: allRegistryPaths,
+                AllScopes: allScopes,
+                PathEnabledStates: pathEnabledStates,
+                HandlerType: HandlerType.StaticVerb,
+                VerbInfo: verbInfo));
+        }
+
+        return handlers;
+    }
+
+    private static string MakeVerbDeduplicationKey(StaticVerbEntry entry)
+    {
+        // Deduplicate by verb name + command path (or DelegateExecute CLSID)
+        var executionKey = entry.CommandLine ?? entry.DelegateExecuteClsid ?? "no-exec";
+        return $"{entry.VerbName}|{executionKey}";
     }
 
     private IReadOnlySet<ContextMenuSurface>? ProbeSurfaceVisibility(string clsid, List<string> scopes)

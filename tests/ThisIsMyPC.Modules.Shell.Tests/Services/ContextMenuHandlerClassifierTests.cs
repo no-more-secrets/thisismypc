@@ -128,4 +128,65 @@ public sealed class ContextMenuHandlerClassifierTests
 
         Assert.Equal(HandlerClassification.Critical, result);
     }
+
+    // Static verb classification tests
+
+    [Theory]
+    [InlineData("open")]
+    [InlineData("print")]
+    [InlineData("explore")]
+    [InlineData("properties")]
+    public void ClassifyStaticVerb_canonical_verbs_return_Critical(string verbName)
+    {
+        var result = ContextMenuHandlerClassifier.ClassifyStaticVerb(verbName, "explorer.exe");
+        Assert.Equal(HandlerClassification.Critical, result);
+    }
+
+    [Fact]
+    public void ClassifyStaticVerb_canonical_verb_case_insensitive()
+    {
+        var result = ContextMenuHandlerClassifier.ClassifyStaticVerb("Open", "notepad.exe");
+        Assert.Equal(HandlerClassification.Critical, result);
+    }
+
+    [Fact]
+    public void ClassifyStaticVerb_Windows_system_path_returns_System()
+    {
+        var result = ContextMenuHandlerClassifier.ClassifyStaticVerb(
+            "cmd", @"C:\Windows\System32\cmd.exe /k");
+        Assert.Equal(HandlerClassification.System, result);
+    }
+
+    [Fact]
+    public void ClassifyStaticVerb_explorer_command_returns_System()
+    {
+        var result = ContextMenuHandlerClassifier.ClassifyStaticVerb(
+            "opennewtab", @"explorer.exe ""%V""");
+        Assert.Equal(HandlerClassification.System, result);
+    }
+
+    [Fact]
+    public void ClassifyStaticVerb_null_command_returns_System()
+    {
+        // Shell-internal verbs with no execution data
+        var result = ContextMenuHandlerClassifier.ClassifyStaticVerb(
+            ".SpotlightLearnMore", null);
+        Assert.Equal(HandlerClassification.System, result);
+    }
+
+    [Fact]
+    public void ClassifyStaticVerb_third_party_command_returns_ThirdParty()
+    {
+        var result = ContextMenuHandlerClassifier.ClassifyStaticVerb(
+            "WizTree", @"C:\Program Files\WizTree\WizTree.exe ""%V""");
+        Assert.Equal(HandlerClassification.ThirdParty, result);
+    }
+
+    [Fact]
+    public void ClassifyStaticVerb_PowerToys_command_returns_Optional()
+    {
+        var result = ContextMenuHandlerClassifier.ClassifyStaticVerb(
+            "PowerRename", @"C:\Program Files\PowerToys\modules\PowerRename.exe");
+        Assert.Equal(HandlerClassification.Optional, result);
+    }
 }

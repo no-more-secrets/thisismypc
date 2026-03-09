@@ -15,7 +15,9 @@ public sealed record ContextMenuHandler(
     IReadOnlyList<string>? AllScopes = null,
     IReadOnlyDictionary<string, bool>? PathEnabledStates = null,
     IReadOnlySet<ContextMenuSurface>? VisibleSurfaces = null,
-    DisableMethod DisableMethod = DisableMethod.None)
+    DisableMethod DisableMethod = DisableMethod.None,
+    HandlerType HandlerType = HandlerType.ComHandler,
+    StaticVerbInfo? VerbInfo = null)
 {
     public bool IsBlockedListDisabled => DisableMethod is DisableMethod.BlockedList or DisableMethod.Both;
 }

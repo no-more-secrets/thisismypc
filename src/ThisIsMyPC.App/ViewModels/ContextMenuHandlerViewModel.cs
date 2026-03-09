@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using ThisIsMyPC.Core.Changes;
 using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Modules.Shell.Changes;
@@ -41,7 +42,11 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
     [ObservableProperty]
     private bool _isPendingDisable;
 
+    [ObservableProperty]
+    private bool _canMigrate;
+
     public HandlerClassification Classification { get; }
+    public HandlerType HandlerType { get; }
     public IReadOnlyList<string> AllScopes { get; }
     public string ScopeNote { get; private set; }
     public string Clsid { get; }
@@ -49,6 +54,9 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
     public IReadOnlyList<string> AllRegistryPaths { get; }
     public MiscSurfaceGroup? MiscGroup { get; set; }
     public string WarningText { get; }
+    public string DisableMethodText { get; }
+    public string HandlerTypeBadge { get; }
+    public StaticVerbInfo? VerbInfo { get; }
 
     public ContextMenuHandlerViewModel(
         ContextMenuHandler handler,
@@ -61,16 +69,34 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
         _registryIsEnabled = handler.IsEnabled;
 
         Classification = handler.Classification;
+        HandlerType = handler.HandlerType;
+        VerbInfo = handler.VerbInfo;
         AllScopes = handler.AllScopes ?? [handler.AppliesTo];
         Clsid = handler.Clsid;
         DllPath = handler.DllPath;
         AllRegistryPaths = handler.AllRegistryPaths ?? [handler.RegistryPath];
 
-        Label = handler.Name;
+        Label = handler.HandlerType == HandlerType.StaticVerb
+            ? handler.VerbInfo?.MuiVerb ?? handler.Name
+            : handler.Name;
         ScopeNote = string.Empty; // Set after tab assignment via SetScopeNote
         Description = BuildDescription(handler);
         SystemPath = handler.RegistryPath;
         WarningText = BuildWarningText(handler);
+        CanMigrate = handler.DisableMethod == DisableMethod.DashPrefix;
+        DisableMethodText = handler.DisableMethod switch
+        {
+            DisableMethod.DashPrefix => "Disabled via dash-prefix (legacy)",
+            DisableMethod.BlockedList => "Disabled via Blocked List",
+            DisableMethod.Both => "Disabled via Blocked List + dash-prefix (legacy)",
+            _ => string.Empty,
+        };
+        HandlerTypeBadge = handler.HandlerType switch
+        {
+            HandlerType.StaticVerb => "Static Verb",
+            HandlerType.ModernPackaged => "Modern Packaged",
+            _ => "COM Handler",
+        };
 
         _suppressStaging = true;
         IsEnabled = handler.IsEnabled;
@@ -89,7 +115,21 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
     {
         if (isRegistryView)
         {
-            Description = Clsid;
+            if (HandlerType == HandlerType.StaticVerb && VerbInfo is not null)
+            {
+                var parts = new List<string> { $"Verb: {VerbInfo.VerbName}" };
+                if (VerbInfo.CommandLine is not null)
+                    parts.Add($"Command: {VerbInfo.CommandLine}");
+                if (VerbInfo.DelegateExecuteClsid is not null)
+                    parts.Add($"DelegateExecute: {VerbInfo.DelegateExecuteClsid}");
+                if (VerbInfo.AppliesTo is not null)
+                    parts.Add($"AppliesTo: {VerbInfo.AppliesTo}");
+                Description = string.Join(" | ", parts);
+            }
+            else
+            {
+                Description = Clsid;
+            }
             SystemPath = string.Join("\n", AllRegistryPaths);
             if (DllPath is not null)
                 SystemPath += $"\nDLL: {DllPath}";
@@ -103,14 +143,33 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
 
     private static string BuildDescription(ContextMenuHandler handler, string? scopeNote = null)
     {
-        var classText = handler.Classification switch
+        string classText;
+
+        if (handler.HandlerType == HandlerType.StaticVerb)
         {
-            HandlerClassification.Critical => "Windows built-in (critical)",
-            HandlerClassification.System => $"Windows built-in -- {handler.Publisher ?? "Microsoft"}",
-            HandlerClassification.Optional => $"Microsoft (optional) -- {handler.Publisher ?? "PowerToys"}",
-            HandlerClassification.ThirdParty => handler.Publisher ?? "Unknown publisher",
-            _ => handler.Publisher ?? string.Empty,
-        };
+            var badges = new List<string> { "Static Verb" };
+            var verbInfo = handler.VerbInfo;
+            if (verbInfo is not null)
+            {
+                if (verbInfo.IsExtended) badges.Add("Shift-only");
+                if (verbInfo.Position is not null) badges.Add(verbInfo.Position);
+                if (verbInfo.HasLuaShield) badges.Add("UAC");
+                if (verbInfo.IsProgrammaticAccessOnly) badges.Add("Hidden (Script-only)");
+                if (verbInfo.DelegateExecuteClsid is not null) badges.Add("Delegated");
+            }
+            classText = string.Join(" | ", badges);
+        }
+        else
+        {
+            classText = handler.Classification switch
+            {
+                HandlerClassification.Critical => "Windows built-in (critical)",
+                HandlerClassification.System => $"Windows built-in -- {handler.Publisher ?? "Microsoft"}",
+                HandlerClassification.Optional => $"Microsoft (optional) -- {handler.Publisher ?? "PowerToys"}",
+                HandlerClassification.ThirdParty => handler.Publisher ?? "Unknown publisher",
+                _ => handler.Publisher ?? string.Empty,
+            };
+        }
 
         if (!string.IsNullOrEmpty(scopeNote))
             classText += $" -- {scopeNote}";
@@ -126,6 +185,17 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
             "This is a Windows feature.",
         _ => string.Empty,
     };
+
+    [RelayCommand]
+    private void Migrate()
+    {
+        if (!CanMigrate || _disposed)
+            return;
+
+        var migrationGroup = ContextMenuChangeFactory.CreateMigration(_handler);
+        _pendingChangesService.Stage(migrationGroup);
+        CanMigrate = false;
+    }
 
     partial void OnIsEnabledChanged(bool value)
     {
@@ -158,11 +228,20 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
             if (_readRegistryState is not null)
                 _registryIsEnabled = _readRegistryState();
 
-            // Blocked list for universal coverage + dash-prefix for immediate Explorer effect
-            var blockedListChange = ContextMenuChangeFactory.CreateBlockedListToggle(_handler, desiredState);
-            var dashPrefixChanges = ContextMenuChangeFactory.CreateToggle(_handler, desiredState);
-            var allChanges = new List<ChangeDescriptor> { blockedListChange };
-            allChanges.AddRange(dashPrefixChanges);
+            // Route to appropriate change factory based on handler type
+            List<ChangeDescriptor> allChanges;
+            if (_handler.HandlerType == HandlerType.StaticVerb)
+            {
+                // Static verbs use LegacyDisable — single mechanism
+                allChanges = [.. ContextMenuChangeFactory.CreateStaticVerbToggle(_handler, desiredState)];
+            }
+            else
+            {
+                // COM handlers: blocked list for universal coverage + dash-prefix for immediate Explorer effect
+                var blockedListChange = ContextMenuChangeFactory.CreateBlockedListToggle(_handler, desiredState);
+                var dashPrefixChanges = ContextMenuChangeFactory.CreateToggle(_handler, desiredState);
+                allChanges = [blockedListChange, .. dashPrefixChanges];
+            }
 
             _isStagingChange = true;
             try

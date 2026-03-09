@@ -124,10 +124,50 @@ public static class ContextMenuChangeFactory
         };
     }
 
+    /// <summary>
+    /// Creates toggle change descriptors for a static verb handler.
+    /// Produces one ChangeDescriptor per registry path, using LegacyDisable mechanism.
+    /// </summary>
+    public static IReadOnlyList<ChangeDescriptor> CreateStaticVerbToggle(ContextMenuHandler handler, bool enable)
+    {
+        var verbInfo = handler.VerbInfo!;
+        var settingId = MakeStaticVerbSettingId(verbInfo.VerbName, handler.AppliesTo);
+        var registryPaths = handler.AllRegistryPaths ?? [handler.RegistryPath];
+
+        return registryPaths.Select(path =>
+        {
+            var pathEnabled = handler.PathEnabledStates?.GetValueOrDefault(path, handler.IsEnabled)
+                              ?? handler.IsEnabled;
+
+            return new ChangeDescriptor
+            {
+                ModuleId = ModuleId,
+                SettingId = settingId,
+                DisplayName = $"Context menu: {handler.Name}",
+                // LegacyDisable value on the verb key itself
+                SystemLocation = $@"{path}\LegacyDisable",
+                BeforeValue = enable ? "" : ShellRegistryPaths.AbsentValue,
+                AfterValue = enable ? ShellRegistryPaths.AbsentValue : "",
+                BeforeDisplay = enable ? "Disabled" : "Enabled",
+                AfterDisplay = enable ? "Enabled" : "Disabled",
+                ValueType = ChangeValueType.Registry_String,
+                Category = enable ? ChangeCategory.Enable : ChangeCategory.Disable,
+            };
+        }).ToList();
+    }
+
     public static string MakeSettingId(string clsid)
     {
         // Strip braces from CLSID for a clean SettingId
         var cleanClsid = clsid.TrimStart('{').TrimEnd('}');
         return $"ctx-handler-{cleanClsid}";
+    }
+
+    public static string MakeStaticVerbSettingId(string verbName, string scope)
+    {
+        // Normalize verb name for SettingId (lowercase, no spaces)
+        var cleanVerb = verbName.ToLowerInvariant().Replace(' ', '-');
+        var cleanScope = scope.ToLowerInvariant().Replace(' ', '-');
+        return $"ctx-verb-{cleanVerb}-{cleanScope}";
     }
 }

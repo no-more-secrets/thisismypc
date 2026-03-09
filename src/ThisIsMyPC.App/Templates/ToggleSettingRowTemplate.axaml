@@ -4,13 +4,19 @@
 
     <!-- Reusable toggle setting row template for module controls.
          Modules should use this DataTemplate for settings that can be enabled/disabled.
-         Expected DataContext properties:
+         Expected DataContext properties (required):
            - string Label: Setting name
            - string Description: What the setting does
            - string SystemPath: Registry path or service name (shown in monospace)
            - bool IsEnabled: Current toggle state
+         Optional properties (used by context menu handlers, hidden when absent):
+           - bool IsPendingEnable / IsPendingDisable: Pending state visual indicators
+           - string WarningText: Warning for critical/system handlers
+           - string DisableMethodText: Disable method indicator
+           - bool CanMigrate: Shows "Migrate to Blocked List" button
+           - ICommand MigrateCommand: Migration action
          Note: Compiled bindings are disabled here because this template is generic.
-         Module-specific templates should set x:DataType for their concrete ViewModel. -->
+         FallbackValue is set on optional bindings to suppress binding errors. -->
 
     <DataTemplate x:Key="ToggleSettingRowTemplate">
         <Border Padding="16,12"
@@ -46,6 +52,19 @@
                                Foreground="{StaticResource DangerBrush}"
                                TextWrapping="Wrap"
                                IsVisible="{Binding WarningText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                    <!-- Disable method info + migrate action (context menu handlers only) -->
+                    <TextBlock Text="{Binding DisableMethodText, FallbackValue=''}"
+                               FontSize="11"
+                               Foreground="{StaticResource WarningBrush}"
+                               IsVisible="{Binding DisableMethodText, FallbackValue='', Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    <Button Content="Migrate to Blocked List"
+                            Command="{Binding MigrateCommand, FallbackValue={x:Null}}"
+                            IsVisible="{Binding CanMigrate, FallbackValue=False}"
+                            FontSize="11"
+                            Padding="6,2"
+                            Margin="0,2,0,0"
+                            Classes="accent" />
 
                     <!-- System path (monospace) -->
                     <TextBlock Text="{Binding SystemPath}"

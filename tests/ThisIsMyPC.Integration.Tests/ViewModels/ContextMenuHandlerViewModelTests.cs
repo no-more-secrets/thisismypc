@@ -16,7 +16,8 @@ public sealed class ContextMenuHandlerViewModelTests : IDisposable
         IReadOnlyList<string>? allRegistryPaths = null,
         string name = "TestHandler",
         string clsid = "{12345678-1234-1234-1234-123456789ABC}",
-        string? publisher = "TestPublisher")
+        string? publisher = "TestPublisher",
+        DisableMethod disableMethod = DisableMethod.None)
     {
         var handler = new ContextMenuHandler(
             Name: name,
@@ -28,7 +29,8 @@ public sealed class ContextMenuHandlerViewModelTests : IDisposable
             IsEnabled: isEnabled,
             Classification: classification,
             AllRegistryPaths: allRegistryPaths,
-            AllScopes: allScopes);
+            AllScopes: allScopes,
+            DisableMethod: disableMethod);
 
         var vm = new ContextMenuHandlerViewModel(handler, _pendingService);
         _disposables.Add(vm);
@@ -164,6 +166,97 @@ public sealed class ContextMenuHandlerViewModelTests : IDisposable
     {
         var vm = CreateVm(clsid: "{AAAA-BBBB}");
         Assert.Equal("{AAAA-BBBB}", vm.Clsid);
+    }
+
+    [Fact]
+    public void CanMigrate_true_when_DisableMethod_is_DashPrefix()
+    {
+        var vm = CreateVm(isEnabled: false, disableMethod: DisableMethod.DashPrefix);
+        Assert.True(vm.CanMigrate);
+    }
+
+    [Fact]
+    public void CanMigrate_false_when_DisableMethod_is_None()
+    {
+        var vm = CreateVm(disableMethod: DisableMethod.None);
+        Assert.False(vm.CanMigrate);
+    }
+
+    [Fact]
+    public void CanMigrate_false_when_DisableMethod_is_BlockedList()
+    {
+        var vm = CreateVm(isEnabled: false, disableMethod: DisableMethod.BlockedList);
+        Assert.False(vm.CanMigrate);
+    }
+
+    [Fact]
+    public void CanMigrate_false_when_DisableMethod_is_Both()
+    {
+        var vm = CreateVm(isEnabled: false, disableMethod: DisableMethod.Both);
+        Assert.False(vm.CanMigrate);
+    }
+
+    [Fact]
+    public void DisableMethodText_shows_legacy_for_DashPrefix()
+    {
+        var vm = CreateVm(isEnabled: false, disableMethod: DisableMethod.DashPrefix);
+        Assert.Contains("dash-prefix", vm.DisableMethodText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("legacy", vm.DisableMethodText, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void DisableMethodText_empty_for_None()
+    {
+        var vm = CreateVm(disableMethod: DisableMethod.None);
+        Assert.Empty(vm.DisableMethodText);
+    }
+
+    [Fact]
+    public void DisableMethodText_shows_blocked_list_for_BlockedList()
+    {
+        var vm = CreateVm(isEnabled: false, disableMethod: DisableMethod.BlockedList);
+        Assert.Contains("Blocked List", vm.DisableMethodText);
+    }
+
+    [Fact]
+    public void MigrateCommand_stages_migration_group_when_CanMigrate()
+    {
+        var vm = CreateVm(
+            isEnabled: false,
+            disableMethod: DisableMethod.DashPrefix,
+            allRegistryPaths: [@"HKCR\*\shellex\ContextMenuHandlers\TestHandler"]);
+
+        vm.MigrateCommand.Execute(null);
+
+        Assert.True(_pendingService.PendingCount > 0);
+        var group = _pendingService.PendingGroups[0];
+        Assert.Contains("Migrate", group.DisplayName);
+        Assert.Contains(group.Changes, c => c.SystemLocation.Contains("Blocked"));
+        Assert.False(vm.CanMigrate);
+    }
+
+    [Fact]
+    public void MigrateCommand_second_click_does_not_double_stage()
+    {
+        var vm = CreateVm(
+            isEnabled: false,
+            disableMethod: DisableMethod.DashPrefix,
+            allRegistryPaths: [@"HKCR\*\shellex\ContextMenuHandlers\TestHandler"]);
+
+        vm.MigrateCommand.Execute(null);
+        vm.MigrateCommand.Execute(null);
+
+        Assert.Equal(1, _pendingService.PendingCount);
+    }
+
+    [Fact]
+    public void MigrateCommand_does_nothing_when_not_CanMigrate()
+    {
+        var vm = CreateVm(disableMethod: DisableMethod.None);
+
+        vm.MigrateCommand.Execute(null);
+
+        Assert.Equal(0, _pendingService.PendingCount);
     }
 
     public void Dispose()

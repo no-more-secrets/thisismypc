@@ -19,6 +19,11 @@ public static class ContextMenuHandlerClassifier
         "{A470F8CF-A1E8-4f65-8335-227475AA5C46}", // Encryption
     };
 
+    private static readonly HashSet<string> CanonicalVerbs = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "open", "print", "explore", "properties",
+    };
+
     public static HandlerClassification Classify(string clsid, string? dllPath, string? publisher = null)
     {
         if (CriticalClsids.Contains(clsid))
@@ -57,6 +62,30 @@ public static class ContextMenuHandlerClassifier
         // Path-based fallback when version info is unavailable
         if (companyName is null && dllPath.Contains("PowerToys", StringComparison.OrdinalIgnoreCase))
             return HandlerClassification.Optional;
+
+        return HandlerClassification.ThirdParty;
+    }
+
+    public static HandlerClassification ClassifyStaticVerb(string verbName, string? commandLine)
+    {
+        if (CanonicalVerbs.Contains(verbName))
+            return HandlerClassification.Critical;
+
+        // Verbs with Windows system paths are System-level
+        if (commandLine is not null)
+        {
+            if (commandLine.Contains(@"\Windows\", StringComparison.OrdinalIgnoreCase) ||
+                commandLine.Contains(@"\SystemRoot\", StringComparison.OrdinalIgnoreCase) ||
+                commandLine.StartsWith("explorer", StringComparison.OrdinalIgnoreCase))
+                return HandlerClassification.System;
+
+            if (commandLine.Contains("PowerToys", StringComparison.OrdinalIgnoreCase))
+                return HandlerClassification.Optional;
+        }
+
+        // Verbs with no command line and no DelegateExecute — shell-internal
+        if (commandLine is null)
+            return HandlerClassification.System;
 
         return HandlerClassification.ThirdParty;
     }

@@ -12,6 +12,18 @@ public static class ShellRegistryPaths
     public const string BlockedListKeyPath = @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Shell Extensions\Blocked";
     public const string AbsentValue = "__absent__";
 
+    // Static verb scope paths — the 10 hierarchy levels from which Shell enumerates \shell verbs
+    public static IReadOnlyList<(string KeyPath, string Scope)> StaticVerbScopePaths { get; } =
+    [
+        (@"HKCR\*\shell", "All files"),
+        (@"HKCR\AllFilesystemObjects\shell", "All filesystem objects"),
+        (@"HKCR\Directory\shell", "Directories"),
+        (@"HKCR\Folder\shell", "Folders"),
+        (@"HKCR\Directory\Background\shell", "Folder background"),
+        (@"HKCR\DesktopBackground\shell", "Desktop background"),
+        (@"HKCR\Drive\shell", "Drives"),
+    ];
+
     /// <summary>
     /// Splits a SystemLocation (e.g., "HKCR\...\ValueName") into key path and value name.
     /// Maps "(Default)" to empty string per Windows registry API convention.

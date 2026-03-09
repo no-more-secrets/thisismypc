@@ -1,4 +1,5 @@
 using ThisIsMyPC.Interop.Com.Shell;
+using ThisIsMyPC.Modules.Shell.Models;
 
 namespace ThisIsMyPC.App.ViewModels;
 
@@ -29,6 +30,18 @@ public static class ContextMenuTabMapper
             "Folder background" => MapFolderBackground(visibleSurfaces),
             "Desktop background" => [ContextMenuTab.Desktop],
             "Drives" or "This PC" or "Network" or "Recycle Bin" => [ContextMenuTab.Misc],
+            _ => [ContextMenuTab.File],
+        };
+
+    public static IReadOnlyList<ContextMenuTab> GetTabsForStaticVerbScope(string scope)
+        => scope switch
+        {
+            "All files" or "All filesystem objects" => [ContextMenuTab.File],
+            "Directories" => [ContextMenuTab.Folder],
+            "Folders" => [ContextMenuTab.Folder],
+            "Folder background" => [ContextMenuTab.FolderBackground],
+            "Desktop background" => [ContextMenuTab.Desktop],
+            "Drives" => [ContextMenuTab.Misc],
             _ => [ContextMenuTab.File],
         };
 

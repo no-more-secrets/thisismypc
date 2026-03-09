@@ -119,4 +119,49 @@ public sealed class ContextMenuTabMapperTests
     {
         Assert.Null(ContextMenuTabMapper.GetMiscGroup("All files"));
     }
+
+    // Static verb scope tab mapping tests
+
+    [Fact]
+    public void GetTabsForStaticVerbScope_drives_maps_to_Misc()
+    {
+        var tabs = ContextMenuTabMapper.GetTabsForStaticVerbScope("Drives");
+        Assert.Contains(ContextMenuTab.Misc, tabs);
+    }
+
+    [Fact]
+    public void GetTabsForStaticVerbScope_directory_background_maps_to_FolderBackground()
+    {
+        var tabs = ContextMenuTabMapper.GetTabsForStaticVerbScope("Folder background");
+        Assert.Contains(ContextMenuTab.FolderBackground, tabs);
+        Assert.DoesNotContain(ContextMenuTab.Desktop, tabs);
+    }
+
+    [Fact]
+    public void GetTabsForStaticVerbScope_desktop_background_maps_to_Desktop()
+    {
+        var tabs = ContextMenuTabMapper.GetTabsForStaticVerbScope("Desktop background");
+        Assert.Contains(ContextMenuTab.Desktop, tabs);
+    }
+
+    [Fact]
+    public void GetTabsForStaticVerbScope_all_files_maps_to_File()
+    {
+        var tabs = ContextMenuTabMapper.GetTabsForStaticVerbScope("All files");
+        Assert.Contains(ContextMenuTab.File, tabs);
+    }
+
+    [Fact]
+    public void GetTabsForStaticVerbScope_directories_maps_to_Folder()
+    {
+        var tabs = ContextMenuTabMapper.GetTabsForStaticVerbScope("Directories");
+        Assert.Contains(ContextMenuTab.Folder, tabs);
+    }
+
+    [Fact]
+    public void GetTabsForStaticVerbScope_folders_maps_to_Folder()
+    {
+        var tabs = ContextMenuTabMapper.GetTabsForStaticVerbScope("Folders");
+        Assert.Contains(ContextMenuTab.Folder, tabs);
+    }
 }
