@@ -1,5 +1,5 @@
 ---
-author: Claude Opus 4.6 (synthesis of 7 Gemini 3.1 Pro Deep Research documents)
+author: Claude Opus 4.6 (synthesis of 8 Gemini 3.1 Pro Deep Research documents)
 date: 2026-03-08
 source_documents:
   - threat-modeling-research-part1.md (tm1) — 21 pages
@@ -7,6 +7,7 @@ source_documents:
   - windows-kernel-driver-security-research.md (kd) — 21 pages
   - windows11-context-menu-research-part1.md (cm) — 20 pages
   - windows11-context-menu-research-part2.md (cm2) — 16 pages
+  - windows11-context-menu-research-part3.md (cm3) — 17 pages
   - windows11-control-surface-research.md (cs) — 34 pages
   - nativeaot-runtime-integrity-research.md (ri) — 17 pages
 citation_format: "[abbreviation:line(s)]"
@@ -14,7 +15,7 @@ citation_format: "[abbreviation:line(s)]"
 
 # Deep Research Synthesis: Windows 11 Architecture and ThisIsMyPC Security Posture
 
-This document synthesizes 152 pages of deep research into a unified reference for the ThisIsMyPC project. It covers the Windows 11 platform constraints, security architecture, and implementation implications across five domains: kernel security, IPC hardening, shell integration, configuration surface management, and user-mode runtime integrity.
+This document synthesizes 169 pages of deep research into a unified reference for the ThisIsMyPC project. It covers the Windows 11 platform constraints, security architecture, and implementation implications across five domains: kernel security, IPC hardening, shell integration, configuration surface management, and user-mode runtime integrity.
 
 ## 1. The Windows 11 Trust Model
 
@@ -274,30 +275,48 @@ Four architectural categories populate context menus: [cm2:§1]
 
 ### 8.3 Explorer Filtering Pipeline
 
-The Shell filters contributions in two phases: [cm2:§2]
+The Shell filters contributions in three distinct layers: [cm2:§2] [cm3:§1-2]
 
-1. **Pre-instantiation registry filtering**: Computationally inexpensive triage based on the class of the selected object; handlers not registered in the targeted taxonomy are categorically ignored before any COM loading occurs [cm2:§2.1]
-2. **Post-instantiation programmatic filtering**: COM object is instantiated and fed selection context via `IShellExtInit::Initialize` (legacy) or `IObjectWithSelection` (modern); handler self-suppresses via `ECS_HIDDEN` (`IExplorerCommand::GetState`) or by returning 0 items during `QueryContextMenu` [cm2:§2.2]
+1. **Pre-instantiation registry filtering** (legacy): Computationally inexpensive triage based on the class of the selected object; handlers not registered in the targeted taxonomy are categorically ignored before any COM loading occurs [cm2:§2.1]
+2. **Pre-instantiation declarative filtering** (modern): PackagedCom `IExplorerCommand` handlers are scoped via `<desktop5:ItemType>` in `AppxManifest.xml`, compiled into the **AppModel State Repository** (locked SQLite DB) at install time. Shell checks `ItemType` against the active namespace — if no match, COM server is **never instantiated**. This is strict literal matching; `Directory\Background` does NOT cascade to Desktop (breaks legacy inheritance). [cm3:§1.3]
+3. **Post-instantiation programmatic filtering**: COM object is instantiated and fed selection context via `IShellExtInit::Initialize` (legacy) or `IObjectWithSelection` (modern); handler self-suppresses via `ECS_HIDDEN` (`IExplorerCommand::GetState`) or by returning 0 items during `QueryContextMenu` [cm2:§2.2]
 
 **Background surface fallback**: When right-clicking `Directory\Background`, the `IShellItemArray`/`IDataObject` is empty. Handlers must implement `IObjectWithSite`, query `SID_STopLevelBrowser` → `IShellBrowser` → `IShellView::GetFolder` to retrieve the current directory path. Critical for "Open Terminal Here"-style commands. [cm2:§2.3]
 
-**PowerRename case study**: Demonstrates post-instantiation keyboard-state filtering — inspects `CMF_EXTENDEDVERBS` flag during `QueryContextMenu` to conditionally suppress itself when user has not held SHIFT [cm2:§2.4]
+**PowerRename case study**: Legacy `PowerRenameExt` inspects `CMF_EXTENDEDVERBS` flag during `QueryContextMenu`; modern `PowerRenameContextMenu::GetState` is surface-agnostic — desktop exclusion is purely from manifest `ItemType` scoping, not runtime code [cm2:§2.4] [cm3:§1.1-1.3]
+
+**NVIDIA inverted filtering**: `NvCplDesktopContext` registered at `Directory\Background\shellex` but appears only on desktop, not folders. Uses `IObjectWithSite` → `SetSite` → `IShellBrowser` → PIDL chain to detect it's on a standard directory and suppress. Exhibits **fail-open** behavior: if site chain unavailable (e.g., simplified COM probe), defaults to inserting items. Explorer does NOT do post-hoc HMENU stripping. [cm3:§2]
 
 ### 8.4 Ghost Handlers
 
-Three distinct vectors produce invisible-but-registered handlers: [cm2:§3]
+Four distinct vectors produce invisible-but-registered handlers: [cm2:§3] [cm3:§3]
 
 1. **Benign (programmatic self-suppression)**: Globally registered handlers that self-suppress via `ECS_HIDDEN` when irrelevant to current context; still incurs DLL load + query performance penalty [cm2:§3.1]
-2. **Malignant (orphaned registry pointers)**: Uninstallers fail to clean up `shellex` keys pointing to deleted DLLs (e.g., OneDrive `FileSyncEx` `{CB3D0F55-BC2C-4C1A-85ED-23ED75B5106B}`); Explorer waits for I/O timeout per orphan — compounding "slow right-click" latency [cm2:§3.2]
-3. **Architectural (Win11 segregation)**: Legacy `IContextMenu` handlers are instantiated and queried by the modern menu engine, then silently suppressed from the top-level view; they remain as ghosts, appearing only in "Show more options" [cm2:§3.3]
+2. **Malignant (orphaned registry pointers)**: Uninstallers fail to clean up `shellex` keys pointing to deleted DLLs; Explorer waits for I/O timeout per orphan — compounding "slow right-click" latency [cm2:§3.2]
+3. **Architectural (Win11 segregation)**: Legacy `IContextMenu` handlers are instantiated and queried by the modern menu engine, then silently suppressed from the top-level view [cm2:§3.3]
+4. **Dynamic state evaluation**: Handlers successfully instantiate and call `InsertMenuItem` but apply `MFS_HIDDEN` flag (`0x00000003`) to `MENUITEMINFO.fState` — Shell respects bitmask and strips before rendering. Probes that don't check `fState` will see false positives. [cm3:§3]
 
-- **Implication**: ThisIsMyPC's orphan detection must scan for all three types — not just missing DLLs but also IContextMenu-only registrations that are invisible in the modern menu [cm2:§3]
+**Specific ghost handler state evaluations:** [cm3:§3.1-3.3]
+
+| Handler | CLSID | State Check | Hiding Mechanism |
+|---|---|---|---|
+| **OneDrive FileSyncEx** | `{CB3D0F55-BC2C-4C1A...}` | Evaluates path against `cfapi.dll` sync roots via `SyncRootManager` registry | `MFS_HIDDEN` on `fState` |
+| **WorkFolders** | `{E61BF828-3972-484A...}` | Queries MDM/GPO for active enterprise partnership | Returns 0 items or `MFS_HIDDEN` |
+| **DesktopSlideshow** | `{0bf754aa-7549-4788...}` | Queries `SystemParametersInfo` for wallpaper slideshow mode | `MF_DISABLED`/`MF_GRAYED` or `MFS_HIDDEN` |
+
+- **Implication**: ThisIsMyPC's orphan detection must scan for all four types — missing DLLs, IContextMenu-only registrations invisible in modern menu, and handlers that insert-but-hide via `fState`. Probes must read `MENUITEMINFO.fState` bitmask after `QueryContextMenu`. [cm2:§3] [cm3:§3]
 
 ### 8.5 Surface Inheritance: DesktopBackground vs. Directory\Background
 
-- `DesktopBackground` inherits all registrations from `Directory\Background` (desktop is treated as a specialized folder view mapped to `CSIDL_DESKTOP`) [cm2:§4]
-- Inheritance is strictly **unidirectional**: `Directory\Background` → `DesktopBackground` (union merge), but NOT reverse [cm2:§4]
-- Desktop-exclusive commands (Display Settings, Personalize) must target `HKCR\DesktopBackground\shellex` specifically; they will not appear in folder backgrounds [cm2:§4]
+- **Legacy (static verbs + shellex)**: `DesktopBackground` inherits all registrations from `Directory\Background` (desktop is `CSIDL_DESKTOP`, treated as directory). Unidirectional: `Directory\Background` → `DesktopBackground`, NOT reverse. [cm2:§4] [cm3:§5.1]
+- **Modern (PackagedCom)**: Inheritance is **broken** — `AppxManifest.xml` `ItemType="Directory\Background"` does NOT cascade to Desktop. Modern handlers must explicitly declare each surface. [cm3:§1.3]
+- Desktop-exclusive commands (Display Settings, Personalize) must target `HKCR\DesktopBackground\shell` specifically [cm2:§4] [cm3:§5.2]
+
+### 8.6 PackagedCom Enumeration
+
+- PackagedCom registry (`HKLM\...\PackagedCom\Package\{Family}\Class\{CLSID}`) stores `DisplayName`, `Icon`, `DllPath`/`SurrogateAppId` but **NOT surface scope** [cm3:§4.1]
+- Surface scope lives exclusively in `AppxManifest.xml`, compiled to AppModel State Repository (protected SQLite DB) [cm3:§4.2]
+- **Enumeration API**: `AppExtensionCatalog.Open("windows.fileExplorerContextMenus")` → iterate `AppExtension` → `GetExtensionPropertiesAsync` → parse `ItemType` key for surface scope + `Verb` node for CLSID. Bypasses COM instantiation entirely. [cm3:§4.3]
 
 ### 8.6 Implementation Model for ThisIsMyPC
 
@@ -362,6 +381,7 @@ Additional scopes: [cm:84-96]
 - **PowerToys double-registration**: Dual registration in both `PackagedCom` and `shellex\ContextMenuHandlers` causes duplicate entries when classic menu hack is applied [cm:219-230]
 - **MS Copilot**: "Ask Copilot" forcibly injected via system-level extension; removal requires adding `{CB3B0003-8088-4EDE-8769-8B354AB2FF8C}` to Blocked list [cm:217]
 - **OneDrive FileSyncEx**: Orphaned `{CB3D0F55-BC2C-4C1A-85ED-23ED75B5106B}` keys cause slow right-click when DLL is missing or AppLocker-blocked [cm2:§3.2]
+- **NVIDIA NvCplDesktopContext**: Registered at `Directory\Background\shellex` but only shows on desktop — uses `IObjectWithSite` PIDL chain to suppress on folder backgrounds; fail-open when site chain absent [cm3:§2]
 
 ## 9. Configuration Surface: Enforcement Mechanisms
 
@@ -425,7 +445,7 @@ From exhaustive analysis of r/Windows11, r/sysadmin, Microsoft Answers, and spec
 - Bytecode: Cryptographic signing + in-kernel static verifier + `__try`/`__except` [tm2:200]
 - UI: Mandatory 5-second delay timer + randomized visual CAPTCHA for Owner Mode transition [tm2:201]
 - Builds: Reproducible NativeAOT compilation in containerized CI/CD [tm2:202]
-- Context Menu: Orphan detection (3 ghost handler types) + dual-handler (static verb + COM extension) management + "New" submenu validation [cm:256-258] [cm2:§3, §5]
+- Context Menu: Orphan detection (4 ghost handler types incl. `MFS_HIDDEN` state evaluation) + dual-handler management + "New" submenu validation + PackagedCom enumeration via `AppExtensionCatalog` API [cm:256-258] [cm2:§3, §5] [cm3:§3-4]
 - User-mode hardening: `<ControlFlowGuard>Guard</ControlFlowGuard>` in `.csproj`; IFEO-based ACG (`ProcessDynamicCodePolicy`) + CIG (`ProcessSignaturePolicy`) enforcement on both GUI and service processes; WDAC Supplemental Policy for any unsigned DLL dependencies [ri:§2.1, §5.2, §4.3]
 
 ### Tier 3: Defense-in-Depth [tm2:204-206]
