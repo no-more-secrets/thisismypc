@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using ThisIsMyPC.Core.Changes;
 using ThisIsMyPC.Core.Services;
@@ -13,6 +14,8 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
     private readonly Func<bool>? _readRegistryState;
     private bool _registryIsEnabled;
     private bool _suppressStaging;
+    private bool _isStagingChange;
+    private string? _stagedGroupId;
     private CancellationTokenSource? _debounceCts;
 
     [ObservableProperty]
@@ -70,6 +73,8 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
         _suppressStaging = true;
         IsEnabled = handler.IsEnabled;
         _suppressStaging = false;
+
+        _pendingChangesService.PropertyChanged += OnPendingChangesPropertyChanged;
     }
 
     public void SetScopeNote(string scopeNote)
@@ -149,25 +154,34 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
                 _registryIsEnabled = _readRegistryState();
 
             var changes = ContextMenuChangeFactory.CreateToggle(_handler, desiredState);
-            var settingId = ContextMenuChangeFactory.MakeSettingId(_handler.Clsid);
 
-            // Unstage any existing pending change for this handler
-            var existing = _pendingChangesService.PendingGroups
-                .FirstOrDefault(g => g.Changes.Any(c => c.SettingId == settingId));
-            if (existing is not null)
-                _pendingChangesService.Unstage(existing.GroupId);
-
-            // Only stage if the desired state differs from the real registry value
-            if (desiredState != _registryIsEnabled)
+            _isStagingChange = true;
+            try
             {
-                var group = new ChangeGroup
+                // Unstage any existing pending change
+                if (_stagedGroupId is not null)
                 {
-                    GroupId = Guid.NewGuid().ToString("N"),
-                    DisplayName = $"Context menu: {_handler.Name}",
-                    Description = $"Toggle {_handler.Name} context menu handler",
-                    Changes = changes,
-                };
-                _pendingChangesService.Stage(group);
+                    _pendingChangesService.Unstage(_stagedGroupId);
+                    _stagedGroupId = null;
+                }
+
+                // Only stage if the desired state differs from the real registry value
+                if (desiredState != _registryIsEnabled)
+                {
+                    var group = new ChangeGroup
+                    {
+                        GroupId = Guid.NewGuid().ToString("N"),
+                        DisplayName = $"Context menu: {_handler.Name}",
+                        Description = $"Toggle {_handler.Name} context menu handler",
+                        Changes = changes,
+                    };
+                    _pendingChangesService.Stage(group);
+                    _stagedGroupId = group.GroupId;
+                }
+            }
+            finally
+            {
+                _isStagingChange = false;
             }
 
             UpdatePendingState();
@@ -175,6 +189,25 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Toggle staging failed for {Label}: {ex.Message}");
+        }
+    }
+
+    private void OnPendingChangesPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (_isStagingChange)
+            return;
+        if (e.PropertyName is not nameof(IPendingChangesService.PendingGroups))
+            return;
+
+        // Our staged change was removed externally (DiscardAll or Unstage) — reset toggle
+        if (_stagedGroupId is not null &&
+            !_pendingChangesService.PendingGroups.Any(g => g.GroupId == _stagedGroupId))
+        {
+            _stagedGroupId = null;
+            _suppressStaging = true;
+            IsEnabled = _registryIsEnabled;
+            _suppressStaging = false;
+            UpdatePendingState();
         }
     }
 
@@ -187,6 +220,7 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
 
     public void Dispose()
     {
+        _pendingChangesService.PropertyChanged -= OnPendingChangesPropertyChanged;
         _debounceCts?.Cancel();
         _debounceCts?.Dispose();
         _debounceCts = null;

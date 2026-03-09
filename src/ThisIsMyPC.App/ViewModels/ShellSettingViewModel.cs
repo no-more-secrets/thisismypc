@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using ThisIsMyPC.Core.Changes;
 using ThisIsMyPC.Core.Services;
@@ -14,6 +15,8 @@ public sealed partial class ShellSettingViewModel : ViewModelBase, IDisposable
     private readonly Func<bool>? _readRegistryState;
     private bool _registryIsEnabled;
     private bool _suppressStaging;
+    private bool _isStagingChange;
+    private string? _stagedGroupId;
     private CancellationTokenSource? _debounceCts;
 
     [ObservableProperty]
@@ -54,6 +57,8 @@ public sealed partial class ShellSettingViewModel : ViewModelBase, IDisposable
         _suppressStaging = true;
         IsEnabled = preference.IsEnabled;
         _suppressStaging = false;
+
+        _pendingChangesService.PropertyChanged += OnPendingChangesPropertyChanged;
     }
 
     // Constructor for non-ExplorerPreference settings (taskbar, etc.)
@@ -79,6 +84,8 @@ public sealed partial class ShellSettingViewModel : ViewModelBase, IDisposable
         _suppressStaging = true;
         IsEnabled = isEnabled;
         _suppressStaging = false;
+
+        _pendingChangesService.PropertyChanged += OnPendingChangesPropertyChanged;
     }
 
     partial void OnIsEnabledChanged(bool value)
@@ -120,15 +127,34 @@ public sealed partial class ShellSettingViewModel : ViewModelBase, IDisposable
             if (change is null)
                 return;
 
-            // Unstage any existing pending change for the same setting
-            var existing = _pendingChangesService.PendingGroups
-                .FirstOrDefault(g => g.Changes.Any(c => c.SettingId == change.SettingId));
-            if (existing is not null)
-                _pendingChangesService.Unstage(existing.GroupId);
+            _isStagingChange = true;
+            try
+            {
+                // Unstage any existing pending change
+                if (_stagedGroupId is not null)
+                {
+                    _pendingChangesService.Unstage(_stagedGroupId);
+                    _stagedGroupId = null;
+                }
 
-            // Only stage if the desired state differs from the real registry value
-            if (desiredState != _registryIsEnabled)
-                _pendingChangesService.Stage(change);
+                // Only stage if the desired state differs from the real registry value
+                if (desiredState != _registryIsEnabled)
+                {
+                    var group = new ChangeGroup
+                    {
+                        GroupId = Guid.NewGuid().ToString("N"),
+                        DisplayName = change.DisplayName,
+                        Description = change.DisplayName,
+                        Changes = [change]
+                    };
+                    _pendingChangesService.Stage(group);
+                    _stagedGroupId = group.GroupId;
+                }
+            }
+            finally
+            {
+                _isStagingChange = false;
+            }
 
             // Update pending state properties for UI binding
             UpdatePendingState();
@@ -136,6 +162,25 @@ public sealed partial class ShellSettingViewModel : ViewModelBase, IDisposable
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Toggle staging failed for {Label}: {ex.Message}");
+        }
+    }
+
+    private void OnPendingChangesPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (_isStagingChange)
+            return;
+        if (e.PropertyName is not nameof(IPendingChangesService.PendingGroups))
+            return;
+
+        // Our staged change was removed externally (DiscardAll or Unstage) — reset toggle
+        if (_stagedGroupId is not null &&
+            !_pendingChangesService.PendingGroups.Any(g => g.GroupId == _stagedGroupId))
+        {
+            _stagedGroupId = null;
+            _suppressStaging = true;
+            IsEnabled = _registryIsEnabled;
+            _suppressStaging = false;
+            UpdatePendingState();
         }
     }
 
@@ -148,6 +193,7 @@ public sealed partial class ShellSettingViewModel : ViewModelBase, IDisposable
 
     public void Dispose()
     {
+        _pendingChangesService.PropertyChanged -= OnPendingChangesPropertyChanged;
         _debounceCts?.Cancel();
         _debounceCts?.Dispose();
         _debounceCts = null;

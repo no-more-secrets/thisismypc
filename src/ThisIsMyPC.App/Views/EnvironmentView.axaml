@@ -11,7 +11,7 @@
     <UserControl.Resources>
         <DataTemplate x:Key="EnvVarRowTemplate" x:DataType="vm:EnvironmentVariableItemViewModel">
             <Border Padding="12,8" Margin="0,2" CornerRadius="4"
-                    Background="{StaticResource CardBrush}">
+                    Background="{StaticResource SurfaceBrush}">
                 <Grid ColumnDefinitions="*,2*,Auto">
                     <!-- Display mode -->
                     <TextBlock Grid.Column="0" Text="{Binding Name}"
@@ -60,10 +60,13 @@
     <TabControl>
 
         <!-- PATH Tab -->
-        <TabItem Header="PATH">
+        <TabItem>
+            <TabItem.Header>
+                <TextBlock Text="PATH" FontSize="13" />
+            </TabItem.Header>
             <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Auto">
-                <StackPanel Spacing="20" Margin="0,8,0,16">
+                <StackPanel Spacing="20" Margin="0,8,20,16">
 
                     <!-- User PATH -->
                     <StackPanel Spacing="6">
@@ -74,8 +77,9 @@
                         <TextBlock Text="Appended to System PATH for the current user"
                                    FontSize="12"
                                    Foreground="{StaticResource TextSecondaryBrush}" />
-                        <views:PathEditorView DataContext="{Binding UserPathEditor}"
-                                              IsVisible="{Binding UserPathEditor, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                        <Panel IsVisible="{Binding UserPathEditor, Converter={x:Static ObjectConverters.IsNotNull}}">
+                            <views:PathEditorView DataContext="{Binding UserPathEditor}" />
+                        </Panel>
                         <TextBlock Text="No user PATH variable found"
                                    FontSize="12" FontStyle="Italic"
                                    Foreground="{StaticResource TextTertiaryBrush}"
@@ -91,8 +95,9 @@
                         <TextBlock Text="Base PATH inherited by all users (requires elevation to modify)"
                                    FontSize="12"
                                    Foreground="{StaticResource TextSecondaryBrush}" />
-                        <views:PathEditorView DataContext="{Binding SystemPathEditor}"
-                                              IsVisible="{Binding SystemPathEditor, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                        <Panel IsVisible="{Binding SystemPathEditor, Converter={x:Static ObjectConverters.IsNotNull}}">
+                            <views:PathEditorView DataContext="{Binding SystemPathEditor}" />
+                        </Panel>
                         <TextBlock Text="No system PATH variable found"
                                    FontSize="12" FontStyle="Italic"
                                    Foreground="{StaticResource TextTertiaryBrush}"
@@ -110,8 +115,8 @@
             </TabItem.Header>
             <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Auto">
-                <StackPanel Spacing="8" Margin="0,8,0,16">
-                    <DockPanel>
+                <StackPanel Spacing="8" Margin="0,8,20,16">
+                    <DockPanel Margin="12,0">
                         <TextBlock Text="User environment variables (excluding PATH)"
                                    FontSize="12"
                                    Foreground="{StaticResource TextSecondaryBrush}"
@@ -139,8 +144,8 @@
             </TabItem.Header>
             <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Auto">
-                <StackPanel Spacing="8" Margin="0,8,0,16">
-                    <DockPanel>
+                <StackPanel Spacing="8" Margin="0,8,20,16">
+                    <DockPanel Margin="12,0">
                         <TextBlock Text="System-wide variables (requires elevation to modify)"
                                    FontSize="12"
                                    Foreground="{StaticResource TextSecondaryBrush}"

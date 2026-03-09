@@ -115,10 +115,49 @@ public sealed class PathEditorViewModelTests
     }
 
     [Fact]
-    public void CharacterCountText_shows_total_length()
+    public void CharacterCountText_shows_entry_count_and_total_length()
     {
         var vm = new PathEditorViewModel("AB;CD;EF", "User", _pendingService);
-        // 6 chars (AB + CD + EF) + 2 semicolons = 8 characters
+        // 3 entries, 6 chars (AB + CD + EF) + 2 semicolons = 8 characters
+        Assert.Contains("3 entries", vm.CharacterCountText);
         Assert.Contains("8 characters", vm.CharacterCountText);
+    }
+
+    [Fact]
+    public void MoveEntry_stages_single_change_not_duplicates()
+    {
+        var vm = new PathEditorViewModel("A;B;C", "User", _pendingService);
+        vm.MoveEntry(0, 2);
+        vm.MoveEntry(1, 0);
+
+        // Two moves should result in only one pending change group, not two
+        Assert.Equal(1, _pendingService.PendingCount);
+    }
+
+    [Fact]
+    public void MoveEntry_back_to_original_unstages_change()
+    {
+        var vm = new PathEditorViewModel("A;B;C", "User", _pendingService);
+        vm.MoveEntry(0, 2); // A;B;C → B;C;A
+        Assert.Equal(1, _pendingService.PendingCount);
+
+        vm.MoveEntry(2, 0); // B;C;A → A;B;C (back to original)
+        Assert.Equal(0, _pendingService.PendingCount);
+    }
+
+    [Fact]
+    public void DiscardAll_resets_entries_to_original()
+    {
+        var vm = new PathEditorViewModel("A;B;C", "User", _pendingService);
+        vm.MoveEntry(0, 2); // A;B;C → B;C;A
+
+        Assert.Equal("B", vm.Entries[0].Path);
+
+        _pendingService.DiscardAll();
+
+        // Entries should reset to original order
+        Assert.Equal("A", vm.Entries[0].Path);
+        Assert.Equal("B", vm.Entries[1].Path);
+        Assert.Equal("C", vm.Entries[2].Path);
     }
 }
