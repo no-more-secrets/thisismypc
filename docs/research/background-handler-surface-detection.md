@@ -145,3 +145,44 @@ Recommend: standalone bug fix story. Story 2.8 is about a different problem (mod
 - Unit tests with `FakeContextMenuProbe` that returns canned results
 - Verify tab assignment uses probe data, not hardcoded mapping
 - Integration test: real COM probe on known handlers (NVIDIA, PowerRename) — may need to be trait-marked for systems that have them
+
+---
+
+## Additional gaps beyond Desktop/FolderBackground split
+
+### Missing registry path: `DesktopBackground\shell` (static verbs)
+
+The deep research (`docs/deep-research/windows11-context-menu-research.md`) documents that `HKCR\DesktopBackground\shell` hosts static verbs for the desktop (Display settings, Personalize). We only scan `shellex\ContextMenuHandlers` under each path, not `shell` static verbs. This is by design — the app manages shellex handlers, not shell verbs. But worth noting.
+
+### WizTree mystery — needs its own research
+
+WizTree appears on:
+- Folder right-click (catalog)
+- Folder Background (catalog)
+- Desktop Background (catalog)
+- **This PC right-click** (user-reported)
+- **Network right-click** (user-reported)
+
+But WizTree is NOT in any of our scanned `shellex\ContextMenuHandlers` paths:
+- Not in `HKCR\*`, `AllFilesystemObjects`, `Directory`, `Directory\Background`, `Folder`, `Drive`
+- Not in `HKCR\CLSID\{20D04FE0-...}` (This PC) or `HKCR\CLSID\{F02C1A0D-...}` (Network) — those paths don't even exist
+
+**Hypothesis:** WizTree may use `IExplorerCommand` with a Sparse Package manifest, which is the Win11 modern handler mechanism. This is the mechanism documented in the deep research (Section 1.1) and aligns with Story 2.8 (Modern Handler Enumeration). Alternatively, it could use a completely different registration path not yet identified.
+
+**Action:** WizTree's registration mechanism warrants standalone research before Story 2.8 planning. Understanding how it registers will determine whether the app needs `IExplorerCommand` enumeration (significant scope) or just additional registry paths.
+
+### Broader scanner gaps summary
+
+| Gap | Impact | Fix location |
+|-----|--------|-------------|
+| Desktop/FolderBackground split | Tabs show wrong handlers | This plan (COM probing) |
+| Missing `DesktopBackground\shellex` path | DesktopSlideshow handler not shown | This plan (add to HandlerRegistrations) |
+| WizTree / IExplorerCommand handlers | Missing from all tabs | Story 2.8 + research |
+| `HKCR\SystemFileAssociations` per-type handlers | Unknown — may explain image-specific handlers | Needs investigation |
+| `HKCR\<ProgID>\shellex` per-program handlers | Unknown — may explain Adobe per-type entries | Needs investigation |
+
+### Reference
+
+- Deep research: `docs/deep-research/windows11-context-menu-research.md` (Sections 1.1, 3.1-3.3, 4.x)
+- Real-world catalog: `docs/research/context-menu-catalog.md`
+- Registry dump: captured 2026-03-08, inline above
