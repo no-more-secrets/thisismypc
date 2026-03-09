@@ -91,6 +91,35 @@
                            Margin="0,4,0,0" />
             </StackPanel>
 
+            <!-- Restart notification bar -->
+            <Border DockPanel.Dock="Bottom"
+                    Margin="0,16,0,0"
+                    Padding="16,10"
+                    CornerRadius="8"
+                    Background="{StaticResource RaisedBrush}"
+                    BorderBrush="{StaticResource WarningBrush}"
+                    BorderThickness="1"
+                    IsVisible="{Binding IsRestartNotificationVisible}">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Right"
+                                Orientation="Horizontal"
+                                Spacing="8">
+                        <Button Classes="apply-bar-apply"
+                                Content="Restart Explorer Now"
+                                Command="{Binding RestartExplorerCommand}"
+                                IsEnabled="{Binding !IsRestartingExplorer}" />
+                        <Button Classes="apply-bar-discard"
+                                Content="Later"
+                                Command="{Binding DismissRestartNotificationCommand}" />
+                    </StackPanel>
+                    <TextBlock Text="{Binding RestartNotificationMessage}"
+                               VerticalAlignment="Center"
+                               Foreground="{StaticResource WarningBrush}"
+                               FontSize="13"
+                               TextWrapping="Wrap" />
+                </DockPanel>
+            </Border>
+
             <!-- Apply bar with review panel popup -->
             <Panel DockPanel.Dock="Bottom" Margin="0,16,0,0">
                 <Border x:Name="ApplyBar"

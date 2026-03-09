@@ -11,12 +11,20 @@ public class MainWindowViewModelTests
 {
     private static MainWindowViewModel CreateViewModel(out PendingChangesService pendingChangesService, params IModule[] modules)
     {
+        return CreateViewModel(out pendingChangesService, out _, modules);
+    }
+
+    private static MainWindowViewModel CreateViewModel(
+        out PendingChangesService pendingChangesService,
+        out Fakes.FakeExplorerRestartService explorerRestartService,
+        params IModule[] modules)
+    {
         var navigationService = new NavigationService(modules);
         pendingChangesService = new PendingChangesService();
         var historyService = new Fakes.FakeChangeHistoryService();
         var reviewPanel = new ReviewPanelViewModel(pendingChangesService);
         var registryService = new Fakes.FakeRegistryService();
-        var explorerRestartService = new Fakes.FakeExplorerRestartService();
+        explorerRestartService = new Fakes.FakeExplorerRestartService();
         return new MainWindowViewModel(navigationService, pendingChangesService, historyService, registryService, explorerRestartService, reviewPanel);
     }
 
@@ -229,5 +237,35 @@ public class MainWindowViewModelTests
         vm.DismissRestartNotificationCommand.Execute(null);
 
         Assert.False(vm.IsRestartNotificationVisible);
+    }
+
+    [Fact]
+    public async Task RestartExplorerCommand_CallsServiceAndClearsNotification()
+    {
+        var vm = CreateViewModel(out _, out var restartService);
+        vm.IsRestartNotificationVisible = true;
+        vm.RestartNotificationMessage = "Explorer restart required";
+
+        await vm.RestartExplorerCommand.ExecuteAsync(null);
+
+        Assert.True(restartService.WasCalled);
+        Assert.False(vm.IsRestartNotificationVisible);
+        Assert.False(vm.IsRestartingExplorer);
+        Assert.Equal("Explorer restarted successfully", vm.StatusMessage);
+    }
+
+    [Fact]
+    public async Task RestartExplorerCommand_ShowsErrorOnFailure()
+    {
+        var vm = CreateViewModel(out _, out var restartService);
+        restartService.ShouldSucceed = false;
+        vm.IsRestartNotificationVisible = true;
+
+        await vm.RestartExplorerCommand.ExecuteAsync(null);
+
+        Assert.True(restartService.WasCalled);
+        Assert.True(vm.IsRestartNotificationVisible);
+        Assert.False(vm.IsRestartingExplorer);
+        Assert.Contains("Failed to restart Explorer", vm.StatusMessage);
     }
 }

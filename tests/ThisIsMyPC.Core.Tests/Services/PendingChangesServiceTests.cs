@@ -330,4 +330,42 @@ public class PendingChangesServiceTests
 
         Assert.Single(result.RequiredRestarts);
     }
+
+    [Fact]
+    public async Task ApplyAll_RequiredRestarts_PopulatedOnPartialFailure()
+    {
+        var service = new PendingChangesService();
+
+        // Group 1: succeeds with ExplorerRestart requirement
+        service.Stage(new ChangeDescriptor
+        {
+            ModuleId = "Explorer",
+            SettingId = "restart-setting",
+            DisplayName = "Restart Setting",
+            SystemLocation = @"HKCU\Test",
+            BeforeValue = "0",
+            AfterValue = "1",
+            BeforeDisplay = "Off",
+            AfterDisplay = "On",
+            ValueType = ChangeValueType.Registry_String,
+            Category = ChangeCategory.Enable,
+            RestartRequirement = RestartRequirement.ExplorerRestart,
+        });
+
+        // Group 2: fails
+        service.Stage(CreateTestGroup("g2", CreateTestChange("bad")));
+
+        var result = await service.ApplyAllAsync(
+            applyFunc: change =>
+            {
+                if (change.SettingId == "bad")
+                    return Task.FromResult(OperationResult<bool>.Failure("error", ErrorCategory.AccessDenied));
+                return Task.FromResult(OperationResult<bool>.Success(true));
+            },
+            revertFunc: _ => Task.FromResult(OperationResult<bool>.Success(true)));
+
+        Assert.False(result.IsSuccess);
+        Assert.Single(result.RequiredRestarts);
+        Assert.Contains(RestartRequirement.ExplorerRestart, result.RequiredRestarts);
+    }
 }

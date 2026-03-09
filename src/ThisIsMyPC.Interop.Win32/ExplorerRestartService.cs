@@ -53,11 +53,14 @@ public sealed class ExplorerRestartService : IExplorerRestartService
                 }
             }
 
-            // 6. Start new explorer.exe
+            // 6. Start new explorer.exe (use full path to prevent PATH hijacking)
+            var explorerPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+                "explorer.exe");
             Process.Start(new ProcessStartInfo
             {
-                FileName = "explorer.exe",
-                UseShellExecute = true,
+                FileName = explorerPath,
+                UseShellExecute = false,
             });
 
             // 7. Wait for shell to initialize

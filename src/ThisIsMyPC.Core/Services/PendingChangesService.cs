@@ -122,6 +122,12 @@ public sealed class PendingChangesService : IPendingChangesService
                     OnPropertyChanged(nameof(PendingCount));
                     OnPropertyChanged(nameof(PendingGroups));
 
+                    var failureRestarts = allApplied
+                        .Select(c => c.RestartRequirement)
+                        .Where(r => r != Changes.RestartRequirement.None)
+                        .Distinct()
+                        .ToList();
+
                     return new MutationResult
                     {
                         IsSuccess = false,
@@ -129,7 +135,8 @@ public sealed class PendingChangesService : IPendingChangesService
                         Failed = change,
                         RolledBack = rolledBack.AsReadOnly(),
                         ErrorMessage = result.ErrorMessage,
-                        ErrorCategory = result.ErrorCategory
+                        ErrorCategory = result.ErrorCategory,
+                        RequiredRestarts = failureRestarts,
                     };
                 }
             }
