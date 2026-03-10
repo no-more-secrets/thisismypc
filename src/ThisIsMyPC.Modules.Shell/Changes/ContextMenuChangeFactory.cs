@@ -136,6 +136,7 @@ public static class ContextMenuChangeFactory
 
         return registryPaths.Select(path =>
         {
+            // Use per-path LegacyDisable state for accurate BeforeValue (needed for revert)
             var pathEnabled = handler.PathEnabledStates?.GetValueOrDefault(path, handler.IsEnabled)
                               ?? handler.IsEnabled;
 
@@ -146,7 +147,7 @@ public static class ContextMenuChangeFactory
                 DisplayName = $"Context menu: {handler.Name}",
                 // LegacyDisable value on the verb key itself
                 SystemLocation = $@"{path}\LegacyDisable",
-                BeforeValue = enable ? "" : ShellRegistryPaths.AbsentValue,
+                BeforeValue = pathEnabled ? ShellRegistryPaths.AbsentValue : "",
                 AfterValue = enable ? ShellRegistryPaths.AbsentValue : "",
                 BeforeDisplay = enable ? "Disabled" : "Enabled",
                 AfterDisplay = enable ? "Enabled" : "Disabled",

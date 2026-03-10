@@ -17,7 +17,10 @@ public sealed record ContextMenuHandler(
     IReadOnlySet<ContextMenuSurface>? VisibleSurfaces = null,
     DisableMethod DisableMethod = DisableMethod.None,
     HandlerType HandlerType = HandlerType.ComHandler,
-    StaticVerbInfo? VerbInfo = null)
+    StaticVerbInfo? VerbInfo = null,
+    ModernPackagedInfo? PackagedInfo = null,
+    bool IsDualRegistered = false,
+    string? DualRegistrationPartnerName = null)
 {
     public bool IsBlockedListDisabled => DisableMethod is DisableMethod.BlockedList or DisableMethod.Both;
 }

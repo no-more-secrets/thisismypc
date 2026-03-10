@@ -8,6 +8,9 @@ namespace ThisIsMyPC.App.ViewModels;
 
 public partial class ContextMenuViewModel : ViewModelBase, IDisposable
 {
+    // Backing store for handler type filtering — populated once, used to repopulate collections
+    private readonly List<(ContextMenuHandlerViewModel Vm, HashSet<ContextMenuTab> Tabs)> _allHandlerEntries = [];
+
     public ObservableCollection<ContextMenuHandlerViewModel> FileHandlers { get; } = [];
     public ObservableCollection<ContextMenuHandlerViewModel> FolderHandlers { get; } = [];
     public ObservableCollection<ContextMenuHandlerViewModel> FolderBackgroundHandlers { get; } = [];
@@ -55,12 +58,13 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
 
             if (!vmMap.TryGetValue(key, out var vm))
             {
-                vm = new ContextMenuHandlerViewModel(
-                    handler,
-                    pendingChangesService,
-                    readRegistryState: handler.HandlerType == HandlerType.StaticVerb
-                        ? () => ReadStaticVerbRegistryState(registryService, handler)
-                        : () => ReadHandlerRegistryState(registryService, handler));
+                Func<bool>? readState = handler.HandlerType switch
+                {
+                    HandlerType.StaticVerb => () => ReadStaticVerbRegistryState(registryService, handler),
+                    HandlerType.ModernPackaged => null, // Always enabled — no registry state
+                    _ => () => ReadHandlerRegistryState(registryService, handler),
+                };
+                vm = new ContextMenuHandlerViewModel(handler, pendingChangesService, readState);
                 vmMap[key] = vm;
                 vmTabs[key] = [];
             }
@@ -68,9 +72,12 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
             // Assign to tabs based on all scopes
             foreach (var scope in handler.AllScopes ?? [handler.AppliesTo])
             {
-                var tabs = handler.HandlerType == HandlerType.StaticVerb
-                    ? ContextMenuTabMapper.GetTabsForStaticVerbScope(scope)
-                    : ContextMenuTabMapper.GetTabs(scope, handler.VisibleSurfaces);
+                var tabs = handler.HandlerType switch
+                {
+                    HandlerType.StaticVerb => ContextMenuTabMapper.GetTabsForStaticVerbScope(scope),
+                    HandlerType.ModernPackaged => ContextMenuTabMapper.GetTabsForModernScope(scope),
+                    _ => ContextMenuTabMapper.GetTabs(scope, handler.VisibleSurfaces),
+                };
                 foreach (var tab in tabs)
                     vmTabs[key].Add(tab);
 
@@ -81,10 +88,46 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
             }
         }
 
-        // Populate tab collections with shared VM instances
+        // Store for handler type filtering and generate ScopeNotes (one-time)
         foreach (var (key, vm) in vmMap)
         {
             var tabs = vmTabs[key];
+            _allHandlerEntries.Add((vm, tabs));
+
+            if (tabs.Count > 1)
+            {
+                var tabNames = tabs.Select(t => t switch
+                {
+                    ContextMenuTab.File => "File",
+                    ContextMenuTab.Folder => "Folders",
+                    ContextMenuTab.FolderBackground => "Background",
+                    ContextMenuTab.Desktop => "Desktop",
+                    ContextMenuTab.Misc => "Misc",
+                    _ => t.ToString(),
+                });
+                vm.SetScopeNote($"appears in: {string.Join(", ", tabNames)}");
+            }
+        }
+
+        PopulateCollections();
+    }
+
+    private void PopulateCollections()
+    {
+        FileHandlers.Clear();
+        FolderHandlers.Clear();
+        FolderBackgroundHandlers.Clear();
+        DesktopHandlers.Clear();
+        MiscHandlers.Clear();
+        DriveMiscHandlers.Clear();
+        ThisPcMiscHandlers.Clear();
+        NetworkMiscHandlers.Clear();
+        RecycleBinMiscHandlers.Clear();
+
+        foreach (var (vm, tabs) in _allHandlerEntries)
+        {
+            if (_handlerTypeFilter is not null && vm.HandlerType != _handlerTypeFilter)
+                continue;
 
             if (tabs.Contains(ContextMenuTab.File))
                 FileHandlers.Add(vm);
@@ -110,26 +153,14 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
             }
         }
 
-        // Generate ScopeNote for each VM based on which tabs it appears in
-        foreach (var (key, vm) in vmMap)
-        {
-            var tabs = vmTabs[key];
-            if (tabs.Count <= 1)
-                continue;
-
-            var tabNames = tabs.Select(t => t switch
-            {
-                ContextMenuTab.File => "File",
-                ContextMenuTab.Folder => "Folders",
-                ContextMenuTab.FolderBackground => "Background",
-                ContextMenuTab.Desktop => "Desktop",
-                ContextMenuTab.Misc => "Misc",
-                _ => t.ToString(),
-            });
-
-            vm.SetScopeNote($"appears in: {string.Join(", ", tabNames)}");
-        }
+        OnPropertyChanged(nameof(FileHandlerCount));
+        OnPropertyChanged(nameof(FolderHandlerCount));
+        OnPropertyChanged(nameof(FolderBackgroundHandlerCount));
+        OnPropertyChanged(nameof(DesktopHandlerCount));
+        OnPropertyChanged(nameof(MiscHandlerCount));
     }
+
+    partial void OnHandlerTypeFilterChanged(HandlerType? value) => PopulateCollections();
 
     private static string MakeHandlerKey(ContextMenuHandler handler)
     {
@@ -137,6 +168,11 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
         {
             var exec = handler.VerbInfo?.CommandLine ?? handler.VerbInfo?.DelegateExecuteClsid ?? "no-exec";
             return $"verb|{handler.VerbInfo?.VerbName ?? handler.Name}|{exec}";
+        }
+        if (handler.HandlerType == HandlerType.ModernPackaged)
+        {
+            // Modern handlers keyed by CLSID + package to avoid collisions with COM handlers
+            return $"modern|{handler.Clsid}|{handler.PackagedInfo?.PackageFamilyName ?? handler.Name}";
         }
         return handler.Clsid;
     }

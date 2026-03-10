@@ -66,7 +66,23 @@ public static class ContextMenuHandlerClassifier
         return HandlerClassification.ThirdParty;
     }
 
-    public static HandlerClassification ClassifyStaticVerb(string verbName, string? commandLine)
+    public static HandlerClassification ClassifyModernPackaged(
+        string packageFamilyName, string? publisherDisplayName = null)
+    {
+        // Microsoft/Windows packages are System-level
+        if (packageFamilyName.StartsWith("Microsoft.", StringComparison.OrdinalIgnoreCase) ||
+            packageFamilyName.StartsWith("Windows.", StringComparison.OrdinalIgnoreCase))
+            return HandlerClassification.System;
+
+        if (publisherDisplayName is not null &&
+            publisherDisplayName.Contains("Microsoft", StringComparison.OrdinalIgnoreCase))
+            return HandlerClassification.System;
+
+        return HandlerClassification.ThirdParty;
+    }
+
+    public static HandlerClassification ClassifyStaticVerb(
+        string verbName, string? commandLine, string? delegateExecuteClsid = null)
     {
         if (CanonicalVerbs.Contains(verbName))
             return HandlerClassification.Critical;
@@ -83,7 +99,13 @@ public static class ContextMenuHandlerClassifier
                 return HandlerClassification.Optional;
         }
 
-        // Verbs with no command line and no DelegateExecute — shell-internal
+        // Verbs with no command line — check DelegateExecute presence
+        // DelegateExecute-only verbs are empirically always Microsoft system verbs on Win11
+        // (V4 audit: 100% of DE-only verbs are Microsoft Shell handlers)
+        if (commandLine is null && delegateExecuteClsid is not null)
+            return HandlerClassification.System;
+
+        // No command line and no DelegateExecute — shell-internal (e.g., .SpotlightLearnMore)
         if (commandLine is null)
             return HandlerClassification.System;
 

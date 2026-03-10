@@ -21,7 +21,9 @@ public sealed class ContextMenuModule : IModule
     {
         _registryService = registryService;
         var staticVerbService = new StaticVerbService(registryService, ShellRegistryPaths.StaticVerbScopePaths);
-        _contextMenuScanner = new ContextMenuScanner(shellExtensionService, contextMenuProbe, staticVerbService);
+        var modernPackagedService = new ModernPackagedHandlerService();
+        _contextMenuScanner = new ContextMenuScanner(
+            shellExtensionService, contextMenuProbe, staticVerbService, modernPackagedService);
     }
 
     public ModuleInfo Info { get; } = new(

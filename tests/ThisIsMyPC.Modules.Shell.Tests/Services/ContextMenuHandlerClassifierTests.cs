@@ -189,4 +189,50 @@ public sealed class ContextMenuHandlerClassifierTests
             "PowerRename", @"C:\Program Files\PowerToys\modules\PowerRename.exe");
         Assert.Equal(HandlerClassification.Optional, result);
     }
+
+    // Modern packaged classification tests
+
+    [Theory]
+    [InlineData("Microsoft.WindowsTerminal_8wekyb3d8bbwe")]
+    [InlineData("Microsoft.PowerToys_hash")]
+    [InlineData("Microsoft.DesktopAppInstaller_8wekyb3d8bbwe")]
+    public void ClassifyModernPackaged_Microsoft_prefix_returns_System(string pfn)
+    {
+        var result = ContextMenuHandlerClassifier.ClassifyModernPackaged(pfn);
+        Assert.Equal(HandlerClassification.System, result);
+    }
+
+    [Fact]
+    public void ClassifyModernPackaged_Windows_prefix_returns_System()
+    {
+        var result = ContextMenuHandlerClassifier.ClassifyModernPackaged(
+            "Windows.ShellExperienceHost_cw5n1h2txyewy");
+        Assert.Equal(HandlerClassification.System, result);
+    }
+
+    [Fact]
+    public void ClassifyModernPackaged_Microsoft_publisher_returns_System()
+    {
+        var result = ContextMenuHandlerClassifier.ClassifyModernPackaged(
+            "SomeApp_hash", "Microsoft Corporation");
+        Assert.Equal(HandlerClassification.System, result);
+    }
+
+    [Theory]
+    [InlineData("40174MouriNaruto.NanaZip_hash")]
+    [InlineData("NVIDIACorp.NVIDIAApp_hash")]
+    [InlineData("RandomDev.ContextMenuTool_hash")]
+    public void ClassifyModernPackaged_third_party_returns_ThirdParty(string pfn)
+    {
+        var result = ContextMenuHandlerClassifier.ClassifyModernPackaged(pfn);
+        Assert.Equal(HandlerClassification.ThirdParty, result);
+    }
+
+    [Fact]
+    public void ClassifyModernPackaged_case_insensitive()
+    {
+        var result = ContextMenuHandlerClassifier.ClassifyModernPackaged(
+            "microsoft.windowsterminal_8wekyb3d8bbwe");
+        Assert.Equal(HandlerClassification.System, result);
+    }
 }

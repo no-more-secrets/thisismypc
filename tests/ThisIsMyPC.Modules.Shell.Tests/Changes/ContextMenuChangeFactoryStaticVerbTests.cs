@@ -123,6 +123,42 @@ public sealed class ContextMenuChangeFactoryStaticVerbTests
     }
 
     [Fact]
+    public void CreateStaticVerbToggle_mixed_state_uses_per_path_BeforeValue()
+    {
+        // Path A is enabled (no LegacyDisable), path B is already disabled (has LegacyDisable)
+        var paths = new List<string>
+        {
+            @"HKCR\Directory\shell\AnyCode",
+            @"HKCR\Directory\Background\shell\AnyCode",
+        };
+        var states = new Dictionary<string, bool>
+        {
+            [paths[0]] = true,  // enabled — LegacyDisable absent
+            [paths[1]] = false, // disabled — LegacyDisable present
+        };
+
+        var handler = MakeStaticVerbHandler(
+            isEnabled: false,
+            allRegistryPaths: paths,
+            pathEnabledStates: states);
+
+        // Disable both: path A needs LegacyDisable added, path B already has it
+        var changes = ContextMenuChangeFactory.CreateStaticVerbToggle(handler, enable: false);
+
+        Assert.Equal(2, changes.Count);
+
+        // Path A: was enabled (absent) → disable (write empty string)
+        var changeA = changes.Single(c => c.SystemLocation.Contains(@"Directory\shell"));
+        Assert.Equal(ShellRegistryPaths.AbsentValue, changeA.BeforeValue);
+        Assert.Equal("", changeA.AfterValue);
+
+        // Path B: was disabled (present) → disable again (no-op but BeforeValue correct)
+        var changeB = changes.Single(c => c.SystemLocation.Contains(@"Background\shell"));
+        Assert.Equal("", changeB.BeforeValue);
+        Assert.Equal("", changeB.AfterValue);
+    }
+
+    [Fact]
     public void MakeStaticVerbSettingId_produces_expected_format()
     {
         var id = ContextMenuChangeFactory.MakeStaticVerbSettingId("AnyCode", "All files");

@@ -57,6 +57,12 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
     public string DisableMethodText { get; }
     public string HandlerTypeBadge { get; }
     public StaticVerbInfo? VerbInfo { get; }
+    public ModernPackagedInfo? PackagedInfo { get; }
+    public bool IsDualRegistered { get; }
+    public string? DualRegistrationPartnerName { get; }
+    public string? DualRegistrationNote { get; }
+    public bool IsToggleEnabled { get; }
+    public string? ToggleDisabledTooltip { get; }
 
     public ContextMenuHandlerViewModel(
         ContextMenuHandler handler,
@@ -71,6 +77,9 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
         Classification = handler.Classification;
         HandlerType = handler.HandlerType;
         VerbInfo = handler.VerbInfo;
+        PackagedInfo = handler.PackagedInfo;
+        IsDualRegistered = handler.IsDualRegistered;
+        DualRegistrationPartnerName = handler.DualRegistrationPartnerName;
         AllScopes = handler.AllScopes ?? [handler.AppliesTo];
         Clsid = handler.Clsid;
         DllPath = handler.DllPath;
@@ -98,6 +107,21 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
             _ => "COM Handler",
         };
 
+        // Modern handlers cannot be toggled via registry
+        IsToggleEnabled = handler.HandlerType != HandlerType.ModernPackaged;
+        ToggleDisabledTooltip = handler.HandlerType == HandlerType.ModernPackaged
+            ? "Modern handlers are managed at the package level (Settings > Apps)"
+            : null;
+
+        // Dual-registration cross-reference note
+        if (handler.IsDualRegistered && handler.DualRegistrationPartnerName is not null)
+        {
+            var partnerType = handler.HandlerType == HandlerType.ModernPackaged
+                ? "COM Handler"
+                : "Modern Packaged";
+            DualRegistrationNote = $"Also registered as {partnerType}: {handler.DualRegistrationPartnerName}";
+        }
+
         _suppressStaging = true;
         IsEnabled = handler.IsEnabled;
         _suppressStaging = false;
@@ -124,6 +148,15 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
                     parts.Add($"DelegateExecute: {VerbInfo.DelegateExecuteClsid}");
                 if (VerbInfo.AppliesTo is not null)
                     parts.Add($"AppliesTo: {VerbInfo.AppliesTo}");
+                Description = string.Join(" | ", parts);
+            }
+            else if (HandlerType == HandlerType.ModernPackaged && PackagedInfo is not null)
+            {
+                var parts = new List<string> { $"Package: {PackagedInfo.PackageFamilyName}" };
+                if (!string.IsNullOrEmpty(Clsid))
+                    parts.Add($"CLSID: {Clsid}");
+                if (PackagedInfo.ItemTypes is { Count: > 0 })
+                    parts.Add($"ItemTypes: {string.Join(", ", PackagedInfo.ItemTypes)}");
                 Description = string.Join(" | ", parts);
             }
             else
@@ -158,6 +191,13 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
                 if (verbInfo.DelegateExecuteClsid is not null) badges.Add("Delegated");
             }
             classText = string.Join(" | ", badges);
+        }
+        else if (handler.HandlerType == HandlerType.ModernPackaged)
+        {
+            var packagedInfo = handler.PackagedInfo;
+            classText = packagedInfo is not null
+                ? $"{packagedInfo.PackageDisplayName} -- {packagedInfo.PublisherDisplayName}"
+                : handler.Publisher ?? "Unknown publisher";
         }
         else
         {
@@ -200,6 +240,10 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
     partial void OnIsEnabledChanged(bool value)
     {
         if (_suppressStaging)
+            return;
+
+        // Modern packaged handlers cannot be toggled
+        if (_handler.HandlerType == HandlerType.ModernPackaged)
             return;
 
         _debounceCts?.Cancel();

@@ -33,6 +33,20 @@ public static class ContextMenuTabMapper
             _ => [ContextMenuTab.File],
         };
 
+    public static IReadOnlyList<ContextMenuTab> GetTabsForModernScope(string scope)
+        => scope switch
+        {
+            "All files" or "All filesystem objects" => [ContextMenuTab.File],
+            "Directories" or "Folders" => [ContextMenuTab.Folder],
+            // Modern handlers: Directory\Background does NOT inherit to Desktop
+            // (AppModel State Repository uses strict literal matching)
+            "Folder background" => [ContextMenuTab.FolderBackground],
+            "Desktop background" => [ContextMenuTab.Desktop],
+            "Drives" or "This PC" or "Network" or "Recycle Bin" => [ContextMenuTab.Misc],
+            "Unknown scope" => [ContextMenuTab.Misc],
+            _ => [ContextMenuTab.File],
+        };
+
     public static IReadOnlyList<ContextMenuTab> GetTabsForStaticVerbScope(string scope)
         => scope switch
         {

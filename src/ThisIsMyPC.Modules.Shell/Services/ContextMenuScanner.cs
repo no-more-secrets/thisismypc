@@ -9,15 +9,18 @@ public sealed class ContextMenuScanner
     private readonly IShellExtensionService _shellExtensionService;
     private readonly IContextMenuProbe? _contextMenuProbe;
     private readonly IStaticVerbService? _staticVerbService;
+    private readonly IModernPackagedHandlerService? _modernPackagedService;
 
     public ContextMenuScanner(
         IShellExtensionService shellExtensionService,
         IContextMenuProbe? contextMenuProbe = null,
-        IStaticVerbService? staticVerbService = null)
+        IStaticVerbService? staticVerbService = null,
+        IModernPackagedHandlerService? modernPackagedService = null)
     {
         _shellExtensionService = shellExtensionService;
         _contextMenuProbe = contextMenuProbe;
         _staticVerbService = staticVerbService;
+        _modernPackagedService = modernPackagedService;
     }
 
     public IReadOnlyList<ContextMenuHandler> Scan()
@@ -25,11 +28,22 @@ public sealed class ContextMenuScanner
         var handlers = new List<ContextMenuHandler>();
 
         // COM handlers
-        handlers.AddRange(ScanComHandlers());
+        var comHandlers = ScanComHandlers();
+        handlers.AddRange(comHandlers);
 
         // Static verbs
         if (_staticVerbService is not null)
             handlers.AddRange(ScanStaticVerbs());
+
+        // Modern packaged handlers
+        if (_modernPackagedService is not null)
+        {
+            var modernHandlers = ScanModernPackaged();
+            handlers.AddRange(modernHandlers);
+
+            // Cross-type deduplication: detect same-CLSID COM+Modern pairs
+            ApplyCrossTypeDeduplication(handlers, comHandlers, modernHandlers);
+        }
 
         return handlers;
     }
@@ -134,7 +148,7 @@ public sealed class ContextMenuScanner
 
             var displayName = first.MuiVerb ?? first.VerbName;
             var classification = ContextMenuHandlerClassifier.ClassifyStaticVerb(
-                first.VerbName, first.CommandLine);
+                first.VerbName, first.CommandLine, first.DelegateExecuteClsid);
 
             var verbInfo = new StaticVerbInfo(
                 VerbName: first.VerbName,
@@ -173,6 +187,114 @@ public sealed class ContextMenuScanner
         // Deduplicate by verb name + command path (or DelegateExecute CLSID)
         var executionKey = entry.CommandLine ?? entry.DelegateExecuteClsid ?? "no-exec";
         return $"{entry.VerbName}|{executionKey}";
+    }
+
+    private IReadOnlyList<ContextMenuHandler> ScanModernPackaged()
+    {
+        var result = _modernPackagedService!.EnumerateModernHandlers();
+        if (!result.IsSuccess)
+            return [];
+
+        var handlers = new List<ContextMenuHandler>();
+
+        foreach (var entry in result.Value!)
+        {
+            var allScopes = MapItemTypesToScopes(entry.ItemTypes);
+            var classification = ContextMenuHandlerClassifier.ClassifyModernPackaged(
+                entry.PackageFamilyName, entry.PublisherDisplayName);
+
+            var packagedInfo = new ModernPackagedInfo(
+                PackageFamilyName: entry.PackageFamilyName,
+                PackageDisplayName: entry.PackageDisplayName,
+                PublisherDisplayName: entry.PublisherDisplayName,
+                ItemTypes: entry.ItemTypes,
+                VerbId: entry.VerbId,
+                InstallSource: entry.InstallSource);
+
+            handlers.Add(new ContextMenuHandler(
+                Name: entry.HandlerName,
+                Clsid: entry.Clsid,
+                RegistryPath: $"PackagedCom\\{entry.PackageFamilyName}\\{entry.Clsid}",
+                AppliesTo: allScopes.Count > 0 ? allScopes[0] : "Unknown scope",
+                DllPath: null,
+                Publisher: entry.PublisherDisplayName,
+                IsEnabled: true,
+                Classification: classification,
+                AllScopes: allScopes,
+                DisableMethod: DisableMethod.None,
+                HandlerType: HandlerType.ModernPackaged,
+                PackagedInfo: packagedInfo));
+        }
+
+        return handlers;
+    }
+
+    private static List<string> MapItemTypesToScopes(IReadOnlyList<string>? itemTypes)
+    {
+        if (itemTypes is null || itemTypes.Count == 0)
+            return ["Unknown scope"];
+
+        var scopes = new List<string>();
+        foreach (var itemType in itemTypes)
+        {
+            var scope = itemType switch
+            {
+                "*" => "All files",
+                "Directory" => "Directories",
+                @"Directory\Background" => "Folder background",
+                _ when itemType.StartsWith('.') => "All files", // Extension-specific → File tab
+                _ => "Unknown scope",
+            };
+
+            if (!scopes.Contains(scope, StringComparer.OrdinalIgnoreCase))
+                scopes.Add(scope);
+        }
+
+        return scopes;
+    }
+
+    private static void ApplyCrossTypeDeduplication(
+        List<ContextMenuHandler> allHandlers,
+        IReadOnlyList<ContextMenuHandler> comHandlers,
+        IReadOnlyList<ContextMenuHandler> modernHandlers)
+    {
+        // Build CLSID lookup from COM handlers
+        var comByClsid = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        for (var i = 0; i < allHandlers.Count; i++)
+        {
+            if (allHandlers[i].HandlerType == HandlerType.ComHandler &&
+                !string.IsNullOrEmpty(allHandlers[i].Clsid))
+            {
+                comByClsid.TryAdd(allHandlers[i].Clsid, i);
+            }
+        }
+
+        // Check each modern handler for CLSID match
+        for (var i = 0; i < allHandlers.Count; i++)
+        {
+            var handler = allHandlers[i];
+            if (handler.HandlerType != HandlerType.ModernPackaged ||
+                string.IsNullOrEmpty(handler.Clsid))
+                continue;
+
+            if (comByClsid.TryGetValue(handler.Clsid, out var comIndex))
+            {
+                var comHandler = allHandlers[comIndex];
+
+                // Mark both handlers as dual-registered
+                allHandlers[comIndex] = comHandler with
+                {
+                    IsDualRegistered = true,
+                    DualRegistrationPartnerName = handler.Name,
+                };
+
+                allHandlers[i] = handler with
+                {
+                    IsDualRegistered = true,
+                    DualRegistrationPartnerName = comHandler.Name,
+                };
+            }
+        }
     }
 
     private IReadOnlySet<ContextMenuSurface>? ProbeSurfaceVisibility(string clsid, List<string> scopes)

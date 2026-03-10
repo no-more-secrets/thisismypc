@@ -259,6 +259,162 @@ public sealed class ContextMenuHandlerViewModelTests : IDisposable
         Assert.Equal(0, _pendingService.PendingCount);
     }
 
+    // Modern packaged handler ViewModel tests
+
+    private ContextMenuHandlerViewModel CreateModernVm(
+        string name = "Windows Terminal",
+        string clsid = "{9F156763-7844-4DC4-B2B1-901F640F5155}",
+        string pfn = "Microsoft.WindowsTerminal_8wekyb3d8bbwe",
+        string packageDisplayName = "Windows Terminal",
+        string publisherDisplayName = "Microsoft Corporation",
+        IReadOnlyList<string>? itemTypes = null,
+        bool isDualRegistered = false,
+        string? dualPartnerName = null)
+    {
+        var packagedInfo = new ModernPackagedInfo(
+            PackageFamilyName: pfn,
+            PackageDisplayName: packageDisplayName,
+            PublisherDisplayName: publisherDisplayName,
+            ItemTypes: itemTypes ?? ["Directory", @"Directory\Background"],
+            VerbId: "terminal",
+            InstallSource: null);
+
+        var handler = new ContextMenuHandler(
+            Name: name,
+            Clsid: clsid,
+            RegistryPath: $"PackagedCom\\{pfn}\\{clsid}",
+            AppliesTo: "Directories",
+            DllPath: null,
+            Publisher: publisherDisplayName,
+            IsEnabled: true,
+            Classification: HandlerClassification.System,
+            AllScopes: ["Directories", "Folder background"],
+            DisableMethod: DisableMethod.None,
+            HandlerType: HandlerType.ModernPackaged,
+            PackagedInfo: packagedInfo,
+            IsDualRegistered: isDualRegistered,
+            DualRegistrationPartnerName: dualPartnerName);
+
+        var vm = new ContextMenuHandlerViewModel(handler, _pendingService);
+        _disposables.Add(vm);
+        return vm;
+    }
+
+    [Fact]
+    public void ModernHandler_badge_shows_ModernPackaged()
+    {
+        var vm = CreateModernVm();
+        Assert.Equal("Modern Packaged", vm.HandlerTypeBadge);
+    }
+
+    [Fact]
+    public void ModernHandler_toggle_is_disabled()
+    {
+        var vm = CreateModernVm();
+        Assert.False(vm.IsToggleEnabled);
+    }
+
+    [Fact]
+    public void ModernHandler_tooltip_explains_package_management()
+    {
+        var vm = CreateModernVm();
+        Assert.NotNull(vm.ToggleDisabledTooltip);
+        Assert.Contains("package", vm.ToggleDisabledTooltip, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ModernHandler_description_shows_package_and_publisher()
+    {
+        var vm = CreateModernVm(
+            packageDisplayName: "Windows Terminal",
+            publisherDisplayName: "Microsoft Corporation");
+        Assert.Contains("Windows Terminal", vm.Description);
+        Assert.Contains("Microsoft Corporation", vm.Description);
+    }
+
+    [Fact]
+    public void ModernHandler_registry_view_shows_package_info()
+    {
+        var vm = CreateModernVm(pfn: "Microsoft.WindowsTerminal_8wekyb3d8bbwe");
+        vm.SetRegistryViewMode(true);
+
+        Assert.Contains("Microsoft.WindowsTerminal_8wekyb3d8bbwe", vm.Description);
+    }
+
+    [Fact]
+    public void ModernHandler_registry_view_shows_clsid()
+    {
+        var vm = CreateModernVm(clsid: "{9F156763-7844-4DC4-B2B1-901F640F5155}");
+        vm.SetRegistryViewMode(true);
+
+        Assert.Contains("{9F156763-7844-4DC4-B2B1-901F640F5155}", vm.Description);
+    }
+
+    [Fact]
+    public void ModernHandler_registry_view_shows_itemtypes()
+    {
+        var vm = CreateModernVm(itemTypes: ["Directory", @"Directory\Background"]);
+        vm.SetRegistryViewMode(true);
+
+        Assert.Contains("Directory", vm.Description);
+    }
+
+    [Fact]
+    public void ModernHandler_is_always_enabled()
+    {
+        var vm = CreateModernVm();
+        Assert.True(vm.IsEnabled);
+    }
+
+    [Fact]
+    public async Task ModernHandler_toggle_does_not_stage_changes()
+    {
+        var vm = CreateModernVm();
+        vm.IsEnabled = false;
+
+        await Task.Delay(350);
+
+        Assert.Equal(0, _pendingService.PendingCount);
+    }
+
+    [Fact]
+    public void DualRegistered_shows_crossref_note()
+    {
+        var vm = CreateModernVm(isDualRegistered: true, dualPartnerName: "PowerToys CM");
+        Assert.NotNull(vm.DualRegistrationNote);
+        Assert.Contains("PowerToys CM", vm.DualRegistrationNote);
+        Assert.Contains("COM Handler", vm.DualRegistrationNote);
+    }
+
+    [Fact]
+    public void DualRegistered_false_has_null_note()
+    {
+        var vm = CreateModernVm(isDualRegistered: false);
+        Assert.Null(vm.DualRegistrationNote);
+    }
+
+    [Fact]
+    public void ModernHandler_PackagedInfo_populated()
+    {
+        var vm = CreateModernVm(pfn: "Microsoft.PowerToys_hash");
+        Assert.NotNull(vm.PackagedInfo);
+        Assert.Equal("Microsoft.PowerToys_hash", vm.PackagedInfo.PackageFamilyName);
+    }
+
+    [Fact]
+    public void ComHandler_toggle_is_enabled()
+    {
+        var vm = CreateVm();
+        Assert.True(vm.IsToggleEnabled);
+    }
+
+    [Fact]
+    public void ComHandler_has_null_toggle_tooltip()
+    {
+        var vm = CreateVm();
+        Assert.Null(vm.ToggleDisabledTooltip);
+    }
+
     public void Dispose()
     {
         foreach (var vm in _disposables)

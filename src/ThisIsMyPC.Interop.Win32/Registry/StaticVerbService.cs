@@ -65,20 +65,20 @@ public sealed class StaticVerbService : IStaticVerbService
         var appliesTo = ReadStringOrNull(verbKeyPath, "AppliesTo");
 
         // Extended = Shift-only (empty string value existence check)
-        var isExtended = _registryService.ValueExists(verbKeyPath, "Extended").IsSuccess
-                         && _registryService.ValueExists(verbKeyPath, "Extended").Value;
+        var extendedResult = _registryService.ValueExists(verbKeyPath, "Extended");
+        var isExtended = extendedResult.IsSuccess && extendedResult.Value;
 
         // LegacyDisable (empty string value)
-        var isLegacyDisabled = _registryService.ValueExists(verbKeyPath, "LegacyDisable").IsSuccess
-                               && _registryService.ValueExists(verbKeyPath, "LegacyDisable").Value;
+        var legacyDisableResult = _registryService.ValueExists(verbKeyPath, "LegacyDisable");
+        var isLegacyDisabled = legacyDisableResult.IsSuccess && legacyDisableResult.Value;
 
         // HasLUAShield (empty string value)
-        var hasLuaShield = _registryService.ValueExists(verbKeyPath, "HasLUAShield").IsSuccess
-                           && _registryService.ValueExists(verbKeyPath, "HasLUAShield").Value;
+        var luaShieldResult = _registryService.ValueExists(verbKeyPath, "HasLUAShield");
+        var hasLuaShield = luaShieldResult.IsSuccess && luaShieldResult.Value;
 
         // ProgrammaticAccessOnly (empty string value)
-        var isProgrammaticAccessOnly = _registryService.ValueExists(verbKeyPath, "ProgrammaticAccessOnly").IsSuccess
-                                       && _registryService.ValueExists(verbKeyPath, "ProgrammaticAccessOnly").Value;
+        var programmaticResult = _registryService.ValueExists(verbKeyPath, "ProgrammaticAccessOnly");
+        var isProgrammaticAccessOnly = programmaticResult.IsSuccess && programmaticResult.Value;
 
         // Read command subkey: command line and DelegateExecute CLSID
         var commandKeyPath = $@"{verbKeyPath}\command";

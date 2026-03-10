@@ -104,7 +104,8 @@ public sealed class StaticVerbIntegrationTests : IDisposable
             .GroupBy(v => $"{v.VerbName}|{v.CommandLine ?? v.DelegateExecuteClsid ?? "no-exec"}",
                 StringComparer.OrdinalIgnoreCase)
             .Where(g => g.Count() > 1)
-            .OrderByDescending(g => g.Count());
+            .OrderByDescending(g => g.Count())
+            .ToList();
 
         _output.WriteLine("=== Multi-Scope Verbs (Deduplication Candidates) ===");
         foreach (var group in grouped)

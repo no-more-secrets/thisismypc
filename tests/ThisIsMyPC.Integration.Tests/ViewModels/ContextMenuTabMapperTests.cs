@@ -164,4 +164,35 @@ public sealed class ContextMenuTabMapperTests
         var tabs = ContextMenuTabMapper.GetTabsForStaticVerbScope("Folders");
         Assert.Contains(ContextMenuTab.Folder, tabs);
     }
+
+    // Modern scope tab mapping tests
+
+    [Fact]
+    public void GetTabsForModernScope_folder_background_maps_to_FolderBackground_only()
+    {
+        var tabs = ContextMenuTabMapper.GetTabsForModernScope("Folder background");
+        Assert.Contains(ContextMenuTab.FolderBackground, tabs);
+        Assert.DoesNotContain(ContextMenuTab.Desktop, tabs);
+    }
+
+    [Fact]
+    public void GetTabsForModernScope_all_files_maps_to_File()
+    {
+        var tabs = ContextMenuTabMapper.GetTabsForModernScope("All files");
+        Assert.Contains(ContextMenuTab.File, tabs);
+    }
+
+    [Fact]
+    public void GetTabsForModernScope_directories_maps_to_Folder()
+    {
+        var tabs = ContextMenuTabMapper.GetTabsForModernScope("Directories");
+        Assert.Contains(ContextMenuTab.Folder, tabs);
+    }
+
+    [Fact]
+    public void GetTabsForModernScope_unknown_scope_maps_to_Misc()
+    {
+        var tabs = ContextMenuTabMapper.GetTabsForModernScope("Unknown scope");
+        Assert.Contains(ContextMenuTab.Misc, tabs);
+    }
 }
