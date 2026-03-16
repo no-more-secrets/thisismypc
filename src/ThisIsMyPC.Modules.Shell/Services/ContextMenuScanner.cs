@@ -29,7 +29,8 @@ public sealed class ContextMenuScanner
 
         // COM handlers
         var comHandlers = ScanComHandlers();
-        handlers.AddRange(comHandlers);
+        var comWithOrphans = DetectOrphans(comHandlers);
+        handlers.AddRange(comWithOrphans);
 
         // Static verbs
         if (_staticVerbService is not null)
@@ -42,7 +43,7 @@ public sealed class ContextMenuScanner
             handlers.AddRange(modernHandlers);
 
             // Cross-type deduplication: detect same-CLSID COM+Modern pairs
-            ApplyCrossTypeDeduplication(handlers, comHandlers, modernHandlers);
+            ApplyCrossTypeDeduplication(handlers, comWithOrphans, modernHandlers);
         }
 
         return handlers;
@@ -114,6 +115,45 @@ public sealed class ContextMenuScanner
         }
 
         return handlers;
+    }
+
+    private static IReadOnlyList<ContextMenuHandler> DetectOrphans(IReadOnlyList<ContextMenuHandler> comHandlers)
+    {
+        var result = new List<ContextMenuHandler>(comHandlers.Count);
+
+        foreach (var handler in comHandlers)
+        {
+            if (handler.DllPath is null)
+            {
+                // No InProcServer32 DLL path — CLSID registered in shellex but not in HKCR\CLSID
+                result.Add(handler with
+                {
+                    IsOrphaned = true,
+                    OrphanReason = $"CLSID {handler.Clsid} not registered (no HKCR\\CLSID entry)",
+                });
+                continue;
+            }
+
+            // Expand environment variables and strip surrounding quotes before existence check
+            var expandedPath = Environment.ExpandEnvironmentVariables(handler.DllPath);
+            if (expandedPath.Length >= 2 && expandedPath[0] == '"' && expandedPath[^1] == '"')
+                expandedPath = expandedPath[1..^1];
+
+            if (!File.Exists(expandedPath))
+            {
+                result.Add(handler with
+                {
+                    IsOrphaned = true,
+                    OrphanReason = $"DLL not found: {handler.DllPath}",
+                });
+            }
+            else
+            {
+                result.Add(handler);
+            }
+        }
+
+        return result;
     }
 
     private IReadOnlyList<ContextMenuHandler> ScanStaticVerbs()

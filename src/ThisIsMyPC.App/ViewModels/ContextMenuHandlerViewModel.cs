@@ -18,6 +18,7 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
     private bool _suppressStaging;
     private bool _isStagingChange;
     private bool _disposed;
+    private bool _orphanCleanupStaged;
     private string? _stagedGroupId;
     private CancellationTokenSource? _debounceCts;
 
@@ -63,6 +64,9 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
     public string? DualRegistrationNote { get; }
     public bool IsToggleEnabled { get; }
     public string? ToggleDisabledTooltip { get; }
+    public bool IsOrphaned { get; }
+    public string? OrphanReason { get; }
+    public ContextMenuHandler Handler => _handler;
 
     public ContextMenuHandlerViewModel(
         ContextMenuHandler handler,
@@ -100,18 +104,35 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
             DisableMethod.Both => "Disabled via Blocked List + dash-prefix (legacy)",
             _ => string.Empty,
         };
-        HandlerTypeBadge = handler.HandlerType switch
-        {
-            HandlerType.StaticVerb => "Static Verb",
-            HandlerType.ModernPackaged => "Modern Packaged",
-            _ => "COM Handler",
-        };
+        HandlerTypeBadge = handler.IsOrphaned
+            ? "Orphaned"
+            : handler.HandlerType switch
+            {
+                HandlerType.StaticVerb => "Static Verb",
+                HandlerType.ModernPackaged => "Modern Packaged",
+                _ => "COM Handler",
+            };
 
-        // Modern handlers cannot be toggled via registry
-        IsToggleEnabled = handler.HandlerType != HandlerType.ModernPackaged;
-        ToggleDisabledTooltip = handler.HandlerType == HandlerType.ModernPackaged
-            ? "Modern handlers are managed at the package level (Settings > Apps)"
-            : null;
+        // Orphan properties
+        IsOrphaned = handler.IsOrphaned;
+        OrphanReason = handler.OrphanReason;
+
+        // Modern handlers cannot be toggled via registry; orphaned handlers should use Clean Up instead
+        if (handler.IsOrphaned)
+        {
+            IsToggleEnabled = false;
+            ToggleDisabledTooltip = "This handler's DLL is missing — use Clean Up to remove the orphaned registration";
+        }
+        else if (handler.HandlerType == HandlerType.ModernPackaged)
+        {
+            IsToggleEnabled = false;
+            ToggleDisabledTooltip = "Modern handlers are managed at the package level (Settings > Apps)";
+        }
+        else
+        {
+            IsToggleEnabled = true;
+            ToggleDisabledTooltip = null;
+        }
 
         // Dual-registration cross-reference note
         if (handler.IsDualRegistered && handler.DualRegistrationPartnerName is not null)
@@ -159,6 +180,10 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
                     parts.Add($"ItemTypes: {string.Join(", ", PackagedInfo.ItemTypes)}");
                 Description = string.Join(" | ", parts);
             }
+            else if (IsOrphaned)
+            {
+                Description = $"ORPHANED | CLSID: {Clsid} | {OrphanReason ?? "DLL missing"}";
+            }
             else
             {
                 Description = Clsid;
@@ -176,6 +201,14 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
 
     private static string BuildDescription(ContextMenuHandler handler, string? scopeNote = null)
     {
+        if (handler.IsOrphaned)
+        {
+            var orphanText = $"ORPHANED — {handler.OrphanReason ?? "DLL missing"}";
+            if (!string.IsNullOrEmpty(scopeNote))
+                orphanText += $" -- {scopeNote}";
+            return orphanText;
+        }
+
         string classText;
 
         if (handler.HandlerType == HandlerType.StaticVerb)
@@ -217,14 +250,31 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
         return classText;
     }
 
-    private static string BuildWarningText(ContextMenuHandler handler) => handler.Classification switch
+    private static string BuildWarningText(ContextMenuHandler handler)
     {
-        HandlerClassification.Critical =>
-            $"Disabling removes {handler.Name} from all right-click menus.",
-        HandlerClassification.System =>
-            "This is a Windows feature.",
-        _ => string.Empty,
-    };
+        if (handler.IsOrphaned)
+            return "DLL missing — Explorer wastes resources trying to load this handler on every right-click";
+
+        return handler.Classification switch
+        {
+            HandlerClassification.Critical =>
+                $"Disabling removes {handler.Name} from all right-click menus.",
+            HandlerClassification.System =>
+                "This is a Windows feature.",
+            _ => string.Empty,
+        };
+    }
+
+    [RelayCommand]
+    private void CleanUpOrphan()
+    {
+        if (!IsOrphaned || _disposed || _orphanCleanupStaged)
+            return;
+
+        var cleanupGroup = ContextMenuChangeFactory.CreateOrphanCleanup(_handler);
+        _pendingChangesService.Stage(cleanupGroup);
+        _orphanCleanupStaged = true;
+    }
 
     [RelayCommand]
     private void Migrate()

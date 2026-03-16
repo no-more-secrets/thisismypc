@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Modules.Shell.Changes;
 using ThisIsMyPC.Modules.Shell.Models;
@@ -10,6 +11,7 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
 {
     // Backing store for handler type filtering — populated once, used to repopulate collections
     private readonly List<(ContextMenuHandlerViewModel Vm, HashSet<ContextMenuTab> Tabs)> _allHandlerEntries = [];
+    private readonly IPendingChangesService _pendingChangesService;
 
     public ObservableCollection<ContextMenuHandlerViewModel> FileHandlers { get; } = [];
     public ObservableCollection<ContextMenuHandlerViewModel> FolderHandlers { get; } = [];
@@ -29,6 +31,12 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private HandlerType? _handlerTypeFilter;
 
+    [ObservableProperty]
+    private bool _isOrphanFilterActive;
+
+    [ObservableProperty]
+    private int _orphanCount;
+
     public string FileHandlerCount => $"File ({FileHandlers.Count})";
     public string FolderHandlerCount => $"Folder ({FolderHandlers.Count})";
     public string FolderBackgroundHandlerCount => $"Folder Background ({FolderBackgroundHandlers.Count})";
@@ -40,6 +48,7 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
         IPendingChangesService pendingChangesService,
         IRegistryService registryService)
     {
+        _pendingChangesService = pendingChangesService;
         BuildContextMenuHandlerTabs(handlers, pendingChangesService, registryService);
     }
 
@@ -124,10 +133,19 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
         NetworkMiscHandlers.Clear();
         RecycleBinMiscHandlers.Clear();
 
+        var currentTypeFilter = HandlerTypeFilter;
+        var orphanFilterActive = IsOrphanFilterActive;
+        var orphanTotal = 0;
+
         foreach (var (vm, tabs) in _allHandlerEntries)
         {
-            if (_handlerTypeFilter is not null && vm.HandlerType != _handlerTypeFilter)
+            if (currentTypeFilter is not null && vm.HandlerType != currentTypeFilter)
                 continue;
+            if (orphanFilterActive && !vm.IsOrphaned)
+                continue;
+
+            if (vm.IsOrphaned)
+                orphanTotal++;
 
             if (tabs.Contains(ContextMenuTab.File))
                 FileHandlers.Add(vm);
@@ -153,6 +171,14 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
             }
         }
 
+        // Count orphans respecting the handler type filter
+        if (!orphanFilterActive && currentTypeFilter is null)
+            OrphanCount = _allHandlerEntries.Count(e => e.Vm.IsOrphaned);
+        else if (!orphanFilterActive)
+            OrphanCount = _allHandlerEntries.Count(e => e.Vm.IsOrphaned && e.Vm.HandlerType == currentTypeFilter);
+        else
+            OrphanCount = orphanTotal;
+
         OnPropertyChanged(nameof(FileHandlerCount));
         OnPropertyChanged(nameof(FolderHandlerCount));
         OnPropertyChanged(nameof(FolderBackgroundHandlerCount));
@@ -161,6 +187,39 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
     }
 
     partial void OnHandlerTypeFilterChanged(HandlerType? value) => PopulateCollections();
+    partial void OnIsOrphanFilterActiveChanged(bool value) => PopulateCollections();
+    partial void OnOrphanCountChanged(int value) => CleanUpAllOrphansCommand.NotifyCanExecuteChanged();
+
+    [RelayCommand]
+    private void ToggleOrphanFilter() => IsOrphanFilterActive = !IsOrphanFilterActive;
+
+    [RelayCommand(CanExecute = nameof(CanCleanUpAllOrphans))]
+    private void CleanUpAllOrphans()
+    {
+        // Deduplicate VMs (same VM can appear in multiple tabs)
+        // Respect handler type filter: only clean orphans visible in the current view
+        var currentTypeFilter = HandlerTypeFilter;
+        var seen = new HashSet<ContextMenuHandlerViewModel>(ReferenceEqualityComparer.Instance);
+        var orphanHandlers = new List<ContextMenuHandler>();
+
+        foreach (var (vm, _) in _allHandlerEntries)
+        {
+            if (currentTypeFilter is not null && vm.HandlerType != currentTypeFilter)
+                continue;
+            if (!vm.IsOrphaned || !seen.Add(vm))
+                continue;
+
+            orphanHandlers.Add(vm.Handler);
+        }
+
+        if (orphanHandlers.Count == 0)
+            return;
+
+        var bulkGroup = ContextMenuChangeFactory.CreateBulkOrphanCleanup(orphanHandlers);
+        _pendingChangesService.Stage(bulkGroup);
+    }
+
+    private bool CanCleanUpAllOrphans() => OrphanCount > 0;
 
     private static string MakeHandlerKey(ContextMenuHandler handler)
     {

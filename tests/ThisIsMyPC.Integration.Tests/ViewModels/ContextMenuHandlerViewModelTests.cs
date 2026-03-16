@@ -415,6 +415,114 @@ public sealed class ContextMenuHandlerViewModelTests : IDisposable
         Assert.Null(vm.ToggleDisabledTooltip);
     }
 
+    // Orphan handler ViewModel tests
+
+    private ContextMenuHandlerViewModel CreateOrphanVm(
+        string name = "OrphanHandler",
+        string clsid = "{DEAD-BEEF-1234}",
+        string? orphanReason = "DLL not found: C:\\missing\\old.dll",
+        DisableMethod disableMethod = DisableMethod.None)
+    {
+        var handler = new ContextMenuHandler(
+            Name: name,
+            Clsid: clsid,
+            RegistryPath: @"HKCR\*\shellex\ContextMenuHandlers\OrphanHandler",
+            AppliesTo: "All files",
+            DllPath: @"C:\missing\old.dll",
+            Publisher: null,
+            IsEnabled: true,
+            Classification: HandlerClassification.ThirdParty,
+            AllRegistryPaths: [@"HKCR\*\shellex\ContextMenuHandlers\OrphanHandler"],
+            AllScopes: ["All files"],
+            DisableMethod: disableMethod,
+            IsOrphaned: true,
+            OrphanReason: orphanReason);
+
+        var vm = new ContextMenuHandlerViewModel(handler, _pendingService);
+        _disposables.Add(vm);
+        return vm;
+    }
+
+    [Fact]
+    public void Orphan_IsOrphaned_propagated()
+    {
+        var vm = CreateOrphanVm();
+        Assert.True(vm.IsOrphaned);
+    }
+
+    [Fact]
+    public void Orphan_OrphanReason_propagated()
+    {
+        var vm = CreateOrphanVm(orphanReason: "DLL not found: C:\\missing\\test.dll");
+        Assert.Equal("DLL not found: C:\\missing\\test.dll", vm.OrphanReason);
+    }
+
+    [Fact]
+    public void Orphan_badge_shows_Orphaned()
+    {
+        var vm = CreateOrphanVm();
+        Assert.Equal("Orphaned", vm.HandlerTypeBadge);
+    }
+
+    [Fact]
+    public void Orphan_toggle_is_disabled()
+    {
+        var vm = CreateOrphanVm();
+        Assert.False(vm.IsToggleEnabled);
+    }
+
+    [Fact]
+    public void Orphan_toggle_tooltip_mentions_DLL_missing()
+    {
+        var vm = CreateOrphanVm();
+        Assert.NotNull(vm.ToggleDisabledTooltip);
+        Assert.Contains("DLL", vm.ToggleDisabledTooltip, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Clean Up", vm.ToggleDisabledTooltip);
+    }
+
+    [Fact]
+    public void Orphan_description_starts_with_ORPHANED()
+    {
+        var vm = CreateOrphanVm();
+        Assert.StartsWith("ORPHANED", vm.Description);
+    }
+
+    [Fact]
+    public void Orphan_description_contains_reason()
+    {
+        var vm = CreateOrphanVm(orphanReason: "DLL not found: C:\\missing\\foo.dll");
+        Assert.Contains("DLL not found", vm.Description);
+    }
+
+    [Fact]
+    public void Orphan_warning_text_mentions_Explorer_waste()
+    {
+        var vm = CreateOrphanVm();
+        Assert.Contains("Explorer", vm.WarningText);
+        Assert.Contains("DLL missing", vm.WarningText);
+    }
+
+    [Fact]
+    public void CleanUpOrphanCommand_stages_change()
+    {
+        var vm = CreateOrphanVm();
+
+        vm.CleanUpOrphanCommand.Execute(null);
+
+        Assert.True(_pendingService.PendingCount > 0);
+        var group = _pendingService.PendingGroups[0];
+        Assert.Contains("orphaned", group.DisplayName, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void CleanUpOrphanCommand_does_nothing_for_non_orphan()
+    {
+        var vm = CreateVm(); // Non-orphaned handler
+        // The command exists but the handler is not orphaned, so it should not stage anything
+        vm.CleanUpOrphanCommand.Execute(null);
+        Assert.Equal(0, _pendingService.PendingCount);
+    }
+
     public void Dispose()
     {
         foreach (var vm in _disposables)

@@ -157,6 +157,91 @@ public static class ContextMenuChangeFactory
         }).ToList();
     }
 
+    /// <summary>
+    /// Creates a ChangeGroup to remove an orphaned handler's registration from all its registry paths.
+    /// Each ChangeDescriptor deletes the (Default) value (sets to AbsentValue) so Explorer stops loading it.
+    /// </summary>
+    public static ChangeGroup CreateOrphanCleanup(ContextMenuHandler handler)
+    {
+        var settingId = MakeSettingId(handler.Clsid);
+        var registryPaths = handler.AllRegistryPaths ?? [handler.RegistryPath];
+
+        var changes = registryPaths.Select(path =>
+        {
+            var beforeValue = handler.PathEnabledStates?.GetValueOrDefault(path, handler.IsEnabled) ?? handler.IsEnabled
+                ? handler.Clsid
+                : $"-{handler.Clsid}";
+
+            return new ChangeDescriptor
+            {
+                ModuleId = ModuleId,
+                SettingId = settingId,
+                DisplayName = $"Clean up orphaned handler: {handler.Name}",
+                SystemLocation = $@"{path}\(Default)",
+                BeforeValue = beforeValue,
+                AfterValue = ShellRegistryPaths.AbsentValue,
+                BeforeDisplay = "Orphaned registration",
+                AfterDisplay = "Removed",
+                ValueType = ChangeValueType.Registry_String,
+                Category = ChangeCategory.Delete,
+                RestartRequirement = RestartRequirement.ExplorerRestart,
+            };
+        }).ToList();
+
+        return new ChangeGroup
+        {
+            GroupId = Guid.NewGuid().ToString("N"),
+            DisplayName = $"Clean up orphaned handler: {handler.Name}",
+            Description = $"Remove orphaned registration for {handler.Name} (DLL missing)",
+            Changes = changes,
+        };
+    }
+
+    /// <summary>
+    /// Creates a single ChangeGroup containing cleanup descriptors for all provided orphaned handlers.
+    /// Applied atomically with full rollback on failure.
+    /// </summary>
+    public static ChangeGroup CreateBulkOrphanCleanup(IReadOnlyList<ContextMenuHandler> orphans)
+    {
+        var changes = new List<ChangeDescriptor>();
+
+        foreach (var handler in orphans)
+        {
+            var settingId = MakeSettingId(handler.Clsid);
+            var registryPaths = handler.AllRegistryPaths ?? [handler.RegistryPath];
+
+            foreach (var path in registryPaths)
+            {
+                var beforeValue = handler.PathEnabledStates?.GetValueOrDefault(path, handler.IsEnabled) ?? handler.IsEnabled
+                    ? handler.Clsid
+                    : $"-{handler.Clsid}";
+
+                changes.Add(new ChangeDescriptor
+                {
+                    ModuleId = ModuleId,
+                    SettingId = settingId,
+                    DisplayName = $"Clean up orphaned handler: {handler.Name}",
+                    SystemLocation = $@"{path}\(Default)",
+                    BeforeValue = beforeValue,
+                    AfterValue = ShellRegistryPaths.AbsentValue,
+                    BeforeDisplay = "Orphaned registration",
+                    AfterDisplay = "Removed",
+                    ValueType = ChangeValueType.Registry_String,
+                    Category = ChangeCategory.Delete,
+                    RestartRequirement = RestartRequirement.ExplorerRestart,
+                });
+            }
+        }
+
+        return new ChangeGroup
+        {
+            GroupId = Guid.NewGuid().ToString("N"),
+            DisplayName = $"Clean up {orphans.Count} orphaned handlers",
+            Description = $"Remove {orphans.Count} orphaned handler registrations (DLLs missing)",
+            Changes = changes,
+        };
+    }
+
     public static string MakeSettingId(string clsid)
     {
         // Strip braces from CLSID for a clean SettingId

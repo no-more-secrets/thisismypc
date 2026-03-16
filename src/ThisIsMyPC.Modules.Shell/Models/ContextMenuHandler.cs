@@ -20,7 +20,9 @@ public sealed record ContextMenuHandler(
     StaticVerbInfo? VerbInfo = null,
     ModernPackagedInfo? PackagedInfo = null,
     bool IsDualRegistered = false,
-    string? DualRegistrationPartnerName = null)
+    string? DualRegistrationPartnerName = null,
+    bool IsOrphaned = false,
+    string? OrphanReason = null)
 {
     public bool IsBlockedListDisabled => DisableMethod is DisableMethod.BlockedList or DisableMethod.Both;
 }
