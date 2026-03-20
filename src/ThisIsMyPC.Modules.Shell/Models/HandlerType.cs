@@ -5,4 +5,5 @@ public enum HandlerType
     ComHandler,
     StaticVerb,
     ModernPackaged,
+    DragDropHandler,
 }

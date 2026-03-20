@@ -37,6 +37,26 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private int _orphanCount;
 
+    [ObservableProperty]
+    private int _comHandlerCount;
+
+    [ObservableProperty]
+    private int _staticVerbCount;
+
+    [ObservableProperty]
+    private int _modernPackagedCount;
+
+    [ObservableProperty]
+    private int _dualRegisteredCount;
+
+    [ObservableProperty]
+    private int _dragDropHandlerCount;
+
+    public string ScanSummary => $"{ComHandlerCount} COM handlers, {StaticVerbCount} static verbs, {ModernPackagedCount} modern, {DragDropHandlerCount} drag-drop, {OrphanCount} orphaned, {DualRegisteredCount} dual-registered";
+
+    public bool IsClassicMenuActive { get; }
+    public string ClassicMenuBannerText { get; }
+
     public string FileHandlerCount => $"File ({FileHandlers.Count})";
     public string FolderHandlerCount => $"Folder ({FolderHandlers.Count})";
     public string FolderBackgroundHandlerCount => $"Folder Background ({FolderBackgroundHandlers.Count})";
@@ -49,6 +69,19 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
         IRegistryService registryService)
     {
         _pendingChangesService = pendingChangesService;
+
+        // Detect classic context menu shim
+        var shimKeyResult = registryService.KeyExists(Modules.Shell.ShellRegistryPaths.ClassicContextMenuKeyPath);
+        if (shimKeyResult.IsSuccess && shimKeyResult.Value)
+        {
+            var shimValueResult = registryService.ReadString(Modules.Shell.ShellRegistryPaths.ClassicContextMenuKeyPath, string.Empty);
+            IsClassicMenuActive = shimValueResult.IsSuccess && shimValueResult.Value == string.Empty;
+        }
+
+        ClassicMenuBannerText = IsClassicMenuActive
+            ? "Classic menu mode -- all legacy handlers visible in top-level menu"
+            : string.Empty;
+
         BuildContextMenuHandlerTabs(handlers, pendingChangesService, registryService);
     }
 
@@ -70,7 +103,7 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
                 Func<bool>? readState = handler.HandlerType switch
                 {
                     HandlerType.StaticVerb => () => ReadStaticVerbRegistryState(registryService, handler),
-                    HandlerType.ModernPackaged => null, // Always enabled — no registry state
+                    HandlerType.ModernPackaged or HandlerType.DragDropHandler => null,
                     _ => () => ReadHandlerRegistryState(registryService, handler),
                 };
                 vm = new ContextMenuHandlerViewModel(handler, pendingChangesService, readState);
@@ -85,6 +118,7 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
                 {
                     HandlerType.StaticVerb => ContextMenuTabMapper.GetTabsForStaticVerbScope(scope),
                     HandlerType.ModernPackaged => ContextMenuTabMapper.GetTabsForModernScope(scope),
+                    HandlerType.DragDropHandler => [ContextMenuTab.Misc],
                     _ => ContextMenuTabMapper.GetTabs(scope, handler.VisibleSurfaces),
                 };
                 foreach (var tab in tabs)
@@ -179,11 +213,23 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
         else
             OrphanCount = orphanTotal;
 
+        // Compute summary counts respecting handler type filter
+        var filtered = currentTypeFilter is null
+            ? _allHandlerEntries
+            : _allHandlerEntries.Where(e => e.Vm.HandlerType == currentTypeFilter).ToList();
+
+        ComHandlerCount = filtered.Count(e => e.Vm.HandlerType == HandlerType.ComHandler);
+        StaticVerbCount = filtered.Count(e => e.Vm.HandlerType == HandlerType.StaticVerb);
+        ModernPackagedCount = filtered.Count(e => e.Vm.HandlerType == HandlerType.ModernPackaged);
+        DualRegisteredCount = filtered.Count(e => e.Vm.IsDualRegistered);
+        DragDropHandlerCount = filtered.Count(e => e.Vm.HandlerType == HandlerType.DragDropHandler);
+
         OnPropertyChanged(nameof(FileHandlerCount));
         OnPropertyChanged(nameof(FolderHandlerCount));
         OnPropertyChanged(nameof(FolderBackgroundHandlerCount));
         OnPropertyChanged(nameof(DesktopHandlerCount));
         OnPropertyChanged(nameof(MiscHandlerCount));
+        OnPropertyChanged(nameof(ScanSummary));
     }
 
     partial void OnHandlerTypeFilterChanged(HandlerType? value) => PopulateCollections();
@@ -232,6 +278,10 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
         {
             // Modern handlers keyed by CLSID + package to avoid collisions with COM handlers
             return $"modern|{handler.Clsid}|{handler.PackagedInfo?.PackageFamilyName ?? handler.Name}";
+        }
+        if (handler.HandlerType == HandlerType.DragDropHandler)
+        {
+            return $"dragdrop|{handler.Clsid}";
         }
         return handler.Clsid;
     }

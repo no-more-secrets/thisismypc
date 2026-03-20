@@ -22,7 +22,9 @@ public sealed record ContextMenuHandler(
     bool IsDualRegistered = false,
     string? DualRegistrationPartnerName = null,
     bool IsOrphaned = false,
-    string? OrphanReason = null)
+    string? OrphanReason = null,
+    string? RegistryKeyName = null,
+    bool IsContentInspecting = false)
 {
     public bool IsBlockedListDisabled => DisableMethod is DisableMethod.BlockedList or DisableMethod.Both;
 }

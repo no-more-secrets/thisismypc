@@ -20,6 +20,8 @@ public sealed class ShellExtensionService : IShellExtensionService
         (@"HKCR\CLSID\{645FF040-5081-101B-9F08-00AA002F954E}\shellex\ContextMenuHandlers", "Recycle Bin"),
         (@"HKCR\CLSID\{20D04FE0-3AEA-1069-A2D8-08002B30309D}\shellex\ContextMenuHandlers", "This PC"),
         (@"HKCR\CLSID\{F02C1A0D-BE21-4350-88B0-7367FC96EF3C}\shellex\ContextMenuHandlers", "Network"),
+        (@"HKCR\SystemFileAssociations\Directory.Audio\shellex\ContextMenuHandlers", "Audio folders"),
+        (@"HKCR\SystemFileAssociations\Directory.Video\shellex\ContextMenuHandlers", "Video folders"),
     ];
 
     private readonly IRegistryService _registryService;
@@ -64,6 +66,12 @@ public sealed class ShellExtensionService : IShellExtensionService
                         cleanClsid = handlerName;
                     }
 
+                    // Attempt to resolve a friendly display name from the CLSID registration
+                    var registryKeyName = resolvedName;
+                    var clsidDisplayName = ResolveClsidDisplayName(cleanClsid);
+                    if (clsidDisplayName is not null)
+                        resolvedName = clsidDisplayName;
+
                     // Cache DLL path lookups to avoid repeated InprocServer32 reads for the same CLSID
                     if (!dllPathCache.TryGetValue(cleanClsid, out var dllPath))
                     {
@@ -86,7 +94,8 @@ public sealed class ShellExtensionService : IShellExtensionService
                         AppliesTo: appliesTo,
                         DllPath: dllPath,
                         Publisher: publisher,
-                        IsEnabled: isEnabled));
+                        IsEnabled: isEnabled,
+                        RegistryKeyName: registryKeyName));
                 }
             }
 
@@ -118,6 +127,98 @@ public sealed class ShellExtensionService : IShellExtensionService
             return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         return new HashSet<string>(result.Value!, StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static readonly (string Path, string AppliesTo)[] DragDropRegistrations =
+    [
+        (@"HKCR\*\shellex\DragDropHandlers", "All files"),
+        (@"HKCR\Directory\shellex\DragDropHandlers", "Directories"),
+        (@"HKCR\Folder\shellex\DragDropHandlers", "Folders"),
+    ];
+
+    public OperationResult<IReadOnlyList<DragDropHandlerInfo>> EnumerateDragDropHandlers()
+    {
+        try
+        {
+            var handlers = new List<DragDropHandlerInfo>();
+            var dllPathCache = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+            var publisherCache = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var (basePath, appliesTo) in DragDropRegistrations)
+            {
+                var subKeysResult = _registryService.EnumerateSubKeys(basePath);
+                if (!subKeysResult.IsSuccess)
+                    continue;
+
+                foreach (var handlerName in subKeysResult.Value!)
+                {
+                    var handlerKeyPath = $@"{basePath}\{handlerName}";
+                    var clsidResult = _registryService.ReadString(handlerKeyPath, string.Empty);
+                    if (!clsidResult.IsSuccess || string.IsNullOrWhiteSpace(clsidResult.Value))
+                        continue;
+
+                    var cleanClsid = clsidResult.Value!;
+
+                    // Same inverted CLSID detection as ContextMenuHandlers
+                    var resolvedName = handlerName;
+                    if (!LooksLikeClsid(cleanClsid) && LooksLikeClsid(handlerName))
+                    {
+                        resolvedName = cleanClsid;
+                        cleanClsid = handlerName;
+                    }
+
+                    // Resolve CLSID display name
+                    var clsidDisplayName = ResolveClsidDisplayName(cleanClsid);
+                    if (clsidDisplayName is not null)
+                        resolvedName = clsidDisplayName;
+
+                    if (!dllPathCache.TryGetValue(cleanClsid, out var dllPath))
+                    {
+                        dllPath = ResolveDllPath(cleanClsid);
+                        dllPathCache[cleanClsid] = dllPath;
+                    }
+
+                    string? publisher = null;
+                    if (dllPath is not null && !publisherCache.TryGetValue(dllPath, out publisher))
+                    {
+                        publisher = ResolvePublisher(dllPath);
+                        publisherCache[dllPath] = publisher;
+                    }
+
+                    handlers.Add(new DragDropHandlerInfo(
+                        Name: resolvedName,
+                        Clsid: cleanClsid,
+                        RegistryPath: handlerKeyPath,
+                        AppliesTo: appliesTo,
+                        DllPath: dllPath,
+                        Publisher: publisher));
+                }
+            }
+
+            return OperationResult<IReadOnlyList<DragDropHandlerInfo>>.Success(handlers);
+        }
+        catch (Exception ex)
+        {
+            return OperationResult<IReadOnlyList<DragDropHandlerInfo>>.Failure(
+                $"Failed to enumerate drag-drop handlers: {ex.Message}",
+                ErrorCategory.ServiceUnavailable, ex);
+        }
+    }
+
+    private string? ResolveClsidDisplayName(string clsid)
+    {
+        var clsidKeyPath = $@"HKCR\CLSID\{clsid}";
+        var result = _registryService.ReadString(clsidKeyPath, string.Empty);
+        if (!result.IsSuccess)
+            return null;
+
+        var value = result.Value!;
+
+        // Skip empty, indirect strings (@dll,-ID), and values that look like CLSIDs
+        if (string.IsNullOrWhiteSpace(value) || value.StartsWith('@') || LooksLikeClsid(value))
+            return null;
+
+        return value;
     }
 
     private string? ResolveDllPath(string clsid)

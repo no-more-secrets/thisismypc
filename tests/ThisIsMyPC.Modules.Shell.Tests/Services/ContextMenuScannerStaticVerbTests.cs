@@ -16,6 +16,9 @@ public sealed class ContextMenuScannerStaticVerbTests
 
         public bool IsBlockedByCLSID(string clsid) => false;
         public IReadOnlySet<string> GetBlockedClsids() => new HashSet<string>();
+
+        public OperationResult<IReadOnlyList<DragDropHandlerInfo>> EnumerateDragDropHandlers()
+            => OperationResult<IReadOnlyList<DragDropHandlerInfo>>.Success([]);
     }
 
     private sealed class FakeStaticVerbService : IStaticVerbService

@@ -523,6 +523,64 @@ public sealed class ContextMenuHandlerViewModelTests : IDisposable
         Assert.Equal(0, _pendingService.PendingCount);
     }
 
+    // === Task 3 (AC #3) Verification: Toggleability indicators ===
+
+    [Fact]
+    public void CriticalComHandler_toggle_is_enabled_with_warning()
+    {
+        var vm = CreateVm(classification: HandlerClassification.Critical, name: "Open With");
+        Assert.True(vm.IsToggleEnabled);
+        Assert.Null(vm.ToggleDisabledTooltip);
+        Assert.NotEmpty(vm.WarningText);
+    }
+
+    [Fact]
+    public void StaticVerb_toggle_is_enabled()
+    {
+        var handler = new ContextMenuHandler(
+            Name: "Edit",
+            Clsid: string.Empty,
+            RegistryPath: @"HKCR\*\shell\edit",
+            AppliesTo: "All files",
+            DllPath: null,
+            Publisher: null,
+            IsEnabled: true,
+            HandlerType: HandlerType.StaticVerb,
+            VerbInfo: new StaticVerbInfo("edit", null, null, null, false, @"notepad.exe ""%1""", null, false, null, false, false));
+
+        var vm = new ContextMenuHandlerViewModel(handler, _pendingService);
+        _disposables.Add(vm);
+
+        Assert.True(vm.IsToggleEnabled);
+        Assert.Null(vm.ToggleDisabledTooltip);
+    }
+
+    // === Task 4 (AC #5) Verification: Dual-registration cross-reference ===
+
+    [Fact]
+    public void DualRegistered_ComHandler_shows_crossref_to_modern()
+    {
+        var handler = new ContextMenuHandler(
+            Name: "PowerToys CM",
+            Clsid: "{DEDUP-CLSID}",
+            RegistryPath: @"HKCR\*\shellex\ContextMenuHandlers\PowerToys",
+            AppliesTo: "All files",
+            DllPath: @"C:\PowerToys\dll.dll",
+            Publisher: "Microsoft Corporation",
+            IsEnabled: true,
+            HandlerType: HandlerType.ComHandler,
+            IsDualRegistered: true,
+            DualRegistrationPartnerName: "PowerToys Modern");
+
+        var vm = new ContextMenuHandlerViewModel(handler, _pendingService);
+        _disposables.Add(vm);
+
+        Assert.True(vm.IsDualRegistered);
+        Assert.NotNull(vm.DualRegistrationNote);
+        Assert.Contains("PowerToys Modern", vm.DualRegistrationNote);
+        Assert.Contains("Modern Packaged", vm.DualRegistrationNote);
+    }
+
     public void Dispose()
     {
         foreach (var vm in _disposables)

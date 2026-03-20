@@ -238,5 +238,8 @@ public sealed class StaticVerbIntegrationTests : IDisposable
 
         public bool IsBlockedByCLSID(string clsid) => false;
         public IReadOnlySet<string> GetBlockedClsids() => new HashSet<string>();
+
+        public Core.Results.OperationResult<IReadOnlyList<Interop.Com.Shell.DragDropHandlerInfo>> EnumerateDragDropHandlers()
+            => Core.Results.OperationResult<IReadOnlyList<Interop.Com.Shell.DragDropHandlerInfo>>.Success([]);
     }
 }

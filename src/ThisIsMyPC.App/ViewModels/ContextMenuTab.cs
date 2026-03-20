@@ -29,7 +29,8 @@ public static class ContextMenuTabMapper
             "Directories" or "Folders" => [ContextMenuTab.Folder],
             "Folder background" => MapFolderBackground(visibleSurfaces),
             "Desktop background" => [ContextMenuTab.Desktop],
-            "Drives" or "This PC" or "Network" or "Recycle Bin" => [ContextMenuTab.Misc],
+            "Drives" or "This PC" or "Network" or "Recycle Bin"
+                or "Audio folders" or "Video folders" => [ContextMenuTab.Misc],
             _ => [ContextMenuTab.File],
         };
 

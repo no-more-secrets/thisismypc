@@ -21,6 +21,9 @@ public sealed class ContextMenuScannerModernPackagedTests
 
         public bool IsBlockedByCLSID(string clsid) => _blockedClsids.Contains(clsid);
         public IReadOnlySet<string> GetBlockedClsids() => _blockedClsids;
+
+        public OperationResult<IReadOnlyList<DragDropHandlerInfo>> EnumerateDragDropHandlers()
+            => OperationResult<IReadOnlyList<DragDropHandlerInfo>>.Success([]);
     }
 
     [Fact]

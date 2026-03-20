@@ -110,6 +110,7 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
             {
                 HandlerType.StaticVerb => "Static Verb",
                 HandlerType.ModernPackaged => "Modern Packaged",
+                HandlerType.DragDropHandler => "Drag-Drop",
                 _ => "COM Handler",
             };
 
@@ -127,6 +128,11 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
         {
             IsToggleEnabled = false;
             ToggleDisabledTooltip = "Modern handlers are managed at the package level (Settings > Apps)";
+        }
+        else if (handler.HandlerType == HandlerType.DragDropHandler)
+        {
+            IsToggleEnabled = false;
+            ToggleDisabledTooltip = "Drag-drop handlers can only be removed by uninstalling the application";
         }
         else
         {
@@ -186,7 +192,10 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
             }
             else
             {
-                Description = Clsid;
+                var regKeyName = _handler.RegistryKeyName;
+                Description = regKeyName is not null && regKeyName != _handler.Name
+                    ? $"CLSID: {Clsid} | Key: {regKeyName}"
+                    : Clsid;
             }
             SystemPath = string.Join("\n", AllRegistryPaths);
             if (DllPath is not null)
@@ -254,6 +263,9 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
     {
         if (handler.IsOrphaned)
             return "DLL missing — Explorer wastes resources trying to load this handler on every right-click";
+
+        if (handler.IsContentInspecting)
+            return "This handler performs synchronous file I/O during right-click -- may cause menu delays on large or network folders";
 
         return handler.Classification switch
         {

@@ -36,6 +36,9 @@ public sealed class ContextMenuScanner
         if (_staticVerbService is not null)
             handlers.AddRange(ScanStaticVerbs());
 
+        // Drag-drop handlers
+        handlers.AddRange(ScanDragDropHandlers());
+
         // Modern packaged handlers
         if (_modernPackagedService is not null)
         {
@@ -97,6 +100,11 @@ public sealed class ContextMenuScanner
             // Probe surface visibility for background handlers
             var visibleSurfaces = ProbeSurfaceVisibility(first.Clsid, allScopes);
 
+            // Tag handlers registered under SystemFileAssociations\Directory.Audio|Video
+            var isContentInspecting = allScopes.Any(s =>
+                s.Equals("Audio folders", StringComparison.OrdinalIgnoreCase) ||
+                s.Equals("Video folders", StringComparison.OrdinalIgnoreCase));
+
             handlers.Add(new ContextMenuHandler(
                 Name: first.HandlerName,
                 Clsid: first.Clsid,
@@ -111,7 +119,45 @@ public sealed class ContextMenuScanner
                 PathEnabledStates: pathEnabledStates,
                 VisibleSurfaces: visibleSurfaces,
                 DisableMethod: disableMethod,
-                HandlerType: HandlerType.ComHandler));
+                HandlerType: HandlerType.ComHandler,
+                RegistryKeyName: first.EffectiveRegistryKeyName,
+                IsContentInspecting: isContentInspecting));
+        }
+
+        return handlers;
+    }
+
+    private IReadOnlyList<ContextMenuHandler> ScanDragDropHandlers()
+    {
+        var result = _shellExtensionService.EnumerateDragDropHandlers();
+        if (!result.IsSuccess)
+            return [];
+
+        // Deduplicate by CLSID across the 3 registration paths
+        var grouped = result.Value!
+            .GroupBy(info => info.Clsid, StringComparer.OrdinalIgnoreCase);
+
+        var handlers = new List<ContextMenuHandler>();
+
+        foreach (var group in grouped)
+        {
+            var entries = group.ToList();
+            var first = entries[0];
+            var allRegistryPaths = entries.Select(e => e.RegistryPath).ToList();
+            var allScopes = entries.Select(e => e.AppliesTo).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+
+            handlers.Add(new ContextMenuHandler(
+                Name: first.Name,
+                Clsid: first.Clsid,
+                RegistryPath: first.RegistryPath,
+                AppliesTo: first.AppliesTo,
+                DllPath: first.DllPath,
+                Publisher: first.Publisher,
+                IsEnabled: true,
+                Classification: ContextMenuHandlerClassifier.Classify(first.Clsid, first.DllPath, first.Publisher),
+                AllRegistryPaths: allRegistryPaths,
+                AllScopes: allScopes,
+                HandlerType: HandlerType.DragDropHandler));
         }
 
         return handlers;

@@ -21,6 +21,9 @@ public sealed class ContextMenuScannerTests
 
         public bool IsBlockedByCLSID(string clsid) => _blockedClsids.Contains(clsid);
         public IReadOnlySet<string> GetBlockedClsids() => _blockedClsids;
+
+        public OperationResult<IReadOnlyList<DragDropHandlerInfo>> EnumerateDragDropHandlers()
+            => OperationResult<IReadOnlyList<DragDropHandlerInfo>>.Success([]);
     }
 
     private sealed class FakeContextMenuProbe : IContextMenuProbe
@@ -317,5 +320,8 @@ public sealed class ContextMenuScannerTests
 
         public bool IsBlockedByCLSID(string clsid) => false;
         public IReadOnlySet<string> GetBlockedClsids() => new HashSet<string>();
+
+        public OperationResult<IReadOnlyList<DragDropHandlerInfo>> EnumerateDragDropHandlers()
+            => OperationResult<IReadOnlyList<DragDropHandlerInfo>>.Failure("Failed", ErrorCategory.ServiceUnavailable);
     }
 }
