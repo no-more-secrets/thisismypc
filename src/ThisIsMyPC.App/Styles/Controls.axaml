@@ -117,6 +117,11 @@
         <Setter Property="Background" Value="{StaticResource WarningMutedBrush}" />
     </Style>
 
+    <!-- Inactive handler: dimmed appearance -->
+    <Style Selector="Border.inactive">
+        <Setter Property="Opacity" Value="0.55" />
+    </Style>
+
     <!-- Notification bar: restart (amber warning) -->
     <Style Selector="Border.notification-restart">
         <Setter Property="BorderBrush" Value="{StaticResource WarningBrush}" />

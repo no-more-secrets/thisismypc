@@ -49,6 +49,9 @@ public sealed class ContextMenuScanner
             ApplyCrossTypeDeduplication(handlers, comWithOrphans, modernHandlers);
         }
 
+        // Remove internal shell verbs that never produce visible menu entries
+        handlers.RemoveAll(InternalHandlerFilter.ShouldHide);
+
         return handlers;
     }
 
@@ -105,8 +108,10 @@ public sealed class ContextMenuScanner
                 s.Equals("Audio folders", StringComparison.OrdinalIgnoreCase) ||
                 s.Equals("Video folders", StringComparison.OrdinalIgnoreCase));
 
+            var displayName = KnownHandlerDisplayNames.GetDisplayName(first.Clsid) ?? first.HandlerName;
+
             handlers.Add(new ContextMenuHandler(
-                Name: first.HandlerName,
+                Name: displayName,
                 Clsid: first.Clsid,
                 RegistryPath: first.RegistryPath,
                 AppliesTo: first.AppliesTo,

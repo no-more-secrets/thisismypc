@@ -50,6 +50,7 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
     public HandlerType HandlerType { get; }
     public IReadOnlyList<string> AllScopes { get; }
     public string ScopeNote { get; private set; }
+    public IReadOnlyList<ScopeBadge> ScopeBadges { get; internal set; } = [];
     public string Clsid { get; }
     public string? DllPath { get; }
     public IReadOnlyList<string> AllRegistryPaths { get; }
@@ -66,6 +67,8 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
     public string? ToggleDisabledTooltip { get; }
     public bool IsOrphaned { get; }
     public string? OrphanReason { get; }
+    public bool IsInactive { get; internal set; }
+    public string? InactiveReason { get; internal set; }
     public ContextMenuHandler Handler => _handler;
 
     public ContextMenuHandlerViewModel(

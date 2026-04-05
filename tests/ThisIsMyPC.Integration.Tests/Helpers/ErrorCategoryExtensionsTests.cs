@@ -6,7 +6,7 @@ namespace ThisIsMyPC.Integration.Tests.Helpers;
 public class ErrorCategoryExtensionsTests
 {
     [Theory]
-    [InlineData(ErrorCategory.AccessDenied, "administrator")]
+    [InlineData(ErrorCategory.AccessDenied, "Access denied")]
     [InlineData(ErrorCategory.NotFound, "not found")]
     [InlineData(ErrorCategory.ServiceUnavailable, "not available")]
     [InlineData(ErrorCategory.ProtectedByPolicy, "Group Policy")]

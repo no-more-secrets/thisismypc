@@ -146,13 +146,13 @@ public sealed class ContextMenuScannerStaticVerbTests
         var verbService = new FakeStaticVerbService();
 
         verbService.AddEntry(MakeEntry(
-            verbName: "open",
-            registryPath: @"HKCR\*\shell\open",
-            commandLine: "notepad.exe"));
+            verbName: "AnyCode",
+            registryPath: @"HKCR\*\shell\AnyCode",
+            commandLine: "code.exe"));
         verbService.AddEntry(MakeEntry(
-            verbName: "open",
-            registryPath: @"HKCR\Directory\shell\open",
-            commandLine: "explorer.exe"));
+            verbName: "AnyCode",
+            registryPath: @"HKCR\Directory\shell\AnyCode",
+            commandLine: "vslauncher.exe"));
 
         var scanner = new ContextMenuScanner(comService, staticVerbService: verbService);
         var result = scanner.Scan();
@@ -194,11 +194,11 @@ public sealed class ContextMenuScannerStaticVerbTests
     }
 
     [Fact]
-    public void Scan_classifies_canonical_verbs_as_Critical()
+    public void Scan_classifies_properties_as_Critical()
     {
         var comService = new FakeShellExtensionService();
         var verbService = new FakeStaticVerbService();
-        verbService.AddEntry(MakeEntry(verbName: "open", commandLine: "explorer.exe"));
+        verbService.AddEntry(MakeEntry(verbName: "properties", commandLine: "explorer.exe"));
 
         var scanner = new ContextMenuScanner(comService, staticVerbService: verbService);
         var result = scanner.Scan();
@@ -207,16 +207,21 @@ public sealed class ContextMenuScannerStaticVerbTests
     }
 
     [Fact]
-    public void Scan_classifies_open_as_Critical()
+    public void Scan_filters_out_internal_verbs()
     {
         var comService = new FakeShellExtensionService();
         var verbService = new FakeStaticVerbService();
-        verbService.AddEntry(MakeEntry(verbName: "open", commandLine: "notepad.exe"));
+        verbService.AddEntry(MakeEntry(verbName: "open", commandLine: "explorer.exe"));
+        verbService.AddEntry(MakeEntry(verbName: "explore", commandLine: "explorer.exe"));
+        verbService.AddEntry(MakeEntry(verbName: "find", commandLine: "explorer.exe"));
+        verbService.AddEntry(MakeEntry(verbName: "AnyCode", commandLine: "code.exe"));
 
         var scanner = new ContextMenuScanner(comService, staticVerbService: verbService);
         var result = scanner.Scan();
 
-        Assert.Equal(HandlerClassification.Critical, result[0].Classification);
+        // Only AnyCode should survive the internal filter
+        Assert.Single(result);
+        Assert.Equal("AnyCode", result[0].VerbInfo!.VerbName);
     }
 
     [Fact]
@@ -225,32 +230,6 @@ public sealed class ContextMenuScannerStaticVerbTests
         var comService = new FakeShellExtensionService();
         var verbService = new FakeStaticVerbService();
         verbService.AddEntry(MakeEntry(verbName: "print", commandLine: "print.exe"));
-
-        var scanner = new ContextMenuScanner(comService, staticVerbService: verbService);
-        var result = scanner.Scan();
-
-        Assert.Equal(HandlerClassification.Critical, result[0].Classification);
-    }
-
-    [Fact]
-    public void Scan_classifies_explore_as_Critical()
-    {
-        var comService = new FakeShellExtensionService();
-        var verbService = new FakeStaticVerbService();
-        verbService.AddEntry(MakeEntry(verbName: "explore", commandLine: "explorer.exe"));
-
-        var scanner = new ContextMenuScanner(comService, staticVerbService: verbService);
-        var result = scanner.Scan();
-
-        Assert.Equal(HandlerClassification.Critical, result[0].Classification);
-    }
-
-    [Fact]
-    public void Scan_classifies_properties_as_Critical()
-    {
-        var comService = new FakeShellExtensionService();
-        var verbService = new FakeStaticVerbService();
-        verbService.AddEntry(MakeEntry(verbName: "properties", commandLine: "explorer.exe"));
 
         var scanner = new ContextMenuScanner(comService, staticVerbService: verbService);
         var result = scanner.Scan();
@@ -279,9 +258,9 @@ public sealed class ContextMenuScannerStaticVerbTests
         var comService = new FakeShellExtensionService();
         var verbService = new FakeStaticVerbService();
         verbService.AddEntry(MakeEntry(
-            verbName: "opennewtab",
+            verbName: "pintohome",
             commandLine: null,
-            delegateExecuteClsid: "{11dbb47c-a525-400b-9e80-a54615a090c0}"));
+            delegateExecuteClsid: "{b455f46e-e4af-4035-b0a4-cf18d2f6f28e}"));
 
         var scanner = new ContextMenuScanner(comService, staticVerbService: verbService);
         var result = scanner.Scan();

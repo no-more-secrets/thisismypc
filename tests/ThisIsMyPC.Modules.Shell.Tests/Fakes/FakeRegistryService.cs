@@ -11,6 +11,24 @@ public sealed class FakeRegistryService : IRegistryService
 {
     private readonly Dictionary<string, object> _values = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _keys = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, ErrorCategory> _writeFailures = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, ErrorCategory> _deleteFailures = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Configures a key path to fail on write operations with the specified error category.
+    /// </summary>
+    public void SetWriteFailure(string keyPath, ErrorCategory error)
+    {
+        _writeFailures[keyPath] = error;
+    }
+
+    /// <summary>
+    /// Configures a key path to fail on delete operations with the specified error category.
+    /// </summary>
+    public void SetDeleteFailure(string keyPath, ErrorCategory error)
+    {
+        _deleteFailures[keyPath] = error;
+    }
 
     public void SetDWord(string keyPath, string valueName, int value)
     {
@@ -73,6 +91,8 @@ public sealed class FakeRegistryService : IRegistryService
 
     public OperationResult<bool> WriteDWord(string keyPath, string valueName, int value)
     {
+        if (_writeFailures.TryGetValue(keyPath, out var error))
+            return OperationResult<bool>.Failure($"Access denied: {keyPath}", error);
         _values[MakeKey(keyPath, valueName)] = value;
         _keys.Add(keyPath);
         return OperationResult<bool>.Success(true);
@@ -80,6 +100,8 @@ public sealed class FakeRegistryService : IRegistryService
 
     public OperationResult<bool> WriteString(string keyPath, string valueName, string value)
     {
+        if (_writeFailures.TryGetValue(keyPath, out var error))
+            return OperationResult<bool>.Failure($"Access denied: {keyPath}", error);
         _values[MakeKey(keyPath, valueName)] = value;
         _keys.Add(keyPath);
         return OperationResult<bool>.Success(true);
@@ -92,6 +114,8 @@ public sealed class FakeRegistryService : IRegistryService
 
     public OperationResult<bool> WriteMultiString(string keyPath, string valueName, string[] values)
     {
+        if (_writeFailures.TryGetValue(keyPath, out var error))
+            return OperationResult<bool>.Failure($"Access denied: {keyPath}", error);
         _values[MakeKey(keyPath, valueName)] = values;
         _keys.Add(keyPath);
         return OperationResult<bool>.Success(true);
@@ -99,6 +123,8 @@ public sealed class FakeRegistryService : IRegistryService
 
     public OperationResult<bool> DeleteValue(string keyPath, string valueName)
     {
+        if (_deleteFailures.TryGetValue(keyPath, out var deleteError))
+            return OperationResult<bool>.Failure($"Access denied: {keyPath}", deleteError);
         if (!_keys.Contains(keyPath))
             return OperationResult<bool>.Failure($"Key not found: {keyPath}", ErrorCategory.NotFound);
 

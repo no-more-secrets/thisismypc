@@ -62,6 +62,7 @@ public static class ContextMenuChangeFactory
             AfterDisplay = enable ? "Enabled" : "Disabled",
             ValueType = ChangeValueType.Registry_String,
             Category = enable ? ChangeCategory.Enable : ChangeCategory.Disable,
+            RestartRequirement = RestartRequirement.ExplorerRestart,
         };
     }
 
@@ -140,13 +141,17 @@ public static class ContextMenuChangeFactory
             var pathEnabled = handler.PathEnabledStates?.GetValueOrDefault(path, handler.IsEnabled)
                               ?? handler.IsEnabled;
 
+            // Remap HKCR → HKCU\Software\Classes so LegacyDisable writes succeed
+            // even for TrustedInstaller-owned system verb keys
+            var writePath = ShellRegistryPaths.RemapHkcrToHkcu(path);
+
             return new ChangeDescriptor
             {
                 ModuleId = ModuleId,
                 SettingId = settingId,
                 DisplayName = $"Context menu: {handler.Name}",
-                // LegacyDisable value on the verb key itself
-                SystemLocation = $@"{path}\LegacyDisable",
+                // LegacyDisable value on the verb key itself (HKCU overlay)
+                SystemLocation = $@"{writePath}\LegacyDisable",
                 BeforeValue = pathEnabled ? ShellRegistryPaths.AbsentValue : "",
                 AfterValue = enable ? ShellRegistryPaths.AbsentValue : "",
                 BeforeDisplay = enable ? "Disabled" : "Enabled",

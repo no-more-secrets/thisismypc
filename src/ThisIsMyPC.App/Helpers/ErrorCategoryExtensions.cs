@@ -6,7 +6,7 @@ public static class ErrorCategoryExtensions
 {
     public static string ToGuidance(ErrorCategory category) => category switch
     {
-        ErrorCategory.AccessDenied => "Access denied. Try running as administrator.",
+        ErrorCategory.AccessDenied => "Access denied. This key is protected by Windows (owned by TrustedInstaller).",
         ErrorCategory.NotFound => "The target setting or key was not found. It may have been removed.",
         ErrorCategory.ServiceUnavailable => "The required service is not available.",
         ErrorCategory.ProtectedByPolicy => "This setting is locked by Group Policy.",

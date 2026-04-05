@@ -168,7 +168,7 @@ public class MainWindowViewModelTests
         await vm.ApplyAllCommand.ExecuteAsync(null);
 
         Assert.Contains("Registry access denied", vm.StatusMessage);
-        Assert.Contains("administrator", vm.StatusMessage);
+        Assert.Contains("Access denied", vm.StatusMessage);
     }
 
     [Fact]

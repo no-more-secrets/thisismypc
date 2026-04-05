@@ -51,7 +51,7 @@ public sealed class ContextMenuChangeFactoryStaticVerbTests
 
         var change = Assert.Single(changes);
         Assert.Equal(ChangeValueType.Registry_String, change.ValueType);
-        Assert.Equal(@"HKCR\*\shell\AnyCode\LegacyDisable", change.SystemLocation);
+        Assert.Equal(@"HKCU\Software\Classes\*\shell\AnyCode\LegacyDisable", change.SystemLocation);
         Assert.Equal(ShellRegistryPaths.AbsentValue, change.BeforeValue); // was absent (enabled)
         Assert.Equal("", change.AfterValue); // write empty string
         Assert.Equal(ChangeCategory.Disable, change.Category);
@@ -65,7 +65,7 @@ public sealed class ContextMenuChangeFactoryStaticVerbTests
         var changes = ContextMenuChangeFactory.CreateStaticVerbToggle(handler, enable: true);
 
         var change = Assert.Single(changes);
-        Assert.Equal(@"HKCR\*\shell\AnyCode\LegacyDisable", change.SystemLocation);
+        Assert.Equal(@"HKCU\Software\Classes\*\shell\AnyCode\LegacyDisable", change.SystemLocation);
         Assert.Equal("", change.BeforeValue); // was present (disabled)
         Assert.Equal(ShellRegistryPaths.AbsentValue, change.AfterValue); // delete it
         Assert.Equal(ChangeCategory.Enable, change.Category);
@@ -93,8 +93,8 @@ public sealed class ContextMenuChangeFactoryStaticVerbTests
         var changes = ContextMenuChangeFactory.CreateStaticVerbToggle(handler, enable: false);
 
         Assert.Equal(2, changes.Count);
-        Assert.Contains(changes, c => c.SystemLocation == @"HKCR\Directory\shell\AnyCode\LegacyDisable");
-        Assert.Contains(changes, c => c.SystemLocation == @"HKCR\Directory\Background\shell\AnyCode\LegacyDisable");
+        Assert.Contains(changes, c => c.SystemLocation == @"HKCU\Software\Classes\Directory\shell\AnyCode\LegacyDisable");
+        Assert.Contains(changes, c => c.SystemLocation == @"HKCU\Software\Classes\Directory\Background\shell\AnyCode\LegacyDisable");
     }
 
     [Fact]
@@ -148,12 +148,12 @@ public sealed class ContextMenuChangeFactoryStaticVerbTests
         Assert.Equal(2, changes.Count);
 
         // Path A: was enabled (absent) → disable (write empty string)
-        var changeA = changes.Single(c => c.SystemLocation.Contains(@"Directory\shell"));
+        var changeA = changes.Single(c => c.SystemLocation.Contains(@"Classes\Directory\shell\AnyCode"));
         Assert.Equal(ShellRegistryPaths.AbsentValue, changeA.BeforeValue);
         Assert.Equal("", changeA.AfterValue);
 
         // Path B: was disabled (present) → disable again (no-op but BeforeValue correct)
-        var changeB = changes.Single(c => c.SystemLocation.Contains(@"Background\shell"));
+        var changeB = changes.Single(c => c.SystemLocation.Contains(@"Background\shell\AnyCode"));
         Assert.Equal("", changeB.BeforeValue);
         Assert.Equal("", changeB.AfterValue);
     }

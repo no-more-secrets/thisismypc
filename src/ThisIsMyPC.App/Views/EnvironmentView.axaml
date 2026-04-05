@@ -74,7 +74,7 @@
                                    FontSize="15"
                                    FontWeight="SemiBold"
                                    Foreground="{StaticResource TextPrimaryBrush}" />
-                        <TextBlock Text="Appended to System PATH for the current user"
+                        <TextBlock Text="Per-user PATH entries, appended after system PATH"
                                    FontSize="12"
                                    Foreground="{StaticResource TextSecondaryBrush}" />
                         <Panel IsVisible="{Binding UserPathEditor, Converter={x:Static ObjectConverters.IsNotNull}}">
@@ -92,7 +92,7 @@
                                    FontSize="15"
                                    FontWeight="SemiBold"
                                    Foreground="{StaticResource TextPrimaryBrush}" />
-                        <TextBlock Text="Base PATH inherited by all users (requires elevation to modify)"
+                        <TextBlock Text="System-wide PATH entries, inherited by all users"
                                    FontSize="12"
                                    Foreground="{StaticResource TextSecondaryBrush}" />
                         <Panel IsVisible="{Binding SystemPathEditor, Converter={x:Static ObjectConverters.IsNotNull}}">
@@ -117,7 +117,7 @@
                           VerticalScrollBarVisibility="Auto">
                 <StackPanel Spacing="8" Margin="0,8,20,16">
                     <DockPanel Margin="12,0">
-                        <TextBlock Text="User environment variables (excluding PATH)"
+                        <TextBlock Text="Per-user variables (excluding PATH)"
                                    FontSize="12"
                                    Foreground="{StaticResource TextSecondaryBrush}"
                                    VerticalAlignment="Center" />
@@ -146,7 +146,7 @@
                           VerticalScrollBarVisibility="Auto">
                 <StackPanel Spacing="8" Margin="0,8,20,16">
                     <DockPanel Margin="12,0">
-                        <TextBlock Text="System-wide variables (requires elevation to modify)"
+                        <TextBlock Text="System-wide variables (excluding PATH)"
                                    FontSize="12"
                                    Foreground="{StaticResource TextSecondaryBrush}"
                                    VerticalAlignment="Center" />

@@ -26,6 +26,12 @@ Extensive research documents produced via deep-research tools. See [deep-researc
 |---|---|
 | [deep-research/](deep-research/index.md) | 6 research documents (136 pages total, now in markdown): threat modeling, kernel driver security, context menu architecture, Windows 11 control surface mapping, NativeAOT user-mode runtime integrity (CFG/ACG/CIG). Original PDFs in `deep-research/pdf-originals/`. |
 
+## Diagnostic Tools
+
+| Document | Purpose |
+|---|---|
+| [diagnostic-tests.md](diagnostic-tests.md) | How to run live-system diagnostic tests that read the real registry and dump exactly what the app would show. Essential for agentic development — lets the AI see real handler names, tab assignments, scope routing, and toggle states without launching the GUI. |
+
 ## Architecture
 
 | Document | Purpose |

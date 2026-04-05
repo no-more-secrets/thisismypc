@@ -18,6 +18,7 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
     public ObservableCollection<ContextMenuHandlerViewModel> FolderBackgroundHandlers { get; } = [];
     public ObservableCollection<ContextMenuHandlerViewModel> DesktopHandlers { get; } = [];
     public ObservableCollection<ContextMenuHandlerViewModel> MiscHandlers { get; } = [];
+    public ObservableCollection<ContextMenuHandlerViewModel> MultiHandlers { get; } = [];
 
     // Misc tab sub-groups by surface
     public ObservableCollection<ContextMenuHandlerViewModel> DriveMiscHandlers { get; } = [];
@@ -62,6 +63,7 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
     public string FolderBackgroundHandlerCount => $"Folder Background ({FolderBackgroundHandlers.Count})";
     public string DesktopHandlerCount => $"Desktop ({DesktopHandlers.Count})";
     public string MiscHandlerCount => $"Misc ({MiscHandlers.Count})";
+    public string MultiHandlerCount => $"Multi ({MultiHandlers.Count})";
 
     public ContextMenuViewModel(
         IReadOnlyList<ContextMenuHandler> handlers,
@@ -93,6 +95,7 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
         // Unique key: CLSID for COM handlers, verb dedup key for static verbs
         var vmMap = new Dictionary<string, ContextMenuHandlerViewModel>(StringComparer.OrdinalIgnoreCase);
         var vmTabs = new Dictionary<string, HashSet<ContextMenuTab>>(StringComparer.OrdinalIgnoreCase);
+        var vmScopes = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var handler in handlers)
         {
@@ -109,11 +112,14 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
                 vm = new ContextMenuHandlerViewModel(handler, pendingChangesService, readState);
                 vmMap[key] = vm;
                 vmTabs[key] = [];
+                vmScopes[key] = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             }
 
             // Assign to tabs based on all scopes
             foreach (var scope in handler.AllScopes ?? [handler.AppliesTo])
             {
+                vmScopes[key].Add(scope);
+
                 var tabs = handler.HandlerType switch
                 {
                     HandlerType.StaticVerb => ContextMenuTabMapper.GetTabsForStaticVerbScope(scope),
@@ -131,24 +137,33 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
             }
         }
 
-        // Store for handler type filtering and generate ScopeNotes (one-time)
+        // Detect inactive handlers based on system state
+        var inactiveDetector = new InactiveHandlerDetector(registryService);
+        foreach (var vm in vmMap.Values)
+        {
+            var (isInactive, reason) = inactiveDetector.Check(vm);
+            vm.IsInactive = isInactive;
+            vm.InactiveReason = reason;
+        }
+
+        // Route based on distinct registry scopes, not UI tab count.
+        // A handler at "Folder background" maps to both FolderBackground + Desktop tabs
+        // but that's one scope — it stays in those tabs, not Multi.
         foreach (var (key, vm) in vmMap)
         {
-            var tabs = vmTabs[key];
-            _allHandlerEntries.Add((vm, tabs));
+            var originalTabs = vmTabs[key];
+            var distinctScopes = vmScopes[key].Count;
 
-            if (tabs.Count > 1)
+            if (distinctScopes > 1)
             {
-                var tabNames = tabs.Select(t => t switch
-                {
-                    ContextMenuTab.File => "File",
-                    ContextMenuTab.Folder => "Folders",
-                    ContextMenuTab.FolderBackground => "Background",
-                    ContextMenuTab.Desktop => "Desktop",
-                    ContextMenuTab.Misc => "Misc",
-                    _ => t.ToString(),
-                });
-                vm.SetScopeNote($"appears in: {string.Join(", ", tabNames)}");
+                // Genuinely multi-scope: assign scope badges and route to Multi tab only
+                vm.ScopeBadges = BuildScopeBadges(originalTabs);
+                var multiTabs = new HashSet<ContextMenuTab> { ContextMenuTab.Multi };
+                _allHandlerEntries.Add((vm, multiTabs));
+            }
+            else
+            {
+                _allHandlerEntries.Add((vm, originalTabs));
             }
         }
 
@@ -162,6 +177,7 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
         FolderBackgroundHandlers.Clear();
         DesktopHandlers.Clear();
         MiscHandlers.Clear();
+        MultiHandlers.Clear();
         DriveMiscHandlers.Clear();
         ThisPcMiscHandlers.Clear();
         NetworkMiscHandlers.Clear();
@@ -180,6 +196,12 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
 
             if (vm.IsOrphaned)
                 orphanTotal++;
+
+            if (tabs.Contains(ContextMenuTab.Multi))
+            {
+                MultiHandlers.Add(vm);
+                continue;
+            }
 
             if (tabs.Contains(ContextMenuTab.File))
                 FileHandlers.Add(vm);
@@ -205,6 +227,14 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
             }
         }
 
+        // Sort inactive entries to the bottom of each collection
+        SortInactiveToBottom(FileHandlers);
+        SortInactiveToBottom(FolderHandlers);
+        SortInactiveToBottom(FolderBackgroundHandlers);
+        SortInactiveToBottom(DesktopHandlers);
+        SortInactiveToBottom(MultiHandlers);
+        SortInactiveToBottom(MiscHandlers);
+
         // Count orphans respecting the handler type filter
         if (!orphanFilterActive && currentTypeFilter is null)
             OrphanCount = _allHandlerEntries.Count(e => e.Vm.IsOrphaned);
@@ -229,6 +259,7 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
         OnPropertyChanged(nameof(FolderBackgroundHandlerCount));
         OnPropertyChanged(nameof(DesktopHandlerCount));
         OnPropertyChanged(nameof(MiscHandlerCount));
+        OnPropertyChanged(nameof(MultiHandlerCount));
         OnPropertyChanged(nameof(ScanSummary));
     }
 
@@ -266,6 +297,30 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
     }
 
     private bool CanCleanUpAllOrphans() => OrphanCount > 0;
+
+    private static void SortInactiveToBottom(ObservableCollection<ContextMenuHandlerViewModel> collection)
+    {
+        var sorted = collection.OrderBy(vm => vm.IsInactive).ToList();
+        collection.Clear();
+        foreach (var vm in sorted)
+            collection.Add(vm);
+    }
+
+    private static IReadOnlyList<ScopeBadge> BuildScopeBadges(HashSet<ContextMenuTab> tabs)
+    {
+        var badges = new List<ScopeBadge>();
+        if (tabs.Contains(ContextMenuTab.File))
+            badges.Add(new ScopeBadge("Files", "ScopeBadgeFileBrush"));
+        if (tabs.Contains(ContextMenuTab.Folder))
+            badges.Add(new ScopeBadge("Folders", "ScopeBadgeFolderBrush"));
+        if (tabs.Contains(ContextMenuTab.FolderBackground))
+            badges.Add(new ScopeBadge("Background", "ScopeBadgeBackgroundBrush"));
+        if (tabs.Contains(ContextMenuTab.Desktop))
+            badges.Add(new ScopeBadge("Desktop", "ScopeBadgeDesktopBrush"));
+        if (tabs.Contains(ContextMenuTab.Misc))
+            badges.Add(new ScopeBadge("Misc", "ScopeBadgeMiscBrush"));
+        return badges;
+    }
 
     private static string MakeHandlerKey(ContextMenuHandler handler)
     {
@@ -325,7 +380,7 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
         // Dispose all child handler VMs to unsubscribe from PendingChangesService
         var disposed = new HashSet<ContextMenuHandlerViewModel>(ReferenceEqualityComparer.Instance);
         foreach (var collection in (ObservableCollection<ContextMenuHandlerViewModel>[])
-            [FileHandlers, FolderHandlers, FolderBackgroundHandlers, DesktopHandlers, MiscHandlers])
+            [FileHandlers, FolderHandlers, FolderBackgroundHandlers, DesktopHandlers, MiscHandlers, MultiHandlers])
         {
             foreach (var vm in collection)
             {
@@ -340,7 +395,7 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
         // Deduplicate: shared VM instances appear in multiple tab collections
         var seen = new HashSet<ContextMenuHandlerViewModel>(ReferenceEqualityComparer.Instance);
         foreach (var collection in (ObservableCollection<ContextMenuHandlerViewModel>[])
-            [FileHandlers, FolderHandlers, FolderBackgroundHandlers, DesktopHandlers, MiscHandlers])
+            [FileHandlers, FolderHandlers, FolderBackgroundHandlers, DesktopHandlers, MiscHandlers, MultiHandlers])
         {
             foreach (var vm in collection)
             {

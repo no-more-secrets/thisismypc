@@ -3,11 +3,9 @@
                     x:CompileBindings="False">
 
     <!-- Reusable toggle setting row template for module controls.
-         Modules should use this DataTemplate for settings that can be enabled/disabled.
          Expected DataContext properties (required):
            - string Label: Setting name
            - string Description: What the setting does
-           - string SystemPath: Registry path or service name (shown in monospace)
            - bool IsEnabled: Current toggle state
          Optional properties (used by context menu handlers, hidden when absent):
            - bool IsPendingEnable / IsPendingDisable: Pending state visual indicators
@@ -15,6 +13,7 @@
            - string DisableMethodText: Disable method indicator
            - bool CanMigrate: Shows "Migrate to Blocked List" button
            - ICommand MigrateCommand: Migration action
+           - bool IsInactive / string InactiveReason: Dimmed with explanation
          Note: Compiled bindings are disabled here because this template is generic.
          FallbackValue is set on optional bindings to suppress binding errors. -->
 
@@ -23,12 +22,14 @@
                 Margin="0,2"
                 CornerRadius="6"
                 Background="{StaticResource SurfaceBrush}"
+                Classes.inactive="{Binding IsInactive, FallbackValue=False}"
                 Classes.pending-enable="{Binding IsPendingEnable}"
                 Classes.pending-disable="{Binding IsPendingDisable}">
             <DockPanel>
                 <!-- Toggle switch on the right -->
                 <ToggleSwitch DockPanel.Dock="Right"
                               IsChecked="{Binding IsEnabled}"
+                              IsEnabled="{Binding !IsInactive, FallbackValue=True}"
                               VerticalAlignment="Top"
                               Margin="16,0,0,0" />
 
@@ -40,13 +41,22 @@
                                FontSize="14"
                                Foreground="{StaticResource TextPrimaryBrush}" />
 
-                    <!-- Description -->
+                    <!-- Description (collapse when empty) -->
                     <TextBlock Text="{Binding Description}"
                                FontSize="12"
                                Foreground="{StaticResource TextSecondaryBrush}"
-                               TextWrapping="Wrap" />
+                               TextWrapping="Wrap"
+                               IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
-                    <!-- Warning text (Critical/System handlers) -->
+                    <!-- Inactive reason (shown instead of warning for inactive entries) -->
+                    <TextBlock Text="{Binding InactiveReason, FallbackValue=''}"
+                               FontSize="12"
+                               Foreground="{StaticResource TextTertiaryBrush}"
+                               FontStyle="Italic"
+                               TextWrapping="Wrap"
+                               IsVisible="{Binding InactiveReason, FallbackValue='', Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                    <!-- Warning text (Critical/System handlers — hidden when inactive) -->
                     <TextBlock Text="{Binding WarningText}"
                                FontSize="12"
                                Foreground="{StaticResource DangerBrush}"
@@ -65,13 +75,6 @@
                             Padding="6,2"
                             Margin="0,2,0,0"
                             Classes="accent" />
-
-                    <!-- System path (monospace) -->
-                    <TextBlock Text="{Binding SystemPath}"
-                               FontFamily="{StaticResource MonoFont}"
-                               FontSize="11"
-                               Foreground="{StaticResource TextTertiaryBrush}"
-                               Margin="0,2,0,0" />
                 </StackPanel>
             </DockPanel>
         </Border>

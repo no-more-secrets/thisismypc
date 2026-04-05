@@ -10,6 +10,7 @@ public enum ContextMenuTab
     FolderBackground,
     Desktop,
     Misc,
+    Multi,
 }
 
 public enum MiscSurfaceGroup

@@ -191,6 +191,15 @@ public sealed class ContextMenuChangeFactoryTests
     }
 
     [Fact]
+    public void CreateBlockedListToggle_sets_ExplorerRestart_requirement()
+    {
+        var handler = MakeHandler(isEnabled: true);
+        var change = ContextMenuChangeFactory.CreateBlockedListToggle(handler, enable: false);
+
+        Assert.Equal(RestartRequirement.ExplorerRestart, change.RestartRequirement);
+    }
+
+    [Fact]
     public void CreateMigration_produces_blocked_list_and_restore_descriptors()
     {
         var handler = new ContextMenuHandler(

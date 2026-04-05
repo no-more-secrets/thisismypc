@@ -106,9 +106,11 @@ public sealed class ContextMenuModule : IModule
         var (keyPath, valueName) = ShellRegistryPaths.ParseSystemLocation(change.SystemLocation);
 
         // AbsentValue signals delete (remove from blocked list = re-enable handler)
-        return change.AfterValue == ShellRegistryPaths.AbsentValue
+        var result = change.AfterValue == ShellRegistryPaths.AbsentValue
             ? _registryService.DeleteValue(keyPath, valueName)
             : _registryService.WriteString(keyPath, valueName, change.AfterValue ?? string.Empty);
+
+        return MakeBestEffortIfHkcrAccessDenied(result, change);
     }
 
     private OperationResult<bool> RevertStringChange(ChangeDescriptor change)
@@ -116,8 +118,35 @@ public sealed class ContextMenuModule : IModule
         var (keyPath, valueName) = ShellRegistryPaths.ParseSystemLocation(change.SystemLocation);
 
         // Write BeforeValue to restore original state (opposite of ApplyStringChange)
-        return change.BeforeValue == ShellRegistryPaths.AbsentValue
+        var result = change.BeforeValue == ShellRegistryPaths.AbsentValue
             ? _registryService.DeleteValue(keyPath, valueName)
             : _registryService.WriteString(keyPath, valueName, change.BeforeValue ?? string.Empty);
+
+        return MakeBestEffortIfHkcrAccessDenied(result, change);
+    }
+
+    /// <summary>
+    /// HKCR dash-prefix writes are best-effort because the blocked list is the
+    /// authoritative disable mechanism. If a dash-prefix write fails with AccessDenied
+    /// on a TrustedInstaller-owned HKCR path, return Success — the blocked list change
+    /// in the same ChangeGroup handles the actual disable, taking effect after Explorer restart.
+    /// Delete operations (orphan cleanup) are NOT best-effort — they must succeed or fail honestly.
+    /// </summary>
+    private static OperationResult<bool> MakeBestEffortIfHkcrAccessDenied(
+        OperationResult<bool> result, ChangeDescriptor change)
+    {
+        if (result.IsSuccess || result.ErrorCategory != ErrorCategory.AccessDenied)
+            return result;
+
+        if (!change.SystemLocation.StartsWith("HKCR\\", StringComparison.OrdinalIgnoreCase))
+            return result;
+
+        // Orphan cleanup (Delete) must fail honestly — the orphan needs to stay flagged
+        if (change.Category == ChangeCategory.Delete)
+            return result;
+
+        System.Diagnostics.Debug.WriteLine(
+            $"Best-effort: HKCR dash-prefix write skipped (TrustedInstaller-protected): {change.SystemLocation}");
+        return OperationResult<bool>.Success(true);
     }
 }

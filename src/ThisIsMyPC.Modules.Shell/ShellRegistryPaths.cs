@@ -27,6 +27,19 @@ public static class ShellRegistryPaths
     ];
 
     /// <summary>
+    /// Remaps an HKCR path to its HKCU\Software\Classes equivalent.
+    /// HKCR is a virtual merge of HKLM\SOFTWARE\Classes + HKCU\Software\Classes,
+    /// with HKCU taking precedence. Writing to HKCU avoids TrustedInstaller ownership
+    /// on system keys while achieving the same effect.
+    /// </summary>
+    public static string RemapHkcrToHkcu(string hkcrPath)
+    {
+        if (hkcrPath.StartsWith("HKCR\\", StringComparison.OrdinalIgnoreCase))
+            return @"HKCU\Software\Classes\" + hkcrPath[5..];
+        return hkcrPath;
+    }
+
+    /// <summary>
     /// Splits a SystemLocation (e.g., "HKCR\...\ValueName") into key path and value name.
     /// Maps "(Default)" to empty string per Windows registry API convention.
     /// </summary>

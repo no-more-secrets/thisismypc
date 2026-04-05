@@ -165,7 +165,7 @@ public class ChangeHistoryViewModelTests
         await vm.RestoreCommand.ExecuteAsync(vm.HistoryGroups[0].Batches[0].Details[0]);
 
         Assert.NotNull(vm.ErrorMessage);
-        Assert.Contains("administrator", vm.ErrorMessage);
+        Assert.Contains("Access denied", vm.ErrorMessage);
     }
 
     [Fact]

@@ -41,6 +41,13 @@
         <SolidColorBrush x:Key="InfoBrush" Color="{StaticResource InfoColor}" />
         <SolidColorBrush x:Key="InfoMutedBrush" Color="{StaticResource InfoMutedColor}" />
 
+        <!-- Scope Badge Colors (muted tints for Multi tab scope badges) -->
+        <SolidColorBrush x:Key="ScopeBadgeFileBrush" Color="#2e5984" />
+        <SolidColorBrush x:Key="ScopeBadgeFolderBrush" Color="#2e7854" />
+        <SolidColorBrush x:Key="ScopeBadgeBackgroundBrush" Color="#6e5a2e" />
+        <SolidColorBrush x:Key="ScopeBadgeDesktopBrush" Color="#5a2e6e" />
+        <SolidColorBrush x:Key="ScopeBadgeMiscBrush" Color="#4a4a5e" />
+
         <!-- Text (alpha-channel white for proper adaptation across background tiers) -->
         <SolidColorBrush x:Key="TextPrimaryBrush" Color="#FFFFFF" />
         <SolidColorBrush x:Key="TextSecondaryBrush" Color="#CCFFFFFF" />

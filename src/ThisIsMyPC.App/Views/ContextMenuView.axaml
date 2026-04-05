@@ -25,6 +25,23 @@
             </StackPanel>
 
             <TabControl>
+                <!-- Multi-scope Tab -->
+                <TabItem>
+                    <TabItem.Header>
+                        <TextBlock Text="{Binding MultiHandlerCount}" FontSize="13" />
+                    </TabItem.Header>
+                    <StackPanel Spacing="4" Margin="0,8,0,0">
+                        <TextBlock Text="Handlers that appear in multiple right-click contexts. One toggle controls all scopes."
+                                   FontSize="12"
+                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                   FontStyle="Italic"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,4" />
+                        <ItemsControl ItemsSource="{Binding MultiHandlers}"
+                                      ItemTemplate="{StaticResource MultiScopeRowTemplate}" />
+                    </StackPanel>
+                </TabItem>
+
                 <!-- File Tab -->
                 <TabItem>
                     <TabItem.Header>
