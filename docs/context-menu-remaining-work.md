@@ -1,8 +1,47 @@
 # Context Menu Research: Remaining Verification & Decisions
 
-**Date:** 2026-03-08
+**Date:** 2026-03-08 (updated 2026-04-05)
 **Context:** Post-synthesis of Parts 1–3 of Gemini Deep Research on Windows 11 context menu architecture
-**Status:** V4 completed (2026-03-09). V1, V2, V3, V5, D1, D2, D3 remain open.
+**Status:** V4 completed (2026-03-09). V2 partially resolved (2026-04-05). V1, V3, V5, D1, D2, D3 remain open.
+
+## Session Learnings — 2026-04-05 (Story 2-14 + live testing)
+
+Real-system testing against Sam's Windows 11 Education (25H2, [hardware] + [hardware] + [hardware]) revealed critical behavioral findings that no amount of code analysis or research could predict. These should inform all future context menu development.
+
+### Win11 Context Menu is Multi-Layered
+The visible right-click menu comes from at least 5 distinct sources. Our scanner only covers the first two at generic scope paths:
+1. **COM handlers** (`shellex\ContextMenuHandlers`) — what we scan
+2. **Static verbs** (`shell\<verb>`) — what we scan at 7 generic scopes
+3. **Modern IExplorerCommand** (packaged apps) — enumerated via AppExtensionCatalog, not toggleable
+4. **Per-file-type ProgID verbs** (e.g., `HKCR\pngfile\shell\edit`) — NOT scanned yet, needs future story
+5. **Shell built-ins** (Cut, Copy, Delete, Properties) — hardwired, not toggleable
+
+### Vestigial COM Handlers
+Several registered COM handlers produce zero visible menu entries on Win11:
+- **FileSyncEx** `{CB3D0F55}` — OneDrive moved entirely to IExplorerCommand. Toggling this handler has no visible effect on menu entries or overlay icons. The overlay icons come from separate Icon Overlay Handlers at `HKLM\...\ShellIconOverlayIdentifiers`.
+- **AccExt** `{2A118EB5}` (Adobe Creative Cloud) — Folder-scope sync overlay, no menu entry.
+- **EFS Encryption** `{A470F8CF}` — Handler exists, `cipher.exe` works, but the handler no longer surfaces a context menu entry on Win11. Encryption must be done via Properties > Advanced or command line.
+
+### Internal Verbs Accept LegacyDisable But Ignore It
+`explore`, `open`, `find`, `removeproperties`, `opennewprocess`, `opennewtab`, `opennewwindow`, `.SpotlightLearnMore`, `.SpotlightNextImage` — all accept HKCU LegacyDisable writes (the write succeeds), but Explorer ignores the flag on these hardwired verbs. These are dead switches that look functional.
+
+### TrustedInstaller Is the Real Permission Barrier
+The app requires elevation. AccessDenied always means TrustedInstaller ownership, never missing admin. The HKCU\Software\Classes overlay bypasses TrustedInstaller for static verb LegacyDisable writes (HKCR merges both hives, HKCU wins). For COM handlers, the blocked list at `HKLM\...\Shell Extensions\Blocked` is admin-writable and CLSID-wide.
+
+### Blocked List Is CLSID-Wide
+Blocking a CLSID via the blocked list removes the handler from ALL surfaces — including per-file-type registrations the scanner doesn't enumerate. More powerful than path-specific dash-prefix. Requires Explorer restart.
+
+### Dash-Prefix Fails on System Handlers (and That's Fine)
+Dash-prefix writes to TrustedInstaller-owned HKCR keys fail with AccessDenied. Since the blocked list is the authoritative mechanism, these failures are made best-effort (return Success). The toggle works — just needs Explorer restart instead of being immediate.
+
+### Scope Inheritance
+`Directory\Background` entries appear on both folder backgrounds and the desktop. This is one registry scope mapping to two UI surfaces, not two scopes. Multi-tab routing must count distinct registry scopes, not UI tab destinations.
+
+### Conditional Visibility Depends on System State
+Tested on Sam's system: EFS service is running (Manual) but handler doesn't surface UI. Work Folders service exists but isn't configured. Offline Files service exists but no network shares. Desktop slideshow not active. Stickers not enabled. Detection uses registry service start types, HKCU preference keys, and known Win11 behavioral changes.
+
+### Diagnostic Tests Are Essential
+The `Display_full_system_state` test that reads the real registry was the development turning point. It revealed handler identities (AnyCode = VSLauncher.exe), non-functional handlers (FileSyncEx), and tab routing bugs that were invisible from code analysis. See `docs/diagnostic-tests.md`.
 
 ---
 
@@ -27,9 +66,11 @@ These are hands-on tasks that the research couldn't answer. Each requires runnin
 
 ---
 
-### V2. Test MFS_HIDDEN on Ghost Handlers
+### V2. Test MFS_HIDDEN on Ghost Handlers — PARTIALLY RESOLVED
 
-**Why:** Part 3 claims FileSyncEx, WorkFolders, and DesktopSlideshow insert menu items via `InsertMenuItem` but apply `MFS_HIDDEN` (`0x00000003`) to `MENUITEMINFO.fState`, making them invisible in Explorer while still detectable by a probe that only checks for item insertion. This is the proposed explanation for why the COM probe reports items added but nothing shows on screen.
+**Update (2026-04-05):** Live testing confirmed FileSyncEx and WorkFolders produce no visible context menu entries on Win11. The MFS_HIDDEN theory was not directly tested, but the practical outcome is clear: these handlers are vestigial on Win11. FileSyncEx doesn't even affect overlay icons (those come from ShellIconOverlayIdentifiers). The app now marks these as inactive with explanations. The full MFS_HIDDEN probe investigation remains optional — the behavioral finding is sufficient for shipping.
+
+**Original question:** Part 3 claims FileSyncEx, WorkFolders, and DesktopSlideshow insert menu items via `InsertMenuItem` but apply `MFS_HIDDEN` (`0x00000003`) to `MENUITEMINFO.fState`, making them invisible in Explorer while still detectable by a probe that only checks for item insertion. This is the proposed explanation for why the COM probe reports items added but nothing shows on screen.
 
 **Task:**
 1. In the existing COM probe, after calling `QueryContextMenu`, iterate the scratch HMENU using `GetMenuItemCount` + `GetMenuItemInfo`

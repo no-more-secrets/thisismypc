@@ -1,7 +1,7 @@
 # ThisIsMyPC — Project State
 
 ## Current Status
-BMAD Method v6.0.4 installed. Two research reports completed. No code written yet — still in planning/research phase.
+Epic 1 (Foundation) complete. Epic 2 (Explorer & Context Menus) in progress — Story 2-14 (toggle hardening) in review, remaining stories backlog. 540+ tests passing. See `_bmad-output/implementation-artifacts/sprint-status.yaml` for detailed status.
 
 ## BMAD Setup
 - Installed at `_bmad/` (bmm module, claude-code tool)
