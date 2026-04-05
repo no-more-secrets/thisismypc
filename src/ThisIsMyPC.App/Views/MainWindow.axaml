@@ -97,7 +97,8 @@
                     Padding="16,10"
                     CornerRadius="8"
                     Background="{StaticResource RaisedBrush}"
-                    BorderBrush="{StaticResource WarningBrush}"
+                    Classes.notification-restart="{Binding IsRestartActionAvailable}"
+                    Classes.notification-refresh="{Binding !IsRestartActionAvailable}"
                     BorderThickness="1"
                     IsVisible="{Binding IsRestartNotificationVisible}">
                 <DockPanel>
@@ -107,14 +108,16 @@
                         <Button Classes="apply-bar-apply"
                                 Content="Restart Explorer Now"
                                 Command="{Binding RestartExplorerCommand}"
-                                IsEnabled="{Binding !IsRestartingExplorer}" />
+                                IsEnabled="{Binding !IsRestartingExplorer}"
+                                IsVisible="{Binding IsRestartActionAvailable}" />
                         <Button Classes="apply-bar-discard"
-                                Content="Later"
+                                Content="Dismiss"
                                 Command="{Binding DismissRestartNotificationCommand}" />
                     </StackPanel>
                     <TextBlock Text="{Binding RestartNotificationMessage}"
                                VerticalAlignment="Center"
-                               Foreground="{StaticResource WarningBrush}"
+                               Classes.notification-restart="{Binding IsRestartActionAvailable}"
+                               Classes.notification-refresh="{Binding !IsRestartActionAvailable}"
                                FontSize="13"
                                TextWrapping="Wrap" />
                 </DockPanel>

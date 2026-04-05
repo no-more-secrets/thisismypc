@@ -6,4 +6,5 @@ public sealed record DragDropHandlerInfo(
     string RegistryPath,
     string AppliesTo,
     string? DllPath,
-    string? Publisher);
+    string? Publisher,
+    string? RegistryKeyName = null);

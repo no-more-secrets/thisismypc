@@ -28,7 +28,7 @@ public sealed class ShellViewModelTests
         TaskbarSettings? taskbar = null) =>
         new(
             ExplorerPreferences: prefs ?? TestPreferences,
-            Taskbar: taskbar ?? new TaskbarSettings(1, true, false),
+            Taskbar: taskbar ?? new TaskbarSettings(1, true, false, false),
             NotificationSettings: []);
 
     [Fact]
@@ -38,7 +38,7 @@ public sealed class ShellViewModelTests
         var registryService = new Fakes.FakeRegistryService();
         var vm = new ShellViewModel(MakeScanData(), pendingService, registryService);
 
-        Assert.Equal(2, vm.ExplorerSettings.Count);
+        Assert.Equal(3, vm.ExplorerSettings.Count); // 2 preferences + command bar toggle
     }
 
     [Fact]
@@ -88,7 +88,7 @@ public sealed class ShellViewModelTests
     {
         var pendingService = new PendingChangesService();
         var registryService = new Fakes.FakeRegistryService();
-        var scanData = MakeScanData(taskbar: new TaskbarSettings(0, true, false));
+        var scanData = MakeScanData(taskbar: new TaskbarSettings(0, true, false, false));
         var vm = new ShellViewModel(scanData, pendingService, registryService);
 
         Assert.True(vm.TaskbarSettings[0].IsEnabled); // alignment 0 = left
@@ -99,7 +99,7 @@ public sealed class ShellViewModelTests
     {
         var pendingService = new PendingChangesService();
         var registryService = new Fakes.FakeRegistryService();
-        var scanData = MakeScanData(taskbar: new TaskbarSettings(1, false, false));
+        var scanData = MakeScanData(taskbar: new TaskbarSettings(1, false, false, false));
         var vm = new ShellViewModel(scanData, pendingService, registryService);
 
         Assert.False(vm.TaskbarSettings[1].IsEnabled); // widgets disabled
@@ -110,20 +110,55 @@ public sealed class ShellViewModelTests
     {
         var pendingService = new PendingChangesService();
         var registryService = new Fakes.FakeRegistryService();
-        var scanData = MakeScanData(taskbar: new TaskbarSettings(1, true, true));
+        var scanData = MakeScanData(taskbar: new TaskbarSettings(1, true, true, false));
         var vm = new ShellViewModel(scanData, pendingService, registryService);
 
         Assert.True(vm.TaskbarSettings[2].IsEnabled); // classic menu enabled
     }
 
     [Fact]
-    public void Empty_preferences_produces_no_explorer_settings()
+    public void Empty_preferences_produces_command_bar_toggle_only()
     {
         var pendingService = new PendingChangesService();
         var registryService = new Fakes.FakeRegistryService();
         var scanData = MakeScanData(prefs: []);
         var vm = new ShellViewModel(scanData, pendingService, registryService);
 
-        Assert.Empty(vm.ExplorerSettings);
+        Assert.Single(vm.ExplorerSettings); // command bar toggle is always present
+        Assert.Equal("Use classic command bar", vm.ExplorerSettings[0].Label);
+    }
+
+    [Fact]
+    public void Command_bar_toggle_appears_in_explorer_settings()
+    {
+        var pendingService = new PendingChangesService();
+        var registryService = new Fakes.FakeRegistryService();
+        var vm = new ShellViewModel(MakeScanData(), pendingService, registryService);
+
+        var commandBarToggle = vm.ExplorerSettings[^1]; // last explorer setting
+        Assert.Equal("Use classic command bar", commandBarToggle.Label);
+        Assert.Contains("classic", commandBarToggle.Description, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Command_bar_toggle_reflects_scan_state_enabled()
+    {
+        var pendingService = new PendingChangesService();
+        var registryService = new Fakes.FakeRegistryService();
+        var scanData = MakeScanData(taskbar: new TaskbarSettings(1, true, false, true));
+        var vm = new ShellViewModel(scanData, pendingService, registryService);
+
+        Assert.True(vm.ExplorerSettings[^1].IsEnabled); // classic command bar enabled
+    }
+
+    [Fact]
+    public void Command_bar_toggle_reflects_scan_state_disabled()
+    {
+        var pendingService = new PendingChangesService();
+        var registryService = new Fakes.FakeRegistryService();
+        var scanData = MakeScanData(taskbar: new TaskbarSettings(1, true, false, false));
+        var vm = new ShellViewModel(scanData, pendingService, registryService);
+
+        Assert.False(vm.ExplorerSettings[^1].IsEnabled); // modern command bar (default)
     }
 }

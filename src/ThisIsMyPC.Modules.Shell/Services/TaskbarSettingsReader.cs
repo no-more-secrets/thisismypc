@@ -24,6 +24,9 @@ public sealed class TaskbarSettingsReader
         var classicMenuResult = _registryService.KeyExists(ShellRegistryPaths.ClassicContextMenuKeyPath);
         var classicContextMenu = classicMenuResult.IsSuccess && classicMenuResult.Value!;
 
-        return new TaskbarSettings(alignment, widgetsEnabled, classicContextMenu);
+        var commandBarResult = _registryService.KeyExists(ShellRegistryPaths.CommandBarKeyPath);
+        var classicCommandBar = commandBarResult.IsSuccess && commandBarResult.Value!;
+
+        return new TaskbarSettings(alignment, widgetsEnabled, classicContextMenu, classicCommandBar);
     }
 }

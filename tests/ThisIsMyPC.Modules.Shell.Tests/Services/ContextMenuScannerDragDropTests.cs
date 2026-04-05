@@ -101,6 +101,23 @@ public sealed class ContextMenuScannerDragDropTests
     }
 
     [Fact]
+    public void DragDropHandler_RegistryKeyName_propagated()
+    {
+        var fake = new FakeShellExtensionService();
+        fake.AddDragDropHandler(new DragDropHandlerInfo(
+            "7-Zip Shell Extension", "{23170F69-40C1-278A-1000-000100020000}",
+            @"HKCR\*\shellex\DragDropHandlers\7-Zip", "All files",
+            null, null,
+            RegistryKeyName: "7-Zip"));
+
+        var scanner = new ContextMenuScanner(fake);
+        var result = scanner.Scan();
+
+        Assert.Single(result);
+        Assert.Equal("7-Zip", result[0].RegistryKeyName);
+    }
+
+    [Fact]
     public void Scan_includes_both_COM_and_DragDrop_handlers()
     {
         var fake = new FakeShellExtensionService();

@@ -9,6 +9,8 @@ public sealed class FakeExplorerRestartService : IExplorerRestartService
     public bool ShouldSucceed { get; set; } = true;
     public string? FailureMessage { get; set; }
 
+    public bool RefreshWasCalled { get; private set; }
+
     public Task<OperationResult<bool>> RestartExplorerAsync()
     {
         WasCalled = true;
@@ -22,9 +24,16 @@ public sealed class FakeExplorerRestartService : IExplorerRestartService
         return Task.FromResult(result);
     }
 
+    public Task<OperationResult<bool>> RefreshExplorerViewsAsync()
+    {
+        RefreshWasCalled = true;
+        return Task.FromResult(OperationResult<bool>.Success(true));
+    }
+
     public void Reset()
     {
         WasCalled = false;
+        RefreshWasCalled = false;
         ShouldSucceed = true;
         FailureMessage = null;
     }

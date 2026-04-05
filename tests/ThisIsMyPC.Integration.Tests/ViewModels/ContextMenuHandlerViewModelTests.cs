@@ -555,6 +555,49 @@ public sealed class ContextMenuHandlerViewModelTests : IDisposable
         Assert.Null(vm.ToggleDisabledTooltip);
     }
 
+    [Fact]
+    public void DragDropHandler_toggle_is_disabled()
+    {
+        var handler = new ContextMenuHandler(
+            Name: "7-Zip Drag-Drop",
+            Clsid: "{DD-1234}",
+            RegistryPath: @"HKCR\*\shellex\DragDropHandlers\7-Zip",
+            AppliesTo: "All files",
+            DllPath: null,
+            Publisher: null,
+            IsEnabled: true,
+            HandlerType: HandlerType.DragDropHandler);
+
+        var vm = new ContextMenuHandlerViewModel(handler, _pendingService);
+        _disposables.Add(vm);
+
+        Assert.False(vm.IsToggleEnabled);
+        Assert.NotNull(vm.ToggleDisabledTooltip);
+        Assert.Contains("uninstalling", vm.ToggleDisabledTooltip);
+    }
+
+    [Fact]
+    public async Task DragDropHandler_toggle_does_not_stage_changes()
+    {
+        var handler = new ContextMenuHandler(
+            Name: "7-Zip Drag-Drop",
+            Clsid: "{DD-5678}",
+            RegistryPath: @"HKCR\*\shellex\DragDropHandlers\7-Zip",
+            AppliesTo: "All files",
+            DllPath: null,
+            Publisher: null,
+            IsEnabled: true,
+            HandlerType: HandlerType.DragDropHandler);
+
+        var vm = new ContextMenuHandlerViewModel(handler, _pendingService);
+        _disposables.Add(vm);
+
+        vm.IsEnabled = false;
+        await Task.Delay(350);
+
+        Assert.Equal(0, _pendingService.PendingCount);
+    }
+
     // === Task 4 (AC #5) Verification: Dual-registration cross-reference ===
 
     [Fact]

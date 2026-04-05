@@ -7,8 +7,9 @@ namespace ThisIsMyPC.App.ViewModels;
 
 public partial class ShellViewModel : ViewModelBase
 {
-    private const string AdvancedKeyPath = @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced";
-    private const string ClassicContextMenuClsidKeyPath = @"HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}";
+    private static readonly string AdvancedKeyPath = Modules.Shell.ShellRegistryPaths.AdvancedKeyPath;
+    private static readonly string ClassicContextMenuKeyPath = Modules.Shell.ShellRegistryPaths.ClassicContextMenuKeyPath;
+    private static readonly string CommandBarKeyPath = Modules.Shell.ShellRegistryPaths.CommandBarKeyPath;
 
     public ObservableCollection<ShellSettingViewModel> ExplorerSettings { get; } = [];
     public ObservableCollection<ShellSettingViewModel> TaskbarSettings { get; } = [];
@@ -28,8 +29,22 @@ public partial class ShellViewModel : ViewModelBase
                 readRegistryState: () => ReadExplorerPrefFromRegistry(registryService, capturedPref)));
         }
 
-        // Taskbar settings
+        // Command bar style (Explorer visual, not a DWord preference — CLSID override)
         var taskbar = scanData.Taskbar;
+        ExplorerSettings.Add(new ShellSettingViewModel(
+            label: "Use classic command bar",
+            description: "Show the classic ribbon/command bar instead of the modern Windows 11 toolbar in File Explorer (requires Explorer restart)",
+            systemPath: CommandBarKeyPath,
+            isEnabled: taskbar.ClassicCommandBar,
+            pendingChangesService: pendingChangesService,
+            changeFactory: enable => TaskbarChangeFactory.CreateCommandBarToggle(taskbar, enable),
+            readRegistryState: () =>
+            {
+                var result = registryService.KeyExists(CommandBarKeyPath);
+                return result.IsSuccess && result.Value;
+            }));
+
+        // Taskbar settings
 
         TaskbarSettings.Add(new ShellSettingViewModel(
             label: "Taskbar alignment (Left)",
@@ -60,13 +75,13 @@ public partial class ShellViewModel : ViewModelBase
         TaskbarSettings.Add(new ShellSettingViewModel(
             label: "Classic context menu",
             description: "Use Windows 10-style full context menu instead of the compact Windows 11 menu (requires Explorer restart)",
-            systemPath: $@"{ClassicContextMenuClsidKeyPath}\InprocServer32",
+            systemPath: ClassicContextMenuKeyPath,
             isEnabled: taskbar.ClassicContextMenu,
             pendingChangesService: pendingChangesService,
             changeFactory: enable => TaskbarChangeFactory.CreateClassicContextMenuToggle(taskbar, enable),
             readRegistryState: () =>
             {
-                var result = registryService.KeyExists($@"{ClassicContextMenuClsidKeyPath}\InprocServer32");
+                var result = registryService.KeyExists(ClassicContextMenuKeyPath);
                 return result.IsSuccess && result.Value;
             }));
     }

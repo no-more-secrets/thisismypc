@@ -167,7 +167,8 @@ public sealed class ShellExtensionService : IShellExtensionService
                         cleanClsid = handlerName;
                     }
 
-                    // Resolve CLSID display name
+                    // Resolve CLSID display name (preserve original key name for registry view)
+                    var registryKeyName = resolvedName;
                     var clsidDisplayName = ResolveClsidDisplayName(cleanClsid);
                     if (clsidDisplayName is not null)
                         resolvedName = clsidDisplayName;
@@ -191,7 +192,8 @@ public sealed class ShellExtensionService : IShellExtensionService
                         RegistryPath: handlerKeyPath,
                         AppliesTo: appliesTo,
                         DllPath: dllPath,
-                        Publisher: publisher));
+                        Publisher: publisher,
+                        RegistryKeyName: registryKeyName));
                 }
             }
 

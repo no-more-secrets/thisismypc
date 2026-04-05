@@ -304,8 +304,8 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
         if (_suppressStaging)
             return;
 
-        // Modern packaged handlers cannot be toggled
-        if (_handler.HandlerType == HandlerType.ModernPackaged)
+        // Modern packaged and drag-drop handlers cannot be toggled
+        if (_handler.HandlerType is HandlerType.ModernPackaged or HandlerType.DragDropHandler)
             return;
 
         _debounceCts?.Cancel();

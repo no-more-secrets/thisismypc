@@ -93,4 +93,28 @@ public sealed class TaskbarSettingsReaderTests
 
         Assert.False(result.ClassicContextMenu);
     }
+
+    [Fact]
+    public void Read_returns_classic_command_bar_enabled_when_key_exists()
+    {
+        _registry.SetDWord(AdvancedKeyPath, "TaskbarAl", 1);
+        _registry.SetDWord(AdvancedKeyPath, "TaskbarDa", 1);
+        _registry.AddKey(ShellRegistryPaths.CommandBarKeyPath);
+
+        var result = _sut.Read();
+
+        Assert.True(result.ClassicCommandBar);
+    }
+
+    [Fact]
+    public void Read_returns_classic_command_bar_disabled_when_key_absent()
+    {
+        _registry.SetDWord(AdvancedKeyPath, "TaskbarAl", 1);
+        _registry.SetDWord(AdvancedKeyPath, "TaskbarDa", 1);
+        // Command bar key not set
+
+        var result = _sut.Read();
+
+        Assert.False(result.ClassicCommandBar);
+    }
 }

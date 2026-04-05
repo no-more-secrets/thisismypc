@@ -116,4 +116,20 @@
     <Style Selector="Border.pending-modify">
         <Setter Property="Background" Value="{StaticResource WarningMutedBrush}" />
     </Style>
+
+    <!-- Notification bar: restart (amber warning) -->
+    <Style Selector="Border.notification-restart">
+        <Setter Property="BorderBrush" Value="{StaticResource WarningBrush}" />
+    </Style>
+    <Style Selector="TextBlock.notification-restart">
+        <Setter Property="Foreground" Value="{StaticResource WarningBrush}" />
+    </Style>
+
+    <!-- Notification bar: refresh (green success — softer than restart) -->
+    <Style Selector="Border.notification-refresh">
+        <Setter Property="BorderBrush" Value="{StaticResource SuccessBrush}" />
+    </Style>
+    <Style Selector="TextBlock.notification-refresh">
+        <Setter Property="Foreground" Value="{StaticResource SuccessBrush}" />
+    </Style>
 </Styles>

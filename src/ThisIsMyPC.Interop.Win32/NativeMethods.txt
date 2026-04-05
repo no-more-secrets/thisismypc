@@ -1,3 +1,4 @@
 FindWindow
 GetWindowThreadProcessId
 PostMessage
+SHChangeNotify

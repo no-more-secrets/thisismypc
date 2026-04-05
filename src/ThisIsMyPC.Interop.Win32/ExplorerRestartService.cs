@@ -2,6 +2,7 @@ using System.Diagnostics;
 using ThisIsMyPC.Core.Results;
 using ThisIsMyPC.Core.Services;
 using Windows.Win32;
+using Windows.Win32.UI.Shell;
 
 namespace ThisIsMyPC.Interop.Win32;
 
@@ -9,7 +10,8 @@ public sealed class ExplorerRestartService : IExplorerRestartService
 {
     private const uint WM_QUIT = 0x0012;
     private static readonly TimeSpan GracefulTimeout = TimeSpan.FromSeconds(5);
-    private static readonly TimeSpan ShellInitDelay = TimeSpan.FromSeconds(2);
+    private static readonly TimeSpan ShellRecoveryTimeout = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan ShellPollInterval = TimeSpan.FromMilliseconds(250);
 
     public async Task<OperationResult<bool>> RestartExplorerAsync()
     {
@@ -63,8 +65,12 @@ public sealed class ExplorerRestartService : IExplorerRestartService
                 UseShellExecute = false,
             });
 
-            // 7. Wait for shell to initialize
-            await Task.Delay(ShellInitDelay).ConfigureAwait(false);
+            // 7. Poll for Shell_TrayWnd to reappear (shell is ready when taskbar is back)
+            var recovered = await WaitForShellRecoveryAsync(ShellRecoveryTimeout).ConfigureAwait(false);
+            if (!recovered)
+            {
+                Debug.WriteLine("Shell_TrayWnd did not reappear within timeout — Explorer may be starting slowly");
+            }
 
             return OperationResult<bool>.Success(true);
         }
@@ -75,6 +81,43 @@ public sealed class ExplorerRestartService : IExplorerRestartService
                 ErrorCategory.ServiceUnavailable,
                 ex);
         }
+    }
+
+    public async Task<OperationResult<bool>> RefreshExplorerViewsAsync()
+    {
+        try
+        {
+            await Task.Run(() =>
+            {
+                unsafe
+                {
+                    PInvoke.SHChangeNotify(SHCNE_ID.SHCNE_ASSOCCHANGED, SHCNF_FLAGS.SHCNF_IDLIST, null, null);
+                }
+            }).ConfigureAwait(false);
+
+            return OperationResult<bool>.Success(true);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"SHChangeNotify failed: {ex.Message}");
+            return OperationResult<bool>.Failure(
+                $"Failed to refresh Explorer views: {ex.Message}",
+                ErrorCategory.ServiceUnavailable, ex);
+        }
+    }
+
+    private static async Task<bool> WaitForShellRecoveryAsync(TimeSpan timeout)
+    {
+        var start = Stopwatch.GetTimestamp();
+        while (Stopwatch.GetElapsedTime(start) < timeout)
+        {
+            var trayHandle = PInvoke.FindWindow("Shell_TrayWnd", null);
+            if (!trayHandle.IsNull)
+                return true;
+
+            await Task.Delay(ShellPollInterval).ConfigureAwait(false);
+        }
+        return false;
     }
 
     private static Process? GetProcessFromWindow(Windows.Win32.Foundation.HWND hwnd)

@@ -6,8 +6,8 @@ namespace ThisIsMyPC.Modules.Shell.Tests.Changes;
 
 public sealed class TaskbarChangeFactoryTests
 {
-    private static TaskbarSettings MakeTaskbar(int alignment = 1, bool widgets = true, bool classicMenu = false) =>
-        new(alignment, widgets, classicMenu);
+    private static TaskbarSettings MakeTaskbar(int alignment = 1, bool widgets = true, bool classicMenu = false, bool classicCommandBar = false) =>
+        new(alignment, widgets, classicMenu, classicCommandBar);
 
     [Fact]
     public void CreateAlignmentChange_left_to_center()
@@ -93,7 +93,7 @@ public sealed class TaskbarChangeFactoryTests
         Assert.Equal("Disabled", change.BeforeDisplay);
         Assert.Equal("Enabled", change.AfterDisplay);
         Assert.Equal(ChangeCategory.Enable, change.Category);
-        Assert.Equal(RestartRequirement.None, change.RestartRequirement);
+        Assert.Equal(RestartRequirement.ExplorerRestart, change.RestartRequirement);
     }
 
     [Fact]
@@ -107,7 +107,7 @@ public sealed class TaskbarChangeFactoryTests
         Assert.Equal("Enabled", change.BeforeDisplay);
         Assert.Equal("Disabled", change.AfterDisplay);
         Assert.Equal(ChangeCategory.Disable, change.Category);
-        Assert.Equal(RestartRequirement.None, change.RestartRequirement);
+        Assert.Equal(RestartRequirement.ExplorerRestart, change.RestartRequirement);
     }
 
     [Fact]
@@ -117,5 +117,42 @@ public sealed class TaskbarChangeFactoryTests
         var change = TaskbarChangeFactory.CreateClassicContextMenuToggle(taskbar, enable: true);
 
         Assert.Equal(ShellRegistryPaths.ClassicContextMenuKeyPath, change.SystemLocation);
+    }
+
+    [Fact]
+    public void CreateCommandBarToggle_enable()
+    {
+        var taskbar = MakeTaskbar(classicCommandBar: false);
+        var change = TaskbarChangeFactory.CreateCommandBarToggle(taskbar, enable: true);
+
+        Assert.Equal("classic-command-bar", change.SettingId);
+        Assert.Equal(ShellRegistryPaths.AbsentValue, change.BeforeValue);
+        Assert.Equal("", change.AfterValue);
+        Assert.Equal("Modern toolbar", change.BeforeDisplay);
+        Assert.Equal("Classic ribbon", change.AfterDisplay);
+        Assert.Equal(ChangeCategory.Enable, change.Category);
+        Assert.Equal(RestartRequirement.ExplorerRestart, change.RestartRequirement);
+    }
+
+    [Fact]
+    public void CreateCommandBarToggle_disable()
+    {
+        var taskbar = MakeTaskbar(classicCommandBar: true);
+        var change = TaskbarChangeFactory.CreateCommandBarToggle(taskbar, enable: false);
+
+        Assert.Equal("", change.BeforeValue);
+        Assert.Equal(ShellRegistryPaths.AbsentValue, change.AfterValue);
+        Assert.Equal("Classic ribbon", change.BeforeDisplay);
+        Assert.Equal("Modern toolbar", change.AfterDisplay);
+        Assert.Equal(ChangeCategory.Disable, change.Category);
+    }
+
+    [Fact]
+    public void CreateCommandBarToggle_system_location_uses_shared_constant()
+    {
+        var taskbar = MakeTaskbar();
+        var change = TaskbarChangeFactory.CreateCommandBarToggle(taskbar, enable: true);
+
+        Assert.Equal(ShellRegistryPaths.CommandBarKeyPath, change.SystemLocation);
     }
 }

@@ -66,10 +66,19 @@ public sealed class ShellModule : IModule
     {
         try
         {
-            // Special case: classic context menu toggle (key presence-based)
+            // CLSID InprocServer32 override toggles (key presence-based, not value-based)
             if (change.SystemLocation == ShellRegistryPaths.ClassicContextMenuKeyPath)
             {
-                return Task.FromResult(ApplyClassicContextMenuChange(change));
+                return Task.FromResult(ApplyClsidOverride(change,
+                    ShellRegistryPaths.ClassicContextMenuClsidKeyPath,
+                    ShellRegistryPaths.ClassicContextMenuKeyPath));
+            }
+
+            if (change.SystemLocation == ShellRegistryPaths.CommandBarKeyPath)
+            {
+                return Task.FromResult(ApplyClsidOverride(change,
+                    ShellRegistryPaths.CommandBarClsidKeyPath,
+                    ShellRegistryPaths.CommandBarKeyPath));
             }
 
             var result = change.ValueType switch
@@ -123,18 +132,17 @@ public sealed class ShellModule : IModule
         return _registryService.WriteExpandString(keyPath, valueName, change.AfterValue ?? string.Empty);
     }
 
-    private OperationResult<bool> ApplyClassicContextMenuChange(ChangeDescriptor change)
+    private OperationResult<bool> ApplyClsidOverride(ChangeDescriptor change, string clsidKeyPath, string inprocKeyPath)
     {
         if (change.AfterValue == ShellRegistryPaths.AbsentValue)
         {
-            // Disable: delete the CLSID key tree
-            var parentKeyPath = ShellRegistryPaths.ClassicContextMenuClsidKeyPath;
-            return _registryService.DeleteKey(parentKeyPath, recursive: true);
+            // Disable override: delete the CLSID key tree (restores default behavior)
+            return _registryService.DeleteKey(clsidKeyPath, recursive: true);
         }
         else
         {
-            // Enable: create the InprocServer32 key with empty Default value
-            return _registryService.WriteString(ShellRegistryPaths.ClassicContextMenuKeyPath, string.Empty, string.Empty);
+            // Enable override: create InprocServer32 key with empty Default value (nullifies the COM class)
+            return _registryService.WriteString(inprocKeyPath, string.Empty, string.Empty);
         }
     }
 

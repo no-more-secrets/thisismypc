@@ -80,6 +80,9 @@ public partial class MainWindowViewModel : ViewModelBase
     private string _restartNotificationMessage = string.Empty;
 
     [ObservableProperty]
+    private bool _isRestartActionAvailable;
+
+    [ObservableProperty]
     private bool _isRestartingExplorer;
 
     public MainWindowViewModel(
@@ -302,6 +305,7 @@ public partial class MainWindowViewModel : ViewModelBase
             if (result.IsSuccess)
             {
                 IsRestartNotificationVisible = false;
+                IsRestartActionAvailable = false;
                 SetStatus("Explorer restarted successfully", StatusSeverity.Success);
             }
             else
@@ -379,8 +383,19 @@ public partial class MainWindowViewModel : ViewModelBase
                 if (result.RequiredRestarts.Contains(RestartRequirement.ExplorerRestart))
                 {
                     RestartNotificationMessage = "Explorer restart required for changes to take effect. Open file explorer windows may close.";
+                    IsRestartActionAvailable = true;
                     IsRestartNotificationVisible = true;
                     SetStatus("Changes applied — Explorer restart needed", StatusSeverity.Warning);
+                }
+                else if (result.RequiredRestarts.Contains(RestartRequirement.ExplorerRefresh))
+                {
+                    // Fire-and-forget: trigger SHChangeNotify to refresh Explorer views
+                    _ = _explorerRestartService.RefreshExplorerViewsAsync();
+
+                    RestartNotificationMessage = "Explorer preferences updated — open windows may need F5 to refresh";
+                    IsRestartActionAvailable = false;
+                    IsRestartNotificationVisible = true;
+                    SetStatus("Changes applied — Explorer refresh may be needed", StatusSeverity.Success);
                 }
                 else
                 {

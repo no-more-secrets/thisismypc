@@ -142,6 +142,16 @@ public sealed class ContextMenuViewModelSummaryTests : IDisposable
         Assert.Empty(_vm.ClassicMenuBannerText);
     }
 
+    [Fact]
+    public void IsClassicMenuActive_false_when_shim_key_has_non_empty_default()
+    {
+        var registry = new ClassicMenuFakeRegistry(shimKeyExists: true, shimValueEmpty: false);
+        _vm = new ContextMenuViewModel([], _pendingService, registry);
+
+        Assert.False(_vm.IsClassicMenuActive);
+        Assert.Empty(_vm.ClassicMenuBannerText);
+    }
+
     // === Task 8.5: Content-inspecting handler detection tests ===
 
     [Fact]
@@ -210,10 +220,14 @@ public sealed class ContextMenuViewModelSummaryTests : IDisposable
 
         public OperationResult<string> ReadString(string keyPath, string valueName)
         {
-            if (keyPath.Contains("{86ca1aa0", StringComparison.OrdinalIgnoreCase) && valueName == string.Empty)
+            if (keyPath.Contains("{86ca1aa0", StringComparison.OrdinalIgnoreCase) && valueName.Length == 0)
+            {
+                if (!_shimKeyExists)
+                    return OperationResult<string>.Failure("Not found", ErrorCategory.NotFound);
                 return _shimValueEmpty
                     ? OperationResult<string>.Success(string.Empty)
-                    : OperationResult<string>.Failure("Not found", ErrorCategory.NotFound);
+                    : OperationResult<string>.Success(@"C:\Windows\System32\windows.storage.dll");
+            }
             return OperationResult<string>.Failure("Not found", ErrorCategory.NotFound);
         }
 

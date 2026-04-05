@@ -59,6 +59,28 @@ public static class TaskbarChangeFactory
             AfterDisplay = enable ? "Enabled" : "Disabled",
             ValueType = ChangeValueType.Registry_String,
             Category = enable ? ChangeCategory.Enable : ChangeCategory.Disable,
+            RestartRequirement = RestartRequirement.ExplorerRestart,
+        };
+    }
+
+    public static ChangeDescriptor CreateCommandBarToggle(TaskbarSettings current, bool enable)
+    {
+        // Same CLSID InprocServer32 override pattern as classic context menu
+        // Enable = create key with empty Default (disable modern command bar → show classic ribbon)
+        // Disable = delete key (restore modern command bar)
+        return new ChangeDescriptor
+        {
+            ModuleId = ModuleId,
+            SettingId = "classic-command-bar",
+            DisplayName = "Classic command bar",
+            SystemLocation = ShellRegistryPaths.CommandBarKeyPath,
+            BeforeValue = current.ClassicCommandBar ? "" : ShellRegistryPaths.AbsentValue,
+            AfterValue = enable ? "" : ShellRegistryPaths.AbsentValue,
+            BeforeDisplay = current.ClassicCommandBar ? "Classic ribbon" : "Modern toolbar",
+            AfterDisplay = enable ? "Classic ribbon" : "Modern toolbar",
+            ValueType = ChangeValueType.Registry_String,
+            Category = enable ? ChangeCategory.Enable : ChangeCategory.Disable,
+            RestartRequirement = RestartRequirement.ExplorerRestart,
         };
     }
 }

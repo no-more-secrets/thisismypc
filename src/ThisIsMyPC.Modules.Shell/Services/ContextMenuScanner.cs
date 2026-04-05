@@ -145,6 +145,10 @@ public sealed class ContextMenuScanner
             var first = entries[0];
             var allRegistryPaths = entries.Select(e => e.RegistryPath).ToList();
             var allScopes = entries.Select(e => e.AppliesTo).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            var pathEnabledStates = entries.ToDictionary(
+                e => e.RegistryPath,
+                e => true,
+                StringComparer.OrdinalIgnoreCase);
 
             handlers.Add(new ContextMenuHandler(
                 Name: first.Name,
@@ -157,7 +161,9 @@ public sealed class ContextMenuScanner
                 Classification: ContextMenuHandlerClassifier.Classify(first.Clsid, first.DllPath, first.Publisher),
                 AllRegistryPaths: allRegistryPaths,
                 AllScopes: allScopes,
-                HandlerType: HandlerType.DragDropHandler));
+                PathEnabledStates: pathEnabledStates,
+                HandlerType: HandlerType.DragDropHandler,
+                RegistryKeyName: first.RegistryKeyName));
         }
 
         return handlers;
