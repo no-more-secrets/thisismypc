@@ -29,7 +29,7 @@
                 <!-- Toggle switch on the right -->
                 <ToggleSwitch DockPanel.Dock="Right"
                               IsChecked="{Binding IsEnabled}"
-                              IsEnabled="{Binding !IsInactive, FallbackValue=True}"
+                              IsEnabled="{Binding IsToggleEnabled, FallbackValue=True}"
                               VerticalAlignment="Top"
                               Margin="16,0,0,0" />
 
@@ -54,7 +54,7 @@
                                Foreground="{StaticResource TextTertiaryBrush}"
                                FontStyle="Italic"
                                TextWrapping="Wrap"
-                               IsVisible="{Binding InactiveReason, FallbackValue='', Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                               IsVisible="{Binding InactiveReason, FallbackValue={x:False}, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
                     <!-- Warning text (Critical/System handlers — hidden when inactive) -->
                     <TextBlock Text="{Binding WarningText}"
@@ -67,7 +67,7 @@
                     <TextBlock Text="{Binding DisableMethodText, FallbackValue=''}"
                                FontSize="11"
                                Foreground="{StaticResource WarningBrush}"
-                               IsVisible="{Binding DisableMethodText, FallbackValue='', Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                               IsVisible="{Binding DisableMethodText, FallbackValue={x:False}, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                     <Button Content="Migrate to Blocked List"
                             Command="{Binding MigrateCommand, FallbackValue={x:Null}}"
                             IsVisible="{Binding CanMigrate, FallbackValue=False}"

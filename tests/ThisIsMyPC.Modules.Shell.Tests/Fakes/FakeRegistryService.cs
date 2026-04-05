@@ -134,6 +134,8 @@ public sealed class FakeRegistryService : IRegistryService
 
     public OperationResult<bool> DeleteKey(string keyPath, bool recursive = false)
     {
+        if (_deleteFailures.TryGetValue(keyPath, out var deleteError))
+            return OperationResult<bool>.Failure($"Access denied: {keyPath}", deleteError);
         if (recursive)
         {
             // Remove all child keys and their values

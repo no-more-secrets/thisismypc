@@ -10,17 +10,23 @@ public sealed class ContextMenuScanner
     private readonly IContextMenuProbe? _contextMenuProbe;
     private readonly IStaticVerbService? _staticVerbService;
     private readonly IModernPackagedHandlerService? _modernPackagedService;
+    private readonly ProgIdResolver? _progIdResolver;
+    private readonly FileTypeVerbService? _fileTypeVerbService;
 
     public ContextMenuScanner(
         IShellExtensionService shellExtensionService,
         IContextMenuProbe? contextMenuProbe = null,
         IStaticVerbService? staticVerbService = null,
-        IModernPackagedHandlerService? modernPackagedService = null)
+        IModernPackagedHandlerService? modernPackagedService = null,
+        ProgIdResolver? progIdResolver = null,
+        FileTypeVerbService? fileTypeVerbService = null)
     {
         _shellExtensionService = shellExtensionService;
         _contextMenuProbe = contextMenuProbe;
         _staticVerbService = staticVerbService;
         _modernPackagedService = modernPackagedService;
+        _progIdResolver = progIdResolver;
+        _fileTypeVerbService = fileTypeVerbService;
     }
 
     public IReadOnlyList<ContextMenuHandler> Scan()
@@ -50,6 +56,100 @@ public sealed class ContextMenuScanner
         }
 
         // Remove internal shell verbs that never produce visible menu entries
+        handlers.RemoveAll(InternalHandlerFilter.ShouldHide);
+
+        return handlers;
+    }
+
+    /// <summary>
+    /// Scans a specific file extension's ProgID chain for static verbs and COM handlers.
+    /// Returns handlers ready for display in the Per File Type tab.
+    /// </summary>
+    public IReadOnlyList<ContextMenuHandler> ScanFileType(string extension)
+    {
+        if (_progIdResolver is null || _fileTypeVerbService is null)
+            return [];
+
+        var resolveResult = _progIdResolver.Resolve(extension);
+        if (!resolveResult.IsSuccess)
+            return [];
+
+        var progIdEntries = resolveResult.Value!;
+        var handlers = new List<ContextMenuHandler>();
+
+        // Static verbs from ProgID chain
+        var verbsResult = _fileTypeVerbService.ScanVerbs(progIdEntries);
+        if (verbsResult.IsSuccess)
+        {
+            foreach (var entry in verbsResult.Value!)
+            {
+                var classification = ContextMenuHandlerClassifier.ClassifyStaticVerb(
+                    entry.VerbName, entry.CommandLine, entry.DelegateExecuteClsid);
+
+                var displayName = entry.MuiVerb ?? entry.VerbName;
+
+                var verbInfo = new StaticVerbInfo(
+                    VerbName: entry.VerbName,
+                    MuiVerb: entry.MuiVerb,
+                    Icon: entry.Icon,
+                    Position: entry.Position,
+                    IsExtended: entry.IsExtended,
+                    CommandLine: entry.CommandLine,
+                    DelegateExecuteClsid: entry.DelegateExecuteClsid,
+                    IsLegacyDisabled: entry.IsLegacyDisabled,
+                    AppliesTo: entry.AppliesTo,
+                    HasLuaShield: entry.HasLuaShield,
+                    IsProgrammaticAccessOnly: entry.IsProgrammaticAccessOnly);
+
+                handlers.Add(new ContextMenuHandler(
+                    Name: displayName,
+                    Clsid: string.Empty,
+                    RegistryPath: entry.RegistryPath,
+                    AppliesTo: entry.Scope,
+                    DllPath: null,
+                    Publisher: null,
+                    IsEnabled: !entry.IsLegacyDisabled,
+                    Classification: classification,
+                    AllRegistryPaths: [entry.RegistryPath],
+                    AllScopes: [entry.Scope],
+                    PathEnabledStates: new Dictionary<string, bool> { [entry.RegistryPath] = !entry.IsLegacyDisabled },
+                    HandlerType: HandlerType.StaticVerb,
+                    VerbInfo: verbInfo));
+            }
+        }
+
+        // COM handlers from ProgID chain
+        var comResult = _fileTypeVerbService.ScanComHandlers(progIdEntries);
+        if (comResult.IsSuccess)
+        {
+            var blockedClsids = _shellExtensionService.GetBlockedClsids();
+
+            foreach (var comHandler in comResult.Value!)
+            {
+                var classification = ContextMenuHandlerClassifier.Classify(
+                    comHandler.Clsid, comHandler.DllPath, null);
+                var isBlockedList = blockedClsids.Contains(comHandler.Clsid);
+                var isEnabled = comHandler.IsEnabled && !isBlockedList;
+
+                var displayName = KnownHandlerDisplayNames.GetDisplayName(comHandler.Clsid) ?? comHandler.Name;
+
+                handlers.Add(new ContextMenuHandler(
+                    Name: displayName,
+                    Clsid: comHandler.Clsid,
+                    RegistryPath: comHandler.RegistryPath,
+                    AppliesTo: comHandler.Scope,
+                    DllPath: comHandler.DllPath,
+                    Publisher: null,
+                    IsEnabled: isEnabled,
+                    Classification: classification,
+                    AllRegistryPaths: [comHandler.RegistryPath],
+                    AllScopes: [comHandler.Scope],
+                    HandlerType: HandlerType.ComHandler,
+                    DisableMethod: isBlockedList ? DisableMethod.BlockedList : DisableMethod.None));
+            }
+        }
+
+        // Filter internal verbs
         handlers.RemoveAll(InternalHandlerFilter.ShouldHide);
 
         return handlers;

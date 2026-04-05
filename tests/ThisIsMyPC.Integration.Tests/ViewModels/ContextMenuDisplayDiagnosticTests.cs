@@ -31,12 +31,15 @@ public sealed class ContextMenuDisplayDiagnosticTests : IDisposable
         // === Scan real system ===
         var staticVerbService = new StaticVerbService(_registry, ShellRegistryPaths.StaticVerbScopePaths);
         var comService = new ShellExtensionService(_registry);
-        var scanner = new ContextMenuScanner(comService, staticVerbService: staticVerbService);
+        var progIdResolver = new ProgIdResolver(_registry);
+        var fileTypeVerbService = new FileTypeVerbService(_registry);
+        var scanner = new ContextMenuScanner(comService, staticVerbService: staticVerbService,
+            progIdResolver: progIdResolver, fileTypeVerbService: fileTypeVerbService);
         var handlers = scanner.Scan();
 
         // === Build VMs exactly as the app does ===
         var pending = new FakePendingChangesService();
-        using var vm = new ContextMenuViewModel(handlers, pending, _registry);
+        using var vm = new ContextMenuViewModel(handlers, pending, _registry, scanner);
 
         // === Dump each tab ===
         DumpTab("FILE", vm.FileHandlers);
@@ -137,6 +140,64 @@ public sealed class ContextMenuDisplayDiagnosticTests : IDisposable
                 _output.WriteLine($"         InactiveWhy:  {h.InactiveReason}");
 
             _output.WriteLine("");
+        }
+    }
+
+    /// <summary>
+    /// Scans specific file extensions and dumps all per-file-type handlers.
+    /// Use this to verify that per-ProgID scanning finds the right entries.
+    /// Run: dotnet test --filter "Display_per_file_type_state" --logger "console;verbosity=detailed"
+    /// </summary>
+    [Fact]
+    public void Display_per_file_type_state()
+    {
+        var staticVerbService = new StaticVerbService(_registry, ShellRegistryPaths.StaticVerbScopePaths);
+        var comService = new ShellExtensionService(_registry);
+        var progIdResolver = new ProgIdResolver(_registry);
+        var fileTypeVerbService = new FileTypeVerbService(_registry);
+        var scanner = new ContextMenuScanner(comService, staticVerbService: staticVerbService,
+            progIdResolver: progIdResolver, fileTypeVerbService: fileTypeVerbService);
+
+        foreach (var ext in new[] { ".png", ".txt", ".exe", ".pdf" })
+        {
+            _output.WriteLine($"============================================================");
+            _output.WriteLine($"=== PER FILE TYPE: {ext} ===");
+            _output.WriteLine($"============================================================");
+
+            // Show ProgID chain
+            var chainResult = progIdResolver.Resolve(ext);
+            if (chainResult.IsSuccess)
+            {
+                _output.WriteLine($"  ProgID chain:");
+                foreach (var entry in chainResult.Value!)
+                    _output.WriteLine($"    [{entry.Source,-25}] {entry.ProgId} → {entry.KeyPath}");
+                _output.WriteLine("");
+            }
+
+            var handlers = scanner.ScanFileType(ext);
+            _output.WriteLine($"  Handlers: {handlers.Count}");
+            _output.WriteLine("");
+
+            foreach (var h in handlers)
+            {
+                var typeBadge = h.HandlerType == HandlerType.StaticVerb ? "Static Verb" : "COM Handler";
+                _output.WriteLine($"  [{typeBadge,-12}] {h.Name}");
+                _output.WriteLine($"       Scope: {h.AppliesTo}");
+                _output.WriteLine($"       Path:  {h.RegistryPath}");
+                if (!string.IsNullOrEmpty(h.Clsid))
+                    _output.WriteLine($"       CLSID: {h.Clsid}");
+                if (h.VerbInfo is { } vi)
+                {
+                    var parts = new List<string>();
+                    if (vi.CommandLine is not null) parts.Add($"Cmd: {vi.CommandLine}");
+                    if (vi.DelegateExecuteClsid is not null) parts.Add($"DE: {vi.DelegateExecuteClsid}");
+                    if (vi.IsExtended) parts.Add("Shift-only");
+                    if (vi.IsProgrammaticAccessOnly) parts.Add("Hidden");
+                    if (parts.Count > 0)
+                        _output.WriteLine($"       Verb:  {string.Join(" | ", parts)}");
+                }
+                _output.WriteLine("");
+            }
         }
     }
 

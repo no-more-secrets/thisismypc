@@ -11,6 +11,7 @@ public enum ContextMenuTab
     Desktop,
     Misc,
     Multi,
+    PerFileType,
 }
 
 public enum MiscSurfaceGroup

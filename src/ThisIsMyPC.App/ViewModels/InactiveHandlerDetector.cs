@@ -28,39 +28,31 @@ internal sealed class InactiveHandlerDetector
     /// </summary>
     public (bool IsInactive, string? Reason) Check(ContextMenuHandlerViewModel vm)
     {
-        // COM handlers — check by CLSID
-        return vm.Clsid.ToUpperInvariant() switch
+        // COM handlers — check by CLSID (case-insensitive)
+        var clsid = vm.Clsid.ToUpperInvariant();
+        return clsid switch
         {
-            // EFS Encryption Context Menu — handler exists but doesn't surface a menu entry on Win11.
-            // Encryption is available via Properties > Advanced or cipher.exe.
             "{A470F8CF-A1E8-4F65-8335-227475AA5C46}" =>
                 (true, "EFS encryption is available but this handler no longer adds a context menu entry on Windows 11. Use file Properties > Advanced to encrypt."),
 
-            // Work Folders
             "{E61BF828-5E63-4287-BEF1-60B1A4FDE0E3}" when _workFoldersUnconfigured =>
                 (true, "Work Folders is not configured. Set up Work Folders in Settings > Accounts to enable sync options."),
 
-            // Client-Side Caching / Make available offline
             "{474C98EE-CF3D-41F5-80E3-4AAB0AB04301}" when _offlineFilesDisabled =>
                 (true, "Offline Files is disabled. Enable it in Control Panel > Sync Center to use offline file caching."),
 
-            // OneDrive sync overlay — COM handler doesn't produce menu entries on Win11
             "{CB3D0F55-BC2C-4C1A-85ED-23ED75B5106B}" =>
                 (true, "OneDrive uses modern shell integration for menu entries. This legacy COM handler has no visible effect."),
 
-            // Adobe Creative Cloud sync overlay
             "{2A118EB5-5797-4F5E-8B3D-F4ECBA3C98E4}" =>
                 (true, "Adobe Creative Cloud sync overlay. No visible context menu entry — only provides folder sync status."),
 
-            // Pin to taskbar — only appears on executables
             "{90AA3A4E-1CBA-4233-B8BB-535773D48449}" =>
                 (true, "Only appears when right-clicking executable (.exe) files, not general files or folders."),
 
-            // Enhanced Storage — only for IEEE 1667 encrypted USB
             "{2854F705-3548-414C-A113-93E27C808C85}" =>
                 (true, "Only appears on drives that support Enhanced Storage (encrypted USB with IEEE 1667)."),
 
-            // Desktop slideshow — only when slideshow wallpaper active
             "{0BF754AA-C967-445C-AB3D-D8FDA9BAE7EF}" when _slideshowInactive =>
                 (true, "Only appears on the desktop when wallpaper is set to slideshow mode."),
 

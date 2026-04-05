@@ -36,6 +36,8 @@ public static class ShellRegistryPaths
     {
         if (hkcrPath.StartsWith("HKCR\\", StringComparison.OrdinalIgnoreCase))
             return @"HKCU\Software\Classes\" + hkcrPath[5..];
+        if (hkcrPath.StartsWith("HKEY_CLASSES_ROOT\\", StringComparison.OrdinalIgnoreCase))
+            return @"HKCU\Software\Classes\" + hkcrPath[18..];
         return hkcrPath;
     }
 

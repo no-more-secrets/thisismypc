@@ -146,6 +146,37 @@
                         </StackPanel>
                     </ScrollViewer>
                 </TabItem>
+                <!-- Per File Type Tab -->
+                <TabItem>
+                    <TabItem.Header>
+                        <TextBlock Text="Per File Type" FontSize="13" />
+                    </TabItem.Header>
+                    <StackPanel Spacing="8" Margin="0,8,0,0">
+                        <TextBlock Text="Select a file extension to see its specific context menu entries"
+                                   FontSize="12"
+                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                   FontStyle="Italic" />
+                        <AutoCompleteBox ItemsSource="{Binding AvailableExtensions}"
+                                         SelectedItem="{Binding SelectedExtension, Mode=TwoWay}"
+                                         Watermark="Type an extension (e.g., .png)"
+                                         FilterMode="Contains"
+                                         MinimumPrefixLength="1"
+                                         MaxDropDownHeight="300"
+                                         Margin="0,0,0,8" />
+                        <ProgressBar IsIndeterminate="True"
+                                     IsVisible="{Binding IsFileTypeScanning}"
+                                     Height="2"
+                                     Margin="0,0,0,4" />
+                        <TextBlock Text="Select a file extension above to scan for registered context menu entries"
+                                   FontSize="12"
+                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                   FontStyle="Italic"
+                                   IsVisible="{Binding !PerFileTypeHandlers.Count}" />
+                        <ItemsControl ItemsSource="{Binding PerFileTypeHandlers}"
+                                      ItemTemplate="{StaticResource ToggleSettingRowTemplate}" />
+                    </StackPanel>
+                </TabItem>
+
             </TabControl>
 
         </StackPanel>

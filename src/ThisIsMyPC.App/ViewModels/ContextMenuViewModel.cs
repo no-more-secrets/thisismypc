@@ -1,9 +1,12 @@
 using System.Collections.ObjectModel;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ThisIsMyPC.Core.Services;
+using ThisIsMyPC.Interop.Win32.Registry;
 using ThisIsMyPC.Modules.Shell.Changes;
 using ThisIsMyPC.Modules.Shell.Models;
+using ThisIsMyPC.Modules.Shell.Services;
 
 namespace ThisIsMyPC.App.ViewModels;
 
@@ -12,6 +15,8 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
     // Backing store for handler type filtering — populated once, used to repopulate collections
     private readonly List<(ContextMenuHandlerViewModel Vm, HashSet<ContextMenuTab> Tabs)> _allHandlerEntries = [];
     private readonly IPendingChangesService _pendingChangesService;
+    private readonly IRegistryService _registryService;
+    private readonly ContextMenuScanner? _scanner;
 
     public ObservableCollection<ContextMenuHandlerViewModel> FileHandlers { get; } = [];
     public ObservableCollection<ContextMenuHandlerViewModel> FolderHandlers { get; } = [];
@@ -19,6 +24,18 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
     public ObservableCollection<ContextMenuHandlerViewModel> DesktopHandlers { get; } = [];
     public ObservableCollection<ContextMenuHandlerViewModel> MiscHandlers { get; } = [];
     public ObservableCollection<ContextMenuHandlerViewModel> MultiHandlers { get; } = [];
+
+    // Per File Type tab
+    public ObservableCollection<ContextMenuHandlerViewModel> PerFileTypeHandlers { get; } = [];
+
+    [ObservableProperty]
+    private IReadOnlyList<string> _availableExtensions = [];
+
+    [ObservableProperty]
+    private string? _selectedExtension;
+
+    [ObservableProperty]
+    private bool _isFileTypeScanning;
 
     // Misc tab sub-groups by surface
     public ObservableCollection<ContextMenuHandlerViewModel> DriveMiscHandlers { get; } = [];
@@ -68,9 +85,12 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
     public ContextMenuViewModel(
         IReadOnlyList<ContextMenuHandler> handlers,
         IPendingChangesService pendingChangesService,
-        IRegistryService registryService)
+        IRegistryService registryService,
+        ContextMenuScanner? scanner = null)
     {
         _pendingChangesService = pendingChangesService;
+        _registryService = registryService;
+        _scanner = scanner;
 
         // Detect classic context menu shim
         var shimKeyResult = registryService.KeyExists(Modules.Shell.ShellRegistryPaths.ClassicContextMenuKeyPath);
@@ -85,6 +105,15 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
             : string.Empty;
 
         BuildContextMenuHandlerTabs(handlers, pendingChangesService, registryService);
+
+        // Discover file extensions with custom context menu registrations
+        if (scanner is not null)
+        {
+            var discovery = new FileExtensionDiscovery(registryService);
+            var extResult = discovery.DiscoverExtensions();
+            if (extResult.IsSuccess)
+                AvailableExtensions = extResult.Value!;
+        }
     }
 
     private void BuildContextMenuHandlerTabs(
@@ -172,6 +201,8 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
 
     private void PopulateCollections()
     {
+        Dispatcher.UIThread.VerifyAccess();
+
         FileHandlers.Clear();
         FolderHandlers.Clear();
         FolderBackgroundHandlers.Clear();
@@ -187,6 +218,14 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
         var orphanFilterActive = IsOrphanFilterActive;
         var orphanTotal = 0;
 
+        // Accumulate into temp lists to avoid sort notification storm
+        var tmpFile = new List<ContextMenuHandlerViewModel>();
+        var tmpFolder = new List<ContextMenuHandlerViewModel>();
+        var tmpFolderBg = new List<ContextMenuHandlerViewModel>();
+        var tmpDesktop = new List<ContextMenuHandlerViewModel>();
+        var tmpMulti = new List<ContextMenuHandlerViewModel>();
+        var tmpMisc = new List<ContextMenuHandlerViewModel>();
+
         foreach (var (vm, tabs) in _allHandlerEntries)
         {
             if (currentTypeFilter is not null && vm.HandlerType != currentTypeFilter)
@@ -199,21 +238,21 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
 
             if (tabs.Contains(ContextMenuTab.Multi))
             {
-                MultiHandlers.Add(vm);
+                tmpMulti.Add(vm);
                 continue;
             }
 
             if (tabs.Contains(ContextMenuTab.File))
-                FileHandlers.Add(vm);
+                tmpFile.Add(vm);
             if (tabs.Contains(ContextMenuTab.Folder))
-                FolderHandlers.Add(vm);
+                tmpFolder.Add(vm);
             if (tabs.Contains(ContextMenuTab.FolderBackground))
-                FolderBackgroundHandlers.Add(vm);
+                tmpFolderBg.Add(vm);
             if (tabs.Contains(ContextMenuTab.Desktop))
-                DesktopHandlers.Add(vm);
+                tmpDesktop.Add(vm);
             if (tabs.Contains(ContextMenuTab.Misc))
             {
-                MiscHandlers.Add(vm);
+                tmpMisc.Add(vm);
 
                 var collection = vm.MiscGroup switch
                 {
@@ -227,13 +266,13 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
             }
         }
 
-        // Sort inactive entries to the bottom of each collection
-        SortInactiveToBottom(FileHandlers);
-        SortInactiveToBottom(FolderHandlers);
-        SortInactiveToBottom(FolderBackgroundHandlers);
-        SortInactiveToBottom(DesktopHandlers);
-        SortInactiveToBottom(MultiHandlers);
-        SortInactiveToBottom(MiscHandlers);
+        // Add to observable collections sorted: active first, inactive last
+        AddSortedByActive(FileHandlers, tmpFile);
+        AddSortedByActive(FolderHandlers, tmpFolder);
+        AddSortedByActive(FolderBackgroundHandlers, tmpFolderBg);
+        AddSortedByActive(DesktopHandlers, tmpDesktop);
+        AddSortedByActive(MultiHandlers, tmpMulti);
+        AddSortedByActive(MiscHandlers, tmpMisc);
 
         // Count orphans respecting the handler type filter
         if (!orphanFilterActive && currentTypeFilter is null)
@@ -261,6 +300,52 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
         OnPropertyChanged(nameof(MiscHandlerCount));
         OnPropertyChanged(nameof(MultiHandlerCount));
         OnPropertyChanged(nameof(ScanSummary));
+    }
+
+    partial void OnSelectedExtensionChanged(string? value)
+    {
+        // Fire-and-forget async scan (CommunityToolkit.Mvvm doesn't support async partial)
+        _ = ScanFileTypeAsync(value);
+    }
+
+    private async Task ScanFileTypeAsync(string? extension)
+    {
+        // Dispose old per-file-type VMs
+        foreach (var vm in PerFileTypeHandlers)
+            vm.Dispose();
+        PerFileTypeHandlers.Clear();
+
+        if (string.IsNullOrEmpty(extension) || _scanner is null)
+            return;
+
+        IsFileTypeScanning = true;
+        try
+        {
+            // Offload registry reads to thread pool
+            var handlers = await Task.Run(() => _scanner.ScanFileType(extension)).ConfigureAwait(true);
+            var inactiveDetector = new InactiveHandlerDetector(_registryService);
+            var tmpFileType = new List<ContextMenuHandlerViewModel>();
+
+            foreach (var handler in handlers)
+            {
+                Func<bool>? readState = handler.HandlerType switch
+                {
+                    HandlerType.StaticVerb => () => ReadStaticVerbRegistryState(_registryService, handler),
+                    _ => () => ReadHandlerRegistryState(_registryService, handler),
+                };
+                var vm = new ContextMenuHandlerViewModel(handler, _pendingChangesService, readState);
+                var (isInactive, reason) = inactiveDetector.Check(vm);
+                vm.IsInactive = isInactive;
+                vm.InactiveReason = reason;
+                tmpFileType.Add(vm);
+            }
+
+            AddSortedByActive(PerFileTypeHandlers, tmpFileType);
+        }
+        finally
+        {
+            IsFileTypeScanning = false;
+        }
     }
 
     partial void OnHandlerTypeFilterChanged(HandlerType? value) => PopulateCollections();
@@ -298,11 +383,14 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
 
     private bool CanCleanUpAllOrphans() => OrphanCount > 0;
 
-    private static void SortInactiveToBottom(ObservableCollection<ContextMenuHandlerViewModel> collection)
+    private static void AddSortedByActive(
+        ObservableCollection<ContextMenuHandlerViewModel> collection,
+        List<ContextMenuHandlerViewModel> items)
     {
-        var sorted = collection.OrderBy(vm => vm.IsInactive).ToList();
-        collection.Clear();
-        foreach (var vm in sorted)
+        // Add active first, then inactive — avoids clear+re-add notification storm
+        foreach (var vm in items.Where(v => !v.IsInactive))
+            collection.Add(vm);
+        foreach (var vm in items.Where(v => v.IsInactive))
             collection.Add(vm);
     }
 
@@ -364,29 +452,42 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
 
     private static bool ReadStaticVerbRegistryState(IRegistryService registryService, ContextMenuHandler handler)
     {
-        // Static verbs: check LegacyDisable value at each registry path
+        // Static verbs: check LegacyDisable at both HKCR path (real Windows merges HKCU)
+        // and the HKCU overlay path (where we actually write). This ensures the read-back
+        // works both on real Windows (HKCR merge) and in tests (FakeRegistryService, no merge).
         var paths = handler.AllRegistryPaths ?? [handler.RegistryPath];
         foreach (var path in paths)
         {
             var result = registryService.ValueExists(path, "LegacyDisable");
             if (result.IsSuccess && result.Value)
-                return false; // LegacyDisable exists = disabled
+                return false;
+
+            // Also check the HKCU overlay where CreateStaticVerbToggle writes
+            var hkcuPath = Modules.Shell.ShellRegistryPaths.RemapHkcrToHkcu(path);
+            if (hkcuPath != path)
+            {
+                var hkcuResult = registryService.ValueExists(hkcuPath, "LegacyDisable");
+                if (hkcuResult.IsSuccess && hkcuResult.Value)
+                    return false;
+            }
         }
         return true;
     }
 
     public void Dispose()
     {
-        // Dispose all child handler VMs to unsubscribe from PendingChangesService
+        // Dispose all handler VMs including any filtered out of visible collections
         var disposed = new HashSet<ContextMenuHandlerViewModel>(ReferenceEqualityComparer.Instance);
-        foreach (var collection in (ObservableCollection<ContextMenuHandlerViewModel>[])
-            [FileHandlers, FolderHandlers, FolderBackgroundHandlers, DesktopHandlers, MiscHandlers, MultiHandlers])
+        foreach (var (vm, _) in _allHandlerEntries)
         {
-            foreach (var vm in collection)
-            {
-                if (disposed.Add(vm))
-                    vm.Dispose();
-            }
+            if (disposed.Add(vm))
+                vm.Dispose();
+        }
+        // Also dispose per-file-type VMs (not in _allHandlerEntries)
+        foreach (var vm in PerFileTypeHandlers)
+        {
+            if (disposed.Add(vm))
+                vm.Dispose();
         }
     }
 
@@ -395,7 +496,7 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
         // Deduplicate: shared VM instances appear in multiple tab collections
         var seen = new HashSet<ContextMenuHandlerViewModel>(ReferenceEqualityComparer.Instance);
         foreach (var collection in (ObservableCollection<ContextMenuHandlerViewModel>[])
-            [FileHandlers, FolderHandlers, FolderBackgroundHandlers, DesktopHandlers, MiscHandlers, MultiHandlers])
+            [FileHandlers, FolderHandlers, FolderBackgroundHandlers, DesktopHandlers, MiscHandlers, MultiHandlers, PerFileTypeHandlers])
         {
             foreach (var vm in collection)
             {

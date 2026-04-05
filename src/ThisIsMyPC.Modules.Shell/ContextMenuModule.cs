@@ -22,8 +22,11 @@ public sealed class ContextMenuModule : IModule
         _registryService = registryService;
         var staticVerbService = new StaticVerbService(registryService, ShellRegistryPaths.StaticVerbScopePaths);
         var modernPackagedService = new ModernPackagedHandlerService();
+        var progIdResolver = new ProgIdResolver(registryService);
+        var fileTypeVerbService = new FileTypeVerbService(registryService);
         _contextMenuScanner = new ContextMenuScanner(
-            shellExtensionService, contextMenuProbe, staticVerbService, modernPackagedService);
+            shellExtensionService, contextMenuProbe, staticVerbService, modernPackagedService,
+            progIdResolver, fileTypeVerbService);
     }
 
     public ModuleInfo Info { get; } = new(
@@ -141,8 +144,9 @@ public sealed class ContextMenuModule : IModule
         if (!change.SystemLocation.StartsWith("HKCR\\", StringComparison.OrdinalIgnoreCase))
             return result;
 
-        // Orphan cleanup (Delete) must fail honestly — the orphan needs to stay flagged
-        if (change.Category == ChangeCategory.Delete)
+        // Only Disable/Enable (dash-prefix toggles alongside blocked list) get best-effort.
+        // Delete (orphan cleanup) and Modify (migration CLSID restore) must fail honestly.
+        if (change.Category is not (ChangeCategory.Disable or ChangeCategory.Enable))
             return result;
 
         System.Diagnostics.Debug.WriteLine(
