@@ -9,11 +9,16 @@
     <Project Path="src/ThisIsMyPC.Modules.Shell/ThisIsMyPC.Modules.Shell.csproj" />
     <Project Path="src/ThisIsMyPC.Modules.Startup/ThisIsMyPC.Modules.Startup.csproj" />
   </Folder>
+  <Folder Name="/analyzers/">
+    <Project Path="analyzers/ThisIsMyPC.Analyzers/ThisIsMyPC.Analyzers.csproj" />
+  </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/ThisIsMyPC.Analyzers.Tests/ThisIsMyPC.Analyzers.Tests.csproj" />
     <Project Path="tests/ThisIsMyPC.Core.Tests/ThisIsMyPC.Core.Tests.csproj" />
     <Project Path="tests/ThisIsMyPC.Integration.Tests/ThisIsMyPC.Integration.Tests.csproj" />
     <Project Path="tests/ThisIsMyPC.Modules.Power.Tests/ThisIsMyPC.Modules.Power.Tests.csproj" />
     <Project Path="tests/ThisIsMyPC.Modules.Shell.Tests/ThisIsMyPC.Modules.Shell.Tests.csproj" />
     <Project Path="tests/ThisIsMyPC.Modules.Startup.Tests/ThisIsMyPC.Modules.Startup.Tests.csproj" />
+    <Project Path="tests/ThisIsMyPC.Security.Tests/ThisIsMyPC.Security.Tests.csproj" />
   </Folder>
 </Solution>

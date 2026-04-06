@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <NoWarn>CA1707</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <!-- Reference all src assemblies to verify their security attributes via reflection -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\ThisIsMyPC.App\ThisIsMyPC.App.csproj" />
+    <ProjectReference Include="..\..\src\ThisIsMyPC.Core\ThisIsMyPC.Core.csproj" />
+    <ProjectReference Include="..\..\src\ThisIsMyPC.Interop.Com\ThisIsMyPC.Interop.Com.csproj" />
+    <ProjectReference Include="..\..\src\ThisIsMyPC.Interop.Win32\ThisIsMyPC.Interop.Win32.csproj" />
+    <ProjectReference Include="..\..\src\ThisIsMyPC.Interop.Wmi\ThisIsMyPC.Interop.Wmi.csproj" />
+    <ProjectReference Include="..\..\src\ThisIsMyPC.Modules.Power\ThisIsMyPC.Modules.Power.csproj" />
+    <ProjectReference Include="..\..\src\ThisIsMyPC.Modules.Shell\ThisIsMyPC.Modules.Shell.csproj" />
+    <ProjectReference Include="..\..\src\ThisIsMyPC.Modules.Startup\ThisIsMyPC.Modules.Startup.csproj" />
+  </ItemGroup>
+</Project>
