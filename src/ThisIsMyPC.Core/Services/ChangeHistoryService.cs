@@ -12,10 +12,7 @@ public sealed class ChangeHistoryService : IChangeHistoryService
     public ChangeHistoryService(ChangeHistoryRepository repository, string? dbPath = null)
     {
         _repository = repository;
-        _dbPath = dbPath ?? Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "ThisIsMyPC",
-            "history.db");
+        _dbPath = dbPath ?? Path.Combine(AppConstants.DataDirectoryPath, "history.db");
     }
 
     public async Task InitializeAsync()

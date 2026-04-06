@@ -1,0 +1,47 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build and test
+        run: |
+          dotnet build --configuration Release --no-restore
+          dotnet test --configuration Release --no-restore --no-build --filter "Category!=Integration&Category!=Diagnostic"
+
+      - name: Publish NativeAOT
+        run: dotnet publish src/ThisIsMyPC.App/ThisIsMyPC.App.csproj -p:PublishProfile=publish-release
+
+      # TODO: Add code signing step when certificate is procured
+      # - name: Sign binary
+      #   run: signtool sign /f ${{ secrets.CERT_PATH }} /p ${{ secrets.CERT_PASSWORD }} /tr http://timestamp.digicert.com /td sha256 /fd sha256 src/ThisIsMyPC.App/bin/publish/release/ThisIsMyPC.App.exe
+
+      # TODO: Add Velopack packaging when distribution pipeline is ready (Epic 17)
+      # - name: Package with Velopack
+      #   run: vpk pack --packId ThisIsMyPC --packVersion ${{ github.ref_name }} --packDir src/ThisIsMyPC.App/bin/publish/release/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ThisIsMyPC-${{ github.ref_name }}-win-x64
+          path: src/ThisIsMyPC.App/bin/publish/release/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: src/ThisIsMyPC.App/bin/publish/release/*
+          generate_release_notes: true
+          draft: true

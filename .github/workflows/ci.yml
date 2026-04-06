@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+        # TIPC001 Roslyn analyzer runs automatically via Directory.Build.props.
+        # Any [LibraryImport] or [DllImport] missing [DefaultDllImportSearchPaths(System32)]
+        # will fail the build as an error (NFR30).
+
+      - name: Test
+        run: dotnet test --configuration Release --no-restore --no-build --filter "Category!=Integration&Category!=Diagnostic"
+        # Excludes registry-dependent integration tests and diagnostic tests
+        # that require a live Windows system with specific handlers installed.
+        # Security tests, analyzer tests, core tests, and module unit tests all run.

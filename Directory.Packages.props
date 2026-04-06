@@ -28,7 +28,12 @@
 
   <ItemGroup Label="Logging">
     <PackageVersion Include="Serilog" Version="4.3.1" />
+    <PackageVersion Include="Serilog.Formatting.Compact" Version="3.0.0" />
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
+  </ItemGroup>
+
+  <ItemGroup Label="Distribution">
+    <PackageVersion Include="Velopack" Version="0.0.1298" />
   </ItemGroup>
 
   <ItemGroup Label="Analyzers">

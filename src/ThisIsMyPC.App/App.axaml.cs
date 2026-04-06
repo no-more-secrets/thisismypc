@@ -9,11 +9,13 @@ using System.Linq;
 using ThisIsMyPC.App.Services;
 using ThisIsMyPC.App.ViewModels;
 using ThisIsMyPC.App.Views;
+using ThisIsMyPC.Core;
 using ThisIsMyPC.Core.Modules;
 using ThisIsMyPC.Core.Data;
 using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Interop.Win32;
 using ThisIsMyPC.Interop.Win32.Registry;
+using ThisIsMyPC.Interop.Win32.Security;
 using ThisIsMyPC.Interop.Com.Shell;
 using ThisIsMyPC.Modules.Power;
 using ThisIsMyPC.Modules.Shell;
@@ -57,7 +59,13 @@ public partial class App : Application
 
     private static void ConfigureServices(IServiceCollection services)
     {
+        // Installation guard (pre-created in Program.Main)
+        if (Program.InstallGuard is not null)
+            services.AddSingleton<IInstallationGuard>(Program.InstallGuard);
+
         // Interop services
+        services.AddSingleton<ISecurityApi, SecurityApi>();
+        services.AddSingleton<IDataDirectoryGuard, DataDirectoryGuard>();
         services.AddSingleton<IRegistryService, RegistryService>();
         services.AddSingleton<IShellExtensionService, ShellExtensionService>();
         services.AddSingleton<IContextMenuProbe, ContextMenuProbe>();
@@ -70,6 +78,13 @@ public partial class App : Application
         services.AddSingleton<IModule, EnvironmentModule>();
         services.AddSingleton<IModule, StartupModule>();
         services.AddSingleton<IModule, PowerModule>();
+
+        // Update services
+        services.AddSingleton<IUpdateVerifier, AuthenticodeUpdateVerifier>();
+        services.AddSingleton<IUpdateService>(sp =>
+            new VelopackUpdateService(
+                AppConstants.UpdateUrl,
+                sp.GetService<IUpdateVerifier>()));
 
         // Core Services
         services.AddSingleton<IPendingChangesService, PendingChangesService>();
