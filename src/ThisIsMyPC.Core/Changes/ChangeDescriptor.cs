@@ -1,3 +1,5 @@
+using ThisIsMyPC.Core.Enforcement;
+
 namespace ThisIsMyPC.Core.Changes;
 
 public record ChangeDescriptor
@@ -13,4 +15,5 @@ public record ChangeDescriptor
     public required ChangeValueType ValueType { get; init; }
     public ChangeCategory Category { get; init; }
     public RestartRequirement RestartRequirement { get; init; }
+    public SettingEnforcement? Enforcement { get; init; }
 }
