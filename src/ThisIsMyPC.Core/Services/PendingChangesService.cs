@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using ThisIsMyPC.Core.Changes;
+using ThisIsMyPC.Core.Enforcement;
 using ThisIsMyPC.Core.Results;
 
 namespace ThisIsMyPC.Core.Services;
@@ -8,6 +9,12 @@ public sealed class PendingChangesService : IPendingChangesService
 {
     private readonly List<ChangeGroup> _pendingGroups = [];
     private readonly object _lock = new();
+    private readonly IEnforcementExecutor? _enforcementExecutor;
+
+    public PendingChangesService(IEnforcementExecutor? enforcementExecutor = null)
+    {
+        _enforcementExecutor = enforcementExecutor;
+    }
 
     public int PendingCount
     {
@@ -112,11 +119,6 @@ public sealed class PendingChangesService : IPendingChangesService
         ArgumentNullException.ThrowIfNull(applyFunc);
         ArgumentNullException.ThrowIfNull(revertFunc);
 
-        IsApplying = true;
-        OnPropertyChanged(nameof(IsApplying));
-
-        var allApplied = new List<ChangeDescriptor>();
-
         // Snapshot pending groups under lock to avoid mutation during iteration
         List<ChangeGroup> snapshot;
         lock (_lock)
@@ -124,6 +126,27 @@ public sealed class PendingChangesService : IPendingChangesService
             snapshot = [.. _pendingGroups];
         }
 
+        // An enforced change with no executor is a DI misconfiguration — fail before
+        // any change is applied, not mid-batch.
+        if (_enforcementExecutor is null)
+        {
+            var enforced = snapshot
+                .SelectMany(g => g.Changes)
+                .FirstOrDefault(c => c.Enforcement is not null);
+            if (enforced is not null)
+            {
+                throw new InvalidOperationException(
+                    $"Change '{enforced.SettingId}' requires enforcement but no IEnforcementExecutor is configured.");
+            }
+        }
+
+        IsApplying = true;
+        OnPropertyChanged(nameof(IsApplying));
+
+        var allApplied = new List<ChangeDescriptor>();
+
+        try
+        {
         for (var gi = 0; gi < snapshot.Count; gi++)
         {
             var group = snapshot[gi];
@@ -131,7 +154,14 @@ public sealed class PendingChangesService : IPendingChangesService
 
             foreach (var change in group.Changes)
             {
-                var result = await applyFunc(change).ConfigureAwait(false);
+                // Enforcement != null routes through the executor; null goes directly to
+                // the module. No other heuristics (architecture.md L913/L973). The executor
+                // is guaranteed non-null here by the pre-validation above.
+                var result = change.Enforcement is not null
+                    ? ToOperationResult(
+                        await _enforcementExecutor!.ExecuteAsync(change, applyFunc).ConfigureAwait(false),
+                        "Enforcement execution failed")
+                    : await applyFunc(change).ConfigureAwait(false);
 
                 if (result.IsSuccess)
                 {
@@ -143,7 +173,14 @@ public sealed class PendingChangesService : IPendingChangesService
                     var rolledBack = new List<ChangeDescriptor>();
                     for (var i = groupApplied.Count - 1; i >= 0; i--)
                     {
-                        var rollbackResult = await revertFunc(groupApplied[i]).ConfigureAwait(false);
+                        // Mirrors the apply routing exactly — an enforced change must never
+                        // silently degrade to a bare revert (companion services/tasks/GPCache
+                        // would stay mutated).
+                        var rollbackResult = groupApplied[i].Enforcement is not null
+                            ? ToOperationResult(
+                                await _enforcementExecutor!.RevertAsync(groupApplied[i], revertFunc).ConfigureAwait(false),
+                                "Enforcement revert failed")
+                            : await revertFunc(groupApplied[i]).ConfigureAwait(false);
                         if (rollbackResult.IsSuccess)
                         {
                             rolledBack.Add(groupApplied[i]);
@@ -155,19 +192,17 @@ public sealed class PendingChangesService : IPendingChangesService
                         }
                     }
 
-                    // Remove successfully applied groups so pending state is consistent
+                    // Remove successfully applied groups BY IDENTITY so pending state is
+                    // consistent — index-based removal races with Stage/Unstage from the
+                    // UI thread during the awaits above.
+                    var appliedGroupIds = snapshot.Take(gi).Select(g => g.GroupId).ToHashSet();
                     lock (_lock)
                     {
-                        if (gi > 0)
-                        {
-                            _pendingGroups.RemoveRange(0, gi);
-                        }
+                        _pendingGroups.RemoveAll(g => appliedGroupIds.Contains(g.GroupId));
                     }
 
                     OnPropertyChanged(nameof(PendingCount));
                     OnPropertyChanged(nameof(PendingGroups));
-                    IsApplying = false;
-                    OnPropertyChanged(nameof(IsApplying));
 
                     var failureRestarts = allApplied
                         .Select(c => c.RestartRequirement)
@@ -191,15 +226,16 @@ public sealed class PendingChangesService : IPendingChangesService
             allApplied.AddRange(groupApplied);
         }
 
+        // Remove only the groups we actually applied — a group staged while the batch
+        // was running must survive.
+        var snapshotIds = snapshot.Select(g => g.GroupId).ToHashSet();
         lock (_lock)
         {
-            _pendingGroups.Clear();
+            _pendingGroups.RemoveAll(g => snapshotIds.Contains(g.GroupId));
         }
 
         OnPropertyChanged(nameof(PendingCount));
         OnPropertyChanged(nameof(PendingGroups));
-        IsApplying = false;
-        OnPropertyChanged(nameof(IsApplying));
 
         var requiredRestarts = allApplied
             .Select(c => c.RestartRequirement)
@@ -214,7 +250,21 @@ public sealed class PendingChangesService : IPendingChangesService
             RolledBack = [],
             RequiredRestarts = requiredRestarts,
         };
+        }
+        finally
+        {
+            IsApplying = false;
+            OnPropertyChanged(nameof(IsApplying));
+        }
     }
+
+    private static OperationResult<bool> ToOperationResult(
+        Enforcement.EnforcementResult enforcement, string fallbackMessage) =>
+        enforcement.IsSuccess
+            ? OperationResult<bool>.Success(true)
+            : OperationResult<bool>.Failure(
+                enforcement.ErrorMessage ?? fallbackMessage,
+                enforcement.ErrorCategory ?? Results.ErrorCategory.ServiceUnavailable);
 
     private void OnPropertyChanged(string propertyName)
     {
