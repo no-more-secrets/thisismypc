@@ -16,6 +16,7 @@ using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Interop.Win32;
 using ThisIsMyPC.Interop.Win32.Registry;
 using ThisIsMyPC.Interop.Win32.Security;
+using ThisIsMyPC.Interop.Win32.Services;
 using ThisIsMyPC.Interop.Com.Shell;
 using ThisIsMyPC.Modules.Power;
 using ThisIsMyPC.Modules.Shell;
@@ -71,6 +72,7 @@ public partial class App : Application
         services.AddSingleton<IContextMenuProbe, ContextMenuProbe>();
         services.AddSingleton<IExplorerRestartService, ExplorerRestartService>();
         services.AddSingleton<IEnvironmentBroadcaster, EnvironmentBroadcaster>();
+        services.AddSingleton<IServiceControlService, ServiceControlService>();
 
         // Modules (explicit DI registration, NativeAOT-safe)
         services.AddSingleton<IModule, ShellModule>();

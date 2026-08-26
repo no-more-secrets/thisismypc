@@ -7,5 +7,8 @@ public enum ErrorCategory
     ServiceUnavailable,
     ProtectedByPolicy,
     RequiresRestart,
-    HardwareNotPresent
+    HardwareNotPresent,
+    EnforcementBlocked,
+    SkuRestricted,
+    OwnerModeRequired
 }
