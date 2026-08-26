@@ -87,6 +87,7 @@ public partial class App : Application
                 sp.GetService<IUpdateVerifier>()));
 
         // Core Services
+        services.AddSingleton<ICapabilityDetector, CapabilityDetector>();
         services.AddSingleton<IPendingChangesService, PendingChangesService>();
         services.AddSingleton<ChangeHistoryRepository>();
         services.AddSingleton<IChangeHistoryService, ChangeHistoryService>();
