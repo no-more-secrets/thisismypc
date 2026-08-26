@@ -13,6 +13,7 @@ using ThisIsMyPC.Core;
 using ThisIsMyPC.Core.Modules;
 using ThisIsMyPC.Core.Packages;
 using ThisIsMyPC.Core.Data;
+using ThisIsMyPC.Core.Enforcement;
 using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Interop.Win32;
 using ThisIsMyPC.Interop.Win32.Registry;
@@ -93,6 +94,8 @@ public partial class App : Application
 
         // Core Services
         services.AddSingleton<ICapabilityDetector, CapabilityDetector>();
+        // PendingChangesService's optional ctor param resolves this because it is registered.
+        services.AddSingleton<IEnforcementExecutor, EnforcementExecutor>();
         services.AddSingleton<IPendingChangesService, PendingChangesService>();
         services.AddSingleton<ChangeHistoryRepository>();
         services.AddSingleton<IChangeHistoryService, ChangeHistoryService>();
