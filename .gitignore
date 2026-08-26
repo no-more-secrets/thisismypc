@@ -8,11 +8,11 @@ x86/
 publish/
 builds/
 
-# NuGet
+# NuGet (root-level packages folder only — source dirs named Packages/ are code)
 *.nupkg
 *.snupkg
-**/[Pp]ackages/*
-!**/[Pp]ackages/build/
+/[Pp]ackages/*
+!/[Pp]ackages/build/
 
 # Visual Studio
 .vs/
