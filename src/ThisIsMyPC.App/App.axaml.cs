@@ -15,6 +15,7 @@ using ThisIsMyPC.Core.Packages;
 using ThisIsMyPC.Core.Data;
 using ThisIsMyPC.Core.Enforcement;
 using ThisIsMyPC.Core.Services;
+using ThisIsMyPC.Core.Sets;
 using ThisIsMyPC.Interop.Win32;
 using ThisIsMyPC.Interop.Win32.Registry;
 using ThisIsMyPC.Interop.Win32.Security;
@@ -46,6 +47,8 @@ public partial class App : Application
             ConfigureServices(services);
             _serviceProvider = services.BuildServiceProvider();
 
+            LogSetDiscovery(_serviceProvider.GetRequiredService<ISetProvider>());
+
             desktop.MainWindow = new MainWindow
             {
                 DataContext = _serviceProvider.GetRequiredService<MainWindowViewModel>(),
@@ -59,6 +62,16 @@ public partial class App : Application
 #if DEBUG
         this.AttachDevTools();
 #endif
+    }
+
+    private static void LogSetDiscovery(ISetProvider setProvider)
+    {
+        // Until Story 8.4 bundles built-in sets, the missing built-in directory warning
+        // is expected on every install.
+        var load = setProvider.LoadSets();
+        Serilog.Log.Information("Set discovery: {Count} set(s) loaded", load.Sets.Count);
+        foreach (var warning in load.Warnings)
+            Serilog.Log.Warning("Set discovery: {Warning}", warning);
     }
 
     private static void ConfigureServices(IServiceCollection services)
@@ -97,6 +110,9 @@ public partial class App : Application
         // PendingChangesService's optional ctor param resolves this because it is registered.
         services.AddSingleton<IEnforcementExecutor, EnforcementExecutor>();
         services.AddSingleton<IPendingChangesService, PendingChangesService>();
+        services.AddSingleton<ISetProvider>(_ => new SetProvider(
+            Path.Combine(AppContext.BaseDirectory, "sets"),
+            Path.Combine(AppConstants.DataDirectoryPath, "sets")));
         services.AddSingleton<ChangeHistoryRepository>();
         services.AddSingleton<IChangeHistoryService, ChangeHistoryService>();
 
