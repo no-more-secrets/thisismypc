@@ -53,6 +53,20 @@
                               ItemTemplate="{StaticResource ToggleSettingRowTemplate}" />
             </StackPanel>
 
+            <!-- Gaming & Accessibility Section -->
+            <StackPanel Spacing="8">
+                <TextBlock Text="Gaming &amp; Accessibility"
+                           FontSize="18"
+                           FontWeight="SemiBold"
+                           Foreground="{StaticResource TextPrimaryBrush}" />
+                <TextBlock Text="Game DVR, GPU scheduling, and accidental accessibility shortcut prompts"
+                           FontSize="13"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Margin="0,0,0,4" />
+                <ItemsControl ItemsSource="{Binding GamingAndAccessibilitySettings}"
+                              ItemTemplate="{StaticResource ToggleSettingRowTemplate}" />
+            </StackPanel>
+
         </StackPanel>
     </ScrollViewer>
 </UserControl>

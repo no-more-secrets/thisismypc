@@ -85,6 +85,56 @@ public sealed class AnnoyancesSettingsReader
                 keyPath: AnnoyancesRegistryPaths.SystemPoliciesKeyPath,
                 valueName: "EnableActivityFeed",
                 section: AnnoyanceSection.AdvertisingAndTracking),
+
+            ReadPreference(
+                id: "game-dvr",
+                displayName: "Disable Game DVR background recording",
+                description: "Stops the Xbox Game Bar's always-on background video encoding, a common cause of micro-stutter in games (requires Explorer restart).",
+                keyPath: AnnoyancesRegistryPaths.GameDvrKeyPath,
+                valueName: "AppCaptureEnabled",
+                section: AnnoyanceSection.GamingAndAccessibility,
+                restart: RestartRequirement.ExplorerRestart),
+
+            ReadPreference(
+                id: "auto-game-mode",
+                displayName: "Disable Auto Game Mode",
+                description: "Stops Windows from automatically throttling background apps (Discord, OBS, browsers) whenever a full-screen game is detected.",
+                keyPath: AnnoyancesRegistryPaths.GameBarKeyPath,
+                valueName: "AutoGameModeEnabled",
+                section: AnnoyanceSection.GamingAndAccessibility),
+
+            ReadPreference(
+                id: "hags",
+                displayName: "Disable Hardware-Accelerated GPU Scheduling (HAGS)",
+                description: "HAGS moves GPU task scheduling from the CPU onto the GPU itself. It is required for DLSS 3 Frame Generation but can cause stutter or instability in older games. A reboot is required for the change to take effect.",
+                keyPath: AnnoyancesRegistryPaths.GraphicsDriversKeyPath,
+                valueName: "HwSchMode",
+                section: AnnoyanceSection.GamingAndAccessibility,
+                suppressedValue: "1",
+                defaultValue: "2",
+                restart: RestartRequirement.Reboot),
+
+            ReadPreference(
+                id: "sticky-keys-shortcut",
+                displayName: "Suppress the StickyKeys shortcut",
+                description: "Stops pressing Shift five times from popping the StickyKeys prompt (which minimizes full-screen games). StickyKeys itself stays available from Settings.",
+                keyPath: AnnoyancesRegistryPaths.StickyKeysKeyPath,
+                valueName: "Flags",
+                section: AnnoyanceSection.GamingAndAccessibility,
+                valueType: ChangeValueType.Registry_String,
+                suppressedValue: "506",
+                defaultValue: "510"),
+
+            ReadPreference(
+                id: "filter-keys-shortcut",
+                displayName: "Suppress the FilterKeys shortcut",
+                description: "Stops holding Shift for eight seconds from popping the FilterKeys prompt mid-typing. FilterKeys itself stays available from Settings.",
+                keyPath: AnnoyancesRegistryPaths.KeyboardResponseKeyPath,
+                valueName: "Flags",
+                section: AnnoyanceSection.GamingAndAccessibility,
+                valueType: ChangeValueType.Registry_String,
+                suppressedValue: "122",
+                defaultValue: "126"),
         ];
     }
 
@@ -164,15 +214,26 @@ public sealed class AnnoyancesSettingsReader
 
     private AnnoyancePreference ReadPreference(
         string id, string displayName, string description, string keyPath, string valueName,
-        AnnoyanceSection section = AnnoyanceSection.ScoobeAndWelcome)
+        AnnoyanceSection section = AnnoyanceSection.ScoobeAndWelcome,
+        ChangeValueType valueType = ChangeValueType.Registry_DWord,
+        string suppressedValue = "0",
+        string defaultValue = "1",
+        RestartRequirement restart = RestartRequirement.None)
     {
-        // These annoyances all share the same shape: DWORD, 1 = annoyance active
-        // (the Windows default when the value is missing), 0 = suppressed.
-        const string suppressedValue = "0";
-        const string defaultValue = "1";
-
-        var result = _registryService.ReadDWord(keyPath, valueName);
-        var currentValue = result.IsSuccess ? result.Value!.ToString() : defaultValue;
+        // Default shape: DWORD, 1 = annoyance active (the Windows default when the value
+        // is missing), 0 = suppressed. HAGS (1/2) and the accessibility Flags strings
+        // override the value type and pair.
+        string currentValue;
+        if (valueType == ChangeValueType.Registry_String)
+        {
+            var read = _registryService.ReadString(keyPath, valueName);
+            currentValue = read.IsSuccess ? read.Value! : defaultValue;
+        }
+        else
+        {
+            var read = _registryService.ReadDWord(keyPath, valueName);
+            currentValue = read.IsSuccess ? read.Value!.ToString() : defaultValue;
+        }
 
         return new AnnoyancePreference(
             Id: id,
@@ -181,11 +242,11 @@ public sealed class AnnoyancesSettingsReader
             Section: section,
             RegistryKeyPath: keyPath,
             RegistryValueName: valueName,
-            ValueType: ChangeValueType.Registry_DWord,
+            ValueType: valueType,
             CurrentValue: currentValue,
             SuppressedValue: suppressedValue,
             DefaultValue: defaultValue,
             IsSuppressed: currentValue == suppressedValue,
-            RestartRequirement: RestartRequirement.None);
+            RestartRequirement: restart);
     }
 }

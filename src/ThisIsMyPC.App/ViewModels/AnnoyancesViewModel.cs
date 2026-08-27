@@ -10,6 +10,7 @@ public partial class AnnoyancesViewModel : ViewModelBase
     public ObservableCollection<ShellSettingViewModel> ScoobeAndWelcomeSettings { get; } = [];
     public ObservableCollection<ShellSettingViewModel> BingAndEdgeSettings { get; } = [];
     public ObservableCollection<ShellSettingViewModel> AdvertisingAndTrackingSettings { get; } = [];
+    public ObservableCollection<ShellSettingViewModel> GamingAndAccessibilitySettings { get; } = [];
 
     public AnnoyancesViewModel(
         AnnoyancesScanData scanData,
@@ -51,6 +52,19 @@ public partial class AnnoyancesViewModel : ViewModelBase
                 isEnabled: captured.IsSuppressed,
                 pendingChangesService: pendingChangesService,
                 changeFactory: suppress => AnnoyanceChangeFactory.CreateDriftFragileToggle(ReadLive(liveReader, captured.Id), suppress),
+                readRegistryState: () => ReadLive(liveReader, captured.Id).IsSuppressed));
+        }
+
+        foreach (var pref in scanData.Preferences.Where(p => p.Section == AnnoyanceSection.GamingAndAccessibility))
+        {
+            var captured = pref;
+            GamingAndAccessibilitySettings.Add(new ShellSettingViewModel(
+                label: captured.DisplayName,
+                description: captured.Description,
+                systemPath: $@"{captured.RegistryKeyPath}\{captured.RegistryValueName}",
+                isEnabled: captured.IsSuppressed,
+                pendingChangesService: pendingChangesService,
+                changeFactory: suppress => AnnoyanceChangeFactory.CreateToggle(ReadLive(liveReader, captured.Id), suppress),
                 readRegistryState: () => ReadLive(liveReader, captured.Id).IsSuppressed));
         }
 

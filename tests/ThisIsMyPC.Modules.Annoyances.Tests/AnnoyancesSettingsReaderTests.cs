@@ -21,14 +21,13 @@ public sealed class AnnoyancesSettingsReaderTests
         Assert.Equal(
             ["scoobe-nags", "welcome-experience", "app-suggestions", "windows-tips",
              "settings-suggestions", "lock-screen-ads", "silent-app-installs", "edge-shortcuts",
-             "advertising-id", "activity-history"],
+             "advertising-id", "activity-history",
+             "game-dvr", "auto-game-mode", "hags", "sticky-keys-shortcut", "filter-keys-shortcut"],
             prefs.Select(p => p.Id));
         Assert.All(
-            prefs.Where(p => p.Id is not "edge-shortcuts" and not "advertising-id" and not "activity-history"),
+            prefs.Take(7),
             p => Assert.Equal(AnnoyanceSection.ScoobeAndWelcome, p.Section));
         Assert.Equal(AnnoyanceSection.BingAndEdge, prefs.Single(p => p.Id == "edge-shortcuts").Section);
-        Assert.All(prefs, p => Assert.Equal(ChangeValueType.Registry_DWord, p.ValueType));
-        Assert.All(prefs, p => Assert.Equal(RestartRequirement.None, p.RestartRequirement));
     }
 
     [Fact]
@@ -38,7 +37,7 @@ public sealed class AnnoyancesSettingsReaderTests
 
         Assert.All(prefs, p =>
         {
-            Assert.Equal("1", p.CurrentValue);
+            Assert.Equal(p.DefaultValue, p.CurrentValue);
             Assert.False(p.IsSuppressed);
         });
     }
@@ -63,10 +62,9 @@ public sealed class AnnoyancesSettingsReaderTests
         Assert.Equal(
             AnnoyancesRegistryPaths.UserProfileEngagementKeyPath,
             prefs.Single(p => p.Id == "scoobe-nags").RegistryKeyPath);
+        // The six remaining ScoobeAndWelcome prefs all live under ContentDeliveryManager
         Assert.All(
-            prefs.Where(p =>
-                p.Id is not "scoobe-nags" and not "edge-shortcuts"
-                and not "advertising-id" and not "activity-history"),
+            prefs.Where(p => p.Section == AnnoyanceSection.ScoobeAndWelcome && p.Id != "scoobe-nags"),
             p => Assert.Equal(AnnoyancesRegistryPaths.ContentDeliveryManagerKeyPath, p.RegistryKeyPath));
     }
 }

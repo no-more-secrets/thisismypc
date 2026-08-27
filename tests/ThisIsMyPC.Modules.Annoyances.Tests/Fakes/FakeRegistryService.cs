@@ -22,6 +22,12 @@ public sealed class FakeRegistryService : IRegistryService
         _keys.Add(keyPath);
     }
 
+    public void SetString(string keyPath, string valueName, string value)
+    {
+        _values[MakeKey(keyPath, valueName)] = value;
+        _keys.Add(keyPath);
+    }
+
     public OperationResult<int> ReadDWord(string keyPath, string valueName)
     {
         if (_values.TryGetValue(MakeKey(keyPath, valueName), out var val) && val is int intVal)

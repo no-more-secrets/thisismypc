@@ -23,6 +23,21 @@ public static class AnnoyancesRegistryPaths
     public const string SystemPoliciesKeyPath =
         @"HKLM\SOFTWARE\Policies\Microsoft\Windows\System";
 
+    public const string GameDvrKeyPath =
+        @"HKCU\Software\Microsoft\Windows\CurrentVersion\GameDVR";
+
+    public const string GameBarKeyPath =
+        @"HKCU\Software\Microsoft\GameBar";
+
+    public const string GraphicsDriversKeyPath =
+        @"HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers";
+
+    public const string StickyKeysKeyPath =
+        @"HKCU\Control Panel\Accessibility\StickyKeys";
+
+    public const string KeyboardResponseKeyPath =
+        @"HKCU\Control Panel\Accessibility\Keyboard Response";
+
     public static (string KeyPath, string ValueName) ParseSystemLocation(string systemLocation)
     {
         var lastSeparator = systemLocation.LastIndexOf('\\');

@@ -398,7 +398,14 @@ public partial class MainWindowViewModel : ViewModelBase
                 await _changeHistoryService.RecordChangesAsync(result).ConfigureAwait(true);
                 IsReviewPanelOpen = false;
 
-                if (result.RequiredRestarts.Contains(RestartRequirement.ExplorerRestart))
+                if (result.RequiredRestarts.Contains(RestartRequirement.Reboot))
+                {
+                    RestartNotificationMessage = "A reboot is required for some changes to take effect.";
+                    IsRestartActionAvailable = false;
+                    IsRestartNotificationVisible = true;
+                    SetStatus("Changes applied — reboot required", StatusSeverity.Warning);
+                }
+                else if (result.RequiredRestarts.Contains(RestartRequirement.ExplorerRestart))
                 {
                     RestartNotificationMessage = "Explorer restart required for changes to take effect. Open file explorer windows may close.";
                     IsRestartActionAvailable = true;

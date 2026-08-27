@@ -57,6 +57,14 @@ public sealed class AnnoyancesModule : IModule
     {
         try
         {
+            var (keyPath, valueName) = AnnoyancesRegistryPaths.ParseSystemLocation(change.SystemLocation);
+
+            if (change.ValueType == ChangeValueType.Registry_String)
+            {
+                return Task.FromResult(
+                    _registryService.WriteString(keyPath, valueName, change.AfterValue ?? string.Empty));
+            }
+
             if (change.ValueType != ChangeValueType.Registry_DWord)
             {
                 return Task.FromResult(OperationResult<bool>.Failure(
@@ -64,7 +72,6 @@ public sealed class AnnoyancesModule : IModule
                     ErrorCategory.ServiceUnavailable));
             }
 
-            var (keyPath, valueName) = AnnoyancesRegistryPaths.ParseSystemLocation(change.SystemLocation);
             if (!int.TryParse(change.AfterValue, out var intValue))
             {
                 return Task.FromResult(OperationResult<bool>.Failure(

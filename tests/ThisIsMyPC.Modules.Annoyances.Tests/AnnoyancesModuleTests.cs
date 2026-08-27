@@ -32,7 +32,7 @@ public sealed class AnnoyancesModuleTests
 
         Assert.True(result.IsSuccess, result.ErrorMessage);
         var scanData = Assert.IsType<AnnoyancesScanData>(result.Value);
-        Assert.Equal(10, scanData.Preferences.Count);
+        Assert.Equal(15, scanData.Preferences.Count);
         Assert.False(scanData.BingSearch.IsSuppressed);
         Assert.Equal(3, scanData.SettingsSuggestedContent.Count);
     }
