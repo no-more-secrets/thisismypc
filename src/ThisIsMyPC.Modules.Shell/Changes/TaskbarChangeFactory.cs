@@ -1,4 +1,5 @@
 using ThisIsMyPC.Core.Changes;
+using ThisIsMyPC.Core.Enforcement;
 using ThisIsMyPC.Modules.Shell.Models;
 
 namespace ThisIsMyPC.Modules.Shell.Changes;
@@ -6,6 +7,13 @@ namespace ThisIsMyPC.Modules.Shell.Changes;
 public static class TaskbarChangeFactory
 {
     private const string ModuleId = "Explorer";
+
+    // The {86ca1aa0} InprocServer32 override exploits undocumented Explorer internals;
+    // informational only — no companion actions.
+    private static readonly SettingEnforcement ShimOverrideEnforcement = new()
+    {
+        ReversionVectors = ["Windows feature updates may restore the modern behavior (undocumented Explorer shim override)"],
+    };
 
     public static ChangeDescriptor CreateAlignmentChange(TaskbarSettings current, int newAlignment)
     {
@@ -60,6 +68,7 @@ public static class TaskbarChangeFactory
             ValueType = ChangeValueType.Registry_String,
             Category = enable ? ChangeCategory.Enable : ChangeCategory.Disable,
             RestartRequirement = RestartRequirement.ExplorerRestart,
+            Enforcement = enable ? ShimOverrideEnforcement : null,
         };
     }
 
@@ -81,6 +90,7 @@ public static class TaskbarChangeFactory
             ValueType = ChangeValueType.Registry_String,
             Category = enable ? ChangeCategory.Enable : ChangeCategory.Disable,
             RestartRequirement = RestartRequirement.ExplorerRestart,
+            Enforcement = enable ? ShimOverrideEnforcement : null,
         };
     }
 }

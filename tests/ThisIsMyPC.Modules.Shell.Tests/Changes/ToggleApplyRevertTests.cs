@@ -15,7 +15,9 @@ namespace ThisIsMyPC.Modules.Shell.Tests.Changes;
 public sealed class ToggleApplyRevertTests
 {
     private readonly FakeRegistryService _registry = new();
-    private readonly PendingChangesService _pendingChanges = new();
+    // Disable-direction toggles carry informational enforcement metadata (Story 26-4),
+    // so applying them requires an executor.
+    private readonly PendingChangesService _pendingChanges = new(new PassthroughEnforcementExecutor());
     private readonly ContextMenuModule _module;
 
     public ToggleApplyRevertTests()

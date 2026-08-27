@@ -1,4 +1,5 @@
 using ThisIsMyPC.Core.Changes;
+using ThisIsMyPC.Core.Enforcement;
 using ThisIsMyPC.Modules.Shell.Models;
 
 namespace ThisIsMyPC.Modules.Shell.Changes;
@@ -6,6 +7,14 @@ namespace ThisIsMyPC.Modules.Shell.Changes;
 public static class ContextMenuChangeFactory
 {
     private const string ModuleId = "Context Menus";
+
+    // Vendors re-register their handlers on update/reinstall; informational only —
+    // no companion actions. Attached only when disabling (restoring vendor state has
+    // no reversion risk).
+    private static readonly SettingEnforcement HandlerReRegistrationEnforcement = new()
+    {
+        ReversionVectors = ["Application updates or reinstalls may re-register this handler"],
+    };
 
     /// <summary>
     /// Creates toggle change descriptors for a context menu handler.
@@ -38,6 +47,7 @@ public static class ContextMenuChangeFactory
                 AfterDisplay = enable ? "Enabled" : "Disabled",
                 ValueType = ChangeValueType.Registry_String,
                 Category = enable ? ChangeCategory.Enable : ChangeCategory.Disable,
+                Enforcement = enable ? null : HandlerReRegistrationEnforcement,
             };
         }).ToList();
     }
@@ -63,6 +73,7 @@ public static class ContextMenuChangeFactory
             ValueType = ChangeValueType.Registry_String,
             Category = enable ? ChangeCategory.Enable : ChangeCategory.Disable,
             RestartRequirement = RestartRequirement.ExplorerRestart,
+            Enforcement = enable ? null : HandlerReRegistrationEnforcement,
         };
     }
 
@@ -88,6 +99,8 @@ public static class ContextMenuChangeFactory
             AfterDisplay = "Blocked",
             ValueType = ChangeValueType.Registry_String,
             Category = ChangeCategory.Disable,
+            // Same end state as CreateBlockedListToggle(disable) — same reversion risk.
+            Enforcement = HandlerReRegistrationEnforcement,
         });
 
         // Remove dash-prefix from each registration path (restore clean CLSID)
@@ -158,6 +171,7 @@ public static class ContextMenuChangeFactory
                 AfterDisplay = enable ? "Enabled" : "Disabled",
                 ValueType = ChangeValueType.Registry_String,
                 Category = enable ? ChangeCategory.Enable : ChangeCategory.Disable,
+                Enforcement = enable ? null : HandlerReRegistrationEnforcement,
             };
         }).ToList();
     }
