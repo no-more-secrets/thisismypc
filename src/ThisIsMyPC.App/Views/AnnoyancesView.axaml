@@ -39,6 +39,20 @@
                               ItemTemplate="{StaticResource ToggleSettingRowTemplate}" />
             </StackPanel>
 
+            <!-- Advertising & Tracking Section -->
+            <StackPanel Spacing="8">
+                <TextBlock Text="Advertising &amp; Tracking"
+                           FontSize="18"
+                           FontWeight="SemiBold"
+                           Foreground="{StaticResource TextPrimaryBrush}" />
+                <TextBlock Text="Quick toggles for the Advertising ID, activity history, and suggested content"
+                           FontSize="13"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Margin="0,0,0,4" />
+                <ItemsControl ItemsSource="{Binding AdvertisingAndTrackingSettings}"
+                              ItemTemplate="{StaticResource ToggleSettingRowTemplate}" />
+            </StackPanel>
+
         </StackPanel>
     </ScrollViewer>
 </UserControl>

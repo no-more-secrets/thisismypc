@@ -9,6 +9,7 @@ public partial class AnnoyancesViewModel : ViewModelBase
 {
     public ObservableCollection<ShellSettingViewModel> ScoobeAndWelcomeSettings { get; } = [];
     public ObservableCollection<ShellSettingViewModel> BingAndEdgeSettings { get; } = [];
+    public ObservableCollection<ShellSettingViewModel> AdvertisingAndTrackingSettings { get; } = [];
 
     public AnnoyancesViewModel(
         AnnoyancesScanData scanData,
@@ -52,6 +53,37 @@ public partial class AnnoyancesViewModel : ViewModelBase
                 changeFactory: suppress => AnnoyanceChangeFactory.CreateDriftFragileToggle(ReadLive(liveReader, captured.Id), suppress),
                 readRegistryState: () => ReadLive(liveReader, captured.Id).IsSuppressed));
         }
+
+        foreach (var pref in scanData.Preferences.Where(p => p.Section == AnnoyanceSection.AdvertisingAndTracking))
+        {
+            var captured = pref;
+            AdvertisingAndTrackingSettings.Add(new ShellSettingViewModel(
+                label: captured.DisplayName,
+                description: captured.Description,
+                systemPath: $@"{captured.RegistryKeyPath}\{captured.RegistryValueName}",
+                isEnabled: captured.IsSuppressed,
+                pendingChangesService: pendingChangesService,
+                changeFactory: suppress => AnnoyanceChangeFactory.CreateToggle(ReadLive(liveReader, captured.Id), suppress),
+                readRegistryState: () => ReadLive(liveReader, captured.Id).IsSuppressed));
+        }
+
+        // Settings suggested content: one toggle, three CDM values in one atomic group
+        const string suggestedContentDescription =
+            "Stops the ad-like \"suggested content\" tiles Microsoft injects into the Settings app. "
+            + "The comprehensive privacy suite with companion service management arrives in the Privacy & Telemetry module.";
+        AdvertisingAndTrackingSettings.Add(new ShellSettingViewModel(
+            label: "Suppress suggested content in Settings",
+            description: suggestedContentDescription,
+            systemPath: $@"{Modules.Annoyances.AnnoyancesRegistryPaths.ContentDeliveryManagerKeyPath}\SubscribedContent-338393Enabled",
+            isEnabled: scanData.SettingsSuggestedContent.All(p => p.IsSuppressed),
+            pendingChangesService: pendingChangesService,
+            groupFactory: suppress => AnnoyanceChangeFactory.CreateGroupToggle(
+                liveReader.ReadSettingsSuggestedContent(),
+                settingId: "settings-suggested-content",
+                displayName: "Suggested content in Settings",
+                description: suggestedContentDescription,
+                suppress),
+            readRegistryState: () => liveReader.ReadSettingsSuggestedContent().All(p => p.IsSuppressed)));
     }
 
     private static AnnoyancePreference ReadLive(

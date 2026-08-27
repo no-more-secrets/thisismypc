@@ -2,4 +2,5 @@ namespace ThisIsMyPC.Modules.Annoyances.Models;
 
 public sealed record AnnoyancesScanData(
     IReadOnlyList<AnnoyancePreference> Preferences,
-    BingSearchState BingSearch);
+    BingSearchState BingSearch,
+    IReadOnlyList<AnnoyancePreference> SettingsSuggestedContent);

@@ -69,6 +69,55 @@ public sealed class AnnoyancesSettingsReader
                 valueName: "SilentInstalledAppsEnabled"),
 
             ReadEdgeShortcutPreference(),
+
+            ReadPreference(
+                id: "advertising-id",
+                displayName: "Disable the Advertising ID",
+                description: "Stops apps from using your per-user Advertising ID to build a cross-app profile of you for targeted ads. The comprehensive privacy suite with companion service management arrives in the Privacy & Telemetry module.",
+                keyPath: AnnoyancesRegistryPaths.AdvertisingInfoKeyPath,
+                valueName: "Enabled",
+                section: AnnoyanceSection.AdvertisingAndTracking),
+
+            ReadPreference(
+                id: "activity-history",
+                displayName: "Disable activity history collection",
+                description: "Stops Windows from collecting your local application activity history (the Timeline/Activity Feed). Full telemetry controls arrive in the Privacy & Telemetry module.",
+                keyPath: AnnoyancesRegistryPaths.SystemPoliciesKeyPath,
+                valueName: "EnableActivityFeed",
+                section: AnnoyanceSection.AdvertisingAndTracking),
+        ];
+    }
+
+    /// <summary>
+    /// The three ContentDeliveryManager values behind "Suggested content in the Settings
+    /// app". Surfaced as ONE toggle (a single atomic group), so they are not in ReadAll.
+    /// </summary>
+    public IReadOnlyList<AnnoyancePreference> ReadSettingsSuggestedContent()
+    {
+        var cdm = AnnoyancesRegistryPaths.ContentDeliveryManagerKeyPath;
+        return
+        [
+            ReadPreference(
+                id: "settings-suggested-content",
+                displayName: "Suggested content in Settings (338393)",
+                description: "Suggested content entry (SubscribedContent-338393).",
+                keyPath: cdm,
+                valueName: "SubscribedContent-338393Enabled",
+                section: AnnoyanceSection.AdvertisingAndTracking),
+            ReadPreference(
+                id: "settings-suggested-content",
+                displayName: "Suggested content in Settings (353694)",
+                description: "Suggested content entry (SubscribedContent-353694).",
+                keyPath: cdm,
+                valueName: "SubscribedContent-353694Enabled",
+                section: AnnoyanceSection.AdvertisingAndTracking),
+            ReadPreference(
+                id: "settings-suggested-content",
+                displayName: "Suggested content in Settings (353696)",
+                description: "Suggested content entry (SubscribedContent-353696).",
+                keyPath: cdm,
+                valueName: "SubscribedContent-353696Enabled",
+                section: AnnoyanceSection.AdvertisingAndTracking),
         ];
     }
 
@@ -114,9 +163,10 @@ public sealed class AnnoyancesSettingsReader
     }
 
     private AnnoyancePreference ReadPreference(
-        string id, string displayName, string description, string keyPath, string valueName)
+        string id, string displayName, string description, string keyPath, string valueName,
+        AnnoyanceSection section = AnnoyanceSection.ScoobeAndWelcome)
     {
-        // All Story 27-1 annoyances share the same shape: DWORD, 1 = annoyance active
+        // These annoyances all share the same shape: DWORD, 1 = annoyance active
         // (the Windows default when the value is missing), 0 = suppressed.
         const string suppressedValue = "0";
         const string defaultValue = "1";
@@ -128,7 +178,7 @@ public sealed class AnnoyancesSettingsReader
             Id: id,
             DisplayName: displayName,
             Description: description,
-            Section: AnnoyanceSection.ScoobeAndWelcome,
+            Section: section,
             RegistryKeyPath: keyPath,
             RegistryValueName: valueName,
             ValueType: ChangeValueType.Registry_DWord,

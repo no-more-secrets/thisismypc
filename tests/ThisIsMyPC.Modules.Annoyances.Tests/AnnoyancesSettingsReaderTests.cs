@@ -20,10 +20,11 @@ public sealed class AnnoyancesSettingsReaderTests
 
         Assert.Equal(
             ["scoobe-nags", "welcome-experience", "app-suggestions", "windows-tips",
-             "settings-suggestions", "lock-screen-ads", "silent-app-installs", "edge-shortcuts"],
+             "settings-suggestions", "lock-screen-ads", "silent-app-installs", "edge-shortcuts",
+             "advertising-id", "activity-history"],
             prefs.Select(p => p.Id));
         Assert.All(
-            prefs.Where(p => p.Id != "edge-shortcuts"),
+            prefs.Where(p => p.Id is not "edge-shortcuts" and not "advertising-id" and not "activity-history"),
             p => Assert.Equal(AnnoyanceSection.ScoobeAndWelcome, p.Section));
         Assert.Equal(AnnoyanceSection.BingAndEdge, prefs.Single(p => p.Id == "edge-shortcuts").Section);
         Assert.All(prefs, p => Assert.Equal(ChangeValueType.Registry_DWord, p.ValueType));
@@ -63,7 +64,9 @@ public sealed class AnnoyancesSettingsReaderTests
             AnnoyancesRegistryPaths.UserProfileEngagementKeyPath,
             prefs.Single(p => p.Id == "scoobe-nags").RegistryKeyPath);
         Assert.All(
-            prefs.Where(p => p.Id is not "scoobe-nags" and not "edge-shortcuts"),
+            prefs.Where(p =>
+                p.Id is not "scoobe-nags" and not "edge-shortcuts"
+                and not "advertising-id" and not "activity-history"),
             p => Assert.Equal(AnnoyancesRegistryPaths.ContentDeliveryManagerKeyPath, p.RegistryKeyPath));
     }
 }

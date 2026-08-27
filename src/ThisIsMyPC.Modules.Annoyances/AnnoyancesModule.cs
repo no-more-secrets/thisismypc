@@ -40,7 +40,8 @@ public sealed class AnnoyancesModule : IModule
             {
                 var scanData = new AnnoyancesScanData(
                     _settingsReader.ReadAll(),
-                    _settingsReader.ReadBingSearch());
+                    _settingsReader.ReadBingSearch(),
+                    _settingsReader.ReadSettingsSuggestedContent());
                 return OperationResult<object>.Success(scanData);
             }
             catch (Exception ex)

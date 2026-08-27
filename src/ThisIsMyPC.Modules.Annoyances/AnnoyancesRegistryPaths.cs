@@ -17,6 +17,12 @@ public static class AnnoyancesRegistryPaths
     public const string EdgeUpdatePoliciesKeyPath =
         @"HKLM\SOFTWARE\Policies\Microsoft\EdgeUpdate";
 
+    public const string AdvertisingInfoKeyPath =
+        @"HKCU\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo";
+
+    public const string SystemPoliciesKeyPath =
+        @"HKLM\SOFTWARE\Policies\Microsoft\Windows\System";
+
     public static (string KeyPath, string ValueName) ParseSystemLocation(string systemLocation)
     {
         var lastSeparator = systemLocation.LastIndexOf('\\');

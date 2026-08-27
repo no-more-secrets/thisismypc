@@ -50,6 +50,32 @@ public static class AnnoyanceChangeFactory
         };
 
     /// <summary>
+    /// One atomic ChangeGroup from several same-polarity preferences surfaced as a single
+    /// toggle (e.g. the three Settings suggested-content values). All descriptors share
+    /// <paramref name="settingId"/> and stay null-enforcement.
+    /// </summary>
+    public static ChangeGroup CreateGroupToggle(
+        IReadOnlyList<AnnoyancePreference> prefs,
+        string settingId,
+        string displayName,
+        string description,
+        bool suppress)
+    {
+        return new ChangeGroup
+        {
+            GroupId = Guid.NewGuid().ToString("N"),
+            DisplayName = displayName,
+            Description = description,
+            // Shared SettingId groups them; per-pref DisplayName keeps each review-panel
+            // row self-describing (rows otherwise differ only by SystemLocation).
+            Changes = prefs.Select(pref => CreateToggle(pref, suppress) with
+            {
+                SettingId = settingId,
+            }).ToList(),
+        };
+    }
+
+    /// <summary>
     /// One atomic ChangeGroup for Bing search: BingSearchEnabled → 0 and
     /// DisableSearchBoxSuggestions → 1 when suppressing (opposite polarities), both
     /// restored to Windows defaults when not. Explorer restart required for the Start
