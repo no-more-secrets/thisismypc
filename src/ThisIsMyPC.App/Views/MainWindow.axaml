@@ -231,6 +231,9 @@
                             <DataTemplate DataType="{x:Type vm:EnvironmentViewModel}">
                                 <views:EnvironmentView />
                             </DataTemplate>
+                            <DataTemplate DataType="{x:Type vm:AnnoyancesViewModel}">
+                                <views:AnnoyancesView />
+                            </DataTemplate>
                         </ContentControl.DataTemplates>
                     </ContentControl>
                     <!-- Placeholder shown when no module view is loaded -->

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <ApplicationManifest>app.manifest</ApplicationManifest>
@@ -30,6 +30,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ThisIsMyPC.Core\ThisIsMyPC.Core.csproj" />
+    <ProjectReference Include="..\ThisIsMyPC.Modules.Annoyances\ThisIsMyPC.Modules.Annoyances.csproj" />
     <ProjectReference Include="..\ThisIsMyPC.Modules.Shell\ThisIsMyPC.Modules.Shell.csproj" />
     <ProjectReference Include="..\ThisIsMyPC.Modules.Startup\ThisIsMyPC.Modules.Startup.csproj" />
     <ProjectReference Include="..\ThisIsMyPC.Modules.Power\ThisIsMyPC.Modules.Power.csproj" />

@@ -164,6 +164,24 @@ public partial class MainWindowViewModel : ViewModelBase
                     }
                 });
             }
+            else if (current?.Module is Modules.Annoyances.AnnoyancesModule)
+            {
+                var scanResult = await current.Module.ScanSystemStateAsync().ConfigureAwait(false);
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    if (scanResult.IsSuccess && scanResult.Value is Modules.Annoyances.Models.AnnoyancesScanData annoyancesData)
+                    {
+                        ContentTitle = current.Module.Info.Name;
+                        ContentDescription = current.Module.Info.Description;
+                        CurrentContent = new AnnoyancesViewModel(annoyancesData, _pendingChangesService, _registryService);
+                    }
+                    else
+                    {
+                        CurrentContent = null;
+                        SetStatus(scanResult.ErrorMessage ?? "Failed to scan annoyance settings", StatusSeverity.Error);
+                    }
+                });
+            }
             else if (current?.Module is EnvironmentModule)
             {
                 var scanResult = await current.Module.ScanSystemStateAsync().ConfigureAwait(false);

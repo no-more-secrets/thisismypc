@@ -96,6 +96,7 @@ public partial class App : Application
         services.AddSingleton<IModule, ContextMenuModule>();
         services.AddSingleton<IModule, EnvironmentModule>();
         services.AddSingleton<IModule, StartupModule>();
+        services.AddSingleton<IModule, ThisIsMyPC.Modules.Annoyances.AnnoyancesModule>();
         services.AddSingleton<IModule, PowerModule>();
 
         // Update services

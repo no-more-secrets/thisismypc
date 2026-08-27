@@ -5,6 +5,7 @@
     <Project Path="src/ThisIsMyPC.Interop.Com/ThisIsMyPC.Interop.Com.csproj" />
     <Project Path="src/ThisIsMyPC.Interop.Win32/ThisIsMyPC.Interop.Win32.csproj" />
     <Project Path="src/ThisIsMyPC.Interop.Wmi/ThisIsMyPC.Interop.Wmi.csproj" />
+    <Project Path="src/ThisIsMyPC.Modules.Annoyances/ThisIsMyPC.Modules.Annoyances.csproj" />
     <Project Path="src/ThisIsMyPC.Modules.Power/ThisIsMyPC.Modules.Power.csproj" />
     <Project Path="src/ThisIsMyPC.Modules.Shell/ThisIsMyPC.Modules.Shell.csproj" />
     <Project Path="src/ThisIsMyPC.Modules.Startup/ThisIsMyPC.Modules.Startup.csproj" />
@@ -16,6 +17,7 @@
     <Project Path="tests/ThisIsMyPC.Analyzers.Tests/ThisIsMyPC.Analyzers.Tests.csproj" />
     <Project Path="tests/ThisIsMyPC.Core.Tests/ThisIsMyPC.Core.Tests.csproj" />
     <Project Path="tests/ThisIsMyPC.Integration.Tests/ThisIsMyPC.Integration.Tests.csproj" />
+    <Project Path="tests/ThisIsMyPC.Modules.Annoyances.Tests/ThisIsMyPC.Modules.Annoyances.Tests.csproj" />
     <Project Path="tests/ThisIsMyPC.Modules.Power.Tests/ThisIsMyPC.Modules.Power.Tests.csproj" />
     <Project Path="tests/ThisIsMyPC.Modules.Shell.Tests/ThisIsMyPC.Modules.Shell.Tests.csproj" />
     <Project Path="tests/ThisIsMyPC.Modules.Startup.Tests/ThisIsMyPC.Modules.Startup.Tests.csproj" />

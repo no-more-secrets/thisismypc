@@ -33,7 +33,9 @@ public class ChangeHistoryViewModelTests
     [Fact]
     public async Task LoadHistory_GroupsByDateThenBatch()
     {
-        var today = DateTimeOffset.Now;
+        // Anchor at local noon so "-5 minutes" can never cross midnight into yesterday
+        // (this test failed for real when run at 00:03).
+        var today = new DateTimeOffset(DateTime.Today.AddHours(12));
         var yesterday = today.AddDays(-1);
 
         var service = new Fakes.FakeChangeHistoryServiceWithEntries(
