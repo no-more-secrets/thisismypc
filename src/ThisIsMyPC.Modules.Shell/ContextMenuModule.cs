@@ -84,24 +84,12 @@ public sealed class ContextMenuModule : IModule
 
     public Task<OperationResult<bool>> RevertChangeAsync(ChangeDescriptor change)
     {
-        try
-        {
-            var result = change.ValueType switch
-            {
-                ChangeValueType.Registry_String => RevertStringChange(change),
-                _ => OperationResult<bool>.Failure(
-                    $"Unsupported value type: {change.ValueType}",
-                    ErrorCategory.ServiceUnavailable),
-            };
-
-            return Task.FromResult(result);
-        }
-        catch (Exception ex)
-        {
-            return Task.FromResult(OperationResult<bool>.Failure(
-                $"Failed to revert change '{change.DisplayName}': {ex.Message}",
-                ErrorCategory.ServiceUnavailable, ex));
-        }
+        // The revert contract is "apply the descriptor's AfterValue": both
+        // ChangeHistoryService undo and PendingChangesService mid-group rollback hand
+        // this a Before/After-swapped descriptor. (The previous write-BeforeValue
+        // implementation expected the unswapped descriptor and silently re-applied
+        // changes on the history-undo path.)
+        return ApplyChangeAsync(change);
     }
 
     private OperationResult<bool> ApplyStringChange(ChangeDescriptor change)
@@ -112,18 +100,6 @@ public sealed class ContextMenuModule : IModule
         var result = change.AfterValue == ShellRegistryPaths.AbsentValue
             ? _registryService.DeleteValue(keyPath, valueName)
             : _registryService.WriteString(keyPath, valueName, change.AfterValue ?? string.Empty);
-
-        return MakeBestEffortIfHkcrAccessDenied(result, change);
-    }
-
-    private OperationResult<bool> RevertStringChange(ChangeDescriptor change)
-    {
-        var (keyPath, valueName) = ShellRegistryPaths.ParseSystemLocation(change.SystemLocation);
-
-        // Write BeforeValue to restore original state (opposite of ApplyStringChange)
-        var result = change.BeforeValue == ShellRegistryPaths.AbsentValue
-            ? _registryService.DeleteValue(keyPath, valueName)
-            : _registryService.WriteString(keyPath, valueName, change.BeforeValue ?? string.Empty);
 
         return MakeBestEffortIfHkcrAccessDenied(result, change);
     }

@@ -69,6 +69,72 @@ public sealed class ShellSettingViewModelTests : IDisposable
         Assert.Equal(0, _pendingService.PendingCount);
     }
 
+    private static ChangeGroup MakeTwoChangeGroup(bool enable) => new()
+    {
+        GroupId = Guid.NewGuid().ToString("N"),
+        DisplayName = "Composite setting",
+        Description = "Two registry values applied atomically",
+        Changes =
+        [
+            MakeGroupChange("first", enable),
+            MakeGroupChange("second", enable),
+        ],
+    };
+
+    private static ChangeDescriptor MakeGroupChange(string valueName, bool enable) => new()
+    {
+        ModuleId = "Test",
+        SettingId = "composite-setting",
+        DisplayName = "Composite setting",
+        SystemLocation = $@"HKCU\Software\Test\{valueName}",
+        BeforeValue = enable ? "0" : "1",
+        AfterValue = enable ? "1" : "0",
+        BeforeDisplay = enable ? "Off" : "On",
+        AfterDisplay = enable ? "On" : "Off",
+        ValueType = ChangeValueType.Registry_DWord,
+    };
+
+    [Fact]
+    public async Task GroupFactory_toggle_stages_multi_change_group()
+    {
+        var vm = new ShellSettingViewModel(
+            label: "Composite",
+            description: "d",
+            systemPath: @"HKCU\Software\Test\first",
+            isEnabled: false,
+            pendingChangesService: _pendingService,
+            groupFactory: MakeTwoChangeGroup,
+            readRegistryState: () => false);
+
+        vm.IsEnabled = true;
+        await Task.Delay(350); // debounce is 250ms
+
+        var group = Assert.Single(_pendingService.PendingGroups);
+        Assert.Equal(2, group.Changes.Count);
+        Assert.True(vm.HasPendingChange);
+    }
+
+    [Fact]
+    public async Task GroupFactory_toggle_back_unstages_group()
+    {
+        var vm = new ShellSettingViewModel(
+            label: "Composite",
+            description: "d",
+            systemPath: @"HKCU\Software\Test\first",
+            isEnabled: false,
+            pendingChangesService: _pendingService,
+            groupFactory: MakeTwoChangeGroup,
+            readRegistryState: () => false);
+
+        vm.IsEnabled = true;
+        await Task.Delay(350);
+        vm.IsEnabled = false;
+        await Task.Delay(350);
+
+        Assert.Empty(_pendingService.PendingGroups);
+        Assert.False(vm.HasPendingChange);
+    }
+
     [Fact]
     public async Task Toggle_stages_change_after_debounce()
     {

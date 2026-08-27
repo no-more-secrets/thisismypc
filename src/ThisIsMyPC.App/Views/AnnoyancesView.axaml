@@ -25,6 +25,20 @@
                               ItemTemplate="{StaticResource ToggleSettingRowTemplate}" />
             </StackPanel>
 
+            <!-- Bing Search & Edge Section -->
+            <StackPanel Spacing="8">
+                <TextBlock Text="Bing Search &amp; Edge"
+                           FontSize="18"
+                           FontWeight="SemiBold"
+                           Foreground="{StaticResource TextPrimaryBrush}" />
+                <TextBlock Text="Keep Start Menu search local and stop Edge shortcuts from reappearing"
+                           FontSize="13"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Margin="0,0,0,4" />
+                <ItemsControl ItemsSource="{Binding BingAndEdgeSettings}"
+                              ItemTemplate="{StaticResource ToggleSettingRowTemplate}" />
+            </StackPanel>
+
         </StackPanel>
     </ScrollViewer>
 </UserControl>

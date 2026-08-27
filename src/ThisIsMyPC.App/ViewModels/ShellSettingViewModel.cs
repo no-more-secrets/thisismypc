@@ -13,6 +13,7 @@ public sealed partial class ShellSettingViewModel : ViewModelBase, IDisposable
     private readonly IPendingChangesService _pendingChangesService;
     private readonly ExplorerPreference? _preference;
     private readonly Func<bool, ChangeDescriptor>? _changeFactory;
+    private readonly Func<bool, ChangeGroup>? _groupFactory;
     private readonly Func<bool>? _readRegistryState;
     private bool _registryIsEnabled;
     private bool _suppressStaging;
@@ -90,6 +91,34 @@ public sealed partial class ShellSettingViewModel : ViewModelBase, IDisposable
         _pendingChangesService.PropertyChanged += OnPendingChangesPropertyChanged;
     }
 
+    // Constructor for settings whose toggle stages an atomic multi-change group
+    // (e.g. Bing search: two registry values applied together)
+    public ShellSettingViewModel(
+        string label,
+        string description,
+        string systemPath,
+        bool isEnabled,
+        IPendingChangesService pendingChangesService,
+        Func<bool, ChangeGroup> groupFactory,
+        Func<bool> readRegistryState)
+    {
+        _pendingChangesService = pendingChangesService;
+        _preference = null;
+        _groupFactory = groupFactory;
+        _readRegistryState = readRegistryState;
+        _registryIsEnabled = isEnabled;
+
+        Label = label;
+        Description = description;
+        SystemPath = systemPath;
+
+        _suppressStaging = true;
+        IsEnabled = isEnabled;
+        _suppressStaging = false;
+
+        _pendingChangesService.PropertyChanged += OnPendingChangesPropertyChanged;
+    }
+
     partial void OnIsEnabledChanged(bool value)
     {
         if (_suppressStaging)
@@ -122,14 +151,33 @@ public sealed partial class ShellSettingViewModel : ViewModelBase, IDisposable
             if (_readRegistryState is not null)
                 _registryIsEnabled = _readRegistryState();
 
-            // Build the change descriptor
-            ChangeDescriptor? change = null;
-            if (_preference is not null)
-                change = ExplorerChangeFactory.CreateToggle(_preference, desiredState);
-            else if (_changeFactory is not null)
-                change = _changeFactory(desiredState);
+            // Build the change group (single descriptor wrapped, or an atomic multi-change group)
+            ChangeGroup? group = null;
+            if (_groupFactory is not null)
+            {
+                group = _groupFactory(desiredState);
+            }
+            else
+            {
+                ChangeDescriptor? change = null;
+                if (_preference is not null)
+                    change = ExplorerChangeFactory.CreateToggle(_preference, desiredState);
+                else if (_changeFactory is not null)
+                    change = _changeFactory(desiredState);
 
-            if (change is null)
+                if (change is not null)
+                {
+                    group = new ChangeGroup
+                    {
+                        GroupId = Guid.NewGuid().ToString("N"),
+                        DisplayName = change.DisplayName,
+                        Description = change.DisplayName,
+                        Changes = [change]
+                    };
+                }
+            }
+
+            if (group is null)
                 return;
 
             _isStagingChange = true;
@@ -145,13 +193,6 @@ public sealed partial class ShellSettingViewModel : ViewModelBase, IDisposable
                 // Only stage if the desired state differs from the real registry value
                 if (desiredState != _registryIsEnabled)
                 {
-                    var group = new ChangeGroup
-                    {
-                        GroupId = Guid.NewGuid().ToString("N"),
-                        DisplayName = change.DisplayName,
-                        Description = change.DisplayName,
-                        Changes = [change]
-                    };
                     _pendingChangesService.Stage(group);
                     _stagedGroupId = group.GroupId;
                 }

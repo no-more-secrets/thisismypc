@@ -67,7 +67,50 @@ public sealed class AnnoyancesSettingsReader
                 description: "Stops Windows from silently installing suggested Store apps (games, streaming apps) onto the Start menu.",
                 keyPath: cdm,
                 valueName: "SilentInstalledAppsEnabled"),
+
+            ReadEdgeShortcutPreference(),
         ];
+    }
+
+    public BingSearchState ReadBingSearch()
+    {
+        // Opposite polarities: BingSearchEnabled 0 = suppressed (missing = 1, active);
+        // DisableSearchBoxSuggestions 1 = suppressed (missing policy = 0, allowed).
+        var bing = _registryService.ReadDWord(AnnoyancesRegistryPaths.SearchKeyPath, "BingSearchEnabled");
+        var bingValue = bing.IsSuccess ? bing.Value!.ToString() : "1";
+
+        var suggestions = _registryService.ReadDWord(
+            AnnoyancesRegistryPaths.ExplorerPoliciesKeyPath, "DisableSearchBoxSuggestions");
+        var suggestionsValue = suggestions.IsSuccess ? suggestions.Value!.ToString() : "0";
+
+        return new BingSearchState(
+            BingSearchEnabledValue: bingValue,
+            DisableSearchBoxSuggestionsValue: suggestionsValue,
+            IsSuppressed: bingValue == "0" && suggestionsValue == "1");
+    }
+
+    private AnnoyancePreference ReadEdgeShortcutPreference()
+    {
+        // HKLM policy; missing value means Edge Update creates shortcuts (default "1").
+        const string keyPath = AnnoyancesRegistryPaths.EdgeUpdatePoliciesKeyPath;
+        const string valueName = "CreateDesktopShortcutDefault";
+
+        var result = _registryService.ReadDWord(keyPath, valueName);
+        var currentValue = result.IsSuccess ? result.Value!.ToString() : "1";
+
+        return new AnnoyancePreference(
+            Id: "edge-shortcuts",
+            DisplayName: "Block Edge desktop shortcut creation",
+            Description: "Stops Microsoft Edge from recreating its desktop shortcut every time it updates in the background. Major Windows updates are known to overwrite this policy.",
+            Section: AnnoyanceSection.BingAndEdge,
+            RegistryKeyPath: keyPath,
+            RegistryValueName: valueName,
+            ValueType: ChangeValueType.Registry_DWord,
+            CurrentValue: currentValue,
+            SuppressedValue: "0",
+            DefaultValue: "1",
+            IsSuppressed: currentValue == "0",
+            RestartRequirement: RestartRequirement.None);
     }
 
     private AnnoyancePreference ReadPreference(

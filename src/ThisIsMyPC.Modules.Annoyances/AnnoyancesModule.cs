@@ -28,7 +28,7 @@ public sealed class AnnoyancesModule : IModule
 
     public Task<ModuleAvailability> CheckAvailabilityAsync()
     {
-        // Standard HKCU registry writes; the app already runs elevated.
+        // Standard registry writes (HKCU + the HKLM EdgeUpdate policy); the app runs elevated.
         return Task.FromResult(new ModuleAvailability(IsAvailable: true));
     }
 
@@ -38,7 +38,9 @@ public sealed class AnnoyancesModule : IModule
         {
             try
             {
-                var scanData = new AnnoyancesScanData(_settingsReader.ReadAll());
+                var scanData = new AnnoyancesScanData(
+                    _settingsReader.ReadAll(),
+                    _settingsReader.ReadBingSearch());
                 return OperationResult<object>.Success(scanData);
             }
             catch (Exception ex)
@@ -81,9 +83,9 @@ public sealed class AnnoyancesModule : IModule
 
     public Task<OperationResult<bool>> RevertChangeAsync(ChangeDescriptor change)
     {
-        // ChangeHistoryService undo constructs a swapped descriptor — just apply it.
-        // (PendingChangesService's mid-group rollback would pass the unswapped
-        // descriptor, but every Annoyances stage is a single-change group.)
+        // The revert contract is "apply the descriptor's AfterValue": both
+        // ChangeHistoryService undo and PendingChangesService mid-group rollback
+        // hand this a Before/After-swapped descriptor.
         return ApplyChangeAsync(change);
     }
 }

@@ -103,7 +103,9 @@ public sealed class ShellModule : IModule
 
     public Task<OperationResult<bool>> RevertChangeAsync(ChangeDescriptor change)
     {
-        // PendingChangesService constructs a swapped descriptor — just apply it
+        // The revert contract is "apply the descriptor's AfterValue": both
+        // ChangeHistoryService undo and PendingChangesService mid-group rollback
+        // hand this a Before/After-swapped descriptor.
         return ApplyChangeAsync(change);
     }
 

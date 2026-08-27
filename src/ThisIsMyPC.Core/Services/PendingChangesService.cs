@@ -169,18 +169,31 @@ public sealed class PendingChangesService : IPendingChangesService
                 }
                 else
                 {
-                    // Rollback this group's applied changes in reverse order
+                    // Rollback this group's applied changes in reverse order.
+                    // The revert delegate contract (established by ChangeHistoryService undo)
+                    // is "apply the descriptor's AfterValue" — so rollback must hand it a
+                    // Before/After-SWAPPED descriptor, or modules whose RevertChangeAsync
+                    // delegates to ApplyChangeAsync would re-apply the failed group's values.
                     var rolledBack = new List<ChangeDescriptor>();
                     for (var i = groupApplied.Count - 1; i >= 0; i--)
                     {
+                        var original = groupApplied[i];
+                        var swapped = original with
+                        {
+                            BeforeValue = original.AfterValue ?? string.Empty,
+                            AfterValue = original.BeforeValue,
+                            BeforeDisplay = original.AfterDisplay ?? string.Empty,
+                            AfterDisplay = original.BeforeDisplay,
+                        };
+
                         // Mirrors the apply routing exactly — an enforced change must never
                         // silently degrade to a bare revert (companion services/tasks/GPCache
                         // would stay mutated).
-                        var rollbackResult = groupApplied[i].Enforcement is not null
+                        var rollbackResult = swapped.Enforcement is not null
                             ? ToOperationResult(
-                                await _enforcementExecutor!.RevertAsync(groupApplied[i], revertFunc).ConfigureAwait(false),
+                                await _enforcementExecutor!.RevertAsync(swapped, revertFunc).ConfigureAwait(false),
                                 "Enforcement revert failed")
-                            : await revertFunc(groupApplied[i]).ConfigureAwait(false);
+                            : await revertFunc(swapped).ConfigureAwait(false);
                         if (rollbackResult.IsSuccess)
                         {
                             rolledBack.Add(groupApplied[i]);

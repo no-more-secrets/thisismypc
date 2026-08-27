@@ -8,12 +8,17 @@ namespace ThisIsMyPC.App.ViewModels;
 public partial class AnnoyancesViewModel : ViewModelBase
 {
     public ObservableCollection<ShellSettingViewModel> ScoobeAndWelcomeSettings { get; } = [];
+    public ObservableCollection<ShellSettingViewModel> BingAndEdgeSettings { get; } = [];
 
     public AnnoyancesViewModel(
         AnnoyancesScanData scanData,
         IPendingChangesService pendingChangesService,
         IRegistryService registryService)
     {
+        // Factories re-read live state at stage time — a scan-time snapshot would bake
+        // stale BeforeValues into the descriptors after the first apply.
+        var liveReader = new Modules.Annoyances.Services.AnnoyancesSettingsReader(registryService);
+
         foreach (var pref in scanData.Preferences.Where(p => p.Section == AnnoyanceSection.ScoobeAndWelcome))
         {
             var captured = pref;
@@ -23,16 +28,33 @@ public partial class AnnoyancesViewModel : ViewModelBase
                 systemPath: $@"{captured.RegistryKeyPath}\{captured.RegistryValueName}",
                 isEnabled: captured.IsSuppressed,
                 pendingChangesService: pendingChangesService,
-                changeFactory: suppress => AnnoyanceChangeFactory.CreateToggle(captured, suppress),
-                readRegistryState: () => ReadSuppressed(registryService, captured)));
+                changeFactory: suppress => AnnoyanceChangeFactory.CreateToggle(ReadLive(liveReader, captured.Id), suppress),
+                readRegistryState: () => ReadLive(liveReader, captured.Id).IsSuppressed));
+        }
+        BingAndEdgeSettings.Add(new ShellSettingViewModel(
+            label: "Disable Bing web search in Start Menu",
+            description: "Start Menu search stops sending your queries to Bing and shows local results only. Windows Update and Web Experience Pack deployments are known to revert this (requires Explorer restart).",
+            systemPath: $@"{Modules.Annoyances.AnnoyancesRegistryPaths.SearchKeyPath}\BingSearchEnabled",
+            isEnabled: scanData.BingSearch.IsSuppressed,
+            pendingChangesService: pendingChangesService,
+            groupFactory: suppress => AnnoyanceChangeFactory.CreateBingSearchToggle(liveReader.ReadBingSearch(), suppress),
+            readRegistryState: () => liveReader.ReadBingSearch().IsSuppressed));
+
+        foreach (var pref in scanData.Preferences.Where(p => p.Section == AnnoyanceSection.BingAndEdge))
+        {
+            var captured = pref;
+            BingAndEdgeSettings.Add(new ShellSettingViewModel(
+                label: captured.DisplayName,
+                description: captured.Description,
+                systemPath: $@"{captured.RegistryKeyPath}\{captured.RegistryValueName}",
+                isEnabled: captured.IsSuppressed,
+                pendingChangesService: pendingChangesService,
+                changeFactory: suppress => AnnoyanceChangeFactory.CreateDriftFragileToggle(ReadLive(liveReader, captured.Id), suppress),
+                readRegistryState: () => ReadLive(liveReader, captured.Id).IsSuppressed));
         }
     }
 
-    private static bool ReadSuppressed(IRegistryService registryService, AnnoyancePreference pref)
-    {
-        var result = registryService.ReadDWord(pref.RegistryKeyPath, pref.RegistryValueName);
-        if (!result.IsSuccess)
-            return pref.DefaultValue == pref.SuppressedValue; // missing value = Windows default
-        return result.Value.ToString() == pref.SuppressedValue;
-    }
+    private static AnnoyancePreference ReadLive(
+        Modules.Annoyances.Services.AnnoyancesSettingsReader reader, string id)
+        => reader.ReadAll().Single(p => p.Id == id);
 }

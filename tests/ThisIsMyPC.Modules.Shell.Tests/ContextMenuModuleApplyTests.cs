@@ -104,8 +104,8 @@ public sealed class ContextMenuModuleApplyTests
     [Fact]
     public async Task RevertBlockedListDisable_deletes_value()
     {
-        // After a disable (AfterValue="", BeforeValue="__absent__"),
-        // revert should restore BeforeValue="__absent__" → delete the value
+        // Reverting a disable (original: __absent__ → ""): the pipeline hands the module
+        // a SWAPPED descriptor whose AfterValue="__absent__" → delete the value
         var blockedPath = @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Shell Extensions\Blocked";
         _registry.AddKey(blockedPath);
         _registry.SetString(blockedPath, "{12345678-1234-1234-1234-123456789ABC}", "");
@@ -116,10 +116,10 @@ public sealed class ContextMenuModuleApplyTests
             SettingId = "ctx-handler-12345678-1234-1234-1234-123456789ABC",
             DisplayName = "Context menu: TestHandler",
             SystemLocation = $@"{blockedPath}\{{12345678-1234-1234-1234-123456789ABC}}",
-            BeforeValue = "__absent__",
-            AfterValue = "",
-            BeforeDisplay = "Enabled",
-            AfterDisplay = "Disabled",
+            BeforeValue = "",
+            AfterValue = "__absent__",
+            BeforeDisplay = "Disabled",
+            AfterDisplay = "Enabled",
             ValueType = ChangeValueType.Registry_String,
             Category = ChangeCategory.Disable,
         };
@@ -134,8 +134,8 @@ public sealed class ContextMenuModuleApplyTests
     [Fact]
     public async Task RevertBlockedListEnable_restores_empty_string_value()
     {
-        // After an enable (AfterValue="__absent__", BeforeValue=""),
-        // revert should restore BeforeValue="" → write empty string back
+        // Reverting an enable (original: "" → __absent__): the swapped descriptor's
+        // AfterValue="" → write the empty string back
         var blockedPath = @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Shell Extensions\Blocked";
         _registry.AddKey(blockedPath);
 
@@ -145,10 +145,10 @@ public sealed class ContextMenuModuleApplyTests
             SettingId = "ctx-handler-12345678-1234-1234-1234-123456789ABC",
             DisplayName = "Context menu: TestHandler",
             SystemLocation = $@"{blockedPath}\{{12345678-1234-1234-1234-123456789ABC}}",
-            BeforeValue = "",
-            AfterValue = "__absent__",
-            BeforeDisplay = "Disabled",
-            AfterDisplay = "Enabled",
+            BeforeValue = "__absent__",
+            AfterValue = "",
+            BeforeDisplay = "Enabled",
+            AfterDisplay = "Disabled",
             ValueType = ChangeValueType.Registry_String,
             Category = ChangeCategory.Enable,
         };
@@ -174,10 +174,11 @@ public sealed class ContextMenuModuleApplyTests
             SettingId = "ctx-handler-12345678-1234-1234-1234-123456789ABC",
             DisplayName = "Context menu: TestHandler",
             SystemLocation = $@"{handlerPath}\(Default)",
-            BeforeValue = "{12345678-1234-1234-1234-123456789ABC}",
-            AfterValue = "-{12345678-1234-1234-1234-123456789ABC}",
-            BeforeDisplay = "Enabled",
-            AfterDisplay = "Disabled",
+            // Swapped descriptor: AfterValue holds the clean CLSID to restore
+            BeforeValue = "-{12345678-1234-1234-1234-123456789ABC}",
+            AfterValue = "{12345678-1234-1234-1234-123456789ABC}",
+            BeforeDisplay = "Disabled",
+            AfterDisplay = "Enabled",
             ValueType = ChangeValueType.Registry_String,
             Category = ChangeCategory.Disable,
         };
