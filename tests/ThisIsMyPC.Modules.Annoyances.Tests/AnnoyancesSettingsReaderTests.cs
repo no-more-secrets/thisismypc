@@ -24,10 +24,16 @@ public sealed class AnnoyancesSettingsReaderTests
              "advertising-id", "activity-history",
              "game-dvr", "auto-game-mode", "hags", "sticky-keys-shortcut", "filter-keys-shortcut"],
             prefs.Select(p => p.Id));
-        Assert.All(
-            prefs.Take(7),
-            p => Assert.Equal(AnnoyanceSection.ScoobeAndWelcome, p.Section));
+        Assert.Equal(7, prefs.Count(p => p.Section == AnnoyanceSection.ScoobeAndWelcome));
         Assert.Equal(AnnoyanceSection.BingAndEdge, prefs.Single(p => p.Id == "edge-shortcuts").Section);
+        // The original suppression prefs keep the simple shape: DWORD 0/1, no restart
+        Assert.All(
+            prefs.Where(p => p.Section is AnnoyanceSection.ScoobeAndWelcome or AnnoyanceSection.BingAndEdge),
+            p =>
+            {
+                Assert.Equal(ChangeValueType.Registry_DWord, p.ValueType);
+                Assert.Equal(RestartRequirement.None, p.RestartRequirement);
+            });
     }
 
     [Fact]

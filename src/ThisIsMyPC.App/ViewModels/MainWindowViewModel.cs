@@ -400,10 +400,22 @@ public partial class MainWindowViewModel : ViewModelBase
 
                 if (result.RequiredRestarts.Contains(RestartRequirement.Reboot))
                 {
-                    RestartNotificationMessage = "A reboot is required for some changes to take effect.";
-                    IsRestartActionAvailable = false;
+                    // Keep the Explorer-restart action when the batch also needs it, so
+                    // deferring the reboot doesn't leave Explorer-bound changes inactive.
+                    var alsoExplorer = result.RequiredRestarts.Contains(RestartRequirement.ExplorerRestart);
+                    RestartNotificationMessage = alsoExplorer
+                        ? "A reboot is required for some changes; others take effect after an Explorer restart."
+                        : "A reboot is required for some changes to take effect.";
+                    IsRestartActionAvailable = alsoExplorer;
                     IsRestartNotificationVisible = true;
                     SetStatus("Changes applied — reboot required", StatusSeverity.Warning);
+                }
+                else if (result.RequiredRestarts.Contains(RestartRequirement.SignOut))
+                {
+                    RestartNotificationMessage = "Sign out and back in for some changes to take effect.";
+                    IsRestartActionAvailable = false;
+                    IsRestartNotificationVisible = true;
+                    SetStatus("Changes applied — sign-out required", StatusSeverity.Warning);
                 }
                 else if (result.RequiredRestarts.Contains(RestartRequirement.ExplorerRestart))
                 {

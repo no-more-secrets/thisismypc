@@ -117,24 +117,28 @@ public sealed class AnnoyancesSettingsReader
             ReadPreference(
                 id: "sticky-keys-shortcut",
                 displayName: "Suppress the StickyKeys shortcut",
-                description: "Stops pressing Shift five times from popping the StickyKeys prompt (which minimizes full-screen games). StickyKeys itself stays available from Settings.",
+                description: "Stops pressing Shift five times from popping the StickyKeys prompt (which minimizes full-screen games). StickyKeys itself stays available from Settings. Takes effect after signing out and back in.",
                 keyPath: AnnoyancesRegistryPaths.StickyKeysKeyPath,
                 valueName: "Flags",
                 section: AnnoyanceSection.GamingAndAccessibility,
                 valueType: ChangeValueType.Registry_String,
                 suppressedValue: "506",
-                defaultValue: "510"),
+                defaultValue: "510",
+                // Raw registry Flags edits are read at logon; live toggling goes through
+                // SystemParametersInfo, which this module deliberately doesn't use.
+                restart: RestartRequirement.SignOut),
 
             ReadPreference(
                 id: "filter-keys-shortcut",
                 displayName: "Suppress the FilterKeys shortcut",
-                description: "Stops holding Shift for eight seconds from popping the FilterKeys prompt mid-typing. FilterKeys itself stays available from Settings.",
+                description: "Stops holding Shift for eight seconds from popping the FilterKeys prompt mid-typing. FilterKeys itself stays available from Settings. Takes effect after signing out and back in.",
                 keyPath: AnnoyancesRegistryPaths.KeyboardResponseKeyPath,
                 valueName: "Flags",
                 section: AnnoyanceSection.GamingAndAccessibility,
                 valueType: ChangeValueType.Registry_String,
                 suppressedValue: "122",
-                defaultValue: "126"),
+                defaultValue: "126",
+                restart: RestartRequirement.SignOut),
         ];
     }
 

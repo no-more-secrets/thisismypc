@@ -66,6 +66,7 @@ public sealed class GamingAndAccessibilityTests
         Assert.Equal(suppressed, pref.SuppressedValue);
         Assert.Equal(defaultValue, pref.DefaultValue);
         Assert.Equal(defaultValue, pref.CurrentValue); // missing value = Windows default
+        Assert.Equal(RestartRequirement.SignOut, pref.RestartRequirement); // Flags load at logon
     }
 
     [Fact]

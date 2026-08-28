@@ -212,6 +212,74 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
+    public async Task ApplyAllCommand_RebootNotice_NoExplorerAction_WhenOnlyRebootRequired()
+    {
+        var fakeModule = new Fakes.FakeModule("TestModule", _ =>
+            Task.FromResult(OperationResult<bool>.Success(true)));
+
+        var vm = CreateViewModel(out var service, fakeModule);
+        await vm.InitializeAsync();
+
+        service.Stage(CreateTestChange("TestModule", "hags") with
+        {
+            RestartRequirement = RestartRequirement.Reboot,
+        });
+
+        await vm.ApplyAllCommand.ExecuteAsync(null);
+
+        Assert.True(vm.IsRestartNotificationVisible);
+        Assert.Contains("reboot", vm.RestartNotificationMessage, StringComparison.OrdinalIgnoreCase);
+        Assert.False(vm.IsRestartActionAvailable);
+    }
+
+    [Fact]
+    public async Task ApplyAllCommand_RebootPlusExplorer_KeepsExplorerRestartAction()
+    {
+        var fakeModule = new Fakes.FakeModule("TestModule", _ =>
+            Task.FromResult(OperationResult<bool>.Success(true)));
+
+        var vm = CreateViewModel(out var service, fakeModule);
+        await vm.InitializeAsync();
+
+        service.Stage(CreateTestChange("TestModule", "hags") with
+        {
+            RestartRequirement = RestartRequirement.Reboot,
+        });
+        service.Stage(CreateTestChange("TestModule", "game-dvr") with
+        {
+            RestartRequirement = RestartRequirement.ExplorerRestart,
+        });
+
+        await vm.ApplyAllCommand.ExecuteAsync(null);
+
+        Assert.True(vm.IsRestartNotificationVisible);
+        Assert.Contains("reboot", vm.RestartNotificationMessage, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Explorer", vm.RestartNotificationMessage, StringComparison.Ordinal);
+        Assert.True(vm.IsRestartActionAvailable);
+    }
+
+    [Fact]
+    public async Task ApplyAllCommand_SignOutNotice_WhenSignOutRequired()
+    {
+        var fakeModule = new Fakes.FakeModule("TestModule", _ =>
+            Task.FromResult(OperationResult<bool>.Success(true)));
+
+        var vm = CreateViewModel(out var service, fakeModule);
+        await vm.InitializeAsync();
+
+        service.Stage(CreateTestChange("TestModule", "sticky-keys") with
+        {
+            RestartRequirement = RestartRequirement.SignOut,
+        });
+
+        await vm.ApplyAllCommand.ExecuteAsync(null);
+
+        Assert.True(vm.IsRestartNotificationVisible);
+        Assert.Contains("Sign out", vm.RestartNotificationMessage, StringComparison.Ordinal);
+        Assert.False(vm.IsRestartActionAvailable);
+    }
+
+    [Fact]
     public async Task ApplyAllCommand_NoRestartNotification_WhenNoRestartRequired()
     {
         var fakeModule = new Fakes.FakeModule("TestModule", _ =>
