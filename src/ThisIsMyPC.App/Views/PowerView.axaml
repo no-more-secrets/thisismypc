@@ -9,84 +9,250 @@
 
     <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                   VerticalScrollBarVisibility="Auto">
-        <StackPanel Spacing="12" Margin="0,8,20,16">
+        <Panel>
 
-            <!-- Scan failure -->
-            <Border IsVisible="{Binding HasScanError}"
-                    Background="{StaticResource DangerMutedBrush}"
-                    CornerRadius="4" Padding="12,8">
-                <TextBlock Text="{Binding ScanError}"
-                           Foreground="{StaticResource DangerBrush}"
-                           TextWrapping="Wrap" FontSize="12" />
-            </Border>
+            <!-- ======== Plan list ======== -->
+            <StackPanel Spacing="12" Margin="0,8,20,16"
+                        IsVisible="{Binding !IsSettingsView}">
 
-            <!-- Modern Standby machines often register only Balanced -->
-            <TextBlock IsVisible="{Binding HasNoPlans}"
-                       Text="No power plans are registered on this machine."
-                       Foreground="{StaticResource TextSecondaryBrush}"
-                       FontSize="13" />
+                <!-- Scan failure -->
+                <Border IsVisible="{Binding HasScanError}"
+                        Background="{StaticResource DangerMutedBrush}"
+                        CornerRadius="4" Padding="12,8">
+                    <TextBlock Text="{Binding ScanError}"
+                               Foreground="{StaticResource DangerBrush}"
+                               TextWrapping="Wrap" FontSize="12" />
+                </Border>
 
-            <ItemsControl ItemsSource="{Binding Plans}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="vm:PowerPlanItemViewModel">
-                        <Border Padding="16,12" Margin="0,3" CornerRadius="6"
-                                Background="{StaticResource SurfaceBrush}">
-                            <Grid ColumnDefinitions="*,Auto">
-                                <StackPanel Grid.Column="0" Spacing="4">
-                                    <StackPanel Orientation="Horizontal" Spacing="8">
-                                        <TextBlock Text="{Binding Name}"
-                                                   FontSize="14" FontWeight="SemiBold"
-                                                   Foreground="{StaticResource TextPrimaryBrush}"
-                                                   VerticalAlignment="Center" />
-                                        <Border IsVisible="{Binding IsActive}"
-                                                Background="{StaticResource SuccessMutedBrush}"
-                                                CornerRadius="3" Padding="6,2">
-                                            <TextBlock Text="Active"
-                                                       FontSize="11" FontWeight="SemiBold"
-                                                       Foreground="{StaticResource SuccessBrush}" />
-                                        </Border>
-                                        <Border IsVisible="{Binding IsPendingTarget}"
-                                                Background="{StaticResource InfoMutedBrush}"
-                                                CornerRadius="3" Padding="6,2">
-                                            <TextBlock Text="Pending switch"
-                                                       FontSize="11" FontWeight="SemiBold"
-                                                       Foreground="{StaticResource InfoBrush}" />
-                                        </Border>
+                <!-- Modern Standby machines often register only Balanced -->
+                <TextBlock IsVisible="{Binding HasNoPlans}"
+                           Text="No power plans are registered on this machine."
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           FontSize="13" />
+
+                <ItemsControl ItemsSource="{Binding Plans}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:PowerPlanItemViewModel">
+                            <Border Padding="16,12" Margin="0,3" CornerRadius="6"
+                                    Background="{StaticResource SurfaceBrush}">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel Grid.Column="0" Spacing="4">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <TextBlock Text="{Binding Name}"
+                                                       FontSize="14" FontWeight="SemiBold"
+                                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                                       VerticalAlignment="Center" />
+                                            <Border IsVisible="{Binding IsActive}"
+                                                    Background="{StaticResource SuccessMutedBrush}"
+                                                    CornerRadius="3" Padding="6,2">
+                                                <TextBlock Text="Active"
+                                                           FontSize="11" FontWeight="SemiBold"
+                                                           Foreground="{StaticResource SuccessBrush}" />
+                                            </Border>
+                                            <Border IsVisible="{Binding IsPendingTarget}"
+                                                    Background="{StaticResource InfoMutedBrush}"
+                                                    CornerRadius="3" Padding="6,2">
+                                                <TextBlock Text="Pending switch"
+                                                           FontSize="11" FontWeight="SemiBold"
+                                                           Foreground="{StaticResource InfoBrush}" />
+                                            </Border>
+                                        </StackPanel>
+                                        <TextBlock IsVisible="{Binding HasDescription}"
+                                                   Text="{Binding DescriptionText}"
+                                                   FontSize="12"
+                                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                                   TextWrapping="Wrap" />
+                                        <TextBlock IsVisible="{Binding IsNormallyHidden}"
+                                                   Text="{Binding HiddenNote}"
+                                                   FontSize="12"
+                                                   Foreground="{StaticResource WarningBrush}"
+                                                   TextWrapping="Wrap" />
+                                        <TextBlock Text="{Binding GuidText}"
+                                                   FontSize="11" FontFamily="Consolas,monospace"
+                                                   Foreground="{StaticResource TextTertiaryBrush}" />
                                     </StackPanel>
-                                    <TextBlock IsVisible="{Binding HasDescription}"
-                                               Text="{Binding DescriptionText}"
-                                               FontSize="12"
-                                               Foreground="{StaticResource TextSecondaryBrush}"
-                                               TextWrapping="Wrap" />
-                                    <TextBlock IsVisible="{Binding IsNormallyHidden}"
-                                               Text="{Binding HiddenNote}"
-                                               FontSize="12"
-                                               Foreground="{StaticResource WarningBrush}"
-                                               TextWrapping="Wrap" />
-                                    <TextBlock Text="{Binding GuidText}"
-                                               FontSize="11" FontFamily="Consolas,monospace"
-                                               Foreground="{StaticResource TextTertiaryBrush}" />
-                                </StackPanel>
 
-                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4"
-                                            VerticalAlignment="Center">
-                                    <Button Content="Set active"
-                                            Padding="12,6" FontSize="12"
-                                            Command="{Binding $parent[UserControl].((vm:PowerViewModel)DataContext).SelectPlanCommand}"
-                                            CommandParameter="{Binding}"
-                                            IsEnabled="{Binding $parent[UserControl].((vm:PowerViewModel)DataContext).CanSelectPlans}"
-                                            IsVisible="{Binding !IsActive}" />
-                                    <Button Content="Cancel"
-                                            Padding="12,6" FontSize="12"
-                                            Command="{Binding $parent[UserControl].((vm:PowerViewModel)DataContext).CancelPendingSwitchCommand}"
-                                            IsVisible="{Binding IsPendingTarget}" />
-                                </StackPanel>
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4"
+                                                VerticalAlignment="Center">
+                                        <Button Content="Set active"
+                                                Padding="12,6" FontSize="12"
+                                                Command="{Binding $parent[UserControl].((vm:PowerViewModel)DataContext).SelectPlanCommand}"
+                                                CommandParameter="{Binding}"
+                                                IsEnabled="{Binding $parent[UserControl].((vm:PowerViewModel)DataContext).CanSelectPlans}"
+                                                IsVisible="{Binding !IsActive}" />
+                                        <Button Content="Cancel"
+                                                Padding="12,6" FontSize="12"
+                                                Command="{Binding $parent[UserControl].((vm:PowerViewModel)DataContext).CancelPendingSwitchCommand}"
+                                                IsVisible="{Binding IsPendingTarget}" />
+                                        <Button Content="Settings"
+                                                Padding="12,6" FontSize="12"
+                                                Command="{Binding $parent[UserControl].((vm:PowerViewModel)DataContext).OpenSettingsCommand}"
+                                                CommandParameter="{Binding}"
+                                                IsVisible="{Binding $parent[UserControl].((vm:PowerViewModel)DataContext).CanOpenSettings}" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
 
-        </StackPanel>
+            <!-- ======== Settings panel ======== -->
+            <StackPanel Spacing="12" Margin="0,8,20,16"
+                        IsVisible="{Binding IsSettingsView}">
+
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <Button Grid.Column="0" Content="&#8592; Back to plans"
+                            Padding="12,6" FontSize="12"
+                            Command="{Binding CloseSettingsCommand}" />
+                    <TextBlock Grid.Column="1"
+                               Text="{Binding SettingsPlan.Name, FallbackValue=''}"
+                               FontSize="15" FontWeight="SemiBold"
+                               Foreground="{StaticResource TextPrimaryBrush}"
+                               VerticalAlignment="Center" Margin="12,0" />
+                    <ToggleButton Grid.Column="2" Content="Registry view"
+                                  Padding="12,6" FontSize="12"
+                                  IsChecked="{Binding IsRegistryView}" />
+                </Grid>
+
+                <TextBlock IsVisible="{Binding IsLoadingSettings}"
+                           Text="Loading settings…"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           FontSize="13" />
+
+                <Border IsVisible="{Binding HasSettingsError}"
+                        Background="{StaticResource DangerMutedBrush}"
+                        CornerRadius="4" Padding="12,8">
+                    <TextBlock Text="{Binding SettingsError}"
+                               Foreground="{StaticResource DangerBrush}"
+                               TextWrapping="Wrap" FontSize="12" />
+                </Border>
+
+                <!-- Modern Standby (AC5) -->
+                <Border IsVisible="{Binding ShowModernStandby}"
+                        Padding="16,12" CornerRadius="6"
+                        Background="{StaticResource SurfaceBrush}">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Spacing="4">
+                            <TextBlock Text="Disable Modern Standby"
+                                       FontSize="14" FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextPrimaryBrush}" />
+                            <TextBlock Text="{Binding ModernStandbyDescription}"
+                                       FontSize="12"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       TextWrapping="Wrap" />
+                            <TextBlock Text="Requires a restart to take effect."
+                                       FontSize="12"
+                                       Foreground="{StaticResource WarningBrush}" />
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" VerticalAlignment="Center"
+                                      IsChecked="{Binding IsModernStandbyDisabled}"
+                                      Command="{Binding ToggleModernStandbyCommand}" />
+                    </Grid>
+                </Border>
+
+                <ItemsControl ItemsSource="{Binding SettingsGroups}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:PowerSettingGroupViewModel">
+                            <StackPanel Spacing="4" Margin="0,8,0,0">
+                                <TextBlock Text="{Binding GroupName}"
+                                           FontSize="14" FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextPrimaryBrush}" />
+                                <ItemsControl ItemsSource="{Binding Settings}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:PowerSettingItemViewModel">
+                                            <Border Padding="12,8" Margin="0,2" CornerRadius="4"
+                                                    Background="{StaticResource SurfaceBrush}">
+                                                <StackPanel Spacing="4">
+                                                    <TextBlock Text="{Binding Name}"
+                                                               FontSize="13" FontWeight="SemiBold"
+                                                               Foreground="{StaticResource TextPrimaryBrush}" />
+                                                    <TextBlock IsVisible="{Binding HasDescription}"
+                                                               Text="{Binding DescriptionText}"
+                                                               FontSize="12"
+                                                               Foreground="{StaticResource TextSecondaryBrush}"
+                                                               TextWrapping="Wrap" />
+
+                                                    <!-- Registry view (AC3) -->
+                                                    <StackPanel IsVisible="{Binding $parent[UserControl].((vm:PowerViewModel)DataContext).IsRegistryView}"
+                                                                Spacing="2">
+                                                        <TextBlock Text="{Binding SettingGuidText, StringFormat='Setting: {0}'}"
+                                                                   FontSize="11" FontFamily="Consolas,monospace"
+                                                                   Foreground="{StaticResource TextTertiaryBrush}" />
+                                                        <TextBlock Text="{Binding SubgroupGuidText, StringFormat='Subgroup: {0}'}"
+                                                                   FontSize="11" FontFamily="Consolas,monospace"
+                                                                   Foreground="{StaticResource TextTertiaryBrush}" />
+                                                        <TextBlock Text="{Binding RawValuesText}"
+                                                                   FontSize="11" FontFamily="Consolas,monospace"
+                                                                   Foreground="{StaticResource TextTertiaryBrush}" />
+                                                    </StackPanel>
+
+                                                    <Grid ColumnDefinitions="Auto,220,16,Auto,220,Auto"
+                                                          VerticalAlignment="Center">
+                                                        <TextBlock Grid.Column="0" Text="Plugged in:"
+                                                                   FontSize="12" Margin="0,0,8,0"
+                                                                   VerticalAlignment="Center"
+                                                                   Foreground="{StaticResource TextSecondaryBrush}" />
+                                                        <ComboBox Grid.Column="1"
+                                                                  ItemsSource="{Binding Options}"
+                                                                  SelectedIndex="{Binding SelectedAcOptionIndex}"
+                                                                  IsEnabled="{Binding CanEditAc}"
+                                                                  IsVisible="{Binding IsEnumerated}"
+                                                                  FontSize="12" HorizontalAlignment="Stretch" />
+                                                        <TextBox Grid.Column="1"
+                                                                 Text="{Binding AcText, UpdateSourceTrigger=LostFocus}"
+                                                                 IsEnabled="{Binding CanEditAc}"
+                                                                 IsVisible="{Binding IsRangeEditor}"
+                                                                 Watermark="{Binding RangeHint}"
+                                                                 FontSize="12" />
+                                                        <TextBlock Grid.Column="3" Text="On battery:"
+                                                                   FontSize="12" Margin="0,0,8,0"
+                                                                   VerticalAlignment="Center"
+                                                                   Foreground="{StaticResource TextSecondaryBrush}" />
+                                                        <ComboBox Grid.Column="4"
+                                                                  ItemsSource="{Binding Options}"
+                                                                  SelectedIndex="{Binding SelectedDcOptionIndex}"
+                                                                  IsEnabled="{Binding CanEditDc}"
+                                                                  IsVisible="{Binding IsEnumerated}"
+                                                                  FontSize="12" HorizontalAlignment="Stretch" />
+                                                        <TextBox Grid.Column="4"
+                                                                 Text="{Binding DcText, UpdateSourceTrigger=LostFocus}"
+                                                                 IsEnabled="{Binding CanEditDc}"
+                                                                 IsVisible="{Binding IsRangeEditor}"
+                                                                 Watermark="{Binding RangeHint}"
+                                                                 FontSize="12" />
+                                                        <StackPanel Grid.Column="5" Orientation="Horizontal"
+                                                                    Spacing="4" Margin="8,0,0,0"
+                                                                    VerticalAlignment="Center">
+                                                            <Border IsVisible="{Binding HasPendingAc}"
+                                                                    Background="{StaticResource InfoMutedBrush}"
+                                                                    CornerRadius="3" Padding="5,2">
+                                                                <TextBlock Text="AC pending" FontSize="10"
+                                                                           Foreground="{StaticResource InfoBrush}" />
+                                                            </Border>
+                                                            <Border IsVisible="{Binding HasPendingDc}"
+                                                                    Background="{StaticResource InfoMutedBrush}"
+                                                                    CornerRadius="3" Padding="5,2">
+                                                                <TextBlock Text="DC pending" FontSize="10"
+                                                                           Foreground="{StaticResource InfoBrush}" />
+                                                            </Border>
+                                                        </StackPanel>
+                                                    </Grid>
+
+                                                    <TextBlock IsVisible="{Binding IsRangeEditor}"
+                                                               Text="{Binding RangeHint}"
+                                                               FontSize="11"
+                                                               Foreground="{StaticResource TextTertiaryBrush}" />
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </Panel>
     </ScrollViewer>
 </UserControl>

@@ -36,8 +36,9 @@ public sealed class PowerService : IPowerService
                 // name still lists (GUID fallback) rather than failing the scan.
                 plans.Add(new PowerPlanInfo(
                     guid,
-                    ReadPowerString(PowerReadFriendlyName, guid) ?? $"Power plan {guid:D}",
-                    ReadPowerString(PowerReadDescription, guid),
+                    ReadPowerString((byte[]? b, ref uint s) => PowerReadFriendlyName(0, in guid, 0, 0, b, ref s))
+                        ?? $"Power plan {guid:D}",
+                    ReadPowerString((byte[]? b, ref uint s) => PowerReadDescription(0, in guid, 0, 0, b, ref s)),
                     guid == active));
             }
 
@@ -66,6 +67,138 @@ public sealed class PowerService : IPowerService
         }
     }
 
+    public OperationResult<IReadOnlyList<PowerSettingInfo>> EnumeratePlanSettings(Guid planGuid)
+    {
+        try
+        {
+            var settings = new List<PowerSettingInfo>();
+            for (uint subIndex = 0; ; subIndex++)
+            {
+                var subBuffer = new byte[16];
+                var subSize = (uint)subBuffer.Length;
+                var subResult = PowerEnumerate(0, in planGuid, 0, ACCESS_SUBGROUP, subIndex, subBuffer, ref subSize);
+                if (subResult == ERROR_NO_MORE_ITEMS)
+                    break;
+                if (subResult != ERROR_SUCCESS)
+                    return MapError<IReadOnlyList<PowerSettingInfo>>(subResult, $"enumerate subgroups of plan {planGuid:D}");
+
+                var subgroupGuid = new Guid(subBuffer);
+                var subgroupName =
+                    ReadPowerString((byte[]? b, ref uint s) => PowerReadFriendlyName(0, in planGuid, in subgroupGuid, 0, b, ref s))
+                    ?? $"Subgroup {subgroupGuid:D}";
+
+                for (uint index = 0; ; index++)
+                {
+                    var buffer = new byte[16];
+                    var size = (uint)buffer.Length;
+                    var result = PowerEnumerate(0, in planGuid, in subgroupGuid, ACCESS_INDIVIDUAL_SETTING, index, buffer, ref size);
+                    if (result == ERROR_NO_MORE_ITEMS)
+                        break;
+                    if (result != ERROR_SUCCESS)
+                        return MapError<IReadOnlyList<PowerSettingInfo>>(
+                            result, $"enumerate settings of subgroup {subgroupGuid:D}");
+
+                    settings.Add(ReadSetting(planGuid, subgroupGuid, subgroupName, new Guid(buffer)));
+                }
+            }
+
+            return OperationResult<IReadOnlyList<PowerSettingInfo>>.Success(settings);
+        }
+        catch (Exception ex)
+        {
+            return OperationResult<IReadOnlyList<PowerSettingInfo>>.Failure(
+                $"Unexpected error enumerating settings of plan {planGuid:D}: {ex.Message}", ErrorCategory.ServiceUnavailable, ex);
+        }
+    }
+
+    /// <summary>Everything per-setting is best-effort — an unreadable field folds to null/default, never fails the scan.</summary>
+    private static PowerSettingInfo ReadSetting(Guid planGuid, Guid subgroupGuid, string subgroupName, Guid settingGuid)
+    {
+        var name =
+            ReadPowerString((byte[]? b, ref uint s) => PowerReadFriendlyName(0, in planGuid, in subgroupGuid, in settingGuid, b, ref s))
+            ?? $"Setting {settingGuid:D}";
+        var description =
+            ReadPowerString((byte[]? b, ref uint s) => PowerReadDescription(0, in planGuid, in subgroupGuid, in settingGuid, b, ref s));
+        var units =
+            ReadPowerString((byte[]? b, ref uint s) => PowerReadValueUnitsSpecifier(0, in subgroupGuid, in settingGuid, b, ref s));
+
+        uint? acIndex = PowerReadACValueIndex(0, in planGuid, in subgroupGuid, in settingGuid, out var ac) == ERROR_SUCCESS
+            ? ac : null;
+        uint? dcIndex = PowerReadDCValueIndex(0, in planGuid, in subgroupGuid, in settingGuid, out var dc) == ERROR_SUCCESS
+            ? dc : null;
+
+        var isRange = PowerIsSettingRangeDefined(0, in subgroupGuid, in settingGuid);
+        uint min = 0, max = 0, increment = 1;
+        var possibleValues = new List<PowerPossibleValue>();
+        if (isRange)
+        {
+            if (PowerReadValueMin(0, in subgroupGuid, in settingGuid, out var readMin) == ERROR_SUCCESS)
+                min = readMin;
+            if (PowerReadValueMax(0, in subgroupGuid, in settingGuid, out var readMax) == ERROR_SUCCESS)
+                max = readMax;
+            if (PowerReadValueIncrement(0, in subgroupGuid, in settingGuid, out var readIncrement) == ERROR_SUCCESS
+                && readIncrement > 0)
+            {
+                increment = readIncrement;
+            }
+        }
+        else
+        {
+            for (uint possibleIndex = 0; ; possibleIndex++)
+            {
+                var label = ReadPowerString(
+                    (byte[]? b, ref uint s) => PowerReadPossibleFriendlyName(0, in subgroupGuid, in settingGuid, possibleIndex, b, ref s));
+                if (label is null)
+                    break;
+                possibleValues.Add(new PowerPossibleValue(possibleIndex, label));
+            }
+        }
+
+        return new PowerSettingInfo(
+            subgroupGuid, subgroupName, settingGuid, name, description,
+            acIndex, dcIndex, units, isRange, min, max, increment, possibleValues);
+    }
+
+    public OperationResult<bool> WriteSettingIndex(Guid planGuid, Guid subgroupGuid, Guid settingGuid, bool ac, uint valueIndex)
+    {
+        try
+        {
+            var result = ac
+                ? PowerWriteACValueIndex(0, in planGuid, in subgroupGuid, in settingGuid, valueIndex)
+                : PowerWriteDCValueIndex(0, in planGuid, in subgroupGuid, in settingGuid, valueIndex);
+            if (result != ERROR_SUCCESS)
+                return MapError<bool>(result, $"write setting {settingGuid:D} of plan {planGuid:D}");
+
+            // Writes to the active scheme only take effect after re-activation
+            var activeResult = GetActiveScheme();
+            if (activeResult.IsSuccess && activeResult.Value == planGuid)
+            {
+                var reapply = PowerSetActiveScheme(0, in planGuid);
+                if (reapply != ERROR_SUCCESS)
+                    return MapError<bool>(reapply, $"re-activate plan {planGuid:D} after the setting write");
+            }
+
+            return OperationResult<bool>.Success(true);
+        }
+        catch (Exception ex)
+        {
+            return OperationResult<bool>.Failure(
+                $"Unexpected error writing setting {settingGuid:D}: {ex.Message}", ErrorCategory.ServiceUnavailable, ex);
+        }
+    }
+
+    public bool SupportsModernStandby()
+    {
+        try
+        {
+            return GetPwrCapabilities(out var capabilities) && capabilities.AoAc != 0;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     private static OperationResult<Guid> GetActiveScheme()
     {
         var result = PowerGetActiveScheme(0, out var guidPtr);
@@ -81,18 +214,17 @@ public sealed class PowerService : IPowerService
         }
     }
 
-    private delegate uint PowerStringReader(
-        nint rootPowerKey, in Guid schemeGuid, nint subGroup, nint powerSetting, byte[]? buffer, ref uint bufferSize);
+    private delegate uint BufferedRead(byte[]? buffer, ref uint bufferSize);
 
     /// <summary>Two-phase buffer read of a UTF-16 power string; null on any failure or empty value.</summary>
-    private static string? ReadPowerString(PowerStringReader reader, Guid schemeGuid)
+    private static string? ReadPowerString(BufferedRead read)
     {
         uint size = 0;
-        if (reader(0, in schemeGuid, 0, 0, null, ref size) != ERROR_SUCCESS || size == 0)
+        if (read(null, ref size) != ERROR_SUCCESS || size == 0)
             return null;
 
         var buffer = new byte[size];
-        if (reader(0, in schemeGuid, 0, 0, buffer, ref size) != ERROR_SUCCESS)
+        if (read(buffer, ref size) != ERROR_SUCCESS)
             return null;
 
         var text = Encoding.Unicode.GetString(buffer, 0, (int)Math.Min(size, (uint)buffer.Length)).TrimEnd('\0');

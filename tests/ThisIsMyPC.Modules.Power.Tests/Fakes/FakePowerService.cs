@@ -31,6 +31,39 @@ public sealed class FakePowerService : IPowerService
         return OperationResult<IReadOnlyList<PowerPlanInfo>>.Success(_plans.ToList());
     }
 
+    private readonly List<PowerSettingInfo> _settings = [];
+
+    public bool ModernStandbySupported { get; set; }
+
+    public void AddSetting(PowerSettingInfo setting) => _settings.Add(setting);
+
+    /// <summary>Written value indexes: key "plan/subgroup/setting/AC|DC" → index.</summary>
+    public Dictionary<string, uint> WrittenIndexes { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    public OperationResult<IReadOnlyList<PowerSettingInfo>> EnumeratePlanSettings(Guid planGuid)
+    {
+        Calls.Add($"EnumeratePlanSettings:{planGuid:D}");
+        if (_failures.TryGetValue("EnumeratePlanSettings", out var fail))
+            return OperationResult<IReadOnlyList<PowerSettingInfo>>.Failure("Injected EnumeratePlanSettings failure.", fail);
+        return OperationResult<IReadOnlyList<PowerSettingInfo>>.Success(_settings.ToList());
+    }
+
+    public OperationResult<bool> WriteSettingIndex(Guid planGuid, Guid subgroupGuid, Guid settingGuid, bool ac, uint valueIndex)
+    {
+        var scope = ac ? "AC" : "DC";
+        Calls.Add($"WriteSettingIndex:{planGuid:D}/{subgroupGuid:D}/{settingGuid:D}/{scope}={valueIndex}");
+        if (_failures.TryGetValue("WriteSettingIndex", out var fail))
+            return OperationResult<bool>.Failure("Injected WriteSettingIndex failure.", fail);
+        WrittenIndexes[$"{planGuid:D}/{subgroupGuid:D}/{settingGuid:D}/{scope}"] = valueIndex;
+        return OperationResult<bool>.Success(true);
+    }
+
+    public bool SupportsModernStandby()
+    {
+        Calls.Add("SupportsModernStandby");
+        return ModernStandbySupported;
+    }
+
     public OperationResult<bool> SetActivePlan(Guid planGuid)
     {
         Calls.Add($"SetActivePlan:{planGuid:D}");

@@ -11,10 +11,12 @@ namespace ThisIsMyPC.Modules.Power;
 public sealed class PowerModule : IModule
 {
     private readonly IPowerService _powerService;
+    private readonly IRegistryService _registryService;
 
-    public PowerModule(IPowerService powerService)
+    public PowerModule(IPowerService powerService, IRegistryService registryService)
     {
         _powerService = powerService;
+        _registryService = registryService;
     }
 
     public ModuleInfo Info { get; } = new(
@@ -56,6 +58,10 @@ public sealed class PowerModule : IModule
         {
             ChangeValueType.PowerPlan_Setting when change.SettingId == PowerPlanChangeFactory.ActivePlanSettingId
                 => ApplyActivePlanChange(change),
+            ChangeValueType.PowerPlan_Setting when change.SettingId.StartsWith(
+                PowerPlanChangeFactory.SettingIdPrefix, StringComparison.Ordinal)
+                => ApplySettingChange(change),
+            ChangeValueType.Registry_DWord => ApplyRegistryDWordChange(change),
             _ => OperationResult<bool>.Failure(
                 $"Unsupported change: {change.ValueType}/{change.SettingId}", ErrorCategory.ServiceUnavailable),
         });
@@ -65,6 +71,50 @@ public sealed class PowerModule : IModule
     {
         // Revert contract: callers hand us a Before/After-swapped descriptor.
         return ApplyChangeAsync(change);
+    }
+
+    /// <summary>SystemLocation is "{planGuid}/{subgroupGuid}/{settingGuid}/{AC|DC}".</summary>
+    private OperationResult<bool> ApplySettingChange(ChangeDescriptor change)
+    {
+        var parts = change.SystemLocation.Split('/');
+        if (parts.Length != 4 ||
+            !Guid.TryParse(parts[0], out var planGuid) ||
+            !Guid.TryParse(parts[1], out var subgroupGuid) ||
+            !Guid.TryParse(parts[2], out var settingGuid) ||
+            parts[3] is not ("AC" or "DC") ||
+            !uint.TryParse(change.AfterValue, out var valueIndex))
+        {
+            return OperationResult<bool>.Failure(
+                $"Invalid power setting change for {change.DisplayName}: '{change.SystemLocation}' = '{change.AfterValue}'",
+                ErrorCategory.NotFound);
+        }
+
+        return _powerService.WriteSettingIndex(planGuid, subgroupGuid, settingGuid, ac: parts[3] == "AC", valueIndex);
+    }
+
+    /// <summary>Empty AfterValue restores "value absent" (e.g. reverting PlatformAoAcOverride to the Windows default).</summary>
+    private OperationResult<bool> ApplyRegistryDWordChange(ChangeDescriptor change)
+    {
+        var separator = change.SystemLocation.LastIndexOf('\\');
+        if (separator <= 0 || separator == change.SystemLocation.Length - 1)
+        {
+            return OperationResult<bool>.Failure(
+                $"Invalid system location: {change.SystemLocation}", ErrorCategory.NotFound);
+        }
+
+        var keyPath = change.SystemLocation[..separator];
+        var valueName = change.SystemLocation[(separator + 1)..];
+
+        if (string.IsNullOrEmpty(change.AfterValue))
+            return _registryService.DeleteValue(keyPath, valueName);
+
+        if (!int.TryParse(change.AfterValue, out var value))
+        {
+            return OperationResult<bool>.Failure(
+                $"Invalid DWORD value '{change.AfterValue}' for {change.DisplayName}", ErrorCategory.NotFound);
+        }
+
+        return _registryService.WriteDWord(keyPath, valueName, value);
     }
 
     private OperationResult<bool> ApplyActivePlanChange(ChangeDescriptor change)

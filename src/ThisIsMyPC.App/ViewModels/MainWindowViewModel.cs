@@ -30,6 +30,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IChangeHistoryService _changeHistoryService;
     private readonly IRegistryService _registryService;
     private readonly IServiceControlService? _serviceControlService;
+    private readonly IPowerService? _powerService;
     private readonly IScheduledTaskService? _scheduledTaskService;
     private readonly Modules.Startup.Services.TaskClassificationOverrideStore? _taskClassificationOverrides;
     private readonly IExplorerRestartService _explorerRestartService;
@@ -103,8 +104,10 @@ public partial class MainWindowViewModel : ViewModelBase
         ICapabilityDetector? capabilityDetector = null,
         IServiceControlService? serviceControlService = null,
         IScheduledTaskService? scheduledTaskService = null,
-        Modules.Startup.Services.TaskClassificationOverrideStore? taskClassificationOverrides = null)
+        Modules.Startup.Services.TaskClassificationOverrideStore? taskClassificationOverrides = null,
+        IPowerService? powerService = null)
     {
+        _powerService = powerService;
         _navigationService = navigationService;
         _pendingChangesService = pendingChangesService;
         _changeHistoryService = changeHistoryService;
@@ -233,7 +236,8 @@ public partial class MainWindowViewModel : ViewModelBase
                     {
                         ContentTitle = current.Module.Info.Name;
                         ContentDescription = current.Module.Info.Description;
-                        CurrentContent = new PowerViewModel(powerData, _pendingChangesService);
+                        CurrentContent = new PowerViewModel(
+                            powerData, _pendingChangesService, _powerService, _registryService);
                     }
                     else
                     {
