@@ -38,6 +38,12 @@ public sealed partial class StartupViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _taskClassificationFilter = "All";
 
+    [ObservableProperty]
+    private string _taskSortColumn = "Name";
+
+    [ObservableProperty]
+    private bool _taskSortDescending;
+
     public static IReadOnlyList<string> ClassificationFilterOptions { get; } =
         ["All", "Telemetry", "OEM", "Compatibility Diagnostics", "Maintenance", "User-Created", "Unknown"];
 
@@ -89,6 +95,20 @@ public sealed partial class StartupViewModel : ObservableObject, IDisposable
 
     partial void OnTaskFilterTextChanged(string value) => RebuildTasks();
     partial void OnTaskClassificationFilterChanged(string value) => RebuildTasks();
+    partial void OnTaskSortColumnChanged(string value) => RebuildTasks();
+    partial void OnTaskSortDescendingChanged(bool value) => RebuildTasks();
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private void SortTasks(string column)
+    {
+        if (TaskSortColumn == column)
+            TaskSortDescending = !TaskSortDescending;
+        else
+        {
+            TaskSortColumn = column;
+            TaskSortDescending = false;
+        }
+    }
 
     private void RebuildTasks()
     {
@@ -106,7 +126,18 @@ public sealed partial class StartupViewModel : ObservableObject, IDisposable
                 t.PublisherText.Contains(filter, StringComparison.OrdinalIgnoreCase));
         }
 
-        var final = filtered.OrderBy(t => t.Path, StringComparer.OrdinalIgnoreCase).ToList();
+        Func<ScheduledTaskItemViewModel, string> sortKey = TaskSortColumn switch
+        {
+            "Classification" => t => t.SelectedClassification,
+            "Status" => t => t.StateText,
+            "LastRun" => t => (t.Entry.LastRunTime ?? DateTime.MinValue).ToString("O"),
+            _ => t => t.Name,
+        };
+
+        var sorted = TaskSortDescending
+            ? filtered.OrderByDescending(sortKey, StringComparer.OrdinalIgnoreCase)
+            : filtered.OrderBy(sortKey, StringComparer.OrdinalIgnoreCase);
+        var final = sorted.ThenBy(t => t.Path, StringComparer.OrdinalIgnoreCase).ToList();
 
         ScheduledTaskItems.Clear();
         foreach (var item in final)

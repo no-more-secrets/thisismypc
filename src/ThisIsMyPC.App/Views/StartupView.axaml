@@ -327,6 +327,19 @@
                               MinWidth="170"
                               VerticalAlignment="Center" />
                 </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="4" Margin="12,4,0,0">
+                    <TextBlock Text="Sort:" FontSize="12"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               VerticalAlignment="Center" />
+                    <Button Content="Name" Command="{Binding SortTasksCommand}" CommandParameter="Name"
+                            Padding="8,2" FontSize="12" />
+                    <Button Content="Classification" Command="{Binding SortTasksCommand}" CommandParameter="Classification"
+                            Padding="8,2" FontSize="12" />
+                    <Button Content="Status" Command="{Binding SortTasksCommand}" CommandParameter="Status"
+                            Padding="8,2" FontSize="12" />
+                    <Button Content="Last Run" Command="{Binding SortTasksCommand}" CommandParameter="LastRun"
+                            Padding="8,2" FontSize="12" />
+                </StackPanel>
                 <ItemsControl ItemsSource="{Binding ScheduledTaskItems}"
                               ItemTemplate="{StaticResource ScheduledTaskRowTemplate}" />
                 <TextBlock Text="No tasks match the current filter"
