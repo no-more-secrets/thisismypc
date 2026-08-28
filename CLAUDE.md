@@ -18,7 +18,8 @@ able to apply **tweak sets** so Claude Code on that machine can run the debloat 
 reversibly, with visible before-states.
 
 - **The tweak inventory** (audited from Sam's machine, the source data for the built-in
-  sets): `C:\Users\user\Dev-Projects\laptop-debloat\TWEAKS.md`. Its ⚠️ items
+  sets): `_bmad-output/planning-artifacts/TWEAKS.md` (in-repo; contains personal-machine
+  details — move out before the repo ever goes public). Its ⚠️ items
   (Defender/WU/SmartScreen off) are opt-in only; its pitfalls section (WbioSrvc + biometric
   sensor freeze, HP firmware-update channels) must be encoded as `SettingEnforcement`
   companions and warnings, not prose.
