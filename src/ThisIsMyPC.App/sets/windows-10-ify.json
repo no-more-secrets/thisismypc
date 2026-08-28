@@ -1,0 +1,91 @@
+{
+  // Built-in optimization pack. Entries are grouped by constituent tweak set (the
+  // "group" labels) so the 8.2 preview can show where each change comes from.
+  "name": "Windows 10-ify",
+  "description": "Makes Windows 11 behave like Windows 10 again: classic right-click menu, left-aligned taskbar without Widgets, no tips or suggestions, and no Copilot.",
+  "category": "OptimizationPack",
+  "version": "1.0.0",
+  "author": "ThisIsMyPC",
+  "entries": [
+    {
+      "moduleId": "Explorer",
+      "settingId": "classic-context-menu",
+      "value": "",
+      "displayValue": "Classic (Windows 10) menu",
+      "description": "Restores the full Windows 10 right-click context menu instead of the abbreviated Windows 11 menu (requires Explorer restart).",
+      "group": "Classic shell"
+    },
+    {
+      "moduleId": "Explorer",
+      "settingId": "classic-command-bar",
+      "value": "",
+      "displayValue": "Classic ribbon",
+      "description": "Restores the classic File Explorer ribbon instead of the Windows 11 command toolbar (requires Explorer restart).",
+      "group": "Classic shell"
+    },
+    {
+      "moduleId": "Explorer",
+      "settingId": "taskbar-alignment",
+      "value": "0",
+      "displayValue": "Left",
+      "description": "Aligns the taskbar and Start button to the left, where Windows 10 kept them.",
+      "group": "Taskbar"
+    },
+    {
+      "moduleId": "Explorer",
+      "settingId": "taskbar-widgets",
+      "value": "0",
+      "displayValue": "Hidden",
+      "description": "Removes the Widgets button and its news-and-interests feed from the taskbar.",
+      "group": "Taskbar"
+    },
+    {
+      "moduleId": "Windows Annoyances",
+      "settingId": "windows-tips",
+      "value": "0",
+      "displayValue": "Suppressed",
+      "description": "Stops tip notifications and \"Get the most out of Windows\" prompts.",
+      "group": "Tips & suggestions"
+    },
+    {
+      "moduleId": "Windows Annoyances",
+      "settingId": "app-suggestions",
+      "value": "0",
+      "displayValue": "Suppressed",
+      "description": "Stops Windows from suggesting Store apps to install in the Start menu.",
+      "group": "Tips & suggestions"
+    },
+    {
+      "moduleId": "Windows Annoyances",
+      "settingId": "settings-suggestions",
+      "value": "0",
+      "displayValue": "Suppressed",
+      "description": "Stops the suggestion entries Windows injects into the Settings app and Start pane.",
+      "group": "Tips & suggestions"
+    },
+    {
+      "moduleId": "Windows Annoyances",
+      "settingId": "copilot",
+      "value": "1",
+      "displayValue": "Disabled",
+      "description": "Disables the Windows Copilot assistant by policy in both machine and user scope (requires Explorer restart).",
+      "group": "NukeCopilot"
+    },
+    {
+      "moduleId": "Windows Annoyances",
+      "settingId": "copilot-button",
+      "value": "0",
+      "displayValue": "Hidden",
+      "description": "Removes the Copilot button from the taskbar (requires Explorer restart).",
+      "group": "NukeCopilot"
+    },
+    {
+      "moduleId": "Windows Annoyances",
+      "settingId": "edge-sidebar",
+      "value": "0",
+      "displayValue": "Disabled",
+      "description": "Removes Microsoft Edge's Hubs sidebar, including its Copilot rail. Takes effect the next time Edge restarts.",
+      "group": "NukeCopilot"
+    }
+  ]
+}

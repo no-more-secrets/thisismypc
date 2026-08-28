@@ -1,0 +1,81 @@
+{
+  // Built-in set. Diagnostic-data/telemetry-level controls (AllowTelemetry, DiagTrack)
+  // arrive with the Privacy & Telemetry module and will be added to this set then.
+  "name": "Privacy Baseline",
+  "description": "Disables the advertising ID, activity history, Windows Recall, and the ad-like suggestion surfaces Windows injects into Start, Settings, and the lock screen.",
+  "category": "TweakSet",
+  "version": "1.0.0",
+  "author": "ThisIsMyPC",
+  "entries": [
+    {
+      "moduleId": "Windows Annoyances",
+      "settingId": "advertising-id",
+      "value": "0",
+      "displayValue": "Disabled",
+      "description": "Stops apps from using your per-user Advertising ID to build a cross-app profile for targeted ads."
+    },
+    {
+      "moduleId": "Windows Annoyances",
+      "settingId": "activity-history",
+      "value": "0",
+      "displayValue": "Disabled",
+      "description": "Stops Windows from collecting your local application activity history (Timeline/Activity Feed)."
+    },
+    {
+      "moduleId": "Windows Annoyances",
+      "settingId": "recall",
+      "value": "0",
+      "displayValue": "Disabled",
+      "description": "Blocks Windows Recall snapshots and AI analysis of your activity (three WindowsAI policies set together)."
+    },
+    {
+      "moduleId": "Windows Annoyances",
+      "settingId": "app-suggestions",
+      "value": "0",
+      "displayValue": "Suppressed",
+      "description": "Stops Windows from suggesting Store apps to install in the Start menu."
+    },
+    {
+      "moduleId": "Windows Annoyances",
+      "settingId": "windows-tips",
+      "value": "0",
+      "displayValue": "Suppressed",
+      "description": "Stops tip notifications and \"Get the most out of Windows\" prompts."
+    },
+    {
+      "moduleId": "Windows Annoyances",
+      "settingId": "settings-suggestions",
+      "value": "0",
+      "displayValue": "Suppressed",
+      "description": "Stops the suggestion entries Windows injects into the Settings app and Start pane."
+    },
+    {
+      "moduleId": "Windows Annoyances",
+      "settingId": "settings-suggested-content",
+      "value": "0",
+      "displayValue": "Suppressed",
+      "description": "Stops the ad-like \"suggested content\" tiles in the Settings app (three ContentDeliveryManager values set together)."
+    },
+    {
+      "moduleId": "Windows Annoyances",
+      "settingId": "lock-screen-ads",
+      "value": "0",
+      "displayValue": "Suppressed",
+      "description": "Stops \"fun facts, tips, and tricks\" overlays on the lock screen; the Spotlight wallpaper keeps working."
+    },
+    {
+      "moduleId": "Windows Annoyances",
+      "settingId": "silent-app-installs",
+      "value": "0",
+      "displayValue": "Suppressed",
+      "description": "Stops Windows from silently installing suggested Store apps onto the Start menu."
+    },
+    {
+      "moduleId": "Windows Annoyances",
+      "settingId": "bing-search",
+      "value": "0",
+      "displayValue": "Suppressed",
+      "description": "Stops Start Menu search from sending your queries to Bing; results stay local (requires Explorer restart)."
+    }
+  ]
+}

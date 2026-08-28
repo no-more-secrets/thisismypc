@@ -25,7 +25,7 @@ skipped with a warning — it never breaks loading of other sets.
 
 | Property | Type | Required | Notes |
 |---|---|---|---|
-| `moduleId` | string | yes | Target module, e.g. `"Explorer"`, `"Context Menus"` |
+| `moduleId` | string | yes | Target module — the module's `IModule.Info.Name` string, e.g. `"Explorer"`, `"Windows Annoyances"`, `"Context Menus"` |
 | `settingId` | string | yes | The module's setting key, e.g. `"taskbar-widgets"` |
 | `value` | string | yes | Desired value, string-typed exactly like `ChangeDescriptor.AfterValue`. The module knows the value type; before-values are captured from the live system at staging time and are never stored in set files |
 | `description` | string | yes | Human-readable explanation shown in the preview |
@@ -45,6 +45,23 @@ skipped with a warning — it never breaks loading of other sets.
 | `ownerModeRequired` | bool | Requires the Owner Mode service (v1.0) |
 | `aclElevation` | bool | Requires registry ownership transfer (not yet supported) |
 
+## Toggle value convention
+
+For settings a module surfaces as a suppress/restore toggle, `value` is the **primary
+registry value the module writes in the desired state** — the same string the module's
+change factory would put in `ChangeDescriptor.AfterValue`. For group toggles (one
+settingId covering several registry values, e.g. `copilot`, `recall`,
+`settings-suggested-content`, `bing-search` in Windows Annoyances), `value` is the
+**first** value of the group as the module's reader lists it; the resolver maps it to the
+whole group's suppress/restore state. Examples: `advertising-id` → `"0"`, `copilot` →
+`"1"` (TurnOffWindowsCopilot), `recall` → `"0"` (AllowRecallEnablement),
+`classic-context-menu` → `""` (empty InprocServer32 default enables the classic menu).
+
+Entries targeting module-owned toggles should carry **no `enforcement` object**: the
+module's change factory attaches the authoritative enforcement metadata when the change is
+staged. Set-level enforcement is for entries whose target has no module factory (none of
+the built-in sets need this today).
+
 ## Example
 
 ```json
@@ -56,24 +73,22 @@ skipped with a warning — it never breaks loading of other sets.
   "author": "ThisIsMyPC",
   "entries": [
     {
-      "moduleId": "Annoyances",
+      "moduleId": "Windows Annoyances",
       "settingId": "advertising-id",
       "value": "0",
       "displayValue": "Disabled",
-      "description": "Stops apps from using your advertising ID for cross-app tracking.",
-      "enforcement": {
-        "reversionVectors": ["Windows feature updates"]
-      }
+      "description": "Stops apps from using your advertising ID for cross-app tracking."
     },
     {
-      "moduleId": "Startup",
-      "settingId": "svc-diagtrack",
-      "value": "Disabled",
-      "description": "Disables the Connected User Experiences and Telemetry service.",
-      "enforcement": {
-        "companionServices": ["DiagTrack"]
-      }
+      "moduleId": "Explorer",
+      "settingId": "taskbar-widgets",
+      "value": "0",
+      "displayValue": "Hidden",
+      "description": "Removes the Widgets button from the taskbar."
     }
   ]
 }
 ```
+
+The bundled built-in sets (`src/ThisIsMyPC.App/sets/`) are the reference corpus; an
+automated test cross-checks every entry against the module inventories.

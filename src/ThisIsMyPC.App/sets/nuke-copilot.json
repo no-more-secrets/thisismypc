@@ -1,0 +1,33 @@
+{
+  // Built-in set. Value convention: the module's primary registry value in the desired
+  // state (docs/sets-schema.md, "Toggle value convention"). No enforcement objects here —
+  // module change factories attach authoritative enforcement at staging time.
+  "name": "NukeCopilot",
+  "description": "Turns off Windows Copilot everywhere it surfaces: the assistant itself (machine and user policy), the taskbar button, and Edge's Copilot sidebar.",
+  "category": "TweakSet",
+  "version": "1.0.0",
+  "author": "ThisIsMyPC",
+  "entries": [
+    {
+      "moduleId": "Windows Annoyances",
+      "settingId": "copilot",
+      "value": "1",
+      "displayValue": "Disabled",
+      "description": "Disables the Windows Copilot assistant by policy in both machine and user scope (requires Explorer restart)."
+    },
+    {
+      "moduleId": "Windows Annoyances",
+      "settingId": "copilot-button",
+      "value": "0",
+      "displayValue": "Hidden",
+      "description": "Removes the Copilot button from the taskbar (requires Explorer restart)."
+    },
+    {
+      "moduleId": "Windows Annoyances",
+      "settingId": "edge-sidebar",
+      "value": "0",
+      "displayValue": "Disabled",
+      "description": "Removes Microsoft Edge's Hubs sidebar, including its Copilot rail. Takes effect the next time Edge restarts."
+    }
+  ]
+}
