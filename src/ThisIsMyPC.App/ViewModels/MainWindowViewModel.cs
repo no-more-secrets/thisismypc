@@ -136,6 +136,10 @@ public partial class MainWindowViewModel : ViewModelBase
 
         try
         {
+            // Release the outgoing content VM's pending-changes subscriptions
+            // before building the replacement (Dispose implementations are idempotent).
+            await Dispatcher.UIThread.InvokeAsync(() => (CurrentContent as IDisposable)?.Dispose());
+
             var current = _navigationService.CurrentModule;
             if (current?.Module is ShellModule)
             {
@@ -200,7 +204,7 @@ public partial class MainWindowViewModel : ViewModelBase
                     {
                         ContentTitle = current.Module.Info.Name;
                         ContentDescription = current.Module.Info.Description;
-                        CurrentContent = new StartupViewModel(startupData);
+                        CurrentContent = new StartupViewModel(startupData, _pendingChangesService, _registryService);
                     }
                     else
                     {
