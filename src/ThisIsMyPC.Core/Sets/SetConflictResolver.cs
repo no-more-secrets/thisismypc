@@ -1,5 +1,6 @@
 using ThisIsMyPC.Core.Changes;
 using ThisIsMyPC.Core.Modules;
+using ThisIsMyPC.Core.Services;
 
 namespace ThisIsMyPC.Core.Sets;
 
@@ -12,13 +13,16 @@ public sealed class SetConflictResolver
 {
     private readonly IReadOnlyList<ISetEntryInspector> _inspectors;
     private readonly Func<string, ModuleAvailability?> _moduleAvailabilityLookup;
+    private readonly ICapabilityDetector? _capabilityDetector;
 
     public SetConflictResolver(
         IEnumerable<ISetEntryInspector> inspectors,
-        Func<string, ModuleAvailability?> moduleAvailabilityLookup)
+        Func<string, ModuleAvailability?> moduleAvailabilityLookup,
+        ICapabilityDetector? capabilityDetector = null)
     {
         _inspectors = inspectors.ToList();
         _moduleAvailabilityLookup = moduleAvailabilityLookup;
+        _capabilityDetector = capabilityDetector;
     }
 
     public IReadOnlyList<SetEntryResolution> Resolve(
@@ -50,11 +54,14 @@ public sealed class SetConflictResolver
 
         // A resolvable setting can still carry an unstageable value (hand-edited user
         // sets); validate the stage path now so the row never dangles a dead checkbox.
-        if (inspector.CreateChangeGroup(entry) is null)
+        var stageable = inspector.CreateChangeGroup(entry);
+        if (stageable is null)
         {
             return Skipped(entry,
                 $"Will be skipped — the value '{entry.Value}' is not valid for this setting.");
         }
+
+        var skuNotice = BuildSkuNotice(stageable);
 
         // First pending descriptor targeting the same setting. Factories list a group
         // toggle's primary value first, so the first match compares against the same
@@ -78,6 +85,7 @@ public sealed class SetConflictResolver
                     PendingGroupId = group.GroupId,
                     PendingValue = change.AfterValue,
                     PendingDisplay = change.AfterDisplay,
+                    SkuNotice = skuNotice,
                 };
             }
         }
@@ -88,7 +96,24 @@ public sealed class SetConflictResolver
             State = state,
             SkipReason = null,
             Conflict = state.IsApplied ? SetEntryConflict.AlreadyApplied : SetEntryConflict.None,
+            SkuNotice = skuNotice,
         };
+    }
+
+    /// <summary>
+    /// Informational only (architecture FR129): a SkuRestriction matching the current
+    /// SKU means the write succeeds but Windows ignores the value on this edition.
+    /// </summary>
+    private string? BuildSkuNotice(ChangeGroup stageable)
+    {
+        if (_capabilityDetector is null)
+            return null;
+
+        var restricted = stageable.Changes.Any(
+            c => _capabilityDetector.IsSkuRestricted(c.Enforcement?.SkuRestriction));
+        return restricted
+            ? $"Cosmetic on your Windows edition ({_capabilityDetector.Sku}): the value is applied and undoable as usual, but Windows ignores it on this edition."
+            : null;
     }
 
     private static SetEntryResolution Skipped(SetEntry entry, string reason) => new()

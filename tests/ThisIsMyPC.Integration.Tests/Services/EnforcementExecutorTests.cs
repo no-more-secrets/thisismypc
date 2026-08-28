@@ -11,20 +11,9 @@ namespace ThisIsMyPC.Integration.Tests.Services;
 /// <summary>Pure unit tests against fakes — no trait, so they run in the CI filter.</summary>
 public sealed class EnforcementExecutorTests
 {
-    private sealed class FakeCapabilityDetector : ICapabilityDetector
-    {
-        public WindowsSku? Sku { get; set; }
-        public string? SkuDetectionFailureReason => null;
-        public bool IsSkuRestricted(WindowsSku? restriction)
-            => restriction is not null && Sku is not null && Sku == restriction;
-        public bool IsAvailable(SystemCapability capability) => true;
-        public ModuleAvailability GetAvailability(SystemCapability capability) => new(true);
-    }
-
     private readonly FakeServiceControlService _services = new();
-    private readonly FakeCapabilityDetector _capabilities = new();
 
-    private EnforcementExecutor CreateSut() => new(_services, _capabilities);
+    private EnforcementExecutor CreateSut() => new(_services);
 
     private static ChangeDescriptor CreateChange(SettingEnforcement? enforcement) => new()
     {
@@ -137,21 +126,10 @@ public sealed class EnforcementExecutorTests
     }
 
     [Fact]
-    public async Task Execute_SkuRestricted_FailsWithSkuCategory()
+    public async Task Execute_SkuRestriction_IsInformational_NeverGates()
     {
-        _capabilities.Sku = WindowsSku.Home;
-        var change = CreateChange(new SettingEnforcement { SkuRestriction = WindowsSku.Home });
-
-        var result = await CreateSut().ExecuteAsync(change, Primary([]));
-
-        Assert.False(result.IsSuccess);
-        Assert.Equal(ErrorCategory.SkuRestricted, result.ErrorCategory);
-    }
-
-    [Fact]
-    public async Task Execute_SkuRestrictionForOtherSku_Proceeds()
-    {
-        _capabilities.Sku = WindowsSku.Pro;
+        // Architecture FR129: SkuRestriction marks the setting cosmetic on that edition;
+        // the UI informs, the apply proceeds (8-4 removed the 26-7 gate).
         var change = CreateChange(new SettingEnforcement { SkuRestriction = WindowsSku.Home });
         var received = new List<ChangeDescriptor>();
 

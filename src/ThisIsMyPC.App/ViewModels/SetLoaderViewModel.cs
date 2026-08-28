@@ -48,10 +48,11 @@ public partial class SetLoaderViewModel : ViewModelBase, IDisposable
         SetLoadResult loadResult,
         IEnumerable<ISetEntryInspector> inspectors,
         Func<string, ModuleAvailability?> moduleAvailabilityLookup,
-        IPendingChangesService pendingChangesService)
+        IPendingChangesService pendingChangesService,
+        ICapabilityDetector? capabilityDetector = null)
     {
         _inspectors = inspectors.ToList();
-        _conflictResolver = new SetConflictResolver(_inspectors, moduleAvailabilityLookup);
+        _conflictResolver = new SetConflictResolver(_inspectors, moduleAvailabilityLookup, capabilityDetector);
         _pendingChangesService = pendingChangesService;
 
         foreach (var set in loadResult.Sets.OrderBy(s => s.Name, StringComparer.OrdinalIgnoreCase))

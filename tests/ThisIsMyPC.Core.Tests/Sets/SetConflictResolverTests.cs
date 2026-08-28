@@ -1,5 +1,7 @@
 using ThisIsMyPC.Core.Changes;
+using ThisIsMyPC.Core.Enforcement;
 using ThisIsMyPC.Core.Modules;
+using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Core.Sets;
 
 namespace ThisIsMyPC.Core.Tests.Sets;
@@ -177,6 +179,75 @@ public sealed class SetConflictResolverTests
         Assert.Equal("p1", resolution.PendingGroupId);
         Assert.Equal("9", resolution.PendingValue);
         Assert.False(resolution.IncludedByDefault);
+    }
+
+    private sealed class StubCapabilityDetector : ICapabilityDetector
+    {
+        public WindowsSku? Sku { get; init; }
+        public string? SkuDetectionFailureReason => null;
+        public bool IsSkuRestricted(WindowsSku? restriction)
+            => restriction is not null && Sku is not null && Sku == restriction;
+        public bool IsAvailable(SystemCapability capability) => true;
+        public ModuleAvailability GetAvailability(SystemCapability capability) => new(true);
+    }
+
+    private static StubInspector SkuRestrictedInspector(WindowsSku restrictedOn) => new()
+    {
+        OnInspect = _ => State(isApplied: false),
+        OnCreate = e => Group("new", e.SettingId, e.Value) with
+        {
+            Changes =
+            [
+                Group("new", e.SettingId, e.Value).Changes[0] with
+                {
+                    Enforcement = new SettingEnforcement { SkuRestriction = restrictedOn },
+                },
+            ],
+        },
+    };
+
+    [Fact]
+    public void SkuRestrictionMatchingCurrentSku_ProducesCosmeticNotice_StillIncluded()
+    {
+        var resolver = new SetConflictResolver(
+            [SkuRestrictedInspector(WindowsSku.Home)],
+            _ => new ModuleAvailability(IsAvailable: true),
+            new StubCapabilityDetector { Sku = WindowsSku.Home });
+
+        var resolution = resolver.Resolve(Definition(Entry()), []).Single();
+
+        Assert.NotNull(resolution.SkuNotice);
+        Assert.Contains("Home", resolution.SkuNotice, StringComparison.Ordinal);
+        Assert.Contains("Cosmetic", resolution.SkuNotice, StringComparison.Ordinal);
+        // Informational only: the entry stays stageable and included by default
+        Assert.False(resolution.IsSkipped);
+        Assert.True(resolution.IncludedByDefault);
+    }
+
+    [Fact]
+    public void SkuRestrictionForOtherSku_NoNotice()
+    {
+        var resolver = new SetConflictResolver(
+            [SkuRestrictedInspector(WindowsSku.Home)],
+            _ => new ModuleAvailability(IsAvailable: true),
+            new StubCapabilityDetector { Sku = WindowsSku.Education });
+
+        Assert.Null(resolver.Resolve(Definition(Entry()), []).Single().SkuNotice);
+    }
+
+    [Fact]
+    public void UnknownSkuOrNoDetector_NoNotice()
+    {
+        var withUnknownSku = new SetConflictResolver(
+            [SkuRestrictedInspector(WindowsSku.Home)],
+            _ => new ModuleAvailability(IsAvailable: true),
+            new StubCapabilityDetector { Sku = null });
+        Assert.Null(withUnknownSku.Resolve(Definition(Entry()), []).Single().SkuNotice);
+
+        var withoutDetector = new SetConflictResolver(
+            [SkuRestrictedInspector(WindowsSku.Home)],
+            _ => new ModuleAvailability(IsAvailable: true));
+        Assert.Null(withoutDetector.Resolve(Definition(Entry()), []).Single().SkuNotice);
     }
 
     [Fact]

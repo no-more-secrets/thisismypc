@@ -208,6 +208,12 @@
                                                                    TextWrapping="Wrap"
                                                                    Foreground="{StaticResource WarningBrush}"
                                                                    IsVisible="{Binding HasConflict}" />
+                                                        <TextBlock Text="{Binding SkuNotice}"
+                                                                   FontSize="12"
+                                                                   FontStyle="Italic"
+                                                                   TextWrapping="Wrap"
+                                                                   Foreground="{StaticResource InfoBrush}"
+                                                                   IsVisible="{Binding HasSkuNotice}" />
                                                     </StackPanel>
                                                 </DockPanel>
                                             </Border>

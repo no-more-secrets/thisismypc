@@ -32,6 +32,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IExplorerRestartService _explorerRestartService;
     private readonly Core.Sets.ISetProvider _setProvider;
     private readonly IReadOnlyList<Core.Sets.ISetEntryInspector> _setEntryInspectors;
+    private readonly ICapabilityDetector? _capabilityDetector;
 
     public ObservableCollection<SidebarGroupViewModel> SidebarGroups { get; } = [];
 
@@ -95,7 +96,8 @@ public partial class MainWindowViewModel : ViewModelBase
         IExplorerRestartService explorerRestartService,
         ReviewPanelViewModel reviewPanel,
         Core.Sets.ISetProvider setProvider,
-        IEnumerable<Core.Sets.ISetEntryInspector> setEntryInspectors)
+        IEnumerable<Core.Sets.ISetEntryInspector> setEntryInspectors,
+        ICapabilityDetector? capabilityDetector = null)
     {
         _navigationService = navigationService;
         _pendingChangesService = pendingChangesService;
@@ -104,6 +106,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _explorerRestartService = explorerRestartService;
         _setProvider = setProvider;
         _setEntryInspectors = setEntryInspectors.ToList();
+        _capabilityDetector = capabilityDetector;
         ReviewPanel = reviewPanel;
         ChangeHistory = new ChangeHistoryViewModel(
             changeHistoryService,
@@ -309,7 +312,8 @@ public partial class MainWindowViewModel : ViewModelBase
         ContentTitle = "Set Loader";
         ContentDescription = "Browse curated tweak sets and preview every change before applying";
         CurrentContent = new SetLoaderViewModel(
-            loadResult, _setEntryInspectors, LookupModuleAvailability, _pendingChangesService);
+            loadResult, _setEntryInspectors, LookupModuleAvailability, _pendingChangesService,
+            _capabilityDetector);
         IsSetLoaderActive = true;
         SelectedModule = null;
 

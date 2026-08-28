@@ -52,6 +52,8 @@ public sealed partial class SetEntryPreviewViewModel : ViewModelBase
     public bool IsAlreadyStaged => Resolution.Conflict == SetEntryConflict.PendingSameValue;
     public bool HasConflict => Resolution.Conflict == SetEntryConflict.PendingDifferentValue;
     public bool CanToggle => !IsSkipped;
+    public string? SkuNotice => Resolution.SkuNotice;
+    public bool HasSkuNotice => Resolution.SkuNotice is not null;
 
     public string ConflictText => HasConflict
         ? $"Conflicts with a pending change: the set wants '{ProposedDisplay}', the pending change sets '{Resolution.PendingDisplay ?? Resolution.PendingValue}', the system currently has '{CurrentDisplay}'. Checking this row replaces the pending change when staged."

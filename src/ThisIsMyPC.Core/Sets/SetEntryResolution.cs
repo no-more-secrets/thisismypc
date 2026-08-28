@@ -41,6 +41,13 @@ public sealed record SetEntryResolution
     /// <summary>The conflicting pending change's human-readable AfterDisplay.</summary>
     public string? PendingDisplay { get; init; }
 
+    /// <summary>
+    /// Informational notice when the entry is cosmetic on the current Windows edition
+    /// (SettingEnforcement.SkuRestriction matches the detected SKU). Never blocks
+    /// staging or changes the default inclusion.
+    /// </summary>
+    public string? SkuNotice { get; init; }
+
     public bool IsSkipped => SkipReason is not null;
 
     /// <summary>Checked by default only when stageable with nothing in the way.</summary>

@@ -21,14 +21,11 @@ public sealed class EnforcementExecutor : IEnforcementExecutor
     private static readonly TimeSpan ServiceStopTimeout = TimeSpan.FromSeconds(30);
 
     private readonly IServiceControlService _serviceControl;
-    private readonly ICapabilityDetector _capabilities;
 
-    public EnforcementExecutor(IServiceControlService serviceControl, ICapabilityDetector capabilities)
+    public EnforcementExecutor(IServiceControlService serviceControl)
     {
         ArgumentNullException.ThrowIfNull(serviceControl);
-        ArgumentNullException.ThrowIfNull(capabilities);
         _serviceControl = serviceControl;
-        _capabilities = capabilities;
     }
 
     public async Task<EnforcementResult> ExecuteAsync(
@@ -173,17 +170,17 @@ public sealed class EnforcementExecutor : IEnforcementExecutor
         }
     }
 
-    private EnforcementResult? Gate(ChangeDescriptor change, SettingEnforcement enforcement)
+    private static EnforcementResult? Gate(ChangeDescriptor change, SettingEnforcement enforcement)
     {
         if (enforcement.OwnerModeRequired)
             return GateFailure(
                 $"'{change.DisplayName}' requires the Owner Mode service, which is not yet available.",
                 ErrorCategory.OwnerModeRequired);
 
-        if (_capabilities.IsSkuRestricted(enforcement.SkuRestriction))
-            return GateFailure(
-                $"'{change.DisplayName}' is not available on this Windows edition ({_capabilities.Sku?.ToString() ?? "unknown"}).",
-                ErrorCategory.SkuRestricted);
+        // SkuRestriction is deliberately NOT gated: per architecture (SKU detection &
+        // gating, FR129) it marks a setting as cosmetic/ineffective on that edition —
+        // the UI informs, the user can still apply. Interop layers may still surface
+        // ErrorCategory.SkuRestricted for features genuinely absent on an edition.
 
         if (enforcement.CompanionTasks is { Count: > 0 })
             return GateFailure(
