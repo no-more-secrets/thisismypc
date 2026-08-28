@@ -11,6 +11,7 @@ public partial class AnnoyancesViewModel : ViewModelBase
     public ObservableCollection<ShellSettingViewModel> BingAndEdgeSettings { get; } = [];
     public ObservableCollection<ShellSettingViewModel> AdvertisingAndTrackingSettings { get; } = [];
     public ObservableCollection<ShellSettingViewModel> GamingAndAccessibilitySettings { get; } = [];
+    public ObservableCollection<ShellSettingViewModel> AiFeaturesSettings { get; } = [];
 
     public AnnoyancesViewModel(
         AnnoyancesScanData scanData,
@@ -98,6 +99,58 @@ public partial class AnnoyancesViewModel : ViewModelBase
                 changeFactory: suppress => AnnoyanceChangeFactory.CreateToggle(ReadLive(liveReader, captured.Id), suppress),
                 readRegistryState: () => ReadLive(liveReader, captured.Id).IsSuppressed));
         }
+
+        // Windows Copilot: one toggle, machine + user policy scope in one atomic group
+        AiFeaturesSettings.Add(new ShellSettingViewModel(
+            label: "Disable Windows Copilot",
+            description: "Turns the Windows Copilot assistant off by policy, in both machine and user scope. "
+                + "Windows feature updates and Copilot app deployments are known to bring Copilot surfaces back (requires Explorer restart).",
+            systemPath: $@"{Modules.Annoyances.AnnoyancesRegistryPaths.CopilotMachinePoliciesKeyPath}\TurnOffWindowsCopilot",
+            isEnabled: scanData.CopilotPolicy.All(p => p.IsSuppressed),
+            pendingChangesService: pendingChangesService,
+            groupFactory: suppress => AnnoyanceChangeFactory.CreateCopilotPolicyToggle(liveReader.ReadCopilotPolicy(), suppress),
+            readRegistryState: () => liveReader.ReadCopilotPolicy().All(p => p.IsSuppressed)));
+
+        AddAiFeatureSingle(scanData, pendingChangesService, liveReader, "copilot-button");
+
+        // Recall: one toggle, three WindowsAI policy values in one atomic group
+        const string recallDescription =
+            "Blocks Windows Recall from taking and saving screen snapshots and turns off AI analysis of your activity. "
+            + "On PCs without Copilot+ hardware these policies are inert today; setting them future-proofs the machine.";
+        AiFeaturesSettings.Add(new ShellSettingViewModel(
+            label: "Disable Windows Recall and AI data analysis",
+            description: recallDescription,
+            systemPath: $@"{Modules.Annoyances.AnnoyancesRegistryPaths.WindowsAiPoliciesKeyPath}\AllowRecallEnablement",
+            isEnabled: scanData.Recall.All(p => p.IsSuppressed),
+            pendingChangesService: pendingChangesService,
+            groupFactory: suppress => AnnoyanceChangeFactory.CreateGroupToggle(
+                liveReader.ReadRecall(),
+                settingId: "recall",
+                displayName: "Windows Recall and AI data analysis",
+                description: recallDescription,
+                suppress),
+            readRegistryState: () => liveReader.ReadRecall().All(p => p.IsSuppressed)));
+
+        AddAiFeatureSingle(scanData, pendingChangesService, liveReader, "edge-sidebar");
+    }
+
+    // AC ordering (Copilot policy, button, Recall, Edge sidebar) interleaves singles with
+    // groups, so the AiFeatures singles are added by id instead of a section loop.
+    private void AddAiFeatureSingle(
+        AnnoyancesScanData scanData,
+        IPendingChangesService pendingChangesService,
+        Modules.Annoyances.Services.AnnoyancesSettingsReader liveReader,
+        string id)
+    {
+        var pref = scanData.Preferences.Single(p => p.Id == id);
+        AiFeaturesSettings.Add(new ShellSettingViewModel(
+            label: pref.DisplayName,
+            description: pref.Description,
+            systemPath: $@"{pref.RegistryKeyPath}\{pref.RegistryValueName}",
+            isEnabled: pref.IsSuppressed,
+            pendingChangesService: pendingChangesService,
+            changeFactory: suppress => AnnoyanceChangeFactory.CreateToggle(ReadLive(liveReader, id), suppress),
+            readRegistryState: () => ReadLive(liveReader, id).IsSuppressed));
     }
 
     private static AnnoyancePreference ReadLive(

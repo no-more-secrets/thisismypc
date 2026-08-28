@@ -22,7 +22,8 @@ public sealed class AnnoyancesSettingsReaderTests
             ["scoobe-nags", "welcome-experience", "app-suggestions", "windows-tips",
              "settings-suggestions", "lock-screen-ads", "silent-app-installs", "edge-shortcuts",
              "advertising-id", "activity-history",
-             "game-dvr", "auto-game-mode", "hags", "sticky-keys-shortcut", "filter-keys-shortcut"],
+             "game-dvr", "auto-game-mode", "hags", "sticky-keys-shortcut", "filter-keys-shortcut",
+             "copilot-button", "edge-sidebar"],
             prefs.Select(p => p.Id));
         Assert.Equal(7, prefs.Count(p => p.Section == AnnoyanceSection.ScoobeAndWelcome));
         Assert.Equal(AnnoyanceSection.BingAndEdge, prefs.Single(p => p.Id == "edge-shortcuts").Section);

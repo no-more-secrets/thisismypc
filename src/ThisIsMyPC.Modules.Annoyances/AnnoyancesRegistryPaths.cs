@@ -38,6 +38,21 @@ public static class AnnoyancesRegistryPaths
     public const string KeyboardResponseKeyPath =
         @"HKCU\Control Panel\Accessibility\Keyboard Response";
 
+    public const string ExplorerAdvancedKeyPath =
+        @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced";
+
+    public const string CopilotMachinePoliciesKeyPath =
+        @"HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot";
+
+    public const string CopilotUserPoliciesKeyPath =
+        @"HKCU\Software\Policies\Microsoft\Windows\WindowsCopilot";
+
+    public const string WindowsAiPoliciesKeyPath =
+        @"HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsAI";
+
+    public const string EdgePoliciesKeyPath =
+        @"HKLM\SOFTWARE\Policies\Microsoft\Edge";
+
     public static (string KeyPath, string ValueName) ParseSystemLocation(string systemLocation)
     {
         var lastSeparator = systemLocation.LastIndexOf('\\');

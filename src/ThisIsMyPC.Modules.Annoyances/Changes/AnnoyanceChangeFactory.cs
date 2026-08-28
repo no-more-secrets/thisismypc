@@ -15,6 +15,13 @@ public static class AnnoyanceChangeFactory
         ReversionVectors = ["Windows Update", "Web Experience Pack deployment"],
     };
 
+    // Copilot surfaces are re-enabled by feature updates and by Copilot's own app-package
+    // deployments; the policy pair is otherwise stable. Informational only — no companions.
+    private static readonly SettingEnforcement CopilotDriftEnforcement = new()
+    {
+        ReversionVectors = ["Windows feature updates", "Copilot app deployment"],
+    };
+
     /// <summary>
     /// Creates a toggle change. <paramref name="suppress"/> true writes the suppressing
     /// value; false restores the Windows default. BeforeValue is the preference's live
@@ -50,16 +57,20 @@ public static class AnnoyanceChangeFactory
         };
 
     /// <summary>
-    /// One atomic ChangeGroup from several same-polarity preferences surfaced as a single
-    /// toggle (e.g. the three Settings suggested-content values). All descriptors share
-    /// <paramref name="settingId"/> and stay null-enforcement.
+    /// One atomic ChangeGroup from several preferences surfaced as a single toggle
+    /// (e.g. the three Settings suggested-content values). Each descriptor uses its own
+    /// preference's suppressed/default pair, so mixed-polarity groups work. All
+    /// descriptors share <paramref name="settingId"/>; enforcement stays null unless
+    /// <paramref name="suppressEnforcement"/> is given (attached on suppress only,
+    /// 26-4 rule).
     /// </summary>
     public static ChangeGroup CreateGroupToggle(
         IReadOnlyList<AnnoyancePreference> prefs,
         string settingId,
         string displayName,
         string description,
-        bool suppress)
+        bool suppress,
+        SettingEnforcement? suppressEnforcement = null)
     {
         return new ChangeGroup
         {
@@ -71,9 +82,24 @@ public static class AnnoyanceChangeFactory
             Changes = prefs.Select(pref => CreateToggle(pref, suppress) with
             {
                 SettingId = settingId,
+                Enforcement = suppress ? suppressEnforcement : null,
             }).ToList(),
         };
     }
+
+    /// <summary>
+    /// One atomic ChangeGroup turning Windows Copilot off (or back on) in machine and
+    /// user policy scope together, with the Copilot drift reversion vectors on suppress.
+    /// </summary>
+    public static ChangeGroup CreateCopilotPolicyToggle(
+        IReadOnlyList<AnnoyancePreference> prefs, bool suppress)
+        => CreateGroupToggle(
+            prefs,
+            settingId: "copilot",
+            displayName: "Windows Copilot",
+            description: "Disables the Windows Copilot assistant by policy in both machine and user scope.",
+            suppress,
+            suppressEnforcement: CopilotDriftEnforcement);
 
     /// <summary>
     /// One atomic ChangeGroup for Bing search: BingSearchEnabled → 0 and

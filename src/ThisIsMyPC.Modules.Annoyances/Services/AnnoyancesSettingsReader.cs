@@ -139,6 +139,95 @@ public sealed class AnnoyancesSettingsReader
                 suppressedValue: "122",
                 defaultValue: "126",
                 restart: RestartRequirement.SignOut),
+
+            ReadPreference(
+                id: "copilot-button",
+                displayName: "Hide the Copilot taskbar button",
+                description: "Removes the Copilot button from the taskbar. The assistant itself stays reachable unless Windows Copilot is also disabled by policy (requires Explorer restart).",
+                keyPath: AnnoyancesRegistryPaths.ExplorerAdvancedKeyPath,
+                valueName: "ShowCopilotButton",
+                section: AnnoyanceSection.AiFeatures,
+                restart: RestartRequirement.ExplorerRestart),
+
+            ReadPreference(
+                id: "edge-sidebar",
+                displayName: "Disable the Edge sidebar",
+                description: "Removes Microsoft Edge's Hubs sidebar (the Copilot/shopping/tools rail on the right edge of the browser) by policy. Takes effect the next time Edge restarts.",
+                keyPath: AnnoyancesRegistryPaths.EdgePoliciesKeyPath,
+                valueName: "HubsSidebarEnabled",
+                section: AnnoyanceSection.AiFeatures),
+        ];
+    }
+
+    /// <summary>
+    /// TurnOffWindowsCopilot in machine AND user policy scope (TWEAKS.md audits both set
+    /// together). Surfaced as ONE toggle (a single atomic group), so not in ReadAll.
+    /// Polarity is inverted vs the CDM prefs: value present 1 = suppressed, missing = 0.
+    /// </summary>
+    public IReadOnlyList<AnnoyancePreference> ReadCopilotPolicy()
+    {
+        return
+        [
+            ReadPreference(
+                id: "copilot",
+                displayName: "Windows Copilot (machine policy)",
+                description: "TurnOffWindowsCopilot in machine scope.",
+                keyPath: AnnoyancesRegistryPaths.CopilotMachinePoliciesKeyPath,
+                valueName: "TurnOffWindowsCopilot",
+                section: AnnoyanceSection.AiFeatures,
+                suppressedValue: "1",
+                defaultValue: "0",
+                restart: RestartRequirement.ExplorerRestart),
+            ReadPreference(
+                id: "copilot",
+                displayName: "Windows Copilot (user policy)",
+                description: "TurnOffWindowsCopilot in user scope.",
+                keyPath: AnnoyancesRegistryPaths.CopilotUserPoliciesKeyPath,
+                valueName: "TurnOffWindowsCopilot",
+                section: AnnoyanceSection.AiFeatures,
+                suppressedValue: "1",
+                defaultValue: "0",
+                restart: RestartRequirement.ExplorerRestart),
+        ];
+    }
+
+    /// <summary>
+    /// The three HKLM WindowsAI policy values behind Recall and AI data analysis.
+    /// Surfaced as ONE toggle (a single atomic group), so not in ReadAll. Note the mixed
+    /// polarity: AllowRecallEnablement suppresses at 0, the other two at 1.
+    /// </summary>
+    public IReadOnlyList<AnnoyancePreference> ReadRecall()
+    {
+        var windowsAi = AnnoyancesRegistryPaths.WindowsAiPoliciesKeyPath;
+        return
+        [
+            ReadPreference(
+                id: "recall",
+                displayName: "Recall enablement",
+                description: "AllowRecallEnablement policy (0 blocks Recall).",
+                keyPath: windowsAi,
+                valueName: "AllowRecallEnablement",
+                section: AnnoyanceSection.AiFeatures,
+                suppressedValue: "0",
+                defaultValue: "1"),
+            ReadPreference(
+                id: "recall",
+                displayName: "AI data analysis",
+                description: "DisableAIDataAnalysis policy (1 blocks analysis).",
+                keyPath: windowsAi,
+                valueName: "DisableAIDataAnalysis",
+                section: AnnoyanceSection.AiFeatures,
+                suppressedValue: "1",
+                defaultValue: "0"),
+            ReadPreference(
+                id: "recall",
+                displayName: "Snapshot saving",
+                description: "TurnOffSavingSnapshots policy (1 blocks snapshots).",
+                keyPath: windowsAi,
+                valueName: "TurnOffSavingSnapshots",
+                section: AnnoyanceSection.AiFeatures,
+                suppressedValue: "1",
+                defaultValue: "0"),
         ];
     }
 

@@ -41,7 +41,9 @@ public sealed class AnnoyancesModule : IModule
                 var scanData = new AnnoyancesScanData(
                     _settingsReader.ReadAll(),
                     _settingsReader.ReadBingSearch(),
-                    _settingsReader.ReadSettingsSuggestedContent());
+                    _settingsReader.ReadSettingsSuggestedContent(),
+                    _settingsReader.ReadCopilotPolicy(),
+                    _settingsReader.ReadRecall());
                 return OperationResult<object>.Success(scanData);
             }
             catch (Exception ex)
