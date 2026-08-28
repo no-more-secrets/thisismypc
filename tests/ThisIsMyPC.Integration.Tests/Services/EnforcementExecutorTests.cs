@@ -12,8 +12,11 @@ namespace ThisIsMyPC.Integration.Tests.Services;
 public sealed class EnforcementExecutorTests
 {
     private readonly FakeServiceControlService _services = new();
+    private readonly FakeScheduledTaskService _tasks = new();
 
     private EnforcementExecutor CreateSut() => new(_services);
+
+    private EnforcementExecutor CreateSutWithTasks() => new(_services, _tasks);
 
     private static ChangeDescriptor CreateChange(SettingEnforcement? enforcement) => new()
     {
@@ -137,6 +140,64 @@ public sealed class EnforcementExecutorTests
 
         Assert.True(result.IsSuccess, result.ErrorMessage);
         Assert.Single(received);
+    }
+
+    [Fact]
+    public async Task Execute_CompanionTasks_DisabledBeforePrimary()
+    {
+        _tasks.AddTask(@"\Microsoft\Windows\Test\CompanionTask", enabled: true);
+        var change = CreateChange(new SettingEnforcement { CompanionTasks = [@"\Microsoft\Windows\Test\CompanionTask"] });
+        var received = new List<ChangeDescriptor>();
+
+        var result = await CreateSutWithTasks().ExecuteAsync(change, Primary(received));
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.Same(change, Assert.Single(received));
+        Assert.Equal(
+            [EnforcementStepType.DisableScheduledTask, EnforcementStepType.PrimaryMutation],
+            result.Steps.Select(s => s.StepType));
+        Assert.False(_tasks.GetTask(@"\Microsoft\Windows\Test\CompanionTask")!.IsEnabled);
+    }
+
+    [Fact]
+    public async Task Execute_PrimaryFails_CompanionTaskReenabled()
+    {
+        _tasks.AddTask(@"\Microsoft\Windows\Test\CompanionTask", enabled: true);
+        var change = CreateChange(new SettingEnforcement { CompanionTasks = [@"\Microsoft\Windows\Test\CompanionTask"] });
+
+        var result = await CreateSutWithTasks().ExecuteAsync(change, Primary([], succeed: false));
+
+        Assert.False(result.IsSuccess);
+        Assert.True(_tasks.GetTask(@"\Microsoft\Windows\Test\CompanionTask")!.IsEnabled);
+        Assert.True(result.Steps.Single(s => s.StepType == EnforcementStepType.DisableScheduledTask).WasRolledBack);
+    }
+
+    [Fact]
+    public async Task Execute_AlreadyDisabledCompanionTask_NotReenabledOnRollback()
+    {
+        _tasks.AddTask(@"\Microsoft\Windows\Test\CompanionTask", enabled: false);
+        var change = CreateChange(new SettingEnforcement { CompanionTasks = [@"\Microsoft\Windows\Test\CompanionTask"] });
+
+        var result = await CreateSutWithTasks().ExecuteAsync(change, Primary([], succeed: false));
+
+        Assert.False(result.IsSuccess);
+        Assert.False(_tasks.GetTask(@"\Microsoft\Windows\Test\CompanionTask")!.IsEnabled);
+    }
+
+    [Fact]
+    public async Task Revert_CompanionTask_Reenabled()
+    {
+        _tasks.AddTask(@"\Microsoft\Windows\Test\CompanionTask", enabled: false);
+        var change = CreateChange(new SettingEnforcement { CompanionTasks = [@"\Microsoft\Windows\Test\CompanionTask"] });
+        var received = new List<ChangeDescriptor>();
+
+        var result = await CreateSutWithTasks().RevertAsync(change, Primary(received));
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.Equal(
+            [EnforcementStepType.PrimaryMutation, EnforcementStepType.EnableScheduledTask],
+            result.Steps.Select(s => s.StepType));
+        Assert.True(_tasks.GetTask(@"\Microsoft\Windows\Test\CompanionTask")!.IsEnabled);
     }
 
     [Theory]

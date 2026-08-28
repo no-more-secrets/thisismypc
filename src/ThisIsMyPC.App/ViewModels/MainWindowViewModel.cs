@@ -30,6 +30,8 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IChangeHistoryService _changeHistoryService;
     private readonly IRegistryService _registryService;
     private readonly IServiceControlService? _serviceControlService;
+    private readonly IScheduledTaskService? _scheduledTaskService;
+    private readonly Modules.Startup.Services.TaskClassificationOverrideStore? _taskClassificationOverrides;
     private readonly IExplorerRestartService _explorerRestartService;
     private readonly Core.Sets.ISetProvider _setProvider;
     private readonly IReadOnlyList<Core.Sets.ISetEntryInspector> _setEntryInspectors;
@@ -99,7 +101,9 @@ public partial class MainWindowViewModel : ViewModelBase
         Core.Sets.ISetProvider setProvider,
         IEnumerable<Core.Sets.ISetEntryInspector> setEntryInspectors,
         ICapabilityDetector? capabilityDetector = null,
-        IServiceControlService? serviceControlService = null)
+        IServiceControlService? serviceControlService = null,
+        IScheduledTaskService? scheduledTaskService = null,
+        Modules.Startup.Services.TaskClassificationOverrideStore? taskClassificationOverrides = null)
     {
         _navigationService = navigationService;
         _pendingChangesService = pendingChangesService;
@@ -107,6 +111,8 @@ public partial class MainWindowViewModel : ViewModelBase
         _registryService = registryService;
         _explorerRestartService = explorerRestartService;
         _serviceControlService = serviceControlService;
+        _scheduledTaskService = scheduledTaskService;
+        _taskClassificationOverrides = taskClassificationOverrides;
         _setProvider = setProvider;
         _setEntryInspectors = setEntryInspectors.ToList();
         _capabilityDetector = capabilityDetector;
@@ -207,7 +213,9 @@ public partial class MainWindowViewModel : ViewModelBase
                     {
                         ContentTitle = current.Module.Info.Name;
                         ContentDescription = current.Module.Info.Description;
-                        CurrentContent = new StartupViewModel(startupData, _pendingChangesService, _registryService, _serviceControlService);
+                        CurrentContent = new StartupViewModel(
+                            startupData, _pendingChangesService, _registryService,
+                            _serviceControlService, _scheduledTaskService, _taskClassificationOverrides);
                     }
                     else
                     {

@@ -30,11 +30,24 @@ public sealed partial class StartupViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _serviceSortDescending;
 
+    private readonly List<ScheduledTaskItemViewModel> _allTasks = [];
+
+    [ObservableProperty]
+    private string _taskFilterText = string.Empty;
+
+    [ObservableProperty]
+    private string _taskClassificationFilter = "All";
+
+    public static IReadOnlyList<string> ClassificationFilterOptions { get; } =
+        ["All", "Telemetry", "OEM", "Compatibility Diagnostics", "Maintenance", "User-Created", "Unknown"];
+
     public StartupViewModel(
         StartupScanData scanData,
         IPendingChangesService pendingChangesService,
         IRegistryService registryService,
-        IServiceControlService? serviceControlService = null)
+        IServiceControlService? serviceControlService = null,
+        IScheduledTaskService? scheduledTaskService = null,
+        Modules.Startup.Services.TaskClassificationOverrideStore? classificationOverrides = null)
     {
         RegistryEntries = new ObservableCollection<StartupEntryItemViewModel>(
             scanData.StartupEntries
@@ -57,9 +70,50 @@ public sealed partial class StartupViewModel : ObservableObject, IDisposable
         ServicesScanError = scanData.ServicesScanError;
         Services = [];
         RebuildServices();
+
+        _allTasks.AddRange(scanData.ScheduledTasks
+            .Select(t => new ScheduledTaskItemViewModel(
+                t, pendingChangesService, scheduledTaskService, classificationOverrides, RebuildTasks)));
+        ScheduledTasksScanError = scanData.ScheduledTasksScanError;
+        ScheduledTaskItems = [];
+        RebuildTasks();
     }
 
     public string? ServicesScanError { get; }
+    public string? ScheduledTasksScanError { get; }
+
+    public ObservableCollection<ScheduledTaskItemViewModel> ScheduledTaskItems { get; }
+
+    public string ScheduledTasksSectionHeader => $"All Scheduled Tasks ({ScheduledTaskItems.Count} of {_allTasks.Count})";
+    public bool HasVisibleTasks => ScheduledTaskItems.Count > 0;
+
+    partial void OnTaskFilterTextChanged(string value) => RebuildTasks();
+    partial void OnTaskClassificationFilterChanged(string value) => RebuildTasks();
+
+    private void RebuildTasks()
+    {
+        IEnumerable<ScheduledTaskItemViewModel> filtered = _allTasks;
+
+        if (TaskClassificationFilter != "All")
+            filtered = filtered.Where(t => t.SelectedClassification == TaskClassificationFilter);
+
+        var filter = TaskFilterText.Trim();
+        if (filter.Length > 0)
+        {
+            filtered = filtered.Where(t =>
+                t.Name.Contains(filter, StringComparison.OrdinalIgnoreCase) ||
+                t.Path.Contains(filter, StringComparison.OrdinalIgnoreCase) ||
+                t.PublisherText.Contains(filter, StringComparison.OrdinalIgnoreCase));
+        }
+
+        var final = filtered.OrderBy(t => t.Path, StringComparer.OrdinalIgnoreCase).ToList();
+
+        ScheduledTaskItems.Clear();
+        foreach (var item in final)
+            ScheduledTaskItems.Add(item);
+        OnPropertyChanged(nameof(ScheduledTasksSectionHeader));
+        OnPropertyChanged(nameof(HasVisibleTasks));
+    }
 
     public ObservableCollection<ServiceItemViewModel> Services { get; }
 
@@ -151,6 +205,248 @@ public sealed partial class StartupViewModel : ObservableObject, IDisposable
             item.Dispose();
         foreach (var item in _allServices)
             item.Dispose();
+        foreach (var item in _allTasks)
+            item.Dispose();
+    }
+}
+
+/// <summary>
+/// One scheduled-task row: enable/disable stages through the pending pipeline;
+/// classification overrides persist immediately (app metadata, not a system mutation).
+/// </summary>
+public sealed partial class ScheduledTaskItemViewModel : ObservableObject, IDisposable
+{
+    private readonly IPendingChangesService _pendingChangesService;
+    private readonly IScheduledTaskService? _taskService;
+    private readonly Modules.Startup.Services.TaskClassificationOverrideStore? _overrides;
+    private readonly Action? _classificationChanged;
+    private bool _liveIsEnabled;
+    private bool _suppressStaging;
+    private bool _suppressOverride;
+    private bool _isStagingChange;
+    private string? _stagedGroupId;
+    private bool _disposed;
+
+    public static IReadOnlyList<string> ClassificationOptions { get; } =
+        ["Telemetry", "OEM", "Compatibility Diagnostics", "Maintenance", "User-Created", "Unknown"];
+
+    [ObservableProperty]
+    private bool _isEnabled;
+
+    [ObservableProperty]
+    private string _selectedClassification;
+
+    [ObservableProperty]
+    private bool _hasPendingChange;
+
+    public ScheduledTaskItemViewModel(
+        ScheduledTaskEntry entry,
+        IPendingChangesService pendingChangesService,
+        IScheduledTaskService? taskService,
+        Modules.Startup.Services.TaskClassificationOverrideStore? overrides,
+        Action? classificationChanged = null)
+    {
+        Entry = entry;
+        _pendingChangesService = pendingChangesService;
+        _taskService = taskService;
+        _overrides = overrides;
+        _classificationChanged = classificationChanged;
+        _liveIsEnabled = entry.IsEnabled;
+
+        _suppressStaging = true;
+        _suppressOverride = true;
+        _isEnabled = entry.IsEnabled;
+        _selectedClassification = ToDisplay(entry.Classification);
+
+        // Rehydrate a toggle group staged in an earlier visit
+        var settingId = ScheduledTaskChangeFactory.GetSettingId(entry.Path);
+        var existing = pendingChangesService.PendingGroups.FirstOrDefault(g =>
+            g.Changes.Count == 1 &&
+            g.Changes[0].ModuleId == "Startup & Services" &&
+            g.Changes[0].SettingId == settingId);
+        if (existing is not null)
+        {
+            var pendingEnabled = existing.Changes[0].Category == ChangeCategory.Enable;
+            if (pendingEnabled == _liveIsEnabled)
+                pendingChangesService.Unstage(existing.GroupId);
+            else
+            {
+                _stagedGroupId = existing.GroupId;
+                _isEnabled = pendingEnabled;
+            }
+        }
+        _suppressStaging = false;
+        _suppressOverride = false;
+        UpdatePendingState();
+
+        _pendingChangesService.PropertyChanged += OnPendingChangesPropertyChanged;
+    }
+
+    public ScheduledTaskEntry Entry { get; }
+
+    public string Name => Entry.Name;
+    public string Path => Entry.Path;
+    public string PublisherText => Entry.Author ?? "Unknown publisher";
+    public string DescriptionText => Entry.Description ?? string.Empty;
+    public bool HasDescription => !string.IsNullOrEmpty(Entry.Description);
+    public string TriggersText => Entry.TriggerTypes.Count > 0 ? string.Join(", ", Entry.TriggerTypes) : "No triggers";
+    public string LastRunText => Entry.LastRunTime?.ToString("g") ?? "Never";
+    public string LastResultText => Entry.LastTaskResult == 0 ? "OK" : $"0x{Entry.LastTaskResult:X8}";
+    public bool IsCompanionTask => Entry.IsCompanionTask;
+    public string CompanionDescription => Entry.CompanionDescription ?? string.Empty;
+    public string StateText => IsEnabled ? "Enabled" : "Disabled";
+
+    private static string ToDisplay(TaskClassification classification) => classification switch
+    {
+        TaskClassification.Telemetry => "Telemetry",
+        TaskClassification.Oem => "OEM",
+        TaskClassification.CompatibilityDiagnostics => "Compatibility Diagnostics",
+        TaskClassification.Maintenance => "Maintenance",
+        TaskClassification.UserCreated => "User-Created",
+        _ => "Unknown",
+    };
+
+    private static TaskClassification FromDisplay(string display) => display switch
+    {
+        "Telemetry" => TaskClassification.Telemetry,
+        "OEM" => TaskClassification.Oem,
+        "Compatibility Diagnostics" => TaskClassification.CompatibilityDiagnostics,
+        "Maintenance" => TaskClassification.Maintenance,
+        "User-Created" => TaskClassification.UserCreated,
+        _ => TaskClassification.Unknown,
+    };
+
+    partial void OnSelectedClassificationChanged(string value)
+    {
+        if (_suppressOverride || _disposed)
+            return;
+
+        _overrides?.Set(Entry.Path, FromDisplay(value));
+        // Deferred so the ComboBox interaction completes before the list refilters
+        // (an active classification filter may remove this row).
+        if (_classificationChanged is not null)
+            Dispatcher.UIThread.Post(_classificationChanged.Invoke);
+    }
+
+    partial void OnIsEnabledChanged(bool value)
+    {
+        if (_suppressStaging || _disposed)
+            return;
+
+        OnPropertyChanged(nameof(StateText));
+
+        // Cancel any in-flight staging so only the final toggle state wins
+        _toggleCts?.Cancel();
+        _toggleCts?.Dispose();
+        _toggleCts = new CancellationTokenSource();
+        _ = StageToggleAsync(value, _toggleCts.Token);
+    }
+
+    private CancellationTokenSource? _toggleCts;
+
+    // Runs on the UI thread; the COM Query runs on the thread pool and the await
+    // resumes on the UI thread, so staging and property updates stay dispatcher-safe.
+    private async Task StageToggleAsync(bool value, CancellationToken token)
+    {
+        try
+        {
+            // Refresh baseline from the live task state when available
+            if (_taskService is not null)
+            {
+                var live = await Task.Run(() => _taskService.Query(Entry.Path));
+                if (token.IsCancellationRequested || _disposed)
+                    return;
+                if (live.IsSuccess && live.Value is not null)
+                    _liveIsEnabled = live.Value.IsEnabled;
+            }
+
+            _isStagingChange = true;
+            try
+            {
+                if (_stagedGroupId is not null)
+                {
+                    _pendingChangesService.Unstage(_stagedGroupId);
+                    _stagedGroupId = null;
+                }
+
+                if (value != _liveIsEnabled)
+                {
+                    var change = ScheduledTaskChangeFactory.CreateToggle(
+                        Entry with { IsEnabled = _liveIsEnabled }, value);
+                    var group = new ChangeGroup
+                    {
+                        GroupId = Guid.NewGuid().ToString("N"),
+                        DisplayName = change.DisplayName,
+                        Description = change.DisplayName,
+                        Changes = [change],
+                    };
+                    _pendingChangesService.Stage(group);
+                    _stagedGroupId = group.GroupId;
+                }
+            }
+            finally
+            {
+                _isStagingChange = false;
+            }
+
+            UpdatePendingState();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Task toggle staging failed for {Name}: {ex.Message}");
+        }
+    }
+
+    private void OnPendingChangesPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (_isStagingChange)
+            return;
+        if (e.PropertyName is not nameof(IPendingChangesService.PendingGroups))
+            return;
+
+        if (Dispatcher.UIThread.CheckAccess())
+            HandlePendingGroupsChanged();
+        else
+            Dispatcher.UIThread.Post(HandlePendingGroupsChanged);
+    }
+
+    private void HandlePendingGroupsChanged()
+    {
+        if (_stagedGroupId is not null &&
+            !_pendingChangesService.PendingGroups.Any(g => g.GroupId == _stagedGroupId))
+        {
+            _stagedGroupId = null;
+
+            if (_pendingChangesService.IsApplying)
+            {
+                _liveIsEnabled = IsEnabled;
+            }
+            else
+            {
+                _suppressStaging = true;
+                IsEnabled = _liveIsEnabled;
+                _suppressStaging = false;
+                OnPropertyChanged(nameof(StateText));
+            }
+
+            UpdatePendingState();
+        }
+    }
+
+    private void UpdatePendingState()
+    {
+        HasPendingChange = IsEnabled != _liveIsEnabled;
+    }
+
+    public void Dispose()
+    {
+        if (_disposed)
+            return;
+        _disposed = true;
+        _pendingChangesService.PropertyChanged -= OnPendingChangesPropertyChanged;
+        _toggleCts?.Cancel();
+        _toggleCts?.Dispose();
+        _toggleCts = null;
     }
 }
 

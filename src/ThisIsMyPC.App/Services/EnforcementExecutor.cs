@@ -12,7 +12,8 @@ namespace ThisIsMyPC.App.Services;
 /// <summary>
 /// Production enforcement orchestrator: companion services are disabled around the
 /// primary mutation (supplied as a delegate — the executor never calls modules directly)
-/// and restored on failure. Scheduled-task, GPCache, and ACL enforcement dimensions are
+/// and restored on failure. Companion scheduled tasks are disabled/re-enabled the same
+/// way when a task service is supplied. GPCache and ACL enforcement dimensions are
 /// not yet supported and fail up front rather than silently partially enforcing.
 /// No exceptions escape except OperationCanceledException on caller cancellation.
 /// </summary>
@@ -21,11 +22,13 @@ public sealed class EnforcementExecutor : IEnforcementExecutor
     private static readonly TimeSpan ServiceStopTimeout = TimeSpan.FromSeconds(30);
 
     private readonly IServiceControlService _serviceControl;
+    private readonly IScheduledTaskService? _scheduledTasks;
 
-    public EnforcementExecutor(IServiceControlService serviceControl)
+    public EnforcementExecutor(IServiceControlService serviceControl, IScheduledTaskService? scheduledTasks = null)
     {
         ArgumentNullException.ThrowIfNull(serviceControl);
         _serviceControl = serviceControl;
+        _scheduledTasks = scheduledTasks;
     }
 
     public async Task<EnforcementResult> ExecuteAsync(
@@ -51,6 +54,7 @@ public sealed class EnforcementExecutor : IEnforcementExecutor
 
             var steps = new List<EnforcementStepResult>();
             var disabled = new List<(string Name, ServiceStatusInfo Before)>();
+            var disabledTasks = new List<(string Path, bool WasEnabled)>();
 
             try
             {
@@ -67,11 +71,26 @@ public sealed class EnforcementExecutor : IEnforcementExecutor
                     steps.Add(Step(EnforcementStepType.DisableService, serviceName, disableResult.Result));
                     disabled.Add((serviceName, disableResult.Before!));
                 }
+
+                foreach (var taskPath in enforcement.CompanionTasks ?? [])
+                {
+                    var disableResult = DisableCompanionTask(taskPath);
+                    steps.Add(Step(EnforcementStepType.DisableScheduledTask, taskPath, disableResult.Result));
+                    if (!disableResult.Result.IsSuccess)
+                    {
+                        RollbackDisabledTasks(disabledTasks, steps);
+                        await RollbackDisabledAsync(disabled, steps).ConfigureAwait(false);
+                        return Failure(steps, disableResult.Result);
+                    }
+
+                    disabledTasks.Add((taskPath, disableResult.WasEnabled));
+                }
             }
             catch (OperationCanceledException)
             {
                 // Cancellation still escapes (26-5 convention), but never with companions
                 // left disabled.
+                RollbackDisabledTasks(disabledTasks, steps);
                 await RollbackDisabledAsync(disabled, steps).ConfigureAwait(false);
                 throw;
             }
@@ -96,6 +115,7 @@ public sealed class EnforcementExecutor : IEnforcementExecutor
             steps.Add(Step(EnforcementStepType.PrimaryMutation, change.SystemLocation, primary));
             if (!primary.IsSuccess)
             {
+                RollbackDisabledTasks(disabledTasks, steps);
                 await RollbackDisabledAsync(disabled, steps).ConfigureAwait(false);
                 return Failure(steps, primary);
             }
@@ -153,6 +173,15 @@ public sealed class EnforcementExecutor : IEnforcementExecutor
                     return Failure(steps, restore);
             }
 
+            // Best-effort re-enable: a still-disabled companion task is turned back on.
+            foreach (var taskPath in enforcement.CompanionTasks ?? [])
+            {
+                var restore = RestoreCompanionTask(taskPath);
+                steps.Add(Step(EnforcementStepType.EnableScheduledTask, taskPath, restore));
+                if (!restore.IsSuccess)
+                    return Failure(steps, restore);
+            }
+
             return new EnforcementResult { IsSuccess = true, Steps = steps };
         }
         catch (OperationCanceledException)
@@ -170,7 +199,7 @@ public sealed class EnforcementExecutor : IEnforcementExecutor
         }
     }
 
-    private static EnforcementResult? Gate(ChangeDescriptor change, SettingEnforcement enforcement)
+    private EnforcementResult? Gate(ChangeDescriptor change, SettingEnforcement enforcement)
     {
         if (enforcement.OwnerModeRequired)
             return GateFailure(
@@ -182,7 +211,9 @@ public sealed class EnforcementExecutor : IEnforcementExecutor
         // the UI informs, the user can still apply. Interop layers may still surface
         // ErrorCategory.SkuRestricted for features genuinely absent on an edition.
 
-        if (enforcement.CompanionTasks is { Count: > 0 })
+        // CompanionTasks are executed when a task service is available (Story 3-4);
+        // the gate remains only for hosts constructed without one.
+        if (enforcement.CompanionTasks is { Count: > 0 } && _scheduledTasks is null)
             return GateFailure(
                 $"'{change.DisplayName}' requires scheduled-task enforcement, which is not yet supported.",
                 ErrorCategory.ServiceUnavailable);
@@ -272,6 +303,59 @@ public sealed class EnforcementExecutor : IEnforcementExecutor
                     steps[stepIndex] = steps[stepIndex] with { WasRolledBack = true };
             }
         }
+    }
+
+    private (OperationResult<bool> Result, bool WasEnabled) DisableCompanionTask(string taskPath)
+    {
+        // Gate() guarantees _scheduledTasks is non-null whenever CompanionTasks execute.
+        var query = _scheduledTasks!.Query(taskPath);
+        if (!query.IsSuccess)
+            return (OperationResult<bool>.Failure(
+                query.ErrorMessage!, query.ErrorCategory!.Value, query.Exception), false);
+
+        var wasEnabled = query.Value!.IsEnabled;
+        if (!wasEnabled)
+            return (OperationResult<bool>.Success(true), false);
+
+        return (_scheduledTasks.SetEnabled(taskPath, false), true);
+    }
+
+    private void RollbackDisabledTasks(
+        List<(string Path, bool WasEnabled)> disabledTasks, List<EnforcementStepResult> steps)
+    {
+        for (var i = disabledTasks.Count - 1; i >= 0; i--)
+        {
+            var (path, wasEnabled) = disabledTasks[i];
+            if (!wasEnabled)
+                continue; // was already disabled before we touched it
+
+            var restored = _scheduledTasks!.SetEnabled(path, true);
+            if (!restored.IsSuccess)
+            {
+                System.Diagnostics.Debug.WriteLine(
+                    $"Enforcement rollback: failed to re-enable task '{path}': {restored.ErrorMessage}");
+                continue;
+            }
+
+            var stepIndex = steps.FindIndex(s =>
+                s.StepType == EnforcementStepType.DisableScheduledTask && s.Target == path
+                && s.IsSuccess && !s.WasRolledBack);
+            if (stepIndex >= 0)
+                steps[stepIndex] = steps[stepIndex] with { WasRolledBack = true };
+        }
+    }
+
+    private OperationResult<bool> RestoreCompanionTask(string taskPath)
+    {
+        var query = _scheduledTasks!.Query(taskPath);
+        if (!query.IsSuccess)
+            return OperationResult<bool>.Failure(
+                query.ErrorMessage!, query.ErrorCategory!.Value, query.Exception);
+
+        if (query.Value!.IsEnabled)
+            return OperationResult<bool>.Success(true);
+
+        return _scheduledTasks.SetEnabled(taskPath, true);
     }
 
     private OperationResult<bool> RestoreCompanionToManual(string serviceName)

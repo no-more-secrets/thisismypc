@@ -23,6 +23,7 @@ using ThisIsMyPC.Interop.Win32.Services;
 using ThisIsMyPC.Interop.Com.Packages;
 using ThisIsMyPC.Interop.Com.Shell;
 using ThisIsMyPC.Interop.Com.Startup;
+using ThisIsMyPC.Interop.Com.Tasks;
 using ThisIsMyPC.Modules.Power;
 using ThisIsMyPC.Modules.Shell;
 using ThisIsMyPC.Modules.Startup;
@@ -91,6 +92,9 @@ public partial class App : Application
         services.AddSingleton<IEnvironmentBroadcaster, EnvironmentBroadcaster>();
         services.AddSingleton<IServiceControlService, ServiceControlService>();
         services.AddSingleton<IStartupFolderService, StartupFolderService>();
+        services.AddSingleton<IScheduledTaskService, ScheduledTaskService>();
+        services.AddSingleton(new ThisIsMyPC.Modules.Startup.Services.TaskClassificationOverrideStore(
+            System.IO.Path.Combine(AppConstants.DataDirectoryPath, "task-classifications.txt")));
         services.AddSingleton<IAppxPackageService, AppxPackageService>();
 
         // Modules (explicit DI registration, NativeAOT-safe)
