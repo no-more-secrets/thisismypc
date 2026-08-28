@@ -1,0 +1,183 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ThisIsMyPC.App.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="600"
+             x:Class="ThisIsMyPC.App.Views.SetLoaderView"
+             x:DataType="vm:SetLoaderViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="Button.set-card">
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Margin" Value="0,0,0,8" />
+        </Style>
+        <Style Selector="Border.set-card-body">
+            <Setter Property="Background" Value="{StaticResource RaisedBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource SidebarBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="12" />
+        </Style>
+        <Style Selector="Border.set-card-body.selected">
+            <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+        </Style>
+    </UserControl.Styles>
+
+    <UserControl.Resources>
+        <DataTemplate x:Key="SetCardTemplate" x:DataType="vm:SetItemViewModel">
+            <Button Classes="set-card"
+                    Command="{Binding $parent[UserControl].((vm:SetLoaderViewModel)DataContext).SelectSetCommand}"
+                    CommandParameter="{Binding}">
+                <Border Classes="set-card-body" Classes.selected="{Binding IsSelected}">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="{Binding Name}"
+                                   FontSize="15"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextPrimaryBrush}" />
+                        <TextBlock Text="{Binding Description}"
+                                   FontSize="12"
+                                   TextWrapping="Wrap"
+                                   Foreground="{StaticResource TextSecondaryBrush}" />
+                        <TextBlock Text="{Binding MetaLine}"
+                                   FontSize="11"
+                                   TextWrapping="Wrap"
+                                   Foreground="{StaticResource TextTertiaryBrush}" />
+                        <TextBlock Text="{Binding Author, StringFormat='by {0}'}"
+                                   FontSize="11"
+                                   Foreground="{StaticResource TextTertiaryBrush}" />
+                    </StackPanel>
+                </Border>
+            </Button>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Grid ColumnDefinitions="320,24,*">
+
+        <!-- Set browser -->
+        <ScrollViewer Grid.Column="0"
+                      HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="4">
+                <TextBlock Text="No sets found. Built-in sets ship with the application; user sets go in %APPDATA%\ThisIsMyPC\sets."
+                           FontSize="13"
+                           TextWrapping="Wrap"
+                           Foreground="{StaticResource TextTertiaryBrush}"
+                           IsVisible="{Binding HasNoSets}" />
+
+                <StackPanel IsVisible="{Binding HasTweakSets}" Spacing="4" Margin="0,0,0,12">
+                    <TextBlock Text="TWEAK SETS"
+                               FontSize="11"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource TextTertiaryBrush}"
+                               Margin="0,0,0,4" />
+                    <ItemsControl ItemsSource="{Binding TweakSets}"
+                                  ItemTemplate="{StaticResource SetCardTemplate}" />
+                </StackPanel>
+
+                <StackPanel IsVisible="{Binding HasOptimizationPacks}" Spacing="4">
+                    <TextBlock Text="OPTIMIZATION PACKS"
+                               FontSize="11"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource TextTertiaryBrush}"
+                               Margin="0,0,0,4" />
+                    <ItemsControl ItemsSource="{Binding OptimizationPacks}"
+                                  ItemTemplate="{StaticResource SetCardTemplate}" />
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Preview -->
+        <Panel Grid.Column="2">
+            <StackPanel IsVisible="{Binding HasNoSelection}"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Spacing="8">
+                <TextBlock Text="Select a set to preview its changes"
+                           FontSize="15"
+                           HorizontalAlignment="Center"
+                           Foreground="{StaticResource TextSecondaryBrush}" />
+                <TextBlock Text="Every change is shown with its current system value before anything is staged"
+                           FontSize="12"
+                           HorizontalAlignment="Center"
+                           Foreground="{StaticResource TextTertiaryBrush}" />
+            </StackPanel>
+
+            <ScrollViewer IsVisible="{Binding !HasNoSelection}"
+                          HorizontalScrollBarVisibility="Disabled"
+                          VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding PreviewGroups}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:SetPreviewGroupViewModel">
+                            <StackPanel Spacing="6" Margin="0,0,0,16">
+                                <TextBlock Text="{Binding GroupName}"
+                                           FontSize="13"
+                                           FontWeight="SemiBold"
+                                           Foreground="{StaticResource AccentBrush}"
+                                           IsVisible="{Binding HasHeader}" />
+                                <ItemsControl ItemsSource="{Binding Entries}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:SetEntryPreviewViewModel">
+                                            <Border Background="{StaticResource RaisedBrush}"
+                                                    CornerRadius="6"
+                                                    Padding="12,10"
+                                                    Margin="0,0,0,6"
+                                                    ToolTip.Tip="{Binding RawValuesTooltip}">
+                                                <DockPanel>
+                                                    <!-- Current -> proposed -->
+                                                    <StackPanel DockPanel.Dock="Right"
+                                                                Orientation="Horizontal"
+                                                                Spacing="8"
+                                                                VerticalAlignment="Center"
+                                                                Margin="16,0,0,0"
+                                                                IsVisible="{Binding !IsSkipped}">
+                                                        <TextBlock Text="{Binding CurrentDisplay}"
+                                                                   FontSize="12"
+                                                                   Foreground="{StaticResource TextSecondaryBrush}" />
+                                                        <TextBlock Text="&#x2192;"
+                                                                   FontSize="12"
+                                                                   Foreground="{StaticResource TextTertiaryBrush}" />
+                                                        <TextBlock Text="{Binding ProposedDisplay}"
+                                                                   FontSize="12"
+                                                                   FontWeight="SemiBold"
+                                                                   Foreground="{StaticResource AccentBrush}" />
+                                                        <TextBlock Text="already applied"
+                                                                   FontSize="11"
+                                                                   VerticalAlignment="Center"
+                                                                   Foreground="{StaticResource SuccessBrush}"
+                                                                   IsVisible="{Binding IsApplied}" />
+                                                    </StackPanel>
+
+                                                    <StackPanel Spacing="2">
+                                                        <TextBlock Text="{Binding SettingName}"
+                                                                   FontSize="13"
+                                                                   FontWeight="SemiBold"
+                                                                   Foreground="{StaticResource TextPrimaryBrush}" />
+                                                        <TextBlock Text="{Binding Description}"
+                                                                   FontSize="12"
+                                                                   TextWrapping="Wrap"
+                                                                   Foreground="{StaticResource TextSecondaryBrush}" />
+                                                        <TextBlock Text="{Binding SkipReason}"
+                                                                   FontSize="12"
+                                                                   FontStyle="Italic"
+                                                                   TextWrapping="Wrap"
+                                                                   Foreground="{StaticResource WarningBrush}"
+                                                                   IsVisible="{Binding IsSkipped}" />
+                                                    </StackPanel>
+                                                </DockPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Panel>
+    </Grid>
+</UserControl>

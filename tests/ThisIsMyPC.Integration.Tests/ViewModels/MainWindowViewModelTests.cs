@@ -25,7 +25,7 @@ public class MainWindowViewModelTests
         var reviewPanel = new ReviewPanelViewModel(pendingChangesService);
         var registryService = new Fakes.FakeRegistryService();
         explorerRestartService = new Fakes.FakeExplorerRestartService();
-        return new MainWindowViewModel(navigationService, pendingChangesService, historyService, registryService, explorerRestartService, reviewPanel);
+        return new MainWindowViewModel(navigationService, pendingChangesService, historyService, registryService, explorerRestartService, reviewPanel, new Fakes.FakeSetProvider(), []);
     }
 
     private static ChangeDescriptor CreateTestChange(string moduleId = "test", string settingId = "setting1") => new()

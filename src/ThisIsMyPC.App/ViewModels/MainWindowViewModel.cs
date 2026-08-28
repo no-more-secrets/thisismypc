@@ -30,6 +30,8 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IChangeHistoryService _changeHistoryService;
     private readonly IRegistryService _registryService;
     private readonly IExplorerRestartService _explorerRestartService;
+    private readonly Core.Sets.ISetProvider _setProvider;
+    private readonly IReadOnlyList<Core.Sets.ISetEntryInspector> _setEntryInspectors;
 
     public ObservableCollection<SidebarGroupViewModel> SidebarGroups { get; } = [];
 
@@ -91,13 +93,17 @@ public partial class MainWindowViewModel : ViewModelBase
         IChangeHistoryService changeHistoryService,
         IRegistryService registryService,
         IExplorerRestartService explorerRestartService,
-        ReviewPanelViewModel reviewPanel)
+        ReviewPanelViewModel reviewPanel,
+        Core.Sets.ISetProvider setProvider,
+        IEnumerable<Core.Sets.ISetEntryInspector> setEntryInspectors)
     {
         _navigationService = navigationService;
         _pendingChangesService = pendingChangesService;
         _changeHistoryService = changeHistoryService;
         _registryService = registryService;
         _explorerRestartService = explorerRestartService;
+        _setProvider = setProvider;
+        _setEntryInspectors = setEntryInspectors.ToList();
         ReviewPanel = reviewPanel;
         ChangeHistory = new ChangeHistoryViewModel(
             changeHistoryService,
@@ -269,9 +275,51 @@ public partial class MainWindowViewModel : ViewModelBase
         if (item is null || !item.IsAvailable)
             return;
 
+        var wasSetLoaderActive = IsSetLoaderActive;
+        // Captured BEFORE navigating: afterwards CurrentModule always equals the target,
+        // which would double-trigger the rebuild for cross-module navigation (the
+        // PropertyChanged event already fired for that case).
+        var previousModule = _navigationService.CurrentModule?.Module;
+        IsSetLoaderActive = false;
         _navigationService.NavigateToModule(item.Name);
         SyncSelectedModule();
+
+        // Returning from the Set Loader to the module that is still CurrentModule:
+        // the navigation setter guards equality, so rebuild the content explicitly.
+        if (wasSetLoaderActive && previousModule == item.Module)
+        {
+            OnNavigationPropertyChanged(
+                _navigationService,
+                new PropertyChangedEventArgs(nameof(NavigationService.CurrentModule)));
+        }
     }
+
+    [ObservableProperty]
+    private bool _isSetLoaderActive;
+
+    [RelayCommand]
+    private void OpenSetLoader()
+    {
+        // Fresh disk read on every open: user sets dropped into %APPDATA% appear
+        // without an app restart.
+        var loadResult = _setProvider.LoadSets();
+
+        ContentTitle = "Set Loader";
+        ContentDescription = "Browse curated tweak sets and preview every change before applying";
+        CurrentContent = new SetLoaderViewModel(loadResult, _setEntryInspectors, LookupModuleAvailability);
+        IsSetLoaderActive = true;
+        SelectedModule = null;
+
+        foreach (var group in SidebarGroups)
+        {
+            foreach (var sidebarItem in group.Items)
+                sidebarItem.IsActive = false;
+        }
+    }
+
+    private ModuleAvailability? LookupModuleAvailability(string moduleId)
+        => _navigationService.Modules
+            .FirstOrDefault(m => m.Module.Info.Name == moduleId)?.Availability;
 
     [RelayCommand]
     private void ToggleSidebar()

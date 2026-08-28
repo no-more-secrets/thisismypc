@@ -33,6 +33,27 @@
                               Foreground="{StaticResource TextSecondaryBrush}" />
                 </Button>
 
+                <!-- Set Loader (not a module — pinned below the module groups) -->
+                <StackPanel DockPanel.Dock="Bottom" Margin="0,8,0,8">
+                    <TextBlock Text="SETS"
+                               Classes="sidebar-group-header"
+                               IsVisible="{Binding !IsSidebarCollapsed}" />
+                    <Button Classes="sidebar-item"
+                            Classes.active="{Binding IsSetLoaderActive}"
+                            Command="{Binding OpenSetLoaderCommand}"
+                            ToolTip.Tip="Browse and preview tweak sets">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <PathIcon Width="18" Height="18"
+                                      Foreground="{StaticResource TextSecondaryBrush}"
+                                      Data="M12,16L19.36,10.27L21,9L12,2L3,9L4.63,10.27M12,18.54L4.62,12.81L3,14.07L12,21.07L21,14.07L19.37,12.8L12,18.54Z" />
+                            <TextBlock Text="Set Loader"
+                                       VerticalAlignment="Center"
+                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                       IsVisible="{Binding !IsSidebarCollapsed}" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+
                 <!-- Module groups -->
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                               VerticalScrollBarVisibility="Auto">
@@ -233,6 +254,9 @@
                             </DataTemplate>
                             <DataTemplate DataType="{x:Type vm:AnnoyancesViewModel}">
                                 <views:AnnoyancesView />
+                            </DataTemplate>
+                            <DataTemplate DataType="{x:Type vm:SetLoaderViewModel}">
+                                <views:SetLoaderView />
                             </DataTemplate>
                         </ContentControl.DataTemplates>
                     </ContentControl>

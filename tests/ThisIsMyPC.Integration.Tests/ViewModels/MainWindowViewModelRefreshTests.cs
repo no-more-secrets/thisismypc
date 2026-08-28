@@ -21,7 +21,7 @@ public sealed class MainWindowViewModelRefreshTests
         var reviewPanel = new ReviewPanelViewModel(pendingChangesService);
         var registryService = new Fakes.FakeRegistryService();
         var explorerRestartService = new Fakes.FakeExplorerRestartService();
-        var vm = new MainWindowViewModel(navigationService, pendingChangesService, historyService, registryService, explorerRestartService, reviewPanel);
+        var vm = new MainWindowViewModel(navigationService, pendingChangesService, historyService, registryService, explorerRestartService, reviewPanel, new Fakes.FakeSetProvider(), []);
         return (vm, pendingChangesService, explorerRestartService);
     }
 
