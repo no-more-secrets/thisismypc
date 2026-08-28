@@ -99,6 +99,8 @@ public sealed class CapabilityDetectorTests
         public OperationResult<int> ReadDWord(string keyPath, string valueName) => throw new NotSupportedException();
         public OperationResult<string> ReadExpandString(string keyPath, string valueName) => throw new NotSupportedException();
         public OperationResult<string[]> ReadMultiString(string keyPath, string valueName) => throw new NotSupportedException();
+        public OperationResult<byte[]> ReadBinary(string keyPath, string valueName) => throw new NotSupportedException();
+        public OperationResult<bool> WriteBinary(string keyPath, string valueName, byte[] value) => throw new NotSupportedException();
         public OperationResult<bool> WriteDWord(string keyPath, string valueName, int value) => throw new NotSupportedException();
         public OperationResult<bool> WriteString(string keyPath, string valueName, string value) => throw new NotSupportedException();
         public OperationResult<bool> WriteExpandString(string keyPath, string valueName, string value) => throw new NotSupportedException();

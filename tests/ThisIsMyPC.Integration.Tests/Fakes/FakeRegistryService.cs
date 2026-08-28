@@ -22,6 +22,12 @@ internal sealed class FakeRegistryService : IRegistryService
     public OperationResult<string[]> ReadMultiString(string keyPath, string valueName) =>
         OperationResult<string[]>.Failure("Not found", ErrorCategory.NotFound);
 
+    public OperationResult<byte[]> ReadBinary(string keyPath, string valueName) =>
+        OperationResult<byte[]>.Failure("Not found", ErrorCategory.NotFound);
+
+    public OperationResult<bool> WriteBinary(string keyPath, string valueName, byte[] value) =>
+        OperationResult<bool>.Success(true);
+
     public OperationResult<bool> WriteDWord(string keyPath, string valueName, int value) =>
         OperationResult<bool>.Success(true);
 

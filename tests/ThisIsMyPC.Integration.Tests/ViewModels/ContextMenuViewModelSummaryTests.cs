@@ -235,6 +235,8 @@ public sealed class ContextMenuViewModelSummaryTests : IDisposable
         public OperationResult<int> ReadDWord(string k, string v) => OperationResult<int>.Failure("", ErrorCategory.NotFound);
         public OperationResult<string> ReadExpandString(string k, string v) => OperationResult<string>.Failure("", ErrorCategory.NotFound);
         public OperationResult<string[]> ReadMultiString(string k, string v) => OperationResult<string[]>.Failure("", ErrorCategory.NotFound);
+        public OperationResult<byte[]> ReadBinary(string k, string v) => OperationResult<byte[]>.Failure("", ErrorCategory.NotFound);
+        public OperationResult<bool> WriteBinary(string k, string v, byte[] val) => OperationResult<bool>.Success(true);
         public OperationResult<bool> WriteDWord(string k, string v, int val) => OperationResult<bool>.Success(true);
         public OperationResult<bool> WriteString(string k, string v, string val) => OperationResult<bool>.Success(true);
         public OperationResult<bool> WriteExpandString(string k, string v, string val) => OperationResult<bool>.Success(true);

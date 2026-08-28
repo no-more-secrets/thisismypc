@@ -1,0 +1,143 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ThisIsMyPC.App.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="ThisIsMyPC.App.Views.StartupView"
+             x:DataType="vm:StartupViewModel">
+
+    <UserControl.Resources>
+        <DataTemplate x:Key="StartupEntryRowTemplate" x:DataType="vm:StartupEntryItemViewModel">
+            <Border Padding="12,8" Margin="0,2" CornerRadius="4"
+                    Background="{StaticResource SurfaceBrush}">
+                <Grid ColumnDefinitions="2*,*,Auto" RowDefinitions="Auto,Auto">
+                    <StackPanel Grid.Column="0" Grid.Row="0" Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="{Binding Name}"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding DescriptionText}"
+                                   IsVisible="{Binding HasDescription}"
+                                   FontSize="12"
+                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   TextTrimming="CharacterEllipsis"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+                    <TextBlock Grid.Column="1" Grid.Row="0"
+                               Text="{Binding PublisherText}"
+                               FontSize="12"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               TextTrimming="CharacterEllipsis"
+                               Margin="8,0"
+                               VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="2" Grid.Row="0"
+                               Text="{Binding StateText}"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               VerticalAlignment="Center" />
+
+                    <!-- Simplified view: executable location + source label -->
+                    <StackPanel Grid.Column="0" Grid.ColumnSpan="3" Grid.Row="1"
+                                Orientation="Horizontal" Spacing="8" Margin="0,4,0,0"
+                                IsVisible="{Binding !IsRegistryViewMode}">
+                        <TextBlock Text="{Binding SourceLabel}"
+                                   FontSize="11"
+                                   Foreground="{StaticResource TextTertiaryBrush}" />
+                        <TextBlock Text="{Binding FileLocationText}"
+                                   FontSize="11"
+                                   FontFamily="{StaticResource MonoFont}"
+                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                   TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+
+                    <!-- Registry view: exact source path -->
+                    <StackPanel Grid.Column="0" Grid.ColumnSpan="3" Grid.Row="1"
+                                Spacing="2" Margin="0,4,0,0"
+                                IsVisible="{Binding IsRegistryViewMode}">
+                        <TextBlock Text="{Binding RegistryLocationText}"
+                                   FontSize="11"
+                                   FontFamily="{StaticResource MonoFont}"
+                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                   TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="{Binding FileLocationText}"
+                                   FontSize="11"
+                                   FontFamily="{StaticResource MonoFont}"
+                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                   TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="20" Margin="0,8,20,16">
+
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                <TextBlock Text="Registry Info"
+                           FontSize="13"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           VerticalAlignment="Center" />
+                <ToggleSwitch IsChecked="{Binding IsRegistryViewMode}"
+                              OffContent=""
+                              OnContent=""
+                              VerticalAlignment="Center" />
+            </StackPanel>
+
+            <!-- Registry entries -->
+            <StackPanel Spacing="6">
+                <TextBlock Text="{Binding RegistryHeader}"
+                           FontSize="15"
+                           FontWeight="SemiBold"
+                           Foreground="{StaticResource TextPrimaryBrush}" />
+                <TextBlock Text="Programs launched from registry Run keys at sign-in"
+                           FontSize="12"
+                           Foreground="{StaticResource TextSecondaryBrush}" />
+                <ItemsControl ItemsSource="{Binding RegistryEntries}"
+                              ItemTemplate="{StaticResource StartupEntryRowTemplate}" />
+                <TextBlock Text="No registry startup entries found"
+                           FontSize="12" FontStyle="Italic"
+                           Foreground="{StaticResource TextTertiaryBrush}"
+                           IsVisible="{Binding !HasRegistryEntries}" />
+            </StackPanel>
+
+            <!-- Startup folder entries -->
+            <StackPanel Spacing="6">
+                <TextBlock Text="{Binding FolderHeader}"
+                           FontSize="15"
+                           FontWeight="SemiBold"
+                           Foreground="{StaticResource TextPrimaryBrush}" />
+                <TextBlock Text="Shortcuts and programs in the user and common Startup folders"
+                           FontSize="12"
+                           Foreground="{StaticResource TextSecondaryBrush}" />
+                <ItemsControl ItemsSource="{Binding FolderEntries}"
+                              ItemTemplate="{StaticResource StartupEntryRowTemplate}" />
+                <TextBlock Text="No startup folder entries found"
+                           FontSize="12" FontStyle="Italic"
+                           Foreground="{StaticResource TextTertiaryBrush}"
+                           IsVisible="{Binding !HasFolderEntries}" />
+            </StackPanel>
+
+            <!-- Scheduled task entries -->
+            <StackPanel Spacing="6">
+                <TextBlock Text="{Binding TaskHeader}"
+                           FontSize="15"
+                           FontWeight="SemiBold"
+                           Foreground="{StaticResource TextPrimaryBrush}" />
+                <TextBlock Text="Tasks that run at sign-in or startup (full task auditing arrives with the Scheduled Tasks section)"
+                           FontSize="12"
+                           Foreground="{StaticResource TextSecondaryBrush}" />
+                <ItemsControl ItemsSource="{Binding TaskEntries}"
+                              ItemTemplate="{StaticResource StartupEntryRowTemplate}" />
+                <TextBlock Text="No startup-related scheduled tasks found"
+                           FontSize="12" FontStyle="Italic"
+                           Foreground="{StaticResource TextTertiaryBrush}"
+                           IsVisible="{Binding !HasTaskEntries}" />
+            </StackPanel>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

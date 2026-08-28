@@ -57,6 +57,20 @@ public sealed class FakeRegistryService : IRegistryService
         return OperationResult<string[]>.Failure("Not found", ErrorCategory.NotFound);
     }
 
+    public OperationResult<byte[]> ReadBinary(string keyPath, string valueName)
+    {
+        if (_values.TryGetValue(MakeKey(keyPath, valueName), out var val) && val is byte[] bytes)
+            return OperationResult<byte[]>.Success(bytes);
+        return OperationResult<byte[]>.Failure("Not found", ErrorCategory.NotFound);
+    }
+
+    public OperationResult<bool> WriteBinary(string keyPath, string valueName, byte[] value)
+    {
+        _values[MakeKey(keyPath, valueName)] = value;
+        _keys.Add(keyPath);
+        return OperationResult<bool>.Success(true);
+    }
+
     public OperationResult<bool> WriteDWord(string keyPath, string valueName, int value)
     {
         _values[MakeKey(keyPath, valueName)] = value;

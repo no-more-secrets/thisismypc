@@ -177,6 +177,8 @@ public sealed class EnvironmentModuleTests
         public OperationResult<string> ReadString(string keyPath, string valueName) => OperationResult<string>.Failure("not impl", ErrorCategory.NotFound);
         public OperationResult<string> ReadExpandString(string keyPath, string valueName) => OperationResult<string>.Failure("not impl", ErrorCategory.NotFound);
         public OperationResult<string[]> ReadMultiString(string keyPath, string valueName) => OperationResult<string[]>.Failure("not impl", ErrorCategory.NotFound);
+        public OperationResult<byte[]> ReadBinary(string keyPath, string valueName) => OperationResult<byte[]>.Failure("not impl", ErrorCategory.NotFound);
+        public OperationResult<bool> WriteBinary(string keyPath, string valueName, byte[] value) => OperationResult<bool>.Failure("access denied", ErrorCategory.AccessDenied);
         public OperationResult<bool> WriteDWord(string keyPath, string valueName, int value) => OperationResult<bool>.Failure("access denied", ErrorCategory.AccessDenied);
         public OperationResult<bool> WriteString(string keyPath, string valueName, string value) => OperationResult<bool>.Failure("access denied", ErrorCategory.AccessDenied);
         public OperationResult<bool> WriteExpandString(string keyPath, string valueName, string value) => OperationResult<bool>.Failure("access denied", ErrorCategory.AccessDenied);

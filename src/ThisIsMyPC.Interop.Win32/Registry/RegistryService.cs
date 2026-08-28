@@ -29,6 +29,14 @@ public sealed class RegistryService : IRegistryService
             return [raw?.ToString() ?? string.Empty];
         }), keyPath);
 
+    public OperationResult<byte[]> ReadBinary(string keyPath, string valueName) =>
+        Execute(() => ReadValueCore(keyPath, valueName, raw =>
+        {
+            if (raw is byte[] bytes)
+                return bytes;
+            throw new InvalidCastException($"Value is not REG_BINARY: {keyPath}\\{valueName}");
+        }), keyPath);
+
     public OperationResult<bool> WriteDWord(string keyPath, string valueName, int value) =>
         Execute(() => WriteValueCore(keyPath, valueName, value, RegistryValueKind.DWord), keyPath);
 
@@ -40,6 +48,9 @@ public sealed class RegistryService : IRegistryService
 
     public OperationResult<bool> WriteMultiString(string keyPath, string valueName, string[] values) =>
         Execute(() => WriteValueCore(keyPath, valueName, values, RegistryValueKind.MultiString), keyPath);
+
+    public OperationResult<bool> WriteBinary(string keyPath, string valueName, byte[] value) =>
+        Execute(() => WriteValueCore(keyPath, valueName, value, RegistryValueKind.Binary), keyPath);
 
     public OperationResult<bool> DeleteValue(string keyPath, string valueName) =>
         Execute<bool>(() =>
