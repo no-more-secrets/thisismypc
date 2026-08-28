@@ -10,11 +10,16 @@ public sealed class StartupModule : IModule
 {
     private readonly IRegistryService _registryService;
     private readonly IStartupFolderService _startupFolderService;
+    private readonly IServiceControlService _serviceControlService;
 
-    public StartupModule(IRegistryService registryService, IStartupFolderService startupFolderService)
+    public StartupModule(
+        IRegistryService registryService,
+        IStartupFolderService startupFolderService,
+        IServiceControlService serviceControlService)
     {
         _registryService = registryService;
         _startupFolderService = startupFolderService;
+        _serviceControlService = serviceControlService;
     }
 
     public ModuleInfo Info { get; } = new(
@@ -36,8 +41,15 @@ public sealed class StartupModule : IModule
         {
             try
             {
-                var scanner = new StartupScanner(_registryService, _startupFolderService);
-                return OperationResult<object>.Success(scanner.Scan());
+                var startupScanner = new StartupScanner(_registryService, _startupFolderService);
+                var serviceScanner = new ServiceScanner(_serviceControlService);
+                var startupData = startupScanner.Scan();
+                var services = serviceScanner.Scan();
+                return OperationResult<object>.Success(startupData with
+                {
+                    Services = services,
+                    ServicesScanError = serviceScanner.LastScanError,
+                });
             }
             catch (Exception ex)
             {
@@ -49,10 +61,11 @@ public sealed class StartupModule : IModule
 
     public Task<OperationResult<bool>> ApplyChangeAsync(ChangeDescriptor change)
     {
-        // Services (3.3) and scheduled tasks (3.4) add their value types here.
+        // Scheduled tasks (3.4) add their value type here.
         return Task.FromResult(change.ValueType switch
         {
             ChangeValueType.Registry_Binary => ApplyBinaryChange(change),
+            ChangeValueType.Service_StartType => ApplyServiceStartTypeChange(change),
             _ => OperationResult<bool>.Failure(
                 $"Unsupported value type: {change.ValueType}", ErrorCategory.ServiceUnavailable),
         });
@@ -62,6 +75,19 @@ public sealed class StartupModule : IModule
     {
         // Revert contract: callers hand us a Before/After-swapped descriptor.
         return ApplyChangeAsync(change);
+    }
+
+    private OperationResult<bool> ApplyServiceStartTypeChange(ChangeDescriptor change)
+    {
+        if (!Enum.TryParse<ServiceStartType>(change.AfterValue, out var startType) ||
+            !Enum.IsDefined(startType))
+        {
+            return OperationResult<bool>.Failure(
+                $"Invalid service start type '{change.AfterValue}' for {change.DisplayName}", ErrorCategory.NotFound);
+        }
+
+        // SystemLocation is the bare service name
+        return _serviceControlService.SetStartType(change.SystemLocation, startType);
     }
 
     private OperationResult<bool> ApplyBinaryChange(ChangeDescriptor change)

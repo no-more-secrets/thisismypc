@@ -37,6 +37,130 @@ public sealed class ServiceControlService : IServiceControlService
         }
     }
 
+    public OperationResult<IReadOnlyList<ServiceEntryInfo>> EnumerateAll()
+    {
+        try
+        {
+            var hScm = OpenSCManagerW(null, null, SC_MANAGER_CONNECT | SC_MANAGER_ENUMERATE_SERVICE);
+            if (hScm == 0)
+                return MapLastError<IReadOnlyList<ServiceEntryInfo>>("(all)", "connect to Service Control Manager for");
+            try
+            {
+                uint resumeHandle = 0;
+
+                // Size probe: expected to fail with ERROR_MORE_DATA and report the needed bytes.
+                if (EnumServicesStatusExW(hScm, SC_ENUM_PROCESS_INFO, SERVICE_WIN32, SERVICE_STATE_ALL,
+                        0, 0, out var bytesNeeded, out _, ref resumeHandle, null))
+                {
+                    return OperationResult<IReadOnlyList<ServiceEntryInfo>>.Success(Array.Empty<ServiceEntryInfo>());
+                }
+                if (Marshal.GetLastWin32Error() != ERROR_MORE_DATA)
+                    return MapLastError<IReadOnlyList<ServiceEntryInfo>>("(all)", "enumerate");
+
+                // Slack absorbs services registered between probe and fetch (TOCTOU)
+                bytesNeeded += 8192;
+                var buffer = Marshal.AllocHGlobal((int)bytesNeeded);
+                try
+                {
+                    resumeHandle = 0;
+                    if (!EnumServicesStatusExW(hScm, SC_ENUM_PROCESS_INFO, SERVICE_WIN32, SERVICE_STATE_ALL,
+                            buffer, bytesNeeded, out _, out var count, ref resumeHandle, null))
+                        return MapLastError<IReadOnlyList<ServiceEntryInfo>>("(all)", "enumerate");
+
+                    var entries = new List<ServiceEntryInfo>((int)count);
+                    var entrySize = Marshal.SizeOf<EnumServiceStatusProcess>();
+                    for (var i = 0; i < count; i++)
+                    {
+                        var entry = Marshal.PtrToStructure<EnumServiceStatusProcess>(buffer + i * entrySize);
+                        var serviceName = Marshal.PtrToStringUni(entry.lpServiceName);
+                        if (string.IsNullOrEmpty(serviceName))
+                            continue;
+                        var displayName = Marshal.PtrToStringUni(entry.lpDisplayName);
+                        var state = MapState(entry.ServiceStatusProcess.dwCurrentState);
+
+                        // Best-effort per-service config: protected services fold to Manual/null
+                        var startType = ServiceStartType.Manual;
+                        string? description = null;
+                        var hService = OpenServiceW(hScm, serviceName, SERVICE_QUERY_CONFIG);
+                        if (hService != 0)
+                        {
+                            try
+                            {
+                                var config = QueryConfig(hService, serviceName);
+                                if (config.IsSuccess)
+                                    startType = config.Value.StartType;
+                                description = QueryDescription(hService);
+                            }
+                            finally
+                            {
+                                CloseServiceHandle(hService);
+                            }
+                        }
+
+                        entries.Add(new ServiceEntryInfo(
+                            serviceName,
+                            string.IsNullOrEmpty(displayName) ? serviceName : displayName,
+                            description,
+                            state,
+                            startType));
+                    }
+
+                    return OperationResult<IReadOnlyList<ServiceEntryInfo>>.Success(entries);
+                }
+                finally
+                {
+                    Marshal.FreeHGlobal(buffer);
+                }
+            }
+            finally
+            {
+                CloseServiceHandle(hScm);
+            }
+        }
+        catch (Exception ex)
+        {
+            return OperationResult<IReadOnlyList<ServiceEntryInfo>>.Failure(
+                $"Unexpected error enumerating services: {ex.Message}", ErrorCategory.ServiceUnavailable, ex);
+        }
+    }
+
+    private static string? QueryDescription(nint hService)
+    {
+        QueryServiceConfig2W(hService, SERVICE_CONFIG_DESCRIPTION, 0, 0, out var needed);
+        if (Marshal.GetLastWin32Error() != ERROR_INSUFFICIENT_BUFFER || needed == 0)
+            return null;
+
+        var buffer = Marshal.AllocHGlobal((int)needed);
+        try
+        {
+            if (!QueryServiceConfig2W(hService, SERVICE_CONFIG_DESCRIPTION, buffer, needed, out _))
+                return null;
+
+            // SERVICE_DESCRIPTIONW is a single LPWSTR
+            var lpDescription = Marshal.ReadIntPtr(buffer);
+            if (lpDescription == 0)
+                return null;
+            var description = Marshal.PtrToStringUni(lpDescription);
+            return string.IsNullOrWhiteSpace(description) ? null : description;
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(buffer);
+        }
+    }
+
+    private static ServiceState MapState(uint dwCurrentState) => dwCurrentState switch
+    {
+        SERVICE_STOPPED => ServiceState.Stopped,
+        SERVICE_START_PENDING => ServiceState.StartPending,
+        SERVICE_STOP_PENDING => ServiceState.StopPending,
+        SERVICE_RUNNING => ServiceState.Running,
+        SERVICE_CONTINUE_PENDING => ServiceState.ContinuePending,
+        SERVICE_PAUSE_PENDING => ServiceState.PausePending,
+        SERVICE_PAUSED => ServiceState.Paused,
+        _ => ServiceState.Stopped,
+    };
+
     public OperationResult<bool> SetStartType(string serviceName, ServiceStartType startType)
     {
         try
@@ -202,18 +326,7 @@ public sealed class ServiceControlService : IServiceControlService
         if (!QueryServiceStatusEx(hService, SC_STATUS_PROCESS_INFO, out var status, size, out _))
             return MapLastError<ServiceState>(serviceName, "query status of");
 
-        var state = status.dwCurrentState switch
-        {
-            SERVICE_STOPPED => ServiceState.Stopped,
-            SERVICE_START_PENDING => ServiceState.StartPending,
-            SERVICE_STOP_PENDING => ServiceState.StopPending,
-            SERVICE_RUNNING => ServiceState.Running,
-            SERVICE_CONTINUE_PENDING => ServiceState.ContinuePending,
-            SERVICE_PAUSE_PENDING => ServiceState.PausePending,
-            SERVICE_PAUSED => ServiceState.Paused,
-            _ => ServiceState.Stopped,
-        };
-        return OperationResult<ServiceState>.Success(state);
+        return OperationResult<ServiceState>.Success(MapState(status.dwCurrentState));
     }
 
     private static OperationResult<(ServiceStartType StartType, string DisplayName)> QueryConfig(

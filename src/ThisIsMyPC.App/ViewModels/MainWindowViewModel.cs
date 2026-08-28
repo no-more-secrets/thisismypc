@@ -29,6 +29,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IPendingChangesService _pendingChangesService;
     private readonly IChangeHistoryService _changeHistoryService;
     private readonly IRegistryService _registryService;
+    private readonly IServiceControlService? _serviceControlService;
     private readonly IExplorerRestartService _explorerRestartService;
     private readonly Core.Sets.ISetProvider _setProvider;
     private readonly IReadOnlyList<Core.Sets.ISetEntryInspector> _setEntryInspectors;
@@ -97,13 +98,15 @@ public partial class MainWindowViewModel : ViewModelBase
         ReviewPanelViewModel reviewPanel,
         Core.Sets.ISetProvider setProvider,
         IEnumerable<Core.Sets.ISetEntryInspector> setEntryInspectors,
-        ICapabilityDetector? capabilityDetector = null)
+        ICapabilityDetector? capabilityDetector = null,
+        IServiceControlService? serviceControlService = null)
     {
         _navigationService = navigationService;
         _pendingChangesService = pendingChangesService;
         _changeHistoryService = changeHistoryService;
         _registryService = registryService;
         _explorerRestartService = explorerRestartService;
+        _serviceControlService = serviceControlService;
         _setProvider = setProvider;
         _setEntryInspectors = setEntryInspectors.ToList();
         _capabilityDetector = capabilityDetector;
@@ -204,7 +207,7 @@ public partial class MainWindowViewModel : ViewModelBase
                     {
                         ContentTitle = current.Module.Info.Name;
                         ContentDescription = current.Module.Info.Description;
-                        CurrentContent = new StartupViewModel(startupData, _pendingChangesService, _registryService);
+                        CurrentContent = new StartupViewModel(startupData, _pendingChangesService, _registryService, _serviceControlService);
                     }
                     else
                     {

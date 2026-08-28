@@ -25,6 +25,17 @@ public sealed class FakeServiceControlService : IServiceControlService
     public void InjectFailure(string operation, string name, ErrorCategory category = ErrorCategory.AccessDenied)
         => _failures[$"{operation}:{name}"] = category;
 
+    public OperationResult<IReadOnlyList<ServiceEntryInfo>> EnumerateAll()
+    {
+        Calls.Add("EnumerateAll");
+        if (_failures.TryGetValue("EnumerateAll:*", out var fail))
+            return OperationResult<IReadOnlyList<ServiceEntryInfo>>.Failure("Injected EnumerateAll failure.", fail);
+        var entries = _services.Values
+            .Select(s => new ServiceEntryInfo(s.ServiceName, s.DisplayName, null, s.State, s.StartType))
+            .ToList();
+        return OperationResult<IReadOnlyList<ServiceEntryInfo>>.Success(entries);
+    }
+
     public OperationResult<ServiceStatusInfo> Query(string serviceName)
     {
         Calls.Add($"Query:{serviceName}");

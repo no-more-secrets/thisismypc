@@ -57,7 +57,7 @@ public sealed class StartupScanner
         if (_scheduledTaskSource is not null)
             entries.AddRange(_scheduledTaskSource());
 
-        return new StartupScanData(entries);
+        return new StartupScanData(entries, []);
     }
 
     private void ScanRunKey(List<StartupEntry> entries, string runKey, string approvedKey, StartupSource source)

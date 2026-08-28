@@ -7,6 +7,7 @@ internal static partial class NativeServiceControl
     // Access rights — minimal masks per operation. Protected services (e.g. WinDefend)
     // allow query but deny change; a maximal mask would make even Query fail on them.
     internal const uint SC_MANAGER_CONNECT = 0x0001;
+    internal const uint SC_MANAGER_ENUMERATE_SERVICE = 0x0004;
     internal const uint SERVICE_QUERY_CONFIG = 0x0001;
     internal const uint SERVICE_CHANGE_CONFIG = 0x0002;
     internal const uint SERVICE_QUERY_STATUS = 0x0004;
@@ -31,11 +32,18 @@ internal static partial class NativeServiceControl
 
     internal const uint SERVICE_CONTROL_STOP = 0x0001;
     internal const uint SC_STATUS_PROCESS_INFO = 0;
+    internal const uint SERVICE_CONFIG_DESCRIPTION = 1;
     internal const uint SERVICE_CONFIG_DELAYED_AUTO_START_INFO = 3;
+
+    // EnumServicesStatusExW parameters
+    internal const int SC_ENUM_PROCESS_INFO = 0;
+    internal const uint SERVICE_WIN32 = 0x00000030; // own-process | share-process (user services included)
+    internal const uint SERVICE_STATE_ALL = 0x00000003;
 
     // Win32 errors
     internal const int ERROR_ACCESS_DENIED = 5;
     internal const int ERROR_INSUFFICIENT_BUFFER = 122;
+    internal const int ERROR_MORE_DATA = 234;
     internal const int ERROR_SERVICE_ALREADY_RUNNING = 1056;
     internal const int ERROR_SERVICE_DOES_NOT_EXIST = 1060;
     internal const int ERROR_SERVICE_CANNOT_ACCEPT_CTRL = 1061;
@@ -65,6 +73,14 @@ internal static partial class NativeServiceControl
         public uint dwServiceSpecificExitCode;
         public uint dwCheckPoint;
         public uint dwWaitHint;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct EnumServiceStatusProcess
+    {
+        public nint lpServiceName;
+        public nint lpDisplayName;
+        public ServiceStatusProcess ServiceStatusProcess;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -162,4 +178,30 @@ internal static partial class NativeServiceControl
         nint hService,
         uint dwNumServiceArgs,
         nint lpServiceArgVectors);
+
+    // Buffer-based overload for variable-size info levels (e.g. SERVICE_CONFIG_DESCRIPTION)
+    [LibraryImport("advapi32.dll", SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool QueryServiceConfig2W(
+        nint hService,
+        uint dwInfoLevel,
+        nint lpBuffer,
+        uint cbBufSize,
+        out uint pcbBytesNeeded);
+
+    [LibraryImport("advapi32.dll", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool EnumServicesStatusExW(
+        nint hSCManager,
+        int infoLevel,
+        uint dwServiceType,
+        uint dwServiceState,
+        nint lpServices,
+        uint cbBufSize,
+        out uint pcbBytesNeeded,
+        out uint lpServicesReturned,
+        ref uint lpResumeHandle,
+        string? pszGroupName);
 }

@@ -1,4 +1,5 @@
 using ThisIsMyPC.Core.Changes;
+using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Modules.Startup.Changes;
 using ThisIsMyPC.Modules.Startup.Models;
 using ThisIsMyPC.Modules.Startup.Services;
@@ -10,8 +11,9 @@ public class StartupModuleTests
 {
     private readonly FakeRegistryService _registry = new();
     private readonly FakeStartupFolderService _folders = new();
+    private readonly FakeServiceControlService _services = new();
 
-    private StartupModule CreateModule() => new(_registry, _folders);
+    private StartupModule CreateModule() => new(_registry, _folders, _services);
 
     private static StartupEntry MakeEntry() => new()
     {
@@ -70,7 +72,7 @@ public class StartupModuleTests
     public async Task ApplyChange_UnsupportedValueType_Fails()
     {
         var change = StartupChangeFactory.CreateToggle(MakeEntry(), enable: false, currentApprovedBlob: null)!
-            with { ValueType = ChangeValueType.Service_StartType };
+            with { ValueType = ChangeValueType.PowerPlan_Setting };
 
         var result = await CreateModule().ApplyChangeAsync(change);
 
@@ -93,11 +95,74 @@ public class StartupModuleTests
     public async Task ScanSystemState_ReturnsStartupScanData()
     {
         _registry.SetString(StartupScanner.UserRunKey, "App", @"C:\app.exe");
+        _services.AddService("Spooler", ServiceState.Running, ServiceStartType.Automatic);
 
         var result = await CreateModule().ScanSystemStateAsync();
 
         Assert.True(result.IsSuccess);
         var data = Assert.IsType<StartupScanData>(result.Value);
         Assert.Single(data.StartupEntries);
+        Assert.Single(data.Services);
+    }
+
+    [Fact]
+    public async Task ApplyChange_ServiceStartType_CallsSetStartType()
+    {
+        _services.AddService("Spooler", ServiceState.Running, ServiceStartType.Automatic);
+        var entry = new ServiceEntry
+        {
+            ServiceName = "Spooler",
+            DisplayName = "Print Spooler",
+            State = ServiceState.Running,
+            StartType = ServiceStartType.Automatic,
+        };
+        var change = ServiceChangeFactory.CreateStartTypeChange(entry, ServiceStartType.Disabled);
+
+        var result = await CreateModule().ApplyChangeAsync(change);
+
+        Assert.True(result.IsSuccess);
+        Assert.Contains("SetStartType:Spooler:Disabled", _services.Calls);
+        Assert.Equal(ServiceStartType.Disabled, _services.GetService("Spooler")!.StartType);
+    }
+
+    [Fact]
+    public async Task RevertChange_ServiceStartType_RestoresBeforeValue()
+    {
+        _services.AddService("Spooler", ServiceState.Running, ServiceStartType.Automatic);
+        var entry = new ServiceEntry
+        {
+            ServiceName = "Spooler",
+            DisplayName = "Print Spooler",
+            State = ServiceState.Running,
+            StartType = ServiceStartType.Automatic,
+        };
+        var change = ServiceChangeFactory.CreateStartTypeChange(entry, ServiceStartType.Disabled);
+        var module = CreateModule();
+        await module.ApplyChangeAsync(change);
+
+        var reverted = change with { BeforeValue = change.AfterValue!, AfterValue = change.BeforeValue };
+        var result = await module.RevertChangeAsync(reverted);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(ServiceStartType.Automatic, _services.GetService("Spooler")!.StartType);
+    }
+
+    [Fact]
+    public async Task ApplyChange_ServiceStartType_InvalidEnum_Fails()
+    {
+        var entry = new ServiceEntry
+        {
+            ServiceName = "Spooler",
+            DisplayName = "Print Spooler",
+            State = ServiceState.Running,
+            StartType = ServiceStartType.Automatic,
+        };
+        var change = ServiceChangeFactory.CreateStartTypeChange(entry, ServiceStartType.Disabled)
+            with { AfterValue = "NotAStartType" };
+
+        var result = await CreateModule().ApplyChangeAsync(change);
+
+        Assert.False(result.IsSuccess);
+        Assert.Empty(_services.Calls);
     }
 }

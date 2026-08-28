@@ -16,10 +16,25 @@ namespace ThisIsMyPC.App.ViewModels;
 /// </summary>
 public sealed partial class StartupViewModel : ObservableObject, IDisposable
 {
+    private readonly List<ServiceItemViewModel> _allServices = [];
+
     [ObservableProperty]
     private bool _isRegistryViewMode;
 
-    public StartupViewModel(StartupScanData scanData, IPendingChangesService pendingChangesService, IRegistryService registryService)
+    [ObservableProperty]
+    private string _serviceFilterText = string.Empty;
+
+    [ObservableProperty]
+    private string _serviceSortColumn = "Name";
+
+    [ObservableProperty]
+    private bool _serviceSortDescending;
+
+    public StartupViewModel(
+        StartupScanData scanData,
+        IPendingChangesService pendingChangesService,
+        IRegistryService registryService,
+        IServiceControlService? serviceControlService = null)
     {
         RegistryEntries = new ObservableCollection<StartupEntryItemViewModel>(
             scanData.StartupEntries
@@ -36,6 +51,80 @@ public sealed partial class StartupViewModel : ObservableObject, IDisposable
                 .Where(e => e.Source == StartupSource.ScheduledTask)
                 .OrderBy(e => e.Name, StringComparer.OrdinalIgnoreCase)
                 .Select(e => new StartupEntryItemViewModel(e, pendingChangesService, registryService)));
+
+        _allServices.AddRange(scanData.Services
+            .Select(s => new ServiceItemViewModel(s, pendingChangesService, serviceControlService)));
+        ServicesScanError = scanData.ServicesScanError;
+        Services = [];
+        RebuildServices();
+    }
+
+    public string? ServicesScanError { get; }
+
+    public ObservableCollection<ServiceItemViewModel> Services { get; }
+
+    public string ServicesHeader => $"Services ({Services.Count} of {_allServices.Count})";
+    public bool HasVisibleServices => Services.Count > 0;
+
+    partial void OnServiceFilterTextChanged(string value) => RebuildServices();
+    partial void OnServiceSortColumnChanged(string value) => RebuildServices();
+    partial void OnServiceSortDescendingChanged(bool value) => RebuildServices();
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private void SortServices(string column)
+    {
+        if (ServiceSortColumn == column)
+            ServiceSortDescending = !ServiceSortDescending;
+        else
+        {
+            ServiceSortColumn = column;
+            ServiceSortDescending = false;
+        }
+    }
+
+    private void RebuildServices()
+    {
+        IEnumerable<ServiceItemViewModel> filtered = _allServices;
+        var filter = ServiceFilterText.Trim();
+        if (filter.Length > 0)
+        {
+            filtered = filtered.Where(s =>
+                s.DisplayName.Contains(filter, StringComparison.OrdinalIgnoreCase) ||
+                s.ServiceName.Contains(filter, StringComparison.OrdinalIgnoreCase) ||
+                (s.Description?.Contains(filter, StringComparison.OrdinalIgnoreCase) ?? false));
+        }
+
+        Func<ServiceItemViewModel, string> sortKey = ServiceSortColumn switch
+        {
+            "Status" => s => s.StateText,
+            "StartType" => s => s.StartTypeText,
+            _ => s => s.DisplayName,
+        };
+
+        // Per-user instances sort with their template's key so they stay adjacent
+        // (template row first, instances after), regardless of the chosen column.
+        var byName = _allServices.ToDictionary(s => s.ServiceName, StringComparer.OrdinalIgnoreCase);
+        string RootKey(ServiceItemViewModel s) =>
+            s.Entry.TemplateServiceName is not null && byName.TryGetValue(s.Entry.TemplateServiceName, out var template)
+                ? sortKey(template)
+                : sortKey(s);
+        string RootName(ServiceItemViewModel s) => s.Entry.TemplateServiceName ?? s.ServiceName;
+
+        var sorted = ServiceSortDescending
+            ? filtered.OrderByDescending(RootKey, StringComparer.OrdinalIgnoreCase)
+            : filtered.OrderBy(RootKey, StringComparer.OrdinalIgnoreCase);
+
+        var final = sorted
+            .ThenBy(RootName, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(s => s.Entry.IsPerUserInstance)
+            .ThenBy(s => s.DisplayName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        Services.Clear();
+        foreach (var item in final)
+            Services.Add(item);
+        OnPropertyChanged(nameof(ServicesHeader));
+        OnPropertyChanged(nameof(HasVisibleServices));
     }
 
     public ObservableCollection<StartupEntryItemViewModel> RegistryEntries { get; }
@@ -60,6 +149,260 @@ public sealed partial class StartupViewModel : ObservableObject, IDisposable
     {
         foreach (var item in RegistryEntries.Concat(FolderEntries).Concat(TaskEntries))
             item.Dispose();
+        foreach (var item in _allServices)
+            item.Dispose();
+    }
+}
+
+/// <summary>
+/// One service row: startup-type changes stage through the pending pipeline;
+/// Start/Stop/Restart execute immediately against the SCM and are NOT recorded
+/// in change history (transient operational actions).
+/// </summary>
+public sealed partial class ServiceItemViewModel : ObservableObject, IDisposable
+{
+    private static readonly TimeSpan ActionTimeout = TimeSpan.FromSeconds(30);
+
+    private readonly IPendingChangesService _pendingChangesService;
+    private readonly IServiceControlService? _serviceControl;
+    private ServiceStartType _liveStartType;
+    private bool _suppressStaging;
+    private bool _isStagingChange;
+    private string? _stagedGroupId;
+    private bool _disposed;
+
+    public static IReadOnlyList<string> StartTypeOptions { get; } =
+        ["Automatic", "Automatic (Delayed)", "Manual", "Disabled"];
+
+    [ObservableProperty]
+    private string _selectedStartTypeOption;
+
+    [ObservableProperty]
+    private string _stateText;
+
+    [ObservableProperty]
+    private bool _hasPendingChange;
+
+    [ObservableProperty]
+    private bool _isBusy;
+
+    [ObservableProperty]
+    private string? _actionError;
+
+    public ServiceItemViewModel(ServiceEntry entry, IPendingChangesService pendingChangesService, IServiceControlService? serviceControl)
+    {
+        Entry = entry;
+        _pendingChangesService = pendingChangesService;
+        _serviceControl = serviceControl;
+        _liveStartType = entry.StartType;
+        _stateText = entry.State.ToString();
+
+        _suppressStaging = true;
+        _selectedStartTypeOption = ToOption(entry.StartType);
+
+        // Rehydrate a start-type group staged in an earlier visit
+        var settingId = ServiceChangeFactory.GetSettingId(entry.ServiceName);
+        var existing = pendingChangesService.PendingGroups.FirstOrDefault(g =>
+            g.Changes.Count == 1 &&
+            g.Changes[0].ModuleId == "Startup & Services" &&
+            g.Changes[0].SettingId == settingId);
+        if (existing is not null &&
+            Enum.TryParse<ServiceStartType>(existing.Changes[0].AfterValue, out var pendingType))
+        {
+            if (pendingType == _liveStartType)
+            {
+                // Pending target already matches live state — drop the redundant group
+                pendingChangesService.Unstage(existing.GroupId);
+            }
+            else
+            {
+                _stagedGroupId = existing.GroupId;
+                _selectedStartTypeOption = ToOption(pendingType);
+            }
+        }
+        _suppressStaging = false;
+        UpdatePendingState();
+
+        _pendingChangesService.PropertyChanged += OnPendingChangesPropertyChanged;
+    }
+
+    public ServiceEntry Entry { get; }
+
+    public string ServiceName => Entry.ServiceName;
+    public string DisplayName => Entry.DisplayName;
+    public string? Description => Entry.Description;
+    public string DescriptionText => Entry.Description ?? string.Empty;
+    public bool IsPerUserInstance => Entry.IsPerUserInstance;
+    public string PerUserLabel => Entry.TemplateServiceName is null
+        ? string.Empty
+        : $"Per-user instance of {Entry.TemplateServiceName}";
+    public string StartTypeText => ToOption(_liveStartType);
+
+    /// <summary>Per-user template instances are managed via their template service.</summary>
+    public bool CanChangeStartType => !Entry.IsPerUserInstance;
+
+    private static string ToOption(ServiceStartType startType) => ServiceChangeFactory.Describe(startType);
+
+    private static ServiceStartType FromOption(string option) => option switch
+    {
+        "Automatic" => ServiceStartType.Automatic,
+        "Automatic (Delayed)" => ServiceStartType.AutomaticDelayed,
+        "Disabled" => ServiceStartType.Disabled,
+        _ => ServiceStartType.Manual,
+    };
+
+    partial void OnSelectedStartTypeOptionChanged(string value)
+    {
+        if (_suppressStaging || _disposed || !CanChangeStartType)
+            return;
+
+        try
+        {
+            var desired = FromOption(value);
+
+            // Refresh baseline from the SCM (source of truth) when available
+            if (_serviceControl is not null)
+            {
+                var live = _serviceControl.Query(Entry.ServiceName);
+                if (live.IsSuccess && live.Value is not null)
+                    _liveStartType = live.Value.StartType;
+            }
+
+            _isStagingChange = true;
+            try
+            {
+                if (_stagedGroupId is not null)
+                {
+                    _pendingChangesService.Unstage(_stagedGroupId);
+                    _stagedGroupId = null;
+                }
+
+                if (desired != _liveStartType)
+                {
+                    var change = ServiceChangeFactory.CreateStartTypeChange(
+                        Entry with { StartType = _liveStartType }, desired);
+                    var group = new ChangeGroup
+                    {
+                        GroupId = Guid.NewGuid().ToString("N"),
+                        DisplayName = change.DisplayName,
+                        Description = change.DisplayName,
+                        Changes = [change],
+                    };
+                    _pendingChangesService.Stage(group);
+                    _stagedGroupId = group.GroupId;
+                }
+            }
+            finally
+            {
+                _isStagingChange = false;
+            }
+
+            UpdatePendingState();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Start-type staging failed for {DisplayName}: {ex.Message}");
+        }
+    }
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private Task StartAsync() =>
+        RunActionAsync("start", sc => sc.StartAsync(Entry.ServiceName, ActionTimeout));
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private Task StopAsync() =>
+        RunActionAsync("stop", sc => sc.StopAsync(Entry.ServiceName, ActionTimeout));
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private async Task RestartAsync()
+    {
+        await RunActionAsync("restart", async sc =>
+        {
+            var stop = await sc.StopAsync(Entry.ServiceName, ActionTimeout);
+            if (!stop.IsSuccess)
+                return stop;
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => StateText = "Restarting…");
+            return await sc.StartAsync(Entry.ServiceName, ActionTimeout);
+        });
+    }
+
+    // Invoked on the UI thread (RelayCommand); the SCM work runs on the thread
+    // pool via Task.Run and every await resumes on the UI thread, so property
+    // updates stay dispatcher-safe.
+    private async Task RunActionAsync(
+        string verb, Func<IServiceControlService, Task<Core.Results.OperationResult<bool>>> action)
+    {
+        if (_serviceControl is null || IsBusy)
+            return;
+
+        IsBusy = true;
+        ActionError = null;
+        try
+        {
+            var result = await Task.Run(() => action(_serviceControl));
+            var refreshed = await Task.Run(() => _serviceControl.Query(Entry.ServiceName));
+            if (refreshed.IsSuccess && refreshed.Value is not null)
+                StateText = refreshed.Value.State.ToString();
+            if (!result.IsSuccess)
+                ActionError = result.ErrorMessage ?? $"Failed to {verb} {DisplayName}";
+        }
+        catch (Exception ex)
+        {
+            ActionError = $"Failed to {verb} {DisplayName}: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private void OnPendingChangesPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (_isStagingChange)
+            return;
+        if (e.PropertyName is not nameof(IPendingChangesService.PendingGroups))
+            return;
+
+        if (Dispatcher.UIThread.CheckAccess())
+            HandlePendingGroupsChanged();
+        else
+            Dispatcher.UIThread.Post(HandlePendingGroupsChanged);
+    }
+
+    private void HandlePendingGroupsChanged()
+    {
+        if (_stagedGroupId is not null &&
+            !_pendingChangesService.PendingGroups.Any(g => g.GroupId == _stagedGroupId))
+        {
+            _stagedGroupId = null;
+
+            if (_pendingChangesService.IsApplying)
+            {
+                _liveStartType = FromOption(SelectedStartTypeOption);
+                OnPropertyChanged(nameof(StartTypeText));
+            }
+            else
+            {
+                _suppressStaging = true;
+                SelectedStartTypeOption = ToOption(_liveStartType);
+                _suppressStaging = false;
+            }
+
+            UpdatePendingState();
+        }
+    }
+
+    private void UpdatePendingState()
+    {
+        HasPendingChange = FromOption(SelectedStartTypeOption) != _liveStartType;
+    }
+
+    public void Dispose()
+    {
+        if (_disposed)
+            return;
+        _disposed = true;
+        _pendingChangesService.PropertyChanged -= OnPendingChangesPropertyChanged;
     }
 }
 
@@ -108,8 +451,17 @@ public sealed partial class StartupEntryItemViewModel : ObservableObject, IDispo
             g.Changes[0].SettingId == settingId);
         if (existing is not null)
         {
-            _stagedGroupId = existing.GroupId;
-            IsEnabled = existing.Changes[0].Category == ChangeCategory.Enable;
+            var pendingEnabled = existing.Changes[0].Category == ChangeCategory.Enable;
+            if (pendingEnabled == _liveIsEnabled)
+            {
+                // Pending target already matches live state — drop the redundant group
+                pendingChangesService.Unstage(existing.GroupId);
+            }
+            else
+            {
+                _stagedGroupId = existing.GroupId;
+                IsEnabled = pendingEnabled;
+            }
         }
 
         _suppressStaging = false;
