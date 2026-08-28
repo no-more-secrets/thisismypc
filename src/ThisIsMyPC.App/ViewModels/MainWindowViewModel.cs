@@ -224,6 +224,24 @@ public partial class MainWindowViewModel : ViewModelBase
                     }
                 });
             }
+            else if (current?.Module is Modules.Power.PowerModule)
+            {
+                var scanResult = await current.Module.ScanSystemStateAsync().ConfigureAwait(false);
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    if (scanResult.IsSuccess && scanResult.Value is Modules.Power.Models.PowerScanData powerData)
+                    {
+                        ContentTitle = current.Module.Info.Name;
+                        ContentDescription = current.Module.Info.Description;
+                        CurrentContent = new PowerViewModel(powerData, _pendingChangesService);
+                    }
+                    else
+                    {
+                        CurrentContent = null;
+                        SetStatus(scanResult.ErrorMessage ?? "Failed to scan power plans", StatusSeverity.Error);
+                    }
+                });
+            }
             else if (current?.Module is EnvironmentModule)
             {
                 var scanResult = await current.Module.ScanSystemStateAsync().ConfigureAwait(false);

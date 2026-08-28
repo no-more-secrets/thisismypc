@@ -261,6 +261,9 @@
                             <DataTemplate DataType="{x:Type vm:SetLoaderViewModel}">
                                 <views:SetLoaderView />
                             </DataTemplate>
+                            <DataTemplate DataType="{x:Type vm:PowerViewModel}">
+                                <views:PowerView />
+                            </DataTemplate>
                         </ContentControl.DataTemplates>
                     </ContentControl>
                     <!-- Placeholder shown when no module view is loaded -->
