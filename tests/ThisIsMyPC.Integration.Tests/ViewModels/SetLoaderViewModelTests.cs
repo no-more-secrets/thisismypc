@@ -1,5 +1,6 @@
 using ThisIsMyPC.App.ViewModels;
 using ThisIsMyPC.Core.Modules;
+using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Core.Sets;
 using ThisIsMyPC.Integration.Tests.Fakes;
 using ThisIsMyPC.Modules.Annoyances.Services;
@@ -19,13 +20,15 @@ public sealed class SetLoaderViewModelTests
     }
 
     private static SetLoaderViewModel CreateWithBundledSets(
-        Func<string, ModuleAvailability?>? availabilityLookup = null)
+        Func<string, ModuleAvailability?>? availabilityLookup = null,
+        Core.Services.IPendingChangesService? pendingChangesService = null)
     {
         var registry = new FakeRegistryService();
         return new SetLoaderViewModel(
             LoadBundledSets(),
             [new ShellSetEntryInspector(registry), new AnnoyancesSetEntryInspector(registry)],
-            availabilityLookup ?? (_ => Available));
+            availabilityLookup ?? (_ => Available),
+            pendingChangesService ?? new PendingChangesService());
     }
 
     private static SetDefinition Definition(params SetEntry[] entries) => new()
@@ -116,7 +119,8 @@ public sealed class SetLoaderViewModelTests
                 Description = "d",
             })], Warnings = [] },
             [],
-            _ => null);
+            _ => null,
+            new PendingChangesService());
 
         vm.SelectSetCommand.Execute(vm.TweakSets.Single());
 
@@ -138,7 +142,8 @@ public sealed class SetLoaderViewModelTests
                 Description = "d",
             })], Warnings = [] },
             [],
-            _ => new ModuleAvailability(IsAvailable: false, Reason: "Explorer is not running"));
+            _ => new ModuleAvailability(IsAvailable: false, Reason: "Explorer is not running"),
+            new PendingChangesService());
 
         vm.SelectSetCommand.Execute(vm.TweakSets.Single());
 
@@ -160,7 +165,8 @@ public sealed class SetLoaderViewModelTests
                 Description = "d",
             })], Warnings = [] },
             [new ShellSetEntryInspector(registry)],
-            _ => Available);
+            _ => Available,
+            new PendingChangesService());
 
         vm.SelectSetCommand.Execute(vm.TweakSets.Single());
 
@@ -183,6 +189,154 @@ public sealed class SetLoaderViewModelTests
                 vm.PreviewGroups.SelectMany(g => g.Entries),
                 e => Assert.False(e.IsSkipped, $"{set.Name}/{e.Entry.SettingId}: {e.SkipReason}"));
         }
+    }
+
+    [Fact]
+    public void StageIncluded_StagesEachIncludedEntry_AndRowsFlipToAlreadyStaged()
+    {
+        var pending = new PendingChangesService();
+        var vm = CreateWithBundledSets(pendingChangesService: pending);
+        vm.SelectSetCommand.Execute(vm.TweakSets.Single(s => s.Name == "NukeCopilot"));
+        Assert.Equal(3, vm.IncludedCount); // all three default-state entries checked
+
+        vm.StageIncludedCommand.Execute(null);
+
+        Assert.Equal(3, pending.PendingGroups.Count);
+        Assert.Contains("3 changes staged", vm.StageMessage, StringComparison.Ordinal);
+        // Preview re-resolved: every staged row now reads as already staged, unchecked
+        var rows = vm.PreviewGroups.SelectMany(g => g.Entries).ToList();
+        Assert.All(rows, r => Assert.True(r.IsAlreadyStaged));
+        Assert.All(rows, r => Assert.False(r.IsIncluded));
+        Assert.Equal(0, vm.IncludedCount);
+
+        // The copilot group staged BOTH policy scopes atomically
+        var copilotGroup = pending.PendingGroups.Single(
+            g => g.Changes.Any(c => c.SettingId == "copilot"));
+        Assert.Equal(2, copilotGroup.Changes.Count);
+        Assert.All(copilotGroup.Changes, c => Assert.Equal("1", c.AfterValue));
+    }
+
+    [Fact]
+    public void ConflictingPendingChange_IsExcludedByDefault_IncludingItReplacesThePendingGroup()
+    {
+        var pending = new PendingChangesService();
+        // A pending change already restores the advertising ID (opposite direction)
+        var registry = new FakeRegistryService();
+        var conflicting = new Modules.Annoyances.Services.AnnoyancesSetEntryInspector(registry)
+            .CreateChangeGroup(new SetEntry
+            {
+                ModuleId = "Windows Annoyances",
+                SettingId = "advertising-id",
+                Value = "1",
+                Description = "d",
+            });
+        pending.Stage(conflicting!);
+        var oldGroupId = conflicting!.GroupId;
+
+        var vm = CreateWithBundledSets(pendingChangesService: pending);
+        vm.SelectSetCommand.Execute(vm.TweakSets.Single(s => s.Name == "Privacy Baseline"));
+
+        var row = vm.PreviewGroups.SelectMany(g => g.Entries)
+            .Single(e => e.Entry.SettingId == "advertising-id");
+        Assert.True(row.HasConflict);
+        Assert.False(row.IsIncluded); // keep-pending is the default
+        Assert.Contains("pending change", row.ConflictText, StringComparison.OrdinalIgnoreCase);
+
+        // Stage only this row, resolved as replace
+        foreach (var other in vm.PreviewGroups.SelectMany(g => g.Entries))
+            other.IsIncluded = false;
+        row.IsIncluded = true;
+        vm.StageIncludedCommand.Execute(null);
+
+        Assert.DoesNotContain(pending.PendingGroups, g => g.GroupId == oldGroupId);
+        var replacement = pending.PendingGroups.Single(
+            g => g.Changes.Any(c => c.SettingId == "advertising-id"));
+        Assert.Equal("0", replacement.Changes.Single().AfterValue);
+    }
+
+    [Fact]
+    public void ReIncludingAnAlreadyStagedRow_ReplacesInsteadOfDuplicating()
+    {
+        var pending = new PendingChangesService();
+        var vm = CreateWithBundledSets(pendingChangesService: pending);
+        vm.SelectSetCommand.Execute(vm.TweakSets.Single(s => s.Name == "NukeCopilot"));
+        vm.StageIncludedCommand.Execute(null);
+        Assert.Equal(3, pending.PendingGroups.Count);
+
+        // Check every already-staged row and stage again: still 3 groups, no duplicates
+        foreach (var row in vm.PreviewGroups.SelectMany(g => g.Entries))
+            row.IsIncluded = true;
+        vm.StageIncludedCommand.Execute(null);
+
+        Assert.Equal(3, pending.PendingGroups.Count);
+        Assert.Equal(1, pending.PendingGroups.Count(
+            g => g.Changes.Any(c => c.SettingId == "copilot")));
+    }
+
+    [Fact]
+    public void DuplicateEntriesInAUserSet_DoNotCrashThePreview()
+    {
+        var entry = new SetEntry
+        {
+            ModuleId = "Explorer",
+            SettingId = "taskbar-widgets",
+            Value = "0",
+            Description = "d",
+        };
+        var registry = new FakeRegistryService();
+        var vm = new SetLoaderViewModel(
+            new SetLoadResult { Sets = [Definition(entry, entry)], Warnings = [] },
+            [new ShellSetEntryInspector(registry)],
+            _ => Available,
+            new PendingChangesService());
+
+        vm.SelectSetCommand.Execute(vm.TweakSets.Single());
+
+        Assert.Equal(2, vm.PreviewGroups.SelectMany(g => g.Entries).Count());
+    }
+
+    [Fact]
+    public void ExternalPendingChange_RefreshesThePreview()
+    {
+        var pending = new PendingChangesService();
+        var vm = CreateWithBundledSets(pendingChangesService: pending);
+        vm.SelectSetCommand.Execute(vm.TweakSets.Single(s => s.Name == "NukeCopilot"));
+        Assert.Equal(3, vm.IncludedCount);
+
+        // Something else (e.g. the module UI) stages a conflicting copilot change
+        var registry = new FakeRegistryService();
+        var external = new Modules.Annoyances.Services.AnnoyancesSetEntryInspector(registry)
+            .CreateChangeGroup(new SetEntry
+            {
+                ModuleId = "Windows Annoyances",
+                SettingId = "copilot",
+                Value = "0",
+                Description = "d",
+            });
+        pending.Stage(external!);
+
+        var row = vm.PreviewGroups.SelectMany(g => g.Entries)
+            .Single(e => e.Entry.SettingId == "copilot");
+        Assert.True(row.HasConflict);
+        Assert.Equal(2, vm.IncludedCount);
+    }
+
+    [Fact]
+    public void AlreadyAppliedEntry_ExcludedByDefault_ButIncludable()
+    {
+        // taskbar-widgets scans as already hidden against the empty fake registry
+        var vm = CreateWithBundledSets();
+        vm.SelectSetCommand.Execute(vm.OptimizationPacks.Single());
+
+        var row = vm.PreviewGroups.SelectMany(g => g.Entries)
+            .Single(e => e.Entry.SettingId == "taskbar-widgets");
+        Assert.True(row.IsApplied);
+        Assert.False(row.IsIncluded);
+        Assert.True(row.CanToggle);
+
+        var before = vm.IncludedCount;
+        row.IsIncluded = true;
+        Assert.Equal(before + 1, vm.IncludedCount);
     }
 
     [Fact]

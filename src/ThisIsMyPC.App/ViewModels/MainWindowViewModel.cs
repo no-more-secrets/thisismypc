@@ -280,6 +280,7 @@ public partial class MainWindowViewModel : ViewModelBase
         // which would double-trigger the rebuild for cross-module navigation (the
         // PropertyChanged event already fired for that case).
         var previousModule = _navigationService.CurrentModule?.Module;
+        (CurrentContent as SetLoaderViewModel)?.Dispose();
         IsSetLoaderActive = false;
         _navigationService.NavigateToModule(item.Name);
         SyncSelectedModule();
@@ -302,11 +303,13 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         // Fresh disk read on every open: user sets dropped into %APPDATA% appear
         // without an app restart.
+        (CurrentContent as SetLoaderViewModel)?.Dispose();
         var loadResult = _setProvider.LoadSets();
 
         ContentTitle = "Set Loader";
         ContentDescription = "Browse curated tweak sets and preview every change before applying";
-        CurrentContent = new SetLoaderViewModel(loadResult, _setEntryInspectors, LookupModuleAvailability);
+        CurrentContent = new SetLoaderViewModel(
+            loadResult, _setEntryInspectors, LookupModuleAvailability, _pendingChangesService);
         IsSetLoaderActive = true;
         SelectedModule = null;
 

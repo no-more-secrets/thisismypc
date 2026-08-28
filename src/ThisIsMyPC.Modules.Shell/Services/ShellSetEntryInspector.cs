@@ -1,5 +1,7 @@
+using ThisIsMyPC.Core.Changes;
 using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Core.Sets;
+using ThisIsMyPC.Modules.Shell.Changes;
 
 namespace ThisIsMyPC.Modules.Shell.Services;
 
@@ -60,6 +62,49 @@ public sealed class ShellSetEntryInspector : ISetEntryInspector
         return Resolve(pref.DisplayName, pref.CurrentValue,
             pref.IsEnabled ? "Enabled" : "Disabled", entry);
     }
+
+    public ChangeGroup? CreateChangeGroup(SetEntry entry)
+    {
+        switch (entry.SettingId)
+        {
+            case "taskbar-alignment":
+                return entry.Value is "0" or "1"
+                    ? Wrap(TaskbarChangeFactory.CreateAlignmentChange(
+                        _taskbarReader.Read(), newAlignment: int.Parse(entry.Value, System.Globalization.CultureInfo.InvariantCulture)))
+                    : null;
+            case "taskbar-widgets":
+                return entry.Value is "0" or "1"
+                    ? Wrap(TaskbarChangeFactory.CreateWidgetsToggle(_taskbarReader.Read(), enable: entry.Value == "1"))
+                    : null;
+            case "classic-context-menu":
+                return entry.Value == "" || entry.Value == ShellRegistryPaths.AbsentValue
+                    ? Wrap(TaskbarChangeFactory.CreateClassicContextMenuToggle(_taskbarReader.Read(), enable: entry.Value == ""))
+                    : null;
+            case "classic-command-bar":
+                return entry.Value == "" || entry.Value == ShellRegistryPaths.AbsentValue
+                    ? Wrap(TaskbarChangeFactory.CreateCommandBarToggle(_taskbarReader.Read(), enable: entry.Value == ""))
+                    : null;
+        }
+
+        var pref = _explorerReader.ReadAll().FirstOrDefault(p => p.Id == entry.SettingId);
+        if (pref is null)
+            return null;
+
+        var enable = string.Equals(entry.Value, pref.EnabledValue, StringComparison.Ordinal) ? true
+            : string.Equals(entry.Value, pref.DisabledValue, StringComparison.Ordinal) ? false
+            : (bool?)null;
+        return enable is { } direction
+            ? Wrap(ExplorerChangeFactory.CreateToggle(pref, direction), pref.Description)
+            : null;
+    }
+
+    private static ChangeGroup Wrap(ChangeDescriptor change, string? description = null) => new()
+    {
+        GroupId = Guid.NewGuid().ToString("N"),
+        DisplayName = change.DisplayName,
+        Description = description ?? change.DisplayName,
+        Changes = [change],
+    };
 
     private static SetEntryState Resolve(
         string displayName, string currentValue, string currentDisplay, SetEntry entry)

@@ -107,9 +107,32 @@
                            Foreground="{StaticResource TextTertiaryBrush}" />
             </StackPanel>
 
-            <ScrollViewer IsVisible="{Binding !HasNoSelection}"
-                          HorizontalScrollBarVisibility="Disabled"
-                          VerticalScrollBarVisibility="Auto">
+            <DockPanel IsVisible="{Binding !HasNoSelection}">
+
+                <!-- Stage footer -->
+                <Border DockPanel.Dock="Bottom"
+                        Background="{StaticResource RaisedBrush}"
+                        BorderBrush="{StaticResource SidebarBorderBrush}"
+                        BorderThickness="0,1,0,0"
+                        Padding="12,10"
+                        CornerRadius="8"
+                        Margin="0,12,0,0">
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right"
+                                Classes="apply-bar-apply"
+                                Content="{Binding StageButtonText}"
+                                Command="{Binding StageIncludedCommand}"
+                                IsEnabled="{Binding HasIncludedEntries}" />
+                        <TextBlock Text="{Binding StageMessage}"
+                                   FontSize="12"
+                                   VerticalAlignment="Center"
+                                   TextWrapping="Wrap"
+                                   Foreground="{StaticResource SuccessBrush}" />
+                    </DockPanel>
+                </Border>
+
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto">
                 <ItemsControl ItemsSource="{Binding PreviewGroups}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:SetPreviewGroupViewModel">
@@ -128,6 +151,14 @@
                                                     Margin="0,0,0,6"
                                                     ToolTip.Tip="{Binding RawValuesTooltip}">
                                                 <DockPanel>
+                                                    <!-- Include checkbox -->
+                                                    <CheckBox DockPanel.Dock="Left"
+                                                              IsChecked="{Binding IsIncluded}"
+                                                              VerticalAlignment="Top"
+                                                              Margin="0,0,10,0"
+                                                              IsVisible="{Binding CanToggle}"
+                                                              ToolTip.Tip="Include this change when staging" />
+
                                                     <!-- Current -> proposed -->
                                                     <StackPanel DockPanel.Dock="Right"
                                                                 Orientation="Horizontal"
@@ -150,6 +181,11 @@
                                                                    VerticalAlignment="Center"
                                                                    Foreground="{StaticResource SuccessBrush}"
                                                                    IsVisible="{Binding IsApplied}" />
+                                                        <TextBlock Text="already staged"
+                                                                   FontSize="11"
+                                                                   VerticalAlignment="Center"
+                                                                   Foreground="{StaticResource InfoBrush}"
+                                                                   IsVisible="{Binding IsAlreadyStaged}" />
                                                     </StackPanel>
 
                                                     <StackPanel Spacing="2">
@@ -167,6 +203,11 @@
                                                                    TextWrapping="Wrap"
                                                                    Foreground="{StaticResource WarningBrush}"
                                                                    IsVisible="{Binding IsSkipped}" />
+                                                        <TextBlock Text="{Binding ConflictText}"
+                                                                   FontSize="12"
+                                                                   TextWrapping="Wrap"
+                                                                   Foreground="{StaticResource WarningBrush}"
+                                                                   IsVisible="{Binding HasConflict}" />
                                                     </StackPanel>
                                                 </DockPanel>
                                             </Border>
@@ -177,7 +218,8 @@
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
-            </ScrollViewer>
+                </ScrollViewer>
+            </DockPanel>
         </Panel>
     </Grid>
 </UserControl>

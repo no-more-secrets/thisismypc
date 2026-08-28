@@ -15,9 +15,12 @@ public static class ExplorerChangeFactory
             SettingId = pref.Id,
             DisplayName = pref.DisplayName,
             SystemLocation = $@"{pref.RegistryKeyPath}\{pref.RegistryValueName}",
-            BeforeValue = enable ? pref.DisabledValue : pref.EnabledValue,
+            // Live before-state, not the opposite of the target: re-applying an
+            // already-applied entry (legal from the Set Loader) must not record a
+            // before-value the system never had.
+            BeforeValue = pref.CurrentValue,
             AfterValue = enable ? pref.EnabledValue : pref.DisabledValue,
-            BeforeDisplay = enable ? "Disabled" : "Enabled",
+            BeforeDisplay = pref.IsEnabled ? "Enabled" : "Disabled",
             AfterDisplay = enable ? "Enabled" : "Disabled",
             ValueType = pref.ValueType,
             Category = enable ? ChangeCategory.Enable : ChangeCategory.Disable,

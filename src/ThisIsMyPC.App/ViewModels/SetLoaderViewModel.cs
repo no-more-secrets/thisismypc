@@ -2,18 +2,22 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ThisIsMyPC.Core.Modules;
+using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Core.Sets;
 
 namespace ThisIsMyPC.App.ViewModels;
 
 /// <summary>
-/// The Set Loader screen (8.2): browse loaded sets by category and preview every change
-/// with its live current value. Staging and conflict resolution arrive in 8.3.
+/// The Set Loader screen: browse loaded sets by category (8.2), preview every change
+/// with its live current value, resolve conflicts, and stage the included entries into
+/// the standard pending-changes pipeline (8.3).
 /// </summary>
-public partial class SetLoaderViewModel : ViewModelBase
+public partial class SetLoaderViewModel : ViewModelBase, IDisposable
 {
     private readonly IReadOnlyList<ISetEntryInspector> _inspectors;
-    private readonly Func<string, ModuleAvailability?> _moduleAvailabilityLookup;
+    private readonly SetConflictResolver _conflictResolver;
+    private readonly IPendingChangesService _pendingChangesService;
+    private bool _suppressPendingRefresh;
 
     public ObservableCollection<SetItemViewModel> TweakSets { get; } = [];
     public ObservableCollection<SetItemViewModel> OptimizationPacks { get; } = [];
@@ -23,24 +27,50 @@ public partial class SetLoaderViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(HasNoSelection))]
     private SetItemViewModel? _selectedSet;
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasIncludedEntries))]
+    [NotifyPropertyChangedFor(nameof(StageButtonText))]
+    private int _includedCount;
+
+    [ObservableProperty]
+    private string _stageMessage = string.Empty;
+
     public bool HasTweakSets => TweakSets.Count > 0;
     public bool HasOptimizationPacks => OptimizationPacks.Count > 0;
     public bool HasNoSets => TweakSets.Count == 0 && OptimizationPacks.Count == 0;
     public bool HasNoSelection => SelectedSet is null;
+    public bool HasIncludedEntries => IncludedCount > 0;
+    public string StageButtonText => IncludedCount == 1
+        ? "Stage 1 change"
+        : $"Stage {IncludedCount} changes";
 
     public SetLoaderViewModel(
         SetLoadResult loadResult,
         IEnumerable<ISetEntryInspector> inspectors,
-        Func<string, ModuleAvailability?> moduleAvailabilityLookup)
+        Func<string, ModuleAvailability?> moduleAvailabilityLookup,
+        IPendingChangesService pendingChangesService)
     {
         _inspectors = inspectors.ToList();
-        _moduleAvailabilityLookup = moduleAvailabilityLookup;
+        _conflictResolver = new SetConflictResolver(_inspectors, moduleAvailabilityLookup);
+        _pendingChangesService = pendingChangesService;
 
         foreach (var set in loadResult.Sets.OrderBy(s => s.Name, StringComparer.OrdinalIgnoreCase))
         {
             var item = new SetItemViewModel(set);
             (set.Category == SetCategory.OptimizationPack ? OptimizationPacks : TweakSets).Add(item);
         }
+
+        // The review panel (Discard All / Apply) is reachable while this screen is open;
+        // re-resolve so "already staged" tags and conflicts never go stale.
+        _pendingChangesService.PropertyChanged += OnPendingChangesChanged;
+    }
+
+    public void Dispose() => _pendingChangesService.PropertyChanged -= OnPendingChangesChanged;
+
+    private void OnPendingChangesChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(IPendingChangesService.PendingCount) && !_suppressPendingRefresh)
+            BuildPreview();
     }
 
     [RelayCommand]
@@ -50,6 +80,55 @@ public partial class SetLoaderViewModel : ViewModelBase
             set.IsSelected = ReferenceEquals(set, item);
 
         SelectedSet = item;
+        StageMessage = string.Empty;
+        BuildPreview();
+    }
+
+    [RelayCommand]
+    private void StageIncluded()
+    {
+        var staged = 0;
+        // Each Stage/Unstage raises PendingCount; hold the rebuild until the loop is done
+        // (BuildPreview would clear the collection being iterated).
+        _suppressPendingRefresh = true;
+        try
+        {
+            foreach (var row in PreviewGroups.SelectMany(g => g.Entries))
+            {
+                if (!row.IsIncluded || row.IsSkipped)
+                    continue;
+
+                // Fresh build at stage time: before-values must reflect the system NOW,
+                // not the moment the preview was rendered.
+                var group = _inspectors
+                    .FirstOrDefault(i => i.ModuleId == row.Entry.ModuleId)?
+                    .CreateChangeGroup(row.Entry);
+                if (group is null)
+                    continue;
+
+                // Any conflicting pending group is replaced — including the same-value
+                // case, where staging on top would duplicate the mutation.
+                if (row.Resolution.Conflict
+                        is SetEntryConflict.PendingDifferentValue or SetEntryConflict.PendingSameValue
+                    && row.Resolution.PendingGroupId is not null)
+                {
+                    _pendingChangesService.Unstage(row.Resolution.PendingGroupId);
+                }
+
+                _pendingChangesService.Stage(group);
+                staged++;
+            }
+        }
+        finally
+        {
+            _suppressPendingRefresh = false;
+        }
+
+        StageMessage = staged == 1
+            ? "1 change staged — review and apply from the pending changes bar."
+            : $"{staged} changes staged — review and apply from the pending changes bar.";
+
+        // Re-resolve: freshly staged rows flip to "already staged" and uncheck.
         BuildPreview();
     }
 
@@ -57,44 +136,34 @@ public partial class SetLoaderViewModel : ViewModelBase
     {
         PreviewGroups.Clear();
         if (SelectedSet is null)
+        {
+            RecountIncluded();
             return;
+        }
 
         var definition = SelectedSet.Definition;
+        // Positional pairing, NOT a dictionary: SetEntry is a value-equality record and
+        // duplicate rows in a hand-authored user set must not crash the preview.
+        var resolutions = _conflictResolver.Resolve(definition, _pendingChangesService.PendingGroups);
+        var pairs = definition.Entries.Zip(resolutions);
+
         var grouped = definition.Category == SetCategory.OptimizationPack
-            ? definition.Entries.GroupBy(e => e.Group ?? "Other")
-            : definition.Entries.GroupBy(_ => string.Empty);
+            ? pairs.GroupBy(p => p.First.Group ?? "Other")
+            : pairs.GroupBy(_ => string.Empty);
 
         foreach (var group in grouped)
         {
             var groupVm = new SetPreviewGroupViewModel(group.Key);
-            foreach (var entry in group)
-                groupVm.Entries.Add(BuildEntryPreview(entry));
+            foreach (var (_, resolution) in group)
+                groupVm.Entries.Add(new SetEntryPreviewViewModel(resolution, RecountIncluded));
             PreviewGroups.Add(groupVm);
         }
+
+        RecountIncluded();
     }
 
-    private SetEntryPreviewViewModel BuildEntryPreview(SetEntry entry)
-    {
-        var availability = _moduleAvailabilityLookup(entry.ModuleId);
-        if (availability is null)
-        {
-            return SetEntryPreviewViewModel.Skipped(entry,
-                $"Will be skipped — the '{entry.ModuleId}' module is not part of this build.");
-        }
-
-        if (!availability.IsAvailable)
-        {
-            return SetEntryPreviewViewModel.Skipped(entry,
-                $"Will be skipped — {availability.Reason ?? $"the '{entry.ModuleId}' module is not available on this system"}.");
-        }
-
-        var state = _inspectors.FirstOrDefault(i => i.ModuleId == entry.ModuleId)?.Inspect(entry);
-        if (state is null)
-        {
-            return SetEntryPreviewViewModel.Skipped(entry,
-                "Will be skipped — this setting is not recognized by the installed version.");
-        }
-
-        return SetEntryPreviewViewModel.Resolved(entry, state);
-    }
+    private void RecountIncluded()
+        => IncludedCount = PreviewGroups
+            .SelectMany(g => g.Entries)
+            .Count(e => e.IsIncluded && !e.IsSkipped);
 }

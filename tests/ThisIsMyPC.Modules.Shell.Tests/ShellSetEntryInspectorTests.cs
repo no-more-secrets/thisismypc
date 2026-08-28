@@ -96,6 +96,57 @@ public sealed class ShellSetEntryInspectorTests
     }
 
     [Fact]
+    public void CreateChangeGroup_TaskbarAlignmentLeft_BuildsSingleDescriptor()
+    {
+        var group = Inspector.CreateChangeGroup(Entry("taskbar-alignment", "0"));
+
+        var change = Assert.Single(group!.Changes);
+        Assert.Equal("taskbar-alignment", change.SettingId);
+        Assert.Equal("0", change.AfterValue);
+        Assert.Equal("1", change.BeforeValue); // live read: missing value = Center
+    }
+
+    [Fact]
+    public void CreateChangeGroup_ClassicContextMenuEnable_CarriesShimEnforcement()
+    {
+        var group = Inspector.CreateChangeGroup(Entry("classic-context-menu", ""));
+
+        var change = Assert.Single(group!.Changes);
+        Assert.Equal("", change.AfterValue);
+        Assert.Equal(ShellRegistryPaths.AbsentValue, change.BeforeValue);
+        Assert.NotNull(change.Enforcement);
+    }
+
+    [Fact]
+    public void CreateChangeGroup_ClassicCommandBar_BothDirections()
+    {
+        var enable = Inspector.CreateChangeGroup(Entry("classic-command-bar", ""));
+        Assert.Equal("", Assert.Single(enable!.Changes).AfterValue);
+
+        var disable = Inspector.CreateChangeGroup(Entry("classic-command-bar", ShellRegistryPaths.AbsentValue));
+        Assert.Equal(ShellRegistryPaths.AbsentValue, Assert.Single(disable!.Changes).AfterValue);
+    }
+
+    [Fact]
+    public void CreateChangeGroup_ExplorerPreference_MapsEnableDirection()
+    {
+        var group = Inspector.CreateChangeGroup(Entry("hidden-files", "1"));
+
+        var change = Assert.Single(group!.Changes);
+        Assert.Equal("hidden-files", change.SettingId);
+        Assert.Equal("1", change.AfterValue);
+    }
+
+    [Fact]
+    public void CreateChangeGroup_BogusValues_ReturnNull()
+    {
+        Assert.Null(Inspector.CreateChangeGroup(Entry("taskbar-alignment", "5")));
+        Assert.Null(Inspector.CreateChangeGroup(Entry("classic-context-menu", "banana")));
+        Assert.Null(Inspector.CreateChangeGroup(Entry("hidden-files", "banana")));
+        Assert.Null(Inspector.CreateChangeGroup(Entry("no-such-setting", "0")));
+    }
+
+    [Fact]
     public void ExplorerPreference_ResolvesThroughReader()
     {
         // hidden-files: default 2 (hidden), enabled value 1

@@ -1,3 +1,4 @@
+using ThisIsMyPC.Core.Changes;
 using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Core.Sets;
 using ThisIsMyPC.Modules.Annoyances.Changes;
@@ -70,6 +71,72 @@ public sealed class AnnoyancesSetEntryInspector : ISetEntryInspector
                 : wantsDefault && suppressedCount == 0,
         };
     }
+
+    public ChangeGroup? CreateChangeGroup(SetEntry entry)
+    {
+        switch (entry.SettingId)
+        {
+            case "copilot":
+            {
+                var prefs = _reader.ReadCopilotPolicy();
+                return Direction(entry, prefs[0]) is { } suppress
+                    ? AnnoyanceChangeFactory.CreateCopilotPolicyToggle(prefs, suppress)
+                    : null;
+            }
+            case "recall":
+            {
+                var prefs = _reader.ReadRecall();
+                return Direction(entry, prefs[0]) is { } suppress
+                    ? AnnoyanceChangeFactory.CreateGroupToggle(
+                        prefs,
+                        settingId: "recall",
+                        displayName: "Windows Recall and AI data analysis",
+                        description: "Blocks Windows Recall snapshots and AI analysis of your activity (three WindowsAI policies set together).",
+                        suppress)
+                    : null;
+            }
+            case "settings-suggested-content":
+            {
+                var prefs = _reader.ReadSettingsSuggestedContent();
+                return Direction(entry, prefs[0]) is { } suppress
+                    ? AnnoyanceChangeFactory.CreateGroupToggle(
+                        prefs,
+                        settingId: "settings-suggested-content",
+                        displayName: "Suggested content in Settings",
+                        description: "The ad-like suggested content tiles in the Settings app (three ContentDeliveryManager values set together).",
+                        suppress)
+                    : null;
+            }
+            case "bing-search":
+                return entry.Value is "0" or "1"
+                    ? AnnoyanceChangeFactory.CreateBingSearchToggle(_reader.ReadBingSearch(), suppress: entry.Value == "0")
+                    : null;
+        }
+
+        var pref = _reader.ReadAll().FirstOrDefault(p => p.Id == entry.SettingId);
+        if (pref is null || Direction(entry, pref) is not { } suppressSingle)
+            return null;
+
+        // The BingAndEdge section's single toggle (edge-shortcuts) carries the
+        // drift-fragile reversion vectors, exactly like the module UI stages it.
+        var change = pref.Section == AnnoyanceSection.BingAndEdge
+            ? AnnoyanceChangeFactory.CreateDriftFragileToggle(pref, suppressSingle)
+            : AnnoyanceChangeFactory.CreateToggle(pref, suppressSingle);
+
+        return new ChangeGroup
+        {
+            GroupId = Guid.NewGuid().ToString("N"),
+            DisplayName = pref.DisplayName,
+            Description = pref.Description,
+            Changes = [change],
+        };
+    }
+
+    /// <summary>Maps the entry value to a toggle direction; null = neither direction.</summary>
+    private static bool? Direction(SetEntry entry, AnnoyancePreference primary)
+        => string.Equals(entry.Value, primary.SuppressedValue, StringComparison.Ordinal) ? true
+            : string.Equals(entry.Value, primary.DefaultValue, StringComparison.Ordinal) ? false
+            : null;
 
     private SetEntryState InspectBingSearch(SetEntry entry)
     {

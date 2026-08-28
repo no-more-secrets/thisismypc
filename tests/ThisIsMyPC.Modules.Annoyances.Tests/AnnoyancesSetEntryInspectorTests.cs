@@ -144,4 +144,85 @@ public sealed class AnnoyancesSetEntryInspectorTests
         Assert.Equal("Suppressed", state!.CurrentDisplay);
         Assert.True(state.IsApplied);
     }
+
+    [Fact]
+    public void CreateChangeGroup_CopilotSuppress_BuildsBothScopes_WithEnforcement()
+    {
+        var group = Inspector.CreateChangeGroup(Entry("copilot", "1"));
+
+        Assert.NotNull(group);
+        Assert.Equal(2, group!.Changes.Count);
+        Assert.All(group.Changes, c =>
+        {
+            Assert.Equal("copilot", c.SettingId);
+            Assert.Equal("1", c.AfterValue);
+            Assert.Equal("0", c.BeforeValue); // live before-value from the fake registry
+            Assert.NotNull(c.Enforcement);
+        });
+    }
+
+    [Fact]
+    public void CreateChangeGroup_CopilotRestore_NoEnforcement()
+    {
+        var group = Inspector.CreateChangeGroup(Entry("copilot", "0"));
+
+        Assert.All(group!.Changes, c =>
+        {
+            Assert.Equal("0", c.AfterValue);
+            Assert.Null(c.Enforcement);
+        });
+    }
+
+    [Fact]
+    public void CreateChangeGroup_BogusValues_ReturnNull()
+    {
+        Assert.Null(Inspector.CreateChangeGroup(Entry("copilot", "2")));
+        Assert.Null(Inspector.CreateChangeGroup(Entry("advertising-id", "banana")));
+        Assert.Null(Inspector.CreateChangeGroup(Entry("bing-search", "2")));
+        Assert.Null(Inspector.CreateChangeGroup(Entry("no-such-setting", "0")));
+    }
+
+    [Fact]
+    public void CreateChangeGroup_RecallSuppress_MixedPolarityValues()
+    {
+        var group = Inspector.CreateChangeGroup(Entry("recall", "0"));
+
+        Assert.Equal(3, group!.Changes.Count);
+        var byValue = group.Changes.ToDictionary(
+            c => c.SystemLocation[(c.SystemLocation.LastIndexOf('\\') + 1)..], c => c.AfterValue);
+        Assert.Equal("0", byValue["AllowRecallEnablement"]);
+        Assert.Equal("1", byValue["DisableAIDataAnalysis"]);
+        Assert.Equal("1", byValue["TurnOffSavingSnapshots"]);
+    }
+
+    [Fact]
+    public void CreateChangeGroup_Single_WrapsOneDescriptor_NullEnforcement()
+    {
+        var group = Inspector.CreateChangeGroup(Entry("advertising-id", "0"));
+
+        var change = Assert.Single(group!.Changes);
+        Assert.Equal("advertising-id", change.SettingId);
+        Assert.Equal("0", change.AfterValue);
+        Assert.Null(change.Enforcement);
+    }
+
+    [Fact]
+    public void CreateChangeGroup_EdgeShortcuts_CarriesDriftEnforcement()
+    {
+        var group = Inspector.CreateChangeGroup(Entry("edge-shortcuts", "0"));
+
+        var change = Assert.Single(group!.Changes);
+        Assert.NotNull(change.Enforcement);
+        Assert.Contains("Windows Update", change.Enforcement!.ReversionVectors);
+    }
+
+    [Fact]
+    public void CreateChangeGroup_BingSearchSuppress_TwoOppositePolarityChanges()
+    {
+        var group = Inspector.CreateChangeGroup(Entry("bing-search", "0"));
+
+        Assert.Equal(2, group!.Changes.Count);
+        Assert.Contains(group.Changes, c => c.AfterValue == "0"); // BingSearchEnabled
+        Assert.Contains(group.Changes, c => c.AfterValue == "1"); // DisableSearchBoxSuggestions
+    }
 }

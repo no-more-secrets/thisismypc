@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using ThisIsMyPC.Core.Sets;
 
 namespace ThisIsMyPC.App.ViewModels;
@@ -19,39 +20,42 @@ public sealed class SetPreviewGroupViewModel
     public ObservableCollection<SetEntryPreviewViewModel> Entries { get; } = [];
 }
 
-/// <summary>One previewed change row.</summary>
-public sealed class SetEntryPreviewViewModel
+/// <summary>One previewed change row, checkable for staging (8.3).</summary>
+public sealed partial class SetEntryPreviewViewModel : ViewModelBase
 {
-    private SetEntryPreviewViewModel(
-        SetEntry entry, string settingName, string currentDisplay, string currentValue,
-        bool isApplied, bool isSkipped, string? skipReason)
+    private readonly Action _includeChanged;
+
+    public SetEntryPreviewViewModel(SetEntryResolution resolution, Action includeChanged)
     {
-        Entry = entry;
-        SettingName = settingName;
-        CurrentDisplay = currentDisplay;
-        CurrentValue = currentValue;
-        IsApplied = isApplied;
-        IsSkipped = isSkipped;
-        SkipReason = skipReason;
+        Resolution = resolution;
+        _includeChanged = includeChanged;
+        _isIncluded = resolution.IncludedByDefault;
     }
 
-    public static SetEntryPreviewViewModel Resolved(SetEntry entry, SetEntryState state)
-        => new(entry, state.SettingDisplayName, state.CurrentDisplay, state.CurrentValue,
-            state.IsApplied, isSkipped: false, skipReason: null);
+    public SetEntryResolution Resolution { get; }
+    public SetEntry Entry => Resolution.Entry;
 
-    public static SetEntryPreviewViewModel Skipped(SetEntry entry, string reason)
-        => new(entry, entry.SettingId, currentDisplay: "—", currentValue: "",
-            isApplied: false, isSkipped: true, skipReason: reason);
+    [ObservableProperty]
+    private bool _isIncluded;
 
-    public SetEntry Entry { get; }
-    public string SettingName { get; }
+    partial void OnIsIncludedChanged(bool value) => _includeChanged();
+
+    public string SettingName => Resolution.State?.SettingDisplayName ?? Entry.SettingId;
     public string Description => Entry.Description;
-    public string CurrentDisplay { get; }
-    public string CurrentValue { get; }
+    public string CurrentDisplay => Resolution.State?.CurrentDisplay ?? "—";
+    public string CurrentValue => Resolution.State?.CurrentValue ?? "";
     public string ProposedDisplay => Entry.DisplayValue ?? Entry.Value;
-    public bool IsApplied { get; }
-    public bool IsSkipped { get; }
-    public string? SkipReason { get; }
+
+    public bool IsSkipped => Resolution.IsSkipped;
+    public string? SkipReason => Resolution.SkipReason;
+    public bool IsApplied => Resolution.Conflict == SetEntryConflict.AlreadyApplied;
+    public bool IsAlreadyStaged => Resolution.Conflict == SetEntryConflict.PendingSameValue;
+    public bool HasConflict => Resolution.Conflict == SetEntryConflict.PendingDifferentValue;
+    public bool CanToggle => !IsSkipped;
+
+    public string ConflictText => HasConflict
+        ? $"Conflicts with a pending change: the set wants '{ProposedDisplay}', the pending change sets '{Resolution.PendingDisplay ?? Resolution.PendingValue}', the system currently has '{CurrentDisplay}'. Checking this row replaces the pending change when staged."
+        : string.Empty;
 
     /// <summary>Raw values for the row tooltip; display strings carry the row itself.</summary>
     public string RawValuesTooltip =>
