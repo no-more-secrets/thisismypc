@@ -1,9 +1,12 @@
+using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Core.Sets;
 using ThisIsMyPC.Integration.Tests.Fakes;
 using ThisIsMyPC.Modules.Annoyances.Changes;
 using ThisIsMyPC.Modules.Annoyances.Services;
 using ThisIsMyPC.Modules.Shell.Changes;
 using ThisIsMyPC.Modules.Shell.Models;
+using ThisIsMyPC.Modules.Startup.Changes;
+using ThisIsMyPC.Modules.Startup.Models;
 
 namespace ThisIsMyPC.Integration.Tests.Sets;
 
@@ -72,12 +75,56 @@ public sealed class BuiltInSetsTests
         return desired;
     }
 
+    /// <summary>
+    /// The Startup &amp; Services module uses instance-scoped settingIds
+    /// (service-starttype:X, scheduled-task:P), so its desired values are derived per
+    /// entry by round-tripping the settingId through the real factory in the debloat
+    /// direction. Null = the settingId doesn't match the factory's format.
+    /// </summary>
+    private static string? StartupFactoryDesiredValue(SetEntry entry)
+    {
+        const string servicePrefix = "service-starttype:";
+        const string taskPrefix = "scheduled-task:";
+
+        if (entry.SettingId.StartsWith(servicePrefix, StringComparison.Ordinal))
+        {
+            var name = entry.SettingId[servicePrefix.Length..];
+            var change = ServiceChangeFactory.CreateStartTypeChange(
+                new ServiceEntry
+                {
+                    ServiceName = name,
+                    DisplayName = name,
+                    State = ServiceState.Running,
+                    StartType = ServiceStartType.Manual,
+                },
+                ServiceStartType.Disabled);
+            return change.SettingId == entry.SettingId ? change.AfterValue : null;
+        }
+
+        if (entry.SettingId.StartsWith(taskPrefix, StringComparison.Ordinal))
+        {
+            var path = entry.SettingId[taskPrefix.Length..];
+            var change = ScheduledTaskChangeFactory.CreateToggle(
+                new ScheduledTaskEntry
+                {
+                    Name = path[(path.LastIndexOf('\\') + 1)..],
+                    Path = path,
+                    IsEnabled = true,
+                    Classification = TaskClassification.Unknown,
+                },
+                enable: false);
+            return change.SettingId == entry.SettingId ? change.AfterValue : null;
+        }
+
+        return null;
+    }
+
     [Fact]
     public void BundledSets_LoadCleanly()
     {
         Assert.Empty(_result.Warnings);
         Assert.Equal(
-            ["NukeCopilot", "Privacy Baseline", "Windows 10-ify"],
+            ["Clean Boot", "NukeCopilot", "Privacy Baseline", "Windows 10-ify"],
             _result.Sets.Select(s => s.Name).OrderBy(n => n, StringComparer.Ordinal));
         Assert.All(_result.Sets, s => Assert.Equal(SetSource.BuiltIn, s.Source));
     }
@@ -91,9 +138,20 @@ public sealed class BuiltInSetsTests
         {
             foreach (var entry in set.Entries)
             {
-                Assert.True(
-                    desired.TryGetValue((entry.ModuleId, entry.SettingId), out var expectedValue),
-                    $"{set.Name}: unknown setting ({entry.ModuleId}, {entry.SettingId})");
+                string? expectedValue;
+                if (entry.ModuleId == "Startup & Services")
+                {
+                    expectedValue = StartupFactoryDesiredValue(entry);
+                    Assert.True(
+                        expectedValue is not null,
+                        $"{set.Name}: settingId doesn't match a Startup factory format ({entry.SettingId})");
+                }
+                else
+                {
+                    Assert.True(
+                        desired.TryGetValue((entry.ModuleId, entry.SettingId), out expectedValue),
+                        $"{set.Name}: unknown setting ({entry.ModuleId}, {entry.SettingId})");
+                }
                 Assert.True(
                     string.Equals(entry.Value, expectedValue, StringComparison.Ordinal),
                     $"{set.Name}/{entry.SettingId}: value '{entry.Value}' != factory desired value '{expectedValue}'");
@@ -124,5 +182,27 @@ public sealed class BuiltInSetsTests
         Assert.Equal(
             standalone.Entries.Select(e => (e.ModuleId, e.SettingId, e.Value)),
             pack.Entries.Where(e => e.Group == "NukeCopilot").Select(e => (e.ModuleId, e.SettingId, e.Value)));
+    }
+
+    /// <summary>
+    /// The tweak inventory's opt-in-only services (functional breakage: search,
+    /// notifications, sharing, printing, biometrics) must never become default Clean
+    /// Boot entries. WbioSrvc especially: disabling it without the Biometrics policy
+    /// companion hangs security dialogs on machines with a fingerprint sensor.
+    /// </summary>
+    [Fact]
+    public void CleanBoot_NeverIncludesTheOptInRiskServices()
+    {
+        var cleanBoot = _result.Sets.Single(s => s.Name == "Clean Boot");
+
+        string[] optInOnly = ["WSearch", "WbioSrvc", "CDPSvc", "WpnService", "Spooler"];
+        foreach (var service in optInOnly)
+        {
+            Assert.DoesNotContain(
+                ServiceChangeFactory.GetSettingId(service),
+                cleanBoot.Entries.Select(e => e.SettingId));
+        }
+
+        Assert.All(cleanBoot.Entries, e => Assert.Equal("Startup & Services", e.ModuleId));
     }
 }

@@ -124,6 +124,7 @@ public partial class App : Application
         // conflict detection (8.3)
         services.AddSingleton<ISetEntryInspector, ThisIsMyPC.Modules.Shell.Services.ShellSetEntryInspector>();
         services.AddSingleton<ISetEntryInspector, ThisIsMyPC.Modules.Annoyances.Services.AnnoyancesSetEntryInspector>();
+        services.AddSingleton<ISetEntryInspector, ThisIsMyPC.Modules.Startup.Services.StartupSetEntryInspector>();
         services.AddSingleton<ChangeHistoryRepository>();
         services.AddSingleton<IChangeHistoryService, ChangeHistoryService>();
 

@@ -1,0 +1,267 @@
+{
+  // Built-in set authored from the audited services + scheduled-tasks debloat inventory.
+  //
+  // Deliberately EXCLUDED — functional side effects, opt-in only (never make these
+  // default entries; they belong in a future opt-in set with explicit warnings):
+  //   WSearch     — kills Start-menu file search and Outlook search
+  //   WbioSrvc    — on machines with a fingerprint reader / IR camera, disabling it
+  //                 without also setting HKLM\SOFTWARE\Policies\Microsoft\Biometrics\
+  //                 Enabled=0 hangs every WebAuthn/Windows Security popup ~10 seconds
+  //   CDPSvc      — breaks Nearby Share and phone link
+  //   WpnService  — kills toast notifications for UWP apps
+  //   Spooler     — only safe if the machine never prints
+  // Also excluded: OEM services (HP/ASUS — machine-specific, never blanket-disable;
+  // keep a firmware-update channel alive) and third-party updaters (optional).
+  "name": "Clean Boot",
+  "description": "Disables the telemetry, diagnostics, and unused-feature services and scheduled tasks that are safe to turn off on any Windows 11 machine. Deliberately excludes anything that breaks search, notifications, printing, sharing, or biometrics - those stay opt-in.",
+  "category": "TweakSet",
+  "version": "1.0.0",
+  "author": "ThisIsMyPC",
+  "entries": [
+    // --- Telemetry & tracking services ---
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:DiagTrack",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "group": "Telemetry services",
+      "description": "Connected User Experiences and Telemetry - the main Windows diagnostic-data collection service."
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:dptftcs",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "group": "Telemetry services",
+      "description": "Intel Dynamic Tuning telemetry collection service (skipped automatically on machines without it)."
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:DusmSvc",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "group": "Telemetry services",
+      "description": "Data Usage tracking service - meters per-app network usage for the Settings app."
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:TrkWks",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "group": "Telemetry services",
+      "description": "Distributed Link Tracking Client - tracks NTFS file links across machines; unused on standalone PCs."
+    },
+    // --- Diagnostics & compatibility services ---
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:WdiServiceHost",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "group": "Diagnostics services",
+      "description": "Diagnostic Service Host - runs background Windows troubleshooting diagnostics."
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:WdiSystemHost",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "group": "Diagnostics services",
+      "description": "Diagnostic System Host - system-level companion to the diagnostic service host."
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:PcaSvc",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "group": "Diagnostics services",
+      "description": "Program Compatibility Assistant - monitors every program launch for legacy compatibility issues."
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:InventorySvc",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "group": "Diagnostics services",
+      "description": "Inventory and Compatibility Appraisal service - scans installed software for upgrade telemetry."
+    },
+    // --- Unused-feature services ---
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:MapsBroker",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "group": "Unused features",
+      "description": "Downloaded Maps Manager - only needed by apps that use offline Windows Maps data."
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:PhoneSvc",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "group": "Unused features",
+      "description": "Phone Service - telephony state backing for the Your Phone / calling stack."
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:WpcMonSvc",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "group": "Unused features",
+      "description": "Parental Controls monitoring service - unused when no child accounts are configured."
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:RemoteRegistry",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "group": "Unused features",
+      "description": "Remote Registry - lets remote users modify this machine's registry; disabling it also hardens the system."
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:RemoteAccess",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "group": "Unused features",
+      "description": "Routing and Remote Access - dial-up/VPN routing server components; unused on desktops."
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:NetTcpPortSharing",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "group": "Unused features",
+      "description": "Net.Tcp Port Sharing - WCF port-sharing for server workloads; unused on client machines."
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:WSAIFabricSvc",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "group": "Unused features",
+      "description": "Windows AI fabric service - backing service for on-device Windows AI workloads."
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:MsKeyboardFilter",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "group": "Unused features",
+      "description": "Microsoft Keyboard Filter - kiosk-mode key suppression; unused outside assigned-access setups."
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:AssignedAccessManagerSvc",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "group": "Unused features",
+      "description": "Assigned Access Manager - kiosk-mode configuration service."
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:shpamsvc",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "group": "Unused features",
+      "description": "Shared PC Account Manager - shared-device account cleanup; unused on personal machines."
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:AppVClient",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "group": "Unused features",
+      "description": "Microsoft App-V Client - enterprise application virtualization; unused outside managed deployments."
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:UevAgentService",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "group": "Unused features",
+      "description": "User Experience Virtualization agent - enterprise settings roaming; unused outside managed deployments."
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:DialogBlockingService",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "group": "Unused features",
+      "description": "Dialog Blocking Service - suppresses dialogs on managed/kiosk devices; unused on personal machines."
+    },
+    // --- Edge updater services ---
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:edgeupdate",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "group": "Edge updaters",
+      "description": "Microsoft Edge Update - background Edge updater (Edge still updates when launched)."
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:edgeupdatem",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "group": "Edge updaters",
+      "description": "Microsoft Edge Update (machine) - the second Edge updater service."
+    },
+    // --- Telemetry & diagnostics scheduled tasks ---
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "scheduled-task:\\Microsoft\\Windows\\Application Experience\\Microsoft Compatibility Appraiser Exp",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "group": "Scheduled tasks",
+      "description": "Compatibility Appraiser - scans installed software and uploads upgrade-readiness telemetry."
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "scheduled-task:\\Microsoft\\Windows\\Customer Experience Improvement Program\\Consolidator",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "group": "Scheduled tasks",
+      "description": "Customer Experience Improvement Program data consolidator and uploader."
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "scheduled-task:\\Microsoft\\Windows\\Customer Experience Improvement Program\\UsbCeip",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "group": "Scheduled tasks",
+      "description": "Customer Experience Improvement Program USB device telemetry collector."
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "scheduled-task:\\Microsoft\\Windows\\Autochk\\Proxy",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "group": "Scheduled tasks",
+      "description": "Uploads autochk (disk check) results to the Software Quality Management telemetry pipeline."
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "scheduled-task:\\Microsoft\\Windows\\DiskDiagnostic\\Microsoft-Windows-DiskDiagnosticDataCollector",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "group": "Scheduled tasks",
+      "description": "Disk diagnostic telemetry collector for the Windows Disk Diagnostic program."
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "scheduled-task:\\Microsoft\\Windows\\DiskDiagnostic\\Microsoft-Windows-DiskDiagnosticResolver",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "group": "Scheduled tasks",
+      "description": "Disk diagnostic user-notification resolver (companion to the data collector)."
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "scheduled-task:\\Microsoft\\Windows\\Maps\\MapsUpdateTask",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "group": "Scheduled tasks",
+      "description": "Background updater for offline Windows Maps data (pairs with disabling MapsBroker)."
+    }
+  ]
+}

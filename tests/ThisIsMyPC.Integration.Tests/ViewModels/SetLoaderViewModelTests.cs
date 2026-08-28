@@ -5,6 +5,7 @@ using ThisIsMyPC.Core.Sets;
 using ThisIsMyPC.Integration.Tests.Fakes;
 using ThisIsMyPC.Modules.Annoyances.Services;
 using ThisIsMyPC.Modules.Shell.Services;
+using ThisIsMyPC.Modules.Startup.Services;
 
 namespace ThisIsMyPC.Integration.Tests.ViewModels;
 
@@ -24,9 +25,27 @@ public sealed class SetLoaderViewModelTests
         Core.Services.IPendingChangesService? pendingChangesService = null)
     {
         var registry = new FakeRegistryService();
+        var load = LoadBundledSets();
+
+        // Seed the Startup fakes with every service/task the bundled sets reference, so
+        // instance-scoped entries resolve (Manual/enabled = the not-yet-applied state).
+        var services = new FakeServiceControlService();
+        var tasks = new FakeScheduledTaskService();
+        foreach (var entry in load.Sets.SelectMany(s => s.Entries).Where(e => e.ModuleId == "Startup & Services"))
+        {
+            if (entry.SettingId.StartsWith("service-starttype:", StringComparison.Ordinal))
+                services.AddService(entry.SettingId["service-starttype:".Length..], ServiceState.Running, ServiceStartType.Manual);
+            else if (entry.SettingId.StartsWith("scheduled-task:", StringComparison.Ordinal))
+                tasks.AddTask(entry.SettingId["scheduled-task:".Length..]);
+        }
+
         return new SetLoaderViewModel(
-            LoadBundledSets(),
-            [new ShellSetEntryInspector(registry), new AnnoyancesSetEntryInspector(registry)],
+            load,
+            [
+                new ShellSetEntryInspector(registry),
+                new AnnoyancesSetEntryInspector(registry),
+                new StartupSetEntryInspector(services, tasks, registry, new FakeStartupFolderService()),
+            ],
             availabilityLookup ?? (_ => Available),
             pendingChangesService ?? new PendingChangesService());
     }
@@ -49,7 +68,7 @@ public sealed class SetLoaderViewModelTests
         var vm = CreateWithBundledSets();
 
         Assert.Equal(
-            ["NukeCopilot", "Privacy Baseline"],
+            ["Clean Boot", "NukeCopilot", "Privacy Baseline"],
             vm.TweakSets.Select(s => s.Name).OrderBy(n => n, StringComparer.Ordinal));
         Assert.Equal(["Windows 10-ify"], vm.OptimizationPacks.Select(s => s.Name));
         Assert.False(vm.HasNoSets);
