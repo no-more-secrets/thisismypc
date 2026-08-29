@@ -59,14 +59,19 @@ public sealed partial class HomeViewModel : ViewModelBase
 
     public bool HasRecentActivity => RecentActivity.Count > 0;
 
+    /// <summary>First-launch capability summary (5-2); null after dismissal.</summary>
+    public FirstLaunchBannerViewModel? FirstLaunchBanner { get; }
+
     public HomeViewModel(
         SystemIdentity identity,
         IReadOnlyList<QuickActionViewModel> quickActions,
-        IChangeHistoryService historyService)
+        IChangeHistoryService historyService,
+        FirstLaunchBannerViewModel? firstLaunchBanner = null)
     {
         Identity = identity;
         QuickActions = quickActions;
         _historyService = historyService;
+        FirstLaunchBanner = firstLaunchBanner;
     }
 
     [RelayCommand]

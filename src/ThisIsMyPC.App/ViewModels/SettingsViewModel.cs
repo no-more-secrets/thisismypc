@@ -165,8 +165,17 @@ public sealed partial class SettingsViewModel : ViewModelBase
         IReadOnlyList<IModuleSettingsContributor> moduleContributors,
         Action<string>? applyTheme = null,
         IReadOnlyCollection<string>? installedModuleIds = null,
-        string? appVersion = null)
+        string? appVersion = null,
+        IReadOnlyList<Core.Services.CapabilityReportRow>? capabilityReport = null)
     {
+        SystemCapabilityRows = (capabilityReport ?? [])
+            .Select(r => new FirstLaunchRowViewModel(
+                r.DisplayName,
+                r.Availability.IsAvailable
+                    ? $"Available. {r.Availability.RemediationHint}".Trim()
+                    : $"{r.Availability.Reason} {r.Availability.RemediationHint}".Trim(),
+                r.Availability.IsAvailable))
+            .ToList();
         _settings = settings;
         _installedModuleIds = installedModuleIds ?? [];
         _appVersion = appVersion ?? "0.0.0";
@@ -247,6 +256,11 @@ public sealed partial class SettingsViewModel : ViewModelBase
     }
 
     public bool HasModuleSections { get; }
+
+    /// <summary>Read-only capability summary (5-2 AC3) — the first-launch info, always reachable.</summary>
+    public IReadOnlyList<FirstLaunchRowViewModel> SystemCapabilityRows { get; }
+
+    public bool HasCapabilityRows => SystemCapabilityRows.Count > 0;
 
     // --- 7-4 export/import ---
 

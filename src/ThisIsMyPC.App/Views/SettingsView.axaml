@@ -110,6 +110,39 @@
                            Margin="0,2,0,0" />
             </StackPanel>
 
+            <!-- 5-2 AC3: read-only capability summary, always reachable -->
+            <StackPanel IsVisible="{Binding HasCapabilityRows}" Margin="0,0,0,24">
+                <TextBlock Text="System Capabilities"
+                           FontWeight="SemiBold"
+                           FontSize="16"
+                           Foreground="{StaticResource TextPrimaryBrush}" />
+                <TextBlock Text="What this system supports - the same summary shown on first launch."
+                           FontSize="12"
+                           Foreground="{StaticResource TextTertiaryBrush}"
+                           Margin="0,2,0,10" />
+                <ItemsControl ItemsSource="{Binding SystemCapabilityRows}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:FirstLaunchRowViewModel">
+                            <StackPanel Margin="0,2,0,4">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <Ellipse Width="8" Height="8" VerticalAlignment="Center"
+                                             Fill="{StaticResource SuccessBrush}"
+                                             IsVisible="{Binding IsAvailable}" />
+                                    <Ellipse Width="8" Height="8" VerticalAlignment="Center"
+                                             Fill="{StaticResource WarningBrush}"
+                                             IsVisible="{Binding !IsAvailable}" />
+                                    <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold"
+                                               Foreground="{StaticResource TextPrimaryBrush}" />
+                                </StackPanel>
+                                <TextBlock Text="{Binding Detail}" FontSize="12" TextWrapping="Wrap"
+                                           Foreground="{StaticResource TextTertiaryBrush}"
+                                           Margin="14,0,0,0" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+
             <!-- 7-4: Backup & Transfer -->
             <StackPanel>
                 <TextBlock Text="Backup &amp; Transfer"

@@ -407,11 +407,73 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
+    private const string FirstLaunchDismissedKey = "firstLaunchBannerDismissed";
+
+    /// <summary>Null when already dismissed or the settings/detector plumbing is absent.</summary>
+    private FirstLaunchBannerViewModel? BuildFirstLaunchBanner()
+    {
+        if (_settingsService is null || _capabilityDetector is null)
+            return null;
+        if (_settingsService.GetAppBool(FirstLaunchDismissedKey, fallback: false))
+            return null;
+
+        var moduleRows = _navigationService.Modules
+            .Select(m => new FirstLaunchRowViewModel(
+                m.Module.Info.Name,
+                m.Availability.IsAvailable
+                    ? m.Module.Info.Description
+                    : $"{m.Availability.Reason} {m.Availability.RemediationHint}".Trim(),
+                m.Availability.IsAvailable,
+                m.Availability.IsAvailable
+                    ? () => NavigateToModuleByName(m.Module.Info.Name)
+                    : null))
+            .ToList();
+
+        // Hardware ecosystem rows only — the always-present subsystems say nothing useful.
+        var capabilityRows = _capabilityDetector.GetCapabilityReport()
+            .Where(r => r.Capability is Core.Modules.SystemCapability.DdcCi
+                or Core.Modules.SystemCapability.HwInfo
+                or Core.Modules.SystemCapability.AsusAtkacpi
+                or Core.Modules.SystemCapability.OpenRgb)
+            .Select(r => new FirstLaunchRowViewModel(
+                r.DisplayName,
+                r.Availability.IsAvailable
+                    ? $"Detected. {r.Availability.RemediationHint}".Trim()
+                    : $"{r.Availability.Reason} {r.Availability.RemediationHint}".Trim(),
+                r.Availability.IsAvailable))
+            .ToList();
+
+        var banner = new FirstLaunchBannerViewModel(moduleRows, capabilityRows);
+        banner.Dismissed += (_, _) => MarkFirstLaunchBannerDismissed();
+        _firstLaunchBannerActive = true;
+        return banner;
+    }
+
+    private bool _firstLaunchBannerActive;
+
+    private void MarkFirstLaunchBannerDismissed()
+    {
+        _firstLaunchBannerActive = false;
+        _settingsService?.SetApp(FirstLaunchDismissedKey, "1");
+    }
+
+    private void NavigateToModuleByName(string moduleName)
+    {
+        var item = SidebarGroups.SelectMany(g => g.Items)
+            .FirstOrDefault(i => i.Name == moduleName);
+        if (item is not null)
+            NavigateToModule(item);
+    }
+
     [RelayCommand]
     private void NavigateToModule(SidebarItemViewModel? item)
     {
         if (item is null || !item.IsAvailable)
             return;
+
+        // 5-2: navigating anywhere counts as having seen the first-launch summary
+        if (_firstLaunchBannerActive)
+            MarkFirstLaunchBannerDismissed();
 
         var wasSetLoaderActive = IsSetLoaderActive;
         var wasHomeActive = IsHomeActive;
@@ -535,7 +597,8 @@ public partial class MainWindowViewModel : ViewModelBase
             _moduleSettingsContributors,
             applyTheme: ApplyTheme,
             installedModuleIds: _navigationService.Modules.Select(m => m.Module.Info.Name).ToList(),
-            appVersion: typeof(MainWindowViewModel).Assembly.GetName().Version?.ToString(3) ?? "0.0.0");
+            appVersion: typeof(MainWindowViewModel).Assembly.GetName().Version?.ToString(3) ?? "0.0.0",
+            capabilityReport: _capabilityDetector?.GetCapabilityReport());
         IsSettingsActive = true;
         IsSetLoaderActive = false;
         IsHomeActive = false;
@@ -578,7 +641,8 @@ public partial class MainWindowViewModel : ViewModelBase
         var home = new HomeViewModel(
             new SystemIdentityService(_registryService).Read(),
             quickActions,
-            _changeHistoryService);
+            _changeHistoryService,
+            BuildFirstLaunchBanner());
         CurrentContent = home;
         IsHomeActive = true;
         IsSetLoaderActive = false;

@@ -12,6 +12,79 @@
                   VerticalScrollBarVisibility="Auto">
         <StackPanel MaxWidth="800" HorizontalAlignment="Left" Margin="24,16,24,24" Spacing="16">
 
+            <!-- 5-2: first-launch capability summary (dismissible, once) -->
+            <Border Background="{StaticResource SurfaceBrush}" CornerRadius="8" Padding="20,16"
+                    IsVisible="{Binding FirstLaunchBanner.IsVisible, FallbackValue=False}">
+                <StackPanel Spacing="10" DataContext="{Binding FirstLaunchBanner}"
+                            x:DataType="vm:FirstLaunchBannerViewModel">
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Content="Dismiss"
+                                Command="{Binding DismissCommand}" Padding="12,4" />
+                        <StackPanel>
+                            <TextBlock Text="Welcome - here's what this system supports"
+                                       FontWeight="SemiBold" FontSize="15"
+                                       Foreground="{StaticResource TextPrimaryBrush}" />
+                            <TextBlock Text="This summary shows once. It stays available under Settings."
+                                       FontSize="12"
+                                       Foreground="{StaticResource TextTertiaryBrush}" />
+                        </StackPanel>
+                    </DockPanel>
+
+                    <ItemsControl ItemsSource="{Binding ModuleRows}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:FirstLaunchRowViewModel">
+                                <DockPanel Margin="0,2,0,2">
+                                    <Button DockPanel.Dock="Right" Content="Open"
+                                            Command="{Binding NavigateCommand}"
+                                            IsVisible="{Binding CanNavigate}"
+                                            Padding="10,2" FontSize="12" />
+                                    <StackPanel>
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <Ellipse Width="8" Height="8" VerticalAlignment="Center"
+                                                     Fill="{StaticResource SuccessBrush}"
+                                                     IsVisible="{Binding IsAvailable}" />
+                                            <Ellipse Width="8" Height="8" VerticalAlignment="Center"
+                                                     Fill="{StaticResource WarningBrush}"
+                                                     IsVisible="{Binding !IsAvailable}" />
+                                            <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold"
+                                                       Foreground="{StaticResource TextPrimaryBrush}" />
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding Detail}" FontSize="12" TextWrapping="Wrap"
+                                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                                   Margin="14,0,8,0" />
+                                    </StackPanel>
+                                </DockPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock Text="Hardware ecosystems"
+                               FontWeight="SemiBold" FontSize="13"
+                               Foreground="{StaticResource TextSecondaryBrush}" />
+                    <ItemsControl ItemsSource="{Binding CapabilityRows}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:FirstLaunchRowViewModel">
+                                <StackPanel Margin="0,2,0,2">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <Ellipse Width="8" Height="8" VerticalAlignment="Center"
+                                                 Fill="{StaticResource SuccessBrush}"
+                                                 IsVisible="{Binding IsAvailable}" />
+                                        <Ellipse Width="8" Height="8" VerticalAlignment="Center"
+                                                 Fill="{StaticResource WarningBrush}"
+                                                 IsVisible="{Binding !IsAvailable}" />
+                                        <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource TextPrimaryBrush}" />
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding Detail}" FontSize="12" TextWrapping="Wrap"
+                                               Foreground="{StaticResource TextTertiaryBrush}"
+                                               Margin="14,0,8,0" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
             <!-- System Identity -->
             <Border Background="{StaticResource SurfaceBrush}" CornerRadius="8" Padding="20,16">
                 <StackPanel Spacing="8">
