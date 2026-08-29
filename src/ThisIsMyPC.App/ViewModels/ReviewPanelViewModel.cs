@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using Avalonia.Threading;
 using ThisIsMyPC.Core.Services;
+using ThisIsMyPC.Core.Sets;
 
 namespace ThisIsMyPC.App.ViewModels;
 
@@ -11,9 +12,13 @@ public partial class ReviewPanelViewModel : ViewModelBase, IDisposable
 
     public ObservableCollection<ReviewGroupViewModel> ReviewGroups { get; } = [];
 
-    public ReviewPanelViewModel(IPendingChangesService pendingChangesService)
+    public SaveSetFormViewModel SaveSetForm { get; }
+
+    public ReviewPanelViewModel(IPendingChangesService pendingChangesService, ICustomSetWriter customSetWriter)
     {
         _pendingChangesService = pendingChangesService;
+        SaveSetForm = new SaveSetFormViewModel(metadata =>
+            customSetWriter.WriteFromPendingGroups(metadata, _pendingChangesService.PendingGroups));
         _pendingChangesService.PropertyChanged += OnPendingChangesPropertyChanged;
         RefreshItems();
     }

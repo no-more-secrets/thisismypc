@@ -6,6 +6,7 @@ using ThisIsMyPC.App.Helpers;
 using ThisIsMyPC.Core.Changes;
 using ThisIsMyPC.Core.Results;
 using ThisIsMyPC.Core.Services;
+using ThisIsMyPC.Core.Sets;
 
 namespace ThisIsMyPC.App.ViewModels;
 
@@ -16,8 +17,18 @@ public partial class ChangeHistoryViewModel : ViewModelBase
     private readonly IChangeHistoryService _historyService;
     private readonly Func<ChangeDescriptor, Task<OperationResult<bool>>> _revertFunc;
     private readonly Func<ChangeDescriptor, Task<OperationResult<bool>>> _applyFunc;
+    private readonly ICustomSetWriter _customSetWriter;
+    private readonly List<HistoryBatchViewModel> _allBatches = [];
 
     public ObservableCollection<ChangeHistoryGroupViewModel> HistoryGroups { get; } = [];
+
+    public SaveSetFormViewModel SaveSetForm { get; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasSelection))]
+    private int _selectedBatchCount;
+
+    public bool HasSelection => SelectedBatchCount > 0;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(EntryCountText))]
@@ -47,11 +58,36 @@ public partial class ChangeHistoryViewModel : ViewModelBase
     public ChangeHistoryViewModel(
         IChangeHistoryService historyService,
         Func<ChangeDescriptor, Task<OperationResult<bool>>> revertFunc,
-        Func<ChangeDescriptor, Task<OperationResult<bool>>> applyFunc)
+        Func<ChangeDescriptor, Task<OperationResult<bool>>> applyFunc,
+        ICustomSetWriter customSetWriter)
     {
         _historyService = historyService;
         _revertFunc = revertFunc;
         _applyFunc = applyFunc;
+        _customSetWriter = customSetWriter;
+        SaveSetForm = new SaveSetFormViewModel(CreateSetFromSelection);
+    }
+
+    private CustomSetWriteResult CreateSetFromSelection(CustomSetMetadata metadata)
+    {
+        var entries = _allBatches.Where(b => b.IsSelected)
+            .SelectMany(b => b.SourceEntries)
+            .ToList();
+
+        var result = _customSetWriter.WriteFromHistory(metadata, entries);
+        if (result.Success)
+        {
+            foreach (var batch in _allBatches)
+                batch.IsSelected = false;
+        }
+
+        return result;
+    }
+
+    private void OnBatchPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(HistoryBatchViewModel.IsSelected))
+            SelectedBatchCount = _allBatches.Count(b => b.IsSelected);
     }
 
     [RelayCommand]
@@ -63,6 +99,10 @@ public partial class ChangeHistoryViewModel : ViewModelBase
         var totalGroups = await _historyService.GetGroupCountAsync().ConfigureAwait(true);
 
         HistoryGroups.Clear();
+        foreach (var stale in _allBatches)
+            stale.PropertyChanged -= OnBatchPropertyChanged;
+        _allBatches.Clear();
+        SelectedBatchCount = 0;
 
         var today = DateTimeOffset.Now.Date;
         var yesterday = today.AddDays(-1);
@@ -72,6 +112,12 @@ public partial class ChangeHistoryViewModel : ViewModelBase
             .GroupBy(e => e.GroupId ?? e.Id.ToString(CultureInfo.InvariantCulture))
             .Select(g => BuildBatch(g.ToList()))
             .ToList();
+
+        foreach (var batch in batches)
+        {
+            batch.PropertyChanged += OnBatchPropertyChanged;
+            _allBatches.Add(batch);
+        }
 
         TotalGroupCount = totalGroups;
         DisplayedGroupCount = batches.Count;
@@ -128,6 +174,7 @@ public partial class ChangeHistoryViewModel : ViewModelBase
             IsReverted = entries.All(e => e.RevertedAt.HasValue),
             GroupId = primary.GroupId ?? primary.Id.ToString(CultureInfo.InvariantCulture),
             Details = details,
+            SourceEntries = entries,
         };
     }
 

@@ -15,8 +15,14 @@ public partial class HistoryBatchViewModel : ViewModelBase
     public required string GroupId { get; init; }
     public required IReadOnlyList<ChangeHistoryEntryViewModel> Details { get; init; }
 
+    /// <summary>Raw history rows behind this batch — the custom-set writer input (8.5).</summary>
+    public required IReadOnlyList<ChangeHistoryEntry> SourceEntries { get; init; }
+
     [ObservableProperty]
     private bool _isExpanded;
+
+    [ObservableProperty]
+    private bool _isSelected;
 
     public ChangeHistoryEntryViewModel PrimaryEntry => Details[0];
     public string AppliedAtDisplay => AppliedAt.LocalDateTime.ToString("HH:mm:ss", CultureInfo.CurrentCulture);

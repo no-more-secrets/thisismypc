@@ -101,6 +101,7 @@ public partial class MainWindowViewModel : ViewModelBase
         ReviewPanelViewModel reviewPanel,
         Core.Sets.ISetProvider setProvider,
         IEnumerable<Core.Sets.ISetEntryInspector> setEntryInspectors,
+        Core.Sets.ICustomSetWriter customSetWriter,
         ICapabilityDetector? capabilityDetector = null,
         IServiceControlService? serviceControlService = null,
         IScheduledTaskService? scheduledTaskService = null,
@@ -123,7 +124,8 @@ public partial class MainWindowViewModel : ViewModelBase
         ChangeHistory = new ChangeHistoryViewModel(
             changeHistoryService,
             RevertChangeOnModule,
-            ApplyChangeToModule);
+            ApplyChangeToModule,
+            customSetWriter);
 
         _pendingChangesService.PropertyChanged += OnPendingChangesPropertyChanged;
         _navigationService.PropertyChanged += OnNavigationPropertyChanged;

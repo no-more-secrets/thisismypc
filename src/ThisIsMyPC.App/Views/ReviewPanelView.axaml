@@ -48,6 +48,48 @@
                                Foreground="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).StatusBrush}"
                                IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
+                    <!-- Save as Set (8.5): confirmation + inline metadata form -->
+                    <TextBlock Text="{Binding SaveSetForm.SuccessMessage}"
+                               FontSize="12"
+                               TextWrapping="Wrap"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               IsVisible="{Binding SaveSetForm.SuccessMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                    <StackPanel Spacing="6" IsVisible="{Binding SaveSetForm.IsOpen}">
+                        <TextBox Text="{Binding SaveSetForm.SetName}"
+                                 Watermark="Set name"
+                                 FontSize="12" />
+                        <TextBox Text="{Binding SaveSetForm.SetDescription}"
+                                 Watermark="What does this set do?"
+                                 FontSize="12" />
+                        <CheckBox IsChecked="{Binding SaveSetForm.IsOptimizationPack}"
+                                  Content="Optimization pack (comprehensive bundle)"
+                                  FontSize="12" />
+                        <TextBlock Text="{Binding SaveSetForm.ErrorMessage}"
+                                   FontSize="12"
+                                   TextWrapping="Wrap"
+                                   Foreground="{StaticResource DangerBrush}"
+                                   IsVisible="{Binding SaveSetForm.ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                        <DockPanel>
+                            <Button DockPanel.Dock="Left"
+                                    Classes="apply-bar-discard"
+                                    Content="Cancel"
+                                    Command="{Binding SaveSetForm.CancelCommand}" />
+                            <Button DockPanel.Dock="Right"
+                                    Classes="apply-bar-apply"
+                                    Content="Save Set"
+                                    HorizontalAlignment="Right"
+                                    Command="{Binding SaveSetForm.SaveCommand}" />
+                        </DockPanel>
+                    </StackPanel>
+
+                    <Button Classes="apply-bar-discard"
+                            Content="Save as Set"
+                            HorizontalAlignment="Right"
+                            Command="{Binding SaveSetForm.OpenCommand}"
+                            IsVisible="{Binding !SaveSetForm.IsOpen}"
+                            IsEnabled="{Binding !!ReviewGroups.Count}" />
+
                     <DockPanel>
                         <Button DockPanel.Dock="Left"
                                 Classes="apply-bar-discard"

@@ -121,6 +121,9 @@ public partial class App : Application
         services.AddSingleton<ISetProvider>(_ => new SetProvider(
             Path.Combine(AppContext.BaseDirectory, "sets"),
             Path.Combine(AppConstants.DataDirectoryPath, "sets")));
+        // Custom set creation (8.5) writes into the same user sets directory.
+        services.AddSingleton<ICustomSetWriter>(_ => new CustomSetWriter(
+            Path.Combine(AppConstants.DataDirectoryPath, "sets")));
         // Per-module set-entry inspectors for the Set Loader preview (8.2) and
         // conflict detection (8.3)
         services.AddSingleton<ISetEntryInspector, ThisIsMyPC.Modules.Shell.Services.ShellSetEntryInspector>();

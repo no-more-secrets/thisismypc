@@ -15,7 +15,9 @@ public class ChangeHistoryViewModelTests
         return new ChangeHistoryViewModel(
             historyService,
             revertFunc ?? (_ => Task.FromResult(OperationResult<bool>.Success(true))),
-            applyFunc ?? (_ => Task.FromResult(OperationResult<bool>.Success(true))));
+            applyFunc ?? (_ => Task.FromResult(OperationResult<bool>.Success(true))),
+            new Core.Sets.CustomSetWriter(
+                Path.Combine(Path.GetTempPath(), $"tipc-ch-{Guid.NewGuid():N}")));
     }
 
     [Fact]

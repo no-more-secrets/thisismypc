@@ -44,6 +44,8 @@ public sealed record SetEnforcementDocument
     PropertyNameCaseInsensitive = true,
     UseStringEnumConverter = true,
     ReadCommentHandling = JsonCommentHandling.Skip,
-    AllowTrailingCommas = true)]
+    AllowTrailingCommas = true,
+    WriteIndented = true,
+    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
 [JsonSerializable(typeof(SetDocument))]
 public sealed partial class SetJsonContext : JsonSerializerContext;

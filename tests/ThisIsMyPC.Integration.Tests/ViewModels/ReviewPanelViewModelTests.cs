@@ -1,11 +1,15 @@
 using ThisIsMyPC.App.ViewModels;
 using ThisIsMyPC.Core.Changes;
 using ThisIsMyPC.Core.Services;
+using ThisIsMyPC.Core.Sets;
 
 namespace ThisIsMyPC.Integration.Tests.ViewModels;
 
 public class ReviewPanelViewModelTests
 {
+    private static ReviewPanelViewModel CreateVm(IPendingChangesService service)
+        => new(service, new CustomSetWriter(Path.Combine(Path.GetTempPath(), $"tipc-rp-{Guid.NewGuid():N}")));
+
     private static ChangeDescriptor CreateTestChange(
         string moduleId = "test",
         string settingId = "setting1",
@@ -28,7 +32,7 @@ public class ReviewPanelViewModelTests
     {
         var service = new PendingChangesService();
         service.Stage(CreateTestChange());
-        var vm = new ReviewPanelViewModel(service);
+        var vm = CreateVm(service);
 
         Assert.Single(vm.ReviewGroups);
         Assert.Equal("Test Setting", vm.ReviewGroups[0].DisplayName);
@@ -44,7 +48,7 @@ public class ReviewPanelViewModelTests
     public void ReviewGroups_UpdatesWhenChangeStaged()
     {
         var service = new PendingChangesService();
-        var vm = new ReviewPanelViewModel(service);
+        var vm = CreateVm(service);
 
         Assert.Empty(vm.ReviewGroups);
 
@@ -58,7 +62,7 @@ public class ReviewPanelViewModelTests
     {
         var service = new PendingChangesService();
         service.Stage(CreateTestChange());
-        var vm = new ReviewPanelViewModel(service);
+        var vm = CreateVm(service);
 
         service.DiscardAll();
 
@@ -70,7 +74,7 @@ public class ReviewPanelViewModelTests
     {
         var service = new PendingChangesService();
         service.Stage(CreateTestChange(category: ChangeCategory.Disable));
-        var vm = new ReviewPanelViewModel(service);
+        var vm = CreateVm(service);
 
         Assert.True(vm.ReviewGroups[0].IsDisableOrDelete);
     }
@@ -109,7 +113,7 @@ public class ReviewPanelViewModelTests
             ],
         };
         service.Stage(group);
-        var vm = new ReviewPanelViewModel(service);
+        var vm = CreateVm(service);
 
         Assert.Single(vm.ReviewGroups);
         var reviewGroup = vm.ReviewGroups[0];

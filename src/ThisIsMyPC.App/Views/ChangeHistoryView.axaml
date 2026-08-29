@@ -68,6 +68,56 @@
                            Foreground="{StaticResource DangerBrush}" />
             </Border>
 
+            <!-- Create Set from Selection (8.5) -->
+            <Border DockPanel.Dock="Bottom"
+                    Padding="16,10"
+                    BorderBrush="{StaticResource SidebarBorderBrush}"
+                    BorderThickness="0,1,0,0"
+                    IsVisible="{Binding !!TotalGroupCount}">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="{Binding SaveSetForm.SuccessMessage}"
+                               FontSize="12"
+                               TextWrapping="Wrap"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               IsVisible="{Binding SaveSetForm.SuccessMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                    <StackPanel Spacing="6" IsVisible="{Binding SaveSetForm.IsOpen}">
+                        <TextBox Text="{Binding SaveSetForm.SetName}"
+                                 Watermark="Set name"
+                                 FontSize="12" />
+                        <TextBox Text="{Binding SaveSetForm.SetDescription}"
+                                 Watermark="What does this set do?"
+                                 FontSize="12" />
+                        <CheckBox IsChecked="{Binding SaveSetForm.IsOptimizationPack}"
+                                  Content="Optimization pack (comprehensive bundle)"
+                                  FontSize="12" />
+                        <TextBlock Text="{Binding SaveSetForm.ErrorMessage}"
+                                   FontSize="12"
+                                   TextWrapping="Wrap"
+                                   Foreground="{StaticResource DangerBrush}"
+                                   IsVisible="{Binding SaveSetForm.ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                        <DockPanel>
+                            <Button DockPanel.Dock="Left"
+                                    Classes="apply-bar-discard"
+                                    Content="Cancel"
+                                    Command="{Binding SaveSetForm.CancelCommand}" />
+                            <Button DockPanel.Dock="Right"
+                                    Classes="apply-bar-apply"
+                                    Content="Save Set"
+                                    HorizontalAlignment="Right"
+                                    Command="{Binding SaveSetForm.SaveCommand}" />
+                        </DockPanel>
+                    </StackPanel>
+
+                    <Button Classes="apply-bar-discard"
+                            Content="Create Set from Selection"
+                            HorizontalAlignment="Right"
+                            Command="{Binding SaveSetForm.OpenCommand}"
+                            IsVisible="{Binding !SaveSetForm.IsOpen}"
+                            IsEnabled="{Binding HasSelection}" />
+                </StackPanel>
+            </Border>
+
             <!-- Content -->
             <Panel>
                 <!-- Empty state -->
@@ -115,6 +165,14 @@
                                                         Classes.pending-disable="{Binding IsDisableOrDelete}"
                                                         Classes.pending-modify="{Binding IsModifyCategory}">
                                                     <DockPanel>
+                                                        <!-- Selection for Create Set from Selection (8.5) -->
+                                                        <CheckBox DockPanel.Dock="Left"
+                                                                  IsChecked="{Binding IsSelected}"
+                                                                  VerticalAlignment="Center"
+                                                                  Margin="0,0,8,0"
+                                                                  Padding="0"
+                                                                  ToolTip.Tip="Include in a custom set" />
+
                                                         <!-- Restore/Redo button on batch row -->
                                                         <StackPanel DockPanel.Dock="Right"
                                                                     VerticalAlignment="Center"

@@ -22,10 +22,10 @@ public class MainWindowViewModelTests
         var navigationService = new NavigationService(modules);
         pendingChangesService = new PendingChangesService();
         var historyService = new Fakes.FakeChangeHistoryService();
-        var reviewPanel = new ReviewPanelViewModel(pendingChangesService);
+        var reviewPanel = new ReviewPanelViewModel(pendingChangesService, new Core.Sets.CustomSetWriter(Path.Combine(Path.GetTempPath(), $"tipc-mw-{Guid.NewGuid():N}")));
         var registryService = new Fakes.FakeRegistryService();
         explorerRestartService = new Fakes.FakeExplorerRestartService();
-        return new MainWindowViewModel(navigationService, pendingChangesService, historyService, registryService, explorerRestartService, reviewPanel, new Fakes.FakeSetProvider(), []);
+        return new MainWindowViewModel(navigationService, pendingChangesService, historyService, registryService, explorerRestartService, reviewPanel, new Fakes.FakeSetProvider(), [], new Core.Sets.CustomSetWriter(Path.Combine(Path.GetTempPath(), $"tipc-mw-{Guid.NewGuid():N}")));
     }
 
     private static ChangeDescriptor CreateTestChange(string moduleId = "test", string settingId = "setting1") => new()
