@@ -6,5 +6,7 @@ public enum ChangeCategory
     Disable,
     Modify,
     Create,
-    Delete
+    Delete,
+    /// <summary>Windows reverted a ThisIsMyPC-applied setting (drift, 28-3) — system-initiated, not user-initiated.</summary>
+    SystemReversion
 }

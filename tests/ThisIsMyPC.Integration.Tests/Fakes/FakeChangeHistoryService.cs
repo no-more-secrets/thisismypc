@@ -16,6 +16,14 @@ internal sealed class FakeChangeHistoryService : IChangeHistoryService
         return Task.CompletedTask;
     }
 
+    public List<ChangeHistoryEntry> RecordedDriftEntries { get; } = [];
+
+    public Task RecordDriftEventsAsync(IReadOnlyList<ChangeHistoryEntry> driftEntries)
+    {
+        RecordedDriftEntries.AddRange(driftEntries);
+        return Task.CompletedTask;
+    }
+
     public Task<IReadOnlyList<ChangeHistoryEntry>> GetHistoryAsync(int? limit = null, int? offset = null)
         => Task.FromResult<IReadOnlyList<ChangeHistoryEntry>>([]);
 
@@ -54,6 +62,8 @@ internal sealed class FakeChangeHistoryServiceWithEntries : IChangeHistoryServic
     public Task InitializeAsync() => Task.CompletedTask;
 
     public Task RecordChangesAsync(MutationResult result) => Task.CompletedTask;
+
+    public Task RecordDriftEventsAsync(IReadOnlyList<ChangeHistoryEntry> driftEntries) => Task.CompletedTask;
 
     public Task<IReadOnlyList<ChangeHistoryEntry>> GetHistoryAsync(int? limit = null, int? offset = null)
         => Task.FromResult(_entries);

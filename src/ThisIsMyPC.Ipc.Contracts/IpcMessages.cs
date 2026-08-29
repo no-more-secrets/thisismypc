@@ -47,6 +47,8 @@ public sealed record DriftItem
     /// <summary>What the system reverted it to.</summary>
     public required string CurrentValue { get; init; }
     public string? SuspectedCause { get; init; }
+    /// <summary>Serialized SettingEnforcement so reapply keeps enforcement routing.</summary>
+    public string? EnforcementJson { get; init; }
 }
 
 public sealed record DriftReportResponse

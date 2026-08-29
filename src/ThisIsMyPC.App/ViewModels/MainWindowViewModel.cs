@@ -33,6 +33,8 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IPowerService? _powerService;
     private readonly DisplayModePreferencesStore? _displayModeStore;
     private readonly Services.OwnerModeService? _ownerModeService;
+    private readonly Ipc.Contracts.IIpcClient? _ipcClient;
+    private DriftSectionViewModel? _driftSection;
     private readonly IScheduledTaskService? _scheduledTaskService;
     private readonly Modules.Startup.Services.TaskClassificationOverrideStore? _taskClassificationOverrides;
     private readonly IExplorerRestartService _explorerRestartService;
@@ -122,6 +124,71 @@ public partial class MainWindowViewModel : ViewModelBase
         settingId.StartsWith("startup-entry:", StringComparison.Ordinal)
             ? Convert.ToHexString(Modules.Startup.Changes.StartupChangeFactory.DisabledBlob)
             : "Disabled";
+
+    // --- 28-3 drift report (Home section) ---
+
+    /// <summary>
+    /// One fetch at startup: a missing/stopped service degrades silently (Owner Mode
+    /// is optional). Detected drift is audited into history once per report and
+    /// surfaced on Home with reapply options.
+    /// </summary>
+    public async Task LoadDriftReportAsync()
+    {
+        if (_ipcClient is null)
+            return;
+
+        var report = await _ipcClient.GetDriftReportAsync().ConfigureAwait(true);
+        if (!report.IsSuccess || report.Value is not { Items.Count: > 0 } value)
+            return;
+
+        _driftSection = new DriftSectionViewModel(
+            value.Items,
+            ReapplyDriftItem,
+            dismissed: () =>
+            {
+                _driftSection = null;
+                RefreshMonitoringSection();
+            });
+
+        await RecordDriftHistoryOnceAsync(value).ConfigureAwait(true);
+        RefreshMonitoringSection();
+    }
+
+    private void ReapplyDriftItem(DriftRowViewModel row)
+    {
+        if (!Enum.TryParse<ChangeValueType>(row.Item.ValueType, out var valueType))
+        {
+            SetStatus($"\"{row.Item.DisplayName}\" has an unrecognized value type and cannot be restaged.", StatusSeverity.Warning);
+            return;
+        }
+
+        _pendingChangesService.Stage(Core.Drift.DriftReapplyFactory.CreateReapply(
+            row.Item.ModuleId, row.Item.SettingId, row.Item.DisplayName, row.Item.SystemLocation,
+            valueType, row.Item.ExpectedValue, row.Item.CurrentValue, row.Item.EnforcementJson));
+        SetStatus($"Reapply staged for \"{row.Item.DisplayName}\" - review and apply when ready.", StatusSeverity.Success);
+    }
+
+    /// <summary>Audits each drift report into history exactly once (keyed on GeneratedAtUtc).</summary>
+    private async Task RecordDriftHistoryOnceAsync(Ipc.Contracts.DriftReportResponse report)
+    {
+        var stamp = report.GeneratedAtUtc?.ToString("O") ?? "";
+        if (stamp.Length == 0 || _settingsService is null)
+            return;
+        if (_settingsService.GetApp(Core.Settings.AppSettingKeys.DriftLastRecorded, "") == stamp)
+            return;
+
+        var groupId = Guid.NewGuid().ToString("N");
+        var entries = report.Items
+            .Where(i => Enum.TryParse<ChangeValueType>(i.ValueType, out _))
+            .Select(i => Core.Drift.DriftReapplyFactory.CreateDriftHistoryEntry(
+                i.ModuleId, i.SettingId, i.DisplayName, i.SystemLocation,
+                Enum.Parse<ChangeValueType>(i.ValueType), i.ExpectedValue, i.CurrentValue,
+                groupId, report.GeneratedAtUtc!.Value, i.SuspectedCause))
+            .ToList();
+
+        await _changeHistoryService.RecordDriftEventsAsync(entries).ConfigureAwait(true);
+        _settingsService.SetApp(Core.Settings.AppSettingKeys.DriftLastRecorded, stamp);
+    }
 
     // 9-2: gated notifications surface in the status bar (toast rendering is a UI/UX-chapter item)
     private void OnNotificationRaised(object? sender, Core.Notifications.AppNotification notification)
@@ -225,9 +292,11 @@ public partial class MainWindowViewModel : ViewModelBase
         Modules.Startup.Services.TaskClassificationOverrideStore? taskClassificationOverrides = null,
         IPowerService? powerService = null,
         DisplayModePreferencesStore? displayModeStore = null,
-        Services.OwnerModeService? ownerModeService = null)
+        Services.OwnerModeService? ownerModeService = null,
+        Ipc.Contracts.IIpcClient? ipcClient = null)
     {
         _ownerModeService = ownerModeService;
+        _ipcClient = ipcClient;
         _displayModeStore = displayModeStore;
         _powerService = powerService;
         _navigationService = navigationService;
@@ -790,7 +859,8 @@ public partial class MainWindowViewModel : ViewModelBase
             quickActions,
             _changeHistoryService,
             BuildFirstLaunchBanner(),
-            BuildMonitoringSection());
+            BuildMonitoringSection(),
+            _driftSection);
         CurrentContent = home;
         IsHomeActive = true;
         IsSetLoaderActive = false;

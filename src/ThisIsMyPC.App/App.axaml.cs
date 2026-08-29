@@ -90,6 +90,9 @@ public partial class App : Application
             // 9-3: opt-in monitoring loop (runs only while the app is in memory)
             _serviceProvider.GetRequiredService<Core.Monitoring.MonitoringService>().Start();
 
+            // 28-3: one drift-report fetch; silently a no-op when the service is off
+            _ = mainViewModel.LoadDriftReportAsync();
+
             // 9-2: auto-start reconcile + minimized launch
             _autoStartService = new AutoStartService(
                 _serviceProvider.GetRequiredService<IRegistryService>(), settingsService);
@@ -228,6 +231,7 @@ public partial class App : Application
         services.AddSingleton<Core.Notifications.INotificationService, Core.Notifications.NotificationService>();
         services.AddSingleton<Core.Monitoring.IMonitoringSnapshotProvider, MonitoringSnapshotProvider>();
         services.AddSingleton<Core.Monitoring.MonitoringService>();
+        services.AddSingleton<Core.Drift.IDriftBaselineStore, Core.Drift.DriftBaselineStore>();
         services.AddSingleton<ChangeHistoryRepository>();
         services.AddSingleton<IChangeHistoryService, ChangeHistoryService>();
 

@@ -85,6 +85,43 @@
                 </StackPanel>
             </Border>
 
+            <!-- 28-3: drift report from the Owner Mode service -->
+            <Border Background="{StaticResource SurfaceBrush}" CornerRadius="8" Padding="20,16"
+                    IsVisible="{Binding DriftSection, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <StackPanel Spacing="8" DataContext="{Binding DriftSection}"
+                            x:DataType="vm:DriftSectionViewModel">
+                    <TextBlock Text="{Binding Header}"
+                               FontWeight="SemiBold" FontSize="15"
+                               Foreground="{StaticResource TextPrimaryBrush}" />
+                    <TextBlock Text="Likely a Windows update or policy refresh. Reapplying stages the fix for your review - nothing changes until you apply."
+                               FontSize="12"
+                               Foreground="{StaticResource TextTertiaryBrush}" />
+                    <ItemsControl ItemsSource="{Binding Rows}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:DriftRowViewModel">
+                                <DockPanel Margin="0,3,0,3">
+                                    <Button DockPanel.Dock="Right" Content="Reapply"
+                                            Command="{Binding ReapplyCommand}"
+                                            Padding="10,2" FontSize="12" />
+                                    <StackPanel Margin="0,0,12,0">
+                                        <TextBlock Text="{Binding DisplayName}" FontSize="13" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource TextPrimaryBrush}" />
+                                        <TextBlock Text="{Binding Detail}" FontSize="12" TextWrapping="Wrap"
+                                                   Foreground="{StaticResource TextTertiaryBrush}" />
+                                    </StackPanel>
+                                </DockPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Reapply All" Command="{Binding ReapplyAllCommand}"
+                                Padding="10,4" FontSize="12" />
+                        <Button Content="Dismiss" Command="{Binding DismissCommand}"
+                                Padding="10,4" FontSize="12" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
             <!-- 9-3: unreviewed monitoring detections -->
             <Border Background="{StaticResource SurfaceBrush}" CornerRadius="8" Padding="20,16"
                     IsVisible="{Binding MonitoringSection, Converter={x:Static ObjectConverters.IsNotNull}}">

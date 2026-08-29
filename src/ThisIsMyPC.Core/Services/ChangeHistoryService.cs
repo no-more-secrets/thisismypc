@@ -10,15 +10,18 @@ public sealed class ChangeHistoryService : IChangeHistoryService
     private readonly ChangeHistoryRepository _repository;
     private readonly string _dbPath;
     private readonly IEnforcementExecutor? _enforcementExecutor;
+    private readonly Drift.IDriftBaselineStore? _driftBaseline;
 
     public ChangeHistoryService(
         ChangeHistoryRepository repository,
         string? dbPath = null,
-        IEnforcementExecutor? enforcementExecutor = null)
+        IEnforcementExecutor? enforcementExecutor = null,
+        Drift.IDriftBaselineStore? driftBaseline = null)
     {
         _repository = repository;
         _dbPath = dbPath ?? Path.Combine(AppConstants.DataDirectoryPath, "history.db");
         _enforcementExecutor = enforcementExecutor;
+        _driftBaseline = driftBaseline;
     }
 
     public async Task InitializeAsync()
@@ -52,6 +55,20 @@ public sealed class ChangeHistoryService : IChangeHistoryService
         }).ToList();
 
         await _repository.InsertBatchAsync(entries).ConfigureAwait(false);
+
+        // 28-3: successful mutations become the watchdog's expected state.
+        _driftBaseline?.RecordApplied(result.Applied);
+    }
+
+    /// <summary>
+    /// 28-3: records system-initiated reversions (drift) as SystemReversion rows —
+    /// distinct from user changes, never undo/redo targets from this path.
+    /// </summary>
+    public async Task RecordDriftEventsAsync(IReadOnlyList<ChangeHistoryEntry> driftEntries)
+    {
+        if (driftEntries.Count == 0)
+            return;
+        await _repository.InsertBatchAsync(driftEntries).ConfigureAwait(false);
     }
 
     public async Task<IReadOnlyList<ChangeHistoryEntry>> GetHistoryAsync(int? limit = null, int? offset = null)
@@ -129,6 +146,10 @@ public sealed class ChangeHistoryService : IChangeHistoryService
         await _repository.UpdateRevertedAtAsync(historyId, now, insertedRevert.Id)
             .ConfigureAwait(false);
 
+        // Undo changes the expected state too — a stale expectation would report the
+        // user's own undo as drift at next boot.
+        _driftBaseline?.RecordApplied([revertDescriptor]);
+
         return OperationResult<bool>.Success(true);
     }
 
@@ -203,6 +224,8 @@ public sealed class ChangeHistoryService : IChangeHistoryService
 
         await _repository.InsertAsync(redoEntry).ConfigureAwait(false);
         await _repository.ClearRevertedAtAsync(historyId).ConfigureAwait(false);
+
+        _driftBaseline?.RecordApplied([redoDescriptor]);
 
         return OperationResult<bool>.Success(true);
     }

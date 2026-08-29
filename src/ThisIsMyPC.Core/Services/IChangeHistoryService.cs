@@ -7,6 +7,9 @@ public interface IChangeHistoryService
 {
     Task InitializeAsync();
     Task RecordChangesAsync(MutationResult result);
+
+    /// <summary>28-3: records system-initiated reversions (drift) as SystemReversion history rows.</summary>
+    Task RecordDriftEventsAsync(IReadOnlyList<ChangeHistoryEntry> driftEntries);
     Task<IReadOnlyList<ChangeHistoryEntry>> GetHistoryAsync(int? limit = null, int? offset = null);
     Task<IReadOnlyList<ChangeHistoryEntry>> GetRecentGroupedAsync(int groupLimit = 50);
     Task<int> GetGroupCountAsync();

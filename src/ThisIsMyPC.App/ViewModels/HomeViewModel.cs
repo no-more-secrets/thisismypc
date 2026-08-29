@@ -70,14 +70,19 @@ public sealed partial class HomeViewModel : ViewModelBase
         IReadOnlyList<QuickActionViewModel> quickActions,
         IChangeHistoryService historyService,
         FirstLaunchBannerViewModel? firstLaunchBanner = null,
-        MonitoringSectionViewModel? monitoringSection = null)
+        MonitoringSectionViewModel? monitoringSection = null,
+        DriftSectionViewModel? driftSection = null)
     {
         Identity = identity;
         QuickActions = quickActions;
         _historyService = historyService;
         FirstLaunchBanner = firstLaunchBanner;
         MonitoringSection = monitoringSection;
+        DriftSection = driftSection;
     }
+
+    /// <summary>Owner Mode drift report (28-3); null when the service found nothing (or is off).</summary>
+    public DriftSectionViewModel? DriftSection { get; }
 
     [RelayCommand]
     public async Task LoadRecentActivityAsync()

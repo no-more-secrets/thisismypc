@@ -10,6 +10,8 @@ public static class AppSettingKeys
     public const string CloseAction = "closeAction";           // "exit" | "tray"
     public const string MinimizeAction = "minimizeAction";     // "taskbar" | "tray"
     public const string DyslexiaFont = "dyslexiaFont";         // bool
+    /// <summary>Timestamp (round-trip format) of the last drift report audited into history (28-3, not user-facing).</summary>
+    public const string DriftLastRecorded = "driftLastRecorded";
     public const string TrayMode = "trayMode";                 // bool (Epic 9 behavior)
     public const string AutoStart = "autoStart";               // bool (Epic 9 behavior)
     public const string Notifications = "notifications";       // bool (Epic 9 behavior)
