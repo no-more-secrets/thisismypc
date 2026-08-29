@@ -39,6 +39,11 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IReadOnlyList<Core.Sets.ISetEntryInspector> _setEntryInspectors;
     private readonly ICapabilityDetector? _capabilityDetector;
 
+    // Bumped on every content switch (module navigation, Home, Set Loader) so an
+    // in-flight module scan can detect it was superseded and must not clobber the
+    // content the user switched to meanwhile.
+    private int _contentEpoch;
+
     public ObservableCollection<SidebarGroupViewModel> SidebarGroups { get; } = [];
 
     [ObservableProperty]
@@ -153,6 +158,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
         try
         {
+            var epoch = ++_contentEpoch;
+
             // Release the outgoing content VM's pending-changes subscriptions
             // before building the replacement (Dispose implementations are idempotent).
             await Dispatcher.UIThread.InvokeAsync(() => (CurrentContent as IDisposable)?.Dispose());
@@ -163,6 +170,8 @@ public partial class MainWindowViewModel : ViewModelBase
                 var scanResult = await current.Module.ScanSystemStateAsync().ConfigureAwait(false);
                 await Dispatcher.UIThread.InvokeAsync(() =>
                 {
+                    if (epoch != _contentEpoch)
+                        return; // superseded by Home/Set Loader/newer navigation while scanning
                     if (scanResult.IsSuccess && scanResult.Value is ShellScanData scanData)
                     {
                         ContentTitle = current.Module.Info.Name;
@@ -181,6 +190,8 @@ public partial class MainWindowViewModel : ViewModelBase
                 var scanResult = await current.Module.ScanSystemStateAsync().ConfigureAwait(false);
                 await Dispatcher.UIThread.InvokeAsync(() =>
                 {
+                    if (epoch != _contentEpoch)
+                        return; // superseded by Home/Set Loader/newer navigation while scanning
                     if (scanResult.IsSuccess && scanResult.Value is ContextMenuHandlerList handlers)
                     {
                         ContentTitle = current.Module.Info.Name;
@@ -199,6 +210,8 @@ public partial class MainWindowViewModel : ViewModelBase
                 var scanResult = await current.Module.ScanSystemStateAsync().ConfigureAwait(false);
                 await Dispatcher.UIThread.InvokeAsync(() =>
                 {
+                    if (epoch != _contentEpoch)
+                        return; // superseded by Home/Set Loader/newer navigation while scanning
                     if (scanResult.IsSuccess && scanResult.Value is Modules.Annoyances.Models.AnnoyancesScanData annoyancesData)
                     {
                         ContentTitle = current.Module.Info.Name;
@@ -219,6 +232,8 @@ public partial class MainWindowViewModel : ViewModelBase
                 var scanResult = await current.Module.ScanSystemStateAsync().ConfigureAwait(false);
                 await Dispatcher.UIThread.InvokeAsync(() =>
                 {
+                    if (epoch != _contentEpoch)
+                        return; // superseded by Home/Set Loader/newer navigation while scanning
                     if (scanResult.IsSuccess && scanResult.Value is Modules.Startup.Models.StartupScanData startupData)
                     {
                         ContentTitle = current.Module.Info.Name;
@@ -239,6 +254,8 @@ public partial class MainWindowViewModel : ViewModelBase
                 var scanResult = await current.Module.ScanSystemStateAsync().ConfigureAwait(false);
                 await Dispatcher.UIThread.InvokeAsync(() =>
                 {
+                    if (epoch != _contentEpoch)
+                        return; // superseded by Home/Set Loader/newer navigation while scanning
                     if (scanResult.IsSuccess && scanResult.Value is Modules.Power.Models.PowerScanData powerData)
                     {
                         ContentTitle = current.Module.Info.Name;
@@ -258,6 +275,8 @@ public partial class MainWindowViewModel : ViewModelBase
                 var scanResult = await current.Module.ScanSystemStateAsync().ConfigureAwait(false);
                 await Dispatcher.UIThread.InvokeAsync(() =>
                 {
+                    if (epoch != _contentEpoch)
+                        return; // superseded by Home/Set Loader/newer navigation while scanning
                     if (scanResult.IsSuccess && scanResult.Value is Modules.Shell.Models.EnvironmentScanData envData)
                     {
                         ContentTitle = current.Module.Info.Name;
@@ -298,8 +317,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
         PopulateSidebar();
 
-        _navigationService.NavigateToFirstAvailable();
-        SyncSelectedModule();
+        // Home is the launch default (10.5): a cheap read-only dashboard —
+        // no module scan runs until the user navigates to one.
+        OpenHome();
     }
 
     private void PopulateSidebar()
@@ -341,18 +361,20 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
 
         var wasSetLoaderActive = IsSetLoaderActive;
+        var wasHomeActive = IsHomeActive;
         // Captured BEFORE navigating: afterwards CurrentModule always equals the target,
         // which would double-trigger the rebuild for cross-module navigation (the
         // PropertyChanged event already fired for that case).
         var previousModule = _navigationService.CurrentModule?.Module;
         (CurrentContent as SetLoaderViewModel)?.Dispose();
         IsSetLoaderActive = false;
+        IsHomeActive = false;
         _navigationService.NavigateToModule(item.Name);
         SyncSelectedModule();
 
-        // Returning from the Set Loader to the module that is still CurrentModule:
-        // the navigation setter guards equality, so rebuild the content explicitly.
-        if (wasSetLoaderActive && previousModule == item.Module)
+        // Returning from the Set Loader or Home to the module that is still
+        // CurrentModule: the navigation setter guards equality, so rebuild explicitly.
+        if ((wasSetLoaderActive || wasHomeActive) && previousModule == item.Module)
         {
             OnNavigationPropertyChanged(
                 _navigationService,
@@ -366,9 +388,11 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private void OpenSetLoader()
     {
+        _contentEpoch++;
         // Fresh disk read on every open: user sets dropped into %APPDATA% appear
-        // without an app restart.
-        (CurrentContent as SetLoaderViewModel)?.Dispose();
+        // without an app restart. Outgoing content may also be a module VM reached
+        // without a navigation event — its subscriptions must not outlive the switch.
+        (CurrentContent as IDisposable)?.Dispose();
         var loadResult = _setProvider.LoadSets();
 
         ContentTitle = "Set Loader";
@@ -377,8 +401,48 @@ public partial class MainWindowViewModel : ViewModelBase
             loadResult, _setEntryInspectors, LookupModuleAvailability, _pendingChangesService,
             _capabilityDetector);
         IsSetLoaderActive = true;
+        IsHomeActive = false;
         SelectedModule = null;
 
+        ClearSidebarActives();
+    }
+
+    [ObservableProperty]
+    private bool _isHomeActive;
+
+    [RelayCommand]
+    private void OpenHome()
+    {
+        _contentEpoch++;
+        // Old content may be a module VM (reached without a navigation event) or the
+        // Set Loader — either way its subscriptions must not outlive the switch.
+        (CurrentContent as IDisposable)?.Dispose();
+
+        ContentTitle = "Home";
+        ContentDescription = "System overview and recent activity";
+
+        var quickActions = SidebarGroups
+            .SelectMany(g => g.Items)
+            .Where(i => i.IsAvailable)
+            .Select(i => new QuickActionViewModel(i.Name, i.Icon, () => NavigateToModule(i)))
+            .ToList();
+
+        var home = new HomeViewModel(
+            new SystemIdentityService(_registryService).Read(),
+            quickActions,
+            _changeHistoryService);
+        CurrentContent = home;
+        IsHomeActive = true;
+        IsSetLoaderActive = false;
+        SelectedModule = null;
+        ClearSidebarActives();
+
+        // Recent activity fills in asynchronously — the dashboard never blocks.
+        _ = home.LoadRecentActivityCommand.ExecuteAsync(null);
+    }
+
+    private void ClearSidebarActives()
+    {
         foreach (var group in SidebarGroups)
         {
             foreach (var sidebarItem in group.Items)

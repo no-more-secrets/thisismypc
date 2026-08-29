@@ -33,6 +33,24 @@
                               Foreground="{StaticResource TextSecondaryBrush}" />
                 </Button>
 
+                <!-- Home (not a module — ungrouped, pinned above the module groups) -->
+                <Button DockPanel.Dock="Top"
+                        Classes="sidebar-item"
+                        Classes.active="{Binding IsHomeActive}"
+                        Command="{Binding OpenHomeCommand}"
+                        Margin="0,8,0,0"
+                        ToolTip.Tip="System overview and recent activity">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <PathIcon Width="18" Height="18"
+                                  Foreground="{StaticResource TextSecondaryBrush}"
+                                  Data="M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z" />
+                        <TextBlock Text="Home"
+                                   VerticalAlignment="Center"
+                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                   IsVisible="{Binding !IsSidebarCollapsed}" />
+                    </StackPanel>
+                </Button>
+
                 <!-- Set Loader (not a module — pinned below the module groups) -->
                 <StackPanel DockPanel.Dock="Bottom" Margin="0,8,0,8">
                     <TextBlock Text="SETS"
@@ -260,6 +278,9 @@
                             </DataTemplate>
                             <DataTemplate DataType="{x:Type vm:SetLoaderViewModel}">
                                 <views:SetLoaderView />
+                            </DataTemplate>
+                            <DataTemplate DataType="{x:Type vm:HomeViewModel}">
+                                <views:HomeView />
                             </DataTemplate>
                             <DataTemplate DataType="{x:Type vm:PowerViewModel}">
                                 <views:PowerView />
