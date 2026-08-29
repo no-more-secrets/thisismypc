@@ -21,10 +21,13 @@ public sealed class CapabilityDetector : ICapabilityDetector
     private readonly WindowsSku? _sku;
     private readonly string? _skuDetectionFailureReason;
 
-    public CapabilityDetector(IRegistryService registryService)
+    private readonly Func<bool>? _ownerModeProbe;
+
+    public CapabilityDetector(IRegistryService registryService, Func<bool>? ownerModeProbe = null)
     {
         ArgumentNullException.ThrowIfNull(registryService);
         _registryService = registryService;
+        _ownerModeProbe = ownerModeProbe;
 
         try
         {
@@ -52,9 +55,10 @@ public sealed class CapabilityDetector : ICapabilityDetector
 
     public string? SkuDetectionFailureReason => _skuDetectionFailureReason;
 
-    // The Owner Mode service does not exist yet (Epic 28); until it ships, every card
-    // requiring it degrades to the disabled-control-with-callout pattern.
-    public bool IsOwnerModeAvailable => false;
+    // Live probe (28-2): true only while the Owner Mode service is running. Queried
+    // per read, never cached — cards rebuilt after a lifecycle change must see the
+    // new state. No probe wired (tests, degraded hosts) means unavailable.
+    public bool IsOwnerModeAvailable => _ownerModeProbe?.Invoke() ?? false;
 
     public bool IsSkuRestricted(WindowsSku? restriction) =>
         restriction is not null && _sku is not null && _sku == restriction;

@@ -97,6 +97,50 @@ internal static partial class NativeServiceControl
         public nint lpDisplayName;
     }
 
+    // Installer additions (28-2)
+    internal const uint SC_MANAGER_CREATE_SERVICE = 0x0002;
+    internal const uint DELETE = 0x00010000;
+    internal const uint SERVICE_WIN32_OWN_PROCESS = 0x00000010;
+    internal const uint SERVICE_ERROR_NORMAL = 0x00000001;
+    internal const int ERROR_SERVICE_EXISTS = 1073;
+    internal const int ERROR_SERVICE_MARKED_FOR_DELETE = 1072;
+
+    [LibraryImport("advapi32.dll", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    internal static partial nint CreateServiceW(
+        nint hSCManager,
+        string lpServiceName,
+        string lpDisplayName,
+        uint dwDesiredAccess,
+        uint dwServiceType,
+        uint dwStartType,
+        uint dwErrorControl,
+        string lpBinaryPathName,
+        string? lpLoadOrderGroup,
+        nint lpdwTagId,
+        string? lpDependencies,
+        string? lpServiceStartName,
+        string? lpPassword);
+
+    [LibraryImport("advapi32.dll", SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool DeleteService(nint hService);
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct ServiceDescription
+    {
+        public nint lpDescription;
+    }
+
+    [LibraryImport("advapi32.dll", SetLastError = true, EntryPoint = "ChangeServiceConfig2W")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool ChangeServiceConfig2Description(
+        nint hService,
+        uint dwInfoLevel,
+        ref ServiceDescription lpInfo);
+
     [LibraryImport("advapi32.dll", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static partial nint OpenSCManagerW(string? lpMachineName, string? lpDatabaseName, uint dwDesiredAccess);

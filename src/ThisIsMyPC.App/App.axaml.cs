@@ -187,8 +187,16 @@ public partial class App : Application
         // degrades to ServiceUnavailable, never an error dialog.
         services.AddSingleton<ThisIsMyPC.Ipc.Contracts.IIpcClient>(_ => new ThisIsMyPC.Ipc.Contracts.IpcClient());
 
+        // Owner Mode lifecycle (28-2): SCM registration + live capability probe.
+        services.AddSingleton<IServiceInstaller, ServiceInstaller>();
+        services.AddSingleton(sp => new OwnerModeService(
+            sp.GetRequiredService<IServiceInstaller>(),
+            sp.GetRequiredService<IServiceControlService>()));
+
         // Core Services
-        services.AddSingleton<ICapabilityDetector, CapabilityDetector>();
+        services.AddSingleton<ICapabilityDetector>(sp => new CapabilityDetector(
+            sp.GetRequiredService<IRegistryService>(),
+            ownerModeProbe: () => sp.GetRequiredService<OwnerModeService>().IsRunning));
         // PendingChangesService's optional ctor param resolves this because it is registered.
         services.AddSingleton<IEnforcementExecutor, EnforcementExecutor>();
         services.AddSingleton<IPendingChangesService, PendingChangesService>();

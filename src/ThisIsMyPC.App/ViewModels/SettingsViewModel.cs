@@ -160,14 +160,21 @@ public sealed partial class SettingsViewModel : ViewModelBase
 
     public ObservableCollection<SettingsSectionViewModel> Sections { get; } = [];
 
+    /// <summary>Owner Mode service lifecycle section (28-2); null when unavailable (tests).</summary>
+    public OwnerModeSectionViewModel? OwnerMode { get; }
+
+    public bool HasOwnerModeSection => OwnerMode is not null;
+
     public SettingsViewModel(
         ISettingsService settings,
         IReadOnlyList<IModuleSettingsContributor> moduleContributors,
         Action<string>? applyTheme = null,
         IReadOnlyCollection<string>? installedModuleIds = null,
         string? appVersion = null,
-        IReadOnlyList<Core.Services.CapabilityReportRow>? capabilityReport = null)
+        IReadOnlyList<Core.Services.CapabilityReportRow>? capabilityReport = null,
+        OwnerModeSectionViewModel? ownerMode = null)
     {
+        OwnerMode = ownerMode;
         SystemCapabilityRows = (capabilityReport ?? [])
             .Select(r => new FirstLaunchRowViewModel(
                 r.DisplayName,

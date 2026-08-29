@@ -32,6 +32,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IServiceControlService? _serviceControlService;
     private readonly IPowerService? _powerService;
     private readonly DisplayModePreferencesStore? _displayModeStore;
+    private readonly Services.OwnerModeService? _ownerModeService;
     private readonly IScheduledTaskService? _scheduledTaskService;
     private readonly Modules.Startup.Services.TaskClassificationOverrideStore? _taskClassificationOverrides;
     private readonly IExplorerRestartService _explorerRestartService;
@@ -223,8 +224,10 @@ public partial class MainWindowViewModel : ViewModelBase
         IScheduledTaskService? scheduledTaskService = null,
         Modules.Startup.Services.TaskClassificationOverrideStore? taskClassificationOverrides = null,
         IPowerService? powerService = null,
-        DisplayModePreferencesStore? displayModeStore = null)
+        DisplayModePreferencesStore? displayModeStore = null,
+        Services.OwnerModeService? ownerModeService = null)
     {
+        _ownerModeService = ownerModeService;
         _displayModeStore = displayModeStore;
         _powerService = powerService;
         _navigationService = navigationService;
@@ -741,7 +744,8 @@ public partial class MainWindowViewModel : ViewModelBase
             applyTheme: ApplyTheme,
             installedModuleIds: _navigationService.Modules.Select(m => m.Module.Info.Name).ToList(),
             appVersion: typeof(MainWindowViewModel).Assembly.GetName().Version?.ToString(3) ?? "0.0.0",
-            capabilityReport: _capabilityDetector?.GetCapabilityReport());
+            capabilityReport: _capabilityDetector?.GetCapabilityReport(),
+            ownerMode: _ownerModeService is { } ownerMode ? new OwnerModeSectionViewModel(ownerMode) : null);
         IsSettingsActive = true;
         IsSetLoaderActive = false;
         IsHomeActive = false;
