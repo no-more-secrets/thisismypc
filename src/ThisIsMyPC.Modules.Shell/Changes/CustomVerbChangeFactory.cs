@@ -64,9 +64,11 @@ public static class CustomVerbChangeFactory
 
     public static string MakeSettingId(CustomVerbDefinition definition)
     {
+        // "." separates scope from verb id — MakeVerbId slugs can't contain it, so
+        // "Directory\Background" + "foo" can never collide with "Directory" + "background-foo".
         var scopeSlug = definition.Scope.ToLowerInvariant()
-            .Replace('\\', '-').Replace("*", "allfiles");
-        return $"ctx-custom-{scopeSlug}-{definition.VerbId.ToLowerInvariant()}";
+            .Replace('\\', '.').Replace("*", "allfiles");
+        return $"ctx-custom-{scopeSlug}.{definition.VerbId.ToLowerInvariant()}";
     }
 
     /// <summary>Derives a registry-safe verb id from the entry label.</summary>

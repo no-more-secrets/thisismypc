@@ -52,7 +52,9 @@ public sealed class CustomVerbService
         {
             Scope = scope,
             VerbId = keyName[CustomVerbDefinition.VerbKeyPrefix.Length..],
-            Label = label is { IsSuccess: true, Value: { Length: > 0 } l } ? l : keyName,
+            Label = label is { IsSuccess: true, Value: { Length: > 0 } l }
+                ? l
+                : keyName[CustomVerbDefinition.VerbKeyPrefix.Length..],
             Command = command.Value,
             IconPath = icon is { IsSuccess: true, Value: { Length: > 0 } i } ? i : null,
         };

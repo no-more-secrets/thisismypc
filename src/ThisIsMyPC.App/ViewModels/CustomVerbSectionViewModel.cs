@@ -120,7 +120,7 @@ public partial class CustomVerbSectionViewModel : ViewModelBase
                 IconPath = icon.Length > 0 ? icon : null,
             };
             if (after != before)
-                _pendingChanges.Stage(CustomVerbChangeFactory.CreateEdit(before, after));
+                StageReplacing(CustomVerbChangeFactory.CreateEdit(before, after));
         }
         else
         {
@@ -134,7 +134,7 @@ public partial class CustomVerbSectionViewModel : ViewModelBase
                 Command = command,
                 IconPath = icon.Length > 0 ? icon : null,
             };
-            _pendingChanges.Stage(CustomVerbChangeFactory.CreateNew(definition));
+            StageReplacing(CustomVerbChangeFactory.CreateNew(definition));
         }
 
         IsFormOpen = false;
@@ -142,7 +142,22 @@ public partial class CustomVerbSectionViewModel : ViewModelBase
 
     [RelayCommand]
     private void Delete(CustomVerbEntryViewModel entry) =>
-        _pendingChanges.Stage(CustomVerbChangeFactory.CreateDelete(entry.Definition));
+        StageReplacing(CustomVerbChangeFactory.CreateDelete(entry.Definition));
+
+    /// <summary>
+    /// One pending group per entry: staging supersedes any earlier staged group for
+    /// the same SettingId (double-stage duplicates, delete-then-edit resurrection).
+    /// </summary>
+    private void StageReplacing(Core.Changes.ChangeDescriptor change)
+    {
+        var stale = _pendingChanges.PendingGroups
+            .Where(g => g.Changes.Any(c => c.SettingId == change.SettingId))
+            .Select(g => g.GroupId)
+            .ToList();
+        foreach (var groupId in stale)
+            _pendingChanges.Unstage(groupId);
+        _pendingChanges.Stage(change);
+    }
 
     private string UniqueVerbId(string scope, string baseId)
     {
@@ -150,6 +165,23 @@ public partial class CustomVerbSectionViewModel : ViewModelBase
             .Where(e => e.Definition.Scope.Equals(scope, StringComparison.OrdinalIgnoreCase))
             .Select(e => e.Definition.VerbId)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        // Staged-but-unapplied creates are invisible in Entries (the list shows the
+        // applied registry state) — without this, two same-label creates would share
+        // a key path and silently overwrite each other on Apply.
+        foreach (var group in _pendingChanges.PendingGroups)
+        {
+            foreach (var change in group.Changes)
+            {
+                if (change.ValueType != Core.Changes.ChangeValueType.Shell_CustomVerb)
+                    continue;
+                var staged = CustomVerbDefinition.Deserialize(change.AfterValue)
+                    ?? CustomVerbDefinition.Deserialize(change.BeforeValue);
+                if (staged is not null && staged.Scope.Equals(scope, StringComparison.OrdinalIgnoreCase))
+                    taken.Add(staged.VerbId);
+            }
+        }
+
         if (!taken.Contains(baseId))
             return baseId;
         for (var i = 2; ; i++)
