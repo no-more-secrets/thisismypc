@@ -20,7 +20,7 @@ public class MainWindowViewModelHistoryTests
         var reviewPanel = new ReviewPanelViewModel(pendingChangesService, new Core.Sets.CustomSetWriter(Path.Combine(Path.GetTempPath(), $"tipc-mw-{Guid.NewGuid():N}")));
         var registryService = new Fakes.FakeRegistryService();
         var explorerRestartService = new Fakes.FakeExplorerRestartService();
-        return new MainWindowViewModel(navigationService, pendingChangesService, historyService, registryService, explorerRestartService, reviewPanel, new Fakes.FakeSetProvider(), [], new Core.Sets.CustomSetWriter(Path.Combine(Path.GetTempPath(), $"tipc-mw-{Guid.NewGuid():N}")));
+        return new MainWindowViewModel(navigationService, pendingChangesService, historyService, registryService, explorerRestartService, reviewPanel, new Fakes.FakeSetProvider(), [], new Core.Sets.CustomSetWriter(Path.Combine(Path.GetTempPath(), $"tipc-mw-{Guid.NewGuid():N}")), new Fakes.FakeRestorePointService());
     }
 
     private static ChangeDescriptor CreateTestChange(string moduleId = "TestModule", string settingId = "s1") => new()

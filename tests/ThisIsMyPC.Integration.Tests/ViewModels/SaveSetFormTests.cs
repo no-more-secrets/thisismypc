@@ -240,7 +240,8 @@ public sealed class SaveSetFormTests : IDisposable
             reviewPanel,
             setProvider,
             [],
-            Writer);
+            Writer,
+            new FakeRestorePointService());
         await vm.InitializeAsync();
 
         pendingChangesService.Stage(Descriptor());

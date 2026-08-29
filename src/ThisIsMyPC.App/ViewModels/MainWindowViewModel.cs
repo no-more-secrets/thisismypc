@@ -38,6 +38,14 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly Core.Sets.ISetProvider _setProvider;
     private readonly IReadOnlyList<Core.Sets.ISetEntryInspector> _setEntryInspectors;
     private readonly ICapabilityDetector? _capabilityDetector;
+    private readonly IRestorePointService _restorePointService;
+
+    // FR64: auto restore point when a batch stages this many individual changes
+    private const int AutoRestorePointThreshold = 5;
+
+    // Set when the pre-apply restore point failed and the user was told the next
+    // Apply click proceeds without one. Reset on success or Discard All.
+    private bool _applyWithoutRestorePoint;
 
     // Bumped on every content switch (module navigation, Home, Set Loader) so an
     // in-flight module scan can detect it was superseded and must not clobber the
@@ -75,9 +83,12 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanModifyPending))]
+    [NotifyPropertyChangedFor(nameof(CanCreateRestorePoint))]
     private bool _isApplying;
 
     public bool CanModifyPending => HasPendingChanges && !IsApplying;
+
+    public bool CanCreateRestorePoint => !IsCreatingRestorePoint && !IsApplying;
 
     public ReviewPanelViewModel ReviewPanel { get; }
 
@@ -108,6 +119,7 @@ public partial class MainWindowViewModel : ViewModelBase
         Core.Sets.ISetProvider setProvider,
         IEnumerable<Core.Sets.ISetEntryInspector> setEntryInspectors,
         Core.Sets.ICustomSetWriter customSetWriter,
+        IRestorePointService restorePointService,
         ICapabilityDetector? capabilityDetector = null,
         IServiceControlService? serviceControlService = null,
         IScheduledTaskService? scheduledTaskService = null,
@@ -128,6 +140,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _setProvider = setProvider;
         _setEntryInspectors = setEntryInspectors.ToList();
         _capabilityDetector = capabilityDetector;
+        _restorePointService = restorePointService;
         ReviewPanel = reviewPanel;
         ChangeHistory = new ChangeHistoryViewModel(
             changeHistoryService,
@@ -528,7 +541,41 @@ public partial class MainWindowViewModel : ViewModelBase
     private void DiscardAll()
     {
         _pendingChangesService.DiscardAll();
+        _applyWithoutRestorePoint = false;
         IsReviewPanelOpen = false;
+    }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanCreateRestorePoint))]
+    private bool _isCreatingRestorePoint;
+
+    [RelayCommand]
+    private async Task CreateRestorePointAsync()
+    {
+        if (IsCreatingRestorePoint || IsApplying)
+            return;
+
+        IsCreatingRestorePoint = true;
+        SetStatus("Creating restore point...", StatusSeverity.Warning);
+        try
+        {
+            var result = await _restorePointService.CreateRestorePointAsync(
+                $"ThisIsMyPC restore point {DateTime.Now:yyyy-MM-dd HH:mm}").ConfigureAwait(true);
+
+            if (result.IsSuccess)
+            {
+                _applyWithoutRestorePoint = false;
+                SetStatus("Restore point created successfully", StatusSeverity.Success);
+            }
+            else
+            {
+                SetStatus(result.Message ?? "Restore point creation failed", StatusSeverity.Error);
+            }
+        }
+        finally
+        {
+            IsCreatingRestorePoint = false;
+        }
     }
 
     [ObservableProperty]
@@ -562,7 +609,7 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private async Task ApplyAllAsync()
     {
-        if (!HasPendingChanges || IsApplying)
+        if (!HasPendingChanges || IsApplying || IsCreatingRestorePoint)
             return;
 
         IsApplying = true;
@@ -570,12 +617,36 @@ public partial class MainWindowViewModel : ViewModelBase
 
         try
         {
+            // FR64: safety net before bulk batches. Counts individual descriptors —
+            // PendingCount counts groups, so a single 6-change set must still trigger.
+            var changeCount = _pendingChangesService.PendingGroups.Sum(g => g.Changes.Count);
+            if (changeCount >= AutoRestorePointThreshold && !_applyWithoutRestorePoint)
+            {
+                SetStatus("Creating restore point...", StatusSeverity.Warning);
+                var restorePoint = await _restorePointService.CreateRestorePointAsync(
+                    $"ThisIsMyPC: Before applying {changeCount} changes").ConfigureAwait(true);
+
+                if (!restorePoint.IsSuccess)
+                {
+                    _applyWithoutRestorePoint = true;
+                    SetStatus(
+                        $"{restorePoint.Message ?? "Restore point creation failed"}. Click Apply again to proceed without a restore point.",
+                        StatusSeverity.Error);
+                    return;
+                }
+            }
+            else if (_applyWithoutRestorePoint)
+            {
+                SetStatus("Applying without a restore point", StatusSeverity.Warning);
+            }
+
             var result = await _pendingChangesService.ApplyAllAsync(
                 ApplyChangeToModule,
                 RevertChangeOnModule).ConfigureAwait(true);
 
             if (result.IsSuccess)
             {
+                _applyWithoutRestorePoint = false;
                 await _changeHistoryService.RecordChangesAsync(result).ConfigureAwait(true);
                 IsReviewPanelOpen = false;
 

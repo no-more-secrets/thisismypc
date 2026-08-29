@@ -24,7 +24,8 @@ public sealed class MainWindowViewModelSetLoaderTests
         var vm = new MainWindowViewModel(
             navigationService, pendingChangesService, historyService, registryService,
             explorerRestartService, reviewPanel, setProvider, [],
-            new Core.Sets.CustomSetWriter(Path.Combine(Path.GetTempPath(), $"tipc-mw-{Guid.NewGuid():N}")));
+            new Core.Sets.CustomSetWriter(Path.Combine(Path.GetTempPath(), $"tipc-mw-{Guid.NewGuid():N}")),
+            new Fakes.FakeRestorePointService());
         return (vm, setProvider);
     }
 

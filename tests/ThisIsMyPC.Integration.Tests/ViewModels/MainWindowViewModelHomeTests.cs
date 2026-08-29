@@ -26,7 +26,8 @@ public sealed class MainWindowViewModelHomeTests
             reviewPanel,
             new Fakes.FakeSetProvider(),
             [],
-            new CustomSetWriter(Path.Combine(Path.GetTempPath(), $"tipc-home-{Guid.NewGuid():N}")));
+            new CustomSetWriter(Path.Combine(Path.GetTempPath(), $"tipc-home-{Guid.NewGuid():N}")),
+            new Fakes.FakeRestorePointService());
     }
 
     [Fact]

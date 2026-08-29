@@ -21,7 +21,7 @@ public sealed class MainWindowViewModelRefreshTests
         var reviewPanel = new ReviewPanelViewModel(pendingChangesService, new Core.Sets.CustomSetWriter(Path.Combine(Path.GetTempPath(), $"tipc-mw-{Guid.NewGuid():N}")));
         var registryService = new Fakes.FakeRegistryService();
         var explorerRestartService = new Fakes.FakeExplorerRestartService();
-        var vm = new MainWindowViewModel(navigationService, pendingChangesService, historyService, registryService, explorerRestartService, reviewPanel, new Fakes.FakeSetProvider(), [], new Core.Sets.CustomSetWriter(Path.Combine(Path.GetTempPath(), $"tipc-mw-{Guid.NewGuid():N}")));
+        var vm = new MainWindowViewModel(navigationService, pendingChangesService, historyService, registryService, explorerRestartService, reviewPanel, new Fakes.FakeSetProvider(), [], new Core.Sets.CustomSetWriter(Path.Combine(Path.GetTempPath(), $"tipc-mw-{Guid.NewGuid():N}")), new Fakes.FakeRestorePointService());
         return (vm, pendingChangesService, explorerRestartService);
     }
 

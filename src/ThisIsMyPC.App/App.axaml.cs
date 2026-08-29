@@ -97,6 +97,7 @@ public partial class App : Application
             System.IO.Path.Combine(AppConstants.DataDirectoryPath, "task-classifications.txt")));
         services.AddSingleton<IAppxPackageService, AppxPackageService>();
         services.AddSingleton<IPowerService, ThisIsMyPC.Interop.Win32.Power.PowerService>();
+        services.AddSingleton<IRestorePointService, ThisIsMyPC.Interop.Win32.Restore.RestorePointService>();
 
         // Modules (explicit DI registration, NativeAOT-safe)
         services.AddSingleton<IModule, ShellModule>();
