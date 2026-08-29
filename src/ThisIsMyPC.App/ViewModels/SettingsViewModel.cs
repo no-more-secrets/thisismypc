@@ -206,7 +206,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
                 new SettingToggleItemViewModel(
                     settings, null, AppSettingKeys.DyslexiaFont,
                     "Dyslexia-friendly font",
-                    "Renders the app in an accessibility-focused font. Wires up with story 10-4.",
+                    "Switches body text to OpenDyslexic, a dyslexia-friendly font. Headings and registry paths keep their fonts. Takes effect immediately.",
                     settings.GetAppBool(AppSettingKeys.DyslexiaFont, false)),
             ],
         });

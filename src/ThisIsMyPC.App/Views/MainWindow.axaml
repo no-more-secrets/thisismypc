@@ -11,7 +11,7 @@
         MinWidth="900" MinHeight="600"
         Width="1200" Height="800"
         Background="{StaticResource BaseBrush}"
-        FontFamily="{StaticResource BodyFont}">
+        FontFamily="{DynamicResource BodyFont}">
 
     <Grid ColumnDefinitions="Auto,*">
 

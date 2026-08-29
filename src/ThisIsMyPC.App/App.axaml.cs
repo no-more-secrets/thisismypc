@@ -36,6 +36,7 @@ public partial class App : Application
     private WindowPersistenceController? _windowController;
     private TrayService? _trayService;
     private AutoStartService? _autoStartService;
+    private AccessibilityFontService? _fontService;
 
     public override void Initialize()
     {
@@ -54,6 +55,11 @@ public partial class App : Application
 
             LogSetDiscovery(_serviceProvider.GetRequiredService<ISetProvider>());
             InitializeSettings(_serviceProvider.GetRequiredService<Core.Settings.ISettingsService>());
+
+            // 10-4: live OpenDyslexic body-font override (before MainWindow exists so
+            // the first render already uses the preferred font)
+            _fontService = new AccessibilityFontService(
+                _serviceProvider.GetRequiredService<Core.Settings.ISettingsService>(), Resources);
 
             var mainViewModel = _serviceProvider.GetRequiredService<MainWindowViewModel>();
             desktop.MainWindow = new MainWindow
@@ -229,6 +235,8 @@ public partial class App : Application
             _trayService = null;
             _autoStartService?.Dispose();
             _autoStartService = null;
+            _fontService?.Dispose();
+            _fontService = null;
             _windowController?.Dispose();
             _windowController = null;
             if (_serviceProvider is not null)
