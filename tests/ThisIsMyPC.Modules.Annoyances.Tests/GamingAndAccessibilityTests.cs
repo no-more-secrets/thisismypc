@@ -14,12 +14,12 @@ public sealed class GamingAndAccessibilityTests
     private AnnoyancesSettingsReader Reader => new(_registry);
 
     [Fact]
-    public void Section_ContainsAllFiveToggles()
+    public void Section_ContainsAllSixToggles()
     {
         var prefs = Reader.ReadAll().Where(p => p.Section == AnnoyanceSection.GamingAndAccessibility).ToList();
 
         Assert.Equal(
-            ["game-dvr", "auto-game-mode", "hags", "sticky-keys-shortcut", "filter-keys-shortcut"],
+            ["game-dvr", "auto-game-mode", "xbox-game-tips", "hags", "sticky-keys-shortcut", "filter-keys-shortcut"],
             prefs.Select(p => p.Id));
     }
 

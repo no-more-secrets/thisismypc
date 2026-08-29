@@ -18,7 +18,7 @@ public sealed class WindowsUpdateSearchContributor : ISearchSettingsContributor
 
     public IReadOnlyList<SearchEntry> GetSearchEntries()
     {
-        var entries = _reader.ReadSingles()
+        var entries = _reader.ReadSingles().Concat(_reader.ReadUxSettings())
             .Select(s => new SearchEntry(
                 ModuleId, s.Id, s.DisplayName, s.Description,
                 [s.RegistryKeyPath, s.RegistryValueName]))

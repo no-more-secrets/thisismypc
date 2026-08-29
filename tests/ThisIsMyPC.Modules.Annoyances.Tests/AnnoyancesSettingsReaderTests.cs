@@ -21,12 +21,14 @@ public sealed class AnnoyancesSettingsReaderTests
         Assert.Equal(
             ["scoobe-nags", "welcome-experience", "app-suggestions", "windows-tips",
              "settings-suggestions", "lock-screen-images", "spotlight-collection-desktop",
-             "silent-app-installs", "edge-shortcuts",
+             "consumer-features", "silent-app-installs", "edge-shortcuts",
              "dynamic-search-box", "advertising-id", "activity-history",
-             "game-dvr", "auto-game-mode", "hags", "sticky-keys-shortcut", "filter-keys-shortcut",
+             "tailored-experiences", "language-list-access",
+             "game-dvr", "auto-game-mode", "xbox-game-tips", "hags",
+             "sticky-keys-shortcut", "filter-keys-shortcut",
              "copilot-button", "edge-sidebar"],
             prefs.Select(p => p.Id));
-        Assert.Equal(8, prefs.Count(p => p.Section == AnnoyanceSection.ScoobeAndWelcome));
+        Assert.Equal(9, prefs.Count(p => p.Section == AnnoyanceSection.ScoobeAndWelcome));
         Assert.Equal(AnnoyanceSection.BingAndEdge, prefs.Single(p => p.Id == "edge-shortcuts").Section);
         Assert.Equal(AnnoyanceSection.BingAndEdge, prefs.Single(p => p.Id == "dynamic-search-box").Section);
         // The original suppression prefs keep the simple shape: DWORD 0/1, no restart
@@ -96,6 +98,22 @@ public sealed class AnnoyancesSettingsReaderTests
     }
 
     [Fact]
+    public void EdgeDebloat_IsAnAtomicTrioOfEdgePolicies()
+    {
+        var prefs = new AnnoyancesSettingsReader(_registry).ReadEdgeDebloat();
+
+        Assert.Equal(
+            ["EdgeShoppingAssistantEnabled", "ShowMicrosoftRewards", "PersonalizationReportingEnabled"],
+            prefs.Select(p => p.RegistryValueName));
+        Assert.All(prefs, p =>
+        {
+            Assert.Equal("edge-debloat", p.Id);
+            Assert.Equal(AnnoyancesRegistryPaths.EdgePoliciesKeyPath, p.RegistryKeyPath);
+            Assert.Equal("0", p.SuppressedValue);
+        });
+    }
+
+    [Fact]
     public void ScoobeTargetsUserProfileEngagement_RestTargetContentDeliveryManager()
     {
         var prefs = ReadAll();
@@ -104,13 +122,16 @@ public sealed class AnnoyancesSettingsReaderTests
             AnnoyancesRegistryPaths.UserProfileEngagementKeyPath,
             prefs.Single(p => p.Id == "scoobe-nags").RegistryKeyPath);
         // The remaining ScoobeAndWelcome prefs all live under ContentDeliveryManager,
-        // except the CloudContent user-policy Spotlight toggle.
+        // except the CloudContent Spotlight and consumer-features policies.
         Assert.Equal(
             AnnoyancesRegistryPaths.CloudContentUserPoliciesKeyPath,
             prefs.Single(p => p.Id == "spotlight-collection-desktop").RegistryKeyPath);
+        Assert.Equal(
+            AnnoyancesRegistryPaths.CloudContentMachinePoliciesKeyPath,
+            prefs.Single(p => p.Id == "consumer-features").RegistryKeyPath);
         Assert.All(
             prefs.Where(p => p.Section == AnnoyanceSection.ScoobeAndWelcome
-                && p.Id is not "scoobe-nags" and not "spotlight-collection-desktop"),
+                && p.Id is not "scoobe-nags" and not "spotlight-collection-desktop" and not "consumer-features"),
             p => Assert.Equal(AnnoyancesRegistryPaths.ContentDeliveryManagerKeyPath, p.RegistryKeyPath));
     }
 }

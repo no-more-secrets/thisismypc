@@ -71,6 +71,15 @@ public sealed class AnnoyancesSettingsReader
                 defaultValue: "0"),
 
             ReadPreference(
+                id: "consumer-features",
+                displayName: "Disable Microsoft consumer features",
+                description: "Master policy switch for consumer promotions: suggested third-party apps, Start menu ads, and OEM content.",
+                keyPath: AnnoyancesRegistryPaths.CloudContentMachinePoliciesKeyPath,
+                valueName: "DisableWindowsConsumerFeatures",
+                suppressedValue: "1",
+                defaultValue: "0"),
+
+            ReadPreference(
                 id: "silent-app-installs",
                 displayName: "Suppress automatic promoted app installs",
                 description: "Stops Windows from silently installing suggested Store apps (games, streaming apps) onto the Start menu.",
@@ -104,6 +113,24 @@ public sealed class AnnoyancesSettingsReader
                 section: AnnoyanceSection.AdvertisingAndTracking),
 
             ReadPreference(
+                id: "tailored-experiences",
+                displayName: "Disable tailored experiences",
+                description: "Stops Microsoft from using your diagnostic data to personalize tips, ads, and recommendations.",
+                keyPath: AnnoyancesRegistryPaths.PrivacyKeyPath,
+                valueName: "TailoredExperiencesWithDiagnosticDataEnabled",
+                section: AnnoyanceSection.AdvertisingAndTracking),
+
+            ReadPreference(
+                id: "language-list-access",
+                displayName: "Block website access to your language list",
+                description: "Stops websites from reading your Windows language list to profile you.",
+                keyPath: AnnoyancesRegistryPaths.InternationalUserProfileKeyPath,
+                valueName: "HttpAcceptLanguageOptOut",
+                section: AnnoyanceSection.AdvertisingAndTracking,
+                suppressedValue: "1",
+                defaultValue: "0"),
+
+            ReadPreference(
                 id: "game-dvr",
                 displayName: "Disable Game DVR background recording",
                 description: "Stops the Xbox Game Bar's always-on background video encoding, a common cause of micro-stutter in games (requires Explorer restart).",
@@ -118,6 +145,14 @@ public sealed class AnnoyancesSettingsReader
                 description: "Stops Windows from automatically throttling background apps (Discord, OBS, browsers) whenever a full-screen game is detected.",
                 keyPath: AnnoyancesRegistryPaths.GameBarKeyPath,
                 valueName: "AutoGameModeEnabled",
+                section: AnnoyanceSection.GamingAndAccessibility),
+
+            ReadPreference(
+                id: "xbox-game-tips",
+                displayName: "Suppress Xbox Game Bar startup tips",
+                description: "Stops the Game Bar from opening its startup panel with tips when you launch a game.",
+                keyPath: AnnoyancesRegistryPaths.GameBarKeyPath,
+                valueName: "ShowStartupPanel",
                 section: AnnoyanceSection.GamingAndAccessibility),
 
             ReadPreference(
@@ -335,6 +370,40 @@ public sealed class AnnoyancesSettingsReader
                 description: "SoftLandingEnabled entry.",
                 keyPath: cdm,
                 valueName: "SoftLandingEnabled"),
+        ];
+    }
+
+    /// <summary>
+    /// The three safe Edge debloat policies (winutil's Edge set, minus the risky
+    /// entries). Surfaced as ONE toggle (a single atomic group), so not in ReadAll.
+    /// All default-on, suppressed at 0.
+    /// </summary>
+    public IReadOnlyList<AnnoyancePreference> ReadEdgeDebloat()
+    {
+        var edge = AnnoyancesRegistryPaths.EdgePoliciesKeyPath;
+        return
+        [
+            ReadPreference(
+                id: "edge-debloat",
+                displayName: "Edge shopping assistant",
+                description: "EdgeShoppingAssistantEnabled policy.",
+                keyPath: edge,
+                valueName: "EdgeShoppingAssistantEnabled",
+                section: AnnoyanceSection.BingAndEdge),
+            ReadPreference(
+                id: "edge-debloat",
+                displayName: "Microsoft Rewards in Edge",
+                description: "ShowMicrosoftRewards policy.",
+                keyPath: edge,
+                valueName: "ShowMicrosoftRewards",
+                section: AnnoyanceSection.BingAndEdge),
+            ReadPreference(
+                id: "edge-debloat",
+                displayName: "Edge personalization reporting",
+                description: "PersonalizationReportingEnabled policy.",
+                keyPath: edge,
+                valueName: "PersonalizationReportingEnabled",
+                section: AnnoyanceSection.BingAndEdge),
         ];
     }
 

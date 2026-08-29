@@ -16,6 +16,7 @@ public sealed class WindowsUpdateCardProvider
 {
     private const string UpdateBehaviorGroup = "Update Behavior";
     private const string DeliveryOptimizationGroup = "Delivery Optimization";
+    private const string UpdateExperienceGroup = "Update Experience";
 
     private readonly WindowsUpdateSettingsReader _liveReader;
 
@@ -39,8 +40,32 @@ public sealed class WindowsUpdateCardProvider
         foreach (var setting in scanData.Settings.Where(s => s.Id == "delivery-optimization"))
             cards.Add(SingleCard(setting, DeliveryOptimizationGroup, gpCache: false));
 
+        foreach (var setting in scanData.UxSettings)
+            cards.Add(UxCard(setting));
+
         return cards;
     }
+
+    private SettingCardSource UxCard(UpdatePolicySetting setting) => new()
+    {
+        Model = new SettingCardModel
+        {
+            SettingId = setting.Id,
+            ModuleId = WindowsUpdateChangeFactory.ModuleId,
+            DisplayName = setting.DisplayName,
+            Description = setting.Description,
+            ControlType = SettingControlType.Toggle,
+            CurrentValue = setting.IsConfigured ? "1" : "0",
+            CurrentDisplayValue = setting.IsConfigured ? "Configured" : "Not configured",
+            RegistryPath = setting.RegistryKeyPath,
+            ValueName = setting.RegistryValueName,
+            RegistryValueType = setting.ValueType.ToString(),
+            GroupId = UpdateExperienceGroup,
+        },
+        CreateToggleGroup = configure => WrapSingle(
+            WindowsUpdateChangeFactory.CreateUxToggle(ReadLiveUx(setting.Id), configure)),
+        ReadCurrentState = () => ReadLiveUx(setting.Id).IsConfigured,
+    };
 
     private SettingCardSource SingleCard(UpdatePolicySetting setting, string group, bool gpCache)
     {
@@ -147,4 +172,7 @@ public sealed class WindowsUpdateCardProvider
 
     private UpdatePolicySetting ReadLive(string id)
         => _liveReader.ReadSingles().Single(s => s.Id == id);
+
+    private UpdatePolicySetting ReadLiveUx(string id)
+        => _liveReader.ReadUxSettings().Single(s => s.Id == id);
 }

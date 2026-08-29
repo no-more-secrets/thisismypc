@@ -82,8 +82,11 @@ public sealed class WindowsUpdateSetEntryInspector : ISetEntryInspector
         if (setting is null || Direction(entry, setting) is not { } configureSingle)
             return null;
 
-        var change = WindowsUpdateChangeFactory.CreateToggle(
-            setting, configureSingle, gpCache: entry.SettingId != "delivery-optimization");
+        // UX\Settings state values carry no enforcement; policies route by GPCache need.
+        var change = setting.RegistryKeyPath == WindowsUpdateRegistryPaths.UxSettingsKeyPath
+            ? WindowsUpdateChangeFactory.CreateUxToggle(setting, configureSingle)
+            : WindowsUpdateChangeFactory.CreateToggle(
+                setting, configureSingle, gpCache: entry.SettingId != "delivery-optimization");
 
         return new ChangeGroup
         {
@@ -101,5 +104,6 @@ public sealed class WindowsUpdateSetEntryInspector : ISetEntryInspector
             : null;
 
     private UpdatePolicySetting? FindSingle(string settingId)
-        => _reader.ReadSingles().FirstOrDefault(s => s.Id == settingId);
+        => _reader.ReadSingles().FirstOrDefault(s => s.Id == settingId)
+            ?? _reader.ReadUxSettings().FirstOrDefault(s => s.Id == settingId);
 }

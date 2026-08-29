@@ -7,4 +7,5 @@ public sealed record AnnoyancesScanData(
     IReadOnlyList<AnnoyancePreference> CopilotPolicy,
     IReadOnlyList<AnnoyancePreference> Recall,
     IReadOnlyList<AnnoyancePreference> LockScreenAds,
-    IReadOnlyList<AnnoyancePreference> PreinstalledApps);
+    IReadOnlyList<AnnoyancePreference> PreinstalledApps,
+    IReadOnlyList<AnnoyancePreference> EdgeDebloat);

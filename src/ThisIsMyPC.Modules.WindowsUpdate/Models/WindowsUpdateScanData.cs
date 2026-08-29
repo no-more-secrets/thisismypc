@@ -8,4 +8,5 @@ namespace ThisIsMyPC.Modules.WindowsUpdate.Models;
 /// </summary>
 public sealed record WindowsUpdateScanData(
     IReadOnlyList<UpdatePolicySetting> Settings,
-    IReadOnlyList<UpdatePolicySetting> VersionPin);
+    IReadOnlyList<UpdatePolicySetting> VersionPin,
+    IReadOnlyList<UpdatePolicySetting> UxSettings);

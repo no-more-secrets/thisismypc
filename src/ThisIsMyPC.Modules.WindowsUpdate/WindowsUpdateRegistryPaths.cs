@@ -23,6 +23,13 @@ public static class WindowsUpdateRegistryPaths
     public const string CurrentVersionKeyPath =
         @"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion";
 
+    /// <summary>
+    /// The Windows Update Settings-page state store (not a policy hive). Values here
+    /// are what the Settings toggles themselves write — no GPCache, no SKU gating.
+    /// </summary>
+    public const string UxSettingsKeyPath =
+        @"HKLM\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings";
+
     public static (string KeyPath, string ValueName) ParseSystemLocation(string systemLocation)
     {
         var lastSeparator = systemLocation.LastIndexOf('\\');

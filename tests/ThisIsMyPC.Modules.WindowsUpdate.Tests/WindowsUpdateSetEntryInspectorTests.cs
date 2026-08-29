@@ -119,6 +119,25 @@ public class WindowsUpdateSetEntryInspectorTests
     }
 
     [Fact]
+    public void CreateChangeGroup_UxSetting_ResolvesWithNoEnforcement()
+    {
+        // UX\Settings ids resolve through the same inspector; a typo'd routing would
+        // silently kill the set entry.
+        var inspector = new WindowsUpdateSetEntryInspector(new FakeRegistryService());
+
+        var group = inspector.CreateChangeGroup(Entry("restart-notifications", "1"));
+
+        Assert.NotNull(group);
+        var change = Assert.Single(group!.Changes);
+        Assert.Equal("1", change.AfterValue);
+        Assert.Null(change.Enforcement);
+        Assert.Contains("UX\\Settings", change.SystemLocation, StringComparison.Ordinal);
+
+        Assert.NotNull(inspector.Inspect(Entry("active-hours-manual", "2")));
+        Assert.NotNull(inspector.Inspect(Entry("continuous-innovation", "0")));
+    }
+
+    [Fact]
     public void CreateChangeGroup_EmptyValue_RestoresToNotConfigured()
     {
         var registry = new FakeRegistryService();

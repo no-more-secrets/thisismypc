@@ -61,6 +61,13 @@ public static class WindowsUpdateChangeFactory
     }
 
     /// <summary>
+    /// Toggle for a UX\Settings state value (what the Settings page writes): no
+    /// enforcement at all — not a policy, so no GPCache clear and no SKU tag.
+    /// </summary>
+    public static ChangeDescriptor CreateUxToggle(UpdatePolicySetting setting, bool configure)
+        => CreateToggle(setting, configure) with { Enforcement = null };
+
+    /// <summary>
     /// One atomic ChangeGroup pinning (or unpinning) the Windows feature release: the
     /// three WindowsUpdate policy values together. Null when the pin is unavailable
     /// (empty group = DisplayVersion unreadable at scan time).

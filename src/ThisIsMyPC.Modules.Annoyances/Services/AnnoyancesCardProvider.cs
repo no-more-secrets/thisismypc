@@ -25,6 +25,9 @@ public sealed class AnnoyancesCardProvider
     private const string PreinstalledAppsDescription =
         "Stops promotions for OEM and preinstalled apps and the related feature tips.";
 
+    private const string EdgeDebloatDescription =
+        "Turns off the shopping assistant, Microsoft Rewards, and personalization reporting in Edge by policy.";
+
     private const string RecallDescription =
         "Blocks Windows Recall from taking and saving screen snapshots and turns off AI analysis of your activity. "
         + "On PCs without Copilot+ hardware these policies are inert today; setting them future-proofs the machine.";
@@ -58,6 +61,7 @@ public sealed class AnnoyancesCardProvider
 
         cards.Add(BingSearchCard(scanData));
         AddSectionSingles(cards, scanData, AnnoyanceSection.BingAndEdge, driftFragile: true);
+        cards.Add(EdgeDebloatCard(scanData));
 
         AddSectionSingles(cards, scanData, AnnoyanceSection.AdvertisingAndTracking, driftFragile: false);
         cards.Add(SuggestedContentCard(scanData));
@@ -166,6 +170,31 @@ public sealed class AnnoyancesCardProvider
             description: PreinstalledAppsDescription,
             suppress),
         ReadCurrentState = () => _liveReader.ReadPreinstalledApps().All(p => p.IsSuppressed),
+    };
+
+    private SettingCardSource EdgeDebloatCard(AnnoyancesScanData scanData) => new()
+    {
+        Model = new SettingCardModel
+        {
+            SettingId = "edge-debloat",
+            ModuleId = AnnoyanceChangeFactory.ModuleId,
+            DisplayName = "Debloat Microsoft Edge",
+            Description = EdgeDebloatDescription,
+            ControlType = SettingControlType.Toggle,
+            CurrentValue = scanData.EdgeDebloat.All(p => p.IsSuppressed) ? "1" : "0",
+            CurrentDisplayValue = scanData.EdgeDebloat.All(p => p.IsSuppressed) ? "Suppressed" : "Windows default",
+            RegistryPath = AnnoyancesRegistryPaths.EdgePoliciesKeyPath,
+            ValueName = "EdgeShoppingAssistantEnabled",
+            RegistryValueType = nameof(ChangeValueType.Registry_DWord),
+            GroupId = SectionGroups[AnnoyanceSection.BingAndEdge],
+        },
+        CreateToggleGroup = suppress => AnnoyanceChangeFactory.CreateGroupToggle(
+            _liveReader.ReadEdgeDebloat(),
+            settingId: "edge-debloat",
+            displayName: "Edge shopping, Rewards, and personalization",
+            description: EdgeDebloatDescription,
+            suppress),
+        ReadCurrentState = () => _liveReader.ReadEdgeDebloat().All(p => p.IsSuppressed),
     };
 
     private SettingCardSource BingSearchCard(AnnoyancesScanData scanData) => new()

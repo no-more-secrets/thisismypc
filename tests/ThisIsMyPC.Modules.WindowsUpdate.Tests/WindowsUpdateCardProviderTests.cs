@@ -8,7 +8,7 @@ namespace ThisIsMyPC.Modules.WindowsUpdate.Tests;
 public class WindowsUpdateCardProviderTests
 {
     [Fact]
-    public void BuildCards_WithDisplayVersion_FiveCards_VersionPinFirst()
+    public void BuildCards_WithDisplayVersion_EightCards_VersionPinFirst()
     {
         var registry = new FakeRegistryService();
         registry.SetString(WindowsUpdateRegistryPaths.CurrentVersionKeyPath, "DisplayVersion", "24H2");
@@ -18,7 +18,8 @@ public class WindowsUpdateCardProviderTests
         var cards = provider.BuildCards(reader.ReadAll());
 
         Assert.Equal(
-            ["version-pin", "auto-update-mode", "no-auto-reboot", "exclude-drivers", "delivery-optimization"],
+            ["version-pin", "auto-update-mode", "no-auto-reboot", "exclude-drivers", "delivery-optimization",
+             "restart-notifications", "active-hours-manual", "continuous-innovation"],
             cards.Select(c => c.Model.SettingId));
     }
 
@@ -31,7 +32,7 @@ public class WindowsUpdateCardProviderTests
         var cards = provider.BuildCards(reader.ReadAll());
 
         Assert.DoesNotContain("version-pin", cards.Select(c => c.Model.SettingId));
-        Assert.Equal(4, cards.Count);
+        Assert.Equal(7, cards.Count);
     }
 
     [Fact]
@@ -44,8 +45,9 @@ public class WindowsUpdateCardProviderTests
 
         foreach (var card in cards)
         {
-            // SKU-only enforcement (DO) must not render a bogus "known to revert" badge
-            if (card.Model.SettingId == "delivery-optimization")
+            // SKU-only enforcement (DO) and plain UX state values must not render a
+            // bogus "known to revert" badge
+            if (card.Model.SettingId == "delivery-optimization" || card.Model.GroupId == "Update Experience")
                 Assert.Null(card.Model.Enforcement);
             else
                 Assert.Equal(EnforcementLevel.Enforced, card.Model.Enforcement!.Level);
@@ -53,14 +55,20 @@ public class WindowsUpdateCardProviderTests
     }
 
     [Fact]
-    public void AllCards_CarryTheHomeEditionRestriction()
+    public void PolicyCards_RequirePro_UxCards_HaveNoSkuRestriction()
     {
         var registry = new FakeRegistryService();
         registry.SetString(WindowsUpdateRegistryPaths.CurrentVersionKeyPath, "DisplayVersion", "24H2");
         var reader = new WindowsUpdateSettingsReader(registry);
         var cards = new WindowsUpdateCardProvider(reader).BuildCards(reader.ReadAll());
 
-        Assert.All(cards, c => Assert.Equal(Core.Modules.WindowsSku.Pro, c.Model.SkuRestriction));
+        foreach (var card in cards)
+        {
+            if (card.Model.GroupId == "Update Experience")
+                Assert.Null(card.Model.SkuRestriction);
+            else
+                Assert.Equal(Core.Modules.WindowsSku.Pro, card.Model.SkuRestriction);
+        }
     }
 
     [Fact]

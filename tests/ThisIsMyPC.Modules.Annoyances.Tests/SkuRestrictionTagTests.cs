@@ -58,7 +58,8 @@ public class SkuRestrictionTagTests
         // bing-search/edge stay untagged deliberately (field evidence says the HKCU
         // writes are honored on Home); HKCU prefs are edition-independent.
         foreach (var pref in Reader().ReadAll().Where(
-            p => p.Id is not "activity-history" and not "spotlight-collection-desktop"))
+            p => p.Id is not "activity-history" and not "spotlight-collection-desktop"
+                and not "consumer-features"))
         {
             var change = AnnoyanceChangeFactory.CreateToggle(pref, suppress: true);
             Assert.Null(change.Enforcement?.SkuRestriction);
@@ -76,6 +77,10 @@ public class SkuRestrictionTagTests
             AnnoyanceChangeFactory.CreateToggle(pref, suppress: true).Enforcement?.SkuRestriction);
         Assert.Null(
             AnnoyanceChangeFactory.CreateToggle(pref, suppress: false).Enforcement);
+
+        var consumer = Reader().ReadAll().Single(p => p.Id == "consumer-features");
+        Assert.Equal(WindowsSku.Education,
+            AnnoyanceChangeFactory.CreateToggle(consumer, suppress: true).Enforcement?.SkuRestriction);
     }
 
     [Fact]
@@ -90,7 +95,8 @@ public class SkuRestrictionTagTests
             reader.ReadCopilotPolicy(),
             reader.ReadRecall(),
             reader.ReadLockScreenAds(),
-            reader.ReadPreinstalledApps()));
+            reader.ReadPreinstalledApps(),
+            reader.ReadEdgeDebloat()));
 
         var copilot = cards.Single(c => c.Model.SettingId == "copilot");
         var recall = cards.Single(c => c.Model.SettingId == "recall");

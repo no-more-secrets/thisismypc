@@ -38,6 +38,8 @@ public sealed class AnnoyancesSetEntryInspector : ISetEntryInspector
                 return InspectGroup("Lock screen tips and ads", _reader.ReadLockScreenAds(), entry);
             case "preinstalled-apps":
                 return InspectGroup("OEM and preinstalled app promotions", _reader.ReadPreinstalledApps(), entry);
+            case "edge-debloat":
+                return InspectGroup("Edge shopping, Rewards, and personalization", _reader.ReadEdgeDebloat(), entry);
             case "bing-search":
                 return InspectBingSearch(entry);
         }
@@ -130,6 +132,18 @@ public sealed class AnnoyancesSetEntryInspector : ISetEntryInspector
                         settingId: "preinstalled-apps",
                         displayName: "OEM and preinstalled app promotions",
                         description: "Stops promotions for OEM and preinstalled apps and the related feature tips.",
+                        suppress)
+                    : null;
+            }
+            case "edge-debloat":
+            {
+                var prefs = _reader.ReadEdgeDebloat();
+                return Direction(entry, prefs[0]) is { } suppress
+                    ? AnnoyanceChangeFactory.CreateGroupToggle(
+                        prefs,
+                        settingId: "edge-debloat",
+                        displayName: "Edge shopping, Rewards, and personalization",
+                        description: "Turns off the shopping assistant, Microsoft Rewards, and personalization reporting in Edge.",
                         suppress)
                     : null;
             }

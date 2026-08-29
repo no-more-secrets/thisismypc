@@ -48,6 +48,10 @@ public sealed class AnnoyancesSearchContributor : ISearchSettingsContributor
             ModuleId, "preinstalled-apps", "Suppress OEM and preinstalled app promotions",
             "Stops OEM app promotions and feature suggestion tips.",
             ["OemPreInstalledAppsEnabled", "PreInstalledAppsEnabled", "SoftLandingEnabled", "bloatware"]));
+        entries.Add(new SearchEntry(
+            ModuleId, "edge-debloat", "Debloat Microsoft Edge",
+            "Turns off the shopping assistant, Microsoft Rewards, and personalization reporting.",
+            ["EdgeShoppingAssistantEnabled", "ShowMicrosoftRewards", "PersonalizationReportingEnabled", "edge"]));
 
         return entries;
     }

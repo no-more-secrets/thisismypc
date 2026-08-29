@@ -21,9 +21,9 @@ public sealed class AnnoyancesCardProviderTests
     {
         var cards = await BuildAsync();
 
-        // 19 preference singles + Bing, suggested-content, Copilot policy, Recall,
-        // lock-screen-ads, and preinstalled-apps groups.
-        Assert.Equal(25, cards.Count);
+        // 23 preference singles + Bing, suggested-content, Copilot policy, Recall,
+        // lock-screen-ads, preinstalled-apps, and edge-debloat groups.
+        Assert.Equal(30, cards.Count);
         Assert.All(cards, c => Assert.Equal(SettingControlType.Toggle, c.Model.ControlType));
         Assert.All(cards, c => Assert.Equal("Windows Annoyances", c.Model.ModuleId));
         Assert.Equal(cards.Count, cards.Select(c => c.Model.SettingId).Distinct().Count());
@@ -33,6 +33,7 @@ public sealed class AnnoyancesCardProviderTests
         Assert.Contains(cards, c => c.Model.SettingId == "recall");
         Assert.Contains(cards, c => c.Model.SettingId == "lock-screen-ads");
         Assert.Contains(cards, c => c.Model.SettingId == "preinstalled-apps");
+        Assert.Contains(cards, c => c.Model.SettingId == "edge-debloat");
     }
 
     [Fact]

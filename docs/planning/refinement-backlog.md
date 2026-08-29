@@ -62,34 +62,26 @@ Deferred remainder (needs a non-toggle control or riskier writes):
 - Folder-type auto-discovery off (shell bags `FolderType=NotSpecified`) —
   destructive Bags/BagMRU reset, one-shot action not a toggle
 
-## 2. Windows Annoyances module (21 → ~28 cards)
+## 2. Windows Annoyances module — DONE 2026-08-29 (→ 30 cards)
 
-- §0 migration: the 7 orphaned notification entries land here.
-- Consumer features master switch (winutil/Sophia:
-  `HKLM Policies CloudContent\DisableWindowsConsumerFeatures`) — complements the
-  per-CDM toggles; note enforcement/SKU implications (policy key).
-- Tailored experiences (Sophia: `Privacy\TailoredExperiencesWithDiagnosticDataEnabled`)
-- Feedback frequency (Sophia: `Siuf\Rules\NumberOfSIUFInPeriod`)
-- Website language-list access (Sophia: `Control Panel\International\User Profile\HttpAcceptLanguageOptOut`)
-- Xbox Game Bar off + Game Bar tips (Sophia: `GameDVR\AppCaptureEnabled` exists;
-  add `GameBar\ShowStartupPanel`, `UseNexusForGameBarEnabled`)
-- Edge debloat card group (winutil's Edge policy set — pick the safe subset:
-  shopping assistant, sidebar app rotation, rewards, personalization; we already
-  have `edge-sidebar` + `edge-shortcuts`)
-- Widgets: we hide the button; winutil removes the AppX packages — defer removal
-  to the install/uninstall engine, keep as note.
+Shipped: consumer-features master policy (Education/Enterprise tag),
+tailored-experiences, language-list-access, xbox-game-tips, and the edge-debloat
+atomic trio (shopping assistant + Rewards + personalization reporting).
 
-## 3. Windows Update module (5 → ~9 cards)
+Deferred remainder:
+- Feedback frequency (`Siuf\Rules\NumberOfSIUFInPeriod`): restore direction needs
+  delete-the-value, which the Annoyances apply path does not do yet
+- Game Bar `UseNexusForGameBarEnabled` (Xbox button binding): needs care, some
+  controllers rely on it
+- Widgets AppX removal → install/uninstall engine
 
-All WU policy territory we already enforce (GPCache clear pattern exists):
-- Restart notifications (Sophia: `WU\SetUpdateNotificationLevel` /
-  `RestartNotificationsAllowed2`)
-- Active hours automatic/manual (Sophia: `WU\AU\SmartActiveHoursState`)
-- Get latest updates as soon as available toggle (Sophia:
-  `WU\...\IsContinuousInnovationOptedIn`)
-- Include updates for other Microsoft products (Sophia: Update service opt-in —
-  needs COM (`Microsoft Update` service registration) rather than registry; flag
-  for design)
+## 3. Windows Update module — DONE 2026-08-29 (5 → 8 cards)
+
+Shipped as the "Update Experience" group (UX\Settings state values, no GPCache,
+no SKU tag): restart-notifications, active-hours-manual, continuous-innovation.
+
+Deferred: include updates for other Microsoft products (needs the Microsoft
+Update COM service registration, not a registry write).
 
 ## 4. Power Plans module
 

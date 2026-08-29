@@ -97,7 +97,41 @@ public sealed class WindowsUpdateSettingsReader
         ];
     }
 
-    public WindowsUpdateScanData ReadAll() => new(ReadSingles(), ReadVersionPin());
+    /// <summary>
+    /// The Settings-page state toggles (UX\Settings, not the policy hive): what the
+    /// Windows Update settings page itself writes. No GPCache, no SKU restriction.
+    /// </summary>
+    public IReadOnlyList<UpdatePolicySetting> ReadUxSettings()
+    {
+        return
+        [
+            ReadSetting(
+                id: "restart-notifications",
+                displayName: "Notify when a restart is required",
+                description: "Shows a notification when Windows needs to restart to finish updating.",
+                keyPath: WindowsUpdateRegistryPaths.UxSettingsKeyPath,
+                valueName: "RestartNotificationsAllowed2",
+                configuredValue: "1"),
+
+            ReadSetting(
+                id: "active-hours-manual",
+                displayName: "Set active hours manually",
+                description: "Stops Windows from adjusting active hours based on usage. Set the hours in Windows Settings.",
+                keyPath: WindowsUpdateRegistryPaths.UxSettingsKeyPath,
+                valueName: "SmartActiveHoursState",
+                configuredValue: "2"),
+
+            ReadSetting(
+                id: "continuous-innovation",
+                displayName: "Wait for broad rollout of new features",
+                description: "Opts out of receiving the latest feature updates as soon as they are available.",
+                keyPath: WindowsUpdateRegistryPaths.UxSettingsKeyPath,
+                valueName: "IsContinuousInnovationOptedIn",
+                configuredValue: "0"),
+        ];
+    }
+
+    public WindowsUpdateScanData ReadAll() => new(ReadSingles(), ReadVersionPin(), ReadUxSettings());
 
     /// <summary>
     /// The live feature release, e.g. "24H2". Never derived from ProductName — it

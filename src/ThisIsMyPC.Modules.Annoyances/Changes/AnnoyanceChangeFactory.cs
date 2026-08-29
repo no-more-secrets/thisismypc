@@ -48,6 +48,7 @@ public static class AnnoyanceChangeFactory
         {
             ["activity-history"] = ProPolicyEnforcement,
             ["spotlight-collection-desktop"] = EducationPolicyEnforcement,
+            ["consumer-features"] = EducationPolicyEnforcement,
         };
 
     /// <summary>
