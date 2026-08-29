@@ -19,11 +19,12 @@ public sealed class ExplorerSettingsReaderTests
     }
 
     [Fact]
-    public void ReadAll_returns_all_nine_preferences()
+    public void ReadAll_returns_the_full_catalog()
     {
         SetDefaults();
         var prefs = _sut.ReadAll();
-        Assert.Equal(9, prefs.Count);
+        Assert.Equal(22, prefs.Count);
+        Assert.Equal(prefs.Count, prefs.Select(p => p.Id).Distinct().Count());
     }
 
     [Fact]
@@ -178,6 +179,90 @@ public sealed class ExplorerSettingsReaderTests
 
         Assert.False(pref.IsEnabled);
         Assert.Equal("0", pref.CurrentValue);
+    }
+
+    // --- Sophia/winutil-derived catalog additions (refinement backlog §1) ---
+
+    [Fact]
+    public void ItemCheckboxes_enabled_when_AutoCheckSelect_is_1()
+    {
+        _registry.SetDWord(AdvancedKeyPath, "AutoCheckSelect", 1);
+        var pref = _sut.ReadAll().First(p => p.Id == "item-checkboxes");
+
+        Assert.True(pref.IsEnabled);
+        Assert.Equal(RestartRequirement.ExplorerRefresh, pref.RestartRequirement);
+    }
+
+    [Fact]
+    public void QuickAccess_toggles_default_to_enabled_and_target_the_explorer_key()
+    {
+        var prefs = _sut.ReadAll();
+        var recent = prefs.First(p => p.Id == "quick-access-recent-files");
+        var frequent = prefs.First(p => p.Id == "quick-access-frequent-folders");
+
+        Assert.True(recent.IsEnabled);
+        Assert.True(frequent.IsEnabled);
+        Assert.Equal(ExplorerKeyPath, recent.RegistryKeyPath);
+        Assert.Equal("ShowRecent", recent.RegistryValueName);
+        Assert.Equal("ShowFrequent", frequent.RegistryValueName);
+    }
+
+    [Fact]
+    public void TransferDialogDetails_targets_OperationStatusManager_subkey()
+    {
+        var pref = _sut.ReadAll().First(p => p.Id == "transfer-dialog-details");
+
+        Assert.Equal(ExplorerKeyPath + @"\OperationStatusManager", pref.RegistryKeyPath);
+        Assert.Equal("EnthusiastMode", pref.RegistryValueName);
+        Assert.False(pref.IsEnabled);
+    }
+
+    [Fact]
+    public void MergeConflicts_uses_inverted_polarity_of_HideMergeConflicts()
+    {
+        // "Show folder merge conflicts" is on when the Hide value is 0
+        _registry.SetDWord(AdvancedKeyPath, "HideMergeConflicts", 0);
+        var pref = _sut.ReadAll().First(p => p.Id == "merge-conflicts");
+
+        Assert.True(pref.IsEnabled);
+        Assert.Equal("0", pref.EnabledValue);
+        Assert.Equal("1", pref.DisabledValue);
+    }
+
+    [Fact]
+    public void TaskbarEndTask_targets_TaskbarDeveloperSettings_subkey_and_defaults_off()
+    {
+        var pref = _sut.ReadAll().First(p => p.Id == "taskbar-end-task");
+
+        Assert.Equal(AdvancedKeyPath + @"\TaskbarDeveloperSettings", pref.RegistryKeyPath);
+        Assert.Equal("TaskbarEndTask", pref.RegistryValueName);
+        Assert.False(pref.IsEnabled);
+    }
+
+    [Fact]
+    public void AeroShake_uses_inverted_polarity_of_DisallowShaking()
+    {
+        // "Enable title bar window shake" is on when DisallowShaking is 0;
+        // absent value = Windows 11 default = shake off.
+        var offByDefault = _sut.ReadAll().First(p => p.Id == "aero-shake");
+        Assert.False(offByDefault.IsEnabled);
+
+        _registry.SetDWord(AdvancedKeyPath, "DisallowShaking", 0);
+        var enabled = _sut.ReadAll().First(p => p.Id == "aero-shake");
+        Assert.True(enabled.IsEnabled);
+    }
+
+    [Fact]
+    public void StartMenu_toggles_default_to_the_windows_defaults()
+    {
+        var prefs = _sut.ReadAll();
+
+        Assert.True(prefs.First(p => p.Id == "start-recommendations").IsEnabled);
+        Assert.True(prefs.First(p => p.Id == "start-account-notifications").IsEnabled);
+        Assert.True(prefs.First(p => p.Id == "snap-assist").IsEnabled);
+        Assert.True(prefs.First(p => p.Id == "task-view-button").IsEnabled);
+        Assert.False(prefs.First(p => p.Id == "seconds-in-clock").IsEnabled);
+        Assert.False(prefs.First(p => p.Id == "restore-folder-windows").IsEnabled);
     }
 
     private void SetDefaults()

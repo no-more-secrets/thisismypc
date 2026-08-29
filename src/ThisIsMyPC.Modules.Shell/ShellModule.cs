@@ -13,14 +13,12 @@ public sealed class ShellModule : IModule
     private readonly IRegistryService _registryService;
     private readonly ExplorerSettingsReader _explorerSettingsReader;
     private readonly TaskbarSettingsReader _taskbarSettingsReader;
-    private readonly NotificationSettingsReader _notificationSettingsReader;
 
     public ShellModule(IRegistryService registryService)
     {
         _registryService = registryService;
         _explorerSettingsReader = new ExplorerSettingsReader(registryService);
         _taskbarSettingsReader = new TaskbarSettingsReader(registryService);
-        _notificationSettingsReader = new NotificationSettingsReader(registryService);
     }
 
     public ModuleInfo Info { get; } = new(
@@ -44,12 +42,10 @@ public sealed class ShellModule : IModule
             {
                 var explorerPreferences = _explorerSettingsReader.ReadAll();
                 var taskbar = _taskbarSettingsReader.Read();
-                var notificationSettings = _notificationSettingsReader.ReadAll();
 
                 var scanData = new ShellScanData(
                     ExplorerPreferences: explorerPreferences,
-                    Taskbar: taskbar,
-                    NotificationSettings: notificationSettings);
+                    Taskbar: taskbar);
 
                 return OperationResult<object>.Success(scanData);
             }

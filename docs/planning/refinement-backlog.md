@@ -10,46 +10,35 @@ Current coverage baseline: ~40 fixed toggles (Explorer 13, Annoyances 21 cards,
 Windows Update 5, Power 1) + 5 built-in sets (59 entries) + the enumerative modules
 (Context Menus, Environment, Startup & Services, Power grid).
 
-## 0. Housekeeping (do first)
+## 0. Housekeeping — DONE 2026-08-29
 
-- **Dead code**: `NotificationSettingsReader` (Modules.Shell) builds a 16-entry
-  catalog no view consumes — superseded by Annoyances. Seven of its entries are NOT
-  covered by Annoyances and should migrate there as cards before the reader is
-  deleted: `lock-screen-tips` (SubscribedContent-338387), `lock-screen-images`
-  (RotatingLockScreenEnabled), `oem-preinstalled` (OemPreInstalledAppsEnabled),
-  `preinstalled-apps` (PreInstalledAppsEnabled), `soft-landing-tips`
-  (SoftLandingEnabled), `spotlight-collection-desktop`
-  (Policies CloudContent\DisableSpotlightCollectionOnDesktop), `dynamic-search-box`
-  (SearchSettings\IsDynamicSearchBoxEnabled).
+- `NotificationSettingsReader` deleted; its unique coverage migrated to Annoyances:
+  `lock-screen-ads` upgraded to an atomic pair (overlay + SubscribedContent-338387,
+  matching the Settings checkbox), new `lock-screen-images` single, new
+  `preinstalled-apps` atomic trio (OEM/PreInstalled/SoftLanding, added to Privacy
+  Baseline), new `dynamic-search-box` single (drift-fragile).
+- `spotlight-collection-desktop` deliberately dropped: the CloudContent policy is
+  Enterprise/Education-only per the Policy CSP — a placebo on Home/Pro.
 
-## 1. Explorer module (13 → ~28 toggles)
+## 1. Explorer module — DONE 2026-08-29 (13 → 26 toggles)
 
-All plain HKCU registry toggles, same pattern as the existing catalog.
+Shipped: item checkboxes, Quick Access recent/frequent, transfer dialog detailed
+mode, merge conflicts, restore folder windows, seconds in clock, Task View button,
+End Task (TaskbarDeveloperSettings), Start recommendations, Start account
+notifications, Snap Assist, Aero Shake. Search entries now derive from the reader.
 
-Explorer preferences (source: Sophia unless noted):
-- Item checkboxes (`ADV\AutoCheckSelect`)
-- Recycle Bin delete confirmation (`EXPL\...ConfirmFileDelete` / SHELLSTATE)
-- Quick Access: recent files, frequent folders (`EXPL\ShowRecent`, `ShowFrequent`)
-- File transfer dialog detailed mode (`...OperationStatusManager\EnthusiastMode`)
-- Folder merge conflict details (`ADV\HideMergeConflicts`)
-- Restore previous folder windows at logon (`ADV\PersistBrowsers`)
-- Explorer Home and Gallery pinning (winutil: `System.IsPinnedToNameSpaceTree`)
-- "- Shortcut" suffix on new shortcuts (`Explorer\link` NamingTemplates)
-- Folder-type auto-discovery off (winutil: shell bags `FolderType=NotSpecified`) —
-  needs care: touches Bags/BagMRU, decide whether one-shot action or toggle
-
-Taskbar / Start (source: Sophia + winutil):
-- Seconds in system clock (`ADV\ShowSecondsInSystemClock`)
-- Taskbar search mode: hidden/icon/box (`Search\SearchboxTaskbarMode`)
-- Task View button (`ADV\ShowTaskViewButton`)
-- Taskbar button combining (`ADV\TaskbarGlomLevel`)
-- End Task on taskbar right-click (`ADV\TaskbarEndTask`)
-- Search highlights (`SearchSettings\IsDynamicSearchBoxEnabled` — see §0 migration)
-- Start: hide Recommended section (`ADV\Start_IrisRecommendations` /
-  `Explorer\HideRecommendedSection` policy)
-- Start: account notifications (`ADV\Start_AccountNotifications`)
-- Snap assist / window snapping options (`ADV\SnapAssist`, `WindowArrangementActive`)
-- Aero shake (`ADV\DisallowShaking`)
+Deferred remainder (needs a non-toggle control or riskier writes):
+- Taskbar search mode hidden/icon/box (`Search\SearchboxTaskbarMode`) and taskbar
+  button combining (`ADV\TaskbarGlomLevel`) — multi-state; wait for a choice
+  control in the Explorer view (or card ControlType) in the UI/UX chapter
+- Recycle Bin delete confirmation — SHELLSTATE binary blob bit, not a value write
+- "- Shortcut" suffix (`EXPL\NamingTemplates\ShortcutNameTemplate`, REG_SZ) —
+  reader is DWORD-only today
+- Explorer Home and Gallery pinning (winutil: `System.IsPinnedToNameSpaceTree`
+  on two HKCU Classes CLSIDs) — key-presence style write, model like the classic
+  context menu toggles
+- Folder-type auto-discovery off (shell bags `FolderType=NotSpecified`) —
+  destructive Bags/BagMRU reset, one-shot action not a toggle
 
 ## 2. Windows Annoyances module (21 → ~28 cards)
 

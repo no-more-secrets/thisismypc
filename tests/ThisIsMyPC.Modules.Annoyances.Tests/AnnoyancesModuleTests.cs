@@ -32,11 +32,13 @@ public sealed class AnnoyancesModuleTests
 
         Assert.True(result.IsSuccess, result.ErrorMessage);
         var scanData = Assert.IsType<AnnoyancesScanData>(result.Value);
-        Assert.Equal(17, scanData.Preferences.Count);
+        Assert.Equal(18, scanData.Preferences.Count);
         Assert.False(scanData.BingSearch.IsSuppressed);
         Assert.Equal(3, scanData.SettingsSuggestedContent.Count);
         Assert.Equal(2, scanData.CopilotPolicy.Count);
         Assert.Equal(3, scanData.Recall.Count);
+        Assert.Equal(2, scanData.LockScreenAds.Count);
+        Assert.Equal(3, scanData.PreinstalledApps.Count);
     }
 
     [Fact]

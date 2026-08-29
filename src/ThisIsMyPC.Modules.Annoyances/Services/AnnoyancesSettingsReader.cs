@@ -55,11 +55,11 @@ public sealed class AnnoyancesSettingsReader
                 valueName: "SystemPaneSuggestionsEnabled"),
 
             ReadPreference(
-                id: "lock-screen-ads",
-                displayName: "Suppress lock screen tips and ads",
-                description: "Stops \"fun facts, tips, and tricks\" overlays on the lock screen when Windows Spotlight is active. The Spotlight wallpaper itself keeps working.",
+                id: "lock-screen-images",
+                displayName: "Turn off Windows Spotlight lock screen images",
+                description: "Stops the rotating Windows Spotlight wallpapers on the lock screen entirely. Use \"Suppress lock screen tips and ads\" instead if you want to keep the pictures and lose only the overlays.",
                 keyPath: cdm,
-                valueName: "RotatingLockScreenOverlayEnabled"),
+                valueName: "RotatingLockScreenEnabled"),
 
             ReadPreference(
                 id: "silent-app-installs",
@@ -69,6 +69,14 @@ public sealed class AnnoyancesSettingsReader
                 valueName: "SilentInstalledAppsEnabled"),
 
             ReadEdgeShortcutPreference(),
+
+            ReadPreference(
+                id: "dynamic-search-box",
+                displayName: "Suppress search highlights in the search box",
+                description: "Stops the rotating doodles, trends, and promoted content Windows injects into the taskbar search box (\"search highlights\"). Plain search keeps working.",
+                keyPath: AnnoyancesRegistryPaths.SearchSettingsKeyPath,
+                valueName: "IsDynamicSearchBoxEnabled",
+                section: AnnoyanceSection.BingAndEdge),
 
             ReadPreference(
                 id: "advertising-id",
@@ -261,6 +269,63 @@ public sealed class AnnoyancesSettingsReader
                 keyPath: cdm,
                 valueName: "SubscribedContent-353696Enabled",
                 section: AnnoyanceSection.AdvertisingAndTracking),
+        ];
+    }
+
+    /// <summary>
+    /// The two ContentDeliveryManager values behind the lock screen "fun facts, tips,
+    /// tricks and more" checkbox (the Settings toggle writes both). Surfaced as ONE
+    /// toggle (a single atomic group), so not in ReadAll. Spotlight wallpapers keep
+    /// working; only the overlays go.
+    /// </summary>
+    public IReadOnlyList<AnnoyancePreference> ReadLockScreenAds()
+    {
+        var cdm = AnnoyancesRegistryPaths.ContentDeliveryManagerKeyPath;
+        return
+        [
+            ReadPreference(
+                id: "lock-screen-ads",
+                displayName: "Lock screen overlay (RotatingLockScreenOverlay)",
+                description: "Rotating spotlight overlay entry.",
+                keyPath: cdm,
+                valueName: "RotatingLockScreenOverlayEnabled"),
+            ReadPreference(
+                id: "lock-screen-ads",
+                displayName: "Lock screen fun facts and tips (338387)",
+                description: "Subscribed content entry (SubscribedContent-338387).",
+                keyPath: cdm,
+                valueName: "SubscribedContent-338387Enabled"),
+        ];
+    }
+
+    /// <summary>
+    /// The three ContentDeliveryManager values behind OEM/preinstalled app promotions
+    /// and "soft landing" feature tips. Debloat tools (Sophia, winutil, Melody) set them
+    /// as one unit. Surfaced as ONE toggle (a single atomic group), so not in ReadAll.
+    /// </summary>
+    public IReadOnlyList<AnnoyancePreference> ReadPreinstalledApps()
+    {
+        var cdm = AnnoyancesRegistryPaths.ContentDeliveryManagerKeyPath;
+        return
+        [
+            ReadPreference(
+                id: "preinstalled-apps",
+                displayName: "OEM preinstalled app suggestions",
+                description: "OemPreInstalledAppsEnabled entry.",
+                keyPath: cdm,
+                valueName: "OemPreInstalledAppsEnabled"),
+            ReadPreference(
+                id: "preinstalled-apps",
+                displayName: "Preinstalled app suggestions",
+                description: "PreInstalledAppsEnabled entry.",
+                keyPath: cdm,
+                valueName: "PreInstalledAppsEnabled"),
+            ReadPreference(
+                id: "preinstalled-apps",
+                displayName: "Feature suggestion tips",
+                description: "SoftLandingEnabled entry.",
+                keyPath: cdm,
+                valueName: "SoftLandingEnabled"),
         ];
     }
 

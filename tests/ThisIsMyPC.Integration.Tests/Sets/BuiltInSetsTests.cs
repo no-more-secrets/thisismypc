@@ -59,6 +59,14 @@ public sealed class BuiltInSetsTests
             reader.ReadSettingsSuggestedContent(), "settings-suggested-content", "Suggested", "d", suppress: true);
         desired[(suggested.Changes[0].ModuleId, suggested.Changes[0].SettingId)] = suggested.Changes[0].AfterValue!;
 
+        var lockScreen = AnnoyanceChangeFactory.CreateGroupToggle(
+            reader.ReadLockScreenAds(), "lock-screen-ads", "Lock screen", "d", suppress: true);
+        desired[(lockScreen.Changes[0].ModuleId, lockScreen.Changes[0].SettingId)] = lockScreen.Changes[0].AfterValue!;
+
+        var preinstalled = AnnoyanceChangeFactory.CreateGroupToggle(
+            reader.ReadPreinstalledApps(), "preinstalled-apps", "Preinstalled", "d", suppress: true);
+        desired[(preinstalled.Changes[0].ModuleId, preinstalled.Changes[0].SettingId)] = preinstalled.Changes[0].AfterValue!;
+
         var bing = AnnoyanceChangeFactory.CreateBingSearchToggle(reader.ReadBingSearch(), suppress: true);
         desired[(bing.Changes[0].ModuleId, bing.Changes[0].SettingId)] = bing.Changes[0].AfterValue!;
 

@@ -57,6 +57,46 @@ public sealed class AnnoyancesSetEntryInspectorTests
     }
 
     [Fact]
+    public void LockScreenAdsGroup_InspectsAndStagesBothCdmValues()
+    {
+        // Not a ReadAll single anymore — the switch case must route it to the group
+        // reader, else the Privacy Baseline entry silently dies.
+        var state = Inspector.Inspect(Entry("lock-screen-ads", "0"));
+        Assert.NotNull(state);
+        Assert.Equal("Lock screen tips and ads", state!.SettingDisplayName);
+        Assert.False(state.IsApplied);
+
+        var group = Inspector.CreateChangeGroup(Entry("lock-screen-ads", "0"));
+        Assert.NotNull(group);
+        Assert.Equal(2, group!.Changes.Count);
+        Assert.All(group.Changes, c => Assert.Equal("lock-screen-ads", c.SettingId));
+        Assert.All(group.Changes, c => Assert.Equal("0", c.AfterValue));
+        Assert.Equal(
+            ["RotatingLockScreenOverlayEnabled", "SubscribedContent-338387Enabled"],
+            group.Changes.Select(c => c.SystemLocation[(c.SystemLocation.LastIndexOf('\\') + 1)..]));
+    }
+
+    [Fact]
+    public void PreinstalledAppsGroup_InspectsAndStagesAllThreeCdmValues()
+    {
+        var state = Inspector.Inspect(Entry("preinstalled-apps", "0"));
+        Assert.NotNull(state);
+        Assert.Equal("OEM and preinstalled app promotions", state!.SettingDisplayName);
+        Assert.False(state.IsApplied);
+
+        _registry.SetDWord(AnnoyancesRegistryPaths.ContentDeliveryManagerKeyPath, "OemPreInstalledAppsEnabled", 0);
+        var partial = Inspector.Inspect(Entry("preinstalled-apps", "0"));
+        Assert.Equal("Partially set", partial!.CurrentDisplay);
+        Assert.False(partial.IsApplied);
+
+        var group = Inspector.CreateChangeGroup(Entry("preinstalled-apps", "0"));
+        Assert.NotNull(group);
+        Assert.Equal(3, group!.Changes.Count);
+        Assert.All(group.Changes, c => Assert.Equal("preinstalled-apps", c.SettingId));
+        Assert.All(group.Changes, c => Assert.Equal("0", c.AfterValue));
+    }
+
+    [Fact]
     public void CopilotGroup_DefaultState_WindowsDefault_NotApplied()
     {
         var state = Inspector.Inspect(Entry("copilot", "1"));

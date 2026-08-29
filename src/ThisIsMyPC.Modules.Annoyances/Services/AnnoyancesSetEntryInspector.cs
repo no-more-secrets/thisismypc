@@ -34,6 +34,10 @@ public sealed class AnnoyancesSetEntryInspector : ISetEntryInspector
                 return InspectGroup("Windows Recall and AI data analysis", _reader.ReadRecall(), entry);
             case "settings-suggested-content":
                 return InspectGroup("Suggested content in Settings", _reader.ReadSettingsSuggestedContent(), entry);
+            case "lock-screen-ads":
+                return InspectGroup("Lock screen tips and ads", _reader.ReadLockScreenAds(), entry);
+            case "preinstalled-apps":
+                return InspectGroup("OEM and preinstalled app promotions", _reader.ReadPreinstalledApps(), entry);
             case "bing-search":
                 return InspectBingSearch(entry);
         }
@@ -102,6 +106,30 @@ public sealed class AnnoyancesSetEntryInspector : ISetEntryInspector
                         settingId: "settings-suggested-content",
                         displayName: "Suggested content in Settings",
                         description: "The ad-like suggested content tiles in the Settings app (three ContentDeliveryManager values set together).",
+                        suppress)
+                    : null;
+            }
+            case "lock-screen-ads":
+            {
+                var prefs = _reader.ReadLockScreenAds();
+                return Direction(entry, prefs[0]) is { } suppress
+                    ? AnnoyanceChangeFactory.CreateGroupToggle(
+                        prefs,
+                        settingId: "lock-screen-ads",
+                        displayName: "Lock screen tips and ads",
+                        description: "The \"fun facts, tips, and tricks\" lock screen overlays (two ContentDeliveryManager values set together).",
+                        suppress)
+                    : null;
+            }
+            case "preinstalled-apps":
+            {
+                var prefs = _reader.ReadPreinstalledApps();
+                return Direction(entry, prefs[0]) is { } suppress
+                    ? AnnoyanceChangeFactory.CreateGroupToggle(
+                        prefs,
+                        settingId: "preinstalled-apps",
+                        displayName: "OEM and preinstalled app promotions",
+                        description: "OEM app promotions and feature suggestion tips (three ContentDeliveryManager values set together).",
                         suppress)
                     : null;
             }

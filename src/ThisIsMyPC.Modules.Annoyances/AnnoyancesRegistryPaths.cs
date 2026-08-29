@@ -11,6 +11,9 @@ public static class AnnoyancesRegistryPaths
     public const string SearchKeyPath =
         @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search";
 
+    public const string SearchSettingsKeyPath =
+        @"HKCU\Software\Microsoft\Windows\CurrentVersion\SearchSettings";
+
     public const string ExplorerPoliciesKeyPath =
         @"HKCU\Software\Policies\Microsoft\Windows\Explorer";
 

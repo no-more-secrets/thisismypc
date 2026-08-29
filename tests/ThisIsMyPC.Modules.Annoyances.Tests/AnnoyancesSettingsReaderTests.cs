@@ -20,13 +20,14 @@ public sealed class AnnoyancesSettingsReaderTests
 
         Assert.Equal(
             ["scoobe-nags", "welcome-experience", "app-suggestions", "windows-tips",
-             "settings-suggestions", "lock-screen-ads", "silent-app-installs", "edge-shortcuts",
-             "advertising-id", "activity-history",
+             "settings-suggestions", "lock-screen-images", "silent-app-installs", "edge-shortcuts",
+             "dynamic-search-box", "advertising-id", "activity-history",
              "game-dvr", "auto-game-mode", "hags", "sticky-keys-shortcut", "filter-keys-shortcut",
              "copilot-button", "edge-sidebar"],
             prefs.Select(p => p.Id));
         Assert.Equal(7, prefs.Count(p => p.Section == AnnoyanceSection.ScoobeAndWelcome));
         Assert.Equal(AnnoyanceSection.BingAndEdge, prefs.Single(p => p.Id == "edge-shortcuts").Section);
+        Assert.Equal(AnnoyanceSection.BingAndEdge, prefs.Single(p => p.Id == "dynamic-search-box").Section);
         // The original suppression prefs keep the simple shape: DWORD 0/1, no restart
         Assert.All(
             prefs.Where(p => p.Section is AnnoyanceSection.ScoobeAndWelcome or AnnoyanceSection.BingAndEdge),
@@ -59,6 +60,38 @@ public sealed class AnnoyancesSettingsReaderTests
 
         Assert.Equal("0", scoobe.CurrentValue);
         Assert.True(scoobe.IsSuppressed);
+    }
+
+    [Fact]
+    public void LockScreenAds_IsAnAtomicPairOfCdmValues()
+    {
+        var prefs = new AnnoyancesSettingsReader(_registry).ReadLockScreenAds();
+
+        Assert.Equal(
+            ["RotatingLockScreenOverlayEnabled", "SubscribedContent-338387Enabled"],
+            prefs.Select(p => p.RegistryValueName));
+        Assert.All(prefs, p =>
+        {
+            Assert.Equal("lock-screen-ads", p.Id);
+            Assert.Equal(AnnoyancesRegistryPaths.ContentDeliveryManagerKeyPath, p.RegistryKeyPath);
+            Assert.Equal("0", p.SuppressedValue);
+        });
+    }
+
+    [Fact]
+    public void PreinstalledApps_IsAnAtomicTrioOfCdmValues()
+    {
+        var prefs = new AnnoyancesSettingsReader(_registry).ReadPreinstalledApps();
+
+        Assert.Equal(
+            ["OemPreInstalledAppsEnabled", "PreInstalledAppsEnabled", "SoftLandingEnabled"],
+            prefs.Select(p => p.RegistryValueName));
+        Assert.All(prefs, p =>
+        {
+            Assert.Equal("preinstalled-apps", p.Id);
+            Assert.Equal(AnnoyancesRegistryPaths.ContentDeliveryManagerKeyPath, p.RegistryKeyPath);
+            Assert.Equal("0", p.SuppressedValue);
+        });
     }
 
     [Fact]

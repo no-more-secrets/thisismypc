@@ -40,6 +40,14 @@ public sealed class AnnoyancesSearchContributor : ISearchSettingsContributor
             ModuleId, "settings-suggested-content", "Suppress suggested content in Settings",
             "Removes ad-like suggestion tiles from the Settings app.",
             ["ContentDeliveryManager", "SubscribedContent", "ads"]));
+        entries.Add(new SearchEntry(
+            ModuleId, "lock-screen-ads", "Suppress lock screen tips and ads",
+            "Removes fun facts and tips overlays; Spotlight wallpapers keep working.",
+            ["RotatingLockScreenOverlayEnabled", "SubscribedContent-338387Enabled", "lock screen", "spotlight"]));
+        entries.Add(new SearchEntry(
+            ModuleId, "preinstalled-apps", "Suppress OEM and preinstalled app promotions",
+            "Stops OEM app promotions and feature suggestion tips.",
+            ["OemPreInstalledAppsEnabled", "PreInstalledAppsEnabled", "SoftLandingEnabled", "bloatware"]));
 
         return entries;
     }

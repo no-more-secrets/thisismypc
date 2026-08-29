@@ -5,4 +5,6 @@ public sealed record AnnoyancesScanData(
     BingSearchState BingSearch,
     IReadOnlyList<AnnoyancePreference> SettingsSuggestedContent,
     IReadOnlyList<AnnoyancePreference> CopilotPolicy,
-    IReadOnlyList<AnnoyancePreference> Recall);
+    IReadOnlyList<AnnoyancePreference> Recall,
+    IReadOnlyList<AnnoyancePreference> LockScreenAds,
+    IReadOnlyList<AnnoyancePreference> PreinstalledApps);

@@ -1,30 +1,46 @@
 using ThisIsMyPC.Core.Search;
+using ThisIsMyPC.Core.Services;
 
 namespace ThisIsMyPC.Modules.Shell.Services;
 
-// Curated static search inventories for the custom-view Shell-family modules (5-3).
-// Card modules generate entries from their readers; these tabs predate the card system,
-// so their headline controls are listed by hand.
+// Search inventories for the custom-view Shell-family modules (5-3). Explorer
+// preferences are derived from the live reader (like the card modules); the taskbar /
+// classic-shell toggles predate the reader catalog, so they stay listed by hand.
 
 public sealed class ExplorerSearchContributor : ISearchSettingsContributor
 {
+    private readonly ExplorerSettingsReader _reader;
+
+    public ExplorerSearchContributor(IRegistryService registryService)
+    {
+        _reader = new ExplorerSettingsReader(registryService);
+    }
+
     public string ModuleId => "Explorer";
 
-    public IReadOnlyList<SearchEntry> GetSearchEntries() =>
-    [
-        new(ModuleId, "taskbar-alignment", "Taskbar alignment",
-            "Left-align or center the taskbar.", ["TaskbarAl", "taskbar"]),
-        new(ModuleId, "taskbar-widgets", "Widgets button",
-            "Show or hide the taskbar Widgets button.", ["TaskbarDa", "widgets"]),
-        new(ModuleId, "classic-context-menu", "Classic (full) right-click menu",
-            "Restore the Windows 10 style context menu.", ["InprocServer32", "context menu", "right click"]),
-        new(ModuleId, "classic-command-bar", "Classic Explorer command bar",
-            "Restore the classic ribbon-style command bar.", ["command bar", "ribbon"]),
-        new(ModuleId, "file-extensions", "Show file extensions",
-            "Always show file name extensions in Explorer.", ["HideFileExt", "extensions"]),
-        new(ModuleId, "hidden-files", "Show hidden files",
-            "Show hidden files and folders in Explorer.", ["Hidden", "hidden files"]),
-    ];
+    public IReadOnlyList<SearchEntry> GetSearchEntries()
+    {
+        var entries = _reader.ReadAll()
+            .Select(p => new SearchEntry(
+                ModuleId, p.Id, p.DisplayName, p.Description,
+                [p.RegistryKeyPath, p.RegistryValueName]))
+            .ToList();
+
+        entries.Add(new SearchEntry(
+            ModuleId, "taskbar-alignment", "Taskbar alignment",
+            "Left-align or center the taskbar.", ["TaskbarAl", "taskbar"]));
+        entries.Add(new SearchEntry(
+            ModuleId, "taskbar-widgets", "Widgets button",
+            "Show or hide the taskbar Widgets button.", ["TaskbarDa", "widgets"]));
+        entries.Add(new SearchEntry(
+            ModuleId, "classic-context-menu", "Classic (full) right-click menu",
+            "Restore the Windows 10 style context menu.", ["InprocServer32", "context menu", "right click"]));
+        entries.Add(new SearchEntry(
+            ModuleId, "classic-command-bar", "Classic Explorer command bar",
+            "Restore the classic ribbon-style command bar.", ["command bar", "ribbon"]));
+
+        return entries;
+    }
 }
 
 public sealed class ContextMenuSearchContributor : ISearchSettingsContributor

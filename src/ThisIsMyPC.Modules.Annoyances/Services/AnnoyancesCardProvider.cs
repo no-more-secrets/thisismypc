@@ -19,6 +19,14 @@ public sealed class AnnoyancesCardProvider
         "Stops the ad-like \"suggested content\" tiles Microsoft injects into the Settings app. "
         + "The comprehensive privacy suite with companion service management arrives in the Privacy & Telemetry module.";
 
+    private const string LockScreenAdsDescription =
+        "Stops \"fun facts, tips, and tricks\" overlays on the lock screen when Windows Spotlight is active "
+        + "(two ContentDeliveryManager values, set together like the Settings checkbox does). The Spotlight wallpaper itself keeps working.";
+
+    private const string PreinstalledAppsDescription =
+        "Stops Windows from promoting OEM-preinstalled apps and showing \"soft landing\" feature suggestion tips "
+        + "(three ContentDeliveryManager values set together).";
+
     private const string RecallDescription =
         "Blocks Windows Recall from taking and saving screen snapshots and turns off AI analysis of your activity. "
         + "On PCs without Copilot+ hardware these policies are inert today; setting them future-proofs the machine.";
@@ -47,6 +55,8 @@ public sealed class AnnoyancesCardProvider
         var cards = new List<SettingCardSource>();
 
         AddSectionSingles(cards, scanData, AnnoyanceSection.ScoobeAndWelcome, driftFragile: false);
+        cards.Add(LockScreenAdsCard(scanData));
+        cards.Add(PreinstalledAppsCard(scanData));
 
         cards.Add(BingSearchCard(scanData));
         AddSectionSingles(cards, scanData, AnnoyanceSection.BingAndEdge, driftFragile: true);
@@ -109,6 +119,56 @@ public sealed class AnnoyancesCardProvider
             ReadCurrentState = () => ReadLive(pref.Id).IsSuppressed,
         };
     }
+
+    private SettingCardSource LockScreenAdsCard(AnnoyancesScanData scanData) => new()
+    {
+        Model = new SettingCardModel
+        {
+            SettingId = "lock-screen-ads",
+            ModuleId = AnnoyanceChangeFactory.ModuleId,
+            DisplayName = "Suppress lock screen tips and ads",
+            Description = LockScreenAdsDescription,
+            ControlType = SettingControlType.Toggle,
+            CurrentValue = scanData.LockScreenAds.All(p => p.IsSuppressed) ? "1" : "0",
+            CurrentDisplayValue = scanData.LockScreenAds.All(p => p.IsSuppressed) ? "Suppressed" : "Windows default",
+            RegistryPath = AnnoyancesRegistryPaths.ContentDeliveryManagerKeyPath,
+            ValueName = "RotatingLockScreenOverlayEnabled",
+            RegistryValueType = nameof(ChangeValueType.Registry_DWord),
+            GroupId = SectionGroups[AnnoyanceSection.ScoobeAndWelcome],
+        },
+        CreateToggleGroup = suppress => AnnoyanceChangeFactory.CreateGroupToggle(
+            _liveReader.ReadLockScreenAds(),
+            settingId: "lock-screen-ads",
+            displayName: "Lock screen tips and ads",
+            description: LockScreenAdsDescription,
+            suppress),
+        ReadCurrentState = () => _liveReader.ReadLockScreenAds().All(p => p.IsSuppressed),
+    };
+
+    private SettingCardSource PreinstalledAppsCard(AnnoyancesScanData scanData) => new()
+    {
+        Model = new SettingCardModel
+        {
+            SettingId = "preinstalled-apps",
+            ModuleId = AnnoyanceChangeFactory.ModuleId,
+            DisplayName = "Suppress OEM and preinstalled app promotions",
+            Description = PreinstalledAppsDescription,
+            ControlType = SettingControlType.Toggle,
+            CurrentValue = scanData.PreinstalledApps.All(p => p.IsSuppressed) ? "1" : "0",
+            CurrentDisplayValue = scanData.PreinstalledApps.All(p => p.IsSuppressed) ? "Suppressed" : "Windows default",
+            RegistryPath = AnnoyancesRegistryPaths.ContentDeliveryManagerKeyPath,
+            ValueName = "OemPreInstalledAppsEnabled",
+            RegistryValueType = nameof(ChangeValueType.Registry_DWord),
+            GroupId = SectionGroups[AnnoyanceSection.ScoobeAndWelcome],
+        },
+        CreateToggleGroup = suppress => AnnoyanceChangeFactory.CreateGroupToggle(
+            _liveReader.ReadPreinstalledApps(),
+            settingId: "preinstalled-apps",
+            displayName: "OEM and preinstalled app promotions",
+            description: PreinstalledAppsDescription,
+            suppress),
+        ReadCurrentState = () => _liveReader.ReadPreinstalledApps().All(p => p.IsSuppressed),
+    };
 
     private SettingCardSource BingSearchCard(AnnoyancesScanData scanData) => new()
     {

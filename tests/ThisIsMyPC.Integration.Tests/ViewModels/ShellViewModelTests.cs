@@ -28,8 +28,7 @@ public sealed class ShellViewModelTests
         TaskbarSettings? taskbar = null) =>
         new(
             ExplorerPreferences: prefs ?? TestPreferences,
-            Taskbar: taskbar ?? new TaskbarSettings(1, true, false, false),
-            NotificationSettings: []);
+            Taskbar: taskbar ?? new TaskbarSettings(1, true, false, false));
 
     [Fact]
     public void Constructor_creates_correct_number_of_explorer_settings()

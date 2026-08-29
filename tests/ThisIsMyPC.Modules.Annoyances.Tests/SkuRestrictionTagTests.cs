@@ -74,7 +74,9 @@ public class SkuRestrictionTagTests
             reader.ReadBingSearch(),
             reader.ReadSettingsSuggestedContent(),
             reader.ReadCopilotPolicy(),
-            reader.ReadRecall()));
+            reader.ReadRecall(),
+            reader.ReadLockScreenAds(),
+            reader.ReadPreinstalledApps()));
 
         var copilot = cards.Single(c => c.Model.SettingId == "copilot");
         var recall = cards.Single(c => c.Model.SettingId == "recall");
