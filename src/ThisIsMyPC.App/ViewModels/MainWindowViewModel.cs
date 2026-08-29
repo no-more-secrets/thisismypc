@@ -38,6 +38,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly Core.Sets.ISetProvider _setProvider;
     private readonly IReadOnlyList<Core.Sets.ISetEntryInspector> _setEntryInspectors;
     private readonly ICapabilityDetector? _capabilityDetector;
+    private readonly Core.Settings.ISettingsService? _settingsService;
     private readonly IRestorePointService _restorePointService;
 
     // FR64: auto restore point when a batch stages this many individual changes
@@ -121,6 +122,7 @@ public partial class MainWindowViewModel : ViewModelBase
         Core.Sets.ICustomSetWriter customSetWriter,
         IRestorePointService restorePointService,
         ICapabilityDetector? capabilityDetector = null,
+        Core.Settings.ISettingsService? settingsService = null,
         IServiceControlService? serviceControlService = null,
         IScheduledTaskService? scheduledTaskService = null,
         Modules.Startup.Services.TaskClassificationOverrideStore? taskClassificationOverrides = null,
@@ -140,6 +142,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _setProvider = setProvider;
         _setEntryInspectors = setEntryInspectors.ToList();
         _capabilityDetector = capabilityDetector;
+        _settingsService = settingsService;
         _restorePointService = restorePointService;
         ReviewPanel = reviewPanel;
         ChangeHistory = new ChangeHistoryViewModel(
@@ -355,6 +358,9 @@ public partial class MainWindowViewModel : ViewModelBase
         // Home is the launch default (10.5): a cheap read-only dashboard —
         // no module scan runs until the user navigates to one.
         OpenHome();
+
+        if (_settingsService?.SettingsWereReset == true)
+            SetStatus("Settings were reset to defaults (the previous settings file was unreadable)", StatusSeverity.Warning);
     }
 
     private void PopulateSidebar()

@@ -50,6 +50,7 @@ public partial class App : Application
             _serviceProvider = services.BuildServiceProvider();
 
             LogSetDiscovery(_serviceProvider.GetRequiredService<ISetProvider>());
+            InitializeSettings(_serviceProvider.GetRequiredService<Core.Settings.ISettingsService>());
 
             desktop.MainWindow = new MainWindow
             {
@@ -74,6 +75,15 @@ public partial class App : Application
         Serilog.Log.Information("Set discovery: {Count} set(s) loaded", load.Sets.Count);
         foreach (var warning in load.Warnings)
             Serilog.Log.Warning("Set discovery: {Warning}", warning);
+    }
+
+    private static void InitializeSettings(Core.Settings.ISettingsService settingsService)
+    {
+        settingsService.Initialize();
+        if (settingsService.LoadError is { } error)
+            Serilog.Log.Warning("Settings load: {Error}", error);
+        if (settingsService.SettingsWereReset)
+            Serilog.Log.Warning("Settings were reset to defaults; previous file preserved as settings.json.bad");
     }
 
     private static void ConfigureServices(IServiceCollection services)
@@ -135,6 +145,7 @@ public partial class App : Application
         services.AddSingleton<ISetEntryInspector, ThisIsMyPC.Modules.Annoyances.Services.AnnoyancesSetEntryInspector>();
         services.AddSingleton<ISetEntryInspector, ThisIsMyPC.Modules.Startup.Services.StartupSetEntryInspector>();
         services.AddSingleton<ISetEntryInspector, ThisIsMyPC.Modules.WindowsUpdate.Services.WindowsUpdateSetEntryInspector>();
+        services.AddSingleton<Core.Settings.ISettingsService, Core.Settings.SettingsService>();
         services.AddSingleton<ChangeHistoryRepository>();
         services.AddSingleton<IChangeHistoryService, ChangeHistoryService>();
 
