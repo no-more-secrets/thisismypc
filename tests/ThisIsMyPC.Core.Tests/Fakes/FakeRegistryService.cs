@@ -15,6 +15,8 @@ public sealed class FakeRegistryService : IRegistryService
 
     public int ReadStringCallCount { get; private set; }
 
+    public void AddKey(string keyPath) => _keys.Add(keyPath);
+
     public void SetString(string keyPath, string valueName, string value)
     {
         _values[MakeKey(keyPath, valueName)] = value;

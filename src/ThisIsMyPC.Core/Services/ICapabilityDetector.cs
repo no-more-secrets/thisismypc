@@ -30,4 +30,15 @@ public interface ICapabilityDetector
     /// with the service itself (Epic 28).
     /// </summary>
     bool IsOwnerModeAvailable { get; }
+
+    /// <summary>
+    /// One row per <see cref="SystemCapability"/>: availability plus friendly name and
+    /// remediation, for the first-launch summary (5-2) and diagnostics.
+    /// </summary>
+    IReadOnlyList<CapabilityReportRow> GetCapabilityReport();
 }
+
+public sealed record CapabilityReportRow(
+    SystemCapability Capability,
+    string DisplayName,
+    ModuleAvailability Availability);

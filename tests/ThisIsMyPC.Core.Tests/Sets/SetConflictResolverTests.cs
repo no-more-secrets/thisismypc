@@ -190,6 +190,7 @@ public sealed class SetConflictResolverTests
         public bool IsAvailable(SystemCapability capability) => true;
         public ModuleAvailability GetAvailability(SystemCapability capability) => new(true);
         public bool IsOwnerModeAvailable => false;
+        public IReadOnlyList<CapabilityReportRow> GetCapabilityReport() => [];
     }
 
     private static StubInspector SkuRestrictedInspector(WindowsSku restrictedOn) => new()

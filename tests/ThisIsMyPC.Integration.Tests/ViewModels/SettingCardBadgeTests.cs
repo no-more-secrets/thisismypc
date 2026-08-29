@@ -21,6 +21,7 @@ public sealed class SettingCardBadgeTests
         public bool IsAvailable(SystemCapability capability) => true;
         public ModuleAvailability GetAvailability(SystemCapability capability) => new(true);
         public bool IsOwnerModeAvailable => OwnerMode;
+        public IReadOnlyList<CapabilityReportRow> GetCapabilityReport() => [];
     }
 
     private SettingCardViewModel CreateVm(
