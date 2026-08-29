@@ -424,7 +424,7 @@ public partial class MainWindowViewModel : ViewModelBase
         var quickActions = SidebarGroups
             .SelectMany(g => g.Items)
             .Where(i => i.IsAvailable)
-            .Select(i => new QuickActionViewModel(i.Name, i.Icon, () => NavigateToModule(i)))
+            .Select(i => new QuickActionViewModel(i.Name, () => i.IconGeometry, () => NavigateToModule(i)))
             .ToList();
 
         var home = new HomeViewModel(

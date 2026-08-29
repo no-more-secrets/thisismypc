@@ -66,7 +66,9 @@ public sealed class HomeViewModelTests
     public void QuickAction_InvokesNavigateCallback()
     {
         var navigated = false;
-        var action = new QuickActionViewModel("Explorer", "M0,0", () => navigated = true);
+        // Geometry factory must stay unevaluated headless (needs a render platform).
+        var action = new QuickActionViewModel(
+            "Explorer", () => null!, () => navigated = true);
 
         action.OpenCommand.Execute(null);
 

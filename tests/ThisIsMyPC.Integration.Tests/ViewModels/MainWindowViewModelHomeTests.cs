@@ -53,6 +53,11 @@ public sealed class MainWindowViewModelHomeTests
 
         var home = Assert.IsType<HomeViewModel>(vm.CurrentContent);
         Assert.Equal(["ModuleA", "ModuleB"], home.QuickActions.Select(a => a.Name).Order());
+        // Regression note (InvalidDataException "Invalid double value" at render):
+        // module Icon values are lookup KEYS, not path markup — quick-action geometry
+        // must resolve through SidebarItemViewModel.IconGeometry's key mapping.
+        // Cannot be asserted here: geometry parsing needs a render platform that
+        // headless tests lack, which is also why resolution is lazy.
     }
 
     [Fact]

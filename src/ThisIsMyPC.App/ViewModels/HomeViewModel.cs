@@ -10,18 +10,25 @@ namespace ThisIsMyPC.App.ViewModels;
 public sealed partial class QuickActionViewModel : ViewModelBase
 {
     private readonly Action _navigate;
-    private readonly string _icon;
+    private readonly Func<Geometry> _iconGeometryFactory;
     private Geometry? _cachedGeometry;
 
-    public QuickActionViewModel(string name, string icon, Action navigate)
+    public QuickActionViewModel(string name, Func<Geometry> iconGeometryFactory, Action navigate)
     {
         Name = name;
-        _icon = icon;
+        _iconGeometryFactory = iconGeometryFactory;
         _navigate = navigate;
     }
 
     public string Name { get; }
-    public Geometry IconGeometry => _cachedGeometry ??= Geometry.Parse(_icon);
+
+    /// <summary>
+    /// Geometry resolved through the sidebar item's icon-key mapping (raw
+    /// Module.Info.Icon is a KEY like "shell", not path markup). Resolved lazily:
+    /// Geometry parsing needs a rendering platform, which headless tests lack —
+    /// only real rendering may evaluate this.
+    /// </summary>
+    public Geometry IconGeometry => _cachedGeometry ??= _iconGeometryFactory();
 
     [RelayCommand]
     private void Open() => _navigate();
