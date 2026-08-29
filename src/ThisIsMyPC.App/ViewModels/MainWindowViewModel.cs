@@ -43,7 +43,18 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IUpdateService? _updateService;
     private readonly IReadOnlyList<Core.Search.ISearchSettingsContributor> _searchContributors;
     private Core.Search.SettingsSearchService? _searchService;
+    private readonly Core.Notifications.INotificationService? _notificationService;
     private readonly IRestorePointService _restorePointService;
+
+    // 9-2: gated notifications surface in the status bar (toast rendering is a UI/UX-chapter item)
+    private void OnNotificationRaised(object? sender, Core.Notifications.AppNotification notification)
+    {
+        if (Dispatcher.UIThread.CheckAccess())
+            SetStatus($"{notification.Title}: {notification.Message}", StatusSeverity.Warning);
+        else
+            Dispatcher.UIThread.Post(() =>
+                SetStatus($"{notification.Title}: {notification.Message}", StatusSeverity.Warning));
+    }
 
     // FR64: auto restore point when a batch stages this many individual changes
     private const int AutoRestorePointThreshold = 5;
@@ -130,6 +141,7 @@ public partial class MainWindowViewModel : ViewModelBase
         IEnumerable<Core.Settings.IModuleSettingsContributor>? moduleSettingsContributors = null,
         IUpdateService? updateService = null,
         IEnumerable<Core.Search.ISearchSettingsContributor>? searchContributors = null,
+        Core.Notifications.INotificationService? notificationService = null,
         IServiceControlService? serviceControlService = null,
         IScheduledTaskService? scheduledTaskService = null,
         Modules.Startup.Services.TaskClassificationOverrideStore? taskClassificationOverrides = null,
@@ -153,7 +165,10 @@ public partial class MainWindowViewModel : ViewModelBase
         _moduleSettingsContributors = moduleSettingsContributors?.ToList() ?? [];
         _updateService = updateService;
         _searchContributors = searchContributors?.ToList() ?? [];
+        _notificationService = notificationService;
         _restorePointService = restorePointService;
+        if (_notificationService is not null)
+            _notificationService.NotificationRaised += OnNotificationRaised;
         ReviewPanel = reviewPanel;
         ChangeHistory = new ChangeHistoryViewModel(
             changeHistoryService,
@@ -593,6 +608,10 @@ public partial class MainWindowViewModel : ViewModelBase
             {
                 UpdateBadgeText = $"Update {version}";
                 IsUpdateBadgeVisible = true;
+                _notificationService?.Notify(
+                    Core.Notifications.NotificationType.UpdateAvailable,
+                    "Update available",
+                    $"ThisIsMyPC {version} is available - click the badge to open the releases page");
             }
         }
 #pragma warning disable CA1031 // AC: check failures are silently ignored — offline-safe

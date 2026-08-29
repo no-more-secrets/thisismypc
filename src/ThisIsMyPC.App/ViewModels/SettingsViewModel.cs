@@ -230,8 +230,18 @@ public sealed partial class SettingsViewModel : ViewModelBase
                 new SettingToggleItemViewModel(
                     settings, null, AppSettingKeys.Notifications,
                     "Notifications",
-                    "Allow monitoring notifications (new startup entries, reverted settings).",
+                    "Master switch for all notifications. Off means events are only visible inside the app.",
                     settings.GetAppBool(AppSettingKeys.Notifications, true)),
+                new SettingToggleItemViewModel(
+                    settings, null, AppSettingKeys.NotifyMonitoring,
+                    "Notify: monitoring alerts",
+                    "New startup entries or services detected by background monitoring.",
+                    settings.GetAppBool(AppSettingKeys.NotifyMonitoring, true)),
+                new SettingToggleItemViewModel(
+                    settings, null, AppSettingKeys.NotifyUpdates,
+                    "Notify: update available",
+                    "A newer ThisIsMyPC release was found by the launch check.",
+                    settings.GetAppBool(AppSettingKeys.NotifyUpdates, true)),
                 new SettingToggleItemViewModel(
                     settings, null, AppSettingKeys.UpdateCheck,
                     "Check for updates",

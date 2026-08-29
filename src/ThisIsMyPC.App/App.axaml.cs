@@ -35,6 +35,7 @@ public partial class App : Application
     private ServiceProvider? _serviceProvider;
     private WindowPersistenceController? _windowController;
     private TrayService? _trayService;
+    private AutoStartService? _autoStartService;
 
     public override void Initialize()
     {
@@ -75,6 +76,19 @@ public partial class App : Application
                         mainViewModel.ApplyAllCommand.Execute(null);
                 },
                 exit: () => _windowController!.RequestExit());
+
+            // 9-2: auto-start reconcile + minimized launch
+            _autoStartService = new AutoStartService(
+                _serviceProvider.GetRequiredService<IRegistryService>(), settingsService);
+            _autoStartService.Reconcile();
+
+            if (desktop.Args?.Contains("--minimized", StringComparer.Ordinal) == true)
+            {
+                if (settingsService.GetAppBool(Core.Settings.AppSettingKeys.TrayMode, false))
+                    desktop.MainWindow.Opened += (_, _) => desktop.MainWindow.Hide();
+                else
+                    desktop.MainWindow.WindowState = Avalonia.Controls.WindowState.Minimized;
+            }
 
             desktop.ShutdownRequested += OnShutdownRequested;
         }
@@ -174,6 +188,7 @@ public partial class App : Application
         services.AddSingleton<Core.Search.ISearchSettingsContributor, ThisIsMyPC.Modules.Startup.Services.StartupSearchContributor>();
         services.AddSingleton<Core.Search.ISearchSettingsContributor, ThisIsMyPC.Modules.Power.Services.PowerSearchContributor>();
         services.AddSingleton<Core.Settings.ISettingsService, Core.Settings.SettingsService>();
+        services.AddSingleton<Core.Notifications.INotificationService, Core.Notifications.NotificationService>();
         services.AddSingleton<ChangeHistoryRepository>();
         services.AddSingleton<IChangeHistoryService, ChangeHistoryService>();
 
@@ -191,6 +206,8 @@ public partial class App : Application
         {
             _trayService?.Dispose();
             _trayService = null;
+            _autoStartService?.Dispose();
+            _autoStartService = null;
             _windowController?.Dispose();
             _windowController = null;
             if (_serviceProvider is not null)

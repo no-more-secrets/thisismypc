@@ -14,6 +14,8 @@ public static class AppSettingKeys
     public const string AutoStart = "autoStart";               // bool (Epic 9 behavior)
     public const string Notifications = "notifications";       // bool (Epic 9 behavior)
     public const string UpdateCheck = "updateCheck";           // bool (7-3; opt-out default on)
+    public const string NotifyMonitoring = "notifyMonitoring"; // bool (9-2 granular; gated by Notifications)
+    public const string NotifyUpdates = "notifyUpdates";       // bool (9-2 granular; gated by Notifications)
 
     public static IReadOnlyDictionary<string, string> Defaults { get; } =
         new Dictionary<string, string>(StringComparer.Ordinal)
@@ -26,5 +28,7 @@ public static class AppSettingKeys
             [AutoStart] = "0",
             [Notifications] = "1",
             [UpdateCheck] = "1",
+            [NotifyMonitoring] = "1",
+            [NotifyUpdates] = "1",
         };
 }
