@@ -130,6 +130,18 @@ public sealed class AnnoyancesSettingsReader
                 suppressedValue: "1",
                 defaultValue: "0"),
 
+            // Windows default is no value at all (feedback asked automatically);
+            // empty defaultValue restores by deleting the value.
+            ReadPreference(
+                id: "feedback-frequency",
+                displayName: "Stop Windows feedback requests",
+                description: "Stops Windows from asking for feedback.",
+                keyPath: AnnoyancesRegistryPaths.SiufRulesKeyPath,
+                valueName: "NumberOfSIUFInPeriod",
+                section: AnnoyanceSection.AdvertisingAndTracking,
+                suppressedValue: "0",
+                defaultValue: ""),
+
             ReadPreference(
                 id: "game-dvr",
                 displayName: "Disable Game DVR background recording",

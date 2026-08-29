@@ -217,6 +217,22 @@
     },
     {
       "moduleId": "Startup & Services",
+      "settingId": "scheduled-task:\\Microsoft\\Windows\\Application Experience\\ProgramDataUpdater",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "group": "Scheduled tasks",
+      "description": "Application Experience program data collector and uploader."
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "scheduled-task:\\Microsoft\\Windows\\Application Experience\\MareBackup",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "group": "Scheduled tasks",
+      "description": "Application Experience compatibility backup task."
+    },
+    {
+      "moduleId": "Startup & Services",
       "settingId": "scheduled-task:\\Microsoft\\Windows\\Customer Experience Improvement Program\\Consolidator",
       "value": "Disabled",
       "displayValue": "Disabled",

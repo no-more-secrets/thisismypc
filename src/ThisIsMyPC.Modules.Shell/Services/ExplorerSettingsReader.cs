@@ -282,6 +282,20 @@ public sealed class ExplorerSettingsReader
             defaultValue: "1",
             restart: RestartRequirement.None));
 
+        // Shortcut suffix: ShortcutNameTemplate "%s.lnk" drops the "- Shortcut" text;
+        // deleting the value (AbsentValue) restores the Windows default
+        preferences.Add(ReadPreference(
+            id: "shortcut-suffix",
+            displayName: "Create shortcuts without the \"- Shortcut\" suffix",
+            description: "New shortcuts get the file's name only",
+            keyPath: ShellRegistryPaths.NamingTemplatesKeyPath,
+            valueName: "ShortcutNameTemplate",
+            enabledValue: "%s.lnk",
+            disabledValue: ShellRegistryPaths.AbsentValue,
+            defaultValue: ShellRegistryPaths.AbsentValue,
+            restart: RestartRequirement.None,
+            valueType: ChangeValueType.Registry_String));
+
         return preferences;
     }
 
@@ -294,10 +308,22 @@ public sealed class ExplorerSettingsReader
         string enabledValue,
         string disabledValue,
         string defaultValue,
-        RestartRequirement restart)
+        RestartRequirement restart,
+        ChangeValueType valueType = ChangeValueType.Registry_DWord)
     {
-        var result = _registryService.ReadDWord(keyPath, valueName);
-        var currentValue = result.IsSuccess ? result.Value!.ToString() : defaultValue;
+        string currentValue;
+        if (valueType == ChangeValueType.Registry_String)
+        {
+            // Absent string values scan as the preference's default (AbsentValue for
+            // delete-to-restore toggles like shortcut-suffix).
+            var read = _registryService.ReadString(keyPath, valueName);
+            currentValue = read.IsSuccess ? read.Value! : defaultValue;
+        }
+        else
+        {
+            var result = _registryService.ReadDWord(keyPath, valueName);
+            currentValue = result.IsSuccess ? result.Value!.ToString() : defaultValue;
+        }
 
         return new ExplorerPreference(
             Id: id,
@@ -305,7 +331,7 @@ public sealed class ExplorerSettingsReader
             Description: description,
             RegistryKeyPath: keyPath,
             RegistryValueName: valueName,
-            ValueType: ChangeValueType.Registry_DWord,
+            ValueType: valueType,
             CurrentValue: currentValue,
             EnabledValue: enabledValue,
             DisabledValue: disabledValue,

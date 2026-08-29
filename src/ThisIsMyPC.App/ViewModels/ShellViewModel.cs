@@ -88,6 +88,14 @@ public partial class ShellViewModel : ViewModelBase
 
     private static bool ReadExplorerPrefFromRegistry(IRegistryService registryService, ExplorerPreference pref)
     {
+        if (pref.ValueType == Core.Changes.ChangeValueType.Registry_String)
+        {
+            // Absent string value = the delete-to-restore state (AbsentValue)
+            var read = registryService.ReadString(pref.RegistryKeyPath, pref.RegistryValueName);
+            var current = read.IsSuccess ? read.Value! : Modules.Shell.ShellRegistryPaths.AbsentValue;
+            return current == pref.EnabledValue;
+        }
+
         var result = registryService.ReadDWord(pref.RegistryKeyPath, pref.RegistryValueName);
         if (!result.IsSuccess)
             return pref.IsEnabled; // fallback to scan value if read fails

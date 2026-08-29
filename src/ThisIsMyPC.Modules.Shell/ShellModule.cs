@@ -77,6 +77,14 @@ public sealed class ShellModule : IModule
                     ShellRegistryPaths.CommandBarKeyPath));
             }
 
+            // AbsentValue restores "value absent" for delete-to-restore preferences
+            // (shortcut-suffix); the CLSID key-presence toggles are handled above.
+            if (change.AfterValue == ShellRegistryPaths.AbsentValue)
+            {
+                var (absentKeyPath, absentValueName) = ParseSystemLocation(change.SystemLocation);
+                return Task.FromResult(_registryService.DeleteValue(absentKeyPath, absentValueName));
+            }
+
             var result = change.ValueType switch
             {
                 ChangeValueType.Registry_DWord => ApplyDWordChange(change),

@@ -49,13 +49,14 @@ mode, merge conflicts, restore folder windows, seconds in clock, Task View butto
 End Task (TaskbarDeveloperSettings), Start recommendations, Start account
 notifications, Snap Assist, Aero Shake. Search entries now derive from the reader.
 
+Follow-up 2026-08-30: shortcut-suffix shipped (string prefs + AbsentValue
+delete-to-restore now supported in the Explorer reader and ShellModule).
+
 Deferred remainder (needs a non-toggle control or riskier writes):
 - Taskbar search mode hidden/icon/box (`Search\SearchboxTaskbarMode`) and taskbar
   button combining (`ADV\TaskbarGlomLevel`) — multi-state; wait for a choice
   control in the Explorer view (or card ControlType) in the UI/UX chapter
 - Recycle Bin delete confirmation — SHELLSTATE binary blob bit, not a value write
-- "- Shortcut" suffix (`EXPL\NamingTemplates\ShortcutNameTemplate`, REG_SZ) —
-  reader is DWORD-only today
 - Explorer Home and Gallery pinning (winutil: `System.IsPinnedToNameSpaceTree`
   on two HKCU Classes CLSIDs) — key-presence style write, model like the classic
   context menu toggles
@@ -68,9 +69,10 @@ Shipped: consumer-features master policy (Education/Enterprise tag),
 tailored-experiences, language-list-access, xbox-game-tips, and the edge-debloat
 atomic trio (shopping assistant + Rewards + personalization reporting).
 
+Follow-up 2026-08-30: feedback-frequency shipped (empty AfterValue now restores
+by deleting the value, the WU/Power convention).
+
 Deferred remainder:
-- Feedback frequency (`Siuf\Rules\NumberOfSIUFInPeriod`): restore direction needs
-  delete-the-value, which the Annoyances apply path does not do yet
 - Game Bar `UseNexusForGameBarEnabled` (Xbox button binding): needs care, some
   controllers rely on it
 - Widgets AppX removal → install/uninstall engine
@@ -110,15 +112,15 @@ scanner — all from Sophia's context menu section:
 These mostly use the existing LegacyDisable/ProgrammaticAccessOnly/Blocked
 mechanisms the module already implements.
 
-## 6. Clean Boot set cross-check (Startup & Services)
+## 6. Clean Boot set cross-check — DONE 2026-08-30
 
-- winutil sets services to **Manual** where Clean Boot uses **Disabled** — review
-  per-service; Manual is the safer default for `StorSvc`, `SharedAccess`, `CscService`
-  (winutil's list) if we add them.
-- `SvcHostSplitThresholdInKB` (winutil) — new tweak type (single HKLM value),
-  decide module home (Annoyances "performance" group?).
-- Sophia's diagnostic scheduled-task list — cross-check against Clean Boot's 8
-  task entries for additions.
+- Added Sophia's remaining Application Experience tasks: ProgramDataUpdater and
+  MareBackup (both telemetry/compat inventory uploads).
+- winutil's set-to-Manual services (`StorSvc`, `SharedAccess`, `CscService`)
+  deliberately NOT added: they are already Manual/trigger-start or Disabled by
+  default on Windows 11, so the entries would be no-ops with side-effect risk.
+- `SvcHostSplitThresholdInKB` deferred: winutil computes the value from installed
+  RAM, so it needs a dynamic-value tweak type; revisit with a performance group.
 
 ## Deliberately NOT in this pass (new-module territory)
 

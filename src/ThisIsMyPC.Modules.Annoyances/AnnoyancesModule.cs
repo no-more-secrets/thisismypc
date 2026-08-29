@@ -64,6 +64,11 @@ public sealed class AnnoyancesModule : IModule
         {
             var (keyPath, valueName) = AnnoyancesRegistryPaths.ParseSystemLocation(change.SystemLocation);
 
+            // Empty AfterValue = restore "value absent" (the WU/Power convention).
+            // Used by prefs whose Windows default is no value at all (feedback-frequency).
+            if (string.IsNullOrEmpty(change.AfterValue))
+                return Task.FromResult(_registryService.DeleteValue(keyPath, valueName));
+
             if (change.ValueType == ChangeValueType.Registry_String)
             {
                 return Task.FromResult(

@@ -64,6 +64,34 @@ public sealed class ShellModuleApplyTests
     }
 
     [Fact]
+    public async Task ApplyStringChange_absent_value_deletes_the_value()
+    {
+        // The shortcut-suffix delete-to-restore path: AbsentValue AfterValue removes
+        // the value instead of writing the literal "__absent__" string.
+        const string keyPath = @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\NamingTemplates";
+        _registry.SetString(keyPath, "ShortcutNameTemplate", "%s.lnk");
+
+        var change = new ChangeDescriptor
+        {
+            ModuleId = "Explorer",
+            SettingId = "shortcut-suffix",
+            DisplayName = "Shortcut suffix",
+            SystemLocation = $@"{keyPath}\ShortcutNameTemplate",
+            BeforeValue = "%s.lnk",
+            AfterValue = ShellRegistryPaths.AbsentValue,
+            BeforeDisplay = "Enabled",
+            AfterDisplay = "Disabled",
+            ValueType = ChangeValueType.Registry_String,
+            Category = ChangeCategory.Disable,
+        };
+
+        var result = await _module.ApplyChangeAsync(change);
+
+        Assert.True(result.IsSuccess);
+        Assert.False(_registry.ValueExists(keyPath, "ShortcutNameTemplate").Value);
+    }
+
+    [Fact]
     public async Task ApplyClassicContextMenuChange_enable_creates_key()
     {
         var change = new ChangeDescriptor

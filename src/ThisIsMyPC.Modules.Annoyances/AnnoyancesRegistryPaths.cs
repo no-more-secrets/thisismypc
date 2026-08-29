@@ -29,6 +29,9 @@ public static class AnnoyancesRegistryPaths
     public const string InternationalUserProfileKeyPath =
         @"HKCU\Control Panel\International\User Profile";
 
+    public const string SiufRulesKeyPath =
+        @"HKCU\Software\Microsoft\Siuf\Rules";
+
     public const string EdgeUpdatePoliciesKeyPath =
         @"HKLM\SOFTWARE\Policies\Microsoft\EdgeUpdate";
 

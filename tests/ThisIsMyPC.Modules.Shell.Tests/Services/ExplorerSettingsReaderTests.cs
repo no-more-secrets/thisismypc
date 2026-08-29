@@ -23,7 +23,7 @@ public sealed class ExplorerSettingsReaderTests
     {
         SetDefaults();
         var prefs = _sut.ReadAll();
-        Assert.Equal(22, prefs.Count);
+        Assert.Equal(23, prefs.Count);
         Assert.Equal(prefs.Count, prefs.Select(p => p.Id).Distinct().Count());
     }
 
@@ -263,6 +263,21 @@ public sealed class ExplorerSettingsReaderTests
         Assert.True(prefs.First(p => p.Id == "task-view-button").IsEnabled);
         Assert.False(prefs.First(p => p.Id == "seconds-in-clock").IsEnabled);
         Assert.False(prefs.First(p => p.Id == "restore-folder-windows").IsEnabled);
+    }
+
+    [Fact]
+    public void ShortcutSuffix_IsAStringPref_AbsentMeansDisabled()
+    {
+        var absent = _sut.ReadAll().First(p => p.Id == "shortcut-suffix");
+        Assert.Equal(ChangeValueType.Registry_String, absent.ValueType);
+        Assert.False(absent.IsEnabled);
+        Assert.Equal("__absent__", absent.CurrentValue);
+
+        _registry.SetString(ExplorerKeyPath + @"\NamingTemplates", "ShortcutNameTemplate", "%s.lnk");
+        var enabled = _sut.ReadAll().First(p => p.Id == "shortcut-suffix");
+        Assert.True(enabled.IsEnabled);
+        Assert.Equal("%s.lnk", enabled.EnabledValue);
+        Assert.Equal("__absent__", enabled.DisabledValue);
     }
 
     private void SetDefaults()

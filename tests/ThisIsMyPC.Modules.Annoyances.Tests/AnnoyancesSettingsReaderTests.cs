@@ -23,7 +23,7 @@ public sealed class AnnoyancesSettingsReaderTests
              "settings-suggestions", "lock-screen-images", "spotlight-collection-desktop",
              "consumer-features", "silent-app-installs", "edge-shortcuts",
              "dynamic-search-box", "advertising-id", "activity-history",
-             "tailored-experiences", "language-list-access",
+             "tailored-experiences", "language-list-access", "feedback-frequency",
              "game-dvr", "auto-game-mode", "xbox-game-tips", "hags",
              "sticky-keys-shortcut", "filter-keys-shortcut",
              "copilot-button", "edge-sidebar"],
