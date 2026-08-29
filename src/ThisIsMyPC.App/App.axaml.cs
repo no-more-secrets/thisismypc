@@ -64,10 +64,9 @@ public partial class App : Application
             // 9-1: tray mode + window behavior (opt-in; defaults are stock Windows)
             var settingsService = _serviceProvider.GetRequiredService<Core.Settings.ISettingsService>();
             var pendingChanges = _serviceProvider.GetRequiredService<IPendingChangesService>();
-            _windowController = new WindowPersistenceController(desktop.MainWindow, desktop, settingsService);
             _trayService = new TrayService(
                 settingsService,
-                pendingCount: () => pendingChanges.PendingCount,
+                pendingChanges,
                 openWindow: () => _windowController!.ShowWindow(),
                 applyPending: () =>
                 {
@@ -76,6 +75,11 @@ public partial class App : Application
                         mainViewModel.ApplyAllCommand.Execute(null);
                 },
                 exit: () => _windowController!.RequestExit());
+            // Hide-to-tray must never engage when the tray icon failed to materialize —
+            // a hidden window with no tray would be unreachable.
+            _windowController = new WindowPersistenceController(
+                desktop.MainWindow, desktop, settingsService,
+                trayAvailable: () => _trayService!.IsTrayActive);
 
             // 9-3: opt-in monitoring loop (runs only while the app is in memory)
             _serviceProvider.GetRequiredService<Core.Monitoring.MonitoringService>().Start();
@@ -88,9 +92,21 @@ public partial class App : Application
             if (desktop.Args?.Contains("--minimized", StringComparer.Ordinal) == true)
             {
                 if (settingsService.GetAppBool(Core.Settings.AppSettingKeys.TrayMode, false))
-                    desktop.MainWindow.Opened += (_, _) => desktop.MainWindow.Hide();
+                {
+                    // One-shot: Opened fires on EVERY Show(), so a persistent handler
+                    // would re-hide the window each time the user opens it from the tray.
+                    EventHandler? hideOnce = null;
+                    hideOnce = (_, _) =>
+                    {
+                        desktop.MainWindow.Opened -= hideOnce;
+                        desktop.MainWindow.Hide();
+                    };
+                    desktop.MainWindow.Opened += hideOnce;
+                }
                 else
+                {
                     desktop.MainWindow.WindowState = Avalonia.Controls.WindowState.Minimized;
+                }
             }
 
             desktop.ShutdownRequested += OnShutdownRequested;

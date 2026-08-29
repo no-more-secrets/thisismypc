@@ -44,6 +44,11 @@ public sealed class AutoStartService : IDisposable
     {
         if (enabled)
         {
+            if (_launchCommand.StartsWith("\"\"", StringComparison.Ordinal))
+            {
+                Serilog.Log.Warning("Auto-start: executable path unknown; not writing a Run entry");
+                return;
+            }
             var result = _registry.WriteString(RunKeyPath, RunValueName, _launchCommand);
             if (!result.IsSuccess)
                 Serilog.Log.Warning("Auto-start entry write failed: {Error}", result.ErrorMessage);

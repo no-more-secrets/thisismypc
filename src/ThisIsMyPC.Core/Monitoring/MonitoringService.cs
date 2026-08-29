@@ -123,11 +123,14 @@ public sealed class MonitoringService : IDisposable
         if (!_settings.GetAppBool(AppSettingKeys.MonitoringEnabled, fallback: false))
             return;
 
+        // Capture OUTSIDE the lock — registry/SCM/COM enumeration can take seconds and
+        // must never block UI-thread reads of UnreviewedDetections.
+        var current = _provider.Capture();
+
         List<MonitoringDetection> fresh = [];
         lock (_sync)
         {
             EnsureStateLoaded();
-            var current = _provider.Capture();
 
             if (!_baselineCaptured)
             {
@@ -184,14 +187,15 @@ public sealed class MonitoringService : IDisposable
 
     private void StartLoop()
     {
+        CancellationToken token;
         lock (_sync)
         {
             if (_loop is not null)
                 return;
             _loop = new CancellationTokenSource();
+            // Captured inside the lock: a concurrent StopLoop nulls/disposes _loop.
+            token = _loop.Token;
         }
-
-        var token = _loop.Token;
         _ = Task.Run(async () =>
         {
             try

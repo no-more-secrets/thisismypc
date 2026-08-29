@@ -106,6 +106,16 @@ public partial class MainWindowViewModel : ViewModelBase
             OpenHome();
     }
 
+    // New detection while the user sits on Home (the normal tray-idle case) must
+    // surface without requiring navigation churn.
+    private void OnDetectionsChanged(object? sender, EventArgs e)
+    {
+        if (Dispatcher.UIThread.CheckAccess())
+            RefreshMonitoringSection();
+        else
+            Dispatcher.UIThread.Post(RefreshMonitoringSection);
+    }
+
     /// <summary>Disable value per the Startup inspector's settingId conventions.</summary>
     internal static string DisableValueFor(string settingId) =>
         settingId.StartsWith("startup-entry:", StringComparison.Ordinal)
@@ -237,6 +247,8 @@ public partial class MainWindowViewModel : ViewModelBase
         _restorePointService = restorePointService;
         if (_notificationService is not null)
             _notificationService.NotificationRaised += OnNotificationRaised;
+        if (_monitoringService is not null)
+            _monitoringService.DetectionsChanged += OnDetectionsChanged;
         ReviewPanel = reviewPanel;
         ChangeHistory = new ChangeHistoryViewModel(
             changeHistoryService,

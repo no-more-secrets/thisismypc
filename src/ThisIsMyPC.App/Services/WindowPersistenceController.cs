@@ -14,17 +14,20 @@ public sealed class WindowPersistenceController : IDisposable
     private readonly Window _window;
     private readonly IClassicDesktopStyleApplicationLifetime _desktop;
     private readonly ISettingsService _settings;
+    private readonly Func<bool> _trayAvailable;
 
     private bool _exitRequested;
 
     public WindowPersistenceController(
         Window window,
         IClassicDesktopStyleApplicationLifetime desktop,
-        ISettingsService settings)
+        ISettingsService settings,
+        Func<bool>? trayAvailable = null)
     {
         _window = window;
         _desktop = desktop;
         _settings = settings;
+        _trayAvailable = trayAvailable ?? (() => true);
 
         _window.Closing += OnClosing;
         _window.PropertyChanged += OnWindowPropertyChanged;
@@ -51,10 +54,13 @@ public sealed class WindowPersistenceController : IDisposable
 
         switch (WindowBehaviorPolicy.DecideClose(_settings))
         {
-            case CloseDecision.HideToTray:
+            // Guard: never hide with no live tray icon — the window would be unreachable.
+            case CloseDecision.HideToTray when _trayAvailable():
                 e.Cancel = true;
                 _window.Hide();
                 break;
+            case CloseDecision.HideToTray:
+                break; // fall through to terminate
             case CloseDecision.MinimizeToTaskbar:
                 e.Cancel = true;
                 _window.WindowState = WindowState.Minimized;
@@ -72,7 +78,7 @@ public sealed class WindowPersistenceController : IDisposable
         if (e.NewValue is not WindowState.Minimized)
             return;
 
-        if (WindowBehaviorPolicy.DecideMinimize(_settings) == MinimizeDecision.HideToTray)
+        if (WindowBehaviorPolicy.DecideMinimize(_settings) == MinimizeDecision.HideToTray && _trayAvailable())
             _window.Hide();
     }
 
