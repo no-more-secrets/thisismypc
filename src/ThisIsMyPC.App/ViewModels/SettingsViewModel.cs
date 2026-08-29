@@ -228,6 +228,11 @@ public sealed partial class SettingsViewModel : ViewModelBase
                     "Launch ThisIsMyPC automatically at sign-in.",
                     settings.GetAppBool(AppSettingKeys.AutoStart, false)),
                 new SettingToggleItemViewModel(
+                    settings, null, AppSettingKeys.MonitoringEnabled,
+                    "Startup & service monitoring",
+                    "While the app is running (foreground or tray), watch for programs adding new startup entries, services, or scheduled tasks. Detections appear on Home. Never runs when the app is closed.",
+                    settings.GetAppBool(AppSettingKeys.MonitoringEnabled, false)),
+                new SettingToggleItemViewModel(
                     settings, null, AppSettingKeys.Notifications,
                     "Notifications",
                     "Master switch for all notifications. Off means events are only visible inside the app.",

@@ -85,6 +85,40 @@
                 </StackPanel>
             </Border>
 
+            <!-- 9-3: unreviewed monitoring detections -->
+            <Border Background="{StaticResource SurfaceBrush}" CornerRadius="8" Padding="20,16"
+                    IsVisible="{Binding MonitoringSection, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <StackPanel Spacing="8" DataContext="{Binding MonitoringSection}"
+                            x:DataType="vm:MonitoringSectionViewModel">
+                    <TextBlock Text="{Binding Header}"
+                               FontWeight="SemiBold" FontSize="15"
+                               Foreground="{StaticResource TextPrimaryBrush}" />
+                    <TextBlock Text="Programs added these to your boot sequence since the last review."
+                               FontSize="12"
+                               Foreground="{StaticResource TextTertiaryBrush}" />
+                    <ItemsControl ItemsSource="{Binding Rows}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:DetectionRowViewModel">
+                                <DockPanel Margin="0,3,0,3">
+                                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6">
+                                        <Button Content="Disable" Command="{Binding DisableCommand}"
+                                                Padding="10,2" FontSize="12" />
+                                        <Button Content="Dismiss" Command="{Binding DismissCommand}"
+                                                Padding="10,2" FontSize="12" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,12,0">
+                                        <TextBlock Text="{Binding DisplayName}" FontSize="13" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource TextPrimaryBrush}" />
+                                        <TextBlock Text="{Binding Detail}" FontSize="12"
+                                                   Foreground="{StaticResource TextTertiaryBrush}" />
+                                    </StackPanel>
+                                </DockPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
             <!-- System Identity -->
             <Border Background="{StaticResource SurfaceBrush}" CornerRadius="8" Padding="20,16">
                 <StackPanel Spacing="8">

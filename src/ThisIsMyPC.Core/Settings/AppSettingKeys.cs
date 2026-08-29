@@ -14,6 +14,7 @@ public static class AppSettingKeys
     public const string AutoStart = "autoStart";               // bool (Epic 9 behavior)
     public const string Notifications = "notifications";       // bool (Epic 9 behavior)
     public const string UpdateCheck = "updateCheck";           // bool (7-3; opt-out default on)
+    public const string MonitoringEnabled = "monitoringEnabled"; // bool (9-3 opt-in background monitoring)
     public const string NotifyMonitoring = "notifyMonitoring"; // bool (9-2 granular; gated by Notifications)
     public const string NotifyUpdates = "notifyUpdates";       // bool (9-2 granular; gated by Notifications)
 
@@ -28,6 +29,7 @@ public static class AppSettingKeys
             [AutoStart] = "0",
             [Notifications] = "1",
             [UpdateCheck] = "1",
+            [MonitoringEnabled] = "0",
             [NotifyMonitoring] = "1",
             [NotifyUpdates] = "1",
         };

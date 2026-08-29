@@ -44,7 +44,73 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IReadOnlyList<Core.Search.ISearchSettingsContributor> _searchContributors;
     private Core.Search.SettingsSearchService? _searchService;
     private readonly Core.Notifications.INotificationService? _notificationService;
+    private readonly Core.Monitoring.MonitoringService? _monitoringService;
     private readonly IRestorePointService _restorePointService;
+
+    // --- 9-3 monitoring review (Home section) ---
+
+    private MonitoringSectionViewModel? BuildMonitoringSection()
+    {
+        if (_monitoringService is null)
+            return null;
+        var detections = _monitoringService.UnreviewedDetections;
+        if (detections.Count == 0)
+            return null;
+
+        return new MonitoringSectionViewModel(detections
+            .Select(d => new DetectionRowViewModel(d, DisableDetection, DismissDetection))
+            .ToList());
+    }
+
+    private void DisableDetection(DetectionRowViewModel row)
+    {
+        var inspector = _setEntryInspectors.FirstOrDefault(i => i.ModuleId == "Startup & Services");
+        if (inspector is null)
+        {
+            SetStatus("The Startup & Services module is not available to stage this change.", StatusSeverity.Warning);
+            return;
+        }
+
+        var entry = new Core.Sets.SetEntry
+        {
+            ModuleId = "Startup & Services",
+            SettingId = row.Detection.Id,
+            Value = DisableValueFor(row.Detection.Id),
+            Description = $"Disable detected item: {row.Detection.DisplayName}",
+        };
+
+        var group = inspector.CreateChangeGroup(entry);
+        if (group is null)
+        {
+            SetStatus($"\"{row.Detection.DisplayName}\" could not be resolved (it may have been removed already).", StatusSeverity.Warning);
+            _monitoringService?.MarkReviewed(row.Detection.Id);
+            RefreshMonitoringSection();
+            return;
+        }
+
+        _pendingChangesService.Stage(group);
+        _monitoringService?.MarkReviewed(row.Detection.Id);
+        SetStatus($"Disable staged for \"{row.Detection.DisplayName}\" - review and apply when ready.", StatusSeverity.Success);
+        RefreshMonitoringSection();
+    }
+
+    private void DismissDetection(DetectionRowViewModel row)
+    {
+        _monitoringService?.MarkReviewed(row.Detection.Id);
+        RefreshMonitoringSection();
+    }
+
+    private void RefreshMonitoringSection()
+    {
+        if (CurrentContent is HomeViewModel && IsHomeActive)
+            OpenHome();
+    }
+
+    /// <summary>Disable value per the Startup inspector's settingId conventions.</summary>
+    internal static string DisableValueFor(string settingId) =>
+        settingId.StartsWith("startup-entry:", StringComparison.Ordinal)
+            ? Convert.ToHexString(Modules.Startup.Changes.StartupChangeFactory.DisabledBlob)
+            : "Disabled";
 
     // 9-2: gated notifications surface in the status bar (toast rendering is a UI/UX-chapter item)
     private void OnNotificationRaised(object? sender, Core.Notifications.AppNotification notification)
@@ -142,6 +208,7 @@ public partial class MainWindowViewModel : ViewModelBase
         IUpdateService? updateService = null,
         IEnumerable<Core.Search.ISearchSettingsContributor>? searchContributors = null,
         Core.Notifications.INotificationService? notificationService = null,
+        Core.Monitoring.MonitoringService? monitoringService = null,
         IServiceControlService? serviceControlService = null,
         IScheduledTaskService? scheduledTaskService = null,
         Modules.Startup.Services.TaskClassificationOverrideStore? taskClassificationOverrides = null,
@@ -166,6 +233,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _updateService = updateService;
         _searchContributors = searchContributors?.ToList() ?? [];
         _notificationService = notificationService;
+        _monitoringService = monitoringService;
         _restorePointService = restorePointService;
         if (_notificationService is not null)
             _notificationService.NotificationRaised += OnNotificationRaised;
@@ -705,7 +773,8 @@ public partial class MainWindowViewModel : ViewModelBase
             new SystemIdentityService(_registryService).Read(),
             quickActions,
             _changeHistoryService,
-            BuildFirstLaunchBanner());
+            BuildFirstLaunchBanner(),
+            BuildMonitoringSection());
         CurrentContent = home;
         IsHomeActive = true;
         IsSetLoaderActive = false;

@@ -62,16 +62,21 @@ public sealed partial class HomeViewModel : ViewModelBase
     /// <summary>First-launch capability summary (5-2); null after dismissal.</summary>
     public FirstLaunchBannerViewModel? FirstLaunchBanner { get; }
 
+    /// <summary>Unreviewed monitoring detections (9-3); null when none or monitoring off.</summary>
+    public MonitoringSectionViewModel? MonitoringSection { get; }
+
     public HomeViewModel(
         SystemIdentity identity,
         IReadOnlyList<QuickActionViewModel> quickActions,
         IChangeHistoryService historyService,
-        FirstLaunchBannerViewModel? firstLaunchBanner = null)
+        FirstLaunchBannerViewModel? firstLaunchBanner = null,
+        MonitoringSectionViewModel? monitoringSection = null)
     {
         Identity = identity;
         QuickActions = quickActions;
         _historyService = historyService;
         FirstLaunchBanner = firstLaunchBanner;
+        MonitoringSection = monitoringSection;
     }
 
     [RelayCommand]

@@ -77,6 +77,9 @@ public partial class App : Application
                 },
                 exit: () => _windowController!.RequestExit());
 
+            // 9-3: opt-in monitoring loop (runs only while the app is in memory)
+            _serviceProvider.GetRequiredService<Core.Monitoring.MonitoringService>().Start();
+
             // 9-2: auto-start reconcile + minimized launch
             _autoStartService = new AutoStartService(
                 _serviceProvider.GetRequiredService<IRegistryService>(), settingsService);
@@ -189,6 +192,8 @@ public partial class App : Application
         services.AddSingleton<Core.Search.ISearchSettingsContributor, ThisIsMyPC.Modules.Power.Services.PowerSearchContributor>();
         services.AddSingleton<Core.Settings.ISettingsService, Core.Settings.SettingsService>();
         services.AddSingleton<Core.Notifications.INotificationService, Core.Notifications.NotificationService>();
+        services.AddSingleton<Core.Monitoring.IMonitoringSnapshotProvider, MonitoringSnapshotProvider>();
+        services.AddSingleton<Core.Monitoring.MonitoringService>();
         services.AddSingleton<ChangeHistoryRepository>();
         services.AddSingleton<IChangeHistoryService, ChangeHistoryService>();
 
