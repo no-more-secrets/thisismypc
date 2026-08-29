@@ -71,7 +71,8 @@ public sealed partial class SettingChoiceItemViewModel : ViewModelBase
         DisplayName = displayName;
         Description = description;
         Options = options;
-        _selected = options.FirstOrDefault(o => o.Value == initialValue) ?? options[0];
+        _selected = options.FirstOrDefault(o => o.Value == initialValue)
+            ?? (options.Count > 0 ? options[0] : null);
         _applied = applied;
     }
 
@@ -79,11 +80,47 @@ public sealed partial class SettingChoiceItemViewModel : ViewModelBase
     {
         if (value is null)
             return;
+        if (Options.Count == 0)
+            return;
         if (_moduleId is null)
             _settings.SetApp(_key, value.Value);
         else
             _settings.SetModule(_moduleId, _key, value.Value);
         _applied?.Invoke(value.Value);
+    }
+}
+
+/// <summary>A free-text row (TextBox); persists on every keystroke like the others.</summary>
+public sealed partial class SettingTextItemViewModel : ViewModelBase
+{
+    private readonly ISettingsService _settings;
+    private readonly string? _moduleId;
+    private readonly string _key;
+
+    [ObservableProperty]
+    private string _text;
+
+    public string DisplayName { get; }
+    public string Description { get; }
+
+    public SettingTextItemViewModel(
+        ISettingsService settings, string? moduleId, string key,
+        string displayName, string description, string initial)
+    {
+        _settings = settings;
+        _moduleId = moduleId;
+        _key = key;
+        DisplayName = displayName;
+        Description = description;
+        _text = initial;
+    }
+
+    partial void OnTextChanged(string value)
+    {
+        if (_moduleId is null)
+            _settings.SetApp(_key, value);
+        else
+            _settings.SetModule(_moduleId, _key, value);
     }
 }
 
@@ -302,11 +339,9 @@ public sealed partial class SettingsViewModel : ViewModelBase
                 definition.Options?.Select(o => new SettingChoiceOption(o.Value, o.DisplayName)).ToList()
                     ?? [new SettingChoiceOption(current, current)],
                 current),
-            _ => new SettingChoiceItemViewModel(
+            _ => new SettingTextItemViewModel(
                 settings, moduleId, definition.Key, definition.DisplayName,
-                definition.Description,
-                [new SettingChoiceOption(current, current)],
-                current),
+                definition.Description, current),
         };
     }
 }

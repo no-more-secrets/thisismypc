@@ -137,6 +137,53 @@ public class SettingsServiceTests : IDisposable
     }
 
     [Fact]
+    public void UnreadableFile_DegradesToDefaults_AndNeverRewritesTheFile()
+    {
+        // An exclusively-locked file makes ReadAllText throw IOException — the
+        // unreadable path, NOT the corrupt path.
+        Directory.CreateDirectory(_dir);
+        File.WriteAllText(_path, """{ "appSettings": { "theme": "light" } }""");
+        using (File.Open(_path, FileMode.Open, FileAccess.Read, FileShare.None))
+        {
+            var service = Create();
+            service.Initialize();
+
+            Assert.False(service.SettingsWereReset);
+            Assert.NotNull(service.LoadError);
+            Assert.Equal("dark", service.GetApp(AppSettingKeys.Theme, "?"));
+
+            // The safety-critical contract: saves stay disabled so the user's real
+            // file is never clobbered from defaults.
+            service.SetApp(AppSettingKeys.Theme, "light");
+            Assert.Equal("light", service.GetApp(AppSettingKeys.Theme, "?")); // in-memory only
+        }
+
+        // The original content survived untouched
+        Assert.Contains("\"theme\": \"light\"", File.ReadAllText(_path), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void NullValuesInParseableJson_AreSkipped_NotACrash()
+    {
+        Directory.CreateDirectory(_dir);
+        File.WriteAllText(_path, """
+            {
+              "appSettings": { "theme": null, "closeAction": "tray" },
+              "moduleSettings": { "Ghost": null, "Real": { "k": null, "ok": "1" } }
+            }
+            """);
+
+        var service = Create();
+        service.Initialize();
+
+        Assert.Equal("dark", service.GetApp(AppSettingKeys.Theme, "?")); // null skipped → default
+        Assert.Equal("tray", service.GetApp(AppSettingKeys.CloseAction, "?"));
+        Assert.Null(service.GetModule("Ghost", "anything"));
+        Assert.Null(service.GetModule("Real", "k"));
+        Assert.Equal("1", service.GetModule("Real", "ok"));
+    }
+
+    [Fact]
     public void NewDefaults_BackfillIntoOlderFiles()
     {
         Directory.CreateDirectory(_dir);

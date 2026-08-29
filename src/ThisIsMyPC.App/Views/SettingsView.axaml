@@ -27,6 +27,25 @@
             </DockPanel>
         </DataTemplate>
 
+        <DataTemplate DataType="{x:Type vm:SettingTextItemViewModel}">
+            <DockPanel Margin="0,0,0,14">
+                <TextBox DockPanel.Dock="Right"
+                         Text="{Binding Text}"
+                         MinWidth="220"
+                         VerticalAlignment="Top" />
+                <StackPanel Margin="0,0,16,0">
+                    <TextBlock Text="{Binding DisplayName}"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource TextPrimaryBrush}" />
+                    <TextBlock Text="{Binding Description}"
+                               FontSize="12"
+                               TextWrapping="Wrap"
+                               Foreground="{StaticResource TextTertiaryBrush}"
+                               Margin="0,2,0,0" />
+                </StackPanel>
+            </DockPanel>
+        </DataTemplate>
+
         <DataTemplate DataType="{x:Type vm:SettingChoiceItemViewModel}">
             <DockPanel Margin="0,0,0,14">
                 <ComboBox DockPanel.Dock="Right"

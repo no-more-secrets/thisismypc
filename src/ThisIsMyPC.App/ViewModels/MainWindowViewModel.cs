@@ -366,7 +366,9 @@ public partial class MainWindowViewModel : ViewModelBase
         OpenHome();
 
         if (_settingsService?.SettingsWereReset == true)
-            SetStatus("Settings were reset to defaults (the previous settings file was unreadable)", StatusSeverity.Warning);
+            SetStatus("Settings were reset to defaults (the previous file was corrupt; it was preserved as settings.json.bad)", StatusSeverity.Warning);
+        else if (_settingsService?.LoadError is not null)
+            SetStatus("The settings file could not be read - changes to settings will not be saved this session", StatusSeverity.Warning);
 
         // 7-3: fire-and-forget update check — never blocks startup, never surfaces
         // failures (fully offline-safe). Skipped entirely when the user opted out.
