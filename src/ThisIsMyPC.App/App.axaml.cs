@@ -124,6 +124,9 @@ public partial class App : Application
         // Custom set creation (8.5) writes into the same user sets directory.
         services.AddSingleton<ICustomSetWriter>(_ => new CustomSetWriter(
             Path.Combine(AppConstants.DataDirectoryPath, "sets")));
+        // Per-tab display-mode persistence (10.2).
+        services.AddSingleton(_ => new DisplayModePreferencesStore(
+            Path.Combine(AppConstants.DataDirectoryPath, "display-modes.txt")));
         // Per-module set-entry inspectors for the Set Loader preview (8.2) and
         // conflict detection (8.3)
         services.AddSingleton<ISetEntryInspector, ThisIsMyPC.Modules.Shell.Services.ShellSetEntryInspector>();

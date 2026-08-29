@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Modules.Annoyances.Models;
 using ThisIsMyPC.Modules.Annoyances.Services;
@@ -25,11 +26,26 @@ public partial class AnnoyancesViewModel : ViewModelBase, IDisposable
             ["AI Features"] = "Windows Copilot, Recall, and the Edge sidebar",
         };
 
+    private const string TabKey = "annoyances";
+
+    private readonly DisplayModePreferencesStore? _displayModeStore;
+    private bool _suppressModePersist;
+
+    /// <summary>Registry Data display mode (10-2): shows raw paths and values on every card.</summary>
+    [ObservableProperty]
+    private bool _showRegistryData;
+
+    /// <summary>Compact display mode (10-2): collapses card descriptions to a dense toggle list.</summary>
+    [ObservableProperty]
+    private bool _isCompact;
+
     public AnnoyancesViewModel(
         AnnoyancesScanData scanData,
         IPendingChangesService pendingChangesService,
-        IRegistryService registryService)
+        IRegistryService registryService,
+        DisplayModePreferencesStore? displayModeStore = null)
     {
+        _displayModeStore = displayModeStore;
         // Factories re-read live state at stage time — a scan-time snapshot would bake
         // stale BeforeValues into the descriptors after the first apply.
         var provider = new AnnoyancesCardProvider(new AnnoyancesSettingsReader(registryService));
@@ -48,6 +64,38 @@ public partial class AnnoyancesViewModel : ViewModelBase, IDisposable
                 Cards = group.ToList(),
             });
         }
+
+        // Restore the tab's persisted display mode; card flags follow.
+        if (_displayModeStore?.Get(TabKey) is { } mode)
+        {
+            _suppressModePersist = true;
+            ShowRegistryData = mode.RegistryData;
+            IsCompact = mode.Compact;
+            _suppressModePersist = false;
+        }
+    }
+
+    partial void OnShowRegistryDataChanged(bool value) => ApplyDisplayMode();
+
+    partial void OnIsCompactChanged(bool value) => ApplyDisplayMode();
+
+    /// <summary>
+    /// Mode switches mutate the existing card VMs in place — the list is never
+    /// rebuilt, so scroll position and pending tint survive by construction.
+    /// </summary>
+    private void ApplyDisplayMode()
+    {
+        foreach (var group in CardGroups)
+        {
+            foreach (var card in group.Cards)
+            {
+                card.IsDescriptionVisible = !IsCompact;
+                card.IsRegistryDataVisible = ShowRegistryData;
+            }
+        }
+
+        if (!_suppressModePersist)
+            _displayModeStore?.Set(TabKey, ShowRegistryData, IsCompact);
     }
 
     public void Dispose()

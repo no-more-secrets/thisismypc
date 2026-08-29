@@ -31,6 +31,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IRegistryService _registryService;
     private readonly IServiceControlService? _serviceControlService;
     private readonly IPowerService? _powerService;
+    private readonly DisplayModePreferencesStore? _displayModeStore;
     private readonly IScheduledTaskService? _scheduledTaskService;
     private readonly Modules.Startup.Services.TaskClassificationOverrideStore? _taskClassificationOverrides;
     private readonly IExplorerRestartService _explorerRestartService;
@@ -106,8 +107,10 @@ public partial class MainWindowViewModel : ViewModelBase
         IServiceControlService? serviceControlService = null,
         IScheduledTaskService? scheduledTaskService = null,
         Modules.Startup.Services.TaskClassificationOverrideStore? taskClassificationOverrides = null,
-        IPowerService? powerService = null)
+        IPowerService? powerService = null,
+        DisplayModePreferencesStore? displayModeStore = null)
     {
+        _displayModeStore = displayModeStore;
         _powerService = powerService;
         _navigationService = navigationService;
         _pendingChangesService = pendingChangesService;
@@ -200,7 +203,8 @@ public partial class MainWindowViewModel : ViewModelBase
                     {
                         ContentTitle = current.Module.Info.Name;
                         ContentDescription = current.Module.Info.Description;
-                        CurrentContent = new AnnoyancesViewModel(annoyancesData, _pendingChangesService, _registryService);
+                        CurrentContent = new AnnoyancesViewModel(
+                            annoyancesData, _pendingChangesService, _registryService, _displayModeStore);
                     }
                     else
                     {
