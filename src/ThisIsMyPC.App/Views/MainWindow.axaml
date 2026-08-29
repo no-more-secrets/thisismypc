@@ -251,6 +251,22 @@
                                            Foreground="{StaticResource TextSecondaryBrush}"
                                            FontSize="13" />
                             </Button>
+
+                            <!-- 7-3: unobtrusive update badge; visible only when a newer release is known -->
+                            <Button Classes="apply-bar-discard"
+                                    IsVisible="{Binding IsUpdateBadgeVisible}"
+                                    Command="{Binding OpenReleasesPageCommand}"
+                                    Padding="10,6"
+                                    ToolTip.Tip="A newer version is available - click to open the releases page">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <Ellipse Width="8" Height="8"
+                                             Fill="{StaticResource SuccessBrush}"
+                                             VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding UpdateBadgeText}"
+                                               Foreground="{StaticResource TextSecondaryBrush}"
+                                               FontSize="13" />
+                                </StackPanel>
+                            </Button>
                         </StackPanel>
 
                         <!-- Status message (fills remaining space, truncates with ellipsis) -->

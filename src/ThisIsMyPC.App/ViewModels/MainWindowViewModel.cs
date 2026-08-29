@@ -40,6 +40,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly ICapabilityDetector? _capabilityDetector;
     private readonly Core.Settings.ISettingsService? _settingsService;
     private readonly IReadOnlyList<Core.Settings.IModuleSettingsContributor> _moduleSettingsContributors;
+    private readonly IUpdateService? _updateService;
     private readonly IRestorePointService _restorePointService;
 
     // FR64: auto restore point when a batch stages this many individual changes
@@ -125,6 +126,7 @@ public partial class MainWindowViewModel : ViewModelBase
         ICapabilityDetector? capabilityDetector = null,
         Core.Settings.ISettingsService? settingsService = null,
         IEnumerable<Core.Settings.IModuleSettingsContributor>? moduleSettingsContributors = null,
+        IUpdateService? updateService = null,
         IServiceControlService? serviceControlService = null,
         IScheduledTaskService? scheduledTaskService = null,
         Modules.Startup.Services.TaskClassificationOverrideStore? taskClassificationOverrides = null,
@@ -146,6 +148,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _capabilityDetector = capabilityDetector;
         _settingsService = settingsService;
         _moduleSettingsContributors = moduleSettingsContributors?.ToList() ?? [];
+        _updateService = updateService;
         _restorePointService = restorePointService;
         ReviewPanel = reviewPanel;
         ChangeHistory = new ChangeHistoryViewModel(
@@ -364,6 +367,10 @@ public partial class MainWindowViewModel : ViewModelBase
 
         if (_settingsService?.SettingsWereReset == true)
             SetStatus("Settings were reset to defaults (the previous settings file was unreadable)", StatusSeverity.Warning);
+
+        // 7-3: fire-and-forget update check — never blocks startup, never surfaces
+        // failures (fully offline-safe). Skipped entirely when the user opted out.
+        _ = CheckForUpdateBadgeAsync();
     }
 
     private void PopulateSidebar()
@@ -452,6 +459,57 @@ public partial class MainWindowViewModel : ViewModelBase
         SelectedModule = null;
 
         ClearSidebarActives();
+    }
+
+    [ObservableProperty]
+    private bool _isUpdateBadgeVisible;
+
+    [ObservableProperty]
+    private string _updateBadgeText = string.Empty;
+
+    private async Task CheckForUpdateBadgeAsync()
+    {
+        if (_updateService is null)
+            return;
+        // Opt-out toggle (default on): off means NO network request at all.
+        if (_settingsService is not null
+            && !_settingsService.GetAppBool(Core.Settings.AppSettingKeys.UpdateCheck, fallback: true))
+        {
+            return;
+        }
+
+        try
+        {
+            var result = await _updateService.CheckForUpdateAsync().ConfigureAwait(true);
+            if (result.IsSuccess && result.Value is { IsAvailable: true, Version: { } version })
+            {
+                UpdateBadgeText = $"Update {version}";
+                IsUpdateBadgeVisible = true;
+            }
+        }
+#pragma warning disable CA1031 // AC: check failures are silently ignored — offline-safe
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Update check failed: {ex.Message}");
+        }
+#pragma warning restore CA1031
+    }
+
+    [RelayCommand]
+    private void OpenReleasesPage()
+    {
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = Core.AppConstants.UpdateUrl,
+                UseShellExecute = true,
+            });
+        }
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
+        {
+            SetStatus($"Could not open the releases page: {Core.AppConstants.UpdateUrl}", StatusSeverity.Warning);
+        }
     }
 
     [ObservableProperty]
