@@ -10,6 +10,15 @@ namespace ThisIsMyPC.Integration.Tests.Fakes;
 /// </summary>
 internal sealed class FakeRegistryService : IRegistryService
 {
+    /// <summary>Keys that KeyExists reports as present (case-insensitive).</summary>
+    public HashSet<string> ExistingKeys { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Every DeleteKey call, in order.</summary>
+    public List<(string KeyPath, bool Recursive)> DeletedKeys { get; } = [];
+
+    /// <summary>When set, DeleteKey on this path fails with AccessDenied.</summary>
+    public string? FailDeleteForPath { get; set; }
+
     public OperationResult<int> ReadDWord(string keyPath, string valueName) =>
         OperationResult<int>.Failure("Not found", ErrorCategory.NotFound);
 
@@ -43,11 +52,18 @@ internal sealed class FakeRegistryService : IRegistryService
     public OperationResult<bool> DeleteValue(string keyPath, string valueName) =>
         OperationResult<bool>.Success(true);
 
-    public OperationResult<bool> DeleteKey(string keyPath, bool recursive = false) =>
-        OperationResult<bool>.Success(true);
+    public OperationResult<bool> DeleteKey(string keyPath, bool recursive = false)
+    {
+        if (string.Equals(FailDeleteForPath, keyPath, StringComparison.OrdinalIgnoreCase))
+            return OperationResult<bool>.Failure("Access denied", ErrorCategory.AccessDenied);
+
+        DeletedKeys.Add((keyPath, recursive));
+        ExistingKeys.Remove(keyPath);
+        return OperationResult<bool>.Success(true);
+    }
 
     public OperationResult<bool> KeyExists(string keyPath) =>
-        OperationResult<bool>.Success(false);
+        OperationResult<bool>.Success(ExistingKeys.Contains(keyPath));
 
     public OperationResult<bool> ValueExists(string keyPath, string valueName) =>
         OperationResult<bool>.Success(false);

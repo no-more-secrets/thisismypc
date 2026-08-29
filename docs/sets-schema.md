@@ -39,7 +39,7 @@ skipped with a warning — it never breaks loading of other sets.
 |---|---|---|
 | `companionServices` | string[] | Services stopped + disabled around the mutation (e.g. `["DiagTrack"]`) |
 | `companionTasks` | string[] | Scheduled task paths (not yet supported by the executor — entries carrying this fail to apply with a clear error) |
-| `gpCacheEntries` | string[] | GPCache sync targets (not yet supported, same behavior) |
+| `gpCacheEntries` | string[] | Registry keys recursively deleted before the primary write so Windows rebuilds them from the policy hive (e.g. `["HKLM\\SOFTWARE\\Microsoft\\WindowsUpdate\\UpdatePolicy\\GPCache"]`). Paths must be hive-rooted, at least three levels deep, and contain a `GPCache` segment — anything else fails the whole change before any step runs. Cleared again on revert; never restored (derived state) |
 | `reversionVectors` | string[] | Informational reversion risks shown to the user, e.g. `["Windows feature updates"]` |
 | `skuRestriction` | string | `"Home"`, `"Pro"`, `"Enterprise"`, or `"Education"` — the SKU the entry is blocked/cosmetic on |
 | `ownerModeRequired` | bool | Requires the Owner Mode service (v1.0) |

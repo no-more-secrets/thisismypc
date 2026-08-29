@@ -202,14 +202,12 @@ public sealed class EnforcementExecutorTests
 
     [Theory]
     [InlineData("tasks")]
-    [InlineData("gpcache")]
     [InlineData("acl")]
     public async Task Execute_UnsupportedDimensions_FailUpFront(string dimension)
     {
         var enforcement = dimension switch
         {
             "tasks" => new SettingEnforcement { CompanionTasks = [@"\Microsoft\Windows\Test"] },
-            "gpcache" => new SettingEnforcement { GPCacheEntries = ["TestEntry"] },
             _ => new SettingEnforcement { AclElevation = true },
         };
         var received = new List<ChangeDescriptor>();
@@ -219,6 +217,20 @@ public sealed class EnforcementExecutorTests
         Assert.False(result.IsSuccess);
         Assert.Equal(ErrorCategory.ServiceUnavailable, result.ErrorCategory);
         Assert.Contains("not yet supported", result.ErrorMessage, StringComparison.Ordinal);
+        Assert.Empty(received);
+    }
+
+    [Fact]
+    public async Task Execute_GPCacheWithoutRegistryService_GatesUpFront()
+    {
+        var change = CreateChange(new SettingEnforcement { GPCacheEntries = [GPCachePath] });
+        var received = new List<ChangeDescriptor>();
+
+        var result = await CreateSut().ExecuteAsync(change, Primary(received));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorCategory.ServiceUnavailable, result.ErrorCategory);
+        Assert.Contains("not available in this host", result.ErrorMessage, StringComparison.Ordinal);
         Assert.Empty(received);
     }
 
@@ -329,5 +341,192 @@ public sealed class EnforcementExecutorTests
         Assert.False(result.IsSuccess);
         Assert.Equal(ServiceStartType.Disabled, _services.GetService("SvcA")!.StartType);
         Assert.Empty(_services.Calls);
+    }
+
+    // --- GPCache clearing (Story 26-8) ---
+
+    private const string GPCachePath = @"HKLM\SOFTWARE\Microsoft\WindowsUpdate\UpdatePolicy\GPCache";
+
+    private readonly FakeRegistryService _registry = new();
+
+    private EnforcementExecutor CreateSutWithRegistry() => new(_services, _tasks, _registry);
+
+    [Fact]
+    public async Task Execute_GPCache_ClearedRecursively_AfterCompanions_BeforePrimary()
+    {
+        _services.AddService("UsoSvc", ServiceState.Running, ServiceStartType.Automatic);
+        _registry.ExistingKeys.Add(GPCachePath);
+        var change = CreateChange(new SettingEnforcement
+        {
+            CompanionServices = ["UsoSvc"],
+            GPCacheEntries = [GPCachePath],
+        });
+        var received = new List<ChangeDescriptor>();
+
+        var result = await CreateSutWithRegistry().ExecuteAsync(change, Primary(received));
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.Single(received);
+        Assert.Equal(
+            [EnforcementStepType.DisableService, EnforcementStepType.ClearGPCache, EnforcementStepType.PrimaryMutation],
+            result.Steps.Select(s => s.StepType));
+        Assert.Equal((GPCachePath, true), Assert.Single(_registry.DeletedKeys));
+    }
+
+    [Fact]
+    public async Task Execute_GPCache_MissingKey_IsSuccessWithoutDelete()
+    {
+        var change = CreateChange(new SettingEnforcement { GPCacheEntries = [GPCachePath] });
+        var received = new List<ChangeDescriptor>();
+
+        var result = await CreateSutWithRegistry().ExecuteAsync(change, Primary(received));
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.Single(received);
+        Assert.Empty(_registry.DeletedKeys);
+        var clearStep = result.Steps.Single(s => s.StepType == EnforcementStepType.ClearGPCache);
+        Assert.True(clearStep.IsSuccess);
+    }
+
+    [Fact]
+    public async Task Execute_GPCacheClearFails_CompanionsRolledBack_PrimaryNeverRuns()
+    {
+        _services.AddService("UsoSvc", ServiceState.Running, ServiceStartType.Automatic);
+        _registry.ExistingKeys.Add(GPCachePath);
+        _registry.FailDeleteForPath = GPCachePath;
+        var change = CreateChange(new SettingEnforcement
+        {
+            CompanionServices = ["UsoSvc"],
+            GPCacheEntries = [GPCachePath],
+        });
+        var received = new List<ChangeDescriptor>();
+
+        var result = await CreateSutWithRegistry().ExecuteAsync(change, Primary(received));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorCategory.AccessDenied, result.ErrorCategory);
+        Assert.Empty(received); // primary never ran
+        Assert.Equal(ServiceStartType.Automatic, _services.GetService("UsoSvc")!.StartType);
+        Assert.Equal(ServiceState.Running, _services.GetService("UsoSvc")!.State);
+        Assert.True(result.Steps.Single(s => s.StepType == EnforcementStepType.DisableService).WasRolledBack);
+    }
+
+    [Fact]
+    public async Task Revert_GPCache_ClearedAgain_AfterSuccessfulPrimaryRevert()
+    {
+        _registry.ExistingKeys.Add(GPCachePath);
+        var change = CreateChange(new SettingEnforcement { GPCacheEntries = [GPCachePath] });
+        var received = new List<ChangeDescriptor>();
+
+        var result = await CreateSutWithRegistry().RevertAsync(change, Primary(received));
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.Single(received);
+        Assert.Equal(
+            [EnforcementStepType.PrimaryMutation, EnforcementStepType.ClearGPCache],
+            result.Steps.Select(s => s.StepType));
+        Assert.Equal((GPCachePath, true), Assert.Single(_registry.DeletedKeys));
+    }
+
+    [Fact]
+    public async Task Revert_GPCacheClearFails_ResultFails()
+    {
+        _registry.ExistingKeys.Add(GPCachePath);
+        _registry.FailDeleteForPath = GPCachePath;
+        var change = CreateChange(new SettingEnforcement { GPCacheEntries = [GPCachePath] });
+
+        var result = await CreateSutWithRegistry().RevertAsync(change, Primary([]));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorCategory.AccessDenied, result.ErrorCategory);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData(@"HKLM")]
+    [InlineData(@"HKLM\SOFTWARE\GPCache")] // too shallow: hive + 2 segments
+    [InlineData(@"HKLM\SOFTWARE\Microsoft\WindowsUpdate")] // no GPCache segment
+    [InlineData(@"HKLM\SOFTWARE\Microsoft\NotGPCacheHere\Sub")] // segment must EQUAL GPCache
+    [InlineData(@"Foo\Bar\GPCache\Baz")] // unknown hive
+    [InlineData(@"HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UpdatePolicy\GPCache")] // PowerShell-style hive
+    public async Task Execute_UnsafeGPCachePath_RejectedBeforeAnyStep(string path)
+    {
+        _services.AddService("UsoSvc", ServiceState.Running, ServiceStartType.Automatic);
+        var change = CreateChange(new SettingEnforcement
+        {
+            CompanionServices = ["UsoSvc"],
+            GPCacheEntries = [path],
+        });
+        var received = new List<ChangeDescriptor>();
+
+        var result = await CreateSutWithRegistry().ExecuteAsync(change, Primary(received));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorCategory.EnforcementBlocked, result.ErrorCategory);
+        Assert.Contains("invalid GPCache entry", result.ErrorMessage, StringComparison.Ordinal);
+        Assert.Empty(received);
+        Assert.Empty(_services.Calls); // gate fires before any companion mutation
+        Assert.Empty(_registry.DeletedKeys);
+    }
+
+    [Fact]
+    public async Task Execute_ServicesTasksGPCachePrimary_FullStepOrder()
+    {
+        _services.AddService("UsoSvc", ServiceState.Running, ServiceStartType.Automatic);
+        _tasks.AddTask(@"\Microsoft\Windows\WindowsUpdate\Refresh Group Policy Cache", enabled: true);
+        _registry.ExistingKeys.Add(GPCachePath);
+        var change = CreateChange(new SettingEnforcement
+        {
+            CompanionServices = ["UsoSvc"],
+            CompanionTasks = [@"\Microsoft\Windows\WindowsUpdate\Refresh Group Policy Cache"],
+            GPCacheEntries = [GPCachePath],
+        });
+        var received = new List<ChangeDescriptor>();
+
+        var result = await CreateSutWithRegistry().ExecuteAsync(change, Primary(received));
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.Equal(
+            [
+                EnforcementStepType.DisableService,
+                EnforcementStepType.DisableScheduledTask,
+                EnforcementStepType.ClearGPCache,
+                EnforcementStepType.PrimaryMutation,
+            ],
+            result.Steps.Select(s => s.StepType));
+    }
+
+    [Fact]
+    public async Task Execute_GPCacheClearFails_DisabledTasksAlsoRolledBack()
+    {
+        _tasks.AddTask(@"\Microsoft\Windows\Test\CompanionTask", enabled: true);
+        _registry.ExistingKeys.Add(GPCachePath);
+        _registry.FailDeleteForPath = GPCachePath;
+        var change = CreateChange(new SettingEnforcement
+        {
+            CompanionTasks = [@"\Microsoft\Windows\Test\CompanionTask"],
+            GPCacheEntries = [GPCachePath],
+        });
+        var received = new List<ChangeDescriptor>();
+
+        var result = await CreateSutWithRegistry().ExecuteAsync(change, Primary(received));
+
+        Assert.False(result.IsSuccess);
+        Assert.Empty(received);
+        Assert.True(_tasks.GetTask(@"\Microsoft\Windows\Test\CompanionTask")!.IsEnabled);
+        Assert.True(result.Steps.Single(s => s.StepType == EnforcementStepType.DisableScheduledTask).WasRolledBack);
+    }
+
+    [Fact]
+    public async Task Execute_GPCacheSegmentMatch_IsCaseInsensitive()
+    {
+        var path = @"HKLM\SOFTWARE\Microsoft\WindowsUpdate\UpdatePolicy\gpcache";
+        _registry.ExistingKeys.Add(path);
+        var change = CreateChange(new SettingEnforcement { GPCacheEntries = [path] });
+
+        var result = await CreateSutWithRegistry().ExecuteAsync(change, Primary([]));
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.Equal((path, true), Assert.Single(_registry.DeletedKeys));
     }
 }

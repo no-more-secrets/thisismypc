@@ -13,9 +13,12 @@ namespace ThisIsMyPC.App.Services;
 /// Production enforcement orchestrator: companion services are disabled around the
 /// primary mutation (supplied as a delegate — the executor never calls modules directly)
 /// and restored on failure. Companion scheduled tasks are disabled/re-enabled the same
-/// way when a task service is supplied. GPCache and ACL enforcement dimensions are
-/// not yet supported and fail up front rather than silently partially enforcing.
-/// No exceptions escape except OperationCanceledException on caller cancellation.
+/// way when a task service is supplied, and GPCache entries are cleared before the
+/// primary mutation when a registry service is supplied (Windows rebuilds the cache
+/// from the policy hive — see the 26-8 derived-state rule). The ACL enforcement
+/// dimension is not yet supported and fails up front rather than silently partially
+/// enforcing. No exceptions escape except OperationCanceledException on caller
+/// cancellation.
 /// </summary>
 public sealed class EnforcementExecutor : IEnforcementExecutor
 {
@@ -23,12 +26,17 @@ public sealed class EnforcementExecutor : IEnforcementExecutor
 
     private readonly IServiceControlService _serviceControl;
     private readonly IScheduledTaskService? _scheduledTasks;
+    private readonly IRegistryService? _registry;
 
-    public EnforcementExecutor(IServiceControlService serviceControl, IScheduledTaskService? scheduledTasks = null)
+    public EnforcementExecutor(
+        IServiceControlService serviceControl,
+        IScheduledTaskService? scheduledTasks = null,
+        IRegistryService? registry = null)
     {
         ArgumentNullException.ThrowIfNull(serviceControl);
         _serviceControl = serviceControl;
         _scheduledTasks = scheduledTasks;
+        _registry = registry;
     }
 
     public async Task<EnforcementResult> ExecuteAsync(
@@ -95,6 +103,22 @@ public sealed class EnforcementExecutor : IEnforcementExecutor
                 throw;
             }
 
+            // Cleared BEFORE the primary write (epics.md L2234 step order) so the
+            // orchestrator can never keep serving stale cached policy. A cleared cache
+            // is derived state and is never restored — Windows's refresh task rebuilds
+            // it from the policy hive, which on failure is still unchanged (26-8 rule).
+            foreach (var cachePath in enforcement.GPCacheEntries ?? [])
+            {
+                var clear = ClearGPCacheEntry(cachePath);
+                steps.Add(Step(EnforcementStepType.ClearGPCache, cachePath, clear));
+                if (!clear.IsSuccess)
+                {
+                    RollbackDisabledTasks(disabledTasks, steps);
+                    await RollbackDisabledAsync(disabled, steps).ConfigureAwait(false);
+                    return Failure(steps, clear);
+                }
+            }
+
             // A throwing delegate must take the same rollback path as a failing one.
             OperationResult<bool> primary;
             try
@@ -103,6 +127,7 @@ public sealed class EnforcementExecutor : IEnforcementExecutor
             }
             catch (OperationCanceledException)
             {
+                RollbackDisabledTasks(disabledTasks, steps);
                 await RollbackDisabledAsync(disabled, steps).ConfigureAwait(false);
                 throw;
             }
@@ -162,6 +187,16 @@ public sealed class EnforcementExecutor : IEnforcementExecutor
             if (!primary.IsSuccess)
                 return Failure(steps, primary);
 
+            // The cache must not keep serving values from the now-reverted policy
+            // state — clear it again so Windows rebuilds from the restored hive.
+            foreach (var cachePath in enforcement.GPCacheEntries ?? [])
+            {
+                var clear = ClearGPCacheEntry(cachePath);
+                steps.Add(Step(EnforcementStepType.ClearGPCache, cachePath, clear));
+                if (!clear.IsSuccess)
+                    return Failure(steps, clear);
+            }
+
             // Best-effort restore: the true pre-apply start type is unknown at revert time.
             // Manual makes the service startable again without forcing it on; services not
             // currently Disabled are left untouched.
@@ -219,9 +254,24 @@ public sealed class EnforcementExecutor : IEnforcementExecutor
                 ErrorCategory.ServiceUnavailable);
 
         if (enforcement.GPCacheEntries is { Count: > 0 })
-            return GateFailure(
-                $"'{change.DisplayName}' requires Group Policy cache synchronization, which is not yet supported.",
-                ErrorCategory.ServiceUnavailable);
+        {
+            if (_registry is null)
+                return GateFailure(
+                    $"'{change.DisplayName}' requires Group Policy cache synchronization, which is not available in this host.",
+                    ErrorCategory.ServiceUnavailable);
+
+            // Safety guard: cache entries are recursively DELETED. A hand-edited user
+            // set must never be able to point this at an arbitrary subtree, so every
+            // path must be hive-rooted, at least three segments deep, and contain a
+            // literal GPCache segment. Reject before any step executes.
+            foreach (var entry in enforcement.GPCacheEntries)
+            {
+                if (!IsSafeGPCachePath(entry))
+                    return GateFailure(
+                        $"'{change.DisplayName}' has an invalid GPCache entry '{entry}': paths must be hive-rooted, at least three levels deep, and contain a 'GPCache' segment.",
+                        ErrorCategory.EnforcementBlocked);
+            }
+        }
 
         if (enforcement.AclElevation)
             return GateFailure(
@@ -356,6 +406,53 @@ public sealed class EnforcementExecutor : IEnforcementExecutor
             return OperationResult<bool>.Success(true);
 
         return _scheduledTasks.SetEnabled(taskPath, true);
+    }
+
+    private OperationResult<bool> ClearGPCacheEntry(string cachePath)
+    {
+        // Gate() guarantees _registry is non-null whenever GPCacheEntries execute.
+        var exists = _registry!.KeyExists(cachePath);
+        if (!exists.IsSuccess)
+            return OperationResult<bool>.Failure(
+                exists.ErrorMessage!, exists.ErrorCategory!.Value, exists.Exception);
+
+        if (!exists.Value)
+            return OperationResult<bool>.Success(true); // nothing cached — nothing to clear
+
+        return _registry.DeleteKey(cachePath, recursive: true);
+    }
+
+    // Mirrors RegistryService.ParseKeyPath's accepted roots — the guard must reject
+    // up front anything the registry layer would reject (or misroute) at run time.
+    private static readonly string[] KnownHives =
+    [
+        "HKCU", "HKEY_CURRENT_USER",
+        "HKLM", "HKEY_LOCAL_MACHINE",
+        "HKCR", "HKEY_CLASSES_ROOT",
+        "HKU", "HKEY_USERS",
+        "HKCC", "HKEY_CURRENT_CONFIG",
+    ];
+
+    private static bool IsSafeGPCachePath(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            return false;
+
+        var segments = path.Split('\\', StringSplitOptions.RemoveEmptyEntries);
+        // Hive + at least three levels, e.g. HKLM\SOFTWARE\Microsoft\...\GPCache.
+        if (segments.Length < 4)
+            return false;
+
+        if (Array.FindIndex(KnownHives, h => string.Equals(h, segments[0], StringComparison.OrdinalIgnoreCase)) < 0)
+            return false;
+
+        for (var i = 1; i < segments.Length; i++)
+        {
+            if (string.Equals(segments[i], "GPCache", StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        return false;
     }
 
     private OperationResult<bool> RestoreCompanionToManual(string serviceName)
