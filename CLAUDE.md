@@ -11,37 +11,35 @@ replace stale text.
 ExplorerPatcher / HWiNFO consolidated). C# / .NET (`net10.0-windows10.0.22621.0`),
 Avalonia 11 + CommunityToolkit.Mvvm, xUnit. Runs elevated (`app.manifest` requireAdministrator).
 
-## The driving goal: mass debloat/tweak module
+## Where the project is: BMAD is closed
 
-Sam is helping a friend debloat an the laptop. The near-term mission is to make this app
-able to apply **tweak sets** so Claude Code on that machine can run the debloat safely,
-reversibly, with visible before-states.
+Every defined BMAD story shipped (epics 1-10, 25-28 complete; 20-1 standalone).
+Epics that never got stories (11-19, 20-remainder, 21-24) are `retired` in
+sprint-status.yaml and form the backlog for what comes next. Do not run the BMAD
+workflow (`_bmad/`) for new work.
 
-- **The tweak inventory** (audited from Sam's machine, the source data for the built-in
-  sets): `_bmad-output/planning-artifacts/TWEAKS.md` (in-repo; contains personal-machine
-  details — move out before the repo ever goes public). Its ⚠️ items
-  (Defender/WU/SmartScreen off) are opt-in only; its pitfalls section (WbioSrvc + biometric
-  sensor freeze, HP firmware-update channels) must be encoded as `SettingEnforcement`
-  companions and warnings, not prose.
-- **Spec**: Epic 8 (Tweak Sets & Optimization Packs) + Epic 26 (enforcement) in
-  `_bmad-output/planning-artifacts/epics.md`.
-- **Sequence**: 26-2 executor delegation (done) → 26-3 SKU gating → service-control (SCM)
-  interop + AppX removal capability (new, nothing exists — `ChangeValueType.Service_StartType`
-  has no implementation behind it) → 26-4 enforcement metadata → 8.1 `ISetProvider` + set
-  JSON schema → author the sets from TWEAKS.md → 8.2/8.3 preview & conflict UI.
-- ⛔ Never shell out to O&O ShutUp or similar binaries — port their registry recipes into
-  set definitions. Opaque tools break the before-state/undo guarantees.
+**The current chapter** is Sam's post-BMAD plan, two tracks:
+1. **Custom modules ported from open-source Windows utilities** — the retired epics
+   (display/DDC-CI, system info, ASUS/ATKACPI, OpenRGB, drivers, network/firewall,
+   profiles, privacy/telemetry, WU remainder, software install) are the menu, not a
+   contract. ⛔ Never shell out to opaque binaries (O&O ShutUp etc.) — port their
+   registry/API recipes into set definitions or modules; opaque tools break the
+   before-state/undo guarantees.
+2. **UI/UX overhaul** — light theme, toasts, card highlight/observable degradation,
+   the actionable Owner Mode callout, save-form dedup, and everything tagged
+   "deferred to the UI/UX chapter" in story files. Naming/branding decisions are Sam's.
+
+`_bmad-output/planning-artifacts/` (PRD, architecture, epics) remains the reference
+spec; `TWEAKS.md` there contains personal-machine details — move out before the repo
+goes public.
 
 ## How work runs here
 
 - **Commit straight to `main`.** No feature branches or PR ceremony.
-- **BMAD artifacts are specs only** (PRD, architecture, epics, stories in `_bmad-output/`).
-  Skip the agent role-play and "new context window" instructions.
-- Story cycle: implement from the story file → full test suite → fresh-context code review
-  → commit → update story `Status:` + sprint-status.yaml. Don't ask "proceed?" between
-  stories. Stop only for irreversible things and naming/branding (Sam's).
-- Read the story's Dev Notes before coding — they are usually near-code-complete and cite
-  architecture.md line numbers.
+- Work cycle: implement → full test suite → fresh-context code review for anything
+  substantial → commit → update whatever tracking doc the current chapter uses.
+  Don't ask "proceed?" between tasks. Stop only for irreversible things and
+  naming/branding (Sam's).
 
 ## Build & test
 
@@ -76,5 +74,8 @@ Full rules: `_bmad-output/planning-artifacts/architecture.md` (esp. the "AI agen
   executor never calls modules directly (delegate pattern).
 - **Modules**: implement `IModule` (`Core/Modules/IModule.cs`), registered explicitly in
   `App/App.axaml.cs` via `AddSingleton<IModule, X>()` (NativeAOT-safe — no reflection
-  scanning). `Modules.Shell` is the reference implementation; `Modules.Startup` and
-  `Modules.Power` are stubs.
+  scanning). `Modules.Shell` is the reference implementation for custom-view modules;
+  `Modules.Annoyances` is the reference card-renderer consumer.
+- **Session 0 service** (`ThisIsMyPC.Service` + `ThisIsMyPC.Ipc.Contracts`): GPLv2 in
+  this repo (docs/why-gplv2.md — there is no private repo). IPC is the hardened named
+  pipe from 28-1; new message types extend the envelope, never change it.
