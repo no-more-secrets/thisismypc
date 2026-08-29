@@ -33,6 +33,36 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
         ? string.Empty
         : Model.ValueName is null ? Model.RegistryPath : $@"{Model.RegistryPath}\{Model.ValueName}";
 
+    // --- Badges & callouts (10-3). Visible in every display mode — safety-critical
+    // information is never hidden by a display preference. ---
+
+    /// <summary>Enforcement badge: the profile's summary, e.g. "Windows is known to revert this setting".</summary>
+    public bool HasEnforcementBadge => Model.Enforcement is not null;
+    public string? EnforcementSummary => Model.Enforcement?.Summary;
+    public string? ReversionRisksText =>
+        Model.Enforcement?.ReversionRisks is { Count: > 0 } risks
+            ? $"May revert via: {string.Join(", ", risks)}"
+            : null;
+    public bool HasReversionRisks => ReversionRisksText is not null;
+
+    /// <summary>
+    /// SKU callout: informational only — the setting stays toggleable (8-4 rule).
+    /// </summary>
+    public bool HasSkuNotice { get; }
+    public string? SkuNotice { get; }
+
+    /// <summary>
+    /// Owner Mode degradation: control visible but inert, card fully readable.
+    /// </summary>
+    public bool IsOwnerModeDegraded { get; }
+    public string? OwnerModeCallout { get; }
+
+    /// <summary>Subtle badge when Owner Mode is required AND available.</summary>
+    public bool ShowOwnerModeBadge { get; }
+
+    /// <summary>The only thing degradation disables is the control itself.</summary>
+    public bool IsControlEnabled => !IsOwnerModeDegraded;
+
     [ObservableProperty]
     private bool _isEnabled;
 
@@ -53,13 +83,35 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private bool _isRegistryDataVisible;
 
-    public SettingCardViewModel(SettingCardSource source, IPendingChangesService pendingChangesService)
+    public SettingCardViewModel(
+        SettingCardSource source,
+        IPendingChangesService pendingChangesService,
+        ICapabilityDetector? capabilityDetector = null)
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(pendingChangesService);
         _source = source;
         _pendingChangesService = pendingChangesService;
         Model = source.Model;
+
+        // SKU callout only when the detected edition matches the restriction
+        // (IsSkuRestricted handles null/unknown as not-restricted).
+        if (capabilityDetector?.IsSkuRestricted(Model.SkuRestriction) == true)
+        {
+            HasSkuNotice = true;
+            SkuNotice = "On this Windows edition the setting is cosmetic — Windows ignores it. You can still apply it.";
+        }
+
+        // Owner Mode degradation: no detector means the service can't be reached —
+        // treat as unavailable (safe default).
+        if (Model.OwnerModeRequired)
+        {
+            var ownerModeAvailable = capabilityDetector?.IsOwnerModeAvailable == true;
+            IsOwnerModeDegraded = !ownerModeAvailable;
+            ShowOwnerModeBadge = ownerModeAvailable;
+            if (IsOwnerModeDegraded)
+                OwnerModeCallout = "This setting requires Owner Mode to persist across updates. Owner Mode arrives with the background service.";
+        }
 
         _registryIsEnabled = Model.CurrentValue == "1";
         _suppressStaging = true;
@@ -71,7 +123,9 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
 
     partial void OnIsEnabledChanged(bool value)
     {
-        if (_suppressStaging)
+        // Degraded cards must never stage, even via programmatic IsEnabled writes —
+        // the disabled ToggleSwitch only blocks UI input.
+        if (_suppressStaging || !IsControlEnabled)
             return;
 
         _debounceCts?.Cancel();

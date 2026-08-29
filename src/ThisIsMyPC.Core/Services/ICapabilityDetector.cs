@@ -23,4 +23,11 @@ public interface ICapabilityDetector
     /// An unknown SKU never triggers a restriction — callouts are informational only.
     /// </summary>
     bool IsSkuRestricted(WindowsSku? restriction);
+
+    /// <summary>
+    /// Whether the Owner Mode background service is installed and running. Drives the
+    /// card degradation pattern (10.3). The availability-changed observable arrives
+    /// with the service itself (Epic 28).
+    /// </summary>
+    bool IsOwnerModeAvailable { get; }
 }

@@ -44,6 +44,10 @@ public sealed class CapabilityDetector : ICapabilityDetector
 
     public string? SkuDetectionFailureReason => _skuDetectionFailureReason;
 
+    // The Owner Mode service does not exist yet (Epic 28); until it ships, every card
+    // requiring it degrades to the disabled-control-with-callout pattern.
+    public bool IsOwnerModeAvailable => false;
+
     public bool IsSkuRestricted(WindowsSku? restriction) =>
         restriction is not null && _sku is not null && _sku == restriction;
 

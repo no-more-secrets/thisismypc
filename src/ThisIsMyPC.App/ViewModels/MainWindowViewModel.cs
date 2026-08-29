@@ -204,7 +204,8 @@ public partial class MainWindowViewModel : ViewModelBase
                         ContentTitle = current.Module.Info.Name;
                         ContentDescription = current.Module.Info.Description;
                         CurrentContent = new AnnoyancesViewModel(
-                            annoyancesData, _pendingChangesService, _registryService, _displayModeStore);
+                            annoyancesData, _pendingChangesService, _registryService,
+                            _displayModeStore, _capabilityDetector);
                     }
                     else
                     {

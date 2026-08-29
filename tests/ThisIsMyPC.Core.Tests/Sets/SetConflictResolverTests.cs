@@ -189,6 +189,7 @@ public sealed class SetConflictResolverTests
             => restriction is not null && Sku is not null && Sku == restriction;
         public bool IsAvailable(SystemCapability capability) => true;
         public ModuleAvailability GetAvailability(SystemCapability capability) => new(true);
+        public bool IsOwnerModeAvailable => false;
     }
 
     private static StubInspector SkuRestrictedInspector(WindowsSku restrictedOn) => new()

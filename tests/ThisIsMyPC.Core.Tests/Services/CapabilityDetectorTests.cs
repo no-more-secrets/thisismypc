@@ -17,6 +17,14 @@ public sealed class CapabilityDetectorTests
         return new CapabilityDetector(registry);
     }
 
+    [Fact]
+    public void IsOwnerModeAvailable_False_UntilEpic28ShipsTheService()
+    {
+        var detector = CreateDetector("Professional", out _);
+
+        Assert.False(detector.IsOwnerModeAvailable);
+    }
+
     [Theory]
     [InlineData("Core", WindowsSku.Home)]
     [InlineData("CoreN", WindowsSku.Home)]

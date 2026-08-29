@@ -43,7 +43,8 @@ public partial class AnnoyancesViewModel : ViewModelBase, IDisposable
         AnnoyancesScanData scanData,
         IPendingChangesService pendingChangesService,
         IRegistryService registryService,
-        DisplayModePreferencesStore? displayModeStore = null)
+        DisplayModePreferencesStore? displayModeStore = null,
+        ICapabilityDetector? capabilityDetector = null)
     {
         _displayModeStore = displayModeStore;
         // Factories re-read live state at stage time — a scan-time snapshot would bake
@@ -51,7 +52,7 @@ public partial class AnnoyancesViewModel : ViewModelBase, IDisposable
         var provider = new AnnoyancesCardProvider(new AnnoyancesSettingsReader(registryService));
 
         var cards = provider.BuildCards(scanData)
-            .Select(source => new SettingCardViewModel(source, pendingChangesService))
+            .Select(source => new SettingCardViewModel(source, pendingChangesService, capabilityDetector))
             .ToList();
 
         // Group by GroupId in first-appearance order (provider order is authoritative).
