@@ -289,6 +289,9 @@
                             <DataTemplate DataType="{x:Type vm:AnnoyancesViewModel}">
                                 <views:AnnoyancesView />
                             </DataTemplate>
+                            <DataTemplate DataType="{x:Type vm:WindowsUpdateViewModel}">
+                                <views:WindowsUpdateView />
+                            </DataTemplate>
                             <DataTemplate DataType="{x:Type vm:StartupViewModel}">
                                 <views:StartupView />
                             </DataTemplate>

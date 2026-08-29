@@ -218,6 +218,28 @@ public partial class MainWindowViewModel : ViewModelBase
                     }
                 });
             }
+            else if (current?.Module is Modules.WindowsUpdate.WindowsUpdateModule)
+            {
+                var scanResult = await current.Module.ScanSystemStateAsync().ConfigureAwait(false);
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    if (epoch != _contentEpoch)
+                        return; // superseded by Home/Set Loader/newer navigation while scanning
+                    if (scanResult.IsSuccess && scanResult.Value is Modules.WindowsUpdate.Models.WindowsUpdateScanData updateData)
+                    {
+                        ContentTitle = current.Module.Info.Name;
+                        ContentDescription = current.Module.Info.Description;
+                        CurrentContent = new WindowsUpdateViewModel(
+                            updateData, _pendingChangesService, _registryService,
+                            _displayModeStore, _capabilityDetector);
+                    }
+                    else
+                    {
+                        CurrentContent = null;
+                        SetStatus(scanResult.ErrorMessage ?? "Failed to scan Windows Update policies", StatusSeverity.Error);
+                    }
+                });
+            }
             else if (current?.Module is Modules.Annoyances.AnnoyancesModule)
             {
                 var scanResult = await current.Module.ScanSystemStateAsync().ConfigureAwait(false);

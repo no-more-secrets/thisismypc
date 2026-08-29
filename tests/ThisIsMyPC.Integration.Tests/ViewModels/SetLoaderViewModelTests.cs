@@ -6,6 +6,8 @@ using ThisIsMyPC.Integration.Tests.Fakes;
 using ThisIsMyPC.Modules.Annoyances.Services;
 using ThisIsMyPC.Modules.Shell.Services;
 using ThisIsMyPC.Modules.Startup.Services;
+using ThisIsMyPC.Modules.WindowsUpdate;
+using ThisIsMyPC.Modules.WindowsUpdate.Services;
 
 namespace ThisIsMyPC.Integration.Tests.ViewModels;
 
@@ -39,12 +41,18 @@ public sealed class SetLoaderViewModelTests
                 tasks.AddTask(entry.SettingId["scheduled-task:".Length..]);
         }
 
+        // The version-pin entry needs a readable DisplayVersion (the WU inspector skips
+        // the pin on machines where it can't be read).
+        var wuRegistry = new StoringFakeRegistryService();
+        wuRegistry.WriteString(WindowsUpdateRegistryPaths.CurrentVersionKeyPath, "DisplayVersion", "24H2");
+
         return new SetLoaderViewModel(
             load,
             [
                 new ShellSetEntryInspector(registry),
                 new AnnoyancesSetEntryInspector(registry),
                 new StartupSetEntryInspector(services, tasks, registry, new FakeStartupFolderService()),
+                new WindowsUpdateSetEntryInspector(wuRegistry),
             ],
             availabilityLookup ?? (_ => Available),
             pendingChangesService ?? new PendingChangesService());
@@ -68,7 +76,7 @@ public sealed class SetLoaderViewModelTests
         var vm = CreateWithBundledSets();
 
         Assert.Equal(
-            ["Clean Boot", "NukeCopilot", "Privacy Baseline"],
+            ["Clean Boot", "NukeCopilot", "Privacy Baseline", "Windows Update Control"],
             vm.TweakSets.Select(s => s.Name).OrderBy(n => n, StringComparer.Ordinal));
         Assert.Equal(["Windows 10-ify"], vm.OptimizationPacks.Select(s => s.Name));
         Assert.False(vm.HasNoSets);

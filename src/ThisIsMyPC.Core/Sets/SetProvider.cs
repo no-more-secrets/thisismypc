@@ -164,7 +164,7 @@ public sealed class SetProvider : ISetProvider
         };
     }
 
-    private static SettingEnforcement? MapEnforcement(SetEnforcementDocument? document)
+    internal static SettingEnforcement? MapEnforcement(SetEnforcementDocument? document)
     {
         if (document is null)
             return null;

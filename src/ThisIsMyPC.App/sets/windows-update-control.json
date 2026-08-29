@@ -1,0 +1,57 @@
+{
+  // Windows Update policy set — the first consumer of the 26-8 GPCache enforcement
+  // dimension. All entries are Windows Update module toggles; the module's change
+  // factory attaches the GPCache clear (Update Orchestrator policy cache) and
+  // reversion vectors, so entries here carry no enforcement objects.
+  //
+  // Deliberately does NOT disable Windows Update or defer security patches: updates
+  // keep flowing — this set only removes the forced/surprise behavior (background
+  // installs, auto-reboots, driver overwrites, feature upgrades, P2P upload).
+  "name": "Windows Update Control",
+  "description": "Puts Windows Update on your terms: notify before downloading, never auto-restart while signed in, keep vendor drivers, stay on the current Windows release, and stop peer-to-peer update sharing. Security updates keep installing - nothing here turns updates off.",
+  "category": "TweakSet",
+  "version": "1.0.0",
+  "author": "ThisIsMyPC",
+  "entries": [
+    {
+      "moduleId": "Windows Update",
+      "settingId": "version-pin",
+      "value": "1",
+      "displayValue": "Pinned to current release",
+      "group": "Update behavior",
+      "description": "Pins the machine to its current Windows feature release (TargetReleaseVersion + ProductVersion + TargetReleaseVersionInfo set together from the live OS version). Remove the pin before the release reaches end of servicing."
+    },
+    {
+      "moduleId": "Windows Update",
+      "settingId": "auto-update-mode",
+      "value": "2",
+      "displayValue": "Notify before download",
+      "group": "Update behavior",
+      "description": "Windows Update announces available updates instead of downloading and installing on its own schedule (AUOptions = 2). Updates then wait for you - check in regularly."
+    },
+    {
+      "moduleId": "Windows Update",
+      "settingId": "no-auto-reboot",
+      "value": "1",
+      "displayValue": "No auto-restart while signed in",
+      "group": "Update behavior",
+      "description": "Stops Windows Update from rebooting the machine while a user is signed in."
+    },
+    {
+      "moduleId": "Windows Update",
+      "settingId": "exclude-drivers",
+      "value": "1",
+      "displayValue": "Drivers excluded",
+      "group": "Update behavior",
+      "description": "Keeps quality updates from replacing OEM GPU/audio/chipset drivers with generic WHQL versions."
+    },
+    {
+      "moduleId": "Windows Update",
+      "settingId": "delivery-optimization",
+      "value": "0",
+      "displayValue": "HTTP only",
+      "group": "Delivery Optimization",
+      "description": "Update downloads come from Microsoft servers only - no peer-to-peer upload/download with other PCs."
+    }
+  ]
+}

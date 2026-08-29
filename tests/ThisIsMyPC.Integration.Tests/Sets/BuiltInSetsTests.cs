@@ -7,6 +7,9 @@ using ThisIsMyPC.Modules.Shell.Changes;
 using ThisIsMyPC.Modules.Shell.Models;
 using ThisIsMyPC.Modules.Startup.Changes;
 using ThisIsMyPC.Modules.Startup.Models;
+using ThisIsMyPC.Modules.WindowsUpdate;
+using ThisIsMyPC.Modules.WindowsUpdate.Changes;
+using ThisIsMyPC.Modules.WindowsUpdate.Services;
 
 namespace ThisIsMyPC.Integration.Tests.Sets;
 
@@ -58,6 +61,20 @@ public sealed class BuiltInSetsTests
 
         var bing = AnnoyanceChangeFactory.CreateBingSearchToggle(reader.ReadBingSearch(), suppress: true);
         desired[(bing.Changes[0].ModuleId, bing.Changes[0].SettingId)] = bing.Changes[0].AfterValue!;
+
+        // Windows Update: singles from the reader (configured values are static), the
+        // version-pin group from a registry seeded with a DisplayVersion (the group's
+        // set value is its first descriptor — TargetReleaseVersion "1").
+        var wuRegistry = new StoringFakeRegistryService();
+        wuRegistry.WriteString(WindowsUpdateRegistryPaths.CurrentVersionKeyPath, "DisplayVersion", "24H2");
+        var wuReader = new WindowsUpdateSettingsReader(wuRegistry);
+        foreach (var setting in wuReader.ReadSingles())
+        {
+            var change = WindowsUpdateChangeFactory.CreateToggle(setting, configure: true);
+            desired[(change.ModuleId, change.SettingId)] = change.AfterValue!;
+        }
+        var versionPin = WindowsUpdateChangeFactory.CreateVersionPinGroup(wuReader.ReadVersionPin(), configure: true)!;
+        desired[(versionPin.Changes[0].ModuleId, versionPin.Changes[0].SettingId)] = versionPin.Changes[0].AfterValue!;
 
         var taskbar = new TaskbarSettings(
             Alignment: 1, WidgetsEnabled: true, ClassicContextMenu: false, ClassicCommandBar: false);
@@ -124,7 +141,7 @@ public sealed class BuiltInSetsTests
     {
         Assert.Empty(_result.Warnings);
         Assert.Equal(
-            ["Clean Boot", "NukeCopilot", "Privacy Baseline", "Windows 10-ify"],
+            ["Clean Boot", "NukeCopilot", "Privacy Baseline", "Windows 10-ify", "Windows Update Control"],
             _result.Sets.Select(s => s.Name).OrderBy(n => n, StringComparer.Ordinal));
         Assert.All(_result.Sets, s => Assert.Equal(SetSource.BuiltIn, s.Source));
     }

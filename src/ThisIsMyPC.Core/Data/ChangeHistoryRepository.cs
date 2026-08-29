@@ -6,7 +6,13 @@ namespace ThisIsMyPC.Core.Data;
 
 public sealed class ChangeHistoryRepository
 {
-    private const int CurrentSchemaVersion = 1;
+    private const int CurrentSchemaVersion = 2;
+
+    // v2: enforcement metadata persisted per entry so history undo/redo can route
+    // through the enforcement executor. Applied to fresh v1 schemas and migrated
+    // databases alike.
+    private const string MigrateToV2 =
+        "ALTER TABLE change_history ADD COLUMN enforcement_json TEXT";
 
     private const string CreateSchemaV1 = """
         CREATE TABLE IF NOT EXISTS change_history (
@@ -66,6 +72,13 @@ public sealed class ChangeHistoryRepository
                 await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
             }
 
+            if (schemaVersion < 2)
+            {
+                await using var cmd = connection.CreateCommand();
+                cmd.CommandText = MigrateToV2;
+                await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+            }
+
             await SetSchemaVersionAsync(connection, CurrentSchemaVersion).ConfigureAwait(false);
             await transaction.CommitAsync().ConfigureAwait(false);
         }
@@ -81,12 +94,12 @@ public sealed class ChangeHistoryRepository
                 module_id, setting_id, display_name, system_location,
                 before_value, after_value, before_display, after_display,
                 value_type, category, group_id, applied_at,
-                reverted_at, reverted_by_entry_id, redo_of_entry_id
+                reverted_at, reverted_by_entry_id, redo_of_entry_id, enforcement_json
             ) VALUES (
                 @module_id, @setting_id, @display_name, @system_location,
                 @before_value, @after_value, @before_display, @after_display,
                 @value_type, @category, @group_id, @applied_at,
-                @reverted_at, @reverted_by_entry_id, @redo_of_entry_id
+                @reverted_at, @reverted_by_entry_id, @redo_of_entry_id, @enforcement_json
             );
             SELECT last_insert_rowid();
             """;
@@ -193,12 +206,12 @@ public sealed class ChangeHistoryRepository
                     module_id, setting_id, display_name, system_location,
                     before_value, after_value, before_display, after_display,
                     value_type, category, group_id, applied_at,
-                    reverted_at, reverted_by_entry_id, redo_of_entry_id
+                    reverted_at, reverted_by_entry_id, redo_of_entry_id, enforcement_json
                 ) VALUES (
                     @module_id, @setting_id, @display_name, @system_location,
                     @before_value, @after_value, @before_display, @after_display,
                     @value_type, @category, @group_id, @applied_at,
-                    @reverted_at, @reverted_by_entry_id, @redo_of_entry_id
+                    @reverted_at, @reverted_by_entry_id, @redo_of_entry_id, @enforcement_json
                 )
                 """;
             AddEntryParameters(cmd, entry);
@@ -320,6 +333,7 @@ public sealed class ChangeHistoryRepository
         cmd.Parameters.AddWithValue("@reverted_at", entry.RevertedAt.HasValue ? entry.RevertedAt.Value.ToString("O") : DBNull.Value);
         cmd.Parameters.AddWithValue("@reverted_by_entry_id", entry.RevertedByEntryId.HasValue ? entry.RevertedByEntryId.Value : DBNull.Value);
         cmd.Parameters.AddWithValue("@redo_of_entry_id", entry.RedoOfEntryId.HasValue ? entry.RedoOfEntryId.Value : DBNull.Value);
+        cmd.Parameters.AddWithValue("@enforcement_json", (object?)EnforcementJson.Serialize(entry.Enforcement) ?? DBNull.Value);
     }
 
     private static ChangeHistoryEntry ReadEntry(SqliteDataReader reader)
@@ -346,6 +360,7 @@ public sealed class ChangeHistoryRepository
             RevertedAt = revertedAtStr is not null ? DateTimeOffset.Parse(revertedAtStr, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind) : null,
             RevertedByEntryId = revertedByRaw is long rbei ? rbei : null,
             RedoOfEntryId = redoOfRaw is long roei ? roei : null,
+            Enforcement = EnforcementJson.Deserialize(reader["enforcement_json"] as string),
         };
     }
 }

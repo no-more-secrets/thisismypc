@@ -48,4 +48,5 @@ public sealed record SetEnforcementDocument
     WriteIndented = true,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
 [JsonSerializable(typeof(SetDocument))]
+[JsonSerializable(typeof(SetEnforcementDocument))]
 public sealed partial class SetJsonContext : JsonSerializerContext;

@@ -1,5 +1,6 @@
 using ThisIsMyPC.Core.Changes;
 using ThisIsMyPC.Core.Data;
+using ThisIsMyPC.Core.Enforcement;
 using ThisIsMyPC.Core.Results;
 
 namespace ThisIsMyPC.Core.Services;
@@ -8,11 +9,16 @@ public sealed class ChangeHistoryService : IChangeHistoryService
 {
     private readonly ChangeHistoryRepository _repository;
     private readonly string _dbPath;
+    private readonly IEnforcementExecutor? _enforcementExecutor;
 
-    public ChangeHistoryService(ChangeHistoryRepository repository, string? dbPath = null)
+    public ChangeHistoryService(
+        ChangeHistoryRepository repository,
+        string? dbPath = null,
+        IEnforcementExecutor? enforcementExecutor = null)
     {
         _repository = repository;
         _dbPath = dbPath ?? Path.Combine(AppConstants.DataDirectoryPath, "history.db");
+        _enforcementExecutor = enforcementExecutor;
     }
 
     public async Task InitializeAsync()
@@ -42,6 +48,7 @@ public sealed class ChangeHistoryService : IChangeHistoryService
             Category = change.Category,
             GroupId = groupId,
             AppliedAt = now,
+            Enforcement = change.Enforcement,
         }).ToList();
 
         await _repository.InsertBatchAsync(entries).ConfigureAwait(false);
@@ -84,9 +91,13 @@ public sealed class ChangeHistoryService : IChangeHistoryService
             AfterDisplay = entry.BeforeDisplay,
             ValueType = entry.ValueType,
             Category = entry.Category,
+            Enforcement = entry.Enforcement,
         };
 
-        var result = await revertFunc(revertDescriptor).ConfigureAwait(false);
+        // Same routing rule as PendingChangesService: Enforcement != null goes through
+        // the executor (revert direction — GPCache cleared after the primary revert so
+        // e.g. the WU orchestrator can't keep enforcing the undone policy).
+        var result = await RouteAsync(revertDescriptor, revertFunc, revert: true).ConfigureAwait(false);
 
         if (!result.IsSuccess)
         {
@@ -111,6 +122,7 @@ public sealed class ChangeHistoryService : IChangeHistoryService
             Category = entry.Category,
             GroupId = Guid.NewGuid().ToString("N"),
             AppliedAt = now,
+            Enforcement = entry.Enforcement,
         };
 
         var insertedRevert = await _repository.InsertAsync(revertEntry).ConfigureAwait(false);
@@ -159,9 +171,10 @@ public sealed class ChangeHistoryService : IChangeHistoryService
             AfterDisplay = entry.AfterDisplay,
             ValueType = entry.ValueType,
             Category = entry.Category,
+            Enforcement = entry.Enforcement,
         };
 
-        var result = await applyFunc(redoDescriptor).ConfigureAwait(false);
+        var result = await RouteAsync(redoDescriptor, applyFunc, revert: false).ConfigureAwait(false);
 
         if (!result.IsSuccess)
         {
@@ -185,12 +198,44 @@ public sealed class ChangeHistoryService : IChangeHistoryService
             GroupId = Guid.NewGuid().ToString("N"),
             AppliedAt = DateTimeOffset.UtcNow,
             RedoOfEntryId = historyId,
+            Enforcement = entry.Enforcement,
         };
 
         await _repository.InsertAsync(redoEntry).ConfigureAwait(false);
         await _repository.ClearRevertedAtAsync(historyId).ConfigureAwait(false);
 
         return OperationResult<bool>.Success(true);
+    }
+
+    /// <summary>
+    /// Enforcement routing for history undo/redo, mirroring PendingChangesService:
+    /// Enforcement != null → executor (never a silent bare mutation), null → delegate.
+    /// An enforced entry with no executor configured fails loudly instead of degrading.
+    /// </summary>
+    private async Task<OperationResult<bool>> RouteAsync(
+        ChangeDescriptor descriptor,
+        Func<ChangeDescriptor, Task<OperationResult<bool>>> primaryFunc,
+        bool revert)
+    {
+        if (descriptor.Enforcement is null)
+            return await primaryFunc(descriptor).ConfigureAwait(false);
+
+        if (_enforcementExecutor is null)
+        {
+            return OperationResult<bool>.Failure(
+                $"'{descriptor.DisplayName}' requires enforcement but no IEnforcementExecutor is configured.",
+                ErrorCategory.ServiceUnavailable);
+        }
+
+        var enforcement = revert
+            ? await _enforcementExecutor.RevertAsync(descriptor, primaryFunc).ConfigureAwait(false)
+            : await _enforcementExecutor.ExecuteAsync(descriptor, primaryFunc).ConfigureAwait(false);
+
+        return enforcement.IsSuccess
+            ? OperationResult<bool>.Success(true)
+            : OperationResult<bool>.Failure(
+                enforcement.ErrorMessage ?? "Enforcement execution failed",
+                enforcement.ErrorCategory ?? ErrorCategory.ServiceUnavailable);
     }
 
     public async Task<IReadOnlyList<ChangeHistoryEntry>> GetRecentGroupedAsync(int groupLimit = 50)

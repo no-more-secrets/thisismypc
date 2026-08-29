@@ -374,6 +374,23 @@ public sealed class EnforcementExecutorTests
     }
 
     [Fact]
+    public async Task Execute_WindowsUpdateModuleGPCachePath_PassesTheRealPathGuard()
+    {
+        // Ties the Windows Update module's constant to the executor's actual
+        // IsSafeGPCachePath gate — a drifted path fails here, not on a live machine.
+        var change = CreateChange(new SettingEnforcement
+        {
+            GPCacheEntries = [ThisIsMyPC.Modules.WindowsUpdate.WindowsUpdateRegistryPaths.GPCacheKeyPath],
+        });
+        var received = new List<ChangeDescriptor>();
+
+        var result = await CreateSutWithRegistry().ExecuteAsync(change, Primary(received));
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.Single(received);
+    }
+
+    [Fact]
     public async Task Execute_GPCache_MissingKey_IsSuccessWithoutDelete()
     {
         var change = CreateChange(new SettingEnforcement { GPCacheEntries = [GPCachePath] });

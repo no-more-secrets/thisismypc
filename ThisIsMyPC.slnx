@@ -9,6 +9,7 @@
     <Project Path="src/ThisIsMyPC.Modules.Power/ThisIsMyPC.Modules.Power.csproj" />
     <Project Path="src/ThisIsMyPC.Modules.Shell/ThisIsMyPC.Modules.Shell.csproj" />
     <Project Path="src/ThisIsMyPC.Modules.Startup/ThisIsMyPC.Modules.Startup.csproj" />
+    <Project Path="src/ThisIsMyPC.Modules.WindowsUpdate/ThisIsMyPC.Modules.WindowsUpdate.csproj" />
   </Folder>
   <Folder Name="/analyzers/">
     <Project Path="analyzers/ThisIsMyPC.Analyzers/ThisIsMyPC.Analyzers.csproj" />
@@ -21,6 +22,7 @@
     <Project Path="tests/ThisIsMyPC.Modules.Power.Tests/ThisIsMyPC.Modules.Power.Tests.csproj" />
     <Project Path="tests/ThisIsMyPC.Modules.Shell.Tests/ThisIsMyPC.Modules.Shell.Tests.csproj" />
     <Project Path="tests/ThisIsMyPC.Modules.Startup.Tests/ThisIsMyPC.Modules.Startup.Tests.csproj" />
+    <Project Path="tests/ThisIsMyPC.Modules.WindowsUpdate.Tests/ThisIsMyPC.Modules.WindowsUpdate.Tests.csproj" />
     <Project Path="tests/ThisIsMyPC.Security.Tests/ThisIsMyPC.Security.Tests.csproj" />
   </Folder>
 </Solution>

@@ -1,0 +1,60 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ThisIsMyPC.App.ViewModels"
+             xmlns:controls="using:ThisIsMyPC.App.Controls"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="700"
+             x:Class="ThisIsMyPC.App.Views.WindowsUpdateView"
+             x:DataType="vm:WindowsUpdateViewModel">
+
+    <!-- Card-rendered module tab (Epic 10, Annoyances layout). -->
+    <DockPanel>
+        <StackPanel DockPanel.Dock="Top"
+                    Orientation="Horizontal"
+                    Spacing="8"
+                    Margin="24,12,24,0"
+                    HorizontalAlignment="Right">
+            <ToggleButton Content="Registry Data"
+                          IsChecked="{Binding ShowRegistryData}"
+                          FontSize="12"
+                          Padding="10,4" />
+            <ToggleButton Content="Compact"
+                          IsChecked="{Binding IsCompact}"
+                          FontSize="12"
+                          Padding="10,4" />
+        </StackPanel>
+
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Auto">
+        <ItemsControl ItemsSource="{Binding CardGroups}"
+                      MaxWidth="800"
+                      HorizontalAlignment="Left"
+                      Margin="24,16,24,24">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:SettingCardGroupViewModel">
+                    <StackPanel Margin="0,0,0,20">
+                        <TextBlock Text="{Binding Header}"
+                                   FontWeight="SemiBold"
+                                   FontSize="16"
+                                   Foreground="{StaticResource TextPrimaryBrush}" />
+                        <TextBlock Text="{Binding Subtitle}"
+                                   FontSize="12"
+                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,2,0,8"
+                                   IsVisible="{Binding Subtitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                        <ItemsControl ItemsSource="{Binding Cards}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:SettingCardViewModel">
+                                    <controls:SettingCardControl />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>

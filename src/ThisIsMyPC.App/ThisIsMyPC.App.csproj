@@ -39,5 +39,6 @@
     <ProjectReference Include="..\ThisIsMyPC.Modules.Shell\ThisIsMyPC.Modules.Shell.csproj" />
     <ProjectReference Include="..\ThisIsMyPC.Modules.Startup\ThisIsMyPC.Modules.Startup.csproj" />
     <ProjectReference Include="..\ThisIsMyPC.Modules.Power\ThisIsMyPC.Modules.Power.csproj" />
+    <ProjectReference Include="..\ThisIsMyPC.Modules.WindowsUpdate\ThisIsMyPC.Modules.WindowsUpdate.csproj" />
   </ItemGroup>
 </Project>
