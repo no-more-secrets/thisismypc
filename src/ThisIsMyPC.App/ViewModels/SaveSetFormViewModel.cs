@@ -55,16 +55,19 @@ public partial class SaveSetFormViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void Save()
+    private async Task SaveAsync()
     {
         ErrorMessage = null;
 
-        var result = _write(new CustomSetMetadata
+        var metadata = new CustomSetMetadata
         {
             Name = SetName,
             Description = SetDescription,
             Category = IsOptimizationPack ? SetCategory.OptimizationPack : SetCategory.TweakSet,
-        });
+        };
+
+        // File I/O off the UI thread — a slow roaming %APPDATA% must not freeze the popup.
+        var result = await Task.Run(() => _write(metadata)).ConfigureAwait(true);
 
         if (!result.Success)
         {

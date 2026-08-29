@@ -1,0 +1,46 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ThisIsMyPC.App.ViewModels"
+             x:Class="ThisIsMyPC.App.Views.SaveSetFormView"
+             x:DataType="vm:SaveSetFormViewModel">
+
+    <!-- Shared custom-set metadata form (8.5), embedded by the review panel
+         ("Save as Set") and the history panel ("Create Set from Selection").
+         The trigger button stays in the host view - its label and enablement
+         are host-specific. -->
+    <StackPanel Spacing="8">
+        <TextBlock Text="{Binding SuccessMessage}"
+                   FontSize="12"
+                   TextWrapping="Wrap"
+                   Foreground="{StaticResource TextSecondaryBrush}"
+                   IsVisible="{Binding SuccessMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+        <StackPanel Spacing="6" IsVisible="{Binding IsOpen}">
+            <TextBox Text="{Binding SetName}"
+                     Watermark="Set name"
+                     FontSize="12" />
+            <TextBox Text="{Binding SetDescription}"
+                     Watermark="What does this set do?"
+                     FontSize="12" />
+            <CheckBox IsChecked="{Binding IsOptimizationPack}"
+                      Content="Optimization pack (comprehensive bundle)"
+                      FontSize="12" />
+            <TextBlock Text="{Binding ErrorMessage}"
+                       FontSize="12"
+                       TextWrapping="Wrap"
+                       Foreground="{StaticResource DangerBrush}"
+                       IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            <DockPanel>
+                <Button DockPanel.Dock="Left"
+                        Classes="apply-bar-discard"
+                        Content="Cancel"
+                        Command="{Binding CancelCommand}" />
+                <Button DockPanel.Dock="Right"
+                        Classes="apply-bar-apply"
+                        Content="Save Set"
+                        HorizontalAlignment="Right"
+                        Command="{Binding SaveCommand}" />
+            </DockPanel>
+        </StackPanel>
+    </StackPanel>
+</UserControl>

@@ -174,8 +174,14 @@ public sealed class CustomSetWriter : ICustomSetWriter
     {
         var builder = new StringBuilder(name.Length);
         var lastWasDash = true; // suppress leading dashes
-        foreach (var raw in name.Trim())
+        // FormD splits accented letters into base letter + combining mark, so
+        // "Édition Spéciale" becomes edition-speciale rather than dition-sp-ciale.
+        foreach (var raw in name.Trim().Normalize(NormalizationForm.FormD))
         {
+            if (System.Globalization.CharUnicodeInfo.GetUnicodeCategory(raw)
+                == System.Globalization.UnicodeCategory.NonSpacingMark)
+                continue;
+
             var ch = char.ToLowerInvariant(raw);
             if (char.IsAsciiLetterOrDigit(ch))
             {

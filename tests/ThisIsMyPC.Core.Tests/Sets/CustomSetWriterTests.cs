@@ -178,7 +178,7 @@ public sealed class CustomSetWriterTests : IDisposable
 
     [Theory]
     [InlineData("My Debloat!!", "my-debloat.json")]
-    [InlineData("  Édition Spéciale  ", "dition-sp-ciale.json")]
+    [InlineData("  Édition Spéciale  ", "edition-speciale.json")]
     [InlineData("***", "custom-set.json")]
     public void SetName_SlugifiesToSafeFileName(string name, string expectedFileName)
     {

@@ -59,7 +59,7 @@ public sealed class SaveSetFormTests : IDisposable
     // --- Review panel: Save as Set ---
 
     [Fact]
-    public void ReviewPanel_SaveAsSet_WritesPendingChangesAsUserSet()
+    public async Task ReviewPanel_SaveAsSet_WritesPendingChangesAsUserSet()
     {
         var pending = new PendingChangesService();
         pending.Stage(Descriptor());
@@ -70,7 +70,7 @@ public sealed class SaveSetFormTests : IDisposable
         Assert.True(vm.SaveSetForm.IsOpen);
         vm.SaveSetForm.SetName = "My Baseline";
         vm.SaveSetForm.SetDescription = "Things I always turn off.";
-        vm.SaveSetForm.SaveCommand.Execute(null);
+        await vm.SaveSetForm.SaveCommand.ExecuteAsync(null);
 
         Assert.False(vm.SaveSetForm.IsOpen);
         Assert.Null(vm.SaveSetForm.ErrorMessage);
@@ -85,7 +85,7 @@ public sealed class SaveSetFormTests : IDisposable
     }
 
     [Fact]
-    public void ReviewPanel_SaveAsSet_OptimizationPackCategoryHonored()
+    public async Task ReviewPanel_SaveAsSet_OptimizationPackCategoryHonored()
     {
         var pending = new PendingChangesService();
         pending.Stage(Descriptor());
@@ -95,7 +95,7 @@ public sealed class SaveSetFormTests : IDisposable
         vm.SaveSetForm.SetName = "Big Pack";
         vm.SaveSetForm.SetDescription = "Everything.";
         vm.SaveSetForm.IsOptimizationPack = true;
-        vm.SaveSetForm.SaveCommand.Execute(null);
+        await vm.SaveSetForm.SaveCommand.ExecuteAsync(null);
 
         var set = Assert.Single(
             new SetProvider(Path.Combine(_userDir, "nb"), _userDir).LoadSets().Sets);
@@ -103,7 +103,7 @@ public sealed class SaveSetFormTests : IDisposable
     }
 
     [Fact]
-    public void ReviewPanel_SaveAsSet_MissingName_ShowsErrorAndStaysOpen()
+    public async Task ReviewPanel_SaveAsSet_MissingName_ShowsErrorAndStaysOpen()
     {
         var pending = new PendingChangesService();
         pending.Stage(Descriptor());
@@ -111,7 +111,7 @@ public sealed class SaveSetFormTests : IDisposable
 
         vm.SaveSetForm.OpenCommand.Execute(null);
         vm.SaveSetForm.SetDescription = "no name given";
-        vm.SaveSetForm.SaveCommand.Execute(null);
+        await vm.SaveSetForm.SaveCommand.ExecuteAsync(null);
 
         Assert.True(vm.SaveSetForm.IsOpen);
         Assert.Equal("Set name is required.", vm.SaveSetForm.ErrorMessage);
@@ -119,14 +119,14 @@ public sealed class SaveSetFormTests : IDisposable
     }
 
     [Fact]
-    public void ReviewPanel_SaveAsSet_NoPendingChanges_ReportsError()
+    public async Task ReviewPanel_SaveAsSet_NoPendingChanges_ReportsError()
     {
         var vm = new ReviewPanelViewModel(new PendingChangesService(), Writer);
 
         vm.SaveSetForm.OpenCommand.Execute(null);
         vm.SaveSetForm.SetName = "Empty";
         vm.SaveSetForm.SetDescription = "Nothing staged.";
-        vm.SaveSetForm.SaveCommand.Execute(null);
+        await vm.SaveSetForm.SaveCommand.ExecuteAsync(null);
 
         Assert.Equal("No changes to save as a set.", vm.SaveSetForm.ErrorMessage);
     }
@@ -157,7 +157,7 @@ public sealed class SaveSetFormTests : IDisposable
         vm.SaveSetForm.OpenCommand.Execute(null);
         vm.SaveSetForm.SetName = "From History";
         vm.SaveSetForm.SetDescription = "Replay of past changes.";
-        vm.SaveSetForm.SaveCommand.Execute(null);
+        await vm.SaveSetForm.SaveCommand.ExecuteAsync(null);
 
         Assert.Null(vm.SaveSetForm.ErrorMessage);
         Assert.Contains("2 changes", vm.SaveSetForm.SuccessMessage, StringComparison.Ordinal);
@@ -182,7 +182,7 @@ public sealed class SaveSetFormTests : IDisposable
         vm.SaveSetForm.OpenCommand.Execute(null);
         vm.SaveSetForm.SetName = "Nothing";
         vm.SaveSetForm.SetDescription = "No selection.";
-        vm.SaveSetForm.SaveCommand.Execute(null);
+        await vm.SaveSetForm.SaveCommand.ExecuteAsync(null);
 
         Assert.Equal("No changes to save as a set.", vm.SaveSetForm.ErrorMessage);
     }
@@ -203,7 +203,7 @@ public sealed class SaveSetFormTests : IDisposable
     // --- Set Loader labeling (AC 4) ---
 
     [Fact]
-    public void WrittenCustomSet_AppearsAsUserCreatedInSetCard()
+    public async Task WrittenCustomSet_AppearsAsUserCreatedInSetCard()
     {
         var pending = new PendingChangesService();
         pending.Stage(Descriptor());
@@ -211,7 +211,7 @@ public sealed class SaveSetFormTests : IDisposable
         vm.SaveSetForm.OpenCommand.Execute(null);
         vm.SaveSetForm.SetName = "Mine";
         vm.SaveSetForm.SetDescription = "User made.";
-        vm.SaveSetForm.SaveCommand.Execute(null);
+        await vm.SaveSetForm.SaveCommand.ExecuteAsync(null);
 
         // The Set Loader re-reads disk on every open; a fresh provider load is what
         // MainWindowViewModel.OpenSetLoader performs.
@@ -247,7 +247,7 @@ public sealed class SaveSetFormTests : IDisposable
         reviewPanel.SaveSetForm.OpenCommand.Execute(null);
         reviewPanel.SaveSetForm.SetName = "Fresh Set";
         reviewPanel.SaveSetForm.SetDescription = "Saved moments ago.";
-        reviewPanel.SaveSetForm.SaveCommand.Execute(null);
+        await reviewPanel.SaveSetForm.SaveCommand.ExecuteAsync(null);
         Assert.Null(reviewPanel.SaveSetForm.ErrorMessage);
 
         vm.OpenSetLoaderCommand.Execute(null);
