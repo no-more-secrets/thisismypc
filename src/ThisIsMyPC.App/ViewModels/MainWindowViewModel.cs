@@ -39,6 +39,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IReadOnlyList<Core.Sets.ISetEntryInspector> _setEntryInspectors;
     private readonly ICapabilityDetector? _capabilityDetector;
     private readonly Core.Settings.ISettingsService? _settingsService;
+    private readonly IReadOnlyList<Core.Settings.IModuleSettingsContributor> _moduleSettingsContributors;
     private readonly IRestorePointService _restorePointService;
 
     // FR64: auto restore point when a batch stages this many individual changes
@@ -123,6 +124,7 @@ public partial class MainWindowViewModel : ViewModelBase
         IRestorePointService restorePointService,
         ICapabilityDetector? capabilityDetector = null,
         Core.Settings.ISettingsService? settingsService = null,
+        IEnumerable<Core.Settings.IModuleSettingsContributor>? moduleSettingsContributors = null,
         IServiceControlService? serviceControlService = null,
         IScheduledTaskService? scheduledTaskService = null,
         Modules.Startup.Services.TaskClassificationOverrideStore? taskClassificationOverrides = null,
@@ -143,6 +145,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _setEntryInspectors = setEntryInspectors.ToList();
         _capabilityDetector = capabilityDetector;
         _settingsService = settingsService;
+        _moduleSettingsContributors = moduleSettingsContributors?.ToList() ?? [];
         _restorePointService = restorePointService;
         ReviewPanel = reviewPanel;
         ChangeHistory = new ChangeHistoryViewModel(
@@ -403,6 +406,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         var wasSetLoaderActive = IsSetLoaderActive;
         var wasHomeActive = IsHomeActive;
+        var wasSettingsActive = IsSettingsActive;
         // Captured BEFORE navigating: afterwards CurrentModule always equals the target,
         // which would double-trigger the rebuild for cross-module navigation (the
         // PropertyChanged event already fired for that case).
@@ -410,12 +414,13 @@ public partial class MainWindowViewModel : ViewModelBase
         (CurrentContent as SetLoaderViewModel)?.Dispose();
         IsSetLoaderActive = false;
         IsHomeActive = false;
+        IsSettingsActive = false;
         _navigationService.NavigateToModule(item.Name);
         SyncSelectedModule();
 
-        // Returning from the Set Loader or Home to the module that is still
+        // Returning from the Set Loader, Home, or Settings to the module that is still
         // CurrentModule: the navigation setter guards equality, so rebuild explicitly.
-        if ((wasSetLoaderActive || wasHomeActive) && previousModule == item.Module)
+        if ((wasSetLoaderActive || wasHomeActive || wasSettingsActive) && previousModule == item.Module)
         {
             OnNavigationPropertyChanged(
                 _navigationService,
@@ -443,9 +448,49 @@ public partial class MainWindowViewModel : ViewModelBase
             _capabilityDetector);
         IsSetLoaderActive = true;
         IsHomeActive = false;
+        IsSettingsActive = false;
         SelectedModule = null;
 
         ClearSidebarActives();
+    }
+
+    [ObservableProperty]
+    private bool _isSettingsActive;
+
+    [RelayCommand]
+    private void OpenSettings()
+    {
+        if (_settingsService is null)
+            return;
+
+        _contentEpoch++;
+        // Old content may be a module VM or the Set Loader — subscriptions must not
+        // outlive the switch.
+        (CurrentContent as IDisposable)?.Dispose();
+
+        ContentTitle = "Settings";
+        ContentDescription = "Application preferences - every change saves immediately";
+        CurrentContent = new SettingsViewModel(
+            _settingsService,
+            _moduleSettingsContributors,
+            applyTheme: ApplyTheme);
+        IsSettingsActive = true;
+        IsSetLoaderActive = false;
+        IsHomeActive = false;
+        SelectedModule = null;
+        ClearSidebarActives();
+    }
+
+    private static void ApplyTheme(string theme)
+    {
+        // The palette itself is dark-only until the UI/UX overhaul; setting the variant
+        // is still correct so Fluent-derived control chrome follows the choice.
+        if (Application.Current is { } app)
+        {
+            app.RequestedThemeVariant = theme == "light"
+                ? Avalonia.Styling.ThemeVariant.Light
+                : Avalonia.Styling.ThemeVariant.Dark;
+        }
     }
 
     [ObservableProperty]
@@ -475,6 +520,7 @@ public partial class MainWindowViewModel : ViewModelBase
         CurrentContent = home;
         IsHomeActive = true;
         IsSetLoaderActive = false;
+        IsSettingsActive = false;
         SelectedModule = null;
         ClearSidebarActives();
 

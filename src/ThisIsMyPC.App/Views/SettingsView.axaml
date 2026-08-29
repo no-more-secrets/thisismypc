@@ -1,0 +1,95 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ThisIsMyPC.App.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="700"
+             x:Class="ThisIsMyPC.App.Views.SettingsView"
+             x:DataType="vm:SettingsViewModel">
+
+    <UserControl.DataTemplates>
+        <DataTemplate DataType="{x:Type vm:SettingToggleItemViewModel}">
+            <DockPanel Margin="0,0,0,14">
+                <ToggleSwitch DockPanel.Dock="Right"
+                              IsChecked="{Binding IsOn}"
+                              VerticalAlignment="Top"
+                              OnContent="" OffContent="" />
+                <StackPanel Margin="0,0,16,0">
+                    <TextBlock Text="{Binding DisplayName}"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource TextPrimaryBrush}" />
+                    <TextBlock Text="{Binding Description}"
+                               FontSize="12"
+                               TextWrapping="Wrap"
+                               Foreground="{StaticResource TextTertiaryBrush}"
+                               Margin="0,2,0,0" />
+                </StackPanel>
+            </DockPanel>
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type vm:SettingChoiceItemViewModel}">
+            <DockPanel Margin="0,0,0,14">
+                <ComboBox DockPanel.Dock="Right"
+                          ItemsSource="{Binding Options}"
+                          SelectedItem="{Binding Selected}"
+                          MinWidth="220"
+                          VerticalAlignment="Top">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:SettingChoiceOption">
+                            <TextBlock Text="{Binding DisplayName}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+                <StackPanel Margin="0,0,16,0">
+                    <TextBlock Text="{Binding DisplayName}"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource TextPrimaryBrush}" />
+                    <TextBlock Text="{Binding Description}"
+                               FontSize="12"
+                               TextWrapping="Wrap"
+                               Foreground="{StaticResource TextTertiaryBrush}"
+                               Margin="0,2,0,0" />
+                </StackPanel>
+            </DockPanel>
+        </DataTemplate>
+    </UserControl.DataTemplates>
+
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+        <StackPanel MaxWidth="720" HorizontalAlignment="Left" Margin="24,16,24,24">
+            <ItemsControl ItemsSource="{Binding Sections}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:SettingsSectionViewModel">
+                        <StackPanel Margin="0,0,0,24">
+                            <TextBlock Text="{Binding Header}"
+                                       FontWeight="SemiBold"
+                                       FontSize="16"
+                                       Foreground="{StaticResource TextPrimaryBrush}" />
+                            <TextBlock Text="{Binding Subtitle}"
+                                       FontSize="12"
+                                       Foreground="{StaticResource TextTertiaryBrush}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,2,0,10"
+                                       IsVisible="{Binding Subtitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                            <Border Height="8" IsVisible="{Binding Subtitle, Converter={x:Static StringConverters.IsNullOrEmpty}}" />
+                            <ItemsControl ItemsSource="{Binding Items}" />
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- Module Preferences placeholder until a module contributes settings -->
+            <StackPanel IsVisible="{Binding !HasModuleSections}">
+                <TextBlock Text="Module Preferences"
+                           FontWeight="SemiBold"
+                           FontSize="16"
+                           Foreground="{StaticResource TextPrimaryBrush}" />
+                <TextBlock Text="{Binding ModulePreferencesPlaceholder}"
+                           FontSize="12"
+                           Foreground="{StaticResource TextTertiaryBrush}"
+                           TextWrapping="Wrap"
+                           Margin="0,2,0,0" />
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
