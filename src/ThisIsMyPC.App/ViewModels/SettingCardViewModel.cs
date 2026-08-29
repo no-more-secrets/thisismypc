@@ -102,7 +102,7 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
             var required = Model.SkuRestriction == Core.Modules.WindowsSku.Education
                 ? "Enterprise or Education"
                 : $"{Model.SkuRestriction} or higher";
-            SkuNotice = $"Windows honors this setting on {required} editions only — on this edition the write is cosmetic. You can still apply it.";
+            SkuNotice = $"Requires {required}. No effect on this edition.";
         }
 
         // Owner Mode degradation: no detector means the service can't be reached —

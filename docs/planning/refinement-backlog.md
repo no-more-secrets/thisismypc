@@ -36,6 +36,12 @@ required: edition changes are effectively one-way, involve a reboot, and must be
 heavily confirmed — likely paired with the SKU callout ("this setting needs Pro —
 upgrade edition?" flow). Belongs with the install-engine chapter, not refinement.
 
+## 0b. UI copy sweep (UI/UX chapter)
+
+Sam's rule: user-visible strings are product copy — short declarative sentences, no
+em dashes, no wordy asides. New strings follow it (2026-08-29); the older card
+descriptions (Annoyances/WU/Explorer, epics 2-27) still need a one-pass rewrite.
+
 ## 1. Explorer module — DONE 2026-08-29 (13 → 26 toggles)
 
 Shipped: item checkboxes, Quick Access recent/frequent, transfer dialog detailed

@@ -61,14 +61,14 @@
       "settingId": "lock-screen-ads",
       "value": "0",
       "displayValue": "Suppressed",
-      "description": "Stops \"fun facts, tips, and tricks\" overlays on the lock screen; the Spotlight wallpaper keeps working (two ContentDeliveryManager values set together)."
+      "description": "Removes tips, fun facts, and ads from the lock screen. Spotlight wallpapers keep working."
     },
     {
       "moduleId": "Windows Annoyances",
       "settingId": "preinstalled-apps",
       "value": "0",
       "displayValue": "Suppressed",
-      "description": "Stops OEM app promotions and \"soft landing\" feature suggestion tips (three ContentDeliveryManager values set together)."
+      "description": "Stops promotions for OEM and preinstalled apps and the related feature tips."
     },
     {
       "moduleId": "Windows Annoyances",

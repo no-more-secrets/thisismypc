@@ -57,14 +57,14 @@ public sealed class AnnoyancesSettingsReader
             ReadPreference(
                 id: "lock-screen-images",
                 displayName: "Turn off Windows Spotlight lock screen images",
-                description: "Stops the rotating Windows Spotlight wallpapers on the lock screen entirely. Use \"Suppress lock screen tips and ads\" instead if you want to keep the pictures and lose only the overlays.",
+                description: "Turns off the rotating Spotlight wallpapers on the lock screen. To keep the pictures and remove only the overlays, use the tips and ads toggle.",
                 keyPath: cdm,
                 valueName: "RotatingLockScreenEnabled"),
 
             ReadPreference(
                 id: "spotlight-collection-desktop",
                 displayName: "Disable Spotlight collection on the desktop",
-                description: "Removes the \"Windows Spotlight\" option from desktop background settings and stops Microsoft's daily desktop images, by user policy. Officially honored on Enterprise and Education editions only — Home and Pro ignore the value.",
+                description: "Removes the Windows Spotlight option from desktop background settings and stops the daily desktop images.",
                 keyPath: AnnoyancesRegistryPaths.CloudContentUserPoliciesKeyPath,
                 valueName: "DisableSpotlightCollectionOnDesktop",
                 suppressedValue: "1",
@@ -82,7 +82,7 @@ public sealed class AnnoyancesSettingsReader
             ReadPreference(
                 id: "dynamic-search-box",
                 displayName: "Suppress search highlights in the search box",
-                description: "Stops the rotating doodles, trends, and promoted content Windows injects into the taskbar search box (\"search highlights\"). Plain search keeps working.",
+                description: "Removes search highlights (doodles, trends, and promoted content) from the taskbar search box.",
                 keyPath: AnnoyancesRegistryPaths.SearchSettingsKeyPath,
                 valueName: "IsDynamicSearchBoxEnabled",
                 section: AnnoyanceSection.BingAndEdge),

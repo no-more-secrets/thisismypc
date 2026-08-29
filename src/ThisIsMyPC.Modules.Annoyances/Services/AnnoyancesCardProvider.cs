@@ -20,12 +20,10 @@ public sealed class AnnoyancesCardProvider
         + "The comprehensive privacy suite with companion service management arrives in the Privacy & Telemetry module.";
 
     private const string LockScreenAdsDescription =
-        "Stops \"fun facts, tips, and tricks\" overlays on the lock screen when Windows Spotlight is active "
-        + "(two ContentDeliveryManager values, set together like the Settings checkbox does). The Spotlight wallpaper itself keeps working.";
+        "Removes tips, fun facts, and ads from the lock screen. Spotlight wallpapers keep working.";
 
     private const string PreinstalledAppsDescription =
-        "Stops Windows from promoting OEM-preinstalled apps and showing \"soft landing\" feature suggestion tips "
-        + "(three ContentDeliveryManager values set together).";
+        "Stops promotions for OEM and preinstalled apps and the related feature tips.";
 
     private const string RecallDescription =
         "Blocks Windows Recall from taking and saving screen snapshots and turns off AI analysis of your activity. "

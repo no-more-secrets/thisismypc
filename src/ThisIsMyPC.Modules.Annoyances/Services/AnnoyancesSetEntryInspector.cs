@@ -117,7 +117,7 @@ public sealed class AnnoyancesSetEntryInspector : ISetEntryInspector
                         prefs,
                         settingId: "lock-screen-ads",
                         displayName: "Lock screen tips and ads",
-                        description: "The \"fun facts, tips, and tricks\" lock screen overlays (two ContentDeliveryManager values set together).",
+                        description: "Removes tips, fun facts, and ads from the lock screen.",
                         suppress)
                     : null;
             }
@@ -129,7 +129,7 @@ public sealed class AnnoyancesSetEntryInspector : ISetEntryInspector
                         prefs,
                         settingId: "preinstalled-apps",
                         displayName: "OEM and preinstalled app promotions",
-                        description: "OEM app promotions and feature suggestion tips (three ContentDeliveryManager values set together).",
+                        description: "Stops promotions for OEM and preinstalled apps and the related feature tips.",
                         suppress)
                     : null;
             }

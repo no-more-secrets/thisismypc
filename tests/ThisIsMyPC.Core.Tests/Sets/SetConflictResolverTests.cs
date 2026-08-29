@@ -220,7 +220,7 @@ public sealed class SetConflictResolverTests
 
         Assert.NotNull(resolution.SkuNotice);
         Assert.Contains("Home", resolution.SkuNotice, StringComparison.Ordinal);
-        Assert.Contains("Cosmetic", resolution.SkuNotice, StringComparison.Ordinal);
+        Assert.Contains("No effect", resolution.SkuNotice, StringComparison.Ordinal);
         // Informational only: the entry stays stageable and included by default
         Assert.False(resolution.IsSkipped);
         Assert.True(resolution.IncludedByDefault);

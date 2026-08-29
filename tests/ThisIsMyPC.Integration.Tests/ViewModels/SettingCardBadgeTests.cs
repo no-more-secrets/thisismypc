@@ -88,8 +88,7 @@ public sealed class SettingCardBadgeTests
             detector: new StubDetector { Sku = WindowsSku.Home });
 
         Assert.True(vm.HasSkuNotice);
-        Assert.Contains("cosmetic", vm.SkuNotice, StringComparison.Ordinal);
-        Assert.Contains("Pro or higher", vm.SkuNotice, StringComparison.Ordinal);
+        Assert.Contains("Requires Pro or higher", vm.SkuNotice, StringComparison.Ordinal);
         Assert.True(vm.IsControlEnabled);
     }
 

@@ -112,7 +112,7 @@ public sealed class SetConflictResolver
         var restricted = stageable.Changes.Any(
             c => _capabilityDetector.IsSkuRestricted(c.Enforcement?.SkuRestriction));
         return restricted
-            ? $"Cosmetic on your Windows edition ({_capabilityDetector.Sku}): the value is applied and undoable as usual, but Windows ignores it on this edition."
+            ? $"No effect on your Windows edition ({_capabilityDetector.Sku}). The value is still applied and undoable."
             : null;
     }
 

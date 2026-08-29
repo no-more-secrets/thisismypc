@@ -226,7 +226,7 @@ public sealed class ExplorerSettingsReader
         preferences.Add(ReadPreference(
             id: "taskbar-end-task",
             displayName: "Show End Task in taskbar right-click",
-            description: "Add an \"End task\" entry to taskbar app right-click menus to kill hung apps without Task Manager",
+            description: "Add End task to taskbar right-click menus",
             keyPath: ShellRegistryPaths.TaskbarDeveloperSettingsKeyPath,
             valueName: "TaskbarEndTask",
             enabledValue: "1",
@@ -238,7 +238,7 @@ public sealed class ExplorerSettingsReader
         preferences.Add(ReadPreference(
             id: "start-recommendations",
             displayName: "Show Start menu recommendations",
-            description: "Show recommendations for tips, shortcuts, and new apps in the Start menu's Recommended section (recently opened files are controlled separately)",
+            description: "Show tips, shortcuts, and new-app suggestions in Start's Recommended section. Recent files are a separate setting.",
             keyPath: ShellRegistryPaths.AdvancedKeyPath,
             valueName: "Start_IrisRecommendations",
             enabledValue: "1",
@@ -250,7 +250,7 @@ public sealed class ExplorerSettingsReader
         preferences.Add(ReadPreference(
             id: "start-account-notifications",
             displayName: "Show Microsoft account notifications in Start",
-            description: "Show account-related alerts (backup nags, subscription prompts) next to your name in the Start menu",
+            description: "Show Microsoft account alerts next to your name in the Start menu",
             keyPath: ShellRegistryPaths.AdvancedKeyPath,
             valueName: "Start_AccountNotifications",
             enabledValue: "1",
