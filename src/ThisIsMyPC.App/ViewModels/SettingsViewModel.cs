@@ -194,13 +194,13 @@ public sealed partial class SettingsViewModel : ViewModelBase
                 new SettingChoiceItemViewModel(
                     settings, null, AppSettingKeys.CloseAction,
                     "When I close the window",
-                    "Takes effect when background features arrive (Epic 9).",
-                    [new("exit", "Exit the app"), new("tray", "Keep running in the tray")],
+                    "Tray options need Tray mode enabled below; without it the app falls back to exiting.",
+                    [new("exit", "Exit the app"), new("tray", "Keep running in the tray"), new("taskbar", "Minimize to taskbar")],
                     settings.GetApp(AppSettingKeys.CloseAction, "exit")),
                 new SettingChoiceItemViewModel(
                     settings, null, AppSettingKeys.MinimizeAction,
                     "When I minimize the window",
-                    "Takes effect when background features arrive (Epic 9).",
+                    "Tray option needs Tray mode enabled below; without it the app minimizes to the taskbar.",
                     [new("taskbar", "Minimize to taskbar"), new("tray", "Minimize to tray")],
                     settings.GetApp(AppSettingKeys.MinimizeAction, "taskbar")),
                 new SettingToggleItemViewModel(

@@ -33,6 +33,8 @@ namespace ThisIsMyPC.App;
 public partial class App : Application
 {
     private ServiceProvider? _serviceProvider;
+    private WindowPersistenceController? _windowController;
+    private TrayService? _trayService;
 
     public override void Initialize()
     {
@@ -52,10 +54,27 @@ public partial class App : Application
             LogSetDiscovery(_serviceProvider.GetRequiredService<ISetProvider>());
             InitializeSettings(_serviceProvider.GetRequiredService<Core.Settings.ISettingsService>());
 
+            var mainViewModel = _serviceProvider.GetRequiredService<MainWindowViewModel>();
             desktop.MainWindow = new MainWindow
             {
-                DataContext = _serviceProvider.GetRequiredService<MainWindowViewModel>(),
+                DataContext = mainViewModel,
             };
+
+            // 9-1: tray mode + window behavior (opt-in; defaults are stock Windows)
+            var settingsService = _serviceProvider.GetRequiredService<Core.Settings.ISettingsService>();
+            var pendingChanges = _serviceProvider.GetRequiredService<IPendingChangesService>();
+            _windowController = new WindowPersistenceController(desktop.MainWindow, desktop, settingsService);
+            _trayService = new TrayService(
+                settingsService,
+                pendingCount: () => pendingChanges.PendingCount,
+                openWindow: () => _windowController!.ShowWindow(),
+                applyPending: () =>
+                {
+                    _windowController!.ShowWindow();
+                    if (mainViewModel.ApplyAllCommand.CanExecute(null))
+                        mainViewModel.ApplyAllCommand.Execute(null);
+                },
+                exit: () => _windowController!.RequestExit());
 
             desktop.ShutdownRequested += OnShutdownRequested;
         }
@@ -170,6 +189,10 @@ public partial class App : Application
     {
         try
         {
+            _trayService?.Dispose();
+            _trayService = null;
+            _windowController?.Dispose();
+            _windowController = null;
             if (_serviceProvider is not null)
             {
                 await _serviceProvider.DisposeAsync().ConfigureAwait(false);
