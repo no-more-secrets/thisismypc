@@ -177,6 +177,91 @@
                     </StackPanel>
                 </TabItem>
 
+                <!-- Custom Entries Tab (2-6) -->
+                <TabItem>
+                    <TabItem.Header>
+                        <TextBlock Text="Custom" FontSize="13" />
+                    </TabItem.Header>
+                    <StackPanel DataContext="{Binding Custom}" Spacing="8" Margin="0,8,0,0">
+                        <TextBlock Text="Your own right-click entries. Changes stage in the review panel; the list below shows what is applied on the system."
+                                   FontSize="12" FontStyle="Italic"
+                                   Foreground="{StaticResource TextTertiaryBrush}" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="Create New Entry" Command="{Binding OpenCreateFormCommand}" />
+                            <Button Content="Refresh" Command="{Binding RefreshCommand}" />
+                        </StackPanel>
+
+                        <!-- Create/Edit form -->
+                        <Border IsVisible="{Binding IsFormOpen}"
+                                Background="{StaticResource SurfaceBrush}"
+                                CornerRadius="6" Padding="12">
+                            <StackPanel Spacing="8" MaxWidth="560" HorizontalAlignment="Left">
+                                <TextBlock Text="{Binding FormHeader}" FontWeight="SemiBold" FontSize="13" />
+                                <TextBox Watermark="Label shown in the menu"
+                                         Text="{Binding FormLabel, Mode=TwoWay}" Width="540" />
+                                <TextBox Watermark='Command, e.g. notepad.exe "%1"'
+                                         Text="{Binding FormCommandLine, Mode=TwoWay}" Width="540"
+                                         FontFamily="{StaticResource MonoFont}" />
+                                <TextBox Watermark="Icon path (optional), e.g. C:\Tools\app.exe,0"
+                                         Text="{Binding FormIconPath, Mode=TwoWay}" Width="540"
+                                         FontFamily="{StaticResource MonoFont}" />
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="Appears on:" VerticalAlignment="Center" FontSize="12" />
+                                    <ComboBox ItemsSource="{Binding ScopeChoices}"
+                                              SelectedItem="{Binding SelectedScopeChoice, Mode=TwoWay}"
+                                              IsEnabled="{Binding IsScopeEditable}"
+                                              MinWidth="200" />
+                                </StackPanel>
+                                <TextBlock Text="{Binding FormError}"
+                                           Foreground="{StaticResource DangerBrush}"
+                                           FontSize="12"
+                                           IsVisible="{Binding FormError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Button Content="Stage Change" Command="{Binding SubmitCommand}" />
+                                    <Button Content="Cancel" Command="{Binding CancelFormCommand}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Existing entries -->
+                        <TextBlock Text="No custom entries applied yet"
+                                   FontSize="12" FontStyle="Italic"
+                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                   IsVisible="{Binding !Entries.Count}" />
+                        <ItemsControl ItemsSource="{Binding Entries}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:CustomVerbEntryViewModel">
+                                    <Border Background="{StaticResource SurfaceBrush}"
+                                            CornerRadius="6" Padding="10" Margin="0,0,0,6">
+                                        <Grid ColumnDefinitions="*,Auto,Auto">
+                                            <StackPanel Grid.Column="0" Spacing="2">
+                                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                                    <TextBlock Text="{Binding Label}" FontWeight="SemiBold" FontSize="13" />
+                                                    <TextBlock Text="{Binding ScopeDisplay}"
+                                                               FontSize="11"
+                                                               Foreground="{StaticResource TextTertiaryBrush}"
+                                                               VerticalAlignment="Center" />
+                                                </StackPanel>
+                                                <TextBlock Text="{Binding Command}"
+                                                           FontFamily="{StaticResource MonoFont}"
+                                                           FontSize="11"
+                                                           Foreground="{StaticResource TextTertiaryBrush}"
+                                                           TextTrimming="CharacterEllipsis" />
+                                            </StackPanel>
+                                            <Button Grid.Column="1" Content="Edit" Margin="8,0,0,0"
+                                                    Command="{Binding $parent[ItemsControl].((vm:CustomVerbSectionViewModel)DataContext).BeginEditCommand}"
+                                                    CommandParameter="{Binding}" />
+                                            <Button Grid.Column="2" Content="Delete" Margin="8,0,0,0"
+                                                    Command="{Binding $parent[ItemsControl].((vm:CustomVerbSectionViewModel)DataContext).DeleteCommand}"
+                                                    CommandParameter="{Binding}" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </TabItem>
+
             </TabControl>
 
         </StackPanel>

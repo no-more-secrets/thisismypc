@@ -67,6 +67,7 @@ public sealed class ContextMenuModule : IModule
             var result = change.ValueType switch
             {
                 ChangeValueType.Registry_String => ApplyStringChange(change),
+                ChangeValueType.Shell_CustomVerb => ApplyCustomVerbChange(change),
                 _ => OperationResult<bool>.Failure(
                     $"Unsupported value type: {change.ValueType}",
                     ErrorCategory.ServiceUnavailable),
@@ -102,6 +103,61 @@ public sealed class ContextMenuModule : IModule
             : _registryService.WriteString(keyPath, valueName, change.AfterValue ?? string.Empty);
 
         return MakeBestEffortIfHkcrAccessDenied(result, change);
+    }
+
+    /// <summary>
+    /// Custom entry (2-6): the descriptor's value is a serialized CustomVerbDefinition
+    /// and SystemLocation is the verb key path. AbsentValue removes the key tree;
+    /// anything else materializes the definition (label, optional Icon, command).
+    /// Revert works unmodified because apply-the-AfterValue covers both directions.
+    /// </summary>
+    private OperationResult<bool> ApplyCustomVerbChange(ChangeDescriptor change)
+    {
+        var keyPath = change.SystemLocation;
+        // Recursive delete demands a strict ownership guard: only our own prefixed
+        // verb keys under the HKCU classes overlay are ever touched.
+        if (!keyPath.StartsWith(@"HKCU\Software\Classes\", StringComparison.OrdinalIgnoreCase)
+            || !keyPath.Contains($@"\shell\{Models.CustomVerbDefinition.VerbKeyPrefix}", StringComparison.OrdinalIgnoreCase))
+        {
+            return OperationResult<bool>.Failure(
+                $"Refusing custom verb operation outside the ThisIsMyPC namespace: {keyPath}",
+                ErrorCategory.AccessDenied);
+        }
+
+        if (change.AfterValue == ShellRegistryPaths.AbsentValue)
+        {
+            if (_registryService.KeyExists(keyPath) is { IsSuccess: true, Value: false })
+                return OperationResult<bool>.Success(true); // already gone
+            return _registryService.DeleteKey(keyPath, recursive: true);
+        }
+
+        var definition = Models.CustomVerbDefinition.Deserialize(change.AfterValue);
+        if (definition is null)
+        {
+            return OperationResult<bool>.Failure(
+                $"Custom verb definition is unreadable for {change.DisplayName}",
+                ErrorCategory.ServiceUnavailable);
+        }
+
+        var label = _registryService.WriteString(keyPath, string.Empty, definition.Label);
+        if (!label.IsSuccess)
+            return label;
+
+        if (definition.IconPath is { Length: > 0 } icon)
+        {
+            var iconWrite = _registryService.WriteString(keyPath, "Icon", icon);
+            if (!iconWrite.IsSuccess)
+                return iconWrite;
+        }
+        else if (_registryService.ValueExists(keyPath, "Icon") is { IsSuccess: true, Value: true })
+        {
+            // Edit removed the icon — clear the stale value.
+            var iconDelete = _registryService.DeleteValue(keyPath, "Icon");
+            if (!iconDelete.IsSuccess)
+                return iconDelete;
+        }
+
+        return _registryService.WriteString($@"{keyPath}\command", string.Empty, definition.Command);
     }
 
     /// <summary>

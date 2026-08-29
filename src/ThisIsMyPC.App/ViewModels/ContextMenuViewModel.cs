@@ -82,6 +82,9 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
     public string MiscHandlerCount => $"Misc ({MiscHandlers.Count})";
     public string MultiHandlerCount => $"Multi ({MultiHandlers.Count})";
 
+    // Custom entry creation/editing tab (2-6)
+    public CustomVerbSectionViewModel Custom { get; }
+
     public ContextMenuViewModel(
         IReadOnlyList<ContextMenuHandler> handlers,
         IPendingChangesService pendingChangesService,
@@ -91,6 +94,7 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
         _pendingChangesService = pendingChangesService;
         _registryService = registryService;
         _scanner = scanner;
+        Custom = new CustomVerbSectionViewModel(pendingChangesService, registryService);
 
         // Detect classic context menu shim
         var shimKeyResult = registryService.KeyExists(Modules.Shell.ShellRegistryPaths.ClassicContextMenuKeyPath);

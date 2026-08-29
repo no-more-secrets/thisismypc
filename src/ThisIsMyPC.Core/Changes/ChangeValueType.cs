@@ -12,5 +12,6 @@ public enum ChangeValueType
     ScheduledTask_State,
     PowerPlan_Setting,
     Environment_Variable,
-    File_Content
+    File_Content,
+    Shell_CustomVerb
 }
