@@ -19,17 +19,45 @@ public sealed class DriftWatchdog : IHostedService, IDriftReportSource
     private readonly IRegistryService _registry;
     private readonly ILogger<DriftWatchdog> _logger;
     private readonly string _baselinePath;
+    private readonly Func<string, bool> _baselineTrustCheck;
     private readonly Lock _sync = new();
 
     private DriftReportResponse _report = new() { BaselinePresent = false };
     private DateTimeOffset? _lastScanUtc;
 
-    public DriftWatchdog(IRegistryService registry, ILogger<DriftWatchdog> logger, string? baselinePath = null)
+    public DriftWatchdog(
+        IRegistryService registry,
+        ILogger<DriftWatchdog> logger,
+        string? baselinePath = null,
+        Func<string, bool>? baselineTrustCheck = null)
     {
         _registry = registry;
         _logger = logger;
         _baselinePath = baselinePath
             ?? Path.Combine(AppConstants.MachineDataDirectoryPath, DriftBaselineStore.FileName);
+        _baselineTrustCheck = baselineTrustCheck ?? IsOwnedByAdminsOrSystem;
+    }
+
+    /// <summary>
+    /// ProgramData lets standard users pre-create files they then own (and an owner
+    /// can always rewrite the DACL). A baseline not owned by SYSTEM/Administrators
+    /// is untrusted input to a SYSTEM service and is refused outright.
+    /// </summary>
+    private static bool IsOwnedByAdminsOrSystem(string path)
+    {
+        try
+        {
+            var owner = (System.Security.Principal.SecurityIdentifier?)new FileInfo(path)
+                .GetAccessControl()
+                .GetOwner(typeof(System.Security.Principal.SecurityIdentifier));
+            return owner is not null
+                && (owner.IsWellKnown(System.Security.Principal.WellKnownSidType.LocalSystemSid)
+                    || owner.IsWellKnown(System.Security.Principal.WellKnownSidType.BuiltinAdministratorsSid));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or SystemException)
+        {
+            return false;
+        }
     }
 
     public bool BaselinePresent
@@ -68,6 +96,17 @@ public sealed class DriftWatchdog : IHostedService, IDriftReportSource
     public void ScanOnce()
     {
         var now = DateTimeOffset.UtcNow;
+        if (File.Exists(_baselinePath) && !_baselineTrustCheck(_baselinePath))
+        {
+            _logger.LogWarning("Drift baseline is not owned by SYSTEM/Administrators — refusing to read it");
+            lock (_sync)
+            {
+                _report = new DriftReportResponse { BaselinePresent = false, GeneratedAtUtc = now };
+                _lastScanUtc = now;
+            }
+            return;
+        }
+
         var baseline = DriftBaselineStore.Load(_baselinePath);
         if (baseline?.Entries is not { Count: > 0 } entries)
         {
@@ -79,10 +118,29 @@ public sealed class DriftWatchdog : IHostedService, IDriftReportSource
             return;
         }
 
+        // HKCU under LocalSystem is S-1-5-18's hive — user entries must be read via
+        // HKU\{sid}, and only when that profile hive is actually loaded (a boot-time
+        // scan can run before logon; a missing hive is not drift).
+        var userHive = baseline.UserSid is { Length: > 0 } sid ? $@"HKU\{sid}" : null;
+        var userHiveLoaded = userHive is not null
+            && _registry.KeyExists(userHive) is { IsSuccess: true, Value: true };
+
         var items = new List<DriftItem>();
         foreach (var entry in entries)
         {
-            var current = ReadCurrent(entry);
+            string location;
+            if (entry.SystemLocation.StartsWith(@"HKCU\", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!userHiveLoaded)
+                    continue; // unverifiable, never a false positive
+                location = $@"{userHive}\{entry.SystemLocation[5..]}";
+            }
+            else
+            {
+                location = entry.SystemLocation;
+            }
+
+            var current = ReadCurrent(entry, location);
             if (current is null)
                 continue; // unreadable — never report drift on a failed probe
             if (Normalize(current) == Normalize(entry.ExpectedValue))
@@ -118,13 +176,13 @@ public sealed class DriftWatchdog : IHostedService, IDriftReportSource
     /// <summary>Sentinel used when a registry value is absent (matches the module delete conventions).</summary>
     public const string AbsentValue = "__absent__";
 
-    private string? ReadCurrent(DriftBaselineEntry entry)
+    private string? ReadCurrent(DriftBaselineEntry entry, string location)
     {
-        var separator = entry.SystemLocation.LastIndexOf('\\');
+        var separator = location.LastIndexOf('\\');
         if (separator <= 0)
             return null;
-        var keyPath = entry.SystemLocation[..separator];
-        var valueName = entry.SystemLocation[(separator + 1)..];
+        var keyPath = location[..separator];
+        var valueName = location[(separator + 1)..];
         if (valueName == "(Default)")
             valueName = string.Empty;
 

@@ -9,6 +9,8 @@ public enum OwnerModeState
     Stopped,
     Disabled,
     Running,
+    /// <summary>SCM query failed for a reason other than "does not exist" — state honest-unknown, not "not installed".</summary>
+    Unknown,
 }
 
 /// <summary>
@@ -47,7 +49,11 @@ public sealed class OwnerModeService
     {
         var status = _serviceControl.Query(ServiceName);
         if (!status.IsSuccess)
-            return OwnerModeState.NotInstalled; // NotFound and query failures both render as not installed
+        {
+            return status.ErrorCategory == ErrorCategory.NotFound
+                ? OwnerModeState.NotInstalled
+                : OwnerModeState.Unknown; // e.g. SCM access denied — never claim "not installed"
+        }
         return status.Value!.State == ServiceState.Running
             ? OwnerModeState.Running
             : status.Value.StartType == ServiceStartType.Disabled
@@ -55,8 +61,34 @@ public sealed class OwnerModeService
                 : OwnerModeState.Stopped;
     }
 
+    // Card builds probe per card; a short memo keeps that from turning into one SCM
+    // round-trip per rendered card. Invalidated by enable/disable transitions.
+    private static readonly TimeSpan ProbeCacheTtl = TimeSpan.FromSeconds(2);
+    private readonly Lock _probeLock = new();
+    private bool _cachedIsRunning;
+    private long _probeExpiresAt;
+
     /// <summary>Owner Mode capability probe — true only with a live service.</summary>
-    public bool IsRunning => GetState() == OwnerModeState.Running;
+    public bool IsRunning
+    {
+        get
+        {
+            lock (_probeLock)
+            {
+                if (Environment.TickCount64 < _probeExpiresAt)
+                    return _cachedIsRunning;
+                _cachedIsRunning = GetState() == OwnerModeState.Running;
+                _probeExpiresAt = Environment.TickCount64 + (long)ProbeCacheTtl.TotalMilliseconds;
+                return _cachedIsRunning;
+            }
+        }
+    }
+
+    private void InvalidateProbe()
+    {
+        lock (_probeLock)
+            _probeExpiresAt = 0;
+    }
 
     public async Task<OperationResult<bool>> EnableAsync(CancellationToken cancellationToken = default)
     {
@@ -78,6 +110,7 @@ public sealed class OwnerModeService
 
         var start = await _serviceControl.StartAsync(ServiceName, ControlTimeout, cancellationToken)
             .ConfigureAwait(false);
+        InvalidateProbe();
         if (start.IsSuccess)
             StateChanged?.Invoke(this, EventArgs.Empty);
         return start;
@@ -98,6 +131,7 @@ public sealed class OwnerModeService
         }
 
         var result = _serviceControl.SetStartType(ServiceName, ServiceStartType.Disabled);
+        InvalidateProbe();
         if (result.IsSuccess)
             StateChanged?.Invoke(this, EventArgs.Empty);
         return result;

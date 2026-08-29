@@ -23,6 +23,14 @@ public sealed record DriftBaselineEntry
 
 public sealed class DriftBaselineDocument
 {
+    /// <summary>
+    /// SID of the user whose HKCU the entries were written under. The SYSTEM
+    /// watchdog maps HKCU paths to HKU\{sid} — under LocalSystem, HKCU is
+    /// S-1-5-18's hive, and reading it directly reports every user-hive tweak
+    /// as drift. Null means HKCU entries cannot be verified and are skipped.
+    /// </summary>
+    public string? UserSid { get; set; }
+
     public List<DriftBaselineEntry>? Entries { get; set; }
 }
 

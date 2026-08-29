@@ -17,6 +17,9 @@ namespace ThisIsMyPC.Service;
 public sealed class PipeServerWorker : BackgroundService
 {
     private static readonly TimeSpan SquatRetryDelay = TimeSpan.FromSeconds(30);
+    // The pipe is single-instance: a client that connects and never sends would
+    // otherwise wedge the server for everyone until service restart.
+    private static readonly TimeSpan SessionIdleTimeout = TimeSpan.FromSeconds(30);
 
     private readonly IpcRequestHandler _handler;
     private readonly ILogger<PipeServerWorker> _logger;
@@ -69,7 +72,20 @@ public sealed class PipeServerWorker : BackgroundService
     {
         while (pipe.IsConnected && !token.IsCancellationRequested)
         {
-            var frame = await IpcProtocol.ReadFrameAsync(pipe, token).ConfigureAwait(false);
+            byte[]? frame;
+            using (var idle = CancellationTokenSource.CreateLinkedTokenSource(token))
+            {
+                idle.CancelAfter(SessionIdleTimeout);
+                try
+                {
+                    frame = await IpcProtocol.ReadFrameAsync(pipe, idle.Token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (!token.IsCancellationRequested)
+                {
+                    _logger.LogDebug("Idle client session dropped after {Timeout}s", SessionIdleTimeout.TotalSeconds);
+                    return;
+                }
+            }
             if (frame is null)
                 return; // client hung up cleanly
 

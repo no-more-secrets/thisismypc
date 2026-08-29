@@ -28,11 +28,18 @@ public sealed class DriftWatchdogTests : IDisposable
         catch (IOException) { }
     }
 
-    private DriftWatchdog Create() =>
-        new(_registry, NullLogger<DriftWatchdog>.Instance, _baselinePath);
+    private const string TestSid = "S-1-5-21-1111-2222-3333-1001";
+
+    private DriftWatchdog Create(bool trusted = true) =>
+        new(_registry, NullLogger<DriftWatchdog>.Instance, _baselinePath, baselineTrustCheck: _ => trusted);
 
     private void WriteBaseline(params ChangeDescriptor[] applied) =>
-        new DriftBaselineStore(_baselinePath).RecordApplied(applied);
+        new DriftBaselineStore(_baselinePath, userSid: TestSid).RecordApplied(applied);
+
+    private void LoadUserHive() => _registry.Keys.Add($@"HKU\{TestSid}");
+
+    /// <summary>The hive path the SYSTEM watchdog must translate an HKCU location to.</summary>
+    private static string AsUserHive(string hkcuPath) => $@"HKU\{TestSid}\{hkcuPath[5..]}";
 
     private static ChangeDescriptor Applied(
         string location, string after, ChangeValueType valueType = ChangeValueType.Registry_DWord) => new()
@@ -61,15 +68,43 @@ public sealed class DriftWatchdogTests : IDisposable
     }
 
     [Fact]
-    public void Matching_values_produce_no_drift()
+    public void Matching_values_produce_no_drift_via_the_users_hku_hive()
     {
         WriteBaseline(Applied(@"HKCU\Software\Test\Dword", "5"));
-        _registry.DWords[@"HKCU\Software\Test\Dword"] = 5;
+        LoadUserHive();
+        // Present ONLY under HKU\{sid} — a SYSTEM-hive (literal HKCU) read would miss it.
+        _registry.DWords[AsUserHive(@"HKCU\Software\Test\Dword")] = 5;
 
         var watchdog = Create();
         watchdog.ScanOnce();
 
         Assert.True(watchdog.BaselinePresent);
+        Assert.Empty(watchdog.GetReport().Items);
+    }
+
+    [Fact]
+    public void Hkcu_entries_are_skipped_when_the_user_hive_is_not_loaded()
+    {
+        // Pre-logon boot scan: hive absent. The value is also absent — without the
+        // hive-loaded guard this would false-positive as drift.
+        WriteBaseline(Applied(@"HKCU\Software\Test\Dword", "5"));
+
+        var watchdog = Create();
+        watchdog.ScanOnce();
+
+        Assert.True(watchdog.BaselinePresent);
+        Assert.Empty(watchdog.GetReport().Items);
+    }
+
+    [Fact]
+    public void Untrusted_baseline_file_is_refused()
+    {
+        WriteBaseline(Applied(@"HKLM\SOFTWARE\Test\Dword", "5"));
+
+        var watchdog = Create(trusted: false);
+        watchdog.ScanOnce();
+
+        Assert.False(watchdog.BaselinePresent);
         Assert.Empty(watchdog.GetReport().Items);
     }
 
@@ -95,6 +130,7 @@ public sealed class DriftWatchdogTests : IDisposable
     {
         var location = @"HKCU\Software\Test\Str";
         WriteBaseline(Applied(location, "hello", ChangeValueType.Registry_String));
+        LoadUserHive();
         // registry has no value at all
 
         var watchdog = Create();
@@ -103,6 +139,8 @@ public sealed class DriftWatchdogTests : IDisposable
         var item = Assert.Single(watchdog.GetReport().Items);
         Assert.Equal("hello", item.ExpectedValue);
         Assert.Equal("__absent__", item.CurrentValue);
+        // The report shows the app-side location, untranslated
+        Assert.Equal(location, item.SystemLocation);
     }
 
     [Fact]
@@ -110,6 +148,7 @@ public sealed class DriftWatchdogTests : IDisposable
     {
         // A delete-style change: expectation is "no value" (empty AfterValue)
         WriteBaseline(Applied(@"HKCU\Software\Test\Gone", "", ChangeValueType.Registry_String));
+        LoadUserHive();
 
         var watchdog = Create();
         watchdog.ScanOnce();
@@ -121,6 +160,7 @@ public sealed class DriftWatchdogTests : IDisposable
     {
         public Dictionary<string, int> DWords { get; } = new(StringComparer.OrdinalIgnoreCase);
         public Dictionary<string, string> Strings { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public HashSet<string> Keys { get; } = new(StringComparer.OrdinalIgnoreCase);
 
         public OperationResult<int> ReadDWord(string keyPath, string valueName) =>
             DWords.TryGetValue($@"{keyPath}\{valueName}", out var v)
@@ -144,7 +184,8 @@ public sealed class DriftWatchdogTests : IDisposable
         public OperationResult<bool> WriteMultiString(string keyPath, string valueName, string[] values) => Ok();
         public OperationResult<bool> DeleteValue(string keyPath, string valueName) => Ok();
         public OperationResult<bool> DeleteKey(string keyPath, bool recursive = false) => Ok();
-        public OperationResult<bool> KeyExists(string keyPath) => OperationResult<bool>.Success(false);
+        public OperationResult<bool> KeyExists(string keyPath) =>
+            OperationResult<bool>.Success(Keys.Contains(keyPath));
         public OperationResult<bool> ValueExists(string keyPath, string valueName) => OperationResult<bool>.Success(false);
         public OperationResult<IReadOnlyList<string>> EnumerateSubKeys(string keyPath) =>
             OperationResult<IReadOnlyList<string>>.Success([]);

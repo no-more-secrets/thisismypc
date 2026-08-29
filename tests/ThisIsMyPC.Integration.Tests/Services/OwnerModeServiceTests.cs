@@ -98,19 +98,29 @@ public sealed class OwnerModeServiceTests : IDisposable
     }
 
     [Fact]
-    public void Capability_probe_reflects_live_state()
+    public async Task Capability_probe_reflects_lifecycle_transitions()
     {
+        WriteBinary();
         var service = Create();
         var detector = new CapabilityDetector(
             new Fakes.FakeRegistryService(), ownerModeProbe: () => service.IsRunning);
 
         Assert.False(detector.IsOwnerModeAvailable);
 
-        _installer.Installed = true;
-        _serviceControl.State = ServiceState.Running;
-        _serviceControl.StartType = ServiceStartType.Automatic;
-
+        // Enable/disable invalidate the short probe cache; purely external SCM
+        // changes surface after the TTL instead (deliberate, per the 28 review).
+        await service.EnableAsync();
         Assert.True(detector.IsOwnerModeAvailable);
+
+        await service.DisableAsync();
+        Assert.False(detector.IsOwnerModeAvailable);
+    }
+
+    [Fact]
+    public void Query_failure_other_than_not_found_reports_unknown_not_uninstalled()
+    {
+        _serviceControl.QueryFailure = ErrorCategory.AccessDenied;
+        Assert.Equal(OwnerModeState.Unknown, Create().GetState());
     }
 
     private sealed class FakeInstaller : IServiceInstaller
@@ -143,9 +153,12 @@ public sealed class OwnerModeServiceTests : IDisposable
     {
         public ServiceState? State { get; set; }
         public ServiceStartType StartType { get; set; } = ServiceStartType.Manual;
+        public ErrorCategory? QueryFailure { get; set; }
 
         public OperationResult<ServiceStatusInfo> Query(string serviceName) =>
-            State is { } state
+            QueryFailure is { } failure
+                ? OperationResult<ServiceStatusInfo>.Failure("Query failed", failure)
+                : State is { } state
                 ? OperationResult<ServiceStatusInfo>.Success(
                     new ServiceStatusInfo(serviceName, serviceName, state, StartType))
                 : OperationResult<ServiceStatusInfo>.Failure("No such service", ErrorCategory.NotFound);

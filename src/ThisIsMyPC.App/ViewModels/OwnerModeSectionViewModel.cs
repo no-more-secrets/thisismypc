@@ -46,6 +46,7 @@ public partial class OwnerModeSectionViewModel : ViewModelBase
             OwnerModeState.Running => "Running",
             OwnerModeState.Stopped => "Installed, not running",
             OwnerModeState.Disabled => "Installed, disabled",
+            OwnerModeState.Unknown => "State unavailable (service manager query failed)",
             _ => "Not installed",
         };
         EnableCommand.NotifyCanExecuteChanged();

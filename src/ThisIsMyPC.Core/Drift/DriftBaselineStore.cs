@@ -23,11 +23,13 @@ public sealed class DriftBaselineStore : IDriftBaselineStore
     public const string FileName = "drift-baseline.json";
 
     private readonly string _path;
+    private readonly string? _userSid;
     private readonly Lock _sync = new();
 
-    public DriftBaselineStore(string? path = null)
+    public DriftBaselineStore(string? path = null, string? userSid = null)
     {
         _path = path ?? Path.Combine(AppConstants.MachineDataDirectoryPath, FileName);
+        _userSid = userSid;
     }
 
     public static bool IsTrackable(ChangeValueType valueType) => valueType is
@@ -65,7 +67,7 @@ public sealed class DriftBaselineStore : IDriftBaselineStore
                 };
             }
 
-            Save(new DriftBaselineDocument { Entries = [.. entries.Values] });
+            Save(new DriftBaselineDocument { UserSid = _userSid, Entries = [.. entries.Values] });
         }
     }
 
