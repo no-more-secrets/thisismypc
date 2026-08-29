@@ -87,6 +87,20 @@ public sealed partial class SettingChoiceItemViewModel : ViewModelBase
     }
 }
 
+/// <summary>Presentation wrapper for one import-preview row.</summary>
+public sealed class SettingsImportRowWrapper
+{
+    public SettingsImportRowWrapper(SettingsImportRow row)
+    {
+        var scope = row.Scope == SettingChangedEventArgs.AppScope ? "App" : row.Scope;
+        Display = row.SkipReason is null
+            ? $"{scope} / {row.Key}: {row.CurrentValue ?? "(unset)"} -> {row.ImportedValue}"
+            : $"{scope} / {row.Key}: skipped - {row.SkipReason}";
+    }
+
+    public string Display { get; }
+}
+
 public sealed class SettingsSectionViewModel
 {
     public required string Header { get; init; }
@@ -97,17 +111,28 @@ public sealed class SettingsSectionViewModel
 /// <summary>
 /// The application settings screen (7-2): General + Persistence app preferences plus
 /// module-contributed settings (FR6). Values live in ISettingsService and persist on
-/// every change.
+/// every change. Export/import (7-4) lives here too — file dialogs are handled by the
+/// view's code-behind, the VM works on JSON strings so it stays testable.
 /// </summary>
-public sealed class SettingsViewModel : ViewModelBase
+public sealed partial class SettingsViewModel : ViewModelBase
 {
+    private readonly ISettingsService _settings;
+    private readonly IReadOnlyCollection<string> _installedModuleIds;
+    private readonly string _appVersion;
+    private SettingsImportPreview? _pendingImport;
+
     public ObservableCollection<SettingsSectionViewModel> Sections { get; } = [];
 
     public SettingsViewModel(
         ISettingsService settings,
         IReadOnlyList<IModuleSettingsContributor> moduleContributors,
-        Action<string>? applyTheme = null)
+        Action<string>? applyTheme = null,
+        IReadOnlyCollection<string>? installedModuleIds = null,
+        string? appVersion = null)
     {
+        _settings = settings;
+        _installedModuleIds = installedModuleIds ?? [];
+        _appVersion = appVersion ?? "0.0.0";
         Sections.Add(new SettingsSectionViewModel
         {
             Header = "General",
@@ -185,6 +210,78 @@ public sealed class SettingsViewModel : ViewModelBase
     }
 
     public bool HasModuleSections { get; }
+
+    // --- 7-4 export/import ---
+
+    [ObservableProperty]
+    private string _transferStatus = string.Empty;
+
+    [ObservableProperty]
+    private bool _hasImportPreview;
+
+    [ObservableProperty]
+    private string _importPreviewSummary = string.Empty;
+
+    public ObservableCollection<SettingsImportRowWrapper> ImportPreviewRows { get; } = [];
+
+    public string BuildExportJson() =>
+        SettingsTransfer.BuildExportJson(_settings, _appVersion, Environment.MachineName);
+
+    public string DefaultExportFileName =>
+        SettingsTransfer.DefaultExportFileName(DateTimeOffset.Now);
+
+    public void ReportExport(string filePath) =>
+        TransferStatus = $"Settings exported to {filePath}";
+
+    /// <summary>False when the file is not a valid export.</summary>
+    public bool LoadImportPreview(string json)
+    {
+        var document = SettingsTransfer.Parse(json);
+        if (document is null)
+        {
+            TransferStatus = "That file is not a ThisIsMyPC settings export.";
+            return false;
+        }
+
+        _pendingImport = SettingsTransfer.BuildPreview(_settings, document, _installedModuleIds);
+        ImportPreviewRows.Clear();
+        foreach (var row in _pendingImport.Rows)
+            ImportPreviewRows.Add(new SettingsImportRowWrapper(row));
+
+        var source = _pendingImport.SourceMachineName is { Length: > 0 } machine
+            ? $" from {machine}" : string.Empty;
+        ImportPreviewSummary =
+            $"Importing {_pendingImport.ApplicableCount} setting(s){source}; {_pendingImport.SkippedCount} will be skipped.";
+        HasImportPreview = true;
+        TransferStatus = string.Empty;
+        return true;
+    }
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private void ApplyImport()
+    {
+        if (_pendingImport is null)
+            return;
+
+        var (applied, skipped) = SettingsTransfer.Apply(_settings, _pendingImport);
+        TransferStatus = $"Settings imported successfully - {applied} applied, {skipped} skipped. Reopen Settings to see the new values.";
+        ClearImportPreview();
+    }
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private void CancelImport()
+    {
+        TransferStatus = "Import cancelled.";
+        ClearImportPreview();
+    }
+
+    private void ClearImportPreview()
+    {
+        _pendingImport = null;
+        ImportPreviewRows.Clear();
+        HasImportPreview = false;
+        ImportPreviewSummary = string.Empty;
+    }
 
     public string ModulePreferencesPlaceholder =>
         "No installed module exposes configurable settings yet. Module preferences appear here automatically when they do.";

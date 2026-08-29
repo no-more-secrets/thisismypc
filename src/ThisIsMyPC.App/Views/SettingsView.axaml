@@ -79,7 +79,7 @@
             </ItemsControl>
 
             <!-- Module Preferences placeholder until a module contributes settings -->
-            <StackPanel IsVisible="{Binding !HasModuleSections}">
+            <StackPanel IsVisible="{Binding !HasModuleSections}" Margin="0,0,0,24">
                 <TextBlock Text="Module Preferences"
                            FontWeight="SemiBold"
                            FontSize="16"
@@ -89,6 +89,50 @@
                            Foreground="{StaticResource TextTertiaryBrush}"
                            TextWrapping="Wrap"
                            Margin="0,2,0,0" />
+            </StackPanel>
+
+            <!-- 7-4: Backup & Transfer -->
+            <StackPanel>
+                <TextBlock Text="Backup &amp; Transfer"
+                           FontWeight="SemiBold"
+                           FontSize="16"
+                           Foreground="{StaticResource TextPrimaryBrush}" />
+                <TextBlock Text="Export these preferences to a JSON file, or import a file exported on another machine."
+                           FontSize="12"
+                           Foreground="{StaticResource TextTertiaryBrush}"
+                           TextWrapping="Wrap"
+                           Margin="0,2,0,10" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button Content="Export Settings..." Click="OnExportClick" Padding="12,6" />
+                    <Button Content="Import Settings..." Click="OnImportClick" Padding="12,6" />
+                </StackPanel>
+
+                <StackPanel IsVisible="{Binding HasImportPreview}" Margin="0,12,0,0">
+                    <TextBlock Text="{Binding ImportPreviewSummary}"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource TextPrimaryBrush}"
+                               TextWrapping="Wrap" />
+                    <ItemsControl ItemsSource="{Binding ImportPreviewRows}" Margin="0,8,0,8">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:SettingsImportRowWrapper">
+                                <TextBlock FontSize="12" TextWrapping="Wrap" Margin="0,0,0,3"
+                                           Foreground="{StaticResource TextSecondaryBrush}"
+                                           Text="{Binding Display}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Apply Import" Command="{Binding ApplyImportCommand}" Padding="12,6" />
+                        <Button Content="Cancel" Command="{Binding CancelImportCommand}" Padding="12,6" />
+                    </StackPanel>
+                </StackPanel>
+
+                <TextBlock Text="{Binding TransferStatus}"
+                           FontSize="12"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           TextWrapping="Wrap"
+                           Margin="0,10,0,0"
+                           IsVisible="{Binding TransferStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
             </StackPanel>
         </StackPanel>
     </ScrollViewer>

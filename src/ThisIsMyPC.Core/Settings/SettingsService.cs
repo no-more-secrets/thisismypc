@@ -153,6 +153,27 @@ public sealed class SettingsService : ISettingsService
         });
     }
 
+    public IReadOnlyDictionary<string, string> SnapshotApp()
+    {
+        lock (_sync)
+        {
+            EnsureInitialized();
+            return new Dictionary<string, string>(_appSettings, StringComparer.Ordinal);
+        }
+    }
+
+    public IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>> SnapshotModules()
+    {
+        lock (_sync)
+        {
+            EnsureInitialized();
+            return _moduleSettings.ToDictionary(
+                kv => kv.Key,
+                kv => (IReadOnlyDictionary<string, string>)new Dictionary<string, string>(kv.Value, StringComparer.Ordinal),
+                StringComparer.Ordinal);
+        }
+    }
+
     private void EnsureInitialized()
     {
         if (!_initialized)

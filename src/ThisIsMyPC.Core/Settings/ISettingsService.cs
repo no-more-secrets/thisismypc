@@ -33,5 +33,11 @@ public interface ISettingsService
     string? GetModule(string moduleId, string key);
     void SetModule(string moduleId, string key, string value);
 
+    /// <summary>Copy of all app-scope values (7-4 export).</summary>
+    IReadOnlyDictionary<string, string> SnapshotApp();
+
+    /// <summary>Copy of all module-scope values keyed by module id (7-4 export).</summary>
+    IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>> SnapshotModules();
+
     event EventHandler<SettingChangedEventArgs>? SettingChanged;
 }

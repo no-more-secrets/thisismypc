@@ -531,7 +531,9 @@ public partial class MainWindowViewModel : ViewModelBase
         CurrentContent = new SettingsViewModel(
             _settingsService,
             _moduleSettingsContributors,
-            applyTheme: ApplyTheme);
+            applyTheme: ApplyTheme,
+            installedModuleIds: _navigationService.Modules.Select(m => m.Module.Info.Name).ToList(),
+            appVersion: typeof(MainWindowViewModel).Assembly.GetName().Version?.ToString(3) ?? "0.0.0");
         IsSettingsActive = true;
         IsSetLoaderActive = false;
         IsHomeActive = false;
