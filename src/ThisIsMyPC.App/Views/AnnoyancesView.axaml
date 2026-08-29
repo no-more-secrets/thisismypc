@@ -1,86 +1,44 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ThisIsMyPC.App.ViewModels"
+             xmlns:controls="using:ThisIsMyPC.App.Controls"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="700"
              x:Class="ThisIsMyPC.App.Views.AnnoyancesView"
              x:DataType="vm:AnnoyancesViewModel">
 
+    <!-- Card-rendered module tab (Epic 10 reference consumer). Fluid content area,
+         ~800px max width for readability. -->
     <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                   VerticalScrollBarVisibility="Auto">
-        <StackPanel Spacing="24" Margin="0,0,0,16">
-
-            <!-- SCOOBE & Welcome Section -->
-            <StackPanel Spacing="8">
-                <TextBlock Text="Nag Screens &amp; Suggestions"
-                           FontSize="18"
-                           FontWeight="SemiBold"
-                           Foreground="{StaticResource TextPrimaryBrush}" />
-                <TextBlock Text="Suppress setup nags, welcome pages, tips, suggestions, and lock screen ads"
-                           FontSize="13"
-                           Foreground="{StaticResource TextSecondaryBrush}"
-                           Margin="0,0,0,4" />
-                <ItemsControl ItemsSource="{Binding ScoobeAndWelcomeSettings}"
-                              ItemTemplate="{StaticResource ToggleSettingRowTemplate}" />
-            </StackPanel>
-
-            <!-- Bing Search & Edge Section -->
-            <StackPanel Spacing="8">
-                <TextBlock Text="Bing Search &amp; Edge"
-                           FontSize="18"
-                           FontWeight="SemiBold"
-                           Foreground="{StaticResource TextPrimaryBrush}" />
-                <TextBlock Text="Keep Start Menu search local and stop Edge shortcuts from reappearing"
-                           FontSize="13"
-                           Foreground="{StaticResource TextSecondaryBrush}"
-                           Margin="0,0,0,4" />
-                <ItemsControl ItemsSource="{Binding BingAndEdgeSettings}"
-                              ItemTemplate="{StaticResource ToggleSettingRowTemplate}" />
-            </StackPanel>
-
-            <!-- Advertising & Tracking Section -->
-            <StackPanel Spacing="8">
-                <TextBlock Text="Advertising &amp; Tracking"
-                           FontSize="18"
-                           FontWeight="SemiBold"
-                           Foreground="{StaticResource TextPrimaryBrush}" />
-                <TextBlock Text="Quick toggles for the Advertising ID, activity history, and suggested content"
-                           FontSize="13"
-                           Foreground="{StaticResource TextSecondaryBrush}"
-                           Margin="0,0,0,4" />
-                <ItemsControl ItemsSource="{Binding AdvertisingAndTrackingSettings}"
-                              ItemTemplate="{StaticResource ToggleSettingRowTemplate}" />
-            </StackPanel>
-
-            <!-- Gaming & Accessibility Section -->
-            <StackPanel Spacing="8">
-                <TextBlock Text="Gaming &amp; Accessibility"
-                           FontSize="18"
-                           FontWeight="SemiBold"
-                           Foreground="{StaticResource TextPrimaryBrush}" />
-                <TextBlock Text="Game DVR, GPU scheduling, and accidental accessibility shortcut prompts"
-                           FontSize="13"
-                           Foreground="{StaticResource TextSecondaryBrush}"
-                           Margin="0,0,0,4" />
-                <ItemsControl ItemsSource="{Binding GamingAndAccessibilitySettings}"
-                              ItemTemplate="{StaticResource ToggleSettingRowTemplate}" />
-            </StackPanel>
-
-            <!-- AI Features Section -->
-            <StackPanel Spacing="8">
-                <TextBlock Text="AI Features"
-                           FontSize="18"
-                           FontWeight="SemiBold"
-                           Foreground="{StaticResource TextPrimaryBrush}" />
-                <TextBlock Text="Windows Copilot, Recall, and the Edge sidebar"
-                           FontSize="13"
-                           Foreground="{StaticResource TextSecondaryBrush}"
-                           Margin="0,0,0,4" />
-                <ItemsControl ItemsSource="{Binding AiFeaturesSettings}"
-                              ItemTemplate="{StaticResource ToggleSettingRowTemplate}" />
-            </StackPanel>
-
-        </StackPanel>
+        <ItemsControl ItemsSource="{Binding CardGroups}"
+                      MaxWidth="800"
+                      HorizontalAlignment="Left"
+                      Margin="24,16,24,24">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:SettingCardGroupViewModel">
+                    <StackPanel Margin="0,0,0,20">
+                        <TextBlock Text="{Binding Header}"
+                                   FontWeight="SemiBold"
+                                   FontSize="16"
+                                   Foreground="{StaticResource TextPrimaryBrush}" />
+                        <TextBlock Text="{Binding Subtitle}"
+                                   FontSize="12"
+                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,2,0,8"
+                                   IsVisible="{Binding Subtitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                        <ItemsControl ItemsSource="{Binding Cards}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:SettingCardViewModel">
+                                    <controls:SettingCardControl />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
     </ScrollViewer>
 </UserControl>

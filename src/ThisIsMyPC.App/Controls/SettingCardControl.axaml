@@ -1,0 +1,62 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ThisIsMyPC.App.ViewModels"
+             x:Class="ThisIsMyPC.App.Controls.SettingCardControl"
+             x:DataType="vm:SettingCardViewModel">
+
+    <!-- Card renderer (Epic 10). One control, visual states — never four templates.
+         Display modes (10-2) drive IsDescriptionVisible / IsRegistryDataVisible;
+         enforcement badges and Owner Mode degradation arrive in 10-3. -->
+    <Border Padding="16,12"
+            Margin="0,2"
+            CornerRadius="6"
+            Background="{StaticResource SurfaceBrush}"
+            Classes.pending-enable="{Binding IsPendingEnable}"
+            Classes.pending-disable="{Binding IsPendingDisable}">
+        <DockPanel>
+            <!-- Control docked right; Toggle is the only interactive type for now -->
+            <ToggleSwitch DockPanel.Dock="Right"
+                          IsChecked="{Binding IsEnabled}"
+                          IsVisible="{Binding IsToggle}"
+                          VerticalAlignment="Top"
+                          Margin="16,0,0,0" />
+
+            <StackPanel Spacing="2">
+                <TextBlock Text="{Binding DisplayName}"
+                           FontWeight="SemiBold"
+                           FontSize="14"
+                           Foreground="{StaticResource TextPrimaryBrush}" />
+
+                <!-- Plain-English description; collapsed in Compact mode -->
+                <TextBlock Text="{Binding Description}"
+                           FontSize="12"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           TextWrapping="Wrap"
+                           IsVisible="{Binding IsDescriptionVisible}" />
+
+                <!-- Affected system component — visible in every display mode -->
+                <TextBlock Text="{Binding SystemPath}"
+                           FontFamily="{StaticResource MonoFont}"
+                           FontSize="11"
+                           Foreground="{StaticResource TextTertiaryBrush}"
+                           TextWrapping="Wrap"
+                           IsVisible="{Binding SystemPath, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                <!-- Registry data (10-2 Registry Data mode; hidden by default) -->
+                <StackPanel Spacing="1"
+                            Margin="0,4,0,0"
+                            IsVisible="{Binding IsRegistryDataVisible}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Text="{Binding Model.RegistryValueType}"
+                                   FontFamily="{StaticResource MonoFont}"
+                                   FontSize="11"
+                                   Foreground="{StaticResource TextTertiaryBrush}" />
+                        <TextBlock Text="{Binding Model.CurrentDisplayValue}"
+                                   FontSize="11"
+                                   Foreground="{StaticResource TextTertiaryBrush}" />
+                    </StackPanel>
+                </StackPanel>
+            </StackPanel>
+        </DockPanel>
+    </Border>
+</UserControl>
