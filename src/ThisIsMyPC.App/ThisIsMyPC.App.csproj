@@ -35,6 +35,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ThisIsMyPC.Core\ThisIsMyPC.Core.csproj" />
+    <ProjectReference Include="..\ThisIsMyPC.Ipc.Contracts\ThisIsMyPC.Ipc.Contracts.csproj" />
     <ProjectReference Include="..\ThisIsMyPC.Modules.Annoyances\ThisIsMyPC.Modules.Annoyances.csproj" />
     <ProjectReference Include="..\ThisIsMyPC.Modules.Shell\ThisIsMyPC.Modules.Shell.csproj" />
     <ProjectReference Include="..\ThisIsMyPC.Modules.Startup\ThisIsMyPC.Modules.Startup.csproj" />

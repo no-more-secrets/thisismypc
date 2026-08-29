@@ -183,6 +183,10 @@ public partial class App : Application
                 AppConstants.UpdateUrl,
                 sp.GetService<IUpdateVerifier>()));
 
+        // Owner Mode IPC client (28-1) — connects per request; a missing service
+        // degrades to ServiceUnavailable, never an error dialog.
+        services.AddSingleton<ThisIsMyPC.Ipc.Contracts.IIpcClient>(_ => new ThisIsMyPC.Ipc.Contracts.IpcClient());
+
         // Core Services
         services.AddSingleton<ICapabilityDetector, CapabilityDetector>();
         // PendingChangesService's optional ctor param resolves this because it is registered.
