@@ -19,8 +19,10 @@ public interface ICapabilityDetector
     string? SkuDetectionFailureReason { get; }
 
     /// <summary>
-    /// True when <paramref name="restriction"/> names the current edition family.
-    /// An unknown SKU never triggers a restriction — callouts are informational only.
+    /// True when the current edition sits below <paramref name="restriction"/>, the
+    /// MINIMUM edition tier that honors the policy (Home &lt; Pro &lt;
+    /// Enterprise/Education). An unknown SKU never triggers a restriction — callouts
+    /// are informational only.
     /// </summary>
     bool IsSkuRestricted(WindowsSku? restriction);
 

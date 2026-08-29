@@ -60,8 +60,10 @@ public sealed class CapabilityDetector : ICapabilityDetector
     // new state. No probe wired (tests, degraded hosts) means unavailable.
     public bool IsOwnerModeAvailable => _ownerModeProbe?.Invoke() ?? false;
 
+    // SkuRestriction is the MINIMUM edition whose tier honors the policy
+    // (Home < Pro < Enterprise/Education). Restricted = this machine sits below it.
     public bool IsSkuRestricted(WindowsSku? restriction) =>
-        restriction is not null && _sku is not null && _sku == restriction;
+        restriction is { } required && _sku is { } current && current.Tier() < required.Tier();
 
     public bool IsAvailable(SystemCapability capability) => GetAvailability(capability).IsAvailable;
 

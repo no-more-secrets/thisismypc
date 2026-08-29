@@ -39,7 +39,7 @@ public record SettingCardModel
     /// <summary>Drives the Owner Mode degradation pattern (control inert with callout when the service is absent).</summary>
     public bool OwnerModeRequired { get; init; }
 
-    /// <summary>Edition on which this setting is cosmetic/ineffective; drives an informational callout.</summary>
+    /// <summary>Minimum edition tier that honors the setting; below it the write is cosmetic. Drives an informational callout.</summary>
     public WindowsSku? SkuRestriction { get; init; }
 }
 

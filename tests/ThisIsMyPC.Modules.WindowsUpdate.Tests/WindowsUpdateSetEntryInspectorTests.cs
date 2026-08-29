@@ -115,7 +115,7 @@ public class WindowsUpdateSetEntryInspectorTests
         var enforcement = Assert.Single(group!.Changes).Enforcement;
         Assert.NotNull(enforcement);
         Assert.Null(enforcement!.GPCacheEntries);
-        Assert.Equal(Core.Modules.WindowsSku.Home, enforcement.SkuRestriction);
+        Assert.Equal(Core.Modules.WindowsSku.Pro, enforcement.SkuRestriction);
     }
 
     [Fact]

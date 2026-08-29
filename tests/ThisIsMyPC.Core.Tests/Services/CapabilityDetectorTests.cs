@@ -135,14 +135,29 @@ public sealed class CapabilityDetectorTests
     }
 
     [Fact]
-    public void IsSkuRestricted_TrueOnlyWhenRestrictionMatchesCurrentSku()
+    public void IsSkuRestricted_TrueOnlyWhenCurrentTierIsBelowTheMinimum()
     {
-        var detector = CreateDetector("Professional", out _);
+        // SkuRestriction = minimum edition tier honoring the policy
+        // (Home < Pro < Enterprise/Education).
+        var pro = CreateDetector("Professional", out _);
+        Assert.False(pro.IsSkuRestricted(WindowsSku.Home));
+        Assert.False(pro.IsSkuRestricted(WindowsSku.Pro));
+        Assert.True(pro.IsSkuRestricted(WindowsSku.Enterprise));
+        Assert.True(pro.IsSkuRestricted(WindowsSku.Education));
 
-        Assert.True(detector.IsSkuRestricted(WindowsSku.Pro));
-        Assert.False(detector.IsSkuRestricted(WindowsSku.Home));
-        Assert.False(detector.IsSkuRestricted(WindowsSku.Enterprise));
-        Assert.False(detector.IsSkuRestricted(WindowsSku.Education));
+        var home = CreateDetector("Core", out _);
+        Assert.True(home.IsSkuRestricted(WindowsSku.Pro));
+        Assert.False(home.IsSkuRestricted(WindowsSku.Home));
+    }
+
+    [Fact]
+    public void EnterpriseAndEducation_AreTheSameTier()
+    {
+        var enterprise = CreateDetector("Enterprise", out _);
+        var education = CreateDetector("Education", out _);
+
+        Assert.False(enterprise.IsSkuRestricted(WindowsSku.Education));
+        Assert.False(education.IsSkuRestricted(WindowsSku.Enterprise));
     }
 
     [Fact]

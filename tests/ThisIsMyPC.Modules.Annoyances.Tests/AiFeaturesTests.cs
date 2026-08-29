@@ -126,7 +126,7 @@ public sealed class AiFeaturesTests
         Assert.Equal("1", byValue["TurnOffSavingSnapshots"].AfterValue);
         // 26-9: the WindowsAI policies are Pro+ only — Home tag on suppress
         Assert.All(group.Changes, c => Assert.Equal(
-            Core.Modules.WindowsSku.Home, c.Enforcement!.SkuRestriction));
+            Core.Modules.WindowsSku.Pro, c.Enforcement!.SkuRestriction));
 
         var restore = AnnoyanceChangeFactory.CreateRecallPolicyToggle(prefs, suppress: false, "d");
         var restoreByValue = restore.Changes.ToDictionary(

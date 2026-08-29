@@ -45,7 +45,7 @@ public class WindowsUpdateChangeFactoryTests
         // DODownloadMode is Pro+ per the DeliveryOptimization CSP, but DoSvc reads the
         // policy key directly — no GPCache clear, no reversion vectors.
         Assert.NotNull(change.Enforcement);
-        Assert.Equal(Core.Modules.WindowsSku.Home, change.Enforcement!.SkuRestriction);
+        Assert.Equal(Core.Modules.WindowsSku.Pro, change.Enforcement!.SkuRestriction);
         Assert.Null(change.Enforcement.GPCacheEntries);
         Assert.Null(change.Enforcement.ReversionVectors);
     }
@@ -59,7 +59,7 @@ public class WindowsUpdateChangeFactoryTests
         {
             var change = WindowsUpdateChangeFactory.CreateToggle(
                 setting, configure: true, gpCache: setting.Id != "delivery-optimization");
-            Assert.Equal(Core.Modules.WindowsSku.Home, change.Enforcement!.SkuRestriction);
+            Assert.Equal(Core.Modules.WindowsSku.Pro, change.Enforcement!.SkuRestriction);
         }
     }
 

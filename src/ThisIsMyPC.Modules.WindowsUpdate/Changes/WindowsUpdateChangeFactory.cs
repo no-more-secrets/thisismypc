@@ -15,21 +15,22 @@ public static class WindowsUpdateChangeFactory
     /// stale cache would keep the removed policy alive (unlike the Annoyances
     /// suppress-only rule, which covers informational vectors).
     /// </summary>
-    // SkuRestriction: the official Policy CSP edition tables list Pro/Enterprise/
-    // Education only for every policy this module writes (Update CSP + DODownloadMode) —
-    // informational tag, never gated (FR129). Source: docs/research/sku-restriction-audit.md.
+    // SkuRestriction is the minimum edition tier that honors the policy: the official
+    // Policy CSP edition tables list Pro/Enterprise/Education for every policy this
+    // module writes (Update CSP + DODownloadMode) — informational tag, never gated
+    // (FR129). Source: docs/research/sku-restriction-audit.md.
     internal static readonly SettingEnforcement WUPolicyEnforcement = new()
     {
         GPCacheEntries = [WindowsUpdateRegistryPaths.GPCacheKeyPath],
         ReversionVectors = ["Group Policy refresh", "Windows feature updates"],
-        SkuRestriction = WindowsSku.Home,
+        SkuRestriction = WindowsSku.Pro,
     };
 
     // Delivery Optimization is read by DoSvc directly (no GPCache), but its policy is
     // also Pro+ only — SKU-only enforcement carries the tag into the set preview.
     internal static readonly SettingEnforcement DOPolicyEnforcement = new()
     {
-        SkuRestriction = WindowsSku.Home,
+        SkuRestriction = WindowsSku.Pro,
     };
 
     /// <summary>

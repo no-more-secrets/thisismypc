@@ -186,7 +186,7 @@ public sealed class SetConflictResolverTests
         public WindowsSku? Sku { get; init; }
         public string? SkuDetectionFailureReason => null;
         public bool IsSkuRestricted(WindowsSku? restriction)
-            => restriction is not null && Sku is not null && Sku == restriction;
+            => restriction is { } required && Sku is { } current && current.Tier() < required.Tier();
         public bool IsAvailable(SystemCapability capability) => true;
         public ModuleAvailability GetAvailability(SystemCapability capability) => new(true);
         public bool IsOwnerModeAvailable => false;
@@ -209,10 +209,10 @@ public sealed class SetConflictResolverTests
     };
 
     [Fact]
-    public void SkuRestrictionMatchingCurrentSku_ProducesCosmeticNotice_StillIncluded()
+    public void SkuBelowTheMinimumTier_ProducesCosmeticNotice_StillIncluded()
     {
         var resolver = new SetConflictResolver(
-            [SkuRestrictedInspector(WindowsSku.Home)],
+            [SkuRestrictedInspector(WindowsSku.Pro)],
             _ => new ModuleAvailability(IsAvailable: true),
             new StubCapabilityDetector { Sku = WindowsSku.Home });
 
@@ -227,10 +227,10 @@ public sealed class SetConflictResolverTests
     }
 
     [Fact]
-    public void SkuRestrictionForOtherSku_NoNotice()
+    public void SkuAtOrAboveTheMinimumTier_NoNotice()
     {
         var resolver = new SetConflictResolver(
-            [SkuRestrictedInspector(WindowsSku.Home)],
+            [SkuRestrictedInspector(WindowsSku.Pro)],
             _ => new ModuleAvailability(IsAvailable: true),
             new StubCapabilityDetector { Sku = WindowsSku.Education });
 
@@ -241,13 +241,13 @@ public sealed class SetConflictResolverTests
     public void UnknownSkuOrNoDetector_NoNotice()
     {
         var withUnknownSku = new SetConflictResolver(
-            [SkuRestrictedInspector(WindowsSku.Home)],
+            [SkuRestrictedInspector(WindowsSku.Pro)],
             _ => new ModuleAvailability(IsAvailable: true),
             new StubCapabilityDetector { Sku = null });
         Assert.Null(withUnknownSku.Resolve(Definition(Entry()), []).Single().SkuNotice);
 
         var withoutDetector = new SetConflictResolver(
-            [SkuRestrictedInspector(WindowsSku.Home)],
+            [SkuRestrictedInspector(WindowsSku.Pro)],
             _ => new ModuleAvailability(IsAvailable: true));
         Assert.Null(withoutDetector.Resolve(Definition(Entry()), []).Single().SkuNotice);
     }

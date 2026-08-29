@@ -17,6 +17,9 @@ public static class AnnoyancesRegistryPaths
     public const string ExplorerPoliciesKeyPath =
         @"HKCU\Software\Policies\Microsoft\Windows\Explorer";
 
+    public const string CloudContentUserPoliciesKeyPath =
+        @"HKCU\Software\Policies\Microsoft\Windows\CloudContent";
+
     public const string EdgeUpdatePoliciesKeyPath =
         @"HKLM\SOFTWARE\Policies\Microsoft\EdgeUpdate";
 

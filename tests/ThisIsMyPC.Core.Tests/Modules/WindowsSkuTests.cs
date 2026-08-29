@@ -23,4 +23,13 @@ public sealed class WindowsSkuTests
 
         Assert.Equal(values.Length, values.Distinct().Count());
     }
+
+    [Fact]
+    public void Tiers_are_home_pro_then_enterprise_education_together()
+    {
+        Assert.Equal(0, WindowsSku.Home.Tier());
+        Assert.Equal(1, WindowsSku.Pro.Tier());
+        Assert.Equal(2, WindowsSku.Enterprise.Tier());
+        Assert.Equal(2, WindowsSku.Education.Tier());
+    }
 }

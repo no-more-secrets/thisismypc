@@ -94,12 +94,15 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
         _pendingChangesService = pendingChangesService;
         Model = source.Model;
 
-        // SKU callout only when the detected edition matches the restriction
+        // SKU callout only when the detected edition sits below the minimum tier
         // (IsSkuRestricted handles null/unknown as not-restricted).
         if (capabilityDetector?.IsSkuRestricted(Model.SkuRestriction) == true)
         {
             HasSkuNotice = true;
-            SkuNotice = "On this Windows edition the setting is cosmetic — Windows ignores it. You can still apply it.";
+            var required = Model.SkuRestriction == Core.Modules.WindowsSku.Education
+                ? "Enterprise or Education"
+                : $"{Model.SkuRestriction} or higher";
+            SkuNotice = $"Windows honors this setting on {required} editions only — on this edition the write is cosmetic. You can still apply it.";
         }
 
         // Owner Mode degradation: no detector means the service can't be reached —

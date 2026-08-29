@@ -60,7 +60,7 @@ public class WindowsUpdateCardProviderTests
         var reader = new WindowsUpdateSettingsReader(registry);
         var cards = new WindowsUpdateCardProvider(reader).BuildCards(reader.ReadAll());
 
-        Assert.All(cards, c => Assert.Equal(Core.Modules.WindowsSku.Home, c.Model.SkuRestriction));
+        Assert.All(cards, c => Assert.Equal(Core.Modules.WindowsSku.Pro, c.Model.SkuRestriction));
     }
 
     [Fact]

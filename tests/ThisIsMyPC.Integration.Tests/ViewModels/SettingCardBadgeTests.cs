@@ -17,7 +17,7 @@ public sealed class SettingCardBadgeTests
         public bool OwnerMode { get; init; }
         public string? SkuDetectionFailureReason => null;
         public bool IsSkuRestricted(WindowsSku? restriction)
-            => restriction is not null && Sku is not null && Sku == restriction;
+            => restriction is { } required && Sku is { } current && current.Tier() < required.Tier();
         public bool IsAvailable(SystemCapability capability) => true;
         public ModuleAvailability GetAvailability(SystemCapability capability) => new(true);
         public bool IsOwnerModeAvailable => OwnerMode;
@@ -81,21 +81,34 @@ public sealed class SettingCardBadgeTests
     }
 
     [Fact]
-    public void SkuRestrictionMatchingDetectedSku_ShowsNotice_ToggleStaysEnabled()
+    public void SkuBelowTheMinimumTier_ShowsNotice_ToggleStaysEnabled()
     {
         var vm = CreateVm(
             skuRestriction: WindowsSku.Pro,
-            detector: new StubDetector { Sku = WindowsSku.Pro });
+            detector: new StubDetector { Sku = WindowsSku.Home });
 
         Assert.True(vm.HasSkuNotice);
         Assert.Contains("cosmetic", vm.SkuNotice, StringComparison.Ordinal);
+        Assert.Contains("Pro or higher", vm.SkuNotice, StringComparison.Ordinal);
         Assert.True(vm.IsControlEnabled);
     }
 
+    [Fact]
+    public void EducationMinimum_NoticeNamesBothTopTierEditions()
+    {
+        var vm = CreateVm(
+            skuRestriction: WindowsSku.Education,
+            detector: new StubDetector { Sku = WindowsSku.Pro });
+
+        Assert.True(vm.HasSkuNotice);
+        Assert.Contains("Enterprise or Education", vm.SkuNotice, StringComparison.Ordinal);
+    }
+
     [Theory]
-    [InlineData(WindowsSku.Home)] // different edition
-    [InlineData(null)]            // unknown edition
-    public void SkuRestrictionNotMatching_NoNotice(WindowsSku? detectedSku)
+    [InlineData(WindowsSku.Pro)]       // meets the minimum
+    [InlineData(WindowsSku.Education)] // above the minimum
+    [InlineData(null)]                 // unknown edition
+    public void SkuAtOrAboveTheMinimum_NoNotice(WindowsSku? detectedSku)
     {
         var vm = CreateVm(
             skuRestriction: WindowsSku.Pro,
@@ -164,7 +177,7 @@ public sealed class SettingCardBadgeTests
             enforcement: new EnforcementProfile { Level = EnforcementLevel.Simple, Summary = "s" },
             skuRestriction: WindowsSku.Pro,
             ownerModeRequired: true,
-            detector: new StubDetector { Sku = WindowsSku.Pro, OwnerMode = false });
+            detector: new StubDetector { Sku = WindowsSku.Home, OwnerMode = false });
 
         // Flip through all four display modes — badge state never changes.
         foreach (var (registry, compact) in new[] { (false, false), (true, false), (false, true), (true, true) })

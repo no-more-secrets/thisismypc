@@ -62,6 +62,15 @@ public sealed class AnnoyancesSettingsReader
                 valueName: "RotatingLockScreenEnabled"),
 
             ReadPreference(
+                id: "spotlight-collection-desktop",
+                displayName: "Disable Spotlight collection on the desktop",
+                description: "Removes the \"Windows Spotlight\" option from desktop background settings and stops Microsoft's daily desktop images, by user policy. Officially honored on Enterprise and Education editions only — Home and Pro ignore the value.",
+                keyPath: AnnoyancesRegistryPaths.CloudContentUserPoliciesKeyPath,
+                valueName: "DisableSpotlightCollectionOnDesktop",
+                suppressedValue: "1",
+                defaultValue: "0"),
+
+            ReadPreference(
                 id: "silent-app-installs",
                 displayName: "Suppress automatic promoted app installs",
                 description: "Stops Windows from silently installing suggested Store apps (games, streaming apps) onto the Start menu.",

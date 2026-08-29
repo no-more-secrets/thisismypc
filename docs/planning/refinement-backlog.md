@@ -17,8 +17,24 @@ Windows Update 5, Power 1) + 5 built-in sets (59 entries) + the enumerative modu
   matching the Settings checkbox), new `lock-screen-images` single, new
   `preinstalled-apps` atomic trio (OEM/PreInstalled/SoftLanding, added to Privacy
   Baseline), new `dynamic-search-box` single (drift-fragile).
-- `spotlight-collection-desktop` deliberately dropped: the CloudContent policy is
-  Enterprise/Education-only per the Policy CSP — a placebo on Home/Pro.
+- `spotlight-collection-desktop` shipped as an Annoyances single with the Home SKU
+  tag (the policy is honored on Enterprise/Education only per the Policy CSP; the
+  card description carries the Pro caveat the single-SKU tag cannot express).
+- SKU model upgraded to tiers (2026-08-29, Sam's design): `SkuRestriction` now means
+  the MINIMUM edition tier honoring the policy — Home(0) < Pro(1) <
+  Enterprise/Education(2), `WindowsSku.Tier()`. Spotlight tags `Education`,
+  WU/Copilot/Recall/activity-history tag `Pro`. Card callout names the requirement.
+
+## Future feature (new-module territory): SKU upgrade via generic keys
+
+Sam's idea: the app detects the edition tier and offers to upgrade the machine's
+SKU by redeeming Microsoft's published generic (non-activating) edition-change
+keys — the documented prerequisite step before redeeming a real key of the higher
+edition (Home → Pro → Education/Enterprise). Mechanics: `changepk.exe /ProductKey`
+or slmgr with the generic key triggers the edition-change servicing path. Care
+required: edition changes are effectively one-way, involve a reboot, and must be
+heavily confirmed — likely paired with the SKU callout ("this setting needs Pro —
+upgrade edition?" flow). Belongs with the install-engine chapter, not refinement.
 
 ## 1. Explorer module — DONE 2026-08-29 (13 → 26 toggles)
 
