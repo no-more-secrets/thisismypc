@@ -145,6 +145,15 @@ public partial class App : Application
         services.AddSingleton<ISetEntryInspector, ThisIsMyPC.Modules.Annoyances.Services.AnnoyancesSetEntryInspector>();
         services.AddSingleton<ISetEntryInspector, ThisIsMyPC.Modules.Startup.Services.StartupSetEntryInspector>();
         services.AddSingleton<ISetEntryInspector, ThisIsMyPC.Modules.WindowsUpdate.Services.WindowsUpdateSetEntryInspector>();
+
+        // Cross-module search contributors (5-3)
+        services.AddSingleton<Core.Search.ISearchSettingsContributor, ThisIsMyPC.Modules.Annoyances.Services.AnnoyancesSearchContributor>();
+        services.AddSingleton<Core.Search.ISearchSettingsContributor, ThisIsMyPC.Modules.WindowsUpdate.Services.WindowsUpdateSearchContributor>();
+        services.AddSingleton<Core.Search.ISearchSettingsContributor, ThisIsMyPC.Modules.Shell.Services.ExplorerSearchContributor>();
+        services.AddSingleton<Core.Search.ISearchSettingsContributor, ThisIsMyPC.Modules.Shell.Services.ContextMenuSearchContributor>();
+        services.AddSingleton<Core.Search.ISearchSettingsContributor, ThisIsMyPC.Modules.Shell.Services.EnvironmentSearchContributor>();
+        services.AddSingleton<Core.Search.ISearchSettingsContributor, ThisIsMyPC.Modules.Startup.Services.StartupSearchContributor>();
+        services.AddSingleton<Core.Search.ISearchSettingsContributor, ThisIsMyPC.Modules.Power.Services.PowerSearchContributor>();
         services.AddSingleton<Core.Settings.ISettingsService, Core.Settings.SettingsService>();
         services.AddSingleton<ChangeHistoryRepository>();
         services.AddSingleton<IChangeHistoryService, ChangeHistoryService>();

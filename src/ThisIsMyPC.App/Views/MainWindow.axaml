@@ -87,6 +87,39 @@
                     </Button>
                 </StackPanel>
 
+                <!-- 5-3: cross-module search -->
+                <StackPanel DockPanel.Dock="Top" Margin="8,8,8,0"
+                            IsVisible="{Binding !IsSidebarCollapsed}">
+                    <TextBox Text="{Binding SearchQuery, Mode=TwoWay}"
+                             Watermark="Search settings..."
+                             FontSize="13" />
+                    <Border Background="{StaticResource OverlayBrush}"
+                            CornerRadius="6" Padding="6" Margin="0,4,0,0"
+                            IsVisible="{Binding HasSearchResults}">
+                        <ItemsControl ItemsSource="{Binding SearchResults}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:SearchResultViewModel">
+                                    <Button Classes="sidebar-item"
+                                            Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).SelectSearchResultCommand}"
+                                            CommandParameter="{Binding}"
+                                            IsEnabled="{Binding IsAvailable}"
+                                            HorizontalAlignment="Stretch"
+                                            ToolTip.Tip="{Binding Description}">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Name}" FontSize="13"
+                                                       TextWrapping="Wrap"
+                                                       Foreground="{StaticResource TextPrimaryBrush}" />
+                                            <TextBlock Text="{Binding ModuleLine}" FontSize="11"
+                                                       TextWrapping="Wrap"
+                                                       Foreground="{StaticResource TextTertiaryBrush}" />
+                                        </StackPanel>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Border>
+                </StackPanel>
+
                 <!-- Module groups -->
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                               VerticalScrollBarVisibility="Auto">

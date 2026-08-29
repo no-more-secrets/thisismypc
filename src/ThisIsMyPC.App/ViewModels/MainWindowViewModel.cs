@@ -41,6 +41,8 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly Core.Settings.ISettingsService? _settingsService;
     private readonly IReadOnlyList<Core.Settings.IModuleSettingsContributor> _moduleSettingsContributors;
     private readonly IUpdateService? _updateService;
+    private readonly IReadOnlyList<Core.Search.ISearchSettingsContributor> _searchContributors;
+    private Core.Search.SettingsSearchService? _searchService;
     private readonly IRestorePointService _restorePointService;
 
     // FR64: auto restore point when a batch stages this many individual changes
@@ -127,6 +129,7 @@ public partial class MainWindowViewModel : ViewModelBase
         Core.Settings.ISettingsService? settingsService = null,
         IEnumerable<Core.Settings.IModuleSettingsContributor>? moduleSettingsContributors = null,
         IUpdateService? updateService = null,
+        IEnumerable<Core.Search.ISearchSettingsContributor>? searchContributors = null,
         IServiceControlService? serviceControlService = null,
         IScheduledTaskService? scheduledTaskService = null,
         Modules.Startup.Services.TaskClassificationOverrideStore? taskClassificationOverrides = null,
@@ -149,6 +152,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _settingsService = settingsService;
         _moduleSettingsContributors = moduleSettingsContributors?.ToList() ?? [];
         _updateService = updateService;
+        _searchContributors = searchContributors?.ToList() ?? [];
         _restorePointService = restorePointService;
         ReviewPanel = reviewPanel;
         ChangeHistory = new ChangeHistoryViewModel(
@@ -405,6 +409,46 @@ public partial class MainWindowViewModel : ViewModelBase
 
             SidebarGroups.Add(groupVm);
         }
+    }
+
+    // --- 5-3 cross-module search ---
+
+    [ObservableProperty]
+    private string _searchQuery = string.Empty;
+
+    [ObservableProperty]
+    private bool _hasSearchResults;
+
+    public ObservableCollection<SearchResultViewModel> SearchResults { get; } = [];
+
+    partial void OnSearchQueryChanged(string value)
+    {
+        _searchService ??= new Core.Search.SettingsSearchService(
+            _searchContributors,
+            moduleId =>
+            {
+                var registration = _navigationService.Modules
+                    .FirstOrDefault(m => m.Module.Info.Name == moduleId);
+                return registration is null
+                    ? (false, "Module not installed")
+                    : (registration.Availability.IsAvailable, registration.Availability.Reason);
+            });
+
+        SearchResults.Clear();
+        foreach (var result in _searchService.Search(value))
+            SearchResults.Add(new SearchResultViewModel(result));
+        HasSearchResults = SearchResults.Count > 0;
+    }
+
+    [RelayCommand]
+    private void SelectSearchResult(SearchResultViewModel? result)
+    {
+        if (result is null || !result.IsAvailable)
+            return;
+
+        SearchQuery = string.Empty;
+        NavigateToModuleByName(result.ModuleId);
+        SetStatus($"Look for \"{result.Name}\" in {result.ModuleId}", StatusSeverity.Success);
     }
 
     private const string FirstLaunchDismissedKey = "firstLaunchBannerDismissed";
