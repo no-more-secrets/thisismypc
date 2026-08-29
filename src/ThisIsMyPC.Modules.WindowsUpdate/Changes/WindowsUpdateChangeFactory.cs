@@ -1,5 +1,6 @@
 using ThisIsMyPC.Core.Changes;
 using ThisIsMyPC.Core.Enforcement;
+using ThisIsMyPC.Core.Modules;
 using ThisIsMyPC.Modules.WindowsUpdate.Models;
 
 namespace ThisIsMyPC.Modules.WindowsUpdate.Changes;
@@ -14,19 +15,30 @@ public static class WindowsUpdateChangeFactory
     /// stale cache would keep the removed policy alive (unlike the Annoyances
     /// suppress-only rule, which covers informational vectors).
     /// </summary>
+    // SkuRestriction: the official Policy CSP edition tables list Pro/Enterprise/
+    // Education only for every policy this module writes (Update CSP + DODownloadMode) —
+    // informational tag, never gated (FR129). Source: docs/research/sku-restriction-audit.md.
     internal static readonly SettingEnforcement WUPolicyEnforcement = new()
     {
         GPCacheEntries = [WindowsUpdateRegistryPaths.GPCacheKeyPath],
         ReversionVectors = ["Group Policy refresh", "Windows feature updates"],
+        SkuRestriction = WindowsSku.Home,
+    };
+
+    // Delivery Optimization is read by DoSvc directly (no GPCache), but its policy is
+    // also Pro+ only — SKU-only enforcement carries the tag into the set preview.
+    internal static readonly SettingEnforcement DOPolicyEnforcement = new()
+    {
+        SkuRestriction = WindowsSku.Home,
     };
 
     /// <summary>
     /// Creates a policy toggle change. <paramref name="configure"/> true writes
     /// <see cref="UpdatePolicySetting.ConfiguredValue"/>; false deletes the value
     /// (empty AfterValue = value absent, the PowerModule convention).
-    /// <paramref name="gpCache"/> attaches the GPCache enforcement — true for
-    /// orchestrator-read policies, false for Delivery Optimization (DoSvc reads its
-    /// policy key directly).
+    /// <paramref name="gpCache"/> selects the enforcement: true for orchestrator-read
+    /// policies (GPCache clear + vectors), false for Delivery Optimization (SKU-only
+    /// tag — DoSvc reads its policy key directly).
     /// </summary>
     public static ChangeDescriptor CreateToggle(UpdatePolicySetting setting, bool configure, bool gpCache = true)
     {
@@ -43,7 +55,7 @@ public static class WindowsUpdateChangeFactory
             ValueType = setting.ValueType,
             Category = ChangeCategory.Modify,
             RestartRequirement = RestartRequirement.None,
-            Enforcement = gpCache ? WUPolicyEnforcement : null,
+            Enforcement = gpCache ? WUPolicyEnforcement : DOPolicyEnforcement,
         };
     }
 

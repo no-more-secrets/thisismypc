@@ -35,14 +35,32 @@ public class WindowsUpdateChangeFactoryTests
     }
 
     [Fact]
-    public void CreateToggle_DeliveryOptimization_CarriesNoEnforcement()
+    public void CreateToggle_DeliveryOptimization_SkuTagOnly_NoGPCache()
     {
         var setting = DefaultReader().ReadSingles().Single(s => s.Id == "delivery-optimization");
 
         var change = WindowsUpdateChangeFactory.CreateToggle(setting, configure: true, gpCache: false);
 
         Assert.Equal("0", change.AfterValue);
-        Assert.Null(change.Enforcement);
+        // DODownloadMode is Pro+ per the DeliveryOptimization CSP, but DoSvc reads the
+        // policy key directly — no GPCache clear, no reversion vectors.
+        Assert.NotNull(change.Enforcement);
+        Assert.Equal(Core.Modules.WindowsSku.Home, change.Enforcement!.SkuRestriction);
+        Assert.Null(change.Enforcement.GPCacheEntries);
+        Assert.Null(change.Enforcement.ReversionVectors);
+    }
+
+    [Fact]
+    public void AllPolicies_CarryTheHomeEditionTag()
+    {
+        // Official Policy CSP edition tables: every policy this module writes lists
+        // Pro/Enterprise/Education only (docs/research/sku-restriction-audit.md).
+        foreach (var setting in DefaultReader().ReadSingles())
+        {
+            var change = WindowsUpdateChangeFactory.CreateToggle(
+                setting, configure: true, gpCache: setting.Id != "delivery-optimization");
+            Assert.Equal(Core.Modules.WindowsSku.Home, change.Enforcement!.SkuRestriction);
+        }
     }
 
     [Fact]

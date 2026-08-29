@@ -17,16 +17,35 @@ public static class AnnoyanceChangeFactory
 
     // Copilot surfaces are re-enabled by feature updates and by Copilot's own app-package
     // deployments; the policy pair is otherwise stable. Informational only — no companions.
+    // SkuRestriction: TurnOffWindowsCopilot lists Pro/Enterprise/Education only in the
+    // Policy CSP (docs/research/sku-restriction-audit.md).
     private static readonly SettingEnforcement CopilotDriftEnforcement = new()
     {
         ReversionVectors = ["Windows feature updates", "Copilot app deployment"],
+        SkuRestriction = Core.Modules.WindowsSku.Home,
     };
+
+    // Policies whose official edition tables exclude Home (informational tag, never
+    // gated — FR129). Attached on the suppress direction only (26-4 rule); source:
+    // docs/research/sku-restriction-audit.md.
+    private static readonly SettingEnforcement HomePolicyEnforcement = new()
+    {
+        SkuRestriction = Core.Modules.WindowsSku.Home,
+    };
+
+    // Per-id lookup so every staging path (module UI cards, set entries) inherits the
+    // tag from the single factory entry point. Only plain-CreateToggle singles belong
+    // here — CreateDriftFragileToggle and CreateGroupToggle overwrite Enforcement
+    // wholesale, so an id routed through those paths would silently lose the tag.
+    private static readonly IReadOnlySet<string> HomeRestrictedSingles =
+        new HashSet<string>(StringComparer.Ordinal) { "activity-history" };
 
     /// <summary>
     /// Creates a toggle change. <paramref name="suppress"/> true writes the suppressing
     /// value; false restores the Windows default. BeforeValue is the preference's live
     /// CurrentValue (a missing registry value scans as the default), preserving true
-    /// before-state fidelity for revert. SettingEnforcement stays null per FR139.
+    /// before-state fidelity for revert. SettingEnforcement stays null per FR139,
+    /// except HomeRestrictedSingles ids, which carry the SKU tag on suppress (26-9).
     /// </summary>
     public static ChangeDescriptor CreateToggle(AnnoyancePreference pref, bool suppress)
     {
@@ -43,6 +62,9 @@ public static class AnnoyanceChangeFactory
             ValueType = pref.ValueType,
             Category = suppress ? ChangeCategory.Disable : ChangeCategory.Enable,
             RestartRequirement = pref.RestartRequirement,
+            Enforcement = suppress && HomeRestrictedSingles.Contains(pref.Id)
+                ? HomePolicyEnforcement
+                : null,
         };
     }
 
@@ -100,6 +122,20 @@ public static class AnnoyanceChangeFactory
             description: "Disables the Windows Copilot assistant by policy in both machine and user scope.",
             suppress,
             suppressEnforcement: CopilotDriftEnforcement);
+
+    /// <summary>
+    /// One atomic ChangeGroup for the Recall/WindowsAI policy trio, with the Home
+    /// edition tag on suppress (the WindowsAI policies list Pro+ only).
+    /// </summary>
+    public static ChangeGroup CreateRecallPolicyToggle(
+        IReadOnlyList<AnnoyancePreference> prefs, bool suppress, string description)
+        => CreateGroupToggle(
+            prefs,
+            settingId: "recall",
+            displayName: "Windows Recall and AI data analysis",
+            description,
+            suppress,
+            suppressEnforcement: HomePolicyEnforcement);
 
     /// <summary>
     /// One atomic ChangeGroup for Bing search: BingSearchEnabled → 0 and

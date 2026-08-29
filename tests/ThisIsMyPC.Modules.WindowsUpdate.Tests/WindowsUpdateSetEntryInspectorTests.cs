@@ -105,14 +105,17 @@ public class WindowsUpdateSetEntryInspectorTests
     }
 
     [Fact]
-    public void CreateChangeGroup_DeliveryOptimization_NoEnforcement()
+    public void CreateChangeGroup_DeliveryOptimization_SkuTagButNoGPCache()
     {
         var inspector = new WindowsUpdateSetEntryInspector(new FakeRegistryService());
 
         var group = inspector.CreateChangeGroup(Entry("delivery-optimization", "0"));
 
         Assert.NotNull(group);
-        Assert.Null(Assert.Single(group!.Changes).Enforcement);
+        var enforcement = Assert.Single(group!.Changes).Enforcement;
+        Assert.NotNull(enforcement);
+        Assert.Null(enforcement!.GPCacheEntries);
+        Assert.Equal(Core.Modules.WindowsSku.Home, enforcement.SkuRestriction);
     }
 
     [Fact]

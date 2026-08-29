@@ -44,11 +44,23 @@ public class WindowsUpdateCardProviderTests
 
         foreach (var card in cards)
         {
+            // SKU-only enforcement (DO) must not render a bogus "known to revert" badge
             if (card.Model.SettingId == "delivery-optimization")
                 Assert.Null(card.Model.Enforcement);
             else
                 Assert.Equal(EnforcementLevel.Enforced, card.Model.Enforcement!.Level);
         }
+    }
+
+    [Fact]
+    public void AllCards_CarryTheHomeEditionRestriction()
+    {
+        var registry = new FakeRegistryService();
+        registry.SetString(WindowsUpdateRegistryPaths.CurrentVersionKeyPath, "DisplayVersion", "24H2");
+        var reader = new WindowsUpdateSettingsReader(registry);
+        var cards = new WindowsUpdateCardProvider(reader).BuildCards(reader.ReadAll());
+
+        Assert.All(cards, c => Assert.Equal(Core.Modules.WindowsSku.Home, c.Model.SkuRestriction));
     }
 
     [Fact]

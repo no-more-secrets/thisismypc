@@ -117,18 +117,18 @@ public sealed class AiFeaturesTests
             Assert.False(p.IsSuppressed); // all missing = Windows default
         });
 
-        var group = AnnoyanceChangeFactory.CreateGroupToggle(
-            prefs, "recall", "Recall", "d", suppress: true);
+        var group = AnnoyanceChangeFactory.CreateRecallPolicyToggle(prefs, suppress: true, "d");
         var byValue = group.Changes.ToDictionary(
             c => c.SystemLocation[(c.SystemLocation.LastIndexOf('\\') + 1)..], c => c);
 
         Assert.Equal("0", byValue["AllowRecallEnablement"].AfterValue);
         Assert.Equal("1", byValue["DisableAIDataAnalysis"].AfterValue);
         Assert.Equal("1", byValue["TurnOffSavingSnapshots"].AfterValue);
-        Assert.All(group.Changes, c => Assert.Null(c.Enforcement));
+        // 26-9: the WindowsAI policies are Pro+ only — Home tag on suppress
+        Assert.All(group.Changes, c => Assert.Equal(
+            Core.Modules.WindowsSku.Home, c.Enforcement!.SkuRestriction));
 
-        var restore = AnnoyanceChangeFactory.CreateGroupToggle(
-            prefs, "recall", "Recall", "d", suppress: false);
+        var restore = AnnoyanceChangeFactory.CreateRecallPolicyToggle(prefs, suppress: false, "d");
         var restoreByValue = restore.Changes.ToDictionary(
             c => c.SystemLocation[(c.SystemLocation.LastIndexOf('\\') + 1)..], c => c);
         Assert.Equal("1", restoreByValue["AllowRecallEnablement"].AfterValue);

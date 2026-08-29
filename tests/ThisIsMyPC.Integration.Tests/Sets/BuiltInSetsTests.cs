@@ -51,8 +51,8 @@ public sealed class BuiltInSetsTests
         var copilot = AnnoyanceChangeFactory.CreateCopilotPolicyToggle(reader.ReadCopilotPolicy(), suppress: true);
         desired[(copilot.Changes[0].ModuleId, copilot.Changes[0].SettingId)] = copilot.Changes[0].AfterValue!;
 
-        var recall = AnnoyanceChangeFactory.CreateGroupToggle(
-            reader.ReadRecall(), "recall", "Recall", "d", suppress: true);
+        var recall = AnnoyanceChangeFactory.CreateRecallPolicyToggle(
+            reader.ReadRecall(), suppress: true, "d");
         desired[(recall.Changes[0].ModuleId, recall.Changes[0].SettingId)] = recall.Changes[0].AfterValue!;
 
         var suggested = AnnoyanceChangeFactory.CreateGroupToggle(

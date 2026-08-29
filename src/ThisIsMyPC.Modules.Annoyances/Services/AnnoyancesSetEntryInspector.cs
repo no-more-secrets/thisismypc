@@ -87,12 +87,10 @@ public sealed class AnnoyancesSetEntryInspector : ISetEntryInspector
             {
                 var prefs = _reader.ReadRecall();
                 return Direction(entry, prefs[0]) is { } suppress
-                    ? AnnoyanceChangeFactory.CreateGroupToggle(
+                    ? AnnoyanceChangeFactory.CreateRecallPolicyToggle(
                         prefs,
-                        settingId: "recall",
-                        displayName: "Windows Recall and AI data analysis",
-                        description: "Blocks Windows Recall snapshots and AI analysis of your activity (three WindowsAI policies set together).",
-                        suppress)
+                        suppress,
+                        description: "Blocks Windows Recall snapshots and AI analysis of your activity (three WindowsAI policies set together).")
                     : null;
             }
             case "settings-suggested-content":

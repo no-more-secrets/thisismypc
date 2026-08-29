@@ -103,6 +103,7 @@ public sealed class AnnoyancesCardProvider
                 RegistryValueType = pref.ValueType.ToString(),
                 GroupId = SectionGroups[pref.Section],
                 Enforcement = Profile(scanTimeEnforcement),
+                SkuRestriction = scanTimeEnforcement?.SkuRestriction,
             },
             CreateToggleGroup = suppress => WrapSingle(factory(suppress)),
             ReadCurrentState = () => ReadLive(pref.Id).IsSuppressed,
@@ -178,6 +179,9 @@ public sealed class AnnoyancesCardProvider
             Enforcement = Profile(
                 AnnoyanceChangeFactory.CreateCopilotPolicyToggle(scanData.CopilotPolicy, suppress: true)
                     .Changes[0].Enforcement),
+            SkuRestriction = AnnoyanceChangeFactory
+                .CreateCopilotPolicyToggle(scanData.CopilotPolicy, suppress: true)
+                .Changes[0].Enforcement?.SkuRestriction,
         },
         CreateToggleGroup = suppress =>
             AnnoyanceChangeFactory.CreateCopilotPolicyToggle(_liveReader.ReadCopilotPolicy(), suppress),
@@ -199,13 +203,12 @@ public sealed class AnnoyancesCardProvider
             ValueName = "AllowRecallEnablement",
             RegistryValueType = nameof(ChangeValueType.Registry_DWord),
             GroupId = SectionGroups[AnnoyanceSection.AiFeatures],
+            SkuRestriction = AnnoyanceChangeFactory
+                .CreateRecallPolicyToggle(scanData.Recall, suppress: true, RecallDescription)
+                .Changes[0].Enforcement?.SkuRestriction,
         },
-        CreateToggleGroup = suppress => AnnoyanceChangeFactory.CreateGroupToggle(
-            _liveReader.ReadRecall(),
-            settingId: "recall",
-            displayName: "Windows Recall and AI data analysis",
-            description: RecallDescription,
-            suppress),
+        CreateToggleGroup = suppress => AnnoyanceChangeFactory.CreateRecallPolicyToggle(
+            _liveReader.ReadRecall(), suppress, RecallDescription),
         ReadCurrentState = () => _liveReader.ReadRecall().All(p => p.IsSuppressed),
     };
 
@@ -213,6 +216,8 @@ public sealed class AnnoyancesCardProvider
     /// Projects the factory's suppress-direction enforcement into the UI-facing profile.
     /// The card layer gets posture + reversion risks, never enforcement internals.
     /// Reversion-vector-only enforcement maps to Simple (informational), not Enforced.
+    /// SKU-only enforcement produces NO profile — SkuRestriction drives its own callout
+    /// and a "known to revert" badge would be false.
     /// </summary>
     private static EnforcementProfile? Profile(SettingEnforcement? enforcement)
     {
@@ -222,6 +227,12 @@ public sealed class AnnoyancesCardProvider
         var hasCompanions = enforcement.CompanionServices is { Count: > 0 }
             || enforcement.CompanionTasks is { Count: > 0 }
             || enforcement.GPCacheEntries is { Count: > 0 };
+
+        if (!hasCompanions && !enforcement.OwnerModeRequired
+            && enforcement.ReversionVectors is not { Count: > 0 })
+        {
+            return null;
+        }
 
         return new EnforcementProfile
         {

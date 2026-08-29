@@ -63,6 +63,7 @@ public sealed class WindowsUpdateCardProvider
                 RegistryValueType = setting.ValueType.ToString(),
                 GroupId = group,
                 Enforcement = Profile(scanTimeEnforcement),
+                SkuRestriction = scanTimeEnforcement?.SkuRestriction,
             },
             CreateToggleGroup = configure => WrapSingle(
                 WindowsUpdateChangeFactory.CreateToggle(ReadLive(setting.Id), configure, gpCache)),
@@ -86,6 +87,7 @@ public sealed class WindowsUpdateCardProvider
             RegistryValueType = nameof(ChangeValueType.Registry_DWord),
             GroupId = UpdateBehaviorGroup,
             Enforcement = Profile(WindowsUpdateChangeFactory.WUPolicyEnforcement),
+            SkuRestriction = WindowsUpdateChangeFactory.WUPolicyEnforcement.SkuRestriction,
         },
         // The live re-read can lose DisplayVersion between scan and stage; fall back to
         // the scan-time pin rather than staging nothing.
@@ -105,6 +107,8 @@ public sealed class WindowsUpdateCardProvider
     /// <summary>
     /// Projects the factory's enforcement into the UI-facing profile (Annoyances
     /// pattern): GPCache/companions → Enforced badge, vectors-only → Simple.
+    /// SKU-only enforcement produces NO profile — the SkuRestriction model field drives
+    /// its own callout, and a "known to revert" badge would be false.
     /// </summary>
     private static EnforcementProfile? Profile(SettingEnforcement? enforcement)
     {
@@ -114,6 +118,12 @@ public sealed class WindowsUpdateCardProvider
         var hasCompanions = enforcement.CompanionServices is { Count: > 0 }
             || enforcement.CompanionTasks is { Count: > 0 }
             || enforcement.GPCacheEntries is { Count: > 0 };
+
+        if (!hasCompanions && !enforcement.OwnerModeRequired
+            && enforcement.ReversionVectors is not { Count: > 0 })
+        {
+            return null;
+        }
 
         return new EnforcementProfile
         {
