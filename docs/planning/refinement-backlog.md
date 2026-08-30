@@ -146,7 +146,7 @@ by deleting the value, the WU/Power convention).
 Deferred remainder:
 - Game Bar `UseNexusForGameBarEnabled` (Xbox button binding): needs care, some
   controllers rely on it
-- Widgets AppX removal → install/uninstall engine
+- Widgets AppX removal — DONE 2026-08-30 via the install engine's Windows Apps tab
 
 ## 3. Windows Update module — DONE 2026-08-29 (5 → 8 cards)
 
@@ -199,8 +199,9 @@ mechanisms the module already implements.
   module (already referenced as "arrives later" in Annoyances descriptions)
 - Defender, SmartScreen, DoH/DNS, LSA → security module (mind the deep-research
   warning: never write Defender policy hives)
-- UWP/AppX debloat, OneDrive removal, Edge removal, VCRedist/.NET installs,
-  laptop-OEM tool installs (G-Helper/OmenMon) → install/uninstall engine
-  (retired Epics 24/13; BCUninstaller + winutil app list as references)
+- Install/uninstall engine v1 SHIPPED 2026-08-30 (Modules.Software: winget
+  catalog + inbox-app removal; see `docs/planning/install-engine-plan.md`).
+  Still there: OneDrive/Edge full removal, VCRedist/.NET bundles, OEM tools
+  (G-Helper/OmenMon), `winget upgrade` management
 - File associations, user shell folder relocation, WSL → unscoped
 - Visual effects/performance preset (winutil) → decide module home later
