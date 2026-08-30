@@ -63,14 +63,14 @@ Consequences, verified against the code and upstream:
   the binary, per the threat model) as part of release readiness. Unsigned
   packages must never pass the current Authenticode verifier by accident —
   the swap is a prerequisite for the first public release.
-- **App signing is solvable at release time** (updated after Sam confirmed an
-  LLC with domain, verified phone, and Google/Apple developer accounts exists):
-  an OV code-signing cert (~$100-250/yr) or Azure Trusted Signing (~$10/mo,
-  needs ~3 years org history) covers installer/app Authenticode. EV remains
-  unnecessary — its only unique value now is Hardware Dev Center driver
-  signing, which upstream PawnIO makes moot. Verify current CA pricing and
-  requirements at purchase time. Until then the SmartScreen warning is
-  accepted. Only release-signing material stays private (GPLv2 rule).
+- **App signing plan: OV cert through the LLC at release time.** The LLC
+  (Apr 2026) has a DUNS number, verified phone, and domain — everything OV
+  validation checks, with no org-age requirement (~$100-250/yr, key on a
+  hardware token). Azure Trusted Signing is off the table until ~Apr 2029
+  (3-year org history rule). EV remains unnecessary — its only unique value
+  is Hardware Dev Center driver signing, which upstream PawnIO makes moot.
+  Verify current CA pricing at purchase time. Until then the SmartScreen
+  warning is accepted. Only release-signing material stays private (GPLv2 rule).
 
 ## Future feature (new-module territory): SKU upgrade via generic keys
 
