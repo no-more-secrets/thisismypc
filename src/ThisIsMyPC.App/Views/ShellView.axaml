@@ -9,12 +9,12 @@
 
     <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                   VerticalScrollBarVisibility="Auto">
-        <StackPanel Spacing="24" Margin="0,0,0,16">
+        <StackPanel Spacing="16" Margin="0,0,0,16">
 
             <!-- Explorer Preferences Section -->
             <StackPanel Spacing="8">
                 <TextBlock Text="Explorer Preferences"
-                           FontSize="18"
+                           FontSize="16"
                            FontWeight="SemiBold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
                 <TextBlock Text="Control how Windows Explorer displays files and folders"
@@ -28,7 +28,7 @@
             <!-- Taskbar Section -->
             <StackPanel Spacing="8">
                 <TextBlock Text="Taskbar"
-                           FontSize="18"
+                           FontSize="16"
                            FontWeight="SemiBold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
                 <TextBlock Text="Customize taskbar alignment, widgets, and context menu style"

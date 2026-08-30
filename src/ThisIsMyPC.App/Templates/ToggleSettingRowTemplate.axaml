@@ -18,7 +18,7 @@
          FallbackValue is set on optional bindings to suppress binding errors. -->
 
     <DataTemplate x:Key="ToggleSettingRowTemplate">
-        <Border Padding="16,12"
+        <Border Padding="16,8"
                 Margin="0,2"
                 CornerRadius="6"
                 Background="{DynamicResource SurfaceBrush}"

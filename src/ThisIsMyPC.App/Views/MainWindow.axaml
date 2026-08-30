@@ -337,7 +337,7 @@
             </Panel>
 
             <!-- Module content area -->
-            <Border Background="{DynamicResource SurfaceBrush}"
+            <Border Background="{DynamicResource RaisedBrush}"
                     CornerRadius="8"
                     Padding="24">
                 <Panel>
