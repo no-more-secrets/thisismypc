@@ -21,6 +21,11 @@
                                   MinWidth="180"
                                   ItemsSource="{Binding Categories}"
                                   SelectedItem="{Binding SelectedCategory}" />
+                        <ComboBox DockPanel.Dock="Right"
+                                  MinWidth="130"
+                                  Margin="0,0,8,0"
+                                  ItemsSource="{Binding InstallStateFilters}"
+                                  SelectedItem="{Binding SelectedInstallStateFilter}" />
                         <TextBox Text="{Binding SearchText}"
                                  Watermark="Search apps"
                                  Margin="0,0,8,0" />
@@ -63,6 +68,12 @@
                                                                 HorizontalContentAlignment="Center"
                                                                 Content="{Binding ActionButtonText}"
                                                                 Command="{Binding ToggleQueueCommand}" />
+                                                        <PathIcon DockPanel.Dock="Left"
+                                                                  Width="16" Height="16"
+                                                                  Margin="0,0,9,0"
+                                                                  VerticalAlignment="Center"
+                                                                  Foreground="{DynamicResource TextTertiaryBrush}"
+                                                                  Data="{Binding Category, Converter={x:Static vm:CategoryIconConverter.Instance}}" />
                                                         <StackPanel Margin="0,0,8,0"
                                                                     VerticalAlignment="Center">
                                                             <StackPanel Orientation="Horizontal" Spacing="6">
@@ -109,10 +120,15 @@
                                 Content="Update all"
                                 Command="{Binding QueueAllUpdatesCommand}"
                                 IsVisible="{Binding HasUpdates}" />
-                        <TextBlock Text="{Binding UpdatesSummary}"
+                        <TextBlock DockPanel.Dock="Right"
+                                   Text="{Binding UpdatesSummary}"
                                    FontSize="12"
+                                   Margin="8,0"
                                    VerticalAlignment="Center"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
+                        <TextBox Text="{Binding UpdatesSearchText}"
+                                 Watermark="Search updates"
+                                 IsVisible="{Binding HasUpdates}" />
                     </DockPanel>
                     <StackPanel Orientation="Horizontal" Spacing="8"
                                 IsVisible="{Binding IsUpdatesLoading}">
@@ -130,7 +146,7 @@
 
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                               VerticalScrollBarVisibility="Auto">
-                    <ItemsControl ItemsSource="{Binding Updates}" Margin="0,0,20,16">
+                    <ItemsControl ItemsSource="{Binding FilteredUpdates}" Margin="0,0,20,16">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:SoftwareUpdateViewModel">
                                 <Border Padding="12,10" Margin="0,2" CornerRadius="4"
@@ -175,7 +191,9 @@
                 <TextBlock Text="Windows Apps" FontSize="14" />
             </TabItem.Header>
             <DockPanel>
-                <StackPanel DockPanel.Dock="Top" Spacing="4" Margin="0,8,20,8">
+                <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,8,20,8">
+                    <TextBox Text="{Binding WindowsAppsSearchText}"
+                             Watermark="Search Windows apps" />
                     <TextBlock Text="Removal deletes the app for all users and stops it from auto-installing for new accounts. Apps with a Store listing can be reinstalled here."
                                FontSize="12"
                                TextWrapping="Wrap"
@@ -188,7 +206,7 @@
 
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                               VerticalScrollBarVisibility="Auto">
-                    <ItemsControl ItemsSource="{Binding WindowsApps}" Margin="0,0,20,16">
+                    <ItemsControl ItemsSource="{Binding FilteredWindowsApps}" Margin="0,0,20,16">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:WindowsAppViewModel">
                                 <Border Padding="12,10" Margin="0,2" CornerRadius="4"

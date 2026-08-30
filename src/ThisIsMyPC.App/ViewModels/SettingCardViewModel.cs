@@ -33,6 +33,16 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
         ? string.Empty
         : Model.ValueName is null ? Model.RegistryPath : $@"{Model.RegistryPath}\{Model.ValueName}";
 
+    /// <summary>Card templates bind their root visibility here; the owning tab's search sets it.</summary>
+    [ObservableProperty]
+    private bool _isSearchVisible = true;
+
+    public void ApplySearch(string query) =>
+        IsSearchVisible = query.Length == 0
+            || DisplayName.Contains(query, StringComparison.OrdinalIgnoreCase)
+            || Description.Contains(query, StringComparison.OrdinalIgnoreCase)
+            || SystemPath.Contains(query, StringComparison.OrdinalIgnoreCase);
+
     // --- Badges & callouts (10-3). Visible in every display mode — safety-critical
     // information is never hidden by a display preference. ---
 

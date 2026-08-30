@@ -31,6 +31,16 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
     [ObservableProperty]
     private string _systemPath = string.Empty;
 
+    /// <summary>Row templates bind their root visibility here; the view's search sets it.</summary>
+    [ObservableProperty]
+    private bool _isSearchVisible = true;
+
+    public void ApplySearch(string query) =>
+        IsSearchVisible = query.Length == 0
+            || Label.Contains(query, StringComparison.OrdinalIgnoreCase)
+            || Description.Contains(query, StringComparison.OrdinalIgnoreCase)
+            || SystemPath.Contains(query, StringComparison.OrdinalIgnoreCase);
+
     [ObservableProperty]
     private bool _isEnabled;
 

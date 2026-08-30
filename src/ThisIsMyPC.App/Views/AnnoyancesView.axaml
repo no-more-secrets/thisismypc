@@ -17,6 +17,10 @@
                     Spacing="8"
                     Margin="24,12,24,0"
                     HorizontalAlignment="Right">
+            <TextBox Text="{Binding SearchText}"
+                     Watermark="Search settings"
+                     MinWidth="220"
+                     FontSize="12" />
             <ToggleButton Classes="toolbar-toggle" Content="Registry Data"
                           IsChecked="{Binding ShowRegistryData}"
                           FontSize="12"
@@ -35,7 +39,8 @@
                       Margin="24,16,24,24">
             <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:SettingCardGroupViewModel">
-                    <StackPanel Margin="0,0,0,20">
+                    <StackPanel Margin="0,0,0,20"
+                                IsVisible="{Binding IsSearchVisible}">
                         <TextBlock Text="{Binding Header}"
                                    FontWeight="SemiBold"
                                    FontSize="16"
@@ -49,7 +54,7 @@
                         <ItemsControl ItemsSource="{Binding Cards}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:SettingCardViewModel">
-                                    <controls:SettingCardControl />
+                                    <controls:SettingCardControl IsVisible="{Binding IsSearchVisible}" />
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>

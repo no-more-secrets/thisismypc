@@ -55,6 +55,21 @@ public sealed partial class SoftwareViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private string _selectedCategory = AllCategories;
 
+    public IReadOnlyList<string> InstallStateFilters { get; } = ["All", "Installed", "Not installed"];
+
+    [ObservableProperty]
+    private string _selectedInstallStateFilter = "All";
+
+    [ObservableProperty]
+    private string _updatesSearchText = string.Empty;
+
+    public ObservableCollection<SoftwareUpdateViewModel> FilteredUpdates { get; } = [];
+
+    [ObservableProperty]
+    private string _windowsAppsSearchText = string.Empty;
+
+    public ObservableCollection<WindowsAppViewModel> FilteredWindowsApps { get; } = [];
+
     public SoftwareViewModel(
         SoftwareScanData scanData, IPendingActionsService pendingActionsService,
         Core.Packages.IWingetService? wingetService = null)
@@ -96,6 +111,7 @@ public sealed partial class SoftwareViewModel : ViewModelBase, IDisposable
 
         _pendingActionsService.PropertyChanged += OnPendingActionsPropertyChanged;
         RefreshFilter();
+        RefreshWindowsAppsFilter();
     }
 
     private async Task LoadUpdatesAsync(Core.Packages.IWingetService wingetService)
@@ -116,6 +132,7 @@ public sealed partial class SoftwareViewModel : ViewModelBase, IDisposable
 
             foreach (var package in result.Value!.OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase))
                 Updates.Add(new SoftwareUpdateViewModel(package, _pendingActionsService));
+            RefreshUpdatesFilter();
 
             HasUpdates = Updates.Count > 0;
             UpdatesSummary = Updates.Count switch
@@ -130,6 +147,40 @@ public sealed partial class SoftwareViewModel : ViewModelBase, IDisposable
     partial void OnSearchTextChanged(string value) => RefreshFilter();
 
     partial void OnSelectedCategoryChanged(string value) => RefreshFilter();
+
+    partial void OnSelectedInstallStateFilterChanged(string value) => RefreshFilter();
+
+    partial void OnUpdatesSearchTextChanged(string value) => RefreshUpdatesFilter();
+
+    partial void OnWindowsAppsSearchTextChanged(string value) => RefreshWindowsAppsFilter();
+
+    private void RefreshUpdatesFilter()
+    {
+        FilteredUpdates.Clear();
+        foreach (var update in Updates)
+        {
+            if (UpdatesSearchText.Length == 0
+                || update.Name.Contains(UpdatesSearchText, StringComparison.OrdinalIgnoreCase)
+                || update.PackageId.Contains(UpdatesSearchText, StringComparison.OrdinalIgnoreCase))
+            {
+                FilteredUpdates.Add(update);
+            }
+        }
+    }
+
+    private void RefreshWindowsAppsFilter()
+    {
+        FilteredWindowsApps.Clear();
+        foreach (var app in WindowsApps)
+        {
+            if (WindowsAppsSearchText.Length == 0
+                || app.Name.Contains(WindowsAppsSearchText, StringComparison.OrdinalIgnoreCase)
+                || app.PackageId.Contains(WindowsAppsSearchText, StringComparison.OrdinalIgnoreCase))
+            {
+                FilteredWindowsApps.Add(app);
+            }
+        }
+    }
 
     private void RefreshFilter()
     {
@@ -151,6 +202,11 @@ public sealed partial class SoftwareViewModel : ViewModelBase, IDisposable
     private bool MatchesFilter(SoftwareAppViewModel app)
     {
         if (SelectedCategory != AllCategories && app.Category != SelectedCategory)
+            return false;
+
+        if (SelectedInstallStateFilter == "Installed" && !app.IsInstalled)
+            return false;
+        if (SelectedInstallStateFilter == "Not installed" && app.IsInstalled)
             return false;
 
         return SearchText.Length == 0
@@ -185,7 +241,8 @@ public sealed partial class SoftwareViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private void QueueAllUpdates()
     {
-        foreach (var update in Updates)
+        // Acts on what the user can see; a search narrows Update all with it.
+        foreach (var update in FilteredUpdates)
             update.Queue();
     }
 

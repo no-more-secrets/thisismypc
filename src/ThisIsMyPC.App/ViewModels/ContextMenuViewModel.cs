@@ -88,6 +88,36 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
     // Curated named toggles for built-in Windows entries (Sophia recipes)
     public IReadOnlyList<ShellSettingViewModel> WindowsEntries { get; }
 
+    [ObservableProperty]
+    private string _searchText = string.Empty;
+
+    partial void OnSearchTextChanged(string value)
+    {
+        foreach (var collection in AllHandlerCollections())
+        {
+            foreach (var handler in collection)
+                handler.ApplySearch(value);
+        }
+
+        foreach (var entry in WindowsEntries)
+            entry.ApplySearch(value);
+    }
+
+    private IEnumerable<ObservableCollection<ContextMenuHandlerViewModel>> AllHandlerCollections()
+    {
+        yield return MultiHandlers;
+        yield return FileHandlers;
+        yield return FolderHandlers;
+        yield return FolderBackgroundHandlers;
+        yield return DesktopHandlers;
+        yield return MiscHandlers;
+        yield return PerFileTypeHandlers;
+        yield return DriveMiscHandlers;
+        yield return ThisPcMiscHandlers;
+        yield return NetworkMiscHandlers;
+        yield return RecycleBinMiscHandlers;
+    }
+
     public ContextMenuViewModel(
         IReadOnlyList<ContextMenuHandler> handlers,
         IPendingChangesService pendingChangesService,

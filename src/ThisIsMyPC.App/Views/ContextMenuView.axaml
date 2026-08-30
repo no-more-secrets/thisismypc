@@ -14,6 +14,10 @@
             <!-- Registry Info toggle -->
             <StackPanel Orientation="Horizontal" Spacing="8"
                         HorizontalAlignment="Right" Margin="0,0,16,4">
+                <TextBox Text="{Binding SearchText}"
+                         Watermark="Search entries"
+                         MinWidth="220"
+                         FontSize="12" />
                 <TextBlock Text="Registry Info"
                            FontSize="13"
                            Foreground="{DynamicResource TextSecondaryBrush}"

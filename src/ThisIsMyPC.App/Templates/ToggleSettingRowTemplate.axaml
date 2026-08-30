@@ -22,6 +22,7 @@
                 Margin="0,2"
                 CornerRadius="6"
                 Background="{DynamicResource SurfaceBrush}"
+                IsVisible="{Binding IsSearchVisible, FallbackValue=True}"
                 Classes.inactive="{Binding IsInactive, FallbackValue=False}"
                 Classes.pending-enable="{Binding IsPendingEnable}"
                 Classes.pending-disable="{Binding IsPendingDisable}">

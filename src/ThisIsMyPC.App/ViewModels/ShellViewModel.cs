@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Modules.Shell.Changes;
 using ThisIsMyPC.Modules.Shell.Models;
@@ -13,6 +14,17 @@ public partial class ShellViewModel : ViewModelBase
 
     public ObservableCollection<ShellSettingViewModel> ExplorerSettings { get; } = [];
     public ObservableCollection<ShellSettingViewModel> TaskbarSettings { get; } = [];
+
+    [ObservableProperty]
+    private string _searchText = string.Empty;
+
+    partial void OnSearchTextChanged(string value)
+    {
+        foreach (var row in ExplorerSettings)
+            row.ApplySearch(value);
+        foreach (var row in TaskbarSettings)
+            row.ApplySearch(value);
+    }
 
     public ShellViewModel(
         ShellScanData scanData,

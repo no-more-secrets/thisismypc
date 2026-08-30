@@ -11,6 +11,12 @@
                   VerticalScrollBarVisibility="Auto">
         <StackPanel Spacing="16" Margin="0,0,0,16">
 
+            <TextBox Text="{Binding SearchText}"
+                     Watermark="Search settings"
+                     MaxWidth="320"
+                     HorizontalAlignment="Left"
+                     Margin="0,8,0,0" />
+
             <!-- Explorer Preferences Section -->
             <StackPanel Spacing="8">
                 <TextBlock Text="Explorer Preferences"

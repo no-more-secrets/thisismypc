@@ -15,6 +15,15 @@ public partial class AnnoyancesViewModel : ViewModelBase, IDisposable
 {
     public ObservableCollection<SettingCardGroupViewModel> CardGroups { get; } = [];
 
+    [ObservableProperty]
+    private string _searchText = string.Empty;
+
+    partial void OnSearchTextChanged(string value)
+    {
+        foreach (var group in CardGroups)
+            group.ApplySearch(value);
+    }
+
     // Section explainer lines carried over from the pre-card view.
     private static readonly IReadOnlyDictionary<string, string> SectionSubtitles =
         new Dictionary<string, string>
