@@ -110,7 +110,11 @@ public sealed class WingetService : IWingetService
     private const int NoPackagesFoundExitCode = unchecked((int)0x8A150014);
 
     // "installed version is already the latest" — the package updated itself
-    // between staging and Apply; done is done.
+    // between staging and Apply; done is done. NoPackagesFound is benign for a
+    // targeted upgrade too: it means the package was uninstalled after staging,
+    // so no update is pending — failing would strand the action in the queue
+    // over a state the user created deliberately. The row rights itself on the
+    // next scan.
     private const int UpdateNotApplicableExitCode = unchecked((int)0x8A15002B);
 
     public async Task<OperationResult<IReadOnlyList<UpgradableWingetPackage>>> ListUpgradableAsync(
