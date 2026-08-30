@@ -39,7 +39,7 @@ public static class PowerPlanChangeFactory
         {
             ModuleId = ModuleId,
             SettingId = $"{SettingIdPrefix}{plan.PlanGuid:D}:{setting.SettingGuid:D}:{scope}",
-            DisplayName = $"{plan.Name} — {setting.Name} ({scopeDisplay})",
+            DisplayName = $"{plan.Name}: {setting.Name} ({scopeDisplay})",
             SystemLocation = $"{plan.PlanGuid:D}/{setting.SubgroupGuid:D}/{setting.SettingGuid:D}/{scope}",
             BeforeValue = currentIndex.ToString(),
             AfterValue = newIndex.ToString(),

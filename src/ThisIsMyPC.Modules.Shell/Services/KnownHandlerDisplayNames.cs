@@ -9,7 +9,7 @@ internal static class KnownHandlerDisplayNames
 {
     private static readonly Dictionary<string, string> DisplayNames = new(StringComparer.OrdinalIgnoreCase)
     {
-        // Critical — always visible
+        // Critical, always visible
         ["{09799AFB-AD67-11d1-ABCD-00C04FC30936}"] = "Open with",
         ["{7BA4C740-9E81-11CF-99D3-00AA004AE837}"] = "Send to",
         ["{D969A300-E7FF-11d0-A93B-00A0C90F2719}"] = "New >",
@@ -50,7 +50,7 @@ internal static class KnownHandlerDisplayNames
         ["{D6791A63-E7E2-4fee-BF52-5DED8E86E9B8}"] = "Portable device menu",
         ["{77597368-7b15-11d0-a0c2-080036af3f03}"] = "Printer management",
 
-        // Third-party — use the visible menu text where known
+        // Third-party: use the visible menu text where known
         ["{D3F9A525-8824-497A-BE36-B23E22F141FC}"] = "Change Attributes",
         ["{A6595CD1-BF77-430A-A452-18696685F7C7}"] = "Convert to Adobe PDF",
         ["{2A118EB5-5797-4F5E-8B3D-F4ECBA3C98E4}"] = "Adobe Creative Cloud sync",

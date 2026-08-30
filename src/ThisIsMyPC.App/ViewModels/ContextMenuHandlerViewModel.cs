@@ -215,7 +215,7 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
     {
         if (handler.IsOrphaned)
         {
-            var orphanText = $"ORPHANED — {handler.OrphanReason ?? "DLL missing"}";
+            var orphanText = $"ORPHANED: {handler.OrphanReason ?? "DLL missing"}";
             if (!string.IsNullOrEmpty(scopeNote))
                 orphanText += $" -- {scopeNote}";
             return orphanText;
