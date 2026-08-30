@@ -115,6 +115,23 @@ public sealed partial class SoftwareViewModel : ViewModelBase, IDisposable
             app.RefreshQueuedState();
     }
 
+    /// <summary>
+    /// Flips row state for actions that just succeeded, so an installed app's
+    /// button reads Uninstall without a rescan. Called by the host after Apply.
+    /// </summary>
+    public void ApplyActionResults(Core.Actions.ActionBatchResult result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+
+        foreach (var action in result.Succeeded)
+        {
+            foreach (var app in _allApps)
+                app.HandleActionSucceeded(action.ActionId);
+            foreach (var app in WindowsApps)
+                app.HandleActionSucceeded(action.ActionId);
+        }
+    }
+
     public void Dispose()
     {
         _pendingActionsService.PropertyChanged -= OnPendingActionsPropertyChanged;
@@ -132,7 +149,7 @@ public sealed partial class SoftwareAppViewModel : ViewModelBase
         ArgumentNullException.ThrowIfNull(pendingActionsService);
         _entry = entry;
         _pendingActionsService = pendingActionsService;
-        IsInstalled = isInstalled;
+        _isInstalled = isInstalled;
         _isQueued = pendingActionsService.IsStaged(ActionId);
     }
 
@@ -141,7 +158,10 @@ public sealed partial class SoftwareAppViewModel : ViewModelBase
     public string Category => _entry.Category;
     public string WingetId => _entry.WingetId;
     public bool IsOpenSource => _entry.IsOpenSource;
-    public bool IsInstalled { get; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ActionButtonText))]
+    private bool _isInstalled;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ActionButtonText))]
@@ -173,6 +193,18 @@ public sealed partial class SoftwareAppViewModel : ViewModelBase
     }
 
     public void RefreshQueuedState() => IsQueued = _pendingActionsService.IsStaged(ActionId);
+
+    public void HandleActionSucceeded(string actionId)
+    {
+        if (actionId == SoftwareActionFactory.InstallPrefix + _entry.Id)
+            IsInstalled = true;
+        else if (actionId == SoftwareActionFactory.UninstallPrefix + _entry.Id)
+            IsInstalled = false;
+        else
+            return;
+
+        RefreshQueuedState();
+    }
 }
 
 public sealed partial class WindowsAppViewModel : ViewModelBase
@@ -186,7 +218,7 @@ public sealed partial class WindowsAppViewModel : ViewModelBase
         ArgumentNullException.ThrowIfNull(pendingActionsService);
         _entry = entry;
         _pendingActionsService = pendingActionsService;
-        IsPresent = isPresent;
+        _isPresent = isPresent;
         _isQueued = pendingActionsService.IsStaged(ActionId);
     }
 
@@ -194,7 +226,11 @@ public sealed partial class WindowsAppViewModel : ViewModelBase
     public string Description => _entry.Description;
     public string Category => _entry.Category;
     public string PackageId => _entry.PackageId;
-    public bool IsPresent { get; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ActionButtonText))]
+    [NotifyPropertyChangedFor(nameof(CanAct))]
+    private bool _isPresent;
 
     // A present app can only be removed; an absent one only reinstalled (Store id permitting).
     public bool CanAct => IsPresent || _entry.CanReinstall;
@@ -229,4 +265,16 @@ public sealed partial class WindowsAppViewModel : ViewModelBase
     }
 
     public void RefreshQueuedState() => IsQueued = _pendingActionsService.IsStaged(ActionId);
+
+    public void HandleActionSucceeded(string actionId)
+    {
+        if (actionId == SoftwareActionFactory.AppxRemovePrefix + _entry.Id)
+            IsPresent = false;
+        else if (actionId == SoftwareActionFactory.AppxReinstallPrefix + _entry.Id)
+            IsPresent = true;
+        else
+            return;
+
+        RefreshQueuedState();
+    }
 }

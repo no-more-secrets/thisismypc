@@ -1200,8 +1200,40 @@ public partial class MainWindowViewModel : ViewModelBase
             // succeeded — a failed change batch should not be followed by installs.
             if (result.IsSuccess && _pendingActionsService is { PendingCount: > 0 })
             {
-                var actionResult = await _pendingActionsService
-                    .ApplyAllAsync(ExecuteActionOnModule).ConfigureAwait(true);
+                var actionCount = _pendingActionsService.PendingCount;
+                SetStatus(
+                    $"Running {actionCount} queued action{(actionCount == 1 ? "" : "s")}...",
+                    StatusSeverity.Warning);
+
+                // Surface per-action progress in the status bar; the IsApplying
+                // guard lets a stale post lose to the final status below.
+                PropertyChangedEventHandler progressHandler = (_, args) =>
+                {
+                    if (args.PropertyName is nameof(IPendingActionsService.CurrentActionDisplay)
+                        && _pendingActionsService.CurrentActionDisplay is { } display)
+                    {
+                        Dispatcher.UIThread.Post(() =>
+                        {
+                            if (_pendingActionsService.IsApplying)
+                                SetStatus($"Running: {display}...", StatusSeverity.Warning);
+                        });
+                    }
+                };
+                _pendingActionsService.PropertyChanged += progressHandler;
+
+                Core.Actions.ActionBatchResult actionResult;
+                try
+                {
+                    actionResult = await _pendingActionsService
+                        .ApplyAllAsync(ExecuteActionOnModule).ConfigureAwait(true);
+                }
+                finally
+                {
+                    _pendingActionsService.PropertyChanged -= progressHandler;
+                }
+
+                if (CurrentContent is SoftwareViewModel softwareVm)
+                    softwareVm.ApplyActionResults(actionResult);
 
                 if (!actionResult.IsSuccess)
                 {
@@ -1210,7 +1242,12 @@ public partial class MainWindowViewModel : ViewModelBase
                         $"{actionResult.Failed.Count} action{(actionResult.Failed.Count == 1 ? "" : "s")} failed. {first.Action.DisplayName}: {first.ErrorMessage}",
                         StatusSeverity.Error);
                 }
-                else if (result.Applied.Count == 0)
+                else if (result.RequiredRestarts.Count > 0)
+                {
+                    // The restart banner stays visible; keep the status pointing at it.
+                    SetStatus("Actions completed — a restart is still needed for some changes", StatusSeverity.Warning);
+                }
+                else
                 {
                     SetStatus(
                         $"{actionResult.Succeeded.Count} action{(actionResult.Succeeded.Count == 1 ? "" : "s")} completed",

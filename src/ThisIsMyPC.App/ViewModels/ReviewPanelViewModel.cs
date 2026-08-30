@@ -19,6 +19,18 @@ public partial class ReviewPanelViewModel : ViewModelBase, IDisposable
 
     public bool IsEmpty => ReviewGroups.Count == 0 && ReviewActions.Count == 0;
 
+    public string HeaderCountText
+    {
+        get
+        {
+            if (ReviewActions.Count == 0)
+                return $"{ReviewGroups.Count} change(s)";
+            if (ReviewGroups.Count == 0)
+                return $"{ReviewActions.Count} action(s)";
+            return $"{ReviewGroups.Count} change(s), {ReviewActions.Count} action(s)";
+        }
+    }
+
     public SaveSetFormViewModel SaveSetForm { get; }
 
     public ReviewPanelViewModel(
@@ -79,6 +91,7 @@ public partial class ReviewPanelViewModel : ViewModelBase, IDisposable
 
         OnPropertyChanged(nameof(HasActions));
         OnPropertyChanged(nameof(IsEmpty));
+        OnPropertyChanged(nameof(HeaderCountText));
     }
 
     [CommunityToolkit.Mvvm.Input.RelayCommand]
@@ -122,6 +135,7 @@ public partial class ReviewPanelViewModel : ViewModelBase, IDisposable
         }
 
         OnPropertyChanged(nameof(IsEmpty));
+        OnPropertyChanged(nameof(HeaderCountText));
     }
 
     public void Dispose()

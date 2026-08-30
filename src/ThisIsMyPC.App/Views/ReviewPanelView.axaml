@@ -24,7 +24,7 @@
                     BorderThickness="0,0,0,1">
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Right"
-                               Text="{Binding ReviewGroups.Count, StringFormat='{}{0} change(s)'}"
+                               Text="{Binding HeaderCountText}"
                                Foreground="{StaticResource TextTertiaryBrush}"
                                FontSize="12"
                                VerticalAlignment="Center" />
@@ -186,7 +186,7 @@
                                    FontSize="12"
                                    Margin="4,6,0,2"
                                    Foreground="{StaticResource WarningBrush}" />
-                        <TextBlock Text="These run on Apply and cannot be undone from history."
+                        <TextBlock Text="These run on Apply. They cannot be undone from history and are not included in saved sets."
                                    FontSize="11"
                                    Margin="4,0,0,4"
                                    Foreground="{StaticResource TextTertiaryBrush}" />
@@ -203,6 +203,7 @@
                                                     Classes="apply-bar-discard"
                                                     Content="Remove"
                                                     VerticalAlignment="Center"
+                                                    IsEnabled="{Binding !$parent[Window].((vm:MainWindowViewModel)DataContext).IsApplying}"
                                                     Command="{Binding $parent[ItemsControl].((vm:ReviewPanelViewModel)DataContext).UnstageActionCommand}"
                                                     CommandParameter="{Binding ActionId}" />
                                             <StackPanel Spacing="2">

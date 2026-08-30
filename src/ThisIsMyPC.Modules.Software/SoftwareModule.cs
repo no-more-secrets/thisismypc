@@ -157,11 +157,14 @@ public sealed class SoftwareModule : IActionModule
             if (!removal.IsSuccess)
                 return removal;
 
-            if (package.IsProvisioned == true)
+            // null means the provisioned list was unreadable — attempt anyway so
+            // the promised "stops auto-install for new profiles" holds, but only
+            // a known-provisioned package turns a deprovision error into failure.
+            if (package.IsProvisioned != false)
             {
                 var deprovision = await _appxPackageService
                     .DeprovisionPackageAsync(package.PackageFamilyName).ConfigureAwait(false);
-                if (!deprovision.IsSuccess)
+                if (!deprovision.IsSuccess && package.IsProvisioned == true)
                     return deprovision;
             }
         }

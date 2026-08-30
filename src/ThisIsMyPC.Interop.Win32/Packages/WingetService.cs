@@ -19,9 +19,15 @@ public sealed class WingetService : IWingetService
     // renders progress spinners that make full output enormous.
     private const int OutputTailLines = 12;
 
+    // The version probe gates module availability during app startup and must
+    // never hang the shell; export feeds the scan. Installs get no artificial
+    // deadline — a large package on a slow line legitimately takes a long time.
+    private static readonly TimeSpan VersionTimeout = TimeSpan.FromSeconds(15);
+    private static readonly TimeSpan ExportTimeout = TimeSpan.FromMinutes(3);
+
     public async Task<OperationResult<string>> GetVersionAsync(CancellationToken cancellationToken = default)
     {
-        var run = await RunWingetAsync(["--version"], cancellationToken).ConfigureAwait(false);
+        var run = await RunWingetAsync(["--version"], cancellationToken, VersionTimeout).ConfigureAwait(false);
         if (!run.IsSuccess)
             return OperationResult<string>.Failure(run.ErrorMessage!, run.ErrorCategory!.Value);
 
@@ -46,7 +52,7 @@ public sealed class WingetService : IWingetService
         {
             var run = await RunWingetAsync(
                 ["export", "-o", exportPath, "--accept-source-agreements", "--disable-interactivity"],
-                cancellationToken).ConfigureAwait(false);
+                cancellationToken, ExportTimeout).ConfigureAwait(false);
             if (!run.IsSuccess)
             {
                 return OperationResult<IReadOnlyList<InstalledWingetPackage>>.Failure(
@@ -64,6 +70,18 @@ public sealed class WingetService : IWingetService
             }
 
             var packages = ParseExportFile(exportPath);
+
+            // A non-zero exit with a populated file is the normal "some packages
+            // have no known source" case. Non-zero AND empty means the export as
+            // a whole failed (e.g. every source unreachable) — report that rather
+            // than presenting "nothing installed" as known state.
+            if (run.Value.ExitCode != 0 && packages.Count == 0)
+            {
+                return OperationResult<IReadOnlyList<InstalledWingetPackage>>.Failure(
+                    FormatExitError("winget export", run.Value.ExitCode, run.Value.Output),
+                    ErrorCategory.ServiceUnavailable);
+            }
+
             return OperationResult<IReadOnlyList<InstalledWingetPackage>>.Success(packages);
         }
         catch (JsonException ex)
@@ -185,7 +203,7 @@ public sealed class WingetService : IWingetService
     }
 
     private static async Task<OperationResult<(int ExitCode, string Output)>> RunWingetAsync(
-        string[] arguments, CancellationToken cancellationToken)
+        string[] arguments, CancellationToken cancellationToken, TimeSpan? timeout = null)
     {
         var startInfo = new ProcessStartInfo
         {
@@ -209,12 +227,18 @@ public sealed class WingetService : IWingetService
                     "winget could not be started.", ErrorCategory.ServiceUnavailable);
             }
 
-            var stdoutTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
-            var stderrTask = process.StandardError.ReadToEndAsync(cancellationToken);
+            using var timeoutCts = timeout is { } limit
+                ? CancellationTokenSource.CreateLinkedTokenSource(cancellationToken)
+                : null;
+            timeoutCts?.CancelAfter(timeout!.Value);
+            var effectiveToken = timeoutCts?.Token ?? cancellationToken;
+
+            var stdoutTask = process.StandardOutput.ReadToEndAsync(CancellationToken.None);
+            var stderrTask = process.StandardError.ReadToEndAsync(CancellationToken.None);
 
             try
             {
-                await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+                await process.WaitForExitAsync(effectiveToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
@@ -223,6 +247,16 @@ public sealed class WingetService : IWingetService
                     process.Kill(entireProcessTree: true);
                 }
                 catch (InvalidOperationException) { }
+
+                // A timeout is a winget failure, not a caller cancellation — only
+                // the caller's own token propagates as OperationCanceledException.
+                if (!cancellationToken.IsCancellationRequested)
+                {
+                    return OperationResult<(int, string)>.Failure(
+                        $"winget did not respond within {timeout!.Value.TotalSeconds:F0} seconds and was terminated.",
+                        ErrorCategory.ServiceUnavailable);
+                }
+
                 throw;
             }
 

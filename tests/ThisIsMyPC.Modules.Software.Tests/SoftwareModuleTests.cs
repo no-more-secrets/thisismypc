@@ -239,6 +239,20 @@ public class SoftwareModuleTests
     }
 
     [Fact]
+    public async Task ExecuteAction_AppxRemoveAttemptsDeprovisionWhenProvisionedStateUnknown()
+    {
+        var target = WindowsAppsCatalog.Entries[0];
+        var appx = new FakeAppxPackageService();
+        appx.Packages.Add(CreatePackage(target.PackageId, provisioned: null));
+        var module = CreateModule(appx: appx);
+
+        var result = await module.ExecuteActionAsync(SoftwareActionFactory.CreateAppxRemove(target));
+
+        Assert.True(result.IsSuccess);
+        Assert.Single(appx.Deprovisions);
+    }
+
+    [Fact]
     public async Task ExecuteAction_AppxRemoveIgnoresFrameworkPackages()
     {
         var target = WindowsAppsCatalog.Entries[0];
