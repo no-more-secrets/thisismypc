@@ -1,8 +1,8 @@
 # CLAUDE.md
 
 Operating guidance for Claude Code in this repository. **How to DO things only** — rationale
-lives in `_bmad-output/planning-artifacts/`, status in
-`_bmad-output/implementation-artifacts/sprint-status.yaml`. Never append history here;
+lives in `_bmad-output/planning-artifacts/`, current status and plans in
+`docs/planning/` (`refinement-backlog.md` is the master list). Never append history here;
 replace stale text.
 
 ## What this is
@@ -14,9 +14,9 @@ Avalonia 11 + CommunityToolkit.Mvvm, xUnit. Runs elevated (`app.manifest` requir
 ## Where the project is: BMAD is closed
 
 Every defined BMAD story shipped (epics 1-10, 25-28 complete; 20-1 standalone).
-Epics that never got stories (11-19, 20-remainder, 21-24) are `retired` in
-sprint-status.yaml and form the backlog for what comes next. Do not run the BMAD
-workflow (`_bmad/`) for new work.
+Epics that never got stories (11-19, 20-remainder, 21-24) were retired and form
+the backlog menu for what comes next. Do not run the BMAD workflow (`_bmad/`)
+for new work.
 
 **The current chapter** is Sam's post-BMAD plan, two tracks:
 1. **Custom modules ported from open-source Windows utilities** — the retired epics
