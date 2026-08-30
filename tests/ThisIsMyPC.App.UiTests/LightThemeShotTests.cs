@@ -24,9 +24,7 @@ public class LightThemeShotTests
         WindowsApps: WindowsAppsCatalog.Entries,
         PresentAppxPackageIds: WindowsAppsCatalog.Entries.Take(20).Select(e => e.PackageId)
             .ToHashSet(StringComparer.OrdinalIgnoreCase),
-        AppxStateKnown: true,
-        Upgradable: [new("Mozilla.Firefox", "Mozilla Firefox", "133.0", "134.0.1")],
-        UpgradableStateKnown: true);
+        AppxStateKnown: true);
 
     [AvaloniaFact]
     public void SoftwareView_RendersInLightAndSwitchesBack()

@@ -10,6 +10,7 @@ public sealed class FakeWingetService : IWingetService
     public List<InstalledWingetPackage> InstalledPackages { get; } = [];
     public List<UpgradableWingetPackage> UpgradablePackages { get; } = [];
     public List<string> Upgrades { get; } = [];
+    public int UpgradableListCalls { get; private set; }
 
     public bool IsAvailable { get; set; } = true;
     public bool ListFails { get; set; }
@@ -30,12 +31,15 @@ public sealed class FakeWingetService : IWingetService
                 InstalledPackages.AsReadOnly()));
 
     public Task<OperationResult<IReadOnlyList<UpgradableWingetPackage>>> ListUpgradableAsync(
-        CancellationToken cancellationToken = default) =>
-        Task.FromResult(UpgradableListFails
+        CancellationToken cancellationToken = default)
+    {
+        UpgradableListCalls++;
+        return Task.FromResult(UpgradableListFails
             ? OperationResult<IReadOnlyList<UpgradableWingetPackage>>.Failure(
                 "upgrade listing failed", ErrorCategory.ServiceUnavailable)
             : OperationResult<IReadOnlyList<UpgradableWingetPackage>>.Success(
                 UpgradablePackages.AsReadOnly()));
+    }
 
     public Task<OperationResult<bool>> UpgradeAsync(
         string packageId, CancellationToken cancellationToken = default)

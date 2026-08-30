@@ -105,10 +105,18 @@
                                    VerticalAlignment="Center"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                     </DockPanel>
-                    <TextBlock Text="Updates could not be read from winget. Rescan to try again."
+                    <StackPanel Orientation="Horizontal" Spacing="8"
+                                IsVisible="{Binding IsUpdatesLoading}">
+                        <ProgressBar IsIndeterminate="True" Width="120" VerticalAlignment="Center" />
+                        <TextBlock Text="Checking for updates. The catalog stays usable meanwhile."
+                                   FontSize="12"
+                                   VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                    </StackPanel>
+                    <TextBlock Text="Updates could not be read from winget. Reopen the module to try again."
                                FontSize="12"
                                Foreground="{DynamicResource WarningBrush}"
-                               IsVisible="{Binding !UpgradableStateKnown}" />
+                               IsVisible="{Binding UpdatesLoadFailed}" />
                 </StackPanel>
 
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled"

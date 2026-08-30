@@ -23,18 +23,12 @@ public class SoftwareViewShotTests
         WindowsApps: WindowsAppsCatalog.Entries,
         PresentAppxPackageIds: WindowsAppsCatalog.Entries.Take(20).Select(e => e.PackageId)
             .ToHashSet(StringComparer.OrdinalIgnoreCase),
-        AppxStateKnown: true,
-        Upgradable:
-        [
-            new("Mozilla.Firefox", "Mozilla Firefox", "133.0", "134.0.1"),
-            new("Git.Git", "Git", "2.47.0", "2.48.1"),
-        ],
-        UpgradableStateKnown: true);
+        AppxStateKnown: true);
 
     private static (UiSession Session, SoftwareViewModel ViewModel, PendingActionsService Queue) CreateSession()
     {
         var queue = new PendingActionsService();
-        var viewModel = new SoftwareViewModel(CreateScanData(), queue);
+        var viewModel = new SoftwareViewModel(CreateScanData(), queue, new Fakes.UiFakeWingetService());
         var session = UiSession.ForView(new SoftwareView(), viewModel, "software-view");
         return (session, viewModel, queue);
     }
@@ -92,11 +86,13 @@ public class SoftwareViewShotTests
     }
 
     [AvaloniaFact]
-    public void UpdatesTab_RendersRowsAndUpdateAllQueuesEverything()
+    public async Task UpdatesTab_RendersRowsAndUpdateAllQueuesEverything()
     {
         var (session, viewModel, queue) = CreateSession();
         using (session)
         {
+            // The update check streams in behind the page.
+            await session.WaitForAsync(() => !viewModel.IsUpdatesLoading, what: "updates load");
             session.ClickText("Updates");
             session.Screenshot("updates-tab");
 

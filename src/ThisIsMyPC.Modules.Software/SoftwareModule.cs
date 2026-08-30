@@ -48,6 +48,13 @@ public sealed class SoftwareModule : IActionModule
 
     public async Task<OperationResult<object>> ScanSystemStateAsync()
     {
+        // Appx enumeration runs alongside the winget chain; the winget calls stay
+        // sequential among themselves (concurrent winget processes contend on the
+        // source cache). Update detection is NOT part of the scan: winget upgrade
+        // hits the network for minutes on some machines, so the view model loads
+        // it in the background after the page is already on screen.
+        var appxTask = _appxPackageService.EnumeratePackagesAsync();
+
         var version = await _wingetService.GetVersionAsync().ConfigureAwait(false);
 
         // Installed-state detection is best-effort: a failed export still leaves
@@ -57,11 +64,7 @@ public sealed class SoftwareModule : IActionModule
             ? installed.Value!.Select(p => p.PackageId).ToHashSet(StringComparer.OrdinalIgnoreCase)
             : [];
 
-        // Update detection is best-effort too: a failed listing hides the
-        // Updates tab content but never blocks the catalog.
-        var upgradable = await _wingetService.ListUpgradableAsync().ConfigureAwait(false);
-
-        var appxPackages = await _appxPackageService.EnumeratePackagesAsync().ConfigureAwait(false);
+        var appxPackages = await appxTask.ConfigureAwait(false);
         var presentAppxIds = appxPackages.IsSuccess
             ? WindowsAppsCatalog.Entries
                 .Where(entry => appxPackages.Value!.Any(p => MatchesPackageId(p, entry.PackageId)))
@@ -76,9 +79,7 @@ public sealed class SoftwareModule : IActionModule
             WingetVersion: version.IsSuccess ? version.Value : null,
             WindowsApps: WindowsAppsCatalog.Entries,
             PresentAppxPackageIds: presentAppxIds,
-            AppxStateKnown: appxPackages.IsSuccess,
-            Upgradable: upgradable.IsSuccess ? upgradable.Value! : [],
-            UpgradableStateKnown: upgradable.IsSuccess);
+            AppxStateKnown: appxPackages.IsSuccess);
 
         return OperationResult<object>.Success(scan);
     }

@@ -28,6 +28,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly NavigationService _navigationService;
     private readonly IPendingChangesService _pendingChangesService;
     private readonly IPendingActionsService? _pendingActionsService;
+    private readonly Core.Packages.IWingetService? _wingetService;
     private readonly IChangeHistoryService _changeHistoryService;
     private readonly IRegistryService _registryService;
     private readonly IServiceControlService? _serviceControlService;
@@ -313,8 +314,10 @@ public partial class MainWindowViewModel : ViewModelBase
         DisplayModePreferencesStore? displayModeStore = null,
         Services.OwnerModeService? ownerModeService = null,
         Ipc.Contracts.IIpcClient? ipcClient = null,
-        IPendingActionsService? pendingActionsService = null)
+        IPendingActionsService? pendingActionsService = null,
+        Core.Packages.IWingetService? wingetService = null)
     {
+        _wingetService = wingetService;
         _pendingActionsService = pendingActionsService;
         _ownerModeService = ownerModeService;
         _ipcClient = ipcClient;
@@ -386,15 +389,29 @@ public partial class MainWindowViewModel : ViewModelBase
         if (e.PropertyName is not nameof(NavigationService.CurrentModule))
             return;
 
+        var epoch = 0;
         try
         {
-            var epoch = ++_contentEpoch;
+            epoch = ++_contentEpoch;
+            var current = _navigationService.CurrentModule;
 
             // Release the outgoing content VM's pending-changes subscriptions
-            // before building the replacement (Dispose implementations are idempotent).
-            await Dispatcher.UIThread.InvokeAsync(() => (CurrentContent as IDisposable)?.Dispose());
+            // before building the replacement (Dispose implementations are idempotent),
+            // and show the loading state immediately: module scans read the live
+            // system and can take a while.
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                (CurrentContent as IDisposable)?.Dispose();
+                CurrentContent = null;
+                if (current is not null)
+                {
+                    ContentTitle = current.Module.Info.Name;
+                    ContentDescription = current.Module.Info.Description;
+                    LoadingText = $"Scanning {current.Module.Info.Name}...";
+                    IsModuleLoading = true;
+                }
+            });
 
-            var current = _navigationService.CurrentModule;
             if (current?.Module is ShellModule)
             {
                 var scanResult = await current.Module.ScanSystemStateAsync().ConfigureAwait(false);
@@ -557,7 +574,7 @@ public partial class MainWindowViewModel : ViewModelBase
                     {
                         ContentTitle = current.Module.Info.Name;
                         ContentDescription = current.Module.Info.Description;
-                        CurrentContent = new SoftwareViewModel(softwareData, _pendingActionsService);
+                        CurrentContent = new SoftwareViewModel(softwareData, _pendingActionsService, _wingetService);
                     }
                     else
                     {
@@ -604,7 +621,23 @@ public partial class MainWindowViewModel : ViewModelBase
             await Dispatcher.UIThread.InvokeAsync(() =>
                 SetStatus($"Failed to load module: {ex.Message}", StatusSeverity.Error));
         }
+        finally
+        {
+            var completedEpoch = epoch;
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                // A newer navigation owns the overlay now; leave its state alone.
+                if (completedEpoch == _contentEpoch)
+                    IsModuleLoading = false;
+            });
+        }
     }
+
+    [ObservableProperty]
+    private bool _isModuleLoading;
+
+    [ObservableProperty]
+    private string _loadingText = string.Empty;
 
     public async Task InitializeAsync()
     {
@@ -798,6 +831,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private void OpenSetLoader()
     {
         _contentEpoch++;
+        IsModuleLoading = false;
         // Fresh disk read on every open: user sets dropped into %APPDATA% appear
         // without an app restart. Outgoing content may also be a module VM reached
         // without a navigation event — its subscriptions must not outlive the switch.
@@ -882,6 +916,7 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
 
         _contentEpoch++;
+        IsModuleLoading = false;
         // Old content may be a module VM or the Set Loader — subscriptions must not
         // outlive the switch.
         (CurrentContent as IDisposable)?.Dispose();
@@ -910,6 +945,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private void OpenHome()
     {
         _contentEpoch++;
+        IsModuleLoading = false;
         // Old content may be a module VM (reached without a navigation event) or the
         // Set Loader — either way its subscriptions must not outlive the switch.
         (CurrentContent as IDisposable)?.Dispose();

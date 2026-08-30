@@ -1,5 +1,3 @@
-using ThisIsMyPC.Core.Packages;
-
 namespace ThisIsMyPC.Modules.Software.Models;
 
 /// <summary>
@@ -15,6 +13,4 @@ public sealed record SoftwareScanData(
     string? WingetVersion,
     IReadOnlyList<WindowsAppEntry> WindowsApps,
     IReadOnlySet<string> PresentAppxPackageIds,
-    bool AppxStateKnown,
-    IReadOnlyList<UpgradableWingetPackage> Upgradable,
-    bool UpgradableStateKnown);
+    bool AppxStateKnown);

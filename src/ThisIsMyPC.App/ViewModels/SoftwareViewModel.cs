@@ -20,20 +20,22 @@ public sealed partial class SoftwareViewModel : ViewModelBase, IDisposable
 
     public IReadOnlyList<WindowsAppViewModel> WindowsApps { get; }
 
-    public IReadOnlyList<SoftwareUpdateViewModel> Updates { get; }
+    // The update check runs winget upgrade against the network; it can take
+    // minutes on a slow machine and must never gate the page. It loads in the
+    // background after construction and streams into the tab when done.
+    public ObservableCollection<SoftwareUpdateViewModel> Updates { get; } = [];
 
-    public bool UpgradableStateKnown { get; }
+    [ObservableProperty]
+    private bool _isUpdatesLoading;
 
-    public bool HasUpdates => Updates.Count > 0;
+    [ObservableProperty]
+    private bool _updatesLoadFailed;
 
-    public string UpdatesSummary => !UpgradableStateKnown
-        ? string.Empty
-        : Updates.Count switch
-        {
-            0 => "Everything winget manages is up to date.",
-            1 => "1 update available.",
-            var n => $"{n} updates available.",
-        };
+    [ObservableProperty]
+    private bool _hasUpdates;
+
+    [ObservableProperty]
+    private string _updatesSummary = string.Empty;
 
     public IReadOnlyList<string> Categories { get; }
 
@@ -49,7 +51,9 @@ public sealed partial class SoftwareViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private string _selectedCategory = AllCategories;
 
-    public SoftwareViewModel(SoftwareScanData scanData, IPendingActionsService pendingActionsService)
+    public SoftwareViewModel(
+        SoftwareScanData scanData, IPendingActionsService pendingActionsService,
+        Core.Packages.IWingetService? wingetService = null)
     {
         ArgumentNullException.ThrowIfNull(scanData);
         _pendingActionsService = pendingActionsService;
@@ -58,18 +62,18 @@ public sealed partial class SoftwareViewModel : ViewModelBase, IDisposable
         AppxStateKnown = scanData.AppxStateKnown;
         WingetVersion = scanData.WingetVersion;
 
+        if (wingetService is not null)
+        {
+            IsUpdatesLoading = true;
+            _ = LoadUpdatesAsync(wingetService);
+        }
+
         WindowsApps = scanData.WindowsApps
             .OrderBy(e => e.Name, StringComparer.OrdinalIgnoreCase)
             .Select(entry => new WindowsAppViewModel(
                 entry,
                 isPresent: scanData.PresentAppxPackageIds.Contains(entry.PackageId),
                 pendingActionsService))
-            .ToList();
-
-        UpgradableStateKnown = scanData.UpgradableStateKnown;
-        Updates = scanData.Upgradable
-            .OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
-            .Select(package => new SoftwareUpdateViewModel(package, pendingActionsService))
             .ToList();
 
         _allApps = scanData.Catalog
@@ -88,6 +92,35 @@ public sealed partial class SoftwareViewModel : ViewModelBase, IDisposable
 
         _pendingActionsService.PropertyChanged += OnPendingActionsPropertyChanged;
         RefreshFilter();
+    }
+
+    private async Task LoadUpdatesAsync(Core.Packages.IWingetService wingetService)
+    {
+        var result = await wingetService.ListUpgradableAsync().ConfigureAwait(false);
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (_disposed)
+                return;
+
+            IsUpdatesLoading = false;
+            if (!result.IsSuccess)
+            {
+                UpdatesLoadFailed = true;
+                return;
+            }
+
+            foreach (var package in result.Value!.OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase))
+                Updates.Add(new SoftwareUpdateViewModel(package, _pendingActionsService));
+
+            HasUpdates = Updates.Count > 0;
+            UpdatesSummary = Updates.Count switch
+            {
+                0 => "Everything winget manages is up to date.",
+                1 => "1 update available.",
+                var n => $"{n} updates available.",
+            };
+        });
     }
 
     partial void OnSearchTextChanged(string value) => RefreshFilter();
@@ -164,8 +197,11 @@ public sealed partial class SoftwareViewModel : ViewModelBase, IDisposable
         }
     }
 
+    private bool _disposed;
+
     public void Dispose()
     {
+        _disposed = true;
         _pendingActionsService.PropertyChanged -= OnPendingActionsPropertyChanged;
     }
 }

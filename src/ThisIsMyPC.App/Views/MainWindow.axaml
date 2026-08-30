@@ -381,11 +381,27 @@
                             </DataTemplate>
                         </ContentControl.DataTemplates>
                     </ContentControl>
-                    <!-- Placeholder shown when no module view is loaded -->
-                    <StackPanel IsVisible="{Binding CurrentContent, Converter={x:Static ObjectConverters.IsNull}}"
+                    <!-- Scan-in-progress overlay -->
+                    <StackPanel IsVisible="{Binding IsModuleLoading}"
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Center"
+                                Spacing="12">
+                        <ProgressBar IsIndeterminate="True" Width="180" />
+                        <TextBlock Text="{Binding LoadingText}"
+                                   FontSize="13"
+                                   HorizontalAlignment="Center"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                    </StackPanel>
+                    <!-- Placeholder when a module has no view and nothing is scanning -->
+                    <StackPanel HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
                                 Spacing="8">
+                        <StackPanel.IsVisible>
+                            <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                <Binding Path="CurrentContent" Converter="{x:Static ObjectConverters.IsNull}" />
+                                <Binding Path="!IsModuleLoading" />
+                            </MultiBinding>
+                        </StackPanel.IsVisible>
                         <TextBlock Text="{Binding ContentTitle}"
                                    FontSize="18"
                                    FontWeight="SemiBold"

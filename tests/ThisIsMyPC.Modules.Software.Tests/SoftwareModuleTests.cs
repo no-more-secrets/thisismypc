@@ -95,31 +95,18 @@ public class SoftwareModuleTests
     }
 
     [Fact]
-    public async Task ScanSystemState_IncludesUpgradablePackages()
+    public async Task ScanSystemState_DoesNotRunTheUpgradeListing()
     {
+        // winget upgrade hits the network for minutes on some machines; it must
+        // load in the background behind the page, never inside the scan.
         var fake = new FakeWingetService();
         fake.UpgradablePackages.Add(new("Git.Git", "Git", "2.47.0", "2.48.1"));
         var module = CreateModule(fake);
 
         var result = await module.ScanSystemStateAsync();
 
-        var scan = Assert.IsType<SoftwareScanData>(result.Value);
-        Assert.True(scan.UpgradableStateKnown);
-        Assert.Single(scan.Upgradable);
-        Assert.Equal("Git.Git", scan.Upgradable[0].PackageId);
-    }
-
-    [Fact]
-    public async Task ScanSystemState_UpgradeListingFailureIsBestEffort()
-    {
-        var module = CreateModule(new FakeWingetService { UpgradableListFails = true });
-
-        var result = await module.ScanSystemStateAsync();
-
         Assert.True(result.IsSuccess);
-        var scan = Assert.IsType<SoftwareScanData>(result.Value);
-        Assert.False(scan.UpgradableStateKnown);
-        Assert.Empty(scan.Upgradable);
+        Assert.Equal(0, fake.UpgradableListCalls);
     }
 
     [Fact]
