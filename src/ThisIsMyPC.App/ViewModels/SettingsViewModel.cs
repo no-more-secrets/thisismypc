@@ -8,7 +8,7 @@ namespace ThisIsMyPC.App.ViewModels;
 public sealed record SettingChoiceOption(string Value, string DisplayName);
 
 /// <summary>
-/// A toggle row. Writes through ISettingsService immediately — app preferences are not
+/// A toggle row. Writes through ISettingsService immediately; app preferences are not
 /// system mutations and never touch the pending-changes pipeline.
 /// </summary>
 public sealed partial class SettingToggleItemViewModel : ViewModelBase
@@ -146,9 +146,9 @@ public sealed class SettingsSectionViewModel
 }
 
 /// <summary>
-/// The application settings screen (7-2): General + Persistence app preferences plus
-/// module-contributed settings (FR6). Values live in ISettingsService and persist on
-/// every change. Export/import (7-4) lives here too — file dialogs are handled by the
+/// The application settings screen: General + Persistence app preferences plus
+/// module-contributed settings. Values live in ISettingsService and persist on
+/// every change. Export/import lives here too; file dialogs are handled by the
 /// view's code-behind, the VM works on JSON strings so it stays testable.
 /// </summary>
 public sealed partial class SettingsViewModel : ViewModelBase
@@ -160,7 +160,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
 
     public ObservableCollection<SettingsSectionViewModel> Sections { get; } = [];
 
-    /// <summary>Owner Mode service lifecycle section (28-2); null when unavailable (tests).</summary>
+    /// <summary>Owner Mode service lifecycle section; null when unavailable (tests).</summary>
     public OwnerModeSectionViewModel? OwnerMode { get; }
 
     public bool HasOwnerModeSection => OwnerMode is not null;
@@ -221,7 +221,6 @@ public sealed partial class SettingsViewModel : ViewModelBase
         Sections.Add(new SettingsSectionViewModel
         {
             Header = "Persistence & Background",
-            Subtitle = "These configure the opt-in background features; the behavior itself lands with Epic 9.",
             Items =
             [
                 new SettingToggleItemViewModel(
@@ -279,12 +278,12 @@ public sealed partial class SettingsViewModel : ViewModelBase
 
     public bool HasModuleSections { get; }
 
-    /// <summary>Read-only capability summary (5-2 AC3) — the first-launch info, always reachable.</summary>
+    /// <summary>Read-only capability summary; the first-launch info, always reachable.</summary>
     public IReadOnlyList<FirstLaunchRowViewModel> SystemCapabilityRows { get; }
 
     public bool HasCapabilityRows => SystemCapabilityRows.Count > 0;
 
-    // --- 7-4 export/import ---
+    // --- export/import ---
 
     [ObservableProperty]
     private string _transferStatus = string.Empty;
@@ -355,9 +354,6 @@ public sealed partial class SettingsViewModel : ViewModelBase
         HasImportPreview = false;
         ImportPreviewSummary = string.Empty;
     }
-
-    public string ModulePreferencesPlaceholder =>
-        "No installed module exposes configurable settings yet. Module preferences appear here automatically when they do.";
 
     private static object BuildModuleItem(
         ISettingsService settings, string moduleId, ModuleSettingDefinition definition)

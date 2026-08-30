@@ -97,20 +97,7 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
 
-            <!-- Module Preferences placeholder until a module contributes settings -->
-            <StackPanel IsVisible="{Binding !HasModuleSections}" Margin="0,0,0,24">
-                <TextBlock Text="Module Preferences"
-                           FontWeight="SemiBold"
-                           FontSize="16"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
-                <TextBlock Text="{Binding ModulePreferencesPlaceholder}"
-                           FontSize="12"
-                           Foreground="{DynamicResource TextTertiaryBrush}"
-                           TextWrapping="Wrap"
-                           Margin="0,2,0,0" />
-            </StackPanel>
-
-            <!-- 28-2: Owner Mode service lifecycle -->
+            <!-- Owner Mode service lifecycle -->
             <StackPanel IsVisible="{Binding HasOwnerModeSection}" Margin="0,0,0,24">
               <StackPanel DataContext="{Binding OwnerMode}">
                 <TextBlock Text="Owner Mode Service"
@@ -148,13 +135,13 @@
               </StackPanel>
             </StackPanel>
 
-            <!-- 5-2 AC3: read-only capability summary, always reachable -->
+            <!-- Read-only capability summary, always reachable -->
             <StackPanel IsVisible="{Binding HasCapabilityRows}" Margin="0,0,0,24">
                 <TextBlock Text="System Capabilities"
                            FontWeight="SemiBold"
                            FontSize="16"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
-                <TextBlock Text="What this system supports - the same summary shown on first launch."
+                <TextBlock Text="What this system supports."
                            FontSize="12"
                            Foreground="{DynamicResource TextTertiaryBrush}"
                            Margin="0,2,0,10" />
@@ -181,7 +168,7 @@
                 </ItemsControl>
             </StackPanel>
 
-            <!-- 7-4: Backup & Transfer -->
+            <!-- Backup & Transfer -->
             <StackPanel>
                 <TextBlock Text="Backup &amp; Transfer"
                            FontWeight="SemiBold"

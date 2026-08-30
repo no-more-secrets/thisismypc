@@ -27,8 +27,8 @@ public partial class OwnerModeSectionViewModel : ViewModelBase
 
     public string Description =>
         "Detects when Windows reverts your settings after updates. Runs as a background " +
-        "service so drift is caught at boot, before you open the app. Enables drift " +
-        "detection now and hardware-driver brokering later; everything else works without it.";
+        "service so drift is caught at boot, before you open the app. Optional; everything " +
+        "else works without it.";
 
     public OwnerModeSectionViewModel(OwnerModeService ownerMode)
     {

@@ -207,7 +207,7 @@ public sealed class PowerModule : IActionModule
         }
 
         // Deletion is destructive and undo can only recreate a factory-settings
-        // copy — so only the plan we created (marker description) may be deleted.
+        // copy, so only the plan we created (marker description) may be deleted.
         var target = PowerPlanScanner.FindMarkedUltimatePerformance(plans);
         if (target is null)
         {
