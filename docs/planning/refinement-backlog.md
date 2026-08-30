@@ -224,6 +224,14 @@ additive verbs live under the HKCU classes overlay.
 - `SvcHostSplitThresholdInKB` deferred: winutil computes the value from installed
   RAM, so it needs a dynamic-value tweak type; revisit with a performance group.
 
+## Known test flake (fix during release prep)
+
+`StaticVerbIntegrationTests.Sandbox_scan_reads_all_metadata` fails intermittently
+(~1 in 3) when the full Integration suite runs, always passes alone: registry
+sandbox contention with a parallel test writing the same HKCU sandbox area.
+Predates 2026-08-31. Fix: unique per-test sandbox key or a collection fixture
+serializing the sandbox users.
+
 ## Deliberately NOT in this pass (new-module territory)
 
 - Telemetry level / DiagTrack / error reporting → the planned Privacy & Telemetry
