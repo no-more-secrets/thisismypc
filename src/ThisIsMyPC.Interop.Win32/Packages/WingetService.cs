@@ -25,6 +25,10 @@ public sealed class WingetService : IWingetService
     private static readonly TimeSpan VersionTimeout = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan ExportTimeout = TimeSpan.FromMinutes(3);
 
+    // Generous — a large package on a slow line is legitimate — but bounded:
+    // a hung silent installer must not wedge the apply pipeline forever.
+    private static readonly TimeSpan OperationTimeout = TimeSpan.FromMinutes(30);
+
     public async Task<OperationResult<string>> GetVersionAsync(CancellationToken cancellationToken = default)
     {
         var run = await RunWingetAsync(["--version"], cancellationToken, VersionTimeout).ConfigureAwait(false);
@@ -127,7 +131,7 @@ public sealed class WingetService : IWingetService
         if (idError is not null)
             return OperationResult<bool>.Failure(idError, ErrorCategory.NotFound);
 
-        var run = await RunWingetAsync(arguments, cancellationToken).ConfigureAwait(false);
+        var run = await RunWingetAsync(arguments, cancellationToken, OperationTimeout).ConfigureAwait(false);
         if (!run.IsSuccess)
             return OperationResult<bool>.Failure(run.ErrorMessage!, run.ErrorCategory!.Value);
 

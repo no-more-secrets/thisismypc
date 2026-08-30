@@ -94,10 +94,16 @@ public sealed class PendingActionsService : IPendingActionsService
         List<ActionDescriptor> snapshot;
         lock (_lock)
         {
+            // The service owns the no-concurrent-batches invariant — a second
+            // caller would snapshot the still-staged queue and run it all twice.
+            if (IsApplying)
+                throw new InvalidOperationException("An action batch is already applying.");
+
             snapshot = [.. _pendingActions];
+            IsApplying = true;
         }
 
-        IsApplying = true;
+
         OnPropertyChanged(nameof(IsApplying));
 
         var succeeded = new List<ActionDescriptor>();

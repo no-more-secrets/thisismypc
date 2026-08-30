@@ -223,6 +223,27 @@ public class PendingActionsServiceTests
     }
 
     [Fact]
+    public async Task ApplyAllAsync_ConcurrentSecondBatchIsRejected()
+    {
+        var service = new PendingActionsService();
+        service.Stage(CreateTestAction("a"));
+
+        var gate = new TaskCompletionSource();
+        var firstBatch = service.ApplyAllAsync(async _ =>
+        {
+            await gate.Task;
+            return OperationResult<bool>.Success(true);
+        });
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.ApplyAllAsync(AlwaysSucceed));
+
+        gate.SetResult();
+        var result = await firstBatch;
+        Assert.True(result.IsSuccess);
+        Assert.Single(result.Succeeded);
+    }
+
+    [Fact]
     public async Task ApplyAllAsync_EmptyQueue_ReturnsSuccessWithNoWork()
     {
         var service = new PendingActionsService();

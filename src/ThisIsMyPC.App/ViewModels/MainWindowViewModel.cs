@@ -1119,7 +1119,10 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             // FR64: safety net before bulk batches. Counts individual descriptors —
             // PendingCount counts groups, so a single 6-change set must still trigger.
-            var changeCount = _pendingChangesService.PendingGroups.Sum(g => g.Changes.Count);
+            // One-way actions count too: a bulk of Appx removals is the least
+            // reversible thing in the app and deserves the restore point most.
+            var changeCount = _pendingChangesService.PendingGroups.Sum(g => g.Changes.Count)
+                + (_pendingActionsService?.PendingCount ?? 0);
             if (changeCount >= AutoRestorePointThreshold && !_applyWithoutRestorePoint)
             {
                 SetStatus("Creating restore point...", StatusSeverity.Warning);
