@@ -416,15 +416,15 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
     {
         var badges = new List<ScopeBadge>();
         if (tabs.Contains(ContextMenuTab.File))
-            badges.Add(new ScopeBadge("Files", "ScopeBadgeFileBrush"));
+            badges.Add(new ScopeBadge("Files", "file"));
         if (tabs.Contains(ContextMenuTab.Folder))
-            badges.Add(new ScopeBadge("Folders", "ScopeBadgeFolderBrush"));
+            badges.Add(new ScopeBadge("Folders", "folder"));
         if (tabs.Contains(ContextMenuTab.FolderBackground))
-            badges.Add(new ScopeBadge("Background", "ScopeBadgeBackgroundBrush"));
+            badges.Add(new ScopeBadge("Background", "background"));
         if (tabs.Contains(ContextMenuTab.Desktop))
-            badges.Add(new ScopeBadge("Desktop", "ScopeBadgeDesktopBrush"));
+            badges.Add(new ScopeBadge("Desktop", "desktop"));
         if (tabs.Contains(ContextMenuTab.Misc))
-            badges.Add(new ScopeBadge("Misc", "ScopeBadgeMiscBrush"));
+            badges.Add(new ScopeBadge("Misc", "misc"));
         return badges;
     }
 

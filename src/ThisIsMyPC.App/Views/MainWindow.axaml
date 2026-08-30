@@ -309,7 +309,9 @@
                                    Margin="12,0,12,0"
                                    TextTrimming="CharacterEllipsis"
                                    IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                                   Foreground="{Binding StatusBrush}" />
+                                   Classes.status-success="{Binding IsStatusSuccess}"
+                                   Classes.status-warning="{Binding IsStatusWarning}"
+                                   Classes.status-error="{Binding IsStatusError}" />
                     </DockPanel>
                 </Border>
 

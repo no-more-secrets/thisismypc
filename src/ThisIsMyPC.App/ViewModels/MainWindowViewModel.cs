@@ -1069,29 +1069,22 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private string _statusMessage = string.Empty;
 
+    // The view colors the status text through style classes with DynamicResource
+    // setters, so a live theme switch restyles it; a snapshotted IBrush would not.
     [ObservableProperty]
-    private IBrush _statusBrush = Brushes.Transparent;
+    [NotifyPropertyChangedFor(nameof(IsStatusSuccess))]
+    [NotifyPropertyChangedFor(nameof(IsStatusWarning))]
+    [NotifyPropertyChangedFor(nameof(IsStatusError))]
+    private StatusSeverity _statusSeverity = StatusSeverity.Success;
+
+    public bool IsStatusSuccess => StatusSeverity == StatusSeverity.Success;
+    public bool IsStatusWarning => StatusSeverity == StatusSeverity.Warning;
+    public bool IsStatusError => StatusSeverity == StatusSeverity.Error;
 
     private void SetStatus(string message, StatusSeverity severity)
     {
         StatusMessage = message;
-        StatusBrush = GetBrush(severity switch
-        {
-            StatusSeverity.Success => "SuccessBrush",
-            StatusSeverity.Error => "DangerBrush",
-            StatusSeverity.Warning => "WarningBrush",
-            _ => "WarningBrush",
-        });
-    }
-
-    private static IBrush GetBrush(string key)
-    {
-        if (Application.Current?.TryGetResource(key, Application.Current.ActualThemeVariant, out var resource) == true
-            && resource is IBrush brush)
-        {
-            return brush;
-        }
-        return Brushes.White;
+        StatusSeverity = severity;
     }
 
     [RelayCommand]

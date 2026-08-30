@@ -46,7 +46,9 @@
                     <TextBlock Text="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).StatusMessage}"
                                FontSize="12"
                                TextWrapping="Wrap"
-                               Foreground="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).StatusBrush}"
+                               Classes.status-success="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).IsStatusSuccess}"
+                               Classes.status-warning="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).IsStatusWarning}"
+                               Classes.status-error="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).IsStatusError}"
                                IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
                     <!-- Save as Set (8.5): shared confirmation + inline metadata form -->

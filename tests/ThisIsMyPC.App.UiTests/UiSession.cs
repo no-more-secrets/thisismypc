@@ -246,6 +246,10 @@ public sealed class UiSession : IDisposable
 
     public void Dispose()
     {
+        // The Application instance is shared across the whole xUnit run; a test
+        // that switched themes must not leak its variant into later tests.
+        if (Application.Current is { } app)
+            app.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Dark;
         Window.Close();
         // Modules implement IAsyncDisposable only; sync Dispose() on the
         // container throws. Their disposals complete synchronously in practice.

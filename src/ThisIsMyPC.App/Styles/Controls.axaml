@@ -137,4 +137,32 @@
     <Style Selector="TextBlock.notification-refresh">
         <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}" />
     </Style>
+
+    <!-- Status bar text; class picked by MainWindowViewModel.StatusSeverity -->
+    <Style Selector="TextBlock.status-success">
+        <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}" />
+    </Style>
+    <Style Selector="TextBlock.status-warning">
+        <Setter Property="Foreground" Value="{DynamicResource WarningBrush}" />
+    </Style>
+    <Style Selector="TextBlock.status-error">
+        <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
+    </Style>
+
+    <!-- Multi tab scope badges; kind class picks the tint -->
+    <Style Selector="Border.scope-badge">
+        <Setter Property="Background" Value="{DynamicResource ScopeBadgeMiscBrush}" />
+    </Style>
+    <Style Selector="Border.scope-badge.file">
+        <Setter Property="Background" Value="{DynamicResource ScopeBadgeFileBrush}" />
+    </Style>
+    <Style Selector="Border.scope-badge.folder">
+        <Setter Property="Background" Value="{DynamicResource ScopeBadgeFolderBrush}" />
+    </Style>
+    <Style Selector="Border.scope-badge.background">
+        <Setter Property="Background" Value="{DynamicResource ScopeBadgeBackgroundBrush}" />
+    </Style>
+    <Style Selector="Border.scope-badge.desktop">
+        <Setter Property="Background" Value="{DynamicResource ScopeBadgeDesktopBrush}" />
+    </Style>
 </Styles>
