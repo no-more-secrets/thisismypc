@@ -146,6 +146,23 @@
                         </StackPanel>
                     </ScrollViewer>
                 </TabItem>
+                <!-- Windows entries: curated named toggles (Sophia recipes) -->
+                <TabItem>
+                    <TabItem.Header>
+                        <TextBlock Text="Windows" FontSize="13" />
+                    </TabItem.Header>
+                    <StackPanel Spacing="4" Margin="0,8,0,0">
+                        <TextBlock Text="Built-in Windows entries. Add useful ones and hide the rest."
+                                   FontSize="12"
+                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                   FontStyle="Italic"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,4" />
+                        <ItemsControl ItemsSource="{Binding WindowsEntries}"
+                                      ItemTemplate="{StaticResource ToggleSettingRowTemplate}" />
+                    </StackPanel>
+                </TabItem>
+
                 <!-- Per File Type Tab -->
                 <TabItem>
                     <TabItem.Header>

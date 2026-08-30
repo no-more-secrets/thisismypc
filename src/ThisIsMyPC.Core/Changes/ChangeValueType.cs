@@ -13,5 +13,6 @@ public enum ChangeValueType
     PowerPlan_Setting,
     Environment_Variable,
     File_Content,
-    Shell_CustomVerb
+    Shell_CustomVerb,
+    Registry_KeyTree
 }

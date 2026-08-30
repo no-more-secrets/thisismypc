@@ -5,6 +5,7 @@ using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Interop.Com.Shell;
 using ThisIsMyPC.Interop.Win32.Registry;
 
+using ThisIsMyPC.Modules.Shell.Changes;
 using ThisIsMyPC.Modules.Shell.Services;
 
 namespace ThisIsMyPC.Modules.Shell;
@@ -67,6 +68,8 @@ public sealed class ContextMenuModule : IModule
             var result = change.ValueType switch
             {
                 ChangeValueType.Registry_String => ApplyStringChange(change),
+                ChangeValueType.Registry_DWord => ApplyDwordChange(change),
+                ChangeValueType.Registry_KeyTree => ApplyKeyTreeChange(change),
                 ChangeValueType.Shell_CustomVerb => ApplyCustomVerbChange(change),
                 _ => OperationResult<bool>.Failure(
                     $"Unsupported value type: {change.ValueType}",
@@ -103,6 +106,76 @@ public sealed class ContextMenuModule : IModule
             : _registryService.WriteString(keyPath, valueName, change.AfterValue ?? string.Empty);
 
         return MakeBestEffortIfHkcrAccessDenied(result, change);
+    }
+
+    /// <summary>AbsentValue deletes the value; otherwise writes the DWORD (curated catalog toggles).</summary>
+    private OperationResult<bool> ApplyDwordChange(ChangeDescriptor change)
+    {
+        var (keyPath, valueName) = ShellRegistryPaths.ParseSystemLocation(change.SystemLocation);
+
+        if (change.AfterValue == ShellRegistryPaths.AbsentValue)
+            return _registryService.DeleteValue(keyPath, valueName);
+
+        if (!int.TryParse(change.AfterValue, out var value))
+        {
+            return OperationResult<bool>.Failure(
+                $"Invalid DWORD value '{change.AfterValue}' for {change.DisplayName}", ErrorCategory.NotFound);
+        }
+
+        return _registryService.WriteDWord(keyPath, valueName, value);
+    }
+
+    /// <summary>
+    /// Curated catalog key tree: the value is a serialized RegistryKeyTreeDefinition
+    /// and SystemLocation is the root key path, restricted to the factory's
+    /// allowlist so this can never touch a foreign key. AbsentValue deletes the
+    /// tree; anything else materializes every value (writes create the key chain).
+    /// </summary>
+    private OperationResult<bool> ApplyKeyTreeChange(ChangeDescriptor change)
+    {
+        if (!WindowsEntriesChangeFactory.KeyTreeAllowlist.Contains(change.SystemLocation))
+        {
+            return OperationResult<bool>.Failure(
+                $"Key tree changes are only allowed for curated catalog paths, not '{change.SystemLocation}'.",
+                ErrorCategory.AccessDenied);
+        }
+
+        // No HKCR best-effort here: a failed tree write or delete must surface —
+        // "hidden" that silently is not would be worse than an error.
+        if (change.AfterValue == ShellRegistryPaths.AbsentValue)
+        {
+            if (_registryService.KeyExists(change.SystemLocation) is { IsSuccess: true, Value: false })
+                return OperationResult<bool>.Success(true);
+            return _registryService.DeleteKey(change.SystemLocation, recursive: true);
+        }
+
+        var definition = Models.RegistryKeyTreeDefinition.Deserialize(change.AfterValue);
+        if (definition is null)
+        {
+            return OperationResult<bool>.Failure(
+                $"Invalid key tree definition for {change.DisplayName}.", ErrorCategory.NotFound);
+        }
+
+        foreach (var value in definition.Values)
+        {
+            var keyPath = value.SubPath.Length == 0
+                ? change.SystemLocation
+                : $@"{change.SystemLocation}\{value.SubPath}";
+
+            var write = value.Kind switch
+            {
+                Models.RegistryKeyTreeValueKind.ExpandString =>
+                    _registryService.WriteExpandString(keyPath, value.Name, value.Data),
+                Models.RegistryKeyTreeValueKind.Binary =>
+                    _registryService.WriteBinary(keyPath, value.Name, Convert.FromBase64String(value.Data)),
+                _ => _registryService.WriteString(keyPath, value.Name, value.Data),
+            };
+
+            if (!write.IsSuccess)
+                return write;
+        }
+
+        return OperationResult<bool>.Success(true);
     }
 
     /// <summary>

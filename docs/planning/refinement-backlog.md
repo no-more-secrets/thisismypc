@@ -175,19 +175,18 @@ Update COM service registration, not a registry write).
 - Note: winutil's S0/S3 items already reachable via our dynamic grid +
   `modern-standby` toggle — no work needed.
 
-## 5. Context Menus module
+## 5. Context Menus module — Windows entries catalog DONE 2026-08-30
 
-Add a curated "Windows entries" catalog (named toggles) on top of the enumerative
-scanner — all from Sophia's context menu section:
-- "Extract all" for MSI; "Install" for CAB
-- Edit with Clipchamp / Photos / Paint entries
-- "Print" on batch files
-- New → Compressed folder
-- 15+ file selection verb limit (`EXPL\MultipleInvokePromptMinimum`)
-- "Search the Microsoft Store" in Open With (`Policies Explorer\NoUseStoreOpenWith`)
-- Open Terminal as admin entry
-These mostly use the existing LegacyDisable/ProgrammaticAccessOnly/Blocked
-mechanisms the module already implements.
+Shipped as the "Windows" tab (9 toggles from Sophia's recipes): MSI Extract all,
+CAB Install, New Compressed folder, Edit with Clipchamp/Photos/Paint (Blocked
+CLSIDs), Print on batch files (ProgrammaticAccessOnly on the HKCU overlay),
+15+ selection verb limit, Store Open With policy. New `Registry_KeyTree`
+change type (allowlisted root paths only) covers the verb-key entries;
+additive verbs live under the HKCU classes overlay.
+- Deferred: "Open Terminal as admin" — Sophia edits Windows Terminal's
+  settings.json and launches wt.exe to generate it; not a registry toggle, does
+  not fit the before-state/undo model. Revisit only with a file-content change
+  design.
 
 ## 6. Clean Boot set cross-check — DONE 2026-08-30
 

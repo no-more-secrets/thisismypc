@@ -85,6 +85,9 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
     // Custom entry creation/editing tab (2-6)
     public CustomVerbSectionViewModel Custom { get; }
 
+    // Curated named toggles for built-in Windows entries (Sophia recipes)
+    public IReadOnlyList<ShellSettingViewModel> WindowsEntries { get; }
+
     public ContextMenuViewModel(
         IReadOnlyList<ContextMenuHandler> handlers,
         IPendingChangesService pendingChangesService,
@@ -95,6 +98,17 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
         _registryService = registryService;
         _scanner = scanner;
         Custom = new CustomVerbSectionViewModel(pendingChangesService, registryService);
+
+        WindowsEntries = Modules.Shell.Changes.WindowsEntriesChangeFactory.Catalog
+            .Select(entry => new ShellSettingViewModel(
+                entry.Label,
+                entry.Description,
+                entry.SystemLocation,
+                entry.ReadState(registryService),
+                pendingChangesService,
+                groupFactory: enable => entry.CreateToggle(registryService, enable),
+                readRegistryState: () => entry.ReadState(registryService)))
+            .ToList();
 
         // Detect classic context menu shim
         var shimKeyResult = registryService.KeyExists(Modules.Shell.ShellRegistryPaths.ClassicContextMenuKeyPath);
@@ -480,6 +494,9 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
 
     public void Dispose()
     {
+        foreach (var entry in WindowsEntries)
+            entry.Dispose();
+
         // Dispose all handler VMs including any filtered out of visible collections
         var disposed = new HashSet<ContextMenuHandlerViewModel>(ReferenceEqualityComparer.Instance);
         foreach (var (vm, _) in _allHandlerEntries)
