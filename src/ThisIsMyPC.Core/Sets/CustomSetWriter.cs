@@ -54,7 +54,7 @@ public sealed class CustomSetWriter : ICustomSetWriter
         ArgumentNullException.ThrowIfNull(metadata);
         ArgumentNullException.ThrowIfNull(entries);
 
-        // Rows sharing a GroupId were applied as one toggle — collapse them the same
+        // Rows sharing a GroupId were applied as one toggle; collapse them the same
         // way as pending groups. A null GroupId row stands alone.
         var documents = new List<SetEntryDocument>();
         var skipped = 0;
@@ -140,7 +140,7 @@ public sealed class CustomSetWriter : ICustomSetWriter
             }
             catch (IOException) when (File.Exists(path))
             {
-                // Name taken — try the next suffix.
+                // Name taken; try the next suffix.
                 continue;
             }
 

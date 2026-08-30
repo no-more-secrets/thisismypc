@@ -64,7 +64,7 @@ public sealed class StartupScanner
     {
         var valueNames = _registry.EnumerateValues(runKey);
         if (!valueNames.IsSuccess || valueNames.Value is null)
-            return; // key absent on this machine — nothing to report
+            return; // key absent on this machine; nothing to report
 
         foreach (var name in valueNames.Value)
         {
@@ -122,7 +122,7 @@ public sealed class StartupScanner
     /// <summary>
     /// StartupApproved values are 12-byte REG_BINARY blobs: an even first byte
     /// (0x02, 0x06) means enabled, an odd first byte (0x03, 0x07) disabled.
-    /// A missing value means the entry has never been toggled — enabled.
+    /// A missing value means the entry has never been toggled; enabled.
     /// </summary>
     private bool ReadApprovedState(string approvedKey, string valueName)
     {
@@ -167,7 +167,7 @@ public sealed class StartupScanner
                 return candidate;
             }
             if (nextSpace < 0)
-                return trimmed[..spaceIndex]; // no extension found — first token is the best guess
+                return trimmed[..spaceIndex]; // no extension found; first token is the best guess
             searchFrom = nextSpace + 1;
         }
     }

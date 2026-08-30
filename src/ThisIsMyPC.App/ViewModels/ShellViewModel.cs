@@ -41,7 +41,7 @@ public partial class ShellViewModel : ViewModelBase
                 readRegistryState: () => ReadExplorerPrefFromRegistry(registryService, capturedPref)));
         }
 
-        // Command bar style (Explorer visual, not a DWord preference — CLSID override)
+        // Command bar style (Explorer visual, not a DWord preference; CLSID override)
         var taskbar = scanData.Taskbar;
         ExplorerSettings.Add(new ShellSettingViewModel(
             label: "Use classic command bar",

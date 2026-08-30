@@ -22,7 +22,7 @@ public sealed class AnnoyancesSettingsReader
             ReadPreference(
                 id: "scoobe-nags",
                 displayName: "Suppress \"Finish setting up your device\" nags",
-                description: "Stops the full-screen SCOOBE prompts Windows shows after updates to push Microsoft 365, OneDrive, and account sign-in. There is no permanent opt-out in Settings — only \"Remind me in 3 days\".",
+                description: "Stops the full-screen prompts Windows shows after updates to push Microsoft 365, OneDrive, and account sign-in. Settings has no permanent opt-out, only \"Remind me in 3 days\".",
                 keyPath: AnnoyancesRegistryPaths.UserProfileEngagementKeyPath,
                 valueName: "ScoobeSystemSettingEnabled"),
 
@@ -162,7 +162,7 @@ public sealed class AnnoyancesSettingsReader
             ReadPreference(
                 id: "hags",
                 displayName: "Disable Hardware-Accelerated GPU Scheduling (HAGS)",
-                description: "HAGS moves GPU task scheduling from the CPU onto the GPU itself. It is required for DLSS 3 Frame Generation but can cause stutter or instability in older games. A reboot is required for the change to take effect.",
+                description: "Moves GPU task scheduling from the CPU to the GPU. Required for DLSS 3 Frame Generation; can cause stutter in older games. Takes effect after a reboot.",
                 keyPath: AnnoyancesRegistryPaths.GraphicsDriversKeyPath,
                 valueName: "HwSchMode",
                 section: AnnoyanceSection.GamingAndAccessibility,

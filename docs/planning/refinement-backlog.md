@@ -133,11 +133,13 @@ Windows). Sight harness: UiSession.SetTheme + light walkthrough suite
 (walkthrough-light/). Drag ghost and insert line in PathEditorView resolve theme
 brushes at use time; RowHoverBrush replaces hardcoded hover whites.
 
-## 0b. UI copy sweep (UI/UX chapter)
+## 0b. UI copy sweep: DONE 2026-08-30
 
-Sam's rule: user-visible strings are product copy — short declarative sentences, no
-em dashes, no wordy asides. New strings follow it (2026-08-29); the older card
-descriptions (Annoyances/WU/Explorer, epics 2-27) still need a one-pass rewrite.
+Sam's rule: user-visible strings are product copy; short declarative sentences, no
+em dashes, no wordy asides. Swept: Settings page (stale Epic 9 claims, dead Module
+Preferences placeholder), Explorer title-restating descriptions rewritten to carry
+real information, Annoyances/WU tightened, every em dash purged from src (321 in
+strings and comments). Docs and tests still carry em dashes; purge on touch.
 
 ## 1. Explorer module — DONE 2026-08-29 (13 → 26 toggles)
 

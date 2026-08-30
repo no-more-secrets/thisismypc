@@ -181,7 +181,7 @@ public sealed class ServiceControlService : IServiceControlService
 
                 // Delayed flag lives outside dwStartType; set it explicitly both ways so
                 // Automatic clears a previously-delayed configuration. If this second call
-                // fails the start type has already changed — the caller's rollback restores
+                // fails the start type has already changed; the caller's rollback restores
                 // the full before-state, so no local undo is attempted.
                 var delayed = startType == ServiceStartType.AutomaticDelayed ? 1 : 0;
                 if (startType is ServiceStartType.Automatic or ServiceStartType.AutomaticDelayed
@@ -209,7 +209,7 @@ public sealed class ServiceControlService : IServiceControlService
                 {
                     var error = Marshal.GetLastWin32Error();
                     // NOT_ACTIVE: already stopped. CANNOT_ACCEPT_CTRL: already STOP_PENDING
-                    // (services clear dwControlsAccepted while stopping) — fall through to the wait.
+                    // (services clear dwControlsAccepted while stopping); fall through to the wait.
                     if (error is ERROR_SERVICE_NOT_ACTIVE or ERROR_SERVICE_CANNOT_ACCEPT_CTRL)
                         return OperationResult<bool>.Success(true);
                     return MapError<bool>(error, serviceName, "stop");

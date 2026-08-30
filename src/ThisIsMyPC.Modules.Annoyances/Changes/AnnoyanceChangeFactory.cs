@@ -9,14 +9,14 @@ public static class AnnoyanceChangeFactory
     public const string ModuleId = "Windows Annoyances";
 
     // Research-documented drift (control-surface research L244): Windows Update and Web
-    // Experience Pack deployments overwrite these keys. Informational only — no companions.
+    // Experience Pack deployments overwrite these keys. Informational only; no companions.
     private static readonly SettingEnforcement DriftFragileEnforcement = new()
     {
         ReversionVectors = ["Windows Update", "Web Experience Pack deployment"],
     };
 
     // Copilot surfaces are re-enabled by feature updates and by Copilot's own app-package
-    // deployments; the policy pair is otherwise stable. Informational only — no companions.
+    // deployments; the policy pair is otherwise stable. Informational only; no companions.
     // SkuRestriction (minimum honoring tier): TurnOffWindowsCopilot lists
     // Pro/Enterprise/Education in the Policy CSP (docs/research/sku-restriction-audit.md).
     private static readonly SettingEnforcement CopilotDriftEnforcement = new()
@@ -25,10 +25,10 @@ public static class AnnoyanceChangeFactory
         SkuRestriction = Core.Modules.WindowsSku.Pro,
     };
 
-    // Minimum-tier policy tags (informational, never gated — FR129), attached on the
+    // Minimum-tier policy tags (informational, never gated; FR129), attached on the
     // suppress direction only (26-4 rule); source: docs/research/sku-restriction-audit.md
     // + the Experience Policy CSP for DisableSpotlightCollectionOnDesktop
-    // (Enterprise/Education only — below that tier the write is cosmetic).
+    // (Enterprise/Education only; below that tier the write is cosmetic).
     private static readonly SettingEnforcement ProPolicyEnforcement = new()
     {
         SkuRestriction = Core.Modules.WindowsSku.Pro,
@@ -41,7 +41,7 @@ public static class AnnoyanceChangeFactory
 
     // Per-id lookup so every staging path (module UI cards, set entries) inherits the
     // tag from the single factory entry point. Only plain-CreateToggle singles belong
-    // here — CreateDriftFragileToggle and CreateGroupToggle overwrite Enforcement
+    // here; CreateDriftFragileToggle and CreateGroupToggle overwrite Enforcement
     // wholesale, so an id routed through those paths would silently lose the tag.
     private static readonly IReadOnlyDictionary<string, SettingEnforcement> TierRestrictedSingles =
         new Dictionary<string, SettingEnforcement>(StringComparer.Ordinal)

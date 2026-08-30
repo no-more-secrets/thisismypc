@@ -62,7 +62,7 @@ internal static partial class NativePower
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static partial nint LocalFree(nint hMem);
 
-    /// <summary>Duplicates a scheme; *destinationSchemeGuid is LocalAlloc'd — free with LocalFree.</summary>
+    /// <summary>Duplicates a scheme; *destinationSchemeGuid is LocalAlloc'd; free with LocalFree.</summary>
     [LibraryImport("powrprof.dll")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static partial uint PowerDuplicateScheme(nint rootPowerKey, in Guid sourceSchemeGuid, out nint destinationSchemeGuid);

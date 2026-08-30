@@ -13,7 +13,7 @@ public sealed class SettingChangedEventArgs : EventArgs
 /// <summary>
 /// Persistent key-value settings (FR74): application-level plus per-module scopes,
 /// stored as human-readable JSON at %APPDATA%\ThisIsMyPC\settings.json. Every Set
-/// persists immediately — there is no manual save.
+/// persists immediately; there is no manual save.
 /// </summary>
 public interface ISettingsService
 {

@@ -57,7 +57,7 @@
                                TextWrapping="Wrap"
                                IsVisible="{Binding InactiveReason, FallbackValue={x:False}, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
-                    <!-- Warning text (Critical/System handlers — hidden when inactive) -->
+                    <!-- Warning text (Critical/System handlers; hidden when inactive) -->
                     <TextBlock Text="{Binding WarningText}"
                                FontSize="12"
                                Foreground="{DynamicResource DangerBrush}"

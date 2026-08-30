@@ -9,7 +9,7 @@ namespace ThisIsMyPC.Interop.Win32.Restore;
 /// <summary>
 /// Creates System Restore points via SRSetRestorePointW. Windows skips creation when a
 /// restore point already exists within SystemRestorePointCreationFrequency minutes
-/// (default 1440), which would silently defeat the pre-debloat safety net — so the
+/// (default 1440), which would silently defeat the pre-debloat safety net; so the
 /// frequency value is forced to 0 for the duration of the call and restored afterward.
 /// Transient operational registry state, same category as the 26-8 GPCache clears;
 /// deliberately not staged through the pending-changes pipeline.
@@ -17,7 +17,7 @@ namespace ThisIsMyPC.Interop.Win32.Restore;
 public sealed class RestorePointService : IRestorePointService
 {
     private const string SystemRestoreDisabledMessage =
-        "System Restore is disabled — enable it in System Properties > System Protection";
+        "System Restore is disabled. Enable it in System Properties > System Protection";
 
     // Serializes creations so two concurrent FrequencyOverride scopes can never
     // interleave and clobber the real SystemRestorePointCreationFrequency value.
@@ -111,7 +111,7 @@ public sealed class RestorePointService : IRestorePointService
                 Message = "The System Restore API (srclient.dll) is not available on this system",
             };
         }
-#pragma warning disable CA1031 // must never fault the apply command's Task — always return a Failed result
+#pragma warning disable CA1031 // must never fault the apply command's Task; always return a Failed result
         catch (Exception ex)
         {
             _logger.Error(ex, "Restore point creation threw unexpectedly");
@@ -125,7 +125,7 @@ public sealed class RestorePointService : IRestorePointService
     }
 
     // MSDN-recommended pairing: close the BEGIN_SYSTEM_CHANGE bracket so the point is
-    // finalized immediately. Best-effort — the restore point already exists if this fails.
+    // finalized immediately. Best-effort; the restore point already exists if this fails.
     private unsafe void EndSystemChange(long sequenceNumber)
     {
         var end = new RESTOREPOINTINFOW
@@ -155,7 +155,7 @@ public sealed class RestorePointService : IRestorePointService
     /// <summary>
     /// Zeroes SystemRestorePointCreationFrequency for the duration of one creation call,
     /// then restores the previous value (or removes it if it was absent). If the override
-    /// cannot be applied the creation proceeds anyway — Windows may then reuse a recent
+    /// cannot be applied the creation proceeds anyway; Windows may then reuse a recent
     /// restore point instead of creating a fresh one.
     /// </summary>
     private sealed class FrequencyOverride : IDisposable
@@ -183,7 +183,7 @@ public sealed class RestorePointService : IRestorePointService
                 key.SetValue(ValueName, 0, RegistryValueKind.DWord);
                 _applied = true;
             }
-#pragma warning disable CA1031 // override is best-effort — creation must proceed regardless
+#pragma warning disable CA1031 // override is best-effort; creation must proceed regardless
             catch (Exception ex)
             {
                 _logger.Warning(ex, "Could not override restore point creation frequency; a recent restore point may be reused");

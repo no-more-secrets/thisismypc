@@ -4,7 +4,7 @@ namespace ThisIsMyPC.Modules.Startup.Services;
 
 /// <summary>
 /// Persists user classification overrides as one "taskPath|Classification"
-/// line per task (no serializer needed — NativeAOT-friendly, human-readable).
+/// line per task (no serializer needed; NativeAOT-friendly, human-readable).
 /// Reads are cached; writes rewrite the whole file (the set is tiny).
 /// </summary>
 public sealed class TaskClassificationOverrideStore
@@ -72,7 +72,7 @@ public sealed class TaskClassificationOverrideStore
         }
         catch
         {
-            // Unreadable store — start empty; next Set() rewrites it.
+            // Unreadable store; start empty; next Set() rewrites it.
         }
     }
 

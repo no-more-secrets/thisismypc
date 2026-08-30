@@ -647,7 +647,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         PopulateSidebar();
 
-        // Home is the launch default (10.5): a cheap read-only dashboard —
+        // Home is the launch default (10.5): a cheap read-only dashboard;
         // no module scan runs until the user navigates to one.
         OpenHome();
 
@@ -656,7 +656,7 @@ public partial class MainWindowViewModel : ViewModelBase
         else if (_settingsService?.LoadError is not null)
             SetStatus("The settings file could not be read - changes to settings will not be saved this session", StatusSeverity.Warning);
 
-        // 7-3: fire-and-forget update check — never blocks startup, never surfaces
+        // 7-3: fire-and-forget update check; never blocks startup, never surfaces
         // failures (fully offline-safe). Skipped entirely when the user opted out.
         _ = CheckForUpdateBadgeAsync();
     }
@@ -755,7 +755,7 @@ public partial class MainWindowViewModel : ViewModelBase
                     : null))
             .ToList();
 
-        // Hardware ecosystem rows only — the always-present subsystems say nothing useful.
+        // Hardware ecosystem rows only; the always-present subsystems say nothing useful.
         var capabilityRows = _capabilityDetector.GetCapabilityReport()
             .Where(r => r.Capability is Core.Modules.SystemCapability.DdcCi
                 or Core.Modules.SystemCapability.HwInfo
@@ -835,7 +835,7 @@ public partial class MainWindowViewModel : ViewModelBase
         IsModuleLoading = false;
         // Fresh disk read on every open: user sets dropped into %APPDATA% appear
         // without an app restart. Outgoing content may also be a module VM reached
-        // without a navigation event — its subscriptions must not outlive the switch.
+        // without a navigation event; its subscriptions must not outlive the switch.
         (CurrentContent as IDisposable)?.Dispose();
         var loadResult = _setProvider.LoadSets();
 
@@ -882,7 +882,7 @@ public partial class MainWindowViewModel : ViewModelBase
                     $"ThisIsMyPC {version} is available - click the badge to open the releases page");
             }
         }
-#pragma warning disable CA1031 // AC: check failures are silently ignored — offline-safe
+#pragma warning disable CA1031 // AC: check failures are silently ignored; offline-safe
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Update check failed: {ex.Message}");
@@ -918,7 +918,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         _contentEpoch++;
         IsModuleLoading = false;
-        // Old content may be a module VM or the Set Loader — subscriptions must not
+        // Old content may be a module VM or the Set Loader; subscriptions must not
         // outlive the switch.
         (CurrentContent as IDisposable)?.Dispose();
 
@@ -948,7 +948,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _contentEpoch++;
         IsModuleLoading = false;
         // Old content may be a module VM (reached without a navigation event) or the
-        // Set Loader — either way its subscriptions must not outlive the switch.
+        // Set Loader; either way its subscriptions must not outlive the switch.
         (CurrentContent as IDisposable)?.Dispose();
 
         ContentTitle = "Home";
@@ -974,7 +974,7 @@ public partial class MainWindowViewModel : ViewModelBase
         SelectedModule = null;
         ClearSidebarActives();
 
-        // Recent activity fills in asynchronously — the dashboard never blocks.
+        // Recent activity fills in asynchronously; the dashboard never blocks.
         _ = home.LoadRecentActivityCommand.ExecuteAsync(null);
     }
 
@@ -1135,7 +1135,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         try
         {
-            // FR64: safety net before bulk batches. Counts individual descriptors —
+            // FR64: safety net before bulk batches. Counts individual descriptors;
             // PendingCount counts groups, so a single 6-change set must still trigger.
             // One-way actions count too: a bulk of Appx removals is the least
             // reversible thing in the app and deserves the restore point most.
@@ -1181,31 +1181,31 @@ public partial class MainWindowViewModel : ViewModelBase
                         : "A reboot is required for some changes to take effect.";
                     IsRestartActionAvailable = alsoExplorer;
                     IsRestartNotificationVisible = true;
-                    SetStatus("Changes applied — reboot required", StatusSeverity.Warning);
+                    SetStatus("Changes applied. Reboot required", StatusSeverity.Warning);
                 }
                 else if (result.RequiredRestarts.Contains(RestartRequirement.SignOut))
                 {
                     RestartNotificationMessage = "Sign out and back in for some changes to take effect.";
                     IsRestartActionAvailable = false;
                     IsRestartNotificationVisible = true;
-                    SetStatus("Changes applied — sign-out required", StatusSeverity.Warning);
+                    SetStatus("Changes applied. Sign-out required", StatusSeverity.Warning);
                 }
                 else if (result.RequiredRestarts.Contains(RestartRequirement.ExplorerRestart))
                 {
                     RestartNotificationMessage = "Explorer restart required for changes to take effect. Open file explorer windows may close.";
                     IsRestartActionAvailable = true;
                     IsRestartNotificationVisible = true;
-                    SetStatus("Changes applied — Explorer restart needed", StatusSeverity.Warning);
+                    SetStatus("Changes applied. Explorer restart needed", StatusSeverity.Warning);
                 }
                 else if (result.RequiredRestarts.Contains(RestartRequirement.ExplorerRefresh))
                 {
                     // Fire-and-forget: trigger SHChangeNotify to refresh Explorer views
                     _ = _explorerRestartService.RefreshExplorerViewsAsync();
 
-                    RestartNotificationMessage = "Explorer preferences updated — open windows may need F5 to refresh";
+                    RestartNotificationMessage = "Explorer preferences updated. Open windows may need F5 to refresh";
                     IsRestartActionAvailable = false;
                     IsRestartNotificationVisible = true;
-                    SetStatus("Changes applied — Explorer refresh may be needed", StatusSeverity.Success);
+                    SetStatus("Changes applied. Explorer refresh may be needed", StatusSeverity.Success);
                 }
                 else
                 {
@@ -1218,7 +1218,7 @@ public partial class MainWindowViewModel : ViewModelBase
             }
 
             // One-way actions run after the reversible batch, and only when it
-            // succeeded — a failed change batch should not be followed by installs.
+            // succeeded; a failed change batch should not be followed by installs.
             if (result.IsSuccess && _pendingActionsService is { PendingCount: > 0 })
             {
                 var actionCount = _pendingActionsService.PendingCount;
@@ -1268,7 +1268,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 else if (result.RequiredRestarts.Count > 0)
                 {
                     // The restart banner stays visible; keep the status pointing at it.
-                    SetStatus("Actions completed — a restart is still needed for some changes", StatusSeverity.Warning);
+                    SetStatus("Actions completed. A restart is still needed for some changes", StatusSeverity.Warning);
                 }
                 else
                 {

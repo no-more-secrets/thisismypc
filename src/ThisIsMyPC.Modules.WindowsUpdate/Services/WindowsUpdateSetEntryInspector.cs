@@ -29,7 +29,7 @@ public sealed class WindowsUpdateSetEntryInspector : ISetEntryInspector
         {
             var pin = _reader.ReadVersionPin();
             if (pin.Count == 0)
-                return null; // DisplayVersion unreadable — pin unavailable on this machine
+                return null; // DisplayVersion unreadable; pin unavailable on this machine
 
             var configuredCount = pin.Count(s => s.IsConfigured);
             var wantsConfigure = string.Equals(entry.Value, pin[0].ConfiguredValue, StringComparison.Ordinal);
@@ -51,7 +51,7 @@ public sealed class WindowsUpdateSetEntryInspector : ISetEntryInspector
         if (setting is null)
             return null;
 
-        // A value matching neither toggle direction is never "applied" — a bogus entry
+        // A value matching neither toggle direction is never "applied"; a bogus entry
         // must not preview as done just because the machine happens to hold that value.
         var direction = Direction(entry, setting);
 

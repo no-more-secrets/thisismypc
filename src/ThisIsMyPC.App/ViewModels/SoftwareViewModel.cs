@@ -217,7 +217,7 @@ public sealed partial class SoftwareViewModel : ViewModelBase, IDisposable
 
     private void OnPendingActionsPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        // Apply/discard empties the queue outside this view — rows must drop
+        // Apply/discard empties the queue outside this view; rows must drop
         // their queued state.
         if (e.PropertyName is nameof(IPendingActionsService.PendingActions))
         {

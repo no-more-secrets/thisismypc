@@ -11,13 +11,13 @@ public static class WindowsUpdateChangeFactory
 
     /// <summary>
     /// WU orchestrator policies: the GPCache overrides the policy hive, so the cache is
-    /// cleared around EVERY mutation — including restores to Not configured, where a
+    /// cleared around EVERY mutation; including restores to Not configured, where a
     /// stale cache would keep the removed policy alive (unlike the Annoyances
     /// suppress-only rule, which covers informational vectors).
     /// </summary>
     // SkuRestriction is the minimum edition tier that honors the policy: the official
     // Policy CSP edition tables list Pro/Enterprise/Education for every policy this
-    // module writes (Update CSP + DODownloadMode) — informational tag, never gated
+    // module writes (Update CSP + DODownloadMode); informational tag, never gated
     // (FR129). Source: docs/research/sku-restriction-audit.md.
     internal static readonly SettingEnforcement WUPolicyEnforcement = new()
     {
@@ -27,7 +27,7 @@ public static class WindowsUpdateChangeFactory
     };
 
     // Delivery Optimization is read by DoSvc directly (no GPCache), but its policy is
-    // also Pro+ only — SKU-only enforcement carries the tag into the set preview.
+    // also Pro+ only; SKU-only enforcement carries the tag into the set preview.
     internal static readonly SettingEnforcement DOPolicyEnforcement = new()
     {
         SkuRestriction = WindowsSku.Pro,
@@ -39,7 +39,7 @@ public static class WindowsUpdateChangeFactory
     /// (empty AfterValue = value absent, the PowerModule convention).
     /// <paramref name="gpCache"/> selects the enforcement: true for orchestrator-read
     /// policies (GPCache clear + vectors), false for Delivery Optimization (SKU-only
-    /// tag — DoSvc reads its policy key directly).
+    /// tag; DoSvc reads its policy key directly).
     /// </summary>
     public static ChangeDescriptor CreateToggle(UpdatePolicySetting setting, bool configure, bool gpCache = true)
     {
@@ -62,7 +62,7 @@ public static class WindowsUpdateChangeFactory
 
     /// <summary>
     /// Toggle for a UX\Settings state value (what the Settings page writes): no
-    /// enforcement at all — not a policy, so no GPCache clear and no SKU tag.
+    /// enforcement at all; not a policy, so no GPCache clear and no SKU tag.
     /// </summary>
     public static ChangeDescriptor CreateUxToggle(UpdatePolicySetting setting, bool configure)
         => CreateToggle(setting, configure) with { Enforcement = null };

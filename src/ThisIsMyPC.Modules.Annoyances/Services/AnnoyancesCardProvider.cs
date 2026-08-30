@@ -95,7 +95,7 @@ public sealed class AnnoyancesCardProvider
             : suppress => AnnoyanceChangeFactory.CreateToggle(ReadLive(pref.Id), suppress);
 
         // Enforcement metadata depends only on the suppress direction, never on live
-        // values — derive it from the scan-time preference so BuildCards does no
+        // values; derive it from the scan-time preference so BuildCards does no
         // registry reads, and unconditionally so a factory gaining enforcement later
         // can never silently lose its badge.
         var scanTimeEnforcement = driftFragile
@@ -330,7 +330,7 @@ public sealed class AnnoyancesCardProvider
     /// Projects the factory's suppress-direction enforcement into the UI-facing profile.
     /// The card layer gets posture + reversion risks, never enforcement internals.
     /// Reversion-vector-only enforcement maps to Simple (informational), not Enforced.
-    /// SKU-only enforcement produces NO profile — SkuRestriction drives its own callout
+    /// SKU-only enforcement produces NO profile; SkuRestriction drives its own callout
     /// and a "known to revert" badge would be false.
     /// </summary>
     private static EnforcementProfile? Profile(SettingEnforcement? enforcement)

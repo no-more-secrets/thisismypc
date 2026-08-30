@@ -11,7 +11,7 @@ namespace ThisIsMyPC.Modules.Startup.Services;
 /// are instance-scoped: "service-starttype:{serviceName}" (value = ServiceStartType name),
 /// "scheduled-task:{taskPath}" (value = "Enabled"/"Disabled"), and
 /// "startup-entry:{source}:{name}" (value = hex StartupApproved blob). A service, task, or
-/// startup entry absent on this machine resolves to null — the set loader marks the entry
+/// startup entry absent on this machine resolves to null; the set loader marks the entry
 /// "will be skipped", which is the intended behavior for machine-specific targets.
 /// </summary>
 public sealed class StartupSetEntryInspector : ISetEntryInspector
@@ -34,7 +34,7 @@ public sealed class StartupSetEntryInspector : ISetEntryInspector
         _serviceControl = serviceControl;
         _taskService = taskService;
         _registry = registry;
-        // Publisher/description metadata is irrelevant to state resolution — skip the
+        // Publisher/description metadata is irrelevant to state resolution; skip the
         // per-executable version-info reads the module UI pays for.
         _startupScanner = new StartupScanner(registry, startupFolders, _ => new StartupFileMetadata(null, null));
     }

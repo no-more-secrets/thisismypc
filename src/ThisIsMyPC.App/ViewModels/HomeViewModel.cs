@@ -25,7 +25,7 @@ public sealed partial class QuickActionViewModel : ViewModelBase
     /// <summary>
     /// Geometry resolved through the sidebar item's icon-key mapping (raw
     /// Module.Info.Icon is a KEY like "shell", not path markup). Resolved lazily:
-    /// Geometry parsing needs a rendering platform, which headless tests lack —
+    /// Geometry parsing needs a rendering platform, which headless tests lack;
     /// only real rendering may evaluate this.
     /// </summary>
     public Geometry IconGeometry => _cachedGeometry ??= _iconGeometryFactory();
@@ -43,7 +43,7 @@ public sealed class RecentActivityItemViewModel
 }
 
 /// <summary>
-/// Home tab (10.5): read-only dashboard and navigation surface. Not a module — no
+/// Home tab (10.5): read-only dashboard and navigation surface. Not a module; no
 /// settings, no pending changes, no display modes. Renders from cheap/cached data;
 /// recent activity loads async after construction without blocking.
 /// </summary>

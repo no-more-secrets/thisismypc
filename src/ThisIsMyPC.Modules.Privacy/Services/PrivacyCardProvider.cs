@@ -54,7 +54,7 @@ public sealed class PrivacyCardProvider
     private SettingCardSource SingleCard(PrivacyPreference pref)
     {
         // Enforcement metadata depends only on the configure direction, never on live
-        // values — derive it from the scan-time preference so BuildCards does no
+        // values; derive it from the scan-time preference so BuildCards does no
         // registry reads.
         var scanTimeEnforcement = PrivacyChangeFactory.CreateToggle(pref, configure: true).Enforcement;
 
@@ -106,7 +106,7 @@ public sealed class PrivacyCardProvider
     /// <summary>
     /// Projects the factory's configure-direction enforcement into the UI-facing
     /// profile (Annoyances pattern). Companion services → Enforced badge; SKU-only
-    /// enforcement produces NO profile — SkuRestriction drives its own callout.
+    /// enforcement produces NO profile; SkuRestriction drives its own callout.
     /// </summary>
     private static EnforcementProfile? Profile(SettingEnforcement? enforcement)
     {

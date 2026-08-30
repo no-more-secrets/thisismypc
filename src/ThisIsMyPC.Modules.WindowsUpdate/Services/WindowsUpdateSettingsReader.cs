@@ -22,7 +22,7 @@ public sealed class WindowsUpdateSettingsReader
             ReadSetting(
                 id: "auto-update-mode",
                 displayName: "Notify before downloading updates",
-                description: "Windows Update tells you updates are available instead of downloading and installing them on its own schedule (AUOptions = 2). You choose when to download and install; nothing installs behind your back.",
+                description: "Windows Update announces available updates instead of installing them on its own schedule (AUOptions = 2). You choose when to download and install.",
                 keyPath: WindowsUpdateRegistryPaths.AuPoliciesKeyPath,
                 valueName: "AUOptions",
                 configuredValue: "2"),
@@ -30,7 +30,7 @@ public sealed class WindowsUpdateSettingsReader
             ReadSetting(
                 id: "no-auto-reboot",
                 displayName: "Never auto-restart while you are signed in",
-                description: "Stops Windows Update from automatically rebooting the machine to finish installing updates while a user session is active — the policy behind lost overnight work.",
+                description: "Stops Windows Update from rebooting to finish installing updates while anyone is signed in; the policy behind lost overnight work.",
                 keyPath: WindowsUpdateRegistryPaths.AuPoliciesKeyPath,
                 valueName: "NoAutoRebootWithLoggedOnUsers",
                 configuredValue: "1"),
@@ -46,7 +46,7 @@ public sealed class WindowsUpdateSettingsReader
             ReadSetting(
                 id: "delivery-optimization",
                 displayName: "Disable update peer-to-peer sharing",
-                description: "Restricts update downloads to Microsoft's servers only (DODownloadMode = 0), stopping Delivery Optimization from uploading update chunks to other PCs and saturating your connection in the background.",
+                description: "Downloads updates from Microsoft's servers only (DODownloadMode = 0). Stops Delivery Optimization from uploading update chunks to other PCs on your connection.",
                 keyPath: WindowsUpdateRegistryPaths.DeliveryOptimizationPoliciesKeyPath,
                 valueName: "DODownloadMode",
                 configuredValue: "0"),
@@ -56,7 +56,7 @@ public sealed class WindowsUpdateSettingsReader
     /// <summary>
     /// The version-pin group: TargetReleaseVersion FIRST (its "1" is the group's toggle
     /// value per the set convention), then ProductVersion and TargetReleaseVersionInfo.
-    /// Empty when DisplayVersion is unreadable — pinning to an unknown release would
+    /// Empty when DisplayVersion is unreadable; pinning to an unknown release would
     /// pin to nothing.
     /// </summary>
     public IReadOnlyList<UpdatePolicySetting> ReadVersionPin()
@@ -134,7 +134,7 @@ public sealed class WindowsUpdateSettingsReader
     public WindowsUpdateScanData ReadAll() => new(ReadSingles(), ReadVersionPin(), ReadUxSettings());
 
     /// <summary>
-    /// The live feature release, e.g. "24H2". Never derived from ProductName — it
+    /// The live feature release, e.g. "24H2". Never derived from ProductName; it
     /// reports "Windows 10" on Windows 11 machines.
     /// </summary>
     public string ReadDisplayVersion()

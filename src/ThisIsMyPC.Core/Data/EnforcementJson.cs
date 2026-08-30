@@ -7,7 +7,7 @@ namespace ThisIsMyPC.Core.Data;
 
 /// <summary>
 /// Persists SettingEnforcement as JSON for change-history storage, reusing the set-file
-/// DTO and source-generated context (NativeAOT-safe, camelCase — the same shape a set
+/// DTO and source-generated context (NativeAOT-safe, camelCase; the same shape a set
 /// file's enforcement object uses).
 /// </summary>
 internal static class EnforcementJson
@@ -32,7 +32,7 @@ internal static class EnforcementJson
         return JsonSerializer.Serialize(document, SetJsonContext.Default.SetEnforcementDocument);
     }
 
-    /// <summary>Null for null/blank/corrupt JSON — a mangled row degrades to unenforced rather than failing the history load.</summary>
+    /// <summary>Null for null/blank/corrupt JSON; a mangled row degrades to unenforced rather than failing the history load.</summary>
     public static SettingEnforcement? Deserialize(string? json)
     {
         if (string.IsNullOrWhiteSpace(json))

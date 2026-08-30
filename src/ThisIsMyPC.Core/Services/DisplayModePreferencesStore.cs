@@ -67,7 +67,7 @@ public sealed class DisplayModePreferencesStore
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            // Unreadable preferences degrade to defaults — never block the UI. But a
+            // Unreadable preferences degrade to defaults; never block the UI. But a
             // failed load must not let a later Set rewrite the file from an empty
             // dictionary and drop other tabs' prefs, so Save is disabled for this
             // instance (modes still work in memory).

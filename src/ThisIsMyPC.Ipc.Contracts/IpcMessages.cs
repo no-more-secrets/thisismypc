@@ -5,7 +5,7 @@ namespace ThisIsMyPC.Ipc.Contracts;
 
 /// <summary>
 /// Every frame carries one envelope. <see cref="Nonce"/> is generated per request by
-/// the client and must be echoed verbatim in the response — a reply with a stale or
+/// the client and must be echoed verbatim in the response; a reply with a stale or
 /// foreign nonce is discarded (replay guard). <see cref="PayloadJson"/> is the
 /// message-type-specific DTO, serialized separately so the envelope shape never
 /// changes when message types are added (PawnIO brokering extensibility).

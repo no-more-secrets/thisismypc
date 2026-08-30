@@ -12,7 +12,7 @@ public sealed record SystemIdentity
 }
 
 /// <summary>
-/// Reads system identity from cheap sources only — registry and BCL, never WMI
+/// Reads system identity from cheap sources only; registry and BCL, never WMI
 /// (banned in Core) and never anything slow enough to delay first paint.
 /// </summary>
 public sealed class SystemIdentityService
@@ -65,7 +65,7 @@ public sealed class SystemIdentityService
         }
         catch (Exception)
         {
-            return null; // identity is decorative — a throwing registry layer must not break Home
+            return null; // identity is decorative; a throwing registry layer must not break Home
         }
     }
 

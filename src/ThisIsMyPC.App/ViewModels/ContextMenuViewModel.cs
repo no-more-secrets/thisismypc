@@ -12,7 +12,7 @@ namespace ThisIsMyPC.App.ViewModels;
 
 public partial class ContextMenuViewModel : ViewModelBase, IDisposable
 {
-    // Backing store for handler type filtering — populated once, used to repopulate collections
+    // Backing store for handler type filtering; populated once, used to repopulate collections
     private readonly List<(ContextMenuHandlerViewModel Vm, HashSet<ContextMenuTab> Tabs)> _allHandlerEntries = [];
     private readonly IPendingChangesService _pendingChangesService;
     private readonly IRegistryService _registryService;
@@ -225,7 +225,7 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
 
         // Route based on distinct registry scopes, not UI tab count.
         // A handler at "Folder background" maps to both FolderBackground + Desktop tabs
-        // but that's one scope — it stays in those tabs, not Multi.
+        // but that's one scope; it stays in those tabs, not Multi.
         foreach (var (key, vm) in vmMap)
         {
             var originalTabs = vmTabs[key];
@@ -435,7 +435,7 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
         ObservableCollection<ContextMenuHandlerViewModel> collection,
         List<ContextMenuHandlerViewModel> items)
     {
-        // Add active first, then inactive — avoids clear+re-add notification storm
+        // Add active first, then inactive; avoids clear+re-add notification storm
         foreach (var vm in items.Where(v => !v.IsInactive))
             collection.Add(vm);
         foreach (var vm in items.Where(v => v.IsInactive))
@@ -479,7 +479,7 @@ public partial class ContextMenuViewModel : ViewModelBase, IDisposable
 
     private static bool ReadHandlerRegistryState(IRegistryService registryService, ContextMenuHandler handler)
     {
-        // Check blocked list first — if CLSID is in the blocked list, handler is disabled
+        // Check blocked list first; if CLSID is in the blocked list, handler is disabled
         var blockedResult = registryService.ValueExists(
             Modules.Shell.ShellRegistryPaths.BlockedListKeyPath, handler.Clsid);
         if (blockedResult.IsSuccess && blockedResult.Value)

@@ -44,7 +44,7 @@ public partial class PrivacyViewModel : ViewModelBase, IDisposable
         ICapabilityDetector? capabilityDetector = null)
     {
         _displayModeStore = displayModeStore;
-        // Factories re-read live state at stage time — a scan-time snapshot would bake
+        // Factories re-read live state at stage time; a scan-time snapshot would bake
         // stale BeforeValues into the descriptors after the first apply.
         var provider = new PrivacyCardProvider(new PrivacySettingsReader(registryService));
 

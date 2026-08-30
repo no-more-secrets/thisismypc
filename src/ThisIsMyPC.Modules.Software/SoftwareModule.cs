@@ -11,7 +11,7 @@ namespace ThisIsMyPC.Modules.Software;
 
 /// <summary>
 /// Software installation engine (Epic 24). All mutations are one-way actions
-/// through the pending-actions queue — installs and uninstalls have no
+/// through the pending-actions queue; installs and uninstalls have no
 /// before-state, so nothing here touches the pending-changes pipeline.
 /// </summary>
 public sealed class SoftwareModule : IActionModule
@@ -177,7 +177,7 @@ public sealed class SoftwareModule : IActionModule
             .Where(p => !p.IsFramework && MatchesPackageId(p, entry.PackageId))
             .ToList();
 
-        // Already gone counts as done — the queue is idempotent about state
+        // Already gone counts as done; the queue is idempotent about state
         // that changed between staging and Apply.
         foreach (var package in matches)
         {
@@ -186,7 +186,7 @@ public sealed class SoftwareModule : IActionModule
             if (!removal.IsSuccess)
                 return removal;
 
-            // null means the provisioned list was unreadable — attempt anyway so
+            // null means the provisioned list was unreadable; attempt anyway so
             // the promised "stops auto-install for new profiles" holds, but only
             // a known-provisioned package turns a deprovision error into failure.
             if (package.IsProvisioned != false)

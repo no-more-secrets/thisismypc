@@ -61,7 +61,7 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
         {
             if (_liveActivePlan is not null && pendingGuid == _liveActivePlan.PlanGuid)
             {
-                // Pending target already matches live state — drop the redundant group
+                // Pending target already matches live state; drop the redundant group
                 pendingChangesService.Unstage(existing.GroupId);
             }
             else
@@ -282,7 +282,7 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
         {
             var powerService = _powerService;
             var result = await Task.Run(() => powerService.EnumeratePlanSettings(plan.Plan.PlanGuid));
-            // Back was clicked (or a newer load started) while enumerating — discard
+            // Back was clicked (or a newer load started) while enumerating; discard
             if (_disposed || generation != _settingsLoadGeneration)
                 return;
 
@@ -437,7 +437,7 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
 
             if (isApplying && pendingTarget is not null)
             {
-                // The switch was applied — the pending target is now the live active plan
+                // The switch was applied; the pending target is now the live active plan
                 _liveActivePlan = pendingTarget.Plan;
                 foreach (var row in Plans)
                     row.IsActive = row.Plan.PlanGuid == pendingTarget.Plan.PlanGuid;
@@ -453,7 +453,7 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
             _modernStandbyGroupId = null;
             _suppressModernStandby = true;
             IsModernStandbyDisabled = isApplying
-                ? IsModernStandbyDisabled // applied — the toggle already shows the new state
+                ? IsModernStandbyDisabled // applied; the toggle already shows the new state
                 : ReadModernStandbyOverride() == 0;
             _suppressModernStandby = false;
         }
@@ -657,7 +657,7 @@ public sealed partial class PowerSettingItemViewModel : ObservableObject
         $"AC={(_liveAc?.ToString() ?? "?")}  DC={(_liveDc?.ToString() ?? "?")}";
 
     // Enumerated editors bind by POSITION in Options/PossibleValues, not display
-    // string — duplicate friendly names would otherwise stage the wrong index.
+    // string; duplicate friendly names would otherwise stage the wrong index.
     [ObservableProperty]
     private int _selectedAcOptionIndex = -1;
 
@@ -715,7 +715,7 @@ public sealed partial class PowerSettingItemViewModel : ObservableObject
         if (_suppressStaging || IsEnumerated)
             return;
         if (!uint.TryParse(text, out var desired))
-            return; // invalid intermediate input — leave the last staged value alone
+            return; // invalid intermediate input; leave the last staged value alone
         if (Setting.IsRange && (desired < Setting.Min || desired > Setting.Max))
             return;
         StageScope(ac, desired);
@@ -731,7 +731,7 @@ public sealed partial class PowerSettingItemViewModel : ObservableObject
         if (groupId is not null)
         {
             // Clear the field BEFORE unstaging: Unstage raises PropertyChanged
-            // synchronously, which re-enters ReconcileScope via the parent — a
+            // synchronously, which re-enters ReconcileScope via the parent; a
             // still-set field would read as "discarded externally" and snap the
             // editor back to the live value mid-edit.
             var staleGroupId = groupId;
@@ -803,7 +803,7 @@ public sealed partial class PowerSettingItemViewModel : ObservableObject
 
         if (isApplying)
         {
-            // Applied — the editor value is now the live value
+            // Applied; the editor value is now the live value
             var text = ac ? AcText : DcText;
             var position = ac ? SelectedAcOptionIndex : SelectedDcOptionIndex;
             var applied = IsEnumerated ? ValueAtPosition(position) : uint.TryParse(text, out var v) ? v : null;
@@ -815,7 +815,7 @@ public sealed partial class PowerSettingItemViewModel : ObservableObject
         }
         else
         {
-            // Discarded — revert the editor to live state
+            // Discarded; revert the editor to live state
             _suppressStaging = true;
             if (ac)
             {

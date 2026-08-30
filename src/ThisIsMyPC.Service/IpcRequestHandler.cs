@@ -4,7 +4,7 @@ using ThisIsMyPC.Ipc.Contracts;
 namespace ThisIsMyPC.Service;
 
 /// <summary>
-/// Pure request → response mapping for the pipe server — separated from the
+/// Pure request → response mapping for the pipe server; separated from the
 /// transport loop so the protocol is unit-testable without a real Session 0
 /// service (28-1 AC). Every response echoes the request nonce.
 /// </summary>

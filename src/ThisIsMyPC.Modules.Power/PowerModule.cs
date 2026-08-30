@@ -218,7 +218,7 @@ public sealed class PowerModule : IActionModule
                     ErrorCategory.AccessDenied);
             }
 
-            // Already gone — removal is idempotent.
+            // Already gone; removal is idempotent.
             return OperationResult<bool>.Success(true);
         }
 

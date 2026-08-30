@@ -107,7 +107,7 @@ public partial class SetLoaderViewModel : ViewModelBase, IDisposable
                 if (group is null)
                     continue;
 
-                // Any conflicting pending group is replaced — including the same-value
+                // Any conflicting pending group is replaced; including the same-value
                 // case, where staging on top would duplicate the mutation.
                 if (row.Resolution.Conflict
                         is SetEntryConflict.PendingDifferentValue or SetEntryConflict.PendingSameValue
@@ -126,8 +126,8 @@ public partial class SetLoaderViewModel : ViewModelBase, IDisposable
         }
 
         StageMessage = staged == 1
-            ? "1 change staged — review and apply from the pending changes bar."
-            : $"{staged} changes staged — review and apply from the pending changes bar.";
+            ? "1 change staged. Review and apply from the pending changes bar."
+            : $"{staged} changes staged. Review and apply from the pending changes bar.";
 
         // Re-resolve: freshly staged rows flip to "already staged" and uncheck.
         BuildPreview();

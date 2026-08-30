@@ -17,7 +17,7 @@ public static class ShellRegistryPaths
     public const string BlockedListKeyPath = @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Shell Extensions\Blocked";
     public const string AbsentValue = "__absent__";
 
-    // Static verb scope paths — the 10 hierarchy levels from which Shell enumerates \shell verbs
+    // Static verb scope paths; the 10 hierarchy levels from which Shell enumerates \shell verbs
     public static IReadOnlyList<(string KeyPath, string Scope)> StaticVerbScopePaths { get; } =
     [
         (@"HKCR\*\shell", "All files"),

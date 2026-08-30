@@ -135,7 +135,7 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
         if (handler.IsOrphaned)
         {
             IsToggleEnabled = false;
-            ToggleDisabledTooltip = "This handler's DLL is missing — use Clean Up to remove the orphaned registration";
+            ToggleDisabledTooltip = "This handler's DLL is missing; use Clean Up to remove the orphaned registration";
         }
         else if (handler.HandlerType == HandlerType.ModernPackaged)
         {
@@ -275,7 +275,7 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
     private static string BuildWarningText(ContextMenuHandler handler)
     {
         if (handler.IsOrphaned)
-            return "DLL missing — Explorer wastes resources trying to load this handler on every right-click";
+            return "DLL missing; Explorer wastes resources trying to load this handler on every right-click";
 
         if (handler.IsContentInspecting)
             return "This handler performs synchronous file I/O during right-click -- may cause menu delays on large or network folders";
@@ -351,7 +351,7 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
             List<ChangeDescriptor> allChanges;
             if (_handler.HandlerType == HandlerType.StaticVerb)
             {
-                // Static verbs use LegacyDisable — single mechanism
+                // Static verbs use LegacyDisable; single mechanism
                 allChanges = [.. ContextMenuChangeFactory.CreateStaticVerbToggle(_handler, desiredState)];
             }
             else
@@ -414,7 +414,7 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
 
     private void HandlePendingGroupsChanged()
     {
-        // Our staged change was removed — either applied or discarded
+        // Our staged change was removed; either applied or discarded
         if (_stagedGroupId is not null &&
             !_pendingChangesService.PendingGroups.Any(g => g.GroupId == _stagedGroupId))
         {
@@ -422,12 +422,12 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
 
             if (_pendingChangesService.IsApplying)
             {
-                // Change was applied — keep toggle position, update baseline to match
+                // Change was applied; keep toggle position, update baseline to match
                 _registryIsEnabled = IsEnabled;
             }
             else
             {
-                // Change was discarded — reset toggle to registry state
+                // Change was discarded; reset toggle to registry state
                 _suppressStaging = true;
                 IsEnabled = _registryIsEnabled;
                 _suppressStaging = false;

@@ -11,7 +11,7 @@ namespace ThisIsMyPC.App.ViewModels;
 /// <summary>
 /// The Custom tab of the Context Menus module (2-6): lists ThisIsMyPC-created
 /// entries and hosts the create/edit form. Everything stages through the pending
-/// pipeline — the list shows the applied registry state, so a freshly staged
+/// pipeline; the list shows the applied registry state, so a freshly staged
 /// entry appears here only after Apply (the review panel carries it until then).
 /// </summary>
 public partial class CustomVerbSectionViewModel : ViewModelBase
@@ -167,7 +167,7 @@ public partial class CustomVerbSectionViewModel : ViewModelBase
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         // Staged-but-unapplied creates are invisible in Entries (the list shows the
-        // applied registry state) — without this, two same-label creates would share
+        // applied registry state); without this, two same-label creates would share
         // a key path and silently overwrite each other on Apply.
         foreach (var group in _pendingChanges.PendingGroups)
         {

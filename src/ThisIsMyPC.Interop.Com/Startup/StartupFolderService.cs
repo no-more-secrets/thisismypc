@@ -6,7 +6,7 @@ namespace ThisIsMyPC.Interop.Com.Startup;
 
 /// <summary>
 /// Enumerates startup folder contents and resolves .lnk shortcut targets via
-/// IShellLinkW/IPersistFile (raw vtable calls — NativeAOT-safe, no COM wrappers).
+/// IShellLinkW/IPersistFile (raw vtable calls; NativeAOT-safe, no COM wrappers).
 /// </summary>
 public sealed partial class StartupFolderService : IStartupFolderService
 {
@@ -39,7 +39,7 @@ public sealed partial class StartupFolderService : IStartupFolderService
             try
             {
                 // S_OK/S_FALSE must be balanced with CoUninitialize; RPC_E_CHANGED_MODE
-                // means the thread is already MTA — proceed without balancing.
+                // means the thread is already MTA; proceed without balancing.
                 needUninit = CoInitializeEx(0, COINIT_APARTMENTTHREADED) >= 0;
 
                 foreach (var file in Directory.EnumerateFiles(folder))

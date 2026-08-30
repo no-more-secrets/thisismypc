@@ -10,7 +10,7 @@ namespace ThisIsMyPC.App.Services;
 /// Captures the boot-sequence surface for monitoring (9-3): startup entries (run
 /// keys + startup folders), services, and scheduled tasks. Item ids reuse the
 /// Startup &amp; Services set settingId conventions so detections can be disabled
-/// through the existing inspector. Enumeration failures degrade to omissions —
+/// through the existing inspector. Enumeration failures degrade to omissions;
 /// monitoring is best-effort, never a crash source.
 /// </summary>
 public sealed class MonitoringSnapshotProvider : IMonitoringSnapshotProvider
@@ -45,7 +45,7 @@ public sealed class MonitoringSnapshotProvider : IMonitoringSnapshotProvider
                     $"startup ({entry.Source})"));
             }
         }
-#pragma warning disable CA1031 // best-effort capture — a failing source is omitted, never fatal
+#pragma warning disable CA1031 // best-effort capture; a failing source is omitted, never fatal
         catch (Exception ex)
         {
             Serilog.Log.Warning(ex, "Monitoring: startup entry scan failed");

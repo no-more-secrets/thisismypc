@@ -126,7 +126,7 @@ public sealed class PendingChangesService : IPendingChangesService
             snapshot = [.. _pendingGroups];
         }
 
-        // An enforced change with no executor is a DI misconfiguration — fail before
+        // An enforced change with no executor is a DI misconfiguration; fail before
         // any change is applied, not mid-batch.
         if (_enforcementExecutor is null)
         {
@@ -171,7 +171,7 @@ public sealed class PendingChangesService : IPendingChangesService
                 {
                     // Rollback this group's applied changes in reverse order.
                     // The revert delegate contract (established by ChangeHistoryService undo)
-                    // is "apply the descriptor's AfterValue" — so rollback must hand it a
+                    // is "apply the descriptor's AfterValue"; so rollback must hand it a
                     // Before/After-SWAPPED descriptor, or modules whose RevertChangeAsync
                     // delegates to ApplyChangeAsync would re-apply the failed group's values.
                     var rolledBack = new List<ChangeDescriptor>();
@@ -186,7 +186,7 @@ public sealed class PendingChangesService : IPendingChangesService
                             AfterDisplay = original.BeforeDisplay,
                         };
 
-                        // Mirrors the apply routing exactly — an enforced change must never
+                        // Mirrors the apply routing exactly; an enforced change must never
                         // silently degrade to a bare revert (companion services/tasks/GPCache
                         // would stay mutated).
                         var rollbackResult = swapped.Enforcement is not null
@@ -206,7 +206,7 @@ public sealed class PendingChangesService : IPendingChangesService
                     }
 
                     // Remove successfully applied groups BY IDENTITY so pending state is
-                    // consistent — index-based removal races with Stage/Unstage from the
+                    // consistent; index-based removal races with Stage/Unstage from the
                     // UI thread during the awaits above.
                     var appliedGroupIds = snapshot.Take(gi).Select(g => g.GroupId).ToHashSet();
                     lock (_lock)
@@ -239,7 +239,7 @@ public sealed class PendingChangesService : IPendingChangesService
             allApplied.AddRange(groupApplied);
         }
 
-        // Remove only the groups we actually applied — a group staged while the batch
+        // Remove only the groups we actually applied; a group staged while the batch
         // was running must survive.
         var snapshotIds = snapshot.Select(g => g.GroupId).ToHashSet();
         lock (_lock)

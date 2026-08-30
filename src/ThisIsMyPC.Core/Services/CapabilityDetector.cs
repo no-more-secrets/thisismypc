@@ -56,7 +56,7 @@ public sealed class CapabilityDetector : ICapabilityDetector
     public string? SkuDetectionFailureReason => _skuDetectionFailureReason;
 
     // Live probe (28-2): true only while the Owner Mode service is running. Queried
-    // per read, never cached — cards rebuilt after a lifecycle change must see the
+    // per read, never cached; cards rebuilt after a lifecycle change must see the
     // new state. No probe wired (tests, degraded hosts) means unavailable.
     public bool IsOwnerModeAvailable => _ownerModeProbe?.Invoke() ?? false;
 
@@ -87,13 +87,13 @@ public sealed class CapabilityDetector : ICapabilityDetector
 
     private ModuleAvailability Detect(SystemCapability capability) => capability switch
     {
-        // Always present for an elevated Win11 desktop app — rationale, not probe.
+        // Always present for an elevated Win11 desktop app; rationale, not probe.
         SystemCapability.Registry => new ModuleAvailability(true),
         SystemCapability.Com => new ModuleAvailability(true),
         SystemCapability.Wmi => new ModuleAvailability(true),
         SystemCapability.NativeApi => new ModuleAvailability(true),
 
-        // Retired hardware territory — reported honestly so the summary can say what
+        // Retired hardware territory; reported honestly so the summary can say what
         // would be possible; the modules themselves arrive with the post-BMAD work.
         SystemCapability.DdcCi => new ModuleAvailability(
             false,

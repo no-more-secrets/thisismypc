@@ -13,7 +13,7 @@ public sealed class SettingsService : ISettingsService
     private bool _initialized;
 
     // An UNREADABLE file (IO/access) must not let a later Set rewrite the file from
-    // defaults and destroy the user's real settings — saves are disabled for the
+    // defaults and destroy the user's real settings; saves are disabled for the
     // session (DisplayModePreferencesStore semantics). A CORRUPT file is different:
     // it is preserved as .bad, then replaced with defaults.
     private bool _saveDisabled;
@@ -82,7 +82,7 @@ public sealed class SettingsService : ISettingsService
             try
             {
                 // Null-tolerant: JSON like {"theme": null} or {"Module": null} parses
-                // fine but violates the non-null value contract — skip those entries
+                // fine but violates the non-null value contract; skip those entries
                 // rather than crash at startup.
                 foreach (var (key, value) in document.AppSettings ?? [])
                 {

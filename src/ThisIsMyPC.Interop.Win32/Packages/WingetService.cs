@@ -13,20 +13,20 @@ namespace ThisIsMyPC.Interop.Win32.Packages;
 /// </summary>
 public sealed class WingetService : IWingetService
 {
-    // Keep only the last lines of process output for error messages — winget
+    // Keep only the last lines of process output for error messages; winget
     // renders progress spinners that make full output enormous.
     private const int OutputTailLines = 12;
 
     // The version probe gates module availability during app startup and must
     // never hang the shell; export feeds the scan. Installs get no artificial
-    // deadline — a large package on a slow line legitimately takes a long time.
+    // deadline; a large package on a slow line legitimately takes a long time.
     private static readonly TimeSpan VersionTimeout = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan ListTimeout = TimeSpan.FromSeconds(90);
 
     // winget upgrade refreshes sources over the network; far slower than list.
     private static readonly TimeSpan UpgradeListTimeout = TimeSpan.FromMinutes(3);
 
-    // Generous — a large package on a slow line is legitimate — but bounded:
+    // Generous; a large package on a slow line is legitimate; but bounded:
     // a hung silent installer must not wedge the apply pipeline forever.
     private static readonly TimeSpan OperationTimeout = TimeSpan.FromMinutes(30);
 
@@ -78,14 +78,14 @@ public sealed class WingetService : IWingetService
         return OperationResult<IReadOnlyList<InstalledWingetPackage>>.Success(packages);
     }
 
-    // winget's "no installed package found matching input criteria" — the
+    // winget's "no installed package found matching input criteria"; the
     // normal everything-is-current outcome of "winget upgrade", not an error.
     private const int NoPackagesFoundExitCode = unchecked((int)0x8A150014);
 
-    // "installed version is already the latest" — the package updated itself
+    // "installed version is already the latest"; the package updated itself
     // between staging and Apply; done is done. NoPackagesFound is benign for a
     // targeted upgrade too: it means the package was uninstalled after staging,
-    // so no update is pending — failing would strand the action in the queue
+    // so no update is pending; failing would strand the action in the queue
     // over a state the user created deliberately. The row rights itself on the
     // next scan.
     private const int UpdateNotApplicableExitCode = unchecked((int)0x8A15002B);
@@ -254,7 +254,7 @@ public sealed class WingetService : IWingetService
     /// emits columns in a fixed order and only the header words are localized,
     /// so the header-word start offsets on the line above each all-dashes
     /// separator give the boundaries to slice every following row by. Token
-    /// counting cannot work — versions can contain spaces ("&lt; 3.21.0",
+    /// counting cannot work; versions can contain spaces ("&lt; 3.21.0",
     /// "6.6.11 (23272)"). Rows are returned raw; callers validate cells, which
     /// also discards blank lines, trailers, and prose between sections.
     /// </summary>
@@ -269,7 +269,7 @@ public sealed class WingetService : IWingetService
         foreach (var rawLine in output.Split('\n'))
         {
             // Progress rendering leaves carriage returns and backspaces behind;
-            // keep only what would remain on the console line. No Trim — the
+            // keep only what would remain on the console line. No Trim; the
             // leading indentation is part of the column layout.
             var line = rawLine.Replace("\b", "", StringComparison.Ordinal).TrimEnd('\r');
             var lastReturn = line.LastIndexOf('\r');
@@ -381,7 +381,7 @@ public sealed class WingetService : IWingetService
                 }
                 catch (InvalidOperationException) { }
 
-                // A timeout is a winget failure, not a caller cancellation — only
+                // A timeout is a winget failure, not a caller cancellation; only
                 // the caller's own token propagates as OperationCanceledException.
                 if (!cancellationToken.IsCancellationRequested)
                 {

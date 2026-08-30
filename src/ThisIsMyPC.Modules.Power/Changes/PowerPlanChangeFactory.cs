@@ -8,7 +8,7 @@ public static class PowerPlanChangeFactory
 {
     public const string ModuleId = "Power Plans";
 
-    /// <summary>The active plan is one logical setting — re-selection re-stages this id.</summary>
+    /// <summary>The active plan is one logical setting; re-selection re-stages this id.</summary>
     public const string ActivePlanSettingId = "active-power-plan";
 
     /// <summary>SettingId prefix for individual plan settings; suffix is :AC or :DC.</summary>

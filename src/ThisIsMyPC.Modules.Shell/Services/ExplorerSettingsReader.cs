@@ -22,7 +22,7 @@ public sealed class ExplorerSettingsReader
         preferences.Add(ReadPreference(
             id: "hidden-files",
             displayName: "Show hidden files and folders",
-            description: "Display files and folders that are normally hidden",
+            description: "Items marked hidden show up dimmed instead of being invisible",
             keyPath: ShellRegistryPaths.AdvancedKeyPath,
             valueName: "Hidden",
             enabledValue: "1",
@@ -34,7 +34,7 @@ public sealed class ExplorerSettingsReader
         preferences.Add(ReadPreference(
             id: "file-extensions",
             displayName: "Show file name extensions",
-            description: "Display file extensions (e.g., .txt, .exe) in Explorer",
+            description: "Keep .txt, .exe, and other extensions visible; helps spot disguised executables",
             keyPath: ShellRegistryPaths.AdvancedKeyPath,
             valueName: "HideFileExt",
             enabledValue: "0",
@@ -46,7 +46,7 @@ public sealed class ExplorerSettingsReader
         preferences.Add(ReadPreference(
             id: "protected-os-files",
             displayName: "Show protected operating system files",
-            description: "Display hidden OS files (caution: modifying these can break Windows)",
+            description: "System files Windows hides for safety become visible; modifying them can break Windows",
             keyPath: ShellRegistryPaths.AdvancedKeyPath,
             valueName: "ShowSuperHidden",
             enabledValue: "1",
@@ -58,7 +58,7 @@ public sealed class ExplorerSettingsReader
         preferences.Add(ReadPreference(
             id: "separate-process",
             displayName: "Launch folder windows in a separate process",
-            description: "Run each Explorer folder in its own process for stability",
+            description: "A crashed folder window won't take the taskbar and desktop down with it",
             keyPath: ShellRegistryPaths.AdvancedKeyPath,
             valueName: "SeparateProcess",
             enabledValue: "1",
@@ -70,7 +70,7 @@ public sealed class ExplorerSettingsReader
         preferences.Add(ReadPreference(
             id: "sync-provider-notifications",
             displayName: "Show sync provider notifications",
-            description: "Display notifications from cloud sync providers like OneDrive in Explorer",
+            description: "Lets OneDrive and other sync services show prompts (including promotions) inside Explorer",
             keyPath: ShellRegistryPaths.AdvancedKeyPath,
             valueName: "ShowSyncProviderNotifications",
             enabledValue: "1",
@@ -94,7 +94,7 @@ public sealed class ExplorerSettingsReader
         preferences.Add(ReadPreference(
             id: "nav-pane-show-all-folders",
             displayName: "Show all folders in navigation pane",
-            description: "Display all folders including Control Panel and Recycle Bin in the navigation pane",
+            description: "Adds Control Panel, Recycle Bin, and your user folder to the folder tree",
             keyPath: ShellRegistryPaths.AdvancedKeyPath,
             valueName: "NavPaneShowAllFolders",
             enabledValue: "1",
@@ -106,7 +106,7 @@ public sealed class ExplorerSettingsReader
         preferences.Add(ReadPreference(
             id: "nav-pane-expand-to-current",
             displayName: "Expand navigation pane to current folder",
-            description: "Automatically expand the navigation tree to show the current folder location",
+            description: "The folder tree follows along as you navigate",
             keyPath: ShellRegistryPaths.AdvancedKeyPath,
             valueName: "NavPaneExpandToCurrentFolder",
             enabledValue: "1",
@@ -226,7 +226,7 @@ public sealed class ExplorerSettingsReader
         preferences.Add(ReadPreference(
             id: "taskbar-end-task",
             displayName: "Show End Task in taskbar right-click",
-            description: "Add End task to taskbar right-click menus",
+            description: "Kill an app from its taskbar icon without opening Task Manager",
             keyPath: ShellRegistryPaths.TaskbarDeveloperSettingsKeyPath,
             valueName: "TaskbarEndTask",
             enabledValue: "1",

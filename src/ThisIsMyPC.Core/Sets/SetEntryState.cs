@@ -17,7 +17,7 @@ public sealed record SetEntryState
 
     /// <summary>
     /// True when the system already matches the entry's desired value. For group toggles
-    /// every constituent value must match — partial states are not applied.
+    /// every constituent value must match; partial states are not applied.
     /// </summary>
     public required bool IsApplied { get; init; }
 }

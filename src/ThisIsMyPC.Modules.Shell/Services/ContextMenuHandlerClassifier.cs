@@ -99,13 +99,13 @@ public static class ContextMenuHandlerClassifier
                 return HandlerClassification.Optional;
         }
 
-        // Verbs with no command line — check DelegateExecute presence
+        // Verbs with no command line; check DelegateExecute presence
         // DelegateExecute-only verbs are empirically always Microsoft system verbs on Win11
         // (V4 audit: 100% of DE-only verbs are Microsoft Shell handlers)
         if (commandLine is null && delegateExecuteClsid is not null)
             return HandlerClassification.System;
 
-        // No command line and no DelegateExecute — shell-internal (e.g., .SpotlightLearnMore)
+        // No command line and no DelegateExecute; shell-internal (e.g., .SpotlightLearnMore)
         if (commandLine is null)
             return HandlerClassification.System;
 

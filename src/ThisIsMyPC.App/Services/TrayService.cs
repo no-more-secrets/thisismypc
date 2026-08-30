@@ -12,7 +12,7 @@ namespace ThisIsMyPC.App.Services;
 /// supplied by the host so this class stays free of view-model knowledge. The
 /// Apply Pending item tracks IPendingChangesService.PendingCount (the Win32 popup is
 /// rebuilt from current NativeMenuItem state at show time, so property updates are
-/// picked up — NeedsUpdate never fires on Windows).
+/// picked up; NeedsUpdate never fires on Windows).
 /// </summary>
 public sealed class TrayService : IDisposable
 {
@@ -44,7 +44,7 @@ public sealed class TrayService : IDisposable
         SyncVisibility();
     }
 
-    /// <summary>False when tray mode is off OR the icon could not be created — hide-to-tray must not engage then.</summary>
+    /// <summary>False when tray mode is off OR the icon could not be created; hide-to-tray must not engage then.</summary>
     public bool IsTrayActive => _trayIcon?.IsVisible == true;
 
     private void OnSettingChanged(object? sender, SettingChangedEventArgs e)

@@ -6,7 +6,7 @@ namespace ThisIsMyPC.App.ViewModels;
 
 /// <summary>
 /// Home "Drift" section (28-3): settings the Owner Mode service found reverted since
-/// the app last applied them. Reapply stages through the normal pending pipeline —
+/// the app last applied them. Reapply stages through the normal pending pipeline;
 /// nothing touches the system until the user applies from the review panel.
 /// </summary>
 public sealed partial class DriftSectionViewModel : ViewModelBase

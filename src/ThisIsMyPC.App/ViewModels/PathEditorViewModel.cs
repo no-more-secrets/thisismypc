@@ -130,7 +130,7 @@ public partial class PathEditorViewModel : ViewModelBase, IDisposable
 
     private void HandlePendingGroupsChanged()
     {
-        // Our staged change was removed — either applied or discarded
+        // Our staged change was removed; either applied or discarded
         if (_stagedGroupId is not null &&
             !_pendingChangesService.PendingGroups.Any(g => g.GroupId == _stagedGroupId))
         {
@@ -138,12 +138,12 @@ public partial class PathEditorViewModel : ViewModelBase, IDisposable
 
             if (_pendingChangesService.IsApplying)
             {
-                // Change was applied — update baseline to the applied path
+                // Change was applied; update baseline to the applied path
                 _originalPath = string.Join(';', Entries.Select(e => e.Path));
             }
             else
             {
-                // Change was discarded — reset to original
+                // Change was discarded; reset to original
                 Reset();
             }
         }

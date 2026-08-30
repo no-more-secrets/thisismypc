@@ -538,7 +538,7 @@ public sealed partial class ServiceItemViewModel : ObservableObject, IDisposable
         {
             if (pendingType == _liveStartType)
             {
-                // Pending target already matches live state — drop the redundant group
+                // Pending target already matches live state; drop the redundant group
                 pendingChangesService.Unstage(existing.GroupId);
             }
             else
@@ -781,7 +781,7 @@ public sealed partial class StartupEntryItemViewModel : ObservableObject, IDispo
             var pendingEnabled = existing.Changes[0].Category == ChangeCategory.Enable;
             if (pendingEnabled == _liveIsEnabled)
             {
-                // Pending target already matches live state — drop the redundant group
+                // Pending target already matches live state; drop the redundant group
                 pendingChangesService.Unstage(existing.GroupId);
             }
             else
@@ -892,7 +892,7 @@ public sealed partial class StartupEntryItemViewModel : ObservableObject, IDispo
 
     private void HandlePendingGroupsChanged()
     {
-        // Our staged change was removed — either applied or discarded
+        // Our staged change was removed; either applied or discarded
         if (_stagedGroupId is not null &&
             !_pendingChangesService.PendingGroups.Any(g => g.GroupId == _stagedGroupId))
         {
@@ -900,12 +900,12 @@ public sealed partial class StartupEntryItemViewModel : ObservableObject, IDispo
 
             if (_pendingChangesService.IsApplying)
             {
-                // Change was applied — keep toggle position, update baseline to match
+                // Change was applied; keep toggle position, update baseline to match
                 _liveIsEnabled = IsEnabled;
             }
             else
             {
-                // Change was discarded — reset toggle to live state
+                // Change was discarded; reset toggle to live state
                 _suppressStaging = true;
                 IsEnabled = _liveIsEnabled;
                 _suppressStaging = false;

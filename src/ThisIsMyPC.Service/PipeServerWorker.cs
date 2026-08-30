@@ -11,7 +11,7 @@ namespace ThisIsMyPC.Service;
 /// The 28-1 IPC server loop: one hardened single-instance pipe, one client session
 /// at a time (the desktop app opens a fresh connection per request). Every response
 /// echoes the request nonce; unknown types get an Error envelope. A squatted pipe
-/// name is a hard security signal — logged and retried with backoff, never served
+/// name is a hard security signal; logged and retried with backoff, never served
 /// around.
 /// </summary>
 public sealed class PipeServerWorker : BackgroundService

@@ -31,7 +31,7 @@ public sealed class PendingActionsService : IPendingActionsService
 
         lock (_lock)
         {
-            // Idempotent by ActionId — a checkbox re-check must not duplicate work.
+            // Idempotent by ActionId; a checkbox re-check must not duplicate work.
             if (_pendingActions.Any(a => a.ActionId == action.ActionId))
                 return;
 
@@ -94,7 +94,7 @@ public sealed class PendingActionsService : IPendingActionsService
         List<ActionDescriptor> snapshot;
         lock (_lock)
         {
-            // The service owns the no-concurrent-batches invariant — a second
+            // The service owns the no-concurrent-batches invariant; a second
             // caller would snapshot the still-staged queue and run it all twice.
             if (IsApplying)
                 throw new InvalidOperationException("An action batch is already applying.");

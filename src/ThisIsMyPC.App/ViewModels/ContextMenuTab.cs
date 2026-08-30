@@ -57,7 +57,7 @@ public static class ContextMenuTabMapper
             "Directories" => [ContextMenuTab.Folder],
             "Folders" => [ContextMenuTab.Folder],
             // Static verbs at Directory\Background always appear on both folder backgrounds
-            // and the desktop — unlike COM handlers, there is no probe filtering mechanism.
+            // and the desktop; unlike COM handlers, there is no probe filtering mechanism.
             "Folder background" => [ContextMenuTab.FolderBackground, ContextMenuTab.Desktop],
             "Desktop background" => [ContextMenuTab.Desktop],
             "Drives" => [ContextMenuTab.Misc],

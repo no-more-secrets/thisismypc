@@ -42,7 +42,7 @@ public static class SoftwareActionFactory
         };
     }
 
-    /// <summary>Update action ids embed the winget package id directly — updates are not limited to catalog apps.</summary>
+    /// <summary>Update action ids embed the winget package id directly; updates are not limited to catalog apps.</summary>
     public static ActionDescriptor CreateUpgrade(Core.Packages.UpgradableWingetPackage package)
     {
         ArgumentNullException.ThrowIfNull(package);

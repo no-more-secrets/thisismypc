@@ -2,7 +2,7 @@ namespace ThisIsMyPC.Core.Modules;
 
 /// <summary>
 /// Windows edition. For policy support these form tiers: Home &lt; Pro &lt;
-/// Enterprise/Education (the last two are equivalent — see <see cref="Tier"/>).
+/// Enterprise/Education (the last two are equivalent; see <see cref="Tier"/>).
 /// </summary>
 public enum WindowsSku { Home, Pro, Enterprise, Education }
 

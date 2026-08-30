@@ -33,7 +33,7 @@ internal static partial class NativeRestore
         internal long llSequenceNumber;
     }
 
-    // Blittable structs passed by pointer — no marshalling generated, NativeAOT-safe.
+    // Blittable structs passed by pointer; no marshalling generated, NativeAOT-safe.
     [LibraryImport("srclient.dll")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     [return: MarshalAs(UnmanagedType.Bool)]

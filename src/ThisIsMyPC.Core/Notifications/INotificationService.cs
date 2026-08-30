@@ -13,7 +13,7 @@ public sealed record AppNotification(NotificationType Type, string Title, string
 
 /// <summary>
 /// Opt-in notifications (9-2). Implementations gate on the master toggle plus the
-/// per-type toggle; when gated off, nothing is raised anywhere — the information is
+/// per-type toggle; when gated off, nothing is raised anywhere; the information is
 /// only visible inside the app. Windows toast rendering is deferred to the UI/UX
 /// chapter; today the App surfaces raised notifications through its own chrome.
 /// </summary>

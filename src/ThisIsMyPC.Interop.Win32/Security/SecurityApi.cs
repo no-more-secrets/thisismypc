@@ -42,7 +42,7 @@ public sealed class SecurityApi : ISecurityApi
                 return result;
 
             if (pNewDacl == nint.Zero)
-                return 87; // ERROR_INVALID_PARAMETER — SetEntriesInAcl returned success but null DACL
+                return 87; // ERROR_INVALID_PARAMETER; SetEntriesInAcl returned success but null DACL
 
             try
             {
@@ -130,7 +130,7 @@ public sealed class SecurityApi : ISecurityApi
             if (!NativeSecurity.GetAce(pDacl, i, out nint pAce))
                 continue;
 
-            // Read all ACE types (allowed, denied, audit) — they share the same
+            // Read all ACE types (allowed, denied, audit); they share the same
             // header+mask+sid layout. Including deny/audit ACEs ensures the guard's
             // count check catches injected deny ACEs that would block access.
             uint accessMask = (uint)Marshal.ReadInt32(pAce + Marshal.SizeOf<AceHeader>());

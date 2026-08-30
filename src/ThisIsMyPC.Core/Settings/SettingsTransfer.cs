@@ -43,7 +43,7 @@ public sealed record SettingsImportPreview(
 
 /// <summary>
 /// Builds, parses, previews, and applies settings export files. Pure functions over
-/// ISettingsService — file I/O and dialogs stay in the App layer.
+/// ISettingsService; file I/O and dialogs stay in the App layer.
 /// </summary>
 public static class SettingsTransfer
 {

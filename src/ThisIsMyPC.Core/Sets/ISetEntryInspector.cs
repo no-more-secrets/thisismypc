@@ -20,7 +20,7 @@ public interface ISetEntryInspector
     SetEntryState? Inspect(SetEntry entry);
 
     /// <summary>
-    /// Builds the stageable ChangeGroup for the entry — the same descriptors the module's
+    /// Builds the stageable ChangeGroup for the entry; the same descriptors the module's
     /// own UI would stage, with live before-values and factory-attached enforcement.
     /// Null when the settingId is unknown OR the entry's value maps to neither direction
     /// of the toggle (bogus values are unstageable, never misdirected).

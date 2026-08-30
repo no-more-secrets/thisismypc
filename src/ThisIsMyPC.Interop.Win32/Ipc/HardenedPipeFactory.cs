@@ -8,7 +8,7 @@ namespace ThisIsMyPC.Interop.Win32.Ipc;
 /// <summary>
 /// Creates the service-side named pipe with the 28-1 hardening flags that
 /// System.IO.Pipes cannot express together:
-/// FILE_FLAG_FIRST_PIPE_INSTANCE (creation FAILS if the name already exists — a
+/// FILE_FLAG_FIRST_PIPE_INSTANCE (creation FAILS if the name already exists; a
 /// squatter cannot sit behind our name), PIPE_REJECT_REMOTE_CLIENTS (local machine
 /// only), and an SDDL DACL admitting only SYSTEM and Administrators.
 /// </summary>
@@ -69,7 +69,7 @@ public static partial class HardenedPipeFactory
                 handle.Dispose();
                 return OperationResult<NamedPipeServerStream>.Failure(
                     error is ERROR_ACCESS_DENIED or ERROR_PIPE_BUSY
-                        ? $"Pipe name '{pipeName}' already exists — refusing to serve behind a squatter (win32={error})"
+                        ? $"Pipe name '{pipeName}' already exists; refusing to serve behind a squatter (win32={error})"
                         : $"CreateNamedPipe failed (win32={error})",
                     error is ERROR_ACCESS_DENIED or ERROR_PIPE_BUSY
                         ? ErrorCategory.AccessDenied

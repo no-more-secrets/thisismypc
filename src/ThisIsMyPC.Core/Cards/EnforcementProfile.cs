@@ -2,7 +2,7 @@ namespace ThisIsMyPC.Core.Cards;
 
 /// <summary>
 /// UI-facing projection of SettingEnforcement. The card layer needs the enforcement
-/// posture (badge level) and a user-facing summary — never companion service names or
+/// posture (badge level) and a user-facing summary; never companion service names or
 /// other enforcement internals.
 /// </summary>
 public record EnforcementProfile

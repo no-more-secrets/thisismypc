@@ -22,12 +22,12 @@ public sealed class SetProvider : ISetProvider
         var sets = new List<SetDefinition>();
         var warnings = new List<string>();
 
-        // A missing built-in directory means a broken install — worth a warning.
+        // A missing built-in directory means a broken install; worth a warning.
         // A missing user directory just means the user never created a set.
         LoadDirectory(_builtInDirectory, SetSource.BuiltIn, sets, warnings, warnIfMissing: true);
         LoadDirectory(_userDirectory, SetSource.User, sets, warnings, warnIfMissing: false);
 
-        // Names are the set's identity in the browser (8.2) — duplicates load but get flagged.
+        // Names are the set's identity in the browser (8.2); duplicates load but get flagged.
         foreach (var duplicates in sets.GroupBy(s => s.Name, StringComparer.OrdinalIgnoreCase)
                      .Where(g => g.Count() > 1))
         {
@@ -100,7 +100,7 @@ public sealed class SetProvider : ISetProvider
         if (string.IsNullOrWhiteSpace(document.Description))
             problems.Add("missing 'description'");
         // JsonStringEnumConverter accepts raw integers, so an out-of-range numeric value
-        // ("category": 99) deserializes without error — reject it here.
+        // ("category": 99) deserializes without error; reject it here.
         if (document.Category is null)
             problems.Add("missing 'category'");
         else if (!Enum.IsDefined(document.Category.Value))

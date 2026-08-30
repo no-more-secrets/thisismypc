@@ -32,7 +32,7 @@ public sealed class PowerService : IPowerService
                     return MapError<IReadOnlyList<PowerPlanInfo>>(result, "enumerate power plans");
 
                 var guid = new Guid(buffer);
-                // Name/description are best-effort — a plan with an unreadable
+                // Name/description are best-effort; a plan with an unreadable
                 // name still lists (GUID fallback) rather than failing the scan.
                 plans.Add(new PowerPlanInfo(
                     guid,
@@ -111,7 +111,7 @@ public sealed class PowerService : IPowerService
         }
     }
 
-    /// <summary>Everything per-setting is best-effort — an unreadable field folds to null/default, never fails the scan.</summary>
+    /// <summary>Everything per-setting is best-effort; an unreadable field folds to null/default, never fails the scan.</summary>
     private static PowerSettingInfo ReadSetting(Guid planGuid, Guid subgroupGuid, string subgroupName, Guid settingGuid)
     {
         var name =

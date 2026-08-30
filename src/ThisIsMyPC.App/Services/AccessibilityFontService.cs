@@ -56,7 +56,7 @@ public sealed class AccessibilityFontService : IDisposable
     {
         if (enabled)
         {
-            // The FontFamily is constructed lazily — Avalonia touches the embedded
+            // The FontFamily is constructed lazily; Avalonia touches the embedded
             // OTFs only when the first glyph run resolves against this family.
             _appResources[BodyFontKey] = new FontFamily(OpenDyslexicFamily);
         }

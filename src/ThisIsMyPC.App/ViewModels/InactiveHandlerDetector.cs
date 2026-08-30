@@ -28,7 +28,7 @@ internal sealed class InactiveHandlerDetector
     /// </summary>
     public (bool IsInactive, string? Reason) Check(ContextMenuHandlerViewModel vm)
     {
-        // COM handlers — check by CLSID (case-insensitive)
+        // COM handlers; check by CLSID (case-insensitive)
         var clsid = vm.Clsid.ToUpperInvariant();
         return clsid switch
         {
@@ -45,7 +45,7 @@ internal sealed class InactiveHandlerDetector
                 (true, "OneDrive uses modern shell integration for menu entries. This legacy COM handler has no visible effect."),
 
             "{2A118EB5-5797-4F5E-8B3D-F4ECBA3C98E4}" =>
-                (true, "Adobe Creative Cloud sync overlay. No visible context menu entry — only provides folder sync status."),
+                (true, "Adobe Creative Cloud sync overlay. No visible context menu entry; only provides folder sync status."),
 
             "{90AA3A4E-1CBA-4233-B8BB-535773D48449}" =>
                 (true, "Only appears when right-clicking executable (.exe) files, not general files or folders."),
@@ -67,9 +67,9 @@ internal sealed class InactiveHandlerDetector
 
         var verbName = vm.VerbInfo?.VerbName;
 
-        // EFS encrypt verbs — handler doesn't surface menu entry on Win11
+        // EFS encrypt verbs; handler doesn't surface menu entry on Win11
         if (vm.Label.Contains("efscore", StringComparison.OrdinalIgnoreCase))
-            return (true, "EFS verb — no visible context menu entry on Windows 11.");
+            return (true, "EFS verb; no visible context menu entry on Windows 11.");
 
         // Work Folders verb (identified by DLL reference in name)
         if (vm.Label.Contains("WorkfoldersControl", StringComparison.OrdinalIgnoreCase) && _workFoldersUnconfigured)
@@ -79,7 +79,7 @@ internal sealed class InactiveHandlerDetector
         if (vm.Label.Contains("cscui", StringComparison.OrdinalIgnoreCase) && _offlineFilesDisabled)
             return (true, "Offline Files is disabled on this PC.");
 
-        // EditStickers — desktop feature that may be disabled
+        // EditStickers; desktop feature that may be disabled
         if (verbName is not null && verbName.Equals("EditStickers", StringComparison.OrdinalIgnoreCase) && _stickersInactive)
             return (true, "Desktop stickers feature. Only visible when enabled in Personalization settings.");
 

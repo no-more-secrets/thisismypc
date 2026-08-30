@@ -10,7 +10,7 @@ namespace ThisIsMyPC.Core.Services;
 /// </summary>
 public interface IServiceControlService
 {
-    /// <summary>Current state, start type, and display name — the before-state for a ChangeDescriptor.</summary>
+    /// <summary>Current state, start type, and display name; the before-state for a ChangeDescriptor.</summary>
     OperationResult<ServiceStatusInfo> Query(string serviceName);
 
     /// <summary>

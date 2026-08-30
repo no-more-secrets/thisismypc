@@ -11,16 +11,16 @@ public record SettingEnforcement
     /// <summary>
     /// Minimum edition tier that honors the policy (Home &lt; Pro &lt;
     /// Enterprise/Education). Editions below it apply the write but Windows ignores it.
-    /// Informational only — never gates staging (FR129).
+    /// Informational only; never gates staging (FR129).
     /// </summary>
     public WindowsSku? SkuRestriction { get; init; }
     public bool OwnerModeRequired { get; init; }
     public bool AclElevation { get; init; }
 
     /// <summary>
-    /// Direction of companion handling. False (default): this change hardens — the
+    /// Direction of companion handling. False (default): this change hardens; the
     /// executor disables companion services/tasks around the primary mutation.
-    /// True: this change restores — the executor re-enables them (services
+    /// True: this change restores; the executor re-enables them (services
     /// Disabled → Manual) after the primary mutation. Reverting a change runs the
     /// opposite direction, so undo stays symmetric either way.
     /// </summary>

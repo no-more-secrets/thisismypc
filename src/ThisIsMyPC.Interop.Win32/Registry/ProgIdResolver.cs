@@ -40,7 +40,7 @@ public sealed class ProgIdResolver
             entries.Add(new ProgIdEntry($@"HKCR\{defaultProgId.Value}", defaultProgId.Value, ProgIdSource.DefaultProgId));
         }
 
-        // 2. OpenWithProgids — additional ProgIDs from app registrations
+        // 2. OpenWithProgids; additional ProgIDs from app registrations
         // Note: ProgIDs are stored as value *names* (data is empty/zero per convention)
         var openWithPath = $@"{extKeyPath}\OpenWithProgids";
         var openWithResult = _registryService.EnumerateValues(openWithPath);

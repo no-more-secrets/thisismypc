@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 namespace ThisIsMyPC.Core.Settings;
 
 /// <summary>
-/// JSON shape of settings.json. Everything nullable — validation happens in
+/// JSON shape of settings.json. Everything nullable; validation happens in
 /// SettingsService. Unknown top-level properties round-trip via the extension bag so
 /// files written by newer app versions survive an older version's save.
 /// </summary>

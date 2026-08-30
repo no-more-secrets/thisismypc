@@ -33,7 +33,7 @@ public sealed record ScheduledTaskEntry
     /// <summary>Human explanation of the enforcement mechanism a companion task supports.</summary>
     public string? CompanionDescription { get; init; }
 
-    /// <summary>True when the task fires at logon or boot — surfaces in the Startup section.</summary>
+    /// <summary>True when the task fires at logon or boot; surfaces in the Startup section.</summary>
     public bool IsStartupTask =>
         TriggerTypes.Contains("LogonTrigger") || TriggerTypes.Contains("BootTrigger");
 }

@@ -45,7 +45,7 @@ public sealed class CustomVerbService
         var label = _registry.ReadString(keyPath, string.Empty);
         var command = _registry.ReadString($@"{keyPath}\command", string.Empty);
         if (!command.IsSuccess || string.IsNullOrWhiteSpace(command.Value))
-            return null; // half-written or externally mangled entry — not editable
+            return null; // half-written or externally mangled entry; not editable
 
         var icon = _registry.ReadString(keyPath, "Icon");
         return new CustomVerbDefinition

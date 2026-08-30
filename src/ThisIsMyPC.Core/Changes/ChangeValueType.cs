@@ -1,6 +1,6 @@
 namespace ThisIsMyPC.Core.Changes;
 
-#pragma warning disable CA1707 // Underscores are intentional — type-prefixed discriminator naming
+#pragma warning disable CA1707 // Underscores are intentional; type-prefixed discriminator naming
 public enum ChangeValueType
 {
     Registry_DWord,

@@ -48,7 +48,7 @@ public sealed class DataDirectoryGuard : IDataDirectoryGuard
             _logger.Information("Data directory DACL requires update, applying: {Path}", directoryPath);
             return ApplyDacl(directoryPath, isFirstTime);
         }
-#pragma warning disable CA1031 // Guard must not crash the app — log and return failure
+#pragma warning disable CA1031 // Guard must not crash the app; log and return failure
         catch (Exception ex)
 #pragma warning restore CA1031
         {

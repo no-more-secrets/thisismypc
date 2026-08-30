@@ -41,7 +41,7 @@ public sealed class AuthenticodeUpdateVerifier : IUpdateVerifier
                 }
 
                 _logger.Information(
-                    "Update package path not available — falling back to build pipeline check on {Path}",
+                    "Update package path not available; falling back to build pipeline check on {Path}",
                     targetPath);
             }
             else
@@ -51,7 +51,7 @@ public sealed class AuthenticodeUpdateVerifier : IUpdateVerifier
 
             return VerifyAuthenticode(targetPath, updateVersion);
         }
-#pragma warning disable CA1031 // Verification must not crash — report failure
+#pragma warning disable CA1031 // Verification must not crash; report failure
         catch (Exception ex)
 #pragma warning restore CA1031
         {
@@ -71,7 +71,7 @@ public sealed class AuthenticodeUpdateVerifier : IUpdateVerifier
             using var cert2 = new X509Certificate2(cert);
 
             _logger.Information(
-                "Signed by {Subject}, valid {NotBefore} to {NotAfter} — update {Version} integrity confirmed",
+                "Signed by {Subject}, valid {NotBefore} to {NotAfter}; update {Version} integrity confirmed",
                 cert2.Subject, cert2.NotBefore, cert2.NotAfter, version);
 
             return OperationResult<bool>.Success(true);

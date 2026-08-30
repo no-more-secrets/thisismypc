@@ -12,7 +12,7 @@ namespace ThisIsMyPC.Service;
 /// Post-reboot drift detection (28-3): at service start (which includes every boot
 /// for an auto-start service) the baseline written by the desktop app is compared
 /// against live registry state; mismatches become the drift report served over IPC.
-/// Post-boot only — continuous event-driven detection is Phase 3 by design.
+/// Post-boot only; continuous event-driven detection is Phase 3 by design.
 /// </summary>
 public sealed class DriftWatchdog : IHostedService, IDriftReportSource
 {
@@ -98,7 +98,7 @@ public sealed class DriftWatchdog : IHostedService, IDriftReportSource
         var now = DateTimeOffset.UtcNow;
         if (File.Exists(_baselinePath) && !_baselineTrustCheck(_baselinePath))
         {
-            _logger.LogWarning("Drift baseline is not owned by SYSTEM/Administrators — refusing to read it");
+            _logger.LogWarning("Drift baseline is not owned by SYSTEM/Administrators; refusing to read it");
             lock (_sync)
             {
                 _report = new DriftReportResponse { BaselinePresent = false, GeneratedAtUtc = now };
@@ -118,7 +118,7 @@ public sealed class DriftWatchdog : IHostedService, IDriftReportSource
             return;
         }
 
-        // HKCU under LocalSystem is S-1-5-18's hive — user entries must be read via
+        // HKCU under LocalSystem is S-1-5-18's hive; user entries must be read via
         // HKU\{sid}, and only when that profile hive is actually loaded (a boot-time
         // scan can run before logon; a missing hive is not drift).
         var userHive = baseline.UserSid is { Length: > 0 } sid ? $@"HKU\{sid}" : null;
@@ -142,7 +142,7 @@ public sealed class DriftWatchdog : IHostedService, IDriftReportSource
 
             var current = ReadCurrent(entry, location);
             if (current is null)
-                continue; // unreadable — never report drift on a failed probe
+                continue; // unreadable; never report drift on a failed probe
             if (Normalize(current) == Normalize(entry.ExpectedValue))
                 continue;
 

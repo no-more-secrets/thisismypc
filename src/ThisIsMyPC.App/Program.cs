@@ -53,7 +53,7 @@ sealed class Program
             if (installGuard.IsProtectedLocation)
                 Log.Information("Installation path verified: {Path}", AppContext.BaseDirectory);
             else
-                Log.Warning("Unprotected install location: {Path} — {Warning}",
+                Log.Warning("Unprotected install location: {Path}: {Warning}",
                     AppContext.BaseDirectory, installGuard.WarningMessage);
 
             var guard = new DataDirectoryGuard();

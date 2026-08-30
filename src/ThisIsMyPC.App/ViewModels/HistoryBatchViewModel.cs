@@ -15,7 +15,7 @@ public partial class HistoryBatchViewModel : ViewModelBase
     public required string GroupId { get; init; }
     public required IReadOnlyList<ChangeHistoryEntryViewModel> Details { get; init; }
 
-    /// <summary>Raw history rows behind this batch — the custom-set writer input (8.5).</summary>
+    /// <summary>Raw history rows behind this batch; the custom-set writer input (8.5).</summary>
     public required IReadOnlyList<ChangeHistoryEntry> SourceEntries { get; init; }
 
     [ObservableProperty]

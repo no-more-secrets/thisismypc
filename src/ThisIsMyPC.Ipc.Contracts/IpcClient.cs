@@ -14,9 +14,9 @@ public interface IIpcClient
 /// <summary>
 /// Desktop-side pipe client (28-1). Each call opens a fresh connection with
 /// <see cref="TokenImpersonationLevel.Identification"/> (SECURITY_SQOS_PRESENT |
-/// SECURITY_IDENTIFICATION — a squatting server cannot impersonate us beyond
+/// SECURITY_IDENTIFICATION; a squatting server cannot impersonate us beyond
 /// identification), sends one request with a fresh nonce, and requires the
-/// response to echo it. A missing service degrades to ErrorCategory.ServiceUnavailable —
+/// response to echo it. A missing service degrades to ErrorCategory.ServiceUnavailable;
 /// callers surface Owner Mode as unavailable, never as an error dialog.
 /// </summary>
 public sealed class IpcClient : IIpcClient
@@ -73,7 +73,7 @@ public sealed class IpcClient : IIpcClient
 
             if (!string.Equals(envelope.Nonce, nonce, StringComparison.Ordinal))
                 return OperationResult<T>.Failure(
-                    "Response nonce mismatch — possible replay; response discarded",
+                    "Response nonce mismatch (possible replay); response discarded",
                     ErrorCategory.AccessDenied);
 
             if (envelope.Type == IpcMessageTypes.Error)

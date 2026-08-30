@@ -130,7 +130,7 @@
         <Setter Property="Foreground" Value="{DynamicResource WarningBrush}" />
     </Style>
 
-    <!-- Notification bar: refresh (green success — softer than restart) -->
+    <!-- Notification bar: refresh (green success; softer than restart) -->
     <Style Selector="Border.notification-refresh">
         <Setter Property="BorderBrush" Value="{DynamicResource SuccessBrush}" />
     </Style>

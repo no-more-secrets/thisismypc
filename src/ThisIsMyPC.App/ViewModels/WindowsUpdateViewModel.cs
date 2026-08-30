@@ -18,7 +18,7 @@ public partial class WindowsUpdateViewModel : ViewModelBase, IDisposable
     private static readonly IReadOnlyDictionary<string, string> SectionSubtitles =
         new Dictionary<string, string>
         {
-            ["Update Behavior"] = "Update install timing, forced restarts, driver replacement, and feature-release pinning — policies applied with the Update Orchestrator's cache cleared so they actually stick",
+            ["Update Behavior"] = "Update install timing, forced restarts, driver replacement, and feature-release pinning. Applied with the Update Orchestrator cache cleared so they stick",
             ["Delivery Optimization"] = "Stop update peer-to-peer sharing from consuming background bandwidth",
         };
 
@@ -43,7 +43,7 @@ public partial class WindowsUpdateViewModel : ViewModelBase, IDisposable
         ICapabilityDetector? capabilityDetector = null)
     {
         _displayModeStore = displayModeStore;
-        // Factories re-read live state at stage time — a scan-time snapshot would bake
+        // Factories re-read live state at stage time; a scan-time snapshot would bake
         // stale BeforeValues into the descriptors after the first apply.
         var provider = new WindowsUpdateCardProvider(new WindowsUpdateSettingsReader(registryService));
 

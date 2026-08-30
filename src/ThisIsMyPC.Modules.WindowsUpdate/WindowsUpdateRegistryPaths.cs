@@ -25,7 +25,7 @@ public static class WindowsUpdateRegistryPaths
 
     /// <summary>
     /// The Windows Update Settings-page state store (not a policy hive). Values here
-    /// are what the Settings toggles themselves write — no GPCache, no SKU gating.
+    /// are what the Settings toggles themselves write; no GPCache, no SKU gating.
     /// </summary>
     public const string UxSettingsKeyPath =
         @"HKLM\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings";

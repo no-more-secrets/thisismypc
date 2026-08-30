@@ -11,11 +11,11 @@ namespace ThisIsMyPC.App.Services;
 
 /// <summary>
 /// Production enforcement orchestrator: companion services are disabled around the
-/// primary mutation (supplied as a delegate — the executor never calls modules directly)
+/// primary mutation (supplied as a delegate; the executor never calls modules directly)
 /// and restored on failure. Companion scheduled tasks are disabled/re-enabled the same
 /// way when a task service is supplied, and GPCache entries are cleared before the
 /// primary mutation when a registry service is supplied (Windows rebuilds the cache
-/// from the policy hive — see the 26-8 derived-state rule). The ACL enforcement
+/// from the policy hive; see the 26-8 derived-state rule). The ACL enforcement
 /// dimension is not yet supported and fails up front rather than silently partially
 /// enforcing. No exceptions escape except OperationCanceledException on caller
 /// cancellation.
@@ -61,7 +61,7 @@ public sealed class EnforcementExecutor : IEnforcementExecutor
                 return gateFailure;
 
             // Directional companions: a restore-direction change re-enables its
-            // companions instead of disabling them — same sequence RevertAsync runs.
+            // companions instead of disabling them; same sequence RevertAsync runs.
             if (enforcement.RestoresCompanions)
                 return await RunRestoreShapedAsync(change, enforcement, applyPrimary).ConfigureAwait(false);
 
@@ -140,7 +140,7 @@ public sealed class EnforcementExecutor : IEnforcementExecutor
 
             // Cleared BEFORE the primary write (epics.md L2234 step order) so the
             // orchestrator can never keep serving stale cached policy. A cleared cache
-            // is derived state and is never restored — Windows's refresh task rebuilds
+            // is derived state and is never restored; Windows's refresh task rebuilds
             // it from the policy hive, which on failure is still unchanged (26-8 rule).
             foreach (var cachePath in enforcement.GPCacheEntries ?? [])
             {
@@ -242,7 +242,7 @@ public sealed class EnforcementExecutor : IEnforcementExecutor
             return Failure(steps, primary);
 
         // The cache must not keep serving values from the now-reverted policy
-        // state — clear it again so Windows rebuilds from the restored hive.
+        // state; clear it again so Windows rebuilds from the restored hive.
         foreach (var cachePath in enforcement.GPCacheEntries ?? [])
         {
             var clear = ClearGPCacheEntry(cachePath);
@@ -282,7 +282,7 @@ public sealed class EnforcementExecutor : IEnforcementExecutor
                 ErrorCategory.OwnerModeRequired);
 
         // SkuRestriction is deliberately NOT gated: per architecture (SKU detection &
-        // gating, FR129) it marks a setting as cosmetic/ineffective on that edition —
+        // gating, FR129) it marks a setting as cosmetic/ineffective on that edition;
         // the UI informs, the user can still apply. Interop layers may still surface
         // ErrorCategory.SkuRestricted for features genuinely absent on an edition.
 
@@ -342,7 +342,7 @@ public sealed class EnforcementExecutor : IEnforcementExecutor
         var disable = _serviceControl.SetStartType(serviceName, ServiceStartType.Disabled);
         if (!disable.IsSuccess)
         {
-            // The stop above already mutated a running service — restore it before failing
+            // The stop above already mutated a running service; restore it before failing
             // so the caller never inherits a silently stopped companion.
             if (before.State == ServiceState.Running)
             {
@@ -457,12 +457,12 @@ public sealed class EnforcementExecutor : IEnforcementExecutor
                 exists.ErrorMessage!, exists.ErrorCategory!.Value, exists.Exception);
 
         if (!exists.Value)
-            return OperationResult<bool>.Success(true); // nothing cached — nothing to clear
+            return OperationResult<bool>.Success(true); // nothing cached; nothing to clear
 
         return _registry.DeleteKey(cachePath, recursive: true);
     }
 
-    // Mirrors RegistryService.ParseKeyPath's accepted roots — the guard must reject
+    // Mirrors RegistryService.ParseKeyPath's accepted roots; the guard must reject
     // up front anything the registry layer would reject (or misroute) at run time.
     private static readonly string[] KnownHives =
     [

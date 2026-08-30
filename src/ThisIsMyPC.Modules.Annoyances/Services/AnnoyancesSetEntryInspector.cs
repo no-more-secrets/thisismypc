@@ -73,7 +73,7 @@ public sealed class AnnoyancesSetEntryInspector : ISetEntryInspector
             CurrentDisplay = suppressedCount == prefs.Count ? "Suppressed"
                 : suppressedCount == 0 ? "Windows default"
                 : "Partially set",
-            // A user-authored value matching neither direction is never "applied" —
+            // A user-authored value matching neither direction is never "applied";
             // it must not preview as done on a default machine.
             IsApplied = wantsSuppression ? suppressedCount == prefs.Count
                 : wantsDefault && suppressedCount == 0,

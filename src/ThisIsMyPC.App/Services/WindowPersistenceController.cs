@@ -6,7 +6,7 @@ namespace ThisIsMyPC.App.Services;
 
 /// <summary>
 /// Wires the main window's close/minimize behavior to the 9-1 policy. Defaults are
-/// stock Windows behavior (terminate on close, taskbar on minimize) — the tray paths
+/// stock Windows behavior (terminate on close, taskbar on minimize); the tray paths
 /// only engage when the user opted in.
 /// </summary>
 public sealed class WindowPersistenceController : IDisposable
@@ -54,7 +54,7 @@ public sealed class WindowPersistenceController : IDisposable
 
         switch (WindowBehaviorPolicy.DecideClose(_settings))
         {
-            // Guard: never hide with no live tray icon — the window would be unreachable.
+            // Guard: never hide with no live tray icon; the window would be unreachable.
             case CloseDecision.HideToTray when _trayAvailable():
                 e.Cancel = true;
                 _window.Hide();
@@ -67,7 +67,7 @@ public sealed class WindowPersistenceController : IDisposable
                 break;
             case CloseDecision.Terminate:
             default:
-                break; // stock close — zero background footprint
+                break; // stock close; zero background footprint
         }
     }
 

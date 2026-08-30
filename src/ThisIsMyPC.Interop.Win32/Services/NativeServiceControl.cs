@@ -4,7 +4,7 @@ namespace ThisIsMyPC.Interop.Win32.Services;
 
 internal static partial class NativeServiceControl
 {
-    // Access rights — minimal masks per operation. Protected services (e.g. WinDefend)
+    // Access rights; minimal masks per operation. Protected services (e.g. WinDefend)
     // allow query but deny change; a maximal mask would make even Query fail on them.
     internal const uint SC_MANAGER_CONNECT = 0x0001;
     internal const uint SC_MANAGER_ENUMERATE_SERVICE = 0x0004;

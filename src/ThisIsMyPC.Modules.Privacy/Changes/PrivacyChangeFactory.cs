@@ -11,7 +11,7 @@ public static class PrivacyChangeFactory
     // DiagTrack rides along in both directions via directional companions: configure
     // disables it (with rollback), restore re-enables it to Manual
     // (RestoresCompanions). AllowTelemetry is one of the few policies whose CSP
-    // table includes Home — no SKU tag.
+    // table includes Home; no SKU tag.
     internal static readonly SettingEnforcement TelemetryEnforcement = new()
     {
         CompanionServices = ["DiagTrack"],
@@ -36,7 +36,7 @@ public static class PrivacyChangeFactory
         RestoresCompanions = true,
     };
 
-    // Minimum-tier tags (informational, never gated — FR129): LocationAndSensors and
+    // Minimum-tier tags (informational, never gated; FR129): LocationAndSensors and
     // TabletPC policies list Pro/Enterprise/Education in the Policy CSP.
     internal static readonly SettingEnforcement ProPolicyEnforcement = new()
     {

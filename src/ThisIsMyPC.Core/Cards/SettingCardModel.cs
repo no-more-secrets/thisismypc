@@ -4,7 +4,7 @@ namespace ThisIsMyPC.Core.Cards;
 
 /// <summary>
 /// Card rendering data model (Epic 10). Modules produce these POCOs from scan data;
-/// the host's SettingCardControl renders them. Pure data — no Avalonia dependency,
+/// the host's SettingCardControl renders them. Pure data; no Avalonia dependency,
 /// no App types. Pending state is NOT stored here: PendingChangesService is the
 /// source of truth and the host card view model binds to both.
 /// </summary>

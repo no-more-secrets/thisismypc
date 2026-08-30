@@ -22,7 +22,7 @@ public record ChangeHistoryEntry
     /// <summary>
     /// The change's enforcement metadata, persisted so history undo/redo can route
     /// through the enforcement executor (a bare module revert would leave companion
-    /// services/tasks/GPCache untouched — e.g. the WU orchestrator's policy cache
+    /// services/tasks/GPCache untouched; e.g. the WU orchestrator's policy cache
     /// keeping an undone policy alive).
     /// </summary>
     public Enforcement.SettingEnforcement? Enforcement { get; init; }

@@ -51,7 +51,7 @@ public sealed class ExplorerRestartService : IExplorerRestartService
                 }
                 catch (InvalidOperationException)
                 {
-                    // Process already exited between check and kill — that's fine
+                    // Process already exited between check and kill; that's fine
                 }
             }
 
@@ -69,7 +69,7 @@ public sealed class ExplorerRestartService : IExplorerRestartService
             var recovered = await WaitForShellRecoveryAsync(ShellRecoveryTimeout).ConfigureAwait(false);
             if (!recovered)
             {
-                Debug.WriteLine("Shell_TrayWnd did not reappear within timeout — Explorer may be starting slowly");
+                Debug.WriteLine("Shell_TrayWnd did not reappear within timeout; Explorer may be starting slowly");
             }
 
             return OperationResult<bool>.Success(true);

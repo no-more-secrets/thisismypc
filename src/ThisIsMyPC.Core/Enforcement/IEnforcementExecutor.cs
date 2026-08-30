@@ -6,7 +6,7 @@ namespace ThisIsMyPC.Core.Enforcement;
 /// <summary>
 /// Orchestrates multi-step enforced mutations: companion services, scheduled tasks and
 /// GPCache entries are handled around the primary mutation, which is supplied as a
-/// delegate (the owning module's ApplyChange/RevertChange) — the executor never calls
+/// delegate (the owning module's ApplyChange/RevertChange); the executor never calls
 /// modules directly.
 /// </summary>
 public interface IEnforcementExecutor

@@ -4,7 +4,7 @@
              x:Class="ThisIsMyPC.App.Controls.SettingCardControl"
              x:DataType="vm:SettingCardViewModel">
 
-    <!-- Card renderer (Epic 10). One control, visual states — never four templates.
+    <!-- Card renderer (Epic 10). One control, visual states; never four templates.
          Display modes (10-2) drive IsDescriptionVisible / IsRegistryDataVisible;
          enforcement badges and Owner Mode degradation arrive in 10-3. -->
     <Border Padding="16,12"
@@ -36,7 +36,7 @@
                            TextWrapping="Wrap"
                            IsVisible="{Binding IsDescriptionVisible}" />
 
-                <!-- Badges & callouts (10-3) — visible in EVERY display mode;
+                <!-- Badges & callouts (10-3); visible in EVERY display mode;
                      safety-critical information is never hidden by display preference -->
                 <StackPanel Spacing="2">
                     <Border Background="{DynamicResource WarningMutedBrush}"
@@ -76,7 +76,7 @@
                     </Border>
                 </StackPanel>
 
-                <!-- Affected system component — visible in every display mode -->
+                <!-- Affected system component; visible in every display mode -->
                 <TextBlock Text="{Binding SystemPath}"
                            FontFamily="{StaticResource MonoFont}"
                            FontSize="11"

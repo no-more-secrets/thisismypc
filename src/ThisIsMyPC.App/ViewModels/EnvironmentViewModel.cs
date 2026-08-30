@@ -10,7 +10,7 @@ public partial class EnvironmentViewModel : ViewModelBase
 {
     private readonly IPendingChangesService _pendingChangesService;
 
-    // PATH tab — inline editors for user and system PATH
+    // PATH tab; inline editors for user and system PATH
     public PathEditorViewModel? UserPathEditor { get; }
     public PathEditorViewModel? SystemPathEditor { get; }
 

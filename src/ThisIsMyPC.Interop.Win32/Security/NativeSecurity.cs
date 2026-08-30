@@ -4,7 +4,7 @@ namespace ThisIsMyPC.Interop.Win32.Security;
 
 internal static partial class NativeSecurity
 {
-    // advapi32.dll — DACL manipulation
+    // advapi32.dll; DACL manipulation
 
     [LibraryImport("advapi32.dll", StringMarshalling = StringMarshalling.Utf16)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
@@ -37,7 +37,7 @@ internal static partial class NativeSecurity
         nint oldAcl,
         out nint newAcl);
 
-    // advapi32.dll — DACL verification
+    // advapi32.dll; DACL verification
 
     [LibraryImport("advapi32.dll")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
@@ -71,7 +71,7 @@ internal static partial class NativeSecurity
         nint sid,
         out nint stringSid);
 
-    // kernel32.dll — memory management
+    // kernel32.dll; memory management
 
     [LibraryImport("kernel32.dll")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]

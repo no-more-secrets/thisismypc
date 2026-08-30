@@ -42,7 +42,7 @@ public sealed partial class SetEntryPreviewViewModel : ViewModelBase
 
     public string SettingName => Resolution.State?.SettingDisplayName ?? Entry.SettingId;
     public string Description => Entry.Description;
-    public string CurrentDisplay => Resolution.State?.CurrentDisplay ?? "—";
+    public string CurrentDisplay => Resolution.State?.CurrentDisplay ?? "-";
     public string CurrentValue => Resolution.State?.CurrentValue ?? "";
     public string ProposedDisplay => Entry.DisplayValue ?? Entry.Value;
 

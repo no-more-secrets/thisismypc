@@ -282,7 +282,7 @@ public sealed class ContextMenuScanner
         {
             if (handler.DllPath is null)
             {
-                // No InProcServer32 DLL path — CLSID registered in shellex but not in HKCR\CLSID
+                // No InProcServer32 DLL path; CLSID registered in shellex but not in HKCR\CLSID
                 result.Add(handler with
                 {
                     IsOrphaned = true,

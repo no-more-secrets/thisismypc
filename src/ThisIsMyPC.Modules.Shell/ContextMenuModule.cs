@@ -140,7 +140,7 @@ public sealed class ContextMenuModule : IModule
                 ErrorCategory.AccessDenied);
         }
 
-        // No HKCR best-effort here: a failed tree write or delete must surface —
+        // No HKCR best-effort here: a failed tree write or delete must surface;
         // "hidden" that silently is not would be worse than an error.
         if (change.AfterValue == ShellRegistryPaths.AbsentValue)
         {
@@ -224,7 +224,7 @@ public sealed class ContextMenuModule : IModule
         }
         else if (_registryService.ValueExists(keyPath, "Icon") is { IsSuccess: true, Value: true })
         {
-            // Edit removed the icon — clear the stale value.
+            // Edit removed the icon; clear the stale value.
             var iconDelete = _registryService.DeleteValue(keyPath, "Icon");
             if (!iconDelete.IsSuccess)
                 return iconDelete;
@@ -236,9 +236,9 @@ public sealed class ContextMenuModule : IModule
     /// <summary>
     /// HKCR dash-prefix writes are best-effort because the blocked list is the
     /// authoritative disable mechanism. If a dash-prefix write fails with AccessDenied
-    /// on a TrustedInstaller-owned HKCR path, return Success — the blocked list change
+    /// on a TrustedInstaller-owned HKCR path, return Success; the blocked list change
     /// in the same ChangeGroup handles the actual disable, taking effect after Explorer restart.
-    /// Delete operations (orphan cleanup) are NOT best-effort — they must succeed or fail honestly.
+    /// Delete operations (orphan cleanup) are NOT best-effort; they must succeed or fail honestly.
     /// </summary>
     private static OperationResult<bool> MakeBestEffortIfHkcrAccessDenied(
         OperationResult<bool> result, ChangeDescriptor change)

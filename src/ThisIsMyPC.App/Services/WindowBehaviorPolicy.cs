@@ -8,7 +8,7 @@ public enum MinimizeDecision { Taskbar, HideToTray }
 
 /// <summary>
 /// Pure window-behavior decisions (9-1). Tray-dependent choices fall back to the
-/// non-tray behavior whenever tray mode is off — the app must never hide itself with
+/// non-tray behavior whenever tray mode is off; the app must never hide itself with
 /// no way back.
 /// </summary>
 public static class WindowBehaviorPolicy

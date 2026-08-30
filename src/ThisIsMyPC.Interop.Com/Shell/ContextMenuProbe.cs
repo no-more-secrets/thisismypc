@@ -47,7 +47,7 @@ public sealed partial class ContextMenuProbe : IContextMenuProbe
                 return OperationResult<bool>.Success(true); // PIDL failed → safe fallback
 
             // 3. Call IShellExtInit::Initialize via vtable
-            //    Pass null for pdtobj and hkeyProgID — handlers that check these
+            //    Pass null for pdtobj and hkeyProgID; handlers that check these
             //    parameters will use the PIDL alone for surface determination
             var vtable = *(nint**)pShellExtInit;
             var initFn = (delegate* unmanaged[Stdcall]<nint, nint, nint, nint, int>)vtable[VtblInitialize];

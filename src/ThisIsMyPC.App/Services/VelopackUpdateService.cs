@@ -39,7 +39,7 @@ public sealed class VelopackUpdateService : IUpdateService, IDisposable
             return OperationResult<UpdateCheckResult>.Success(
                 new UpdateCheckResult(true, version, null));
         }
-#pragma warning disable CA1031 // Velopack throws on network/config errors — must not crash
+#pragma warning disable CA1031 // Velopack throws on network/config errors; must not crash
         catch (Exception ex)
 #pragma warning restore CA1031
         {
@@ -88,7 +88,7 @@ public sealed class VelopackUpdateService : IUpdateService, IDisposable
 
             return OperationResult<bool>.Success(true);
         }
-#pragma warning disable CA1031 // Velopack throws on download/network errors — must not crash
+#pragma warning disable CA1031 // Velopack throws on download/network errors; must not crash
         catch (Exception ex)
 #pragma warning restore CA1031
         {

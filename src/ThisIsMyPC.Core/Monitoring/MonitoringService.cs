@@ -43,7 +43,7 @@ public sealed class MonitoringState
 public sealed partial class MonitoringJsonContext : JsonSerializerContext;
 
 /// <summary>
-/// Opt-in boot-sequence monitoring (9-3). Runs ONLY while the app is in memory — no
+/// Opt-in boot-sequence monitoring (9-3). Runs ONLY while the app is in memory; no
 /// hidden services or scheduled tasks, ever (the Epic 28 service covers the
 /// closed-app case later). First enable captures a baseline without flagging
 /// anything; subsequent scans flag additions, persist them, and raise a gated
@@ -123,7 +123,7 @@ public sealed class MonitoringService : IDisposable
         if (!_settings.GetAppBool(AppSettingKeys.MonitoringEnabled, fallback: false))
             return;
 
-        // Capture OUTSIDE the lock — registry/SCM/COM enumeration can take seconds and
+        // Capture OUTSIDE the lock; registry/SCM/COM enumeration can take seconds and
         // must never block UI-thread reads of UnreviewedDetections.
         var current = _provider.Capture();
 
@@ -207,7 +207,7 @@ public sealed class MonitoringService : IDisposable
             }
             catch (OperationCanceledException)
             {
-                // disable/shutdown — expected
+                // disable/shutdown; expected
             }
         }, CancellationToken.None);
     }

@@ -43,7 +43,7 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
             || Description.Contains(query, StringComparison.OrdinalIgnoreCase)
             || SystemPath.Contains(query, StringComparison.OrdinalIgnoreCase);
 
-    // --- Badges & callouts (10-3). Visible in every display mode — safety-critical
+    // --- Badges & callouts (10-3). Visible in every display mode; safety-critical
     // information is never hidden by a display preference. ---
 
     /// <summary>Enforcement badge: the profile's summary, e.g. "Windows is known to revert this setting".</summary>
@@ -56,7 +56,7 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
     public bool HasReversionRisks => ReversionRisksText is not null;
 
     /// <summary>
-    /// SKU callout: informational only — the setting stays toggleable (8-4 rule).
+    /// SKU callout: informational only; the setting stays toggleable (8-4 rule).
     /// </summary>
     public bool HasSkuNotice { get; }
     public string? SkuNotice { get; }
@@ -115,7 +115,7 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
             SkuNotice = $"Requires {required}. No effect on this edition.";
         }
 
-        // Owner Mode degradation: no detector means the service can't be reached —
+        // Owner Mode degradation: no detector means the service can't be reached;
         // treat as unavailable (safe default).
         if (Model.OwnerModeRequired)
         {
@@ -136,7 +136,7 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
 
     partial void OnIsEnabledChanged(bool value)
     {
-        // Degraded cards must never stage, even via programmatic IsEnabled writes —
+        // Degraded cards must never stage, even via programmatic IsEnabled writes;
         // the disabled ToggleSwitch only blocks UI input.
         if (_suppressStaging || !IsControlEnabled)
             return;
@@ -217,12 +217,12 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
 
             if (_pendingChangesService.IsApplying)
             {
-                // Applied — keep toggle position, adopt as new baseline.
+                // Applied; keep toggle position, adopt as new baseline.
                 _registryIsEnabled = IsEnabled;
             }
             else
             {
-                // Discarded — reset toggle to registry state.
+                // Discarded; reset toggle to registry state.
                 _suppressStaging = true;
                 IsEnabled = _registryIsEnabled;
                 _suppressStaging = false;

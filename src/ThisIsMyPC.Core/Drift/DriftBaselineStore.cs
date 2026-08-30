@@ -14,7 +14,7 @@ public interface IDriftBaselineStore
 /// Last-known-applied state for the drift watchdog (28-3). Written by the app after
 /// every successful apply/undo/redo; read by the Session 0 service at boot. Lives in
 /// ProgramData so SYSTEM can reach it without resolving a user profile. Registry
-/// value types only — service start types, scheduled tasks and power settings have
+/// value types only; service start types, scheduled tasks and power settings have
 /// their own authoritative stores the watchdog does not model yet.
 /// Persistence is best-effort: a failed write never fails the apply that triggered it.
 /// </summary>
@@ -71,7 +71,7 @@ public sealed class DriftBaselineStore : IDriftBaselineStore
         }
     }
 
-    /// <summary>Null when absent/corrupt — the watchdog treats that as "no baseline yet".</summary>
+    /// <summary>Null when absent/corrupt; the watchdog treats that as "no baseline yet".</summary>
     public static DriftBaselineDocument? Load(string path)
     {
         try
@@ -101,7 +101,7 @@ public sealed class DriftBaselineStore : IDriftBaselineStore
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            // Best-effort — the mutation that triggered this already succeeded.
+            // Best-effort; the mutation that triggered this already succeeded.
         }
     }
 }

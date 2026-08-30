@@ -181,7 +181,7 @@
                                                                        VerticalAlignment="Center"
                                                                        IsVisible="{Binding IsReverted}" />
 
-                                                            <!-- Display name — fills remaining space, ellipsis on overflow -->
+                                                            <!-- Display name; fills remaining space, ellipsis on overflow -->
                                                             <TextBlock Text="{Binding DisplayName}"
                                                                        FontWeight="SemiBold"
                                                                        FontSize="14"

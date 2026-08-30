@@ -61,7 +61,7 @@ public sealed class ChangeHistoryService : IChangeHistoryService
     }
 
     /// <summary>
-    /// 28-3: records system-initiated reversions (drift) as SystemReversion rows —
+    /// 28-3: records system-initiated reversions (drift) as SystemReversion rows;
     /// distinct from user changes, never undo/redo targets from this path.
     /// </summary>
     public async Task RecordDriftEventsAsync(IReadOnlyList<ChangeHistoryEntry> driftEntries)
@@ -112,7 +112,7 @@ public sealed class ChangeHistoryService : IChangeHistoryService
         };
 
         // Same routing rule as PendingChangesService: Enforcement != null goes through
-        // the executor (revert direction — GPCache cleared after the primary revert so
+        // the executor (revert direction; GPCache cleared after the primary revert so
         // e.g. the WU orchestrator can't keep enforcing the undone policy).
         var result = await RouteAsync(revertDescriptor, revertFunc, revert: true).ConfigureAwait(false);
 
@@ -146,7 +146,7 @@ public sealed class ChangeHistoryService : IChangeHistoryService
         await _repository.UpdateRevertedAtAsync(historyId, now, insertedRevert.Id)
             .ConfigureAwait(false);
 
-        // Undo changes the expected state too — a stale expectation would report the
+        // Undo changes the expected state too; a stale expectation would report the
         // user's own undo as drift at next boot.
         _driftBaseline?.RecordApplied([revertDescriptor]);
 

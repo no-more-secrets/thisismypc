@@ -86,7 +86,7 @@ public partial class App : Application
                         mainViewModel.ApplyAllCommand.Execute(null);
                 },
                 exit: () => _windowController!.RequestExit());
-            // Hide-to-tray must never engage when the tray icon failed to materialize —
+            // Hide-to-tray must never engage when the tray icon failed to materialize;
             // a hidden window with no tray would be unreachable.
             _windowController = new WindowPersistenceController(
                 desktop.MainWindow, desktop, settingsService,
@@ -95,7 +95,7 @@ public partial class App : Application
             // 9-3: opt-in monitoring loop (runs only while the app is in memory)
             _serviceProvider.GetRequiredService<Core.Monitoring.MonitoringService>().Start();
 
-            // 28-3: the machine-wide drift directory must be SYSTEM/Administrators-only —
+            // 28-3: the machine-wide drift directory must be SYSTEM/Administrators-only;
             // ProgramData's default ACL would let a standard user own and rewrite the
             // baseline a SYSTEM service consumes.
             try
@@ -210,7 +210,7 @@ public partial class App : Application
                 AppConstants.UpdateUrl,
                 sp.GetService<IUpdateVerifier>()));
 
-        // Owner Mode IPC client (28-1) — connects per request; a missing service
+        // Owner Mode IPC client (28-1); connects per request; a missing service
         // degrades to ServiceUnavailable, never an error dialog.
         services.AddSingleton<ThisIsMyPC.Ipc.Contracts.IIpcClient>(_ => new ThisIsMyPC.Ipc.Contracts.IpcClient());
 
@@ -297,7 +297,7 @@ public partial class App : Application
     }
 
     [UnconditionalSuppressMessage("Trimming", "IL2026",
-        Justification = "DataValidators access is safe — Avalonia initializes these before this runs")]
+        Justification = "DataValidators access is safe; Avalonia initializes these before this runs")]
     private static void DisableAvaloniaDataAnnotationValidation()
     {
         var dataValidationPluginsToRemove =

@@ -5,7 +5,7 @@ namespace ThisIsMyPC.Core.Drift;
 
 /// <summary>
 /// One expected system value in the drift baseline (28-3): the last state
-/// ThisIsMyPC put a location into. Keyed by SystemLocation — the newest write to a
+/// ThisIsMyPC put a location into. Keyed by SystemLocation; the newest write to a
 /// location wins regardless of which module or set produced it.
 /// </summary>
 public sealed record DriftBaselineEntry
@@ -25,7 +25,7 @@ public sealed class DriftBaselineDocument
 {
     /// <summary>
     /// SID of the user whose HKCU the entries were written under. The SYSTEM
-    /// watchdog maps HKCU paths to HKU\{sid} — under LocalSystem, HKCU is
+    /// watchdog maps HKCU paths to HKU\{sid}; under LocalSystem, HKCU is
     /// S-1-5-18's hive, and reading it directly reports every user-hive tweak
     /// as drift. Null means HKCU entries cannot be verified and are skipped.
     /// </summary>

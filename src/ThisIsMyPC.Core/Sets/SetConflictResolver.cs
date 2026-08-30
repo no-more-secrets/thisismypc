@@ -7,7 +7,7 @@ namespace ThisIsMyPC.Core.Sets;
 /// <summary>
 /// Resolves every entry of a set against the current system state (via the module
 /// inspectors) and the already-pending changes, producing the preview/staging decisions
-/// of Story 8.3. Pure logic — all system access goes through the injected inspectors.
+/// of Story 8.3. Pure logic; all system access goes through the injected inspectors.
 /// </summary>
 public sealed class SetConflictResolver
 {
@@ -35,13 +35,13 @@ public sealed class SetConflictResolver
         if (availability is null)
         {
             return Skipped(entry,
-                $"Will be skipped — the '{entry.ModuleId}' module is not part of this build.");
+                $"Will be skipped: the '{entry.ModuleId}' module is not part of this build.");
         }
 
         if (!availability.IsAvailable)
         {
             return Skipped(entry,
-                $"Will be skipped — {availability.Reason ?? $"the '{entry.ModuleId}' module is not available on this system"}.");
+                $"Will be skipped: {availability.Reason ?? $"the '{entry.ModuleId}' module is not available on this system"}.");
         }
 
         var inspector = _inspectors.FirstOrDefault(i => i.ModuleId == entry.ModuleId);
@@ -49,7 +49,7 @@ public sealed class SetConflictResolver
         if (inspector is null || state is null)
         {
             return Skipped(entry,
-                "Will be skipped — this setting is not recognized by the installed version.");
+                "Will be skipped: this setting is not recognized by the installed version.");
         }
 
         // A resolvable setting can still carry an unstageable value (hand-edited user
@@ -58,7 +58,7 @@ public sealed class SetConflictResolver
         if (stageable is null)
         {
             return Skipped(entry,
-                $"Will be skipped — the value '{entry.Value}' is not valid for this setting.");
+                $"Will be skipped: the value '{entry.Value}' is not valid for this setting.");
         }
 
         var skuNotice = BuildSkuNotice(stageable);

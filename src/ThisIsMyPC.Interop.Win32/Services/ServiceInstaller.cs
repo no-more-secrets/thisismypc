@@ -36,7 +36,7 @@ public sealed class ServiceInstaller : IServiceInstaller
                     return OperationResult<bool>.Success(true);
                 if (error == ERROR_SERVICE_MARKED_FOR_DELETE)
                     return OperationResult<bool>.Failure(
-                        $"Service '{serviceName}' is marked for deletion — a reboot is required before it can be reinstalled.",
+                        $"Service '{serviceName}' is marked for deletion; a reboot is required before it can be reinstalled.",
                         ErrorCategory.ServiceUnavailable);
                 return Fail($"create service '{serviceName}'", error);
             }
@@ -115,7 +115,7 @@ public sealed class ServiceInstaller : IServiceInstaller
 
     private static void SetDescription(nint hService, string description)
     {
-        // Best-effort — a missing description never fails an install.
+        // Best-effort; a missing description never fails an install.
         var ptr = Marshal.StringToHGlobalUni(description);
         try
         {

@@ -149,7 +149,7 @@ public sealed partial class ShellSettingViewModel : ViewModelBase, IDisposable
             is ChangeCategory.Enable or ChangeCategory.Create;
         if (pendingOn == _registryIsEnabled)
         {
-            // Pending target already matches live state — drop the redundant group.
+            // Pending target already matches live state; drop the redundant group.
             _pendingChangesService.Unstage(existing.GroupId);
             return;
         }
@@ -268,7 +268,7 @@ public sealed partial class ShellSettingViewModel : ViewModelBase, IDisposable
 
     private void HandlePendingGroupsChanged()
     {
-        // Our staged change was removed — either applied or discarded
+        // Our staged change was removed; either applied or discarded
         if (_stagedGroupId is not null &&
             !_pendingChangesService.PendingGroups.Any(g => g.GroupId == _stagedGroupId))
         {
@@ -276,12 +276,12 @@ public sealed partial class ShellSettingViewModel : ViewModelBase, IDisposable
 
             if (_pendingChangesService.IsApplying)
             {
-                // Change was applied — keep toggle position, update baseline to match
+                // Change was applied; keep toggle position, update baseline to match
                 _registryIsEnabled = IsEnabled;
             }
             else
             {
-                // Change was discarded — reset toggle to registry state
+                // Change was discarded; reset toggle to registry state
                 _suppressStaging = true;
                 IsEnabled = _registryIsEnabled;
                 _suppressStaging = false;

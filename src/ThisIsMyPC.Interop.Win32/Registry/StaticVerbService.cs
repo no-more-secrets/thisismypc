@@ -26,7 +26,7 @@ public sealed class StaticVerbService : IStaticVerbService
 
             foreach (var verbName in subKeysResult.Value!)
             {
-                // Skip ShellNew entries — different framework
+                // Skip ShellNew entries; different framework
                 if (verbName.Equals("ShellNew", StringComparison.OrdinalIgnoreCase))
                     continue;
 
@@ -100,7 +100,7 @@ public sealed class StaticVerbService : IStaticVerbService
                             && _registryService.KeyExists(dropTargetKeyPath).Value;
 
         // Verbs with no execution mechanism at all are still valid (shell-internal)
-        // — e.g., .SpotlightLearnMore, EditStickers at DesktopBackground\shell
+        //; e.g., .SpotlightLearnMore, EditStickers at DesktopBackground\shell
 
         return new StaticVerbEntry(
             VerbName: verbName,

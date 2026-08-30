@@ -5,7 +5,7 @@ namespace ThisIsMyPC.Core.Cards;
 /// <summary>
 /// A card model paired with the behavior the host needs to make it interactive.
 /// The model stays a pure POCO; the delegates carry the module's change factory and
-/// live-state read. Factories re-read live state at stage time — BeforeValues must
+/// live-state read. Factories re-read live state at stage time; BeforeValues must
 /// never come from scan-time snapshots.
 /// </summary>
 public sealed record SettingCardSource

@@ -55,7 +55,7 @@ public sealed class AutoStartService : IDisposable
         }
         else
         {
-            // Only delete when present — never churn the Run key on every clean start.
+            // Only delete when present; never churn the Run key on every clean start.
             if (_registry.ValueExists(RunKeyPath, RunValueName) is { IsSuccess: true, Value: true })
             {
                 var result = _registry.DeleteValue(RunKeyPath, RunValueName);

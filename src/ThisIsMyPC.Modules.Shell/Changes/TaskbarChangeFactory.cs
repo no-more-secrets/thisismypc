@@ -9,7 +9,7 @@ public static class TaskbarChangeFactory
     private const string ModuleId = "Explorer";
 
     // The {86ca1aa0} InprocServer32 override exploits undocumented Explorer internals;
-    // informational only — no companion actions.
+    // informational only; no companion actions.
     private static readonly SettingEnforcement ShimOverrideEnforcement = new()
     {
         ReversionVectors = ["Windows feature updates may restore the modern behavior (undocumented Explorer shim override)"],

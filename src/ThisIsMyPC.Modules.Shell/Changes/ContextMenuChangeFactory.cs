@@ -8,7 +8,7 @@ public static class ContextMenuChangeFactory
 {
     private const string ModuleId = "Context Menus";
 
-    // Vendors re-register their handlers on update/reinstall; informational only —
+    // Vendors re-register their handlers on update/reinstall; informational only;
     // no companion actions. Attached only when disabling (restoring vendor state has
     // no reversion risk).
     private static readonly SettingEnforcement HandlerReRegistrationEnforcement = new()
@@ -99,7 +99,7 @@ public static class ContextMenuChangeFactory
             AfterDisplay = "Blocked",
             ValueType = ChangeValueType.Registry_String,
             Category = ChangeCategory.Disable,
-            // Same end state as CreateBlockedListToggle(disable) — same reversion risk.
+            // Same end state as CreateBlockedListToggle(disable); same reversion risk.
             Enforcement = HandlerReRegistrationEnforcement,
         });
 

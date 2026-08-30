@@ -132,7 +132,7 @@ public sealed class WindowsUpdateCardProvider
     /// <summary>
     /// Projects the factory's enforcement into the UI-facing profile (Annoyances
     /// pattern): GPCache/companions → Enforced badge, vectors-only → Simple.
-    /// SKU-only enforcement produces NO profile — the SkuRestriction model field drives
+    /// SKU-only enforcement produces NO profile; the SkuRestriction model field drives
     /// its own callout, and a "known to revert" badge would be false.
     /// </summary>
     private static EnforcementProfile? Profile(SettingEnforcement? enforcement)

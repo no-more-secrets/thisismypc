@@ -56,7 +56,7 @@ public partial class AnnoyancesViewModel : ViewModelBase, IDisposable
         ICapabilityDetector? capabilityDetector = null)
     {
         _displayModeStore = displayModeStore;
-        // Factories re-read live state at stage time — a scan-time snapshot would bake
+        // Factories re-read live state at stage time; a scan-time snapshot would bake
         // stale BeforeValues into the descriptors after the first apply.
         var provider = new AnnoyancesCardProvider(new AnnoyancesSettingsReader(registryService));
 
@@ -90,7 +90,7 @@ public partial class AnnoyancesViewModel : ViewModelBase, IDisposable
     partial void OnIsCompactChanged(bool value) => ApplyDisplayMode();
 
     /// <summary>
-    /// Mode switches mutate the existing card VMs in place — the list is never
+    /// Mode switches mutate the existing card VMs in place; the list is never
     /// rebuilt, so scroll position and pending tint survive by construction.
     /// </summary>
     private void ApplyDisplayMode()

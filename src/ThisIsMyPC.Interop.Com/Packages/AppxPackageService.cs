@@ -153,7 +153,7 @@ public sealed class AppxPackageService : IAppxPackageService
     }
 
     // Resource-backed display names throw for some system/staged packages when the
-    // resource cannot be resolved — fall back to the raw identity string.
+    // resource cannot be resolved; fall back to the raw identity string.
     private static string SafeDisplayString(Func<string> read, string fallback)
     {
         try

@@ -9,7 +9,7 @@ public enum OwnerModeState
     Stopped,
     Disabled,
     Running,
-    /// <summary>SCM query failed for a reason other than "does not exist" — state honest-unknown, not "not installed".</summary>
+    /// <summary>SCM query failed for a reason other than "does not exist"; state honest-unknown, not "not installed".</summary>
     Unknown,
 }
 
@@ -17,7 +17,7 @@ public enum OwnerModeState
 /// Owner Mode service lifecycle (28-2). Enable = register with the SCM
 /// (SERVICE_AUTO_START, LocalSystem) + start; disable = stop + start type Disabled
 /// (registration stays so re-enabling is one click). State is queried live from the
-/// SCM — the service can be managed externally and the UI must not drift from it.
+/// SCM; the service can be managed externally and the UI must not drift from it.
 /// </summary>
 public sealed class OwnerModeService
 {
@@ -52,7 +52,7 @@ public sealed class OwnerModeService
         {
             return status.ErrorCategory == ErrorCategory.NotFound
                 ? OwnerModeState.NotInstalled
-                : OwnerModeState.Unknown; // e.g. SCM access denied — never claim "not installed"
+                : OwnerModeState.Unknown; // e.g. SCM access denied; never claim "not installed"
         }
         return status.Value!.State == ServiceState.Running
             ? OwnerModeState.Running
@@ -68,7 +68,7 @@ public sealed class OwnerModeService
     private bool _cachedIsRunning;
     private long _probeExpiresAt;
 
-    /// <summary>Owner Mode capability probe — true only with a live service.</summary>
+    /// <summary>Owner Mode capability probe; true only with a live service.</summary>
     public bool IsRunning
     {
         get
@@ -103,7 +103,7 @@ public sealed class OwnerModeService
         if (!install.IsSuccess)
             return install;
 
-        // A previous disable leaves start type Disabled — restore auto-start before starting.
+        // A previous disable leaves start type Disabled; restore auto-start before starting.
         var startType = _serviceControl.SetStartType(ServiceName, ServiceStartType.Automatic);
         if (!startType.IsSuccess)
             return startType;

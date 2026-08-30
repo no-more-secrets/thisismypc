@@ -215,7 +215,7 @@
                     <TextBlock Text="Recent Activity"
                                FontWeight="SemiBold" FontSize="16"
                                Foreground="{DynamicResource TextPrimaryBrush}" />
-                    <TextBlock Text="No changes applied yet — changes you apply will show up here."
+                    <TextBlock Text="No changes applied yet. They will show up here."
                                FontSize="12"
                                Foreground="{DynamicResource TextTertiaryBrush}"
                                IsVisible="{Binding !HasRecentActivity}" />

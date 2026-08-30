@@ -6,7 +6,7 @@ namespace ThisIsMyPC.Modules.Startup.Changes;
 
 /// <summary>
 /// Builds ChangeDescriptors for service startup-type changes. Start/stop/restart
-/// are immediate operational actions and deliberately have no factory — they
+/// are immediate operational actions and deliberately have no factory; they
 /// never enter the pending-changes pipeline or the change history.
 /// </summary>
 public static class ServiceChangeFactory

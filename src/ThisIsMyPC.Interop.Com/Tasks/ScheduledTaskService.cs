@@ -7,7 +7,7 @@ namespace ThisIsMyPC.Interop.Com.Tasks;
 
 /// <summary>
 /// ITaskService COM wrapper via raw vtable calls (NativeAOT-safe, no COM
-/// wrappers — same style as ContextMenuProbe/StartupFolderService).
+/// wrappers; same style as ContextMenuProbe/StartupFolderService).
 ///
 /// Deliberately minimal interface surface: task metadata (author, description,
 /// triggers) is read from IRegisteredTask::get_Xml and parsed with XDocument

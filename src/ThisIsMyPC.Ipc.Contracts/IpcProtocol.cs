@@ -14,7 +14,7 @@ public static class IpcProtocol
     public const string PipeName = "ThisIsMyPC";
     public const int ProtocolVersion = 1;
 
-    /// <summary>Hard ceiling per frame — a drift report is small; anything bigger is hostile or corrupt.</summary>
+    /// <summary>Hard ceiling per frame; a drift report is small; anything bigger is hostile or corrupt.</summary>
     public const int MaxFrameBytes = 1024 * 1024;
 
     public static async Task WriteFrameAsync(Stream stream, byte[] payload, CancellationToken cancellationToken)
