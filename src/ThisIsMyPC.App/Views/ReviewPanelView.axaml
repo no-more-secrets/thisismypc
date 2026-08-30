@@ -78,7 +78,7 @@
             <!-- Change list or empty state -->
             <Panel MinHeight="80">
                 <!-- Empty state -->
-                <StackPanel IsVisible="{Binding !ReviewGroups.Count}"
+                <StackPanel IsVisible="{Binding IsEmpty}"
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center"
                             Spacing="4">
@@ -92,11 +92,13 @@
                                Foreground="{StaticResource TextTertiaryBrush}" />
                 </StackPanel>
 
-                <!-- Grouped change items -->
+                <!-- Grouped change items + one-way actions -->
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                               VerticalScrollBarVisibility="Auto"
-                              IsVisible="{Binding !!ReviewGroups.Count}">
-                    <ItemsControl ItemsSource="{Binding ReviewGroups}" Margin="8,8">
+                              IsVisible="{Binding !IsEmpty}">
+                  <StackPanel>
+                    <ItemsControl ItemsSource="{Binding ReviewGroups}" Margin="8,8"
+                                  IsVisible="{Binding !!ReviewGroups.Count}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:ReviewGroupViewModel">
                                 <Border Margin="0,2"
@@ -176,6 +178,54 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
+
+                    <!-- One-way actions (installs/uninstalls). Not undoable from history. -->
+                    <StackPanel IsVisible="{Binding HasActions}" Margin="8,0,8,8">
+                        <TextBlock Text="One-way actions"
+                                   FontWeight="SemiBold"
+                                   FontSize="12"
+                                   Margin="4,6,0,2"
+                                   Foreground="{StaticResource WarningBrush}" />
+                        <TextBlock Text="These run on Apply and cannot be undone from history."
+                                   FontSize="11"
+                                   Margin="4,0,0,4"
+                                   Foreground="{StaticResource TextTertiaryBrush}" />
+                        <ItemsControl ItemsSource="{Binding ReviewActions}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:ReviewActionViewModel">
+                                    <Border Margin="0,2"
+                                            Padding="12,8"
+                                            CornerRadius="4"
+                                            BorderThickness="1"
+                                            BorderBrush="{StaticResource SidebarBorderBrush}">
+                                        <DockPanel>
+                                            <Button DockPanel.Dock="Right"
+                                                    Classes="apply-bar-discard"
+                                                    Content="Remove"
+                                                    VerticalAlignment="Center"
+                                                    Command="{Binding $parent[ItemsControl].((vm:ReviewPanelViewModel)DataContext).UnstageActionCommand}"
+                                                    CommandParameter="{Binding ActionId}" />
+                                            <StackPanel Spacing="2">
+                                                <TextBlock Text="{Binding DisplayName}"
+                                                           FontWeight="SemiBold"
+                                                           FontSize="13"
+                                                           Foreground="{StaticResource TextPrimaryBrush}" />
+                                                <TextBlock Text="{Binding Detail}"
+                                                           FontFamily="{StaticResource MonoFont}"
+                                                           FontSize="11"
+                                                           Foreground="{StaticResource TextTertiaryBrush}" />
+                                                <TextBlock Text="{Binding UndoHint}"
+                                                           IsVisible="{Binding HasUndoHint}"
+                                                           FontSize="11"
+                                                           Foreground="{StaticResource TextSecondaryBrush}" />
+                                            </StackPanel>
+                                        </DockPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                  </StackPanel>
                 </ScrollViewer>
             </Panel>
         </DockPanel>

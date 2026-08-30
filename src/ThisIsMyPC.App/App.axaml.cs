@@ -218,6 +218,7 @@ public partial class App : Application
         // PendingChangesService's optional ctor param resolves this because it is registered.
         services.AddSingleton<IEnforcementExecutor, EnforcementExecutor>();
         services.AddSingleton<IPendingChangesService, PendingChangesService>();
+        services.AddSingleton<IPendingActionsService, PendingActionsService>();
         services.AddSingleton<ISetProvider>(_ => new SetProvider(
             Path.Combine(AppContext.BaseDirectory, "sets"),
             Path.Combine(AppConstants.DataDirectoryPath, "sets")));

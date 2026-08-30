@@ -9,18 +9,32 @@ namespace ThisIsMyPC.App.ViewModels;
 public partial class ReviewPanelViewModel : ViewModelBase, IDisposable
 {
     private readonly IPendingChangesService _pendingChangesService;
+    private readonly IPendingActionsService? _pendingActionsService;
 
     public ObservableCollection<ReviewGroupViewModel> ReviewGroups { get; } = [];
 
+    public ObservableCollection<ReviewActionViewModel> ReviewActions { get; } = [];
+
+    public bool HasActions => ReviewActions.Count > 0;
+
+    public bool IsEmpty => ReviewGroups.Count == 0 && ReviewActions.Count == 0;
+
     public SaveSetFormViewModel SaveSetForm { get; }
 
-    public ReviewPanelViewModel(IPendingChangesService pendingChangesService, ICustomSetWriter customSetWriter)
+    public ReviewPanelViewModel(
+        IPendingChangesService pendingChangesService,
+        ICustomSetWriter customSetWriter,
+        IPendingActionsService? pendingActionsService = null)
     {
         _pendingChangesService = pendingChangesService;
+        _pendingActionsService = pendingActionsService;
         SaveSetForm = new SaveSetFormViewModel(metadata =>
             customSetWriter.WriteFromPendingGroups(metadata, _pendingChangesService.PendingGroups));
         _pendingChangesService.PropertyChanged += OnPendingChangesPropertyChanged;
+        if (_pendingActionsService is not null)
+            _pendingActionsService.PropertyChanged += OnPendingActionsPropertyChanged;
         RefreshItems();
+        RefreshActions();
     }
 
     private void OnPendingChangesPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -32,6 +46,45 @@ public partial class ReviewPanelViewModel : ViewModelBase, IDisposable
             else
                 Dispatcher.UIThread.Post(RefreshItems);
         }
+    }
+
+    private void OnPendingActionsPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(IPendingActionsService.PendingActions))
+        {
+            if (Dispatcher.UIThread.CheckAccess())
+                RefreshActions();
+            else
+                Dispatcher.UIThread.Post(RefreshActions);
+        }
+    }
+
+    private void RefreshActions()
+    {
+        ReviewActions.Clear();
+
+        if (_pendingActionsService is not null)
+        {
+            foreach (var action in _pendingActionsService.PendingActions)
+            {
+                ReviewActions.Add(new ReviewActionViewModel
+                {
+                    ActionId = action.ActionId,
+                    DisplayName = action.DisplayName,
+                    Detail = action.Detail,
+                    UndoHint = action.UndoHint,
+                });
+            }
+        }
+
+        OnPropertyChanged(nameof(HasActions));
+        OnPropertyChanged(nameof(IsEmpty));
+    }
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private void UnstageAction(string actionId)
+    {
+        _pendingActionsService?.Unstage(actionId);
     }
 
     private void RefreshItems()
@@ -67,10 +120,14 @@ public partial class ReviewPanelViewModel : ViewModelBase, IDisposable
                 Details = details,
             });
         }
+
+        OnPropertyChanged(nameof(IsEmpty));
     }
 
     public void Dispose()
     {
         _pendingChangesService.PropertyChanged -= OnPendingChangesPropertyChanged;
+        if (_pendingActionsService is not null)
+            _pendingActionsService.PropertyChanged -= OnPendingActionsPropertyChanged;
     }
 }

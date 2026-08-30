@@ -27,6 +27,7 @@ public partial class MainWindowViewModel : ViewModelBase
 {
     private readonly NavigationService _navigationService;
     private readonly IPendingChangesService _pendingChangesService;
+    private readonly IPendingActionsService? _pendingActionsService;
     private readonly IChangeHistoryService _changeHistoryService;
     private readonly IRegistryService _registryService;
     private readonly IServiceControlService? _serviceControlService;
@@ -235,11 +236,29 @@ public partial class MainWindowViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(CanModifyPending))]
     private int _pendingCount;
 
-    public bool HasPendingChanges => PendingCount > 0;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasPendingChanges))]
+    [NotifyPropertyChangedFor(nameof(PendingCountText))]
+    [NotifyPropertyChangedFor(nameof(CanModifyPending))]
+    private int _actionCount;
 
-    public string PendingCountText => PendingCount == 0
-        ? "No pending changes"
-        : $"{PendingCount} change{(PendingCount == 1 ? "" : "s")} pending";
+    public bool HasPendingChanges => PendingCount + ActionCount > 0;
+
+    public string PendingCountText
+    {
+        get
+        {
+            if (PendingCount == 0 && ActionCount == 0)
+                return "No pending changes";
+
+            var parts = new List<string>();
+            if (PendingCount > 0)
+                parts.Add($"{PendingCount} change{(PendingCount == 1 ? "" : "s")}");
+            if (ActionCount > 0)
+                parts.Add($"{ActionCount} action{(ActionCount == 1 ? "" : "s")}");
+            return string.Join(", ", parts) + " pending";
+        }
+    }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanModifyPending))]
@@ -293,8 +312,10 @@ public partial class MainWindowViewModel : ViewModelBase
         IPowerService? powerService = null,
         DisplayModePreferencesStore? displayModeStore = null,
         Services.OwnerModeService? ownerModeService = null,
-        Ipc.Contracts.IIpcClient? ipcClient = null)
+        Ipc.Contracts.IIpcClient? ipcClient = null,
+        IPendingActionsService? pendingActionsService = null)
     {
+        _pendingActionsService = pendingActionsService;
         _ownerModeService = ownerModeService;
         _ipcClient = ipcClient;
         _displayModeStore = displayModeStore;
@@ -331,6 +352,22 @@ public partial class MainWindowViewModel : ViewModelBase
         _pendingChangesService.PropertyChanged += OnPendingChangesPropertyChanged;
         _navigationService.PropertyChanged += OnNavigationPropertyChanged;
         PendingCount = _pendingChangesService.PendingCount;
+        if (_pendingActionsService is not null)
+        {
+            _pendingActionsService.PropertyChanged += OnPendingActionsPropertyChanged;
+            ActionCount = _pendingActionsService.PendingCount;
+        }
+    }
+
+    private void OnPendingActionsPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(IPendingActionsService.PendingCount))
+        {
+            if (Dispatcher.UIThread.CheckAccess())
+                ActionCount = _pendingActionsService!.PendingCount;
+            else
+                Dispatcher.UIThread.Post(() => ActionCount = _pendingActionsService!.PendingCount);
+        }
     }
 
     private void OnPendingChangesPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -981,6 +1018,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private void DiscardAll()
     {
         _pendingChangesService.DiscardAll();
+        _pendingActionsService?.DiscardAll();
         _applyWithoutRestorePoint = false;
         IsReviewPanelOpen = false;
     }
@@ -1135,11 +1173,35 @@ public partial class MainWindowViewModel : ViewModelBase
             {
                 SetStatus(FormatApplyError(result), StatusSeverity.Error);
             }
+
+            // One-way actions run after the reversible batch, and only when it
+            // succeeded — a failed change batch should not be followed by installs.
+            if (result.IsSuccess && _pendingActionsService is { PendingCount: > 0 })
+            {
+                var actionResult = await _pendingActionsService
+                    .ApplyAllAsync(ExecuteActionOnModule).ConfigureAwait(true);
+
+                if (!actionResult.IsSuccess)
+                {
+                    var first = actionResult.Failed[0];
+                    SetStatus(
+                        $"{actionResult.Failed.Count} action{(actionResult.Failed.Count == 1 ? "" : "s")} failed. {first.Action.DisplayName}: {first.ErrorMessage}",
+                        StatusSeverity.Error);
+                }
+                else if (result.Applied.Count == 0)
+                {
+                    SetStatus(
+                        $"{actionResult.Succeeded.Count} action{(actionResult.Succeeded.Count == 1 ? "" : "s")} completed",
+                        StatusSeverity.Success);
+                }
+            }
         }
         finally
         {
             IsApplying = false;
             PendingCount = _pendingChangesService.PendingCount;
+            if (_pendingActionsService is not null)
+                ActionCount = _pendingActionsService.PendingCount;
         }
     }
 
@@ -1189,6 +1251,20 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         return await module.RevertChangeAsync(change).ConfigureAwait(false);
+    }
+
+    private async Task<OperationResult<bool>> ExecuteActionOnModule(Core.Actions.ActionDescriptor action)
+    {
+        var module = ResolveModule(action.ModuleId);
+
+        if (module is not Core.Modules.IActionModule actionModule)
+        {
+            return OperationResult<bool>.Failure(
+                $"Module '{action.ModuleId}' not found or cannot execute actions",
+                ErrorCategory.NotFound);
+        }
+
+        return await actionModule.ExecuteActionAsync(action).ConfigureAwait(false);
     }
 
     private static string FormatApplyError(MutationResult result)
