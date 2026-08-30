@@ -78,6 +78,23 @@ Consequences, verified against the code and upstream:
   SmartScreen reputation builds from download volume regardless. Only
   release-signing material stays private (GPLv2 rule).
 
+## Machine-scope packaging (Sam, 2026-08-30): the app corresponds to the PC, not a profile
+
+Product identity decision — the app is machine-scoped, matching requireAdministrator,
+the Session 0 service, and Epic 28's all-profiles HKU\{sid} drift mapping. Release
+packaging must follow:
+- **Binaries in `C:\Program Files\`** (admin-only write; deep-research DLL-sideloading
+  rule). Velopack's default per-user `%LocalAppData%` install violates this — use its
+  machine-wide install mode.
+- **Mutable state (settings, change DB) in `%ProgramData%\ThisIsMyPC`**, folder created
+  and owned by Administrators/SYSTEM with an admin-only DACL. Not hardened `%APPDATA%`:
+  users own their profile folders, and ownership beats a DACL (owner can retake
+  WRITE_DAC), so a profile-folder lockdown is undoable by user-level malware.
+- Keep integrity validation of stored state in the elevated service regardless of
+  folder (defense in depth per threat model tm2:120-134).
+- One machine, one install, one database — no per-user copies with divergent views
+  of machine state.
+
 ## AV / SmartScreen readiness (release-readiness chunk, pre-first-release)
 
 The flag risk is Defender PUA heuristics on the app's behavior (elevated +
