@@ -136,12 +136,19 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
     public string HibernateDescription =>
         "Hibernation writes memory to disk so the machine can power off fully and resume. " +
         "Disabling it deletes the hiberfile, which also turns off Fast Startup and removes " +
-        "Hibernate from the power menu.";
+        "Hibernate from the power menu. On laptops it also removes the critical-battery " +
+        "hibernate safety net and any hibernate-instead-of-sleep timers.";
 
     public string UltimatePerformanceDescription =>
         "Registers the hidden Ultimate Performance plan Windows ships for workstations. " +
         "It removes micro-latencies at the cost of higher idle power use. Removing it deletes " +
         "the registered copy; the plan must not be active when removed.";
+
+    /// <summary>On Modern Standby machines the classic plan system is largely bypassed.</summary>
+    public bool ShowUltimatePerformanceCaveat => _powerService?.SupportsModernStandby() ?? false;
+
+    public string UltimatePerformanceCaveat =>
+        "This PC uses Modern Standby. Windows may largely ignore classic power plans here.";
 
     [RelayCommand]
     private void ToggleHibernate()

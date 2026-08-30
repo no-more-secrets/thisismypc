@@ -163,6 +163,13 @@ Update COM service registration, not a registry write).
   + marker description for locale-proof detection; removal refuses while active)
 - Network adapter power saving (Sophia) — NIC device setting, not powrprof; flag
   for design (may belong to a future network module instead)
+- "Hibernate instead of sleep" preset (Sam's laptop pattern, 2026-08-30): for
+  machines where sleep is unreliable and eventually powers off losing work —
+  on battery set Sleep-after to never and Hibernate-after to a short timer.
+  Both are ordinary DC value-index writes the settings grid already exposes;
+  package as a curated preset/set once sets can carry PowerPlan_Setting
+  entries. Pairs with the hibernation-toggle warning (the preset depends on
+  the hiberfile existing).
 - Melody `PowerPlans` repo: candidate importable plan definitions (CC0 upstream is
   batch; port as data)
 - Note: winutil's S0/S3 items already reachable via our dynamic grid +

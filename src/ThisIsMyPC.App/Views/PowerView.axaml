@@ -132,6 +132,11 @@
                                            FontSize="12"
                                            Foreground="{StaticResource TextSecondaryBrush}"
                                            TextWrapping="Wrap" />
+                                <TextBlock Text="{Binding UltimatePerformanceCaveat}"
+                                           IsVisible="{Binding ShowUltimatePerformanceCaveat}"
+                                           FontSize="12"
+                                           Foreground="{StaticResource WarningBrush}"
+                                           TextWrapping="Wrap" />
                             </StackPanel>
                             <ToggleSwitch Grid.Column="1" VerticalAlignment="Center"
                                           IsChecked="{Binding IsUltimatePerformanceInstalled}"
