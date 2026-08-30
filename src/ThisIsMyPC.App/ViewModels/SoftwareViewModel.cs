@@ -18,9 +18,13 @@ public sealed partial class SoftwareViewModel : ViewModelBase, IDisposable
 
     public ObservableCollection<SoftwareAppViewModel> FilteredApps { get; } = [];
 
+    public IReadOnlyList<WindowsAppViewModel> WindowsApps { get; }
+
     public IReadOnlyList<string> Categories { get; }
 
     public bool InstalledStateKnown { get; }
+
+    public bool AppxStateKnown { get; }
 
     public string? WingetVersion { get; }
 
@@ -36,7 +40,16 @@ public sealed partial class SoftwareViewModel : ViewModelBase, IDisposable
         _pendingActionsService = pendingActionsService;
 
         InstalledStateKnown = scanData.InstalledStateKnown;
+        AppxStateKnown = scanData.AppxStateKnown;
         WingetVersion = scanData.WingetVersion;
+
+        WindowsApps = scanData.WindowsApps
+            .OrderBy(e => e.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(entry => new WindowsAppViewModel(
+                entry,
+                isPresent: scanData.PresentAppxPackageIds.Contains(entry.PackageId),
+                pendingActionsService))
+            .ToList();
 
         _allApps = scanData.Catalog
             .OrderBy(e => e.Name, StringComparer.OrdinalIgnoreCase)
@@ -98,6 +111,8 @@ public sealed partial class SoftwareViewModel : ViewModelBase, IDisposable
     {
         foreach (var app in _allApps)
             app.RefreshQueuedState();
+        foreach (var app in WindowsApps)
+            app.RefreshQueuedState();
     }
 
     public void Dispose()
@@ -152,6 +167,62 @@ public sealed partial class SoftwareAppViewModel : ViewModelBase
             _pendingActionsService.Stage(IsInstalled
                 ? SoftwareActionFactory.CreateUninstall(_entry)
                 : SoftwareActionFactory.CreateInstall(_entry));
+        }
+
+        RefreshQueuedState();
+    }
+
+    public void RefreshQueuedState() => IsQueued = _pendingActionsService.IsStaged(ActionId);
+}
+
+public sealed partial class WindowsAppViewModel : ViewModelBase
+{
+    private readonly WindowsAppEntry _entry;
+    private readonly IPendingActionsService _pendingActionsService;
+
+    public WindowsAppViewModel(
+        WindowsAppEntry entry, bool isPresent, IPendingActionsService pendingActionsService)
+    {
+        ArgumentNullException.ThrowIfNull(pendingActionsService);
+        _entry = entry;
+        _pendingActionsService = pendingActionsService;
+        IsPresent = isPresent;
+        _isQueued = pendingActionsService.IsStaged(ActionId);
+    }
+
+    public string Name => _entry.Name;
+    public string Description => _entry.Description;
+    public string Category => _entry.Category;
+    public string PackageId => _entry.PackageId;
+    public bool IsPresent { get; }
+
+    // A present app can only be removed; an absent one only reinstalled (Store id permitting).
+    public bool CanAct => IsPresent || _entry.CanReinstall;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ActionButtonText))]
+    private bool _isQueued;
+
+    private string ActionId => IsPresent
+        ? SoftwareActionFactory.AppxRemovePrefix + _entry.Id
+        : SoftwareActionFactory.AppxReinstallPrefix + _entry.Id;
+
+    public string ActionButtonText => IsQueued
+        ? "Queued"
+        : IsPresent ? "Remove" : "Reinstall";
+
+    [RelayCommand]
+    private void ToggleQueue()
+    {
+        if (IsQueued)
+        {
+            _pendingActionsService.Unstage(ActionId);
+        }
+        else
+        {
+            _pendingActionsService.Stage(IsPresent
+                ? SoftwareActionFactory.CreateAppxRemove(_entry)
+                : SoftwareActionFactory.CreateAppxReinstall(_entry));
         }
 
         RefreshQueuedState();

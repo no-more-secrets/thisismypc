@@ -10,4 +10,7 @@ public sealed record SoftwareScanData(
     IReadOnlyList<SoftwareCatalogEntry> Catalog,
     IReadOnlySet<string> InstalledWingetIds,
     bool InstalledStateKnown,
-    string? WingetVersion);
+    string? WingetVersion,
+    IReadOnlyList<WindowsAppEntry> WindowsApps,
+    IReadOnlySet<string> PresentAppxPackageIds,
+    bool AppxStateKnown);

@@ -49,9 +49,13 @@ recipes, OEM tools (G-Helper/OmenMon), SKU-upgrade-via-generic-keys feature.
 
 ## Status
 
-- [ ] 1 Core action queue
-- [ ] 2 App integration
-- [ ] 3 Winget interop
-- [ ] 4 Modules.Software + catalog
-- [ ] 5 UI
-- [ ] 6 Windows Apps (Appx)
+- [x] 1 Core action queue
+- [x] 2 App integration
+- [x] 3 Winget interop
+- [x] 4 Modules.Software + catalog
+- [x] 5 UI (App Catalog tab)
+- [x] 6 Windows Apps (Appx) tab
+
+v1 complete 2026-08-30 (chunks 1-6, fresh-context review pending/next).
+Not yet verified in the running app — needs a manual pass in VS: sidebar
+entry, catalog staging, review panel actions section, a real install.

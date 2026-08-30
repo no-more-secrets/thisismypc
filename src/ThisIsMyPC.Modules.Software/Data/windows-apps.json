@@ -1,0 +1,269 @@
+{
+ "_license": "Data ported from CTT winutil (https://github.com/ChrisTitusTech/winutil), MIT License, Copyright (c) Chris Titus Tech.",
+ "apps": [
+  {
+   "id": "clipchamp.clipchamp",
+   "name": "Clipchamp",
+   "description": "Provides a user-friendly video editor with built-in templates, effects, and timeline editing tools.",
+   "packageId": "Clipchamp.Clipchamp",
+   "storeId": "9P1J8S7CCWWT",
+   "category": "Utilities & Productivity"
+  },
+  {
+   "id": "msteams",
+   "name": "Microsoft Teams",
+   "description": "Facilitates instant messaging, video conferencing, file sharing, and workspace collaboration.",
+   "packageId": "MSTeams",
+   "storeId": "XP8BT8DW290MPQ",
+   "category": "Microsoft Apps"
+  },
+  {
+   "id": "microsoftcorporationii.quickassist",
+   "name": "Quick Assist",
+   "description": "Enables secure remote technical support and screen sharing over an internet connection.",
+   "packageId": "MicrosoftCorporationII.QuickAssist",
+   "storeId": "9P7BP5VNWKX5",
+   "category": "Utilities & Productivity"
+  },
+  {
+   "id": "microsoft.bingnews",
+   "name": "News",
+   "description": "Aggregates breaking news headlines, personalized article feeds, and world current events.",
+   "packageId": "Microsoft.BingNews",
+   "storeId": "9WZDNCRFHVFW",
+   "category": "Bing & Web Services"
+  },
+  {
+   "id": "microsoft.bingsearch",
+   "name": "Bing Search",
+   "description": "Integrates Microsoft Bing search capabilities and web services directly into the operating system.",
+   "packageId": "Microsoft.BingSearch",
+   "storeId": "9NZBF4GT040C",
+   "category": "Bing & Web Services"
+  },
+  {
+   "id": "microsoft.bingweather",
+   "name": "Weather",
+   "description": "Displays local real-time weather tracking, radar maps, and historical meteorological forecasts.",
+   "packageId": "Microsoft.BingWeather",
+   "storeId": "9WZDNCRFJ3Q2",
+   "category": "Bing & Web Services"
+  },
+  {
+   "id": "microsoft.copilot",
+   "name": "Copilot",
+   "description": "Launches the Microsoft AI companion for contextual answers, creative writing assistance, and intelligent web search.",
+   "packageId": "Microsoft.Copilot",
+   "storeId": "9NHT9RB2F4HD",
+   "category": "Bing & Web Services"
+  },
+  {
+   "id": "microsoft.gamingapp",
+   "name": "Xbox App",
+   "description": "Serves as the primary gaming library manager, social community interface, and PC Game Pass dashboard.",
+   "packageId": "Microsoft.GamingApp",
+   "storeId": "9MV0B5HZVK9Z",
+   "category": "Xbox & Gaming"
+  },
+  {
+   "id": "microsoft.gethelp",
+   "name": "Get Help",
+   "description": "Provides access to automated troubleshooting guides, support documentation, and direct Microsoft customer assistance.",
+   "packageId": "Microsoft.GetHelp",
+   "storeId": "9PKDZBMV1H3T",
+   "category": "Microsoft Apps"
+  },
+  {
+   "id": "microsoft.microsoftofficehub",
+   "name": "Microsoft 365",
+   "description": "Serves as a centralized launcher and dashboard for accessing cloud-based Microsoft 365 apps and recent documents.",
+   "packageId": "Microsoft.MicrosoftOfficeHub",
+   "storeId": "9WZDNCRD29V9",
+   "category": "Microsoft Apps"
+  },
+  {
+   "id": "microsoft.microsoftsolitairecollection",
+   "name": "Solitaire Collection",
+   "description": "Bundles built-in card game modes including Klondike, Spider, FreeCell, Pyramid, and TriPeaks alongside daily challenges.",
+   "packageId": "Microsoft.MicrosoftSolitaireCollection",
+   "storeId": "",
+   "category": "Xbox & Gaming"
+  },
+  {
+   "id": "microsoft.microsoftstickynotes",
+   "name": "Sticky Notes",
+   "description": "Creates quick, floating text notes on the desktop that automatically sync across devices.",
+   "packageId": "Microsoft.MicrosoftStickyNotes",
+   "storeId": "9NBLGGH4QGHW",
+   "category": "Utilities & Productivity"
+  },
+  {
+   "id": "microsoft.outlookforwindows",
+   "name": "Outlook for Windows",
+   "description": "Provides modern email management, calendar scheduling, and contact organization features.",
+   "packageId": "Microsoft.OutlookForWindows",
+   "storeId": "9NRX63209R7B",
+   "category": "Microsoft Apps"
+  },
+  {
+   "id": "microsoft.paint",
+   "name": "Paint",
+   "description": "Provides built-in digital sketching, basic image editing, and pixel-level graphic manipulation tools.",
+   "packageId": "Microsoft.Paint",
+   "storeId": "9PCFS5B6T72H",
+   "category": "Utilities & Productivity"
+  },
+  {
+   "id": "microsoft.powerautomatedesktop",
+   "name": "Power Automate",
+   "description": "Automates repetitive workflows and desktop tasks using low-code visual scripting.",
+   "packageId": "Microsoft.PowerAutomateDesktop",
+   "storeId": "9NFTCH6J7FHV",
+   "category": "Developer Tools"
+  },
+  {
+   "id": "microsoft.screensketch",
+   "name": "Snipping Tool",
+   "description": "Captures screenshots or screen recordings with built-in markup, image cropping, and optical character recognition (OCR).",
+   "packageId": "Microsoft.ScreenSketch",
+   "storeId": "9MZ95KL8MR0L",
+   "category": "Utilities & Productivity"
+  },
+  {
+   "id": "microsoft.startexperiencesapp",
+   "name": "Start Experiences App",
+   "description": "Powers the Windows Widgets board, delivering a personalized feed of news, weather, sports, and finance content.",
+   "packageId": "Microsoft.StartExperiencesApp",
+   "storeId": "9PC1H9VN18CM",
+   "category": "Bing & Web Services"
+  },
+  {
+   "id": "microsoft.todos",
+   "name": "To Do",
+   "description": "Creates, tracks, and synchronizes personal tasks, smart lists, and daily reminders.",
+   "packageId": "Microsoft.Todos",
+   "storeId": "9NBLGGH5R558",
+   "category": "Utilities & Productivity"
+  },
+  {
+   "id": "microsoft.windowsalarms",
+   "name": "Clock",
+   "description": "Features world clocks, alarms, countdown timers, stopwatches, and dedicated focus session tracking.",
+   "packageId": "Microsoft.WindowsAlarms",
+   "storeId": "9WZDNCRFJ3PR",
+   "category": "Utilities & Productivity"
+  },
+  {
+   "id": "microsoft.windowscalculator",
+   "name": "Calculator",
+   "description": "Performs standard arithmetic, scientific operations, programming calculations, and unit conversions.",
+   "packageId": "Microsoft.WindowsCalculator",
+   "storeId": "9WZDNCRFHVN5",
+   "category": "Utilities & Productivity"
+  },
+  {
+   "id": "microsoft.windowscamera",
+   "name": "Camera",
+   "description": "Captures photographs and records video files via connected webcams or imaging hardware.",
+   "packageId": "Microsoft.WindowsCamera",
+   "storeId": "9WZDNCRFJBBG",
+   "category": "Utilities & Productivity"
+  },
+  {
+   "id": "microsoftwindows.crossdevice",
+   "name": "Mobile Devices",
+   "description": "Manages system-level background connectivity with paired mobile devices. Removing this may disable cross-device features such as phone screen mirroring, file transfer, and mobile hotspot handoff integrated into Windows Settings.",
+   "packageId": "MicrosoftWindows.CrossDevice",
+   "storeId": "9NTXGKQ8P7N0",
+   "category": "Microsoft Ecosystem"
+  },
+  {
+   "id": "microsoft.windows.devhome",
+   "name": "Dev Home",
+   "description": "Provides a specialized dashboard for software developer environment setups, repository syncing, and hardware widgets.",
+   "packageId": "Microsoft.Windows.DevHome",
+   "storeId": "9N8MHTPHNGVV",
+   "category": "Developer Tools"
+  },
+  {
+   "id": "microsoft.windowsfeedbackhub",
+   "name": "Feedback Hub",
+   "description": "Allows users to submit bug reports, feature suggestions, and diagnostic data directly to Microsoft.",
+   "packageId": "Microsoft.WindowsFeedbackHub",
+   "storeId": "9NBLGGH4R32N",
+   "category": "Microsoft Apps"
+  },
+  {
+   "id": "microsoft.windowsnotepad",
+   "name": "Notepad",
+   "description": "Provides a lightweight text editor with multi-tab support for plain text files and code snippets.",
+   "packageId": "Microsoft.WindowsNotepad",
+   "storeId": "9MSMLRH6LZF3",
+   "category": "Utilities & Productivity"
+  },
+  {
+   "id": "microsoft.windows.photos",
+   "name": "Photos",
+   "description": "Organizes, views, and crops local images with basic color adjustment and album creation tools.",
+   "packageId": "Microsoft.Windows.Photos",
+   "storeId": "9WZDNCRFJBH4",
+   "category": "Utilities & Productivity"
+  },
+  {
+   "id": "microsoft.windowssoundrecorder",
+   "name": "Sound Recorder",
+   "description": "Records and trims live audio inputs with simple microphone adjustment controls.",
+   "packageId": "Microsoft.WindowsSoundRecorder",
+   "storeId": "9WZDNCRFHWKN",
+   "category": "Utilities & Productivity"
+  },
+  {
+   "id": "microsoft.xboxgamingoverlay",
+   "name": "Xbox Game Bar",
+   "description": "Provides customizable in-game status widgets, audio balancing sliders, system monitoring tools, and gameplay recording.",
+   "packageId": "Microsoft.XboxGamingOverlay",
+   "storeId": "9NZKPSTSNW4P",
+   "category": "Xbox & Gaming"
+  },
+  {
+   "id": "microsoft.xboxidentityprovider",
+   "name": "Xbox Identity Provider",
+   "description": "Manages Xbox network user authentication and background account validation for connected titles. Warning: removing this may break Microsoft account sign-in for non-Xbox games and apps that rely on this authentication pipeline.",
+   "packageId": "Microsoft.XboxIdentityProvider",
+   "storeId": "9WZDNCRD1HKW",
+   "category": "Xbox & Gaming"
+  },
+  {
+   "id": "microsoft.xboxspeechtotextoverlay",
+   "name": "Xbox Speech To Text Overlay",
+   "description": "Provides system-level live accessibility captions and voice-to-text translation for gaming chat networks.",
+   "packageId": "Microsoft.XboxSpeechToTextOverlay",
+   "storeId": "",
+   "category": "Xbox & Gaming"
+  },
+  {
+   "id": "microsoft.xbox.tcui",
+   "name": "Xbox TCUI",
+   "description": "Provides core account connection UI modules for single sign-on flows within game titles. Warning: removing this may break Microsoft account authentication in games and apps that do not otherwise require the Xbox app.",
+   "packageId": "Microsoft.Xbox.TCUI",
+   "storeId": "",
+   "category": "Xbox & Gaming"
+  },
+  {
+   "id": "microsoft.yourphone",
+   "name": "Phone Link",
+   "description": "Synchronizes text messages, phone notifications, photos, and calls from a mobile device to the desktop.",
+   "packageId": "Microsoft.YourPhone",
+   "storeId": "9NMPJ99VJBWV",
+   "category": "Microsoft Ecosystem"
+  },
+  {
+   "id": "microsoft.zunemusic",
+   "name": "Media Player",
+   "description": "Plays local audio and video files with modern playlist management and casting capabilities.",
+   "packageId": "Microsoft.ZuneMusic",
+   "storeId": "9WZDNCRFJ3PT",
+   "category": "Utilities & Productivity"
+  }
+ ]
+}
