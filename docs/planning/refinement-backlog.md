@@ -48,8 +48,8 @@ Open design decisions carried forward:
 - v3 candidates: diagnostic scheduled-task companions (overlaps Clean Boot
   entries — decide ownership first), consent-store per-app location controls,
   Wi-Fi hotspot reporting (verify still exists on current builds).
-- Sidebar icon: no "privacy" glyph mapped (same gap as "windows-update") — UI/UX
-  chapter.
+- Sidebar icons: DONE 2026-08-30 (privacy shield, windows-update refresh arrow,
+  environment chevrons).
 
 ## Signing decision (Sam, 2026-08-30): no EV certificate for the foreseeable future
 
