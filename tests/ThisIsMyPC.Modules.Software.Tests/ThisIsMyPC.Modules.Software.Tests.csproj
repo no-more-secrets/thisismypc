@@ -14,5 +14,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\ThisIsMyPC.Modules.Software\ThisIsMyPC.Modules.Software.csproj" />
+    <!-- For WingetService.ParseUpgradeTable, a pure parser with no live-system reach. -->
+    <ProjectReference Include="..\..\src\ThisIsMyPC.Interop.Win32\ThisIsMyPC.Interop.Win32.csproj" />
   </ItemGroup>
 </Project>

@@ -57,6 +57,10 @@ public sealed class SoftwareModule : IActionModule
             ? installed.Value!.Select(p => p.PackageId).ToHashSet(StringComparer.OrdinalIgnoreCase)
             : [];
 
+        // Update detection is best-effort too: a failed listing hides the
+        // Updates tab content but never blocks the catalog.
+        var upgradable = await _wingetService.ListUpgradableAsync().ConfigureAwait(false);
+
         var appxPackages = await _appxPackageService.EnumeratePackagesAsync().ConfigureAwait(false);
         var presentAppxIds = appxPackages.IsSuccess
             ? WindowsAppsCatalog.Entries
@@ -72,7 +76,9 @@ public sealed class SoftwareModule : IActionModule
             WingetVersion: version.IsSuccess ? version.Value : null,
             WindowsApps: WindowsAppsCatalog.Entries,
             PresentAppxPackageIds: presentAppxIds,
-            AppxStateKnown: appxPackages.IsSuccess);
+            AppxStateKnown: appxPackages.IsSuccess,
+            Upgradable: upgradable.IsSuccess ? upgradable.Value! : [],
+            UpgradableStateKnown: upgradable.IsSuccess);
 
         return OperationResult<object>.Success(scan);
     }
@@ -90,6 +96,9 @@ public sealed class SoftwareModule : IActionModule
 
         if (TryStripPrefix(action.ActionId, SoftwareActionFactory.UninstallPrefix, out catalogId))
             return await RunCatalogOperationAsync(catalogId, install: false).ConfigureAwait(false);
+
+        if (TryStripPrefix(action.ActionId, SoftwareActionFactory.UpgradePrefix, out var packageId))
+            return await _wingetService.UpgradeAsync(packageId).ConfigureAwait(false);
 
         if (TryStripPrefix(action.ActionId, SoftwareActionFactory.AppxRemovePrefix, out var appId))
             return await RemoveWindowsAppAsync(appId).ConfigureAwait(false);

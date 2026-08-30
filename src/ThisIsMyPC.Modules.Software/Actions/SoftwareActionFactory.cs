@@ -12,6 +12,7 @@ public static class SoftwareActionFactory
 {
     public const string InstallPrefix = "install:";
     public const string UninstallPrefix = "uninstall:";
+    public const string UpgradePrefix = "upgrade:";
     public const string AppxRemovePrefix = "appx-remove:";
     public const string AppxReinstallPrefix = "appx-reinstall:";
 
@@ -38,6 +39,20 @@ public static class SoftwareActionFactory
             DisplayName = $"Uninstall {entry.Name}",
             Detail = $"winget: {entry.WingetId} (runs the app's own uninstaller)",
             UndoHint = "Reinstall from the app catalog.",
+        };
+    }
+
+    /// <summary>Update action ids embed the winget package id directly — updates are not limited to catalog apps.</summary>
+    public static ActionDescriptor CreateUpgrade(Core.Packages.UpgradableWingetPackage package)
+    {
+        ArgumentNullException.ThrowIfNull(package);
+        return new ActionDescriptor
+        {
+            ModuleId = SoftwareModule.ModuleName,
+            ActionId = UpgradePrefix + package.PackageId,
+            DisplayName = $"Update {package.Name}",
+            Detail = $"winget: {package.PackageId} {package.InstalledVersion} to {package.AvailableVersion}",
+            UndoHint = null,
         };
     }
 

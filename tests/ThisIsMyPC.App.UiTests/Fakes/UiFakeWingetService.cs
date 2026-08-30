@@ -13,8 +13,15 @@ public sealed class UiFakeWingetService : IWingetService
         new("Mozilla.Firefox", "133.0"),
     ];
 
+    public List<UpgradableWingetPackage> Upgradable { get; } =
+    [
+        new("Mozilla.Firefox", "Mozilla Firefox", "133.0", "134.0.1"),
+        new("Git.Git", "Git", "2.47.0", "2.48.1"),
+    ];
+
     public List<(string PackageId, WingetSource Source)> Installs { get; } = [];
     public List<(string PackageId, WingetSource Source)> Uninstalls { get; } = [];
+    public List<string> Upgrades { get; } = [];
 
     public Task<OperationResult<string>> GetVersionAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult(OperationResult<string>.Success("v1.9.0-uitest"));
@@ -23,6 +30,18 @@ public sealed class UiFakeWingetService : IWingetService
         CancellationToken cancellationToken = default) =>
         Task.FromResult(OperationResult<IReadOnlyList<InstalledWingetPackage>>.Success(
             Installed.AsReadOnly()));
+
+    public Task<OperationResult<IReadOnlyList<UpgradableWingetPackage>>> ListUpgradableAsync(
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(OperationResult<IReadOnlyList<UpgradableWingetPackage>>.Success(
+            Upgradable.AsReadOnly()));
+
+    public Task<OperationResult<bool>> UpgradeAsync(
+        string packageId, CancellationToken cancellationToken = default)
+    {
+        Upgrades.Add(packageId);
+        return Task.FromResult(OperationResult<bool>.Success(true));
+    }
 
     public Task<OperationResult<bool>> InstallAsync(
         string packageId, WingetSource source, CancellationToken cancellationToken = default)

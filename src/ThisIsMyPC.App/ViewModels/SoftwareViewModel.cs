@@ -20,6 +20,21 @@ public sealed partial class SoftwareViewModel : ViewModelBase, IDisposable
 
     public IReadOnlyList<WindowsAppViewModel> WindowsApps { get; }
 
+    public IReadOnlyList<SoftwareUpdateViewModel> Updates { get; }
+
+    public bool UpgradableStateKnown { get; }
+
+    public bool HasUpdates => Updates.Count > 0;
+
+    public string UpdatesSummary => !UpgradableStateKnown
+        ? string.Empty
+        : Updates.Count switch
+        {
+            0 => "Everything winget manages is up to date.",
+            1 => "1 update available.",
+            var n => $"{n} updates available.",
+        };
+
     public IReadOnlyList<string> Categories { get; }
 
     public bool InstalledStateKnown { get; }
@@ -49,6 +64,12 @@ public sealed partial class SoftwareViewModel : ViewModelBase, IDisposable
                 entry,
                 isPresent: scanData.PresentAppxPackageIds.Contains(entry.PackageId),
                 pendingActionsService))
+            .ToList();
+
+        UpgradableStateKnown = scanData.UpgradableStateKnown;
+        Updates = scanData.Upgradable
+            .OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(package => new SoftwareUpdateViewModel(package, pendingActionsService))
             .ToList();
 
         _allApps = scanData.Catalog
@@ -113,6 +134,15 @@ public sealed partial class SoftwareViewModel : ViewModelBase, IDisposable
             app.RefreshQueuedState();
         foreach (var app in WindowsApps)
             app.RefreshQueuedState();
+        foreach (var update in Updates)
+            update.RefreshQueuedState();
+    }
+
+    [RelayCommand]
+    private void QueueAllUpdates()
+    {
+        foreach (var update in Updates)
+            update.Queue();
     }
 
     /// <summary>
@@ -129,6 +159,8 @@ public sealed partial class SoftwareViewModel : ViewModelBase, IDisposable
                 app.HandleActionSucceeded(action.ActionId);
             foreach (var app in WindowsApps)
                 app.HandleActionSucceeded(action.ActionId);
+            foreach (var update in Updates)
+                update.HandleActionSucceeded(action.ActionId);
         }
     }
 
@@ -203,6 +235,80 @@ public sealed partial class SoftwareAppViewModel : ViewModelBase
         else
             return;
 
+        RefreshQueuedState();
+    }
+}
+
+public sealed partial class SoftwareUpdateViewModel : ViewModelBase
+{
+    private readonly Core.Packages.UpgradableWingetPackage _package;
+    private readonly IPendingActionsService _pendingActionsService;
+
+    public SoftwareUpdateViewModel(
+        Core.Packages.UpgradableWingetPackage package, IPendingActionsService pendingActionsService)
+    {
+        ArgumentNullException.ThrowIfNull(package);
+        ArgumentNullException.ThrowIfNull(pendingActionsService);
+        _package = package;
+        _pendingActionsService = pendingActionsService;
+        _isQueued = pendingActionsService.IsStaged(ActionId);
+    }
+
+    public string Name => _package.Name;
+    public string PackageId => _package.PackageId;
+    public string VersionText => $"{_package.InstalledVersion} to {_package.AvailableVersion}";
+
+    private string ActionId => SoftwareActionFactory.UpgradePrefix + _package.PackageId;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ActionButtonText))]
+    [NotifyPropertyChangedFor(nameof(CanAct))]
+    private bool _isQueued;
+
+    // Done stays done until the next scan; the row keeps its place so the list
+    // does not reshuffle mid-review.
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ActionButtonText))]
+    [NotifyPropertyChangedFor(nameof(CanAct))]
+    private bool _isUpdated;
+
+    public bool CanAct => !IsUpdated;
+
+    public string ActionButtonText => IsUpdated
+        ? "Updated"
+        : IsQueued ? "Queued" : "Update";
+
+    [RelayCommand]
+    private void ToggleQueue()
+    {
+        if (IsUpdated)
+            return;
+
+        if (IsQueued)
+            _pendingActionsService.Unstage(ActionId);
+        else
+            Queue();
+
+        RefreshQueuedState();
+    }
+
+    public void Queue()
+    {
+        if (IsUpdated)
+            return;
+
+        _pendingActionsService.Stage(SoftwareActionFactory.CreateUpgrade(_package));
+        RefreshQueuedState();
+    }
+
+    public void RefreshQueuedState() => IsQueued = _pendingActionsService.IsStaged(ActionId);
+
+    public void HandleActionSucceeded(string actionId)
+    {
+        if (actionId != ActionId)
+            return;
+
+        IsUpdated = true;
         RefreshQueuedState();
     }
 }

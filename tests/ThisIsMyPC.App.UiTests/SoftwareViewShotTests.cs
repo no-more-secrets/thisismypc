@@ -23,7 +23,13 @@ public class SoftwareViewShotTests
         WindowsApps: WindowsAppsCatalog.Entries,
         PresentAppxPackageIds: WindowsAppsCatalog.Entries.Take(20).Select(e => e.PackageId)
             .ToHashSet(StringComparer.OrdinalIgnoreCase),
-        AppxStateKnown: true);
+        AppxStateKnown: true,
+        Upgradable:
+        [
+            new("Mozilla.Firefox", "Mozilla Firefox", "133.0", "134.0.1"),
+            new("Git.Git", "Git", "2.47.0", "2.48.1"),
+        ],
+        UpgradableStateKnown: true);
 
     private static (UiSession Session, SoftwareViewModel ViewModel, PendingActionsService Queue) CreateSession()
     {
@@ -82,6 +88,33 @@ public class SoftwareViewShotTests
             Assert.True(viewModel.FilteredApps.Count is > 0 and < 10,
                 $"Expected a filtered list, got {viewModel.FilteredApps.Count}");
             Assert.Contains(viewModel.FilteredApps, a => a.Name.Contains("Firefox", StringComparison.Ordinal));
+        }
+    }
+
+    [AvaloniaFact]
+    public void UpdatesTab_RendersRowsAndUpdateAllQueuesEverything()
+    {
+        var (session, viewModel, queue) = CreateSession();
+        using (session)
+        {
+            session.ClickText("Updates");
+            session.Screenshot("updates-tab");
+
+            Assert.True(session.IsTextVisible("2 updates available."));
+            Assert.True(session.IsTextVisible("133.0 to 134.0.1"));
+            Assert.True(session.IsTextVisible("Update all"));
+
+            session.ClickText("Update all");
+            session.Screenshot("updates-all-queued");
+
+            Assert.Equal(2, queue.PendingCount);
+            Assert.All(viewModel.Updates, u => Assert.True(u.IsQueued));
+
+            // A per-row click takes that one back out.
+            var row = viewModel.Updates[0];
+            row.ToggleQueueCommand.Execute(null);
+            Assert.Equal(1, queue.PendingCount);
+            Assert.False(row.IsQueued);
         }
     }
 

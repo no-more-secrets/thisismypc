@@ -12,6 +12,10 @@ public enum WingetSource
 /// <summary>A package winget reports as installed, keyed by its source package id.</summary>
 public sealed record InstalledWingetPackage(string PackageId, string? Version);
 
+/// <summary>A package winget reports as having an update available.</summary>
+public sealed record UpgradableWingetPackage(
+    string PackageId, string Name, string InstalledVersion, string AvailableVersion);
+
 /// <summary>
 /// Windows Package Manager (winget) operations. Installs and uninstalls are
 /// long-running and one-way; they are staged through the pending-actions queue,
@@ -32,4 +36,12 @@ public interface IWingetService
 
     Task<OperationResult<bool>> UninstallAsync(
         string packageId, WingetSource source, CancellationToken cancellationToken = default);
+
+    /// <summary>Packages with an update available, from the <c>winget upgrade</c> table.</summary>
+    Task<OperationResult<IReadOnlyList<UpgradableWingetPackage>>> ListUpgradableAsync(
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Updates one package in place; winget resolves the source it was installed from.</summary>
+    Task<OperationResult<bool>> UpgradeAsync(
+        string packageId, CancellationToken cancellationToken = default);
 }

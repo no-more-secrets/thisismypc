@@ -8,9 +8,12 @@ public sealed class FakeWingetService : IWingetService
     public List<(string PackageId, WingetSource Source)> Installs { get; } = [];
     public List<(string PackageId, WingetSource Source)> Uninstalls { get; } = [];
     public List<InstalledWingetPackage> InstalledPackages { get; } = [];
+    public List<UpgradableWingetPackage> UpgradablePackages { get; } = [];
+    public List<string> Upgrades { get; } = [];
 
     public bool IsAvailable { get; set; } = true;
     public bool ListFails { get; set; }
+    public bool UpgradableListFails { get; set; }
     public bool OperationsFail { get; set; }
 
     public Task<OperationResult<string>> GetVersionAsync(CancellationToken cancellationToken = default) =>
@@ -25,6 +28,23 @@ public sealed class FakeWingetService : IWingetService
                 "export failed", ErrorCategory.ServiceUnavailable)
             : OperationResult<IReadOnlyList<InstalledWingetPackage>>.Success(
                 InstalledPackages.AsReadOnly()));
+
+    public Task<OperationResult<IReadOnlyList<UpgradableWingetPackage>>> ListUpgradableAsync(
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(UpgradableListFails
+            ? OperationResult<IReadOnlyList<UpgradableWingetPackage>>.Failure(
+                "upgrade listing failed", ErrorCategory.ServiceUnavailable)
+            : OperationResult<IReadOnlyList<UpgradableWingetPackage>>.Success(
+                UpgradablePackages.AsReadOnly()));
+
+    public Task<OperationResult<bool>> UpgradeAsync(
+        string packageId, CancellationToken cancellationToken = default)
+    {
+        Upgrades.Add(packageId);
+        return Task.FromResult(OperationsFail
+            ? OperationResult<bool>.Failure("upgrade failed", ErrorCategory.ServiceUnavailable)
+            : OperationResult<bool>.Success(true));
+    }
 
     public Task<OperationResult<bool>> InstallAsync(
         string packageId, WingetSource source, CancellationToken cancellationToken = default)

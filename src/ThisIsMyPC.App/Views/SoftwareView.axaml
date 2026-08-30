@@ -87,6 +87,71 @@
             </DockPanel>
         </TabItem>
 
+        <!-- Updates tab: winget upgrade management -->
+        <TabItem>
+            <TabItem.Header>
+                <TextBlock Text="Updates" FontSize="13" />
+            </TabItem.Header>
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,8,20,8">
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right"
+                                Padding="8,4" FontSize="12"
+                                Content="Update all"
+                                Command="{Binding QueueAllUpdatesCommand}"
+                                IsVisible="{Binding HasUpdates}" />
+                        <TextBlock Text="{Binding UpdatesSummary}"
+                                   FontSize="12"
+                                   VerticalAlignment="Center"
+                                   Foreground="{StaticResource TextSecondaryBrush}" />
+                    </DockPanel>
+                    <TextBlock Text="Updates could not be read from winget. Rescan to try again."
+                               FontSize="12"
+                               Foreground="{StaticResource WarningBrush}"
+                               IsVisible="{Binding !UpgradableStateKnown}" />
+                </StackPanel>
+
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding Updates}" Margin="0,0,20,16">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:SoftwareUpdateViewModel">
+                                <Border Padding="12,10" Margin="0,2" CornerRadius="4"
+                                        Background="{StaticResource SurfaceBrush}">
+                                    <DockPanel>
+                                        <Button DockPanel.Dock="Right"
+                                                MinWidth="90"
+                                                Padding="8,4" FontSize="12"
+                                                VerticalAlignment="Center"
+                                                HorizontalContentAlignment="Center"
+                                                Content="{Binding ActionButtonText}"
+                                                Command="{Binding ToggleQueueCommand}"
+                                                IsEnabled="{Binding CanAct}" />
+                                        <StackPanel Spacing="2" Margin="0,0,12,0">
+                                            <TextBlock Text="{Binding Name}"
+                                                       FontWeight="SemiBold"
+                                                       FontSize="13"
+                                                       Foreground="{StaticResource TextPrimaryBrush}" />
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="{Binding VersionText}"
+                                                           FontSize="12"
+                                                           Foreground="{StaticResource TextSecondaryBrush}" />
+                                                <TextBlock Text="{Binding PackageId}"
+                                                           FontFamily="{StaticResource MonoFont}"
+                                                           FontSize="11"
+                                                           VerticalAlignment="Center"
+                                                           Foreground="{StaticResource TextTertiaryBrush}" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </DockPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </DockPanel>
+        </TabItem>
+
         <!-- Windows Apps tab: built-in app removal -->
         <TabItem>
             <TabItem.Header>

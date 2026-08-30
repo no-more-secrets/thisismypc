@@ -95,6 +95,60 @@ public class SoftwareModuleTests
     }
 
     [Fact]
+    public async Task ScanSystemState_IncludesUpgradablePackages()
+    {
+        var fake = new FakeWingetService();
+        fake.UpgradablePackages.Add(new("Git.Git", "Git", "2.47.0", "2.48.1"));
+        var module = CreateModule(fake);
+
+        var result = await module.ScanSystemStateAsync();
+
+        var scan = Assert.IsType<SoftwareScanData>(result.Value);
+        Assert.True(scan.UpgradableStateKnown);
+        Assert.Single(scan.Upgradable);
+        Assert.Equal("Git.Git", scan.Upgradable[0].PackageId);
+    }
+
+    [Fact]
+    public async Task ScanSystemState_UpgradeListingFailureIsBestEffort()
+    {
+        var module = CreateModule(new FakeWingetService { UpgradableListFails = true });
+
+        var result = await module.ScanSystemStateAsync();
+
+        Assert.True(result.IsSuccess);
+        var scan = Assert.IsType<SoftwareScanData>(result.Value);
+        Assert.False(scan.UpgradableStateKnown);
+        Assert.Empty(scan.Upgradable);
+    }
+
+    [Fact]
+    public async Task ExecuteAction_UpgradeRoutesToWingetByPackageId()
+    {
+        var fake = new FakeWingetService();
+        var module = CreateModule(fake);
+        var action = SoftwareActionFactory.CreateUpgrade(new("Git.Git", "Git", "2.47.0", "2.48.1"));
+
+        var result = await module.ExecuteActionAsync(action);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(["Git.Git"], fake.Upgrades);
+        Assert.Empty(fake.Installs);
+    }
+
+    [Fact]
+    public async Task ExecuteAction_UpgradeFailureSurfaces()
+    {
+        var fake = new FakeWingetService { OperationsFail = true };
+        var module = CreateModule(fake);
+        var action = SoftwareActionFactory.CreateUpgrade(new("Git.Git", "Git", "2.47.0", "2.48.1"));
+
+        var result = await module.ExecuteActionAsync(action);
+
+        Assert.False(result.IsSuccess);
+    }
+
+    [Fact]
     public async Task ExecuteAction_UnknownActionIdFails()
     {
         var module = CreateModule();

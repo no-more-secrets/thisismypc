@@ -206,7 +206,9 @@ additive verbs live under the HKCU classes overlay.
   warning: never write Defender policy hives)
 - Install/uninstall engine v1 SHIPPED 2026-08-30 (Modules.Software: winget
   catalog + inbox-app removal; see `docs/planning/install-engine-plan.md`).
+  `winget upgrade` management SHIPPED 2026-08-30 (Updates tab: header-offset
+  table parser in WingetService, upgrade: actions through the queue).
   Still there: OneDrive/Edge full removal, VCRedist/.NET bundles, OEM tools
-  (G-Helper/OmenMon), `winget upgrade` management
+  (G-Helper/OmenMon)
 - File associations, user shell folder relocation, WSL → unscoped
 - Visual effects/performance preset (winutil) → decide module home later

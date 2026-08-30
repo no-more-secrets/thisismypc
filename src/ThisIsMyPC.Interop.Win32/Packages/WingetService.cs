@@ -105,6 +105,54 @@ public sealed class WingetService : IWingetService
         }
     }
 
+    // winget's "no installed package found matching input criteria" — the
+    // normal everything-is-current outcome of "winget upgrade", not an error.
+    private const int NoPackagesFoundExitCode = unchecked((int)0x8A150014);
+
+    // "installed version is already the latest" — the package updated itself
+    // between staging and Apply; done is done.
+    private const int UpdateNotApplicableExitCode = unchecked((int)0x8A15002B);
+
+    public async Task<OperationResult<IReadOnlyList<UpgradableWingetPackage>>> ListUpgradableAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var run = await RunWingetAsync(
+            ["upgrade", "--accept-source-agreements", "--disable-interactivity"],
+            cancellationToken, ExportTimeout).ConfigureAwait(false);
+        if (!run.IsSuccess)
+        {
+            return OperationResult<IReadOnlyList<UpgradableWingetPackage>>.Failure(
+                run.ErrorMessage!, run.ErrorCategory!.Value);
+        }
+
+        var (exitCode, output) = run.Value;
+        if (exitCode == NoPackagesFoundExitCode)
+        {
+            return OperationResult<IReadOnlyList<UpgradableWingetPackage>>.Success([]);
+        }
+
+        var packages = ParseUpgradeTable(output);
+        if (exitCode != 0 && packages.Count == 0)
+        {
+            return OperationResult<IReadOnlyList<UpgradableWingetPackage>>.Failure(
+                FormatExitError("winget upgrade", exitCode, output),
+                ErrorCategory.ServiceUnavailable);
+        }
+
+        return OperationResult<IReadOnlyList<UpgradableWingetPackage>>.Success(packages);
+    }
+
+    public Task<OperationResult<bool>> UpgradeAsync(
+        string packageId, CancellationToken cancellationToken = default) =>
+        RunPackageOperationAsync(
+            packageId,
+            ["upgrade", "--id", packageId, "--exact",
+             "--accept-package-agreements", "--accept-source-agreements",
+             "--silent", "--disable-interactivity"],
+            $"winget upgrade {packageId}",
+            cancellationToken,
+            benignExitCodes: [NoPackagesFoundExitCode, UpdateNotApplicableExitCode]);
+
     public Task<OperationResult<bool>> InstallAsync(
         string packageId, WingetSource source, CancellationToken cancellationToken = default) =>
         RunPackageOperationAsync(
@@ -125,7 +173,8 @@ public sealed class WingetService : IWingetService
             cancellationToken);
 
     private async Task<OperationResult<bool>> RunPackageOperationAsync(
-        string packageId, string[] arguments, string operationName, CancellationToken cancellationToken)
+        string packageId, string[] arguments, string operationName, CancellationToken cancellationToken,
+        int[]? benignExitCodes = null)
     {
         var idError = ValidatePackageId(packageId);
         if (idError is not null)
@@ -136,7 +185,7 @@ public sealed class WingetService : IWingetService
             return OperationResult<bool>.Failure(run.ErrorMessage!, run.ErrorCategory!.Value);
 
         var (exitCode, output) = run.Value;
-        if (exitCode != 0)
+        if (exitCode != 0 && benignExitCodes?.Contains(exitCode) != true)
         {
             return OperationResult<bool>.Failure(
                 FormatExitError(operationName, exitCode, output),
@@ -204,6 +253,97 @@ public sealed class WingetService : IWingetService
         }
 
         return packages.AsReadOnly();
+    }
+
+    /// <summary>
+    /// Parses the fixed-width table of <c>winget upgrade</c> without depending on
+    /// the localized column headers: winget always emits Name, Id, Version,
+    /// Available, Source in that order, so the five header-word start offsets on
+    /// the line above each all-dashes separator give the column boundaries to
+    /// slice every data row by. Token counting is not enough — versions can
+    /// contain spaces ("&lt; 3.21.0", "6.6.11 (23272)"). The "require explicit
+    /// targeting" section repeats header and separator and is parsed the same
+    /// way. Exposed for tests.
+    /// </summary>
+    public static IReadOnlyList<UpgradableWingetPackage> ParseUpgradeTable(string output)
+    {
+        var packages = new List<UpgradableWingetPackage>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        string? previousLine = null;
+        int[]? columns = null;
+
+        foreach (var rawLine in output.Split('\n'))
+        {
+            // Progress rendering leaves carriage returns and backspaces behind;
+            // keep only what would remain on the console line. No Trim — the
+            // leading indentation is part of the column layout.
+            var line = rawLine.Replace("\b", "", StringComparison.Ordinal).TrimEnd('\r');
+            var lastReturn = line.LastIndexOf('\r');
+            if (lastReturn >= 0)
+                line = line[(lastReturn + 1)..];
+
+            var trimmed = line.Trim();
+            if (trimmed.Length >= 5 && trimmed.All(c => c == '-'))
+            {
+                columns = previousLine is null ? null : FindColumnStarts(previousLine);
+                previousLine = line;
+                continue;
+            }
+
+            previousLine = line;
+            if (columns is null)
+                continue;
+
+            var id = Slice(line, columns[1], columns[2]);
+            var installedVersion = Slice(line, columns[2], columns[3]);
+            var availableVersion = Slice(line, columns[3], columns[4]);
+
+            // Every data row fills all of its columns; a blank line or the
+            // "N upgrades available." trailer leaves some empty and ends the table.
+            if (id.Length == 0 || installedVersion.Length == 0 || availableVersion.Length == 0)
+            {
+                columns = null;
+                continue;
+            }
+
+            // A console-width-truncated id (ellipsis) cannot be targeted, and an
+            // id slice with interior spaces means the row is misaligned (wide
+            // glyphs in the name shift every column). Skip the row, keep the table.
+            if (id.Contains('…', StringComparison.Ordinal)
+                || ValidatePackageId(id) is not null
+                || !seen.Add(id))
+            {
+                continue;
+            }
+
+            packages.Add(new UpgradableWingetPackage(
+                PackageId: id,
+                Name: Slice(line, 0, columns[1]),
+                InstalledVersion: installedVersion,
+                AvailableVersion: availableVersion));
+        }
+
+        return packages.AsReadOnly();
+    }
+
+    /// <summary>Start offsets of the five header words, or null when the line is not a five-column header.</summary>
+    private static int[]? FindColumnStarts(string header)
+    {
+        var starts = new List<int>();
+        for (var i = 0; i < header.Length; i++)
+        {
+            if (header[i] != ' ' && (i == 0 || header[i - 1] == ' '))
+                starts.Add(i);
+        }
+
+        return starts.Count == 5 ? [.. starts] : null;
+    }
+
+    private static string Slice(string line, int start, int end)
+    {
+        if (start >= line.Length)
+            return string.Empty;
+        return line[start..Math.Min(end, line.Length)].Trim();
     }
 
     private static async Task<OperationResult<(int ExitCode, string Output)>> RunWingetAsync(
