@@ -17,10 +17,10 @@
 
         <StackPanel Spacing="6" IsVisible="{Binding IsOpen}">
             <TextBox Text="{Binding SetName}"
-                     Watermark="Set name"
+                     Watermark="Preset name"
                      FontSize="12" />
             <TextBox Text="{Binding SetDescription}"
-                     Watermark="What does this set do?"
+                     Watermark="What does this preset do?"
                      FontSize="12" />
             <CheckBox IsChecked="{Binding IsOptimizationPack}"
                       Content="Optimization pack (comprehensive bundle)"
@@ -37,7 +37,7 @@
                         Command="{Binding CancelCommand}" />
                 <Button DockPanel.Dock="Right"
                         Classes="apply-bar-apply"
-                        Content="Save Set"
+                        Content="Save Preset"
                         HorizontalAlignment="Right"
                         Command="{Binding SaveCommand}" />
             </DockPanel>

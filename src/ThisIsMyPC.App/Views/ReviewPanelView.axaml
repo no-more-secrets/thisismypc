@@ -55,7 +55,7 @@
                     <views:SaveSetFormView DataContext="{Binding SaveSetForm}" />
 
                     <Button Classes="apply-bar-discard"
-                            Content="Save as Set"
+                            Content="Save as Preset"
                             HorizontalAlignment="Right"
                             Command="{Binding SaveSetForm.OpenCommand}"
                             IsVisible="{Binding !SaveSetForm.IsOpen}"
@@ -188,7 +188,7 @@
                                    FontSize="12"
                                    Margin="4,6,0,2"
                                    Foreground="{DynamicResource WarningBrush}" />
-                        <TextBlock Text="These run on Apply. They cannot be undone from history and are not included in saved sets."
+                        <TextBlock Text="These run on Apply. They cannot be undone from history and are not included in saved presets."
                                    FontSize="11"
                                    Margin="4,0,0,4"
                                    Foreground="{DynamicResource TextTertiaryBrush}" />

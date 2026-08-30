@@ -39,7 +39,7 @@ public sealed class MainWindowViewModelSetLoaderTests
 
         Assert.IsType<SetLoaderViewModel>(vm.CurrentContent);
         Assert.True(vm.IsSetLoaderActive);
-        Assert.Equal("Set Loader", vm.ContentTitle);
+        Assert.Equal("Presets", vm.ContentTitle);
         Assert.Null(vm.SelectedModule);
         Assert.All(
             vm.SidebarGroups.SelectMany(g => g.Items),

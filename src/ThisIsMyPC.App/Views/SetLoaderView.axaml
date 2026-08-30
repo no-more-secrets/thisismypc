@@ -63,7 +63,7 @@
                       HorizontalScrollBarVisibility="Disabled"
                       VerticalScrollBarVisibility="Auto">
             <StackPanel Spacing="4">
-                <TextBlock Text="No sets found. Built-in sets ship with the application; user sets go in %APPDATA%\ThisIsMyPC\sets."
+                <TextBlock Text="No presets found. Built-in presets ship with the application; your own go in %APPDATA%\ThisIsMyPC\sets."
                            FontSize="13"
                            TextWrapping="Wrap"
                            Foreground="{DynamicResource TextTertiaryBrush}"
@@ -97,7 +97,7 @@
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"
                         Spacing="8">
-                <TextBlock Text="Select a set to preview its changes"
+                <TextBlock Text="Select a preset to preview its changes"
                            FontSize="15"
                            HorizontalAlignment="Center"
                            Foreground="{DynamicResource TextSecondaryBrush}" />

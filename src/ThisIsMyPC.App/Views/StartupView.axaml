@@ -237,23 +237,29 @@
         </DataTemplate>
     </UserControl.Resources>
 
-    <ScrollViewer HorizontalScrollBarVisibility="Disabled"
-                  VerticalScrollBarVisibility="Auto">
-        <StackPanel Spacing="20" Margin="0,8,20,16">
+    <TabControl>
+        <!-- Startup tab: everything that runs at sign-in -->
+        <TabItem>
+            <TabItem.Header>
+                <TextBlock Text="Startup" FontSize="13" />
+            </TabItem.Header>
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                          VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="20" Margin="0,8,20,16">
 
-            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
-                <TextBlock Text="Registry Info"
-                           FontSize="13"
-                           Foreground="{DynamicResource TextSecondaryBrush}"
-                           VerticalAlignment="Center" />
-                <ToggleSwitch IsChecked="{Binding IsRegistryViewMode}"
-                              OffContent=""
-                              OnContent=""
-                              VerticalAlignment="Center" />
-            </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                        <TextBlock Text="Registry Info"
+                                   FontSize="13"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" />
+                        <ToggleSwitch IsChecked="{Binding IsRegistryViewMode}"
+                                      OffContent=""
+                                      OnContent=""
+                                      VerticalAlignment="Center" />
+                    </StackPanel>
 
-            <!-- Registry entries -->
-            <StackPanel Spacing="6">
+                    <!-- Registry entries -->
+                    <StackPanel Spacing="6">
                 <TextBlock Text="{Binding RegistryHeader}"
                            FontSize="15"
                            FontWeight="SemiBold"
@@ -303,13 +309,23 @@
                            IsVisible="{Binding !HasTaskEntries}" />
             </StackPanel>
 
-            <!-- All scheduled tasks -->
-            <StackPanel Spacing="6">
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+
+        <!-- Scheduled Tasks tab -->
+        <TabItem>
+            <TabItem.Header>
+                <TextBlock Text="Scheduled Tasks" FontSize="13" />
+            </TabItem.Header>
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                          VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="6" Margin="0,8,20,16">
                 <TextBlock Text="{Binding ScheduledTasksSectionHeader}"
                            FontSize="15"
                            FontWeight="SemiBold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
-                <TextBlock Text="Every scheduled task on the system, auto-classified — override the classification or disable tasks (staged)"
+                <TextBlock Text="Every scheduled task on the system, auto-classified. Override the classification or disable tasks (staged)."
                            FontSize="12"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBlock Text="{Binding ScheduledTasksScanError, StringFormat='Task scan failed: {0}'}"
@@ -347,14 +363,22 @@
                            Foreground="{DynamicResource TextTertiaryBrush}"
                            IsVisible="{Binding !HasVisibleTasks}" />
             </StackPanel>
+            </ScrollViewer>
+        </TabItem>
 
-            <!-- Services -->
-            <StackPanel Spacing="6">
+        <!-- Services tab -->
+        <TabItem>
+            <TabItem.Header>
+                <TextBlock Text="Services" FontSize="13" />
+            </TabItem.Header>
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                          VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="6" Margin="0,8,20,16">
                 <TextBlock Text="{Binding ServicesHeader}"
                            FontSize="15"
                            FontWeight="SemiBold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
-                <TextBlock Text="Windows services — change startup type (staged), or start/stop/restart immediately"
+                <TextBlock Text="Windows services. Change startup type (staged), or start, stop, and restart immediately."
                            FontSize="12"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBlock Text="{Binding ServicesScanError, StringFormat='Service scan failed: {0}'}"
@@ -384,7 +408,7 @@
                            Foreground="{DynamicResource TextTertiaryBrush}"
                            IsVisible="{Binding !HasVisibleServices}" />
             </StackPanel>
-
-        </StackPanel>
-    </ScrollViewer>
+            </ScrollViewer>
+        </TabItem>
+    </TabControl>
 </UserControl>

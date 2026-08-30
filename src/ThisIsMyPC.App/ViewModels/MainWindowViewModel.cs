@@ -804,8 +804,8 @@ public partial class MainWindowViewModel : ViewModelBase
         (CurrentContent as IDisposable)?.Dispose();
         var loadResult = _setProvider.LoadSets();
 
-        ContentTitle = "Set Loader";
-        ContentDescription = "Browse curated tweak sets and preview every change before applying";
+        ContentTitle = "Presets";
+        ContentDescription = "Browse curated tweak presets and preview every change before applying";
         CurrentContent = new SetLoaderViewModel(
             loadResult, _setEntryInspectors, LookupModuleAvailability, _pendingChangesService,
             _capabilityDetector);

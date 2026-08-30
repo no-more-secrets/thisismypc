@@ -51,25 +51,25 @@
                     </StackPanel>
                 </Button>
 
-                <!-- Set Loader (not a module — pinned below the module groups) -->
+                <!-- Presets (not a module; pinned directly under Home, above the module groups) -->
+                <Button DockPanel.Dock="Top"
+                        Classes="sidebar-item"
+                        Classes.active="{Binding IsSetLoaderActive}"
+                        Command="{Binding OpenSetLoaderCommand}"
+                        ToolTip.Tip="Browse and preview tweak presets">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <PathIcon Width="18" Height="18"
+                                  Foreground="{DynamicResource TextSecondaryBrush}"
+                                  Data="M12,16L19.36,10.27L21,9L12,2L3,9L4.63,10.27M12,18.54L4.62,12.81L3,14.07L12,21.07L21,14.07L19.37,12.8L12,18.54Z" />
+                        <TextBlock Text="Presets"
+                                   VerticalAlignment="Center"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   IsVisible="{Binding !IsSidebarCollapsed}" />
+                    </StackPanel>
+                </Button>
+
+                <!-- Settings alone at the bottom -->
                 <StackPanel DockPanel.Dock="Bottom" Margin="0,8,0,8">
-                    <TextBlock Text="SETS"
-                               Classes="sidebar-group-header"
-                               IsVisible="{Binding !IsSidebarCollapsed}" />
-                    <Button Classes="sidebar-item"
-                            Classes.active="{Binding IsSetLoaderActive}"
-                            Command="{Binding OpenSetLoaderCommand}"
-                            ToolTip.Tip="Browse and preview tweak sets">
-                        <StackPanel Orientation="Horizontal" Spacing="10">
-                            <PathIcon Width="18" Height="18"
-                                      Foreground="{DynamicResource TextSecondaryBrush}"
-                                      Data="M12,16L19.36,10.27L21,9L12,2L3,9L4.63,10.27M12,18.54L4.62,12.81L3,14.07L12,21.07L21,14.07L19.37,12.8L12,18.54Z" />
-                            <TextBlock Text="Set Loader"
-                                       VerticalAlignment="Center"
-                                       Foreground="{DynamicResource TextPrimaryBrush}"
-                                       IsVisible="{Binding !IsSidebarCollapsed}" />
-                        </StackPanel>
-                    </Button>
                     <Button Classes="sidebar-item"
                             Classes.active="{Binding IsSettingsActive}"
                             Command="{Binding OpenSettingsCommand}"
