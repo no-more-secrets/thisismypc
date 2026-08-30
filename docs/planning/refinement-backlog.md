@@ -51,6 +51,22 @@ Open design decisions carried forward:
 - Sidebar icon: no "privacy" glyph mapped (same gap as "windows-update") — UI/UX
   chapter.
 
+## Signing decision (Sam, 2026-08-30): no EV certificate for the foreseeable future
+
+Consequences, verified against the code and upstream:
+- **Hardware modules stay feasible**: use the upstream-signed PawnIO release
+  (what FanControl/LHM ship) — no cert needed on our side. Constraint: never
+  fork or patch the driver; consume upstream releases only. Supersedes
+  ADR-001's "we EV-sign PawnIO" assumption.
+- **Update integrity moves to the GPG path**: replace AuthenticodeUpdateVerifier
+  with the planned GPG manifest verifier (offline key, public key hardcoded in
+  the binary, per the threat model) as part of release readiness. Unsigned
+  packages must never pass the current Authenticode verifier by accident —
+  the swap is a prerequisite for the first public release.
+- **SmartScreen warning on the installer is accepted** for now. Cheap later
+  options if wanted: Azure Trusted Signing (~$10/mo) or SignPath free OSS
+  signing. Only release-signing material stays private either way (GPLv2 rule).
+
 ## Future feature (new-module territory): SKU upgrade via generic keys
 
 Sam's idea: the app detects the edition tier and offers to upgrade the machine's
