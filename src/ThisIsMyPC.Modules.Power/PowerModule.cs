@@ -1,3 +1,4 @@
+using ThisIsMyPC.Core.Actions;
 using ThisIsMyPC.Core.Changes;
 using ThisIsMyPC.Core.Modules;
 using ThisIsMyPC.Core.Results;
@@ -8,8 +9,49 @@ using ThisIsMyPC.Modules.Power.Services;
 
 namespace ThisIsMyPC.Modules.Power;
 
-public sealed class PowerModule : IModule
+public sealed class PowerModule : IActionModule
 {
+    /// <summary>
+    /// Plan deletion is one-way: a deleted plan's custom settings cannot be
+    /// restored, so it runs through the pending-actions queue. Any plan may be
+    /// deleted except the active one (debloating the vendor plan zoo is the
+    /// point); already gone counts as done.
+    /// </summary>
+    public async Task<OperationResult<bool>> ExecuteActionAsync(ActionDescriptor action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+
+        if (!action.ActionId.StartsWith(Actions.PowerActionFactory.DeletePlanPrefix, StringComparison.Ordinal)
+            || !Guid.TryParse(action.ActionId[Actions.PowerActionFactory.DeletePlanPrefix.Length..], out var planGuid))
+        {
+            return OperationResult<bool>.Failure(
+                $"Unknown action '{action.ActionId}'.", ErrorCategory.NotFound);
+        }
+
+        return await Task.Run(() =>
+        {
+            var enumerated = _powerService.EnumeratePlans();
+            if (!enumerated.IsSuccess)
+            {
+                return OperationResult<bool>.Failure(
+                    enumerated.ErrorMessage ?? "Could not enumerate power plans.",
+                    enumerated.ErrorCategory ?? ErrorCategory.ServiceUnavailable);
+            }
+
+            var plan = enumerated.Value!.FirstOrDefault(p => p.PlanGuid == planGuid);
+            if (plan is null)
+                return OperationResult<bool>.Success(true);
+
+            if (plan.IsActive)
+            {
+                return OperationResult<bool>.Failure(
+                    $"'{plan.Name}' is the active plan. Switch to another plan first.",
+                    ErrorCategory.AccessDenied);
+            }
+
+            return _powerService.DeleteScheme(planGuid);
+        }).ConfigureAwait(false);
+    }
     private readonly IPowerService _powerService;
     private readonly IRegistryService _registryService;
 
@@ -172,7 +214,7 @@ public sealed class PowerModule : IModule
             if (PowerPlanScanner.FindUltimatePerformance(plans) is not null)
             {
                 return OperationResult<bool>.Failure(
-                    "This Ultimate Performance plan was not created by ThisIsMyPC. Remove it in Windows power options.",
+                    "This Ultimate Performance plan was not created by ThisIsMyPC. Use its Delete button in the plan list instead.",
                     ErrorCategory.AccessDenied);
             }
 

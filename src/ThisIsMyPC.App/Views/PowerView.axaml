@@ -89,6 +89,11 @@
                                                 Command="{Binding $parent[UserControl].((vm:PowerViewModel)DataContext).OpenSettingsCommand}"
                                                 CommandParameter="{Binding}"
                                                 IsVisible="{Binding $parent[UserControl].((vm:PowerViewModel)DataContext).CanOpenSettings}" />
+                                        <Button Content="{Binding DeleteButtonText}"
+                                                Padding="12,6" FontSize="12"
+                                                Command="{Binding ToggleDeleteQueueCommand}"
+                                                IsVisible="{Binding CanDelete}"
+                                                ToolTip.Tip="Stages the deletion; runs on Apply. Custom settings cannot be restored." />
                                     </StackPanel>
                                 </Grid>
                             </Border>

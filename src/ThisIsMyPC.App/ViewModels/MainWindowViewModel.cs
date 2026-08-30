@@ -552,7 +552,8 @@ public partial class MainWindowViewModel : ViewModelBase
                         ContentTitle = current.Module.Info.Name;
                         ContentDescription = current.Module.Info.Description;
                         CurrentContent = new PowerViewModel(
-                            powerData, _pendingChangesService, _powerService, _registryService);
+                            powerData, _pendingChangesService, _powerService, _registryService,
+                            _pendingActionsService);
                     }
                     else
                     {
@@ -1254,6 +1255,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
                 if (CurrentContent is SoftwareViewModel softwareVm)
                     softwareVm.ApplyActionResults(actionResult);
+                if (CurrentContent is PowerViewModel powerVm)
+                    powerVm.ApplyActionResults(actionResult);
 
                 if (!actionResult.IsSuccess)
                 {

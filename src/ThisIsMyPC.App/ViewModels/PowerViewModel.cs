@@ -24,6 +24,7 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
     private readonly IPendingChangesService _pendingChangesService;
     private readonly IPowerService? _powerService;
     private readonly IRegistryService? _registryService;
+    private Core.Services.IPendingActionsService? _pendingActionsService;
     private PowerPlan? _liveActivePlan;
     private string? _stagedGroupId;
     private string? _modernStandbyGroupId;
@@ -35,16 +36,21 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
         PowerScanData scanData,
         IPendingChangesService pendingChangesService,
         IPowerService? powerService = null,
-        IRegistryService? registryService = null)
+        IRegistryService? registryService = null,
+        Core.Services.IPendingActionsService? pendingActionsService = null)
     {
         _pendingChangesService = pendingChangesService;
         _powerService = powerService;
         _registryService = registryService;
+        _pendingActionsService = pendingActionsService;
         ScanError = scanData.ScanError;
         _liveActivePlan = scanData.Plans.FirstOrDefault(p => p.IsActive);
 
         Plans = new ObservableCollection<PowerPlanItemViewModel>(
-            scanData.Plans.Select(p => new PowerPlanItemViewModel(p)));
+            scanData.Plans.Select(p => new PowerPlanItemViewModel(p, pendingActionsService)));
+
+        if (_pendingActionsService is not null)
+            _pendingActionsService.PropertyChanged += OnPendingActionsPropertyChanged;
 
         // Rehydrate an active-plan group staged in an earlier visit
         var existing = pendingChangesService.PendingGroups.FirstOrDefault(g =>
@@ -466,6 +472,38 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
         SettingsGroups.Clear();
     }
 
+    private void OnPendingActionsPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        // Apply/discard empties the queue outside this view; rows must drop
+        // their queued state.
+        if (e.PropertyName is not nameof(Core.Services.IPendingActionsService.PendingActions))
+            return;
+
+        if (Dispatcher.UIThread.CheckAccess())
+            RefreshDeleteQueuedStates();
+        else
+            Dispatcher.UIThread.Post(RefreshDeleteQueuedStates);
+    }
+
+    private void RefreshDeleteQueuedStates()
+    {
+        foreach (var plan in Plans)
+            plan.RefreshQueuedState();
+    }
+
+    /// <summary>Drops rows whose delete action just succeeded. Called by the host after Apply.</summary>
+    public void ApplyActionResults(Core.Actions.ActionBatchResult result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+
+        foreach (var action in result.Succeeded)
+        {
+            var row = Plans.FirstOrDefault(p => p.DeleteActionId == action.ActionId);
+            if (row is not null)
+                Plans.Remove(row);
+        }
+    }
+
     public void Dispose()
     {
         if (_disposed)
@@ -474,21 +512,28 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
         foreach (var row in SystemPowerToggles)
             row.Dispose();
         _pendingChangesService.PropertyChanged -= OnPendingChangesPropertyChanged;
+        if (_pendingActionsService is not null)
+            _pendingActionsService.PropertyChanged -= OnPendingActionsPropertyChanged;
     }
 }
 
 public sealed partial class PowerPlanItemViewModel : ObservableObject
 {
+    private readonly Core.Services.IPendingActionsService? _pendingActionsService;
+
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanDelete))]
     private bool _isActive;
 
     [ObservableProperty]
     private bool _isPendingTarget;
 
-    public PowerPlanItemViewModel(PowerPlan plan)
+    public PowerPlanItemViewModel(PowerPlan plan, Core.Services.IPendingActionsService? pendingActionsService = null)
     {
         Plan = plan;
         _isActive = plan.IsActive;
+        _pendingActionsService = pendingActionsService;
+        _isDeleteQueued = pendingActionsService?.IsStaged(DeleteActionId) ?? false;
     }
 
     public PowerPlan Plan { get; }
@@ -497,8 +542,38 @@ public sealed partial class PowerPlanItemViewModel : ObservableObject
     public string DescriptionText => Plan.Description ?? string.Empty;
     public bool HasDescription => !string.IsNullOrEmpty(Plan.Description);
     public bool IsNormallyHidden => Plan.IsNormallyHidden;
-    public string HiddenNote => "Normally hidden by Windows — not shown in Control Panel on most editions";
+    public string HiddenNote => "Normally hidden by Windows; not shown in Control Panel on most editions";
     public string GuidText => Plan.PlanGuid.ToString("D");
+
+    // ---- One-way deletion (debloating the plan zoo) ----
+
+    internal string DeleteActionId =>
+        Modules.Power.Actions.PowerActionFactory.DeletePlanPrefix + Plan.PlanGuid.ToString("D");
+
+    public bool CanDelete => !IsActive && _pendingActionsService is not null;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DeleteButtonText))]
+    private bool _isDeleteQueued;
+
+    public string DeleteButtonText => IsDeleteQueued ? "Queued" : "Delete";
+
+    [RelayCommand]
+    private void ToggleDeleteQueue()
+    {
+        if (_pendingActionsService is null || IsActive)
+            return;
+
+        if (IsDeleteQueued)
+            _pendingActionsService.Unstage(DeleteActionId);
+        else
+            _pendingActionsService.Stage(Modules.Power.Actions.PowerActionFactory.CreateDeletePlan(Plan));
+
+        RefreshQueuedState();
+    }
+
+    public void RefreshQueuedState() =>
+        IsDeleteQueued = _pendingActionsService?.IsStaged(DeleteActionId) ?? false;
 }
 
 public sealed class PowerSettingGroupViewModel
