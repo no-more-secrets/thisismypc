@@ -78,6 +78,24 @@ Consequences, verified against the code and upstream:
   SmartScreen reputation builds from download volume regardless. Only
   release-signing material stays private (GPLv2 rule).
 
+## AV / SmartScreen readiness (release-readiness chunk, pre-first-release)
+
+The flag risk is Defender PUA heuristics on the app's behavior (elevated +
+SYSTEM service + policy writes + DiagTrack disable), not the cert. Standing
+mitigations already in place: never write Defender hives (deep-research rule),
+everything reversible and user-confirmed. Pre-release process items:
+- Submit each release to Microsoft's false-positive/developer portal BEFORE
+  publishing; keep the submission contact on the LLC domain.
+- VirusTotal scan of release artifacts as a CI canary (fail loud on new
+  detections, never auto-publish over one).
+- Ship via winget alongside GitHub releases (validation pipeline + users skip
+  browser SmartScreen).
+- Know the failure mode: a malware verdict on a signed binary can get the CERT
+  revoked, killing all releases signed with it. The GPG layer and reproducible
+  builds are the recovery story.
+- Expect SmartScreen cold starts to partially repeat at each ~15-month cert
+  reissue; reputation carry-over between certs is imperfect.
+
 ## Future feature (new-module territory): SKU upgrade via generic keys
 
 Sam's idea: the app detects the edition tier and offers to upgrade the machine's
