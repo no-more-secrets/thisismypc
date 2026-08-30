@@ -121,7 +121,7 @@
                             Command="{Binding CloseSettingsCommand}" />
                     <TextBlock Grid.Column="1"
                                Text="{Binding SettingsPlan.Name, FallbackValue=''}"
-                               FontSize="15" FontWeight="SemiBold"
+                               FontSize="16" FontWeight="SemiBold"
                                Foreground="{DynamicResource TextPrimaryBrush}"
                                VerticalAlignment="Center" Margin="12,0" />
                     <ToggleButton Grid.Column="2" Classes="toolbar-toggle" Content="Registry view"
@@ -179,7 +179,7 @@
                                                     Background="{DynamicResource SurfaceBrush}">
                                                 <StackPanel Spacing="4">
                                                     <TextBlock Text="{Binding Name}"
-                                                               FontSize="13" FontWeight="SemiBold"
+                                                               FontSize="14" FontWeight="SemiBold"
                                                                Foreground="{DynamicResource TextPrimaryBrush}" />
                                                     <TextBlock IsVisible="{Binding HasDescription}"
                                                                Text="{Binding DescriptionText}"
@@ -241,13 +241,13 @@
                                                             <Border IsVisible="{Binding HasPendingAc}"
                                                                     Background="{DynamicResource InfoMutedBrush}"
                                                                     CornerRadius="3" Padding="5,2">
-                                                                <TextBlock Text="AC pending" FontSize="10"
+                                                                <TextBlock Text="AC pending" FontSize="11"
                                                                            Foreground="{DynamicResource InfoBrush}" />
                                                             </Border>
                                                             <Border IsVisible="{Binding HasPendingDc}"
                                                                     Background="{DynamicResource InfoMutedBrush}"
                                                                     CornerRadius="3" Padding="5,2">
-                                                                <TextBlock Text="DC pending" FontSize="10"
+                                                                <TextBlock Text="DC pending" FontSize="11"
                                                                            Foreground="{DynamicResource InfoBrush}" />
                                                             </Border>
                                                         </StackPanel>

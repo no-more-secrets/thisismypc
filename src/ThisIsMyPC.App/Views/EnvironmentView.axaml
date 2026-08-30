@@ -62,7 +62,7 @@
         <!-- PATH Tab -->
         <TabItem>
             <TabItem.Header>
-                <TextBlock Text="PATH" FontSize="13" />
+                <TextBlock Text="PATH" FontSize="14" />
             </TabItem.Header>
             <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Auto">
@@ -71,7 +71,7 @@
                     <!-- User PATH -->
                     <StackPanel Spacing="6">
                         <TextBlock Text="User PATH"
-                                   FontSize="15"
+                                   FontSize="16"
                                    FontWeight="SemiBold"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                         <TextBlock Text="Per-user PATH entries, appended after system PATH"
@@ -89,7 +89,7 @@
                     <!-- System PATH -->
                     <StackPanel Spacing="6">
                         <TextBlock Text="System PATH"
-                                   FontSize="15"
+                                   FontSize="16"
                                    FontWeight="SemiBold"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                         <TextBlock Text="System-wide PATH entries, inherited by all users"
@@ -111,7 +111,7 @@
         <!-- User Tab -->
         <TabItem>
             <TabItem.Header>
-                <TextBlock Text="{Binding UserTabHeader}" FontSize="13" />
+                <TextBlock Text="{Binding UserTabHeader}" FontSize="14" />
             </TabItem.Header>
             <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Auto">
@@ -140,7 +140,7 @@
         <!-- System Tab -->
         <TabItem>
             <TabItem.Header>
-                <TextBlock Text="{Binding SystemTabHeader}" FontSize="13" />
+                <TextBlock Text="{Binding SystemTabHeader}" FontSize="14" />
             </TabItem.Header>
             <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Auto">

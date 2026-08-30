@@ -30,7 +30,7 @@
                                VerticalAlignment="Center" />
                     <TextBlock Text="Review Pending Changes"
                                FontWeight="SemiBold"
-                               FontSize="15"
+                               FontSize="16"
                                Foreground="{DynamicResource TextPrimaryBrush}"
                                VerticalAlignment="Center" />
                 </DockPanel>
@@ -113,7 +113,7 @@
                                         <!-- Group display name -->
                                         <TextBlock Text="{Binding DisplayName}"
                                                    FontWeight="SemiBold"
-                                                   FontSize="13"
+                                                   FontSize="14"
                                                    Foreground="{DynamicResource TextPrimaryBrush}" />
 
                                         <!-- Before -> After -->
@@ -211,7 +211,7 @@
                                             <StackPanel Spacing="2">
                                                 <TextBlock Text="{Binding DisplayName}"
                                                            FontWeight="SemiBold"
-                                                           FontSize="13"
+                                                           FontSize="14"
                                                            Foreground="{DynamicResource TextPrimaryBrush}" />
                                                 <TextBlock Text="{Binding Detail}"
                                                            FontFamily="{StaticResource MonoFont}"

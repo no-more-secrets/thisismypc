@@ -36,7 +36,7 @@
                 <Border Classes="set-card-body" Classes.selected="{Binding IsSelected}">
                     <StackPanel Spacing="4">
                         <TextBlock Text="{Binding Name}"
-                                   FontSize="15"
+                                   FontSize="16"
                                    FontWeight="SemiBold"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                         <TextBlock Text="{Binding Description}"
@@ -98,7 +98,7 @@
                         VerticalAlignment="Center"
                         Spacing="8">
                 <TextBlock Text="Select a preset to preview its changes"
-                           FontSize="15"
+                           FontSize="16"
                            HorizontalAlignment="Center"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBlock Text="Every change is shown with its current system value before anything is staged"
@@ -138,7 +138,7 @@
                         <DataTemplate x:DataType="vm:SetPreviewGroupViewModel">
                             <StackPanel Spacing="6" Margin="0,0,0,16">
                                 <TextBlock Text="{Binding GroupName}"
-                                           FontSize="13"
+                                           FontSize="14"
                                            FontWeight="SemiBold"
                                            Foreground="{DynamicResource AccentBrush}"
                                            IsVisible="{Binding HasHeader}" />
@@ -190,7 +190,7 @@
 
                                                     <StackPanel Spacing="2">
                                                         <TextBlock Text="{Binding SettingName}"
-                                                                   FontSize="13"
+                                                                   FontSize="14"
                                                                    FontWeight="SemiBold"
                                                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                                                         <TextBlock Text="{Binding Description}"

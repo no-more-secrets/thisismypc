@@ -129,7 +129,7 @@
                     <Ellipse Width="8" Height="8" VerticalAlignment="Center"
                              Fill="{DynamicResource WarningBrush}"
                              IsVisible="{Binding !IsRunning}" />
-                    <TextBlock Text="{Binding StateText}" FontSize="13" FontWeight="SemiBold"
+                    <TextBlock Text="{Binding StateText}" FontSize="14" FontWeight="SemiBold"
                                Foreground="{DynamicResource TextPrimaryBrush}" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="8">
@@ -169,7 +169,7 @@
                                     <Ellipse Width="8" Height="8" VerticalAlignment="Center"
                                              Fill="{DynamicResource WarningBrush}"
                                              IsVisible="{Binding !IsAvailable}" />
-                                    <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold"
+                                    <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold"
                                                Foreground="{DynamicResource TextPrimaryBrush}" />
                                 </StackPanel>
                                 <TextBlock Text="{Binding Detail}" FontSize="12" TextWrapping="Wrap"

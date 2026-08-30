@@ -11,7 +11,7 @@
         <!-- App Catalog tab -->
         <TabItem>
             <TabItem.Header>
-                <TextBlock Text="App Catalog" FontSize="13" />
+                <TextBlock Text="App Catalog" FontSize="14" />
             </TabItem.Header>
             <DockPanel>
                 <!-- Toolbar: search + category filter + installed-state note -->
@@ -51,7 +51,7 @@
                                             <StackPanel Orientation="Horizontal" Spacing="8">
                                                 <TextBlock Text="{Binding Name}"
                                                            FontWeight="SemiBold"
-                                                           FontSize="13"
+                                                           FontSize="14"
                                                            Foreground="{DynamicResource TextPrimaryBrush}" />
                                                 <TextBlock Text="Installed"
                                                            FontSize="11"
@@ -90,7 +90,7 @@
         <!-- Updates tab: winget upgrade management -->
         <TabItem>
             <TabItem.Header>
-                <TextBlock Text="Updates" FontSize="13" />
+                <TextBlock Text="Updates" FontSize="14" />
             </TabItem.Header>
             <DockPanel>
                 <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,8,20,8">
@@ -130,7 +130,7 @@
                                         <StackPanel Spacing="2" Margin="0,0,12,0">
                                             <TextBlock Text="{Binding Name}"
                                                        FontWeight="SemiBold"
-                                                       FontSize="13"
+                                                       FontSize="14"
                                                        Foreground="{DynamicResource TextPrimaryBrush}" />
                                             <StackPanel Orientation="Horizontal" Spacing="8">
                                                 <TextBlock Text="{Binding VersionText}"
@@ -155,7 +155,7 @@
         <!-- Windows Apps tab: built-in app removal -->
         <TabItem>
             <TabItem.Header>
-                <TextBlock Text="Windows Apps" FontSize="13" />
+                <TextBlock Text="Windows Apps" FontSize="14" />
             </TabItem.Header>
             <DockPanel>
                 <StackPanel DockPanel.Dock="Top" Spacing="4" Margin="0,8,20,8">
@@ -189,7 +189,7 @@
                                             <StackPanel Orientation="Horizontal" Spacing="8">
                                                 <TextBlock Text="{Binding Name}"
                                                            FontWeight="SemiBold"
-                                                           FontSize="13"
+                                                           FontSize="14"
                                                            Foreground="{DynamicResource TextPrimaryBrush}" />
                                                 <TextBlock Text="Installed"
                                                            FontSize="11"

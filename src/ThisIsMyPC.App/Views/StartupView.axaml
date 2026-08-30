@@ -102,7 +102,7 @@
                                     VerticalAlignment="Center"
                                     ToolTip.Tip="{Binding CompanionDescription}">
                                 <TextBlock Text="Enforcement companion"
-                                           FontSize="10" FontWeight="SemiBold" />
+                                           FontSize="11" FontWeight="SemiBold" />
                             </Border>
                             <TextBlock Text="Pending"
                                        IsVisible="{Binding HasPendingChange}"
@@ -241,7 +241,7 @@
         <!-- Startup tab: everything that runs at sign-in -->
         <TabItem>
             <TabItem.Header>
-                <TextBlock Text="Startup" FontSize="13" />
+                <TextBlock Text="Startup" FontSize="14" />
             </TabItem.Header>
             <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Auto">
@@ -261,7 +261,7 @@
                     <!-- Registry entries -->
                     <StackPanel Spacing="6">
                 <TextBlock Text="{Binding RegistryHeader}"
-                           FontSize="15"
+                           FontSize="16"
                            FontWeight="SemiBold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
                 <TextBlock Text="Programs launched from registry Run keys at sign-in"
@@ -278,7 +278,7 @@
             <!-- Startup folder entries -->
             <StackPanel Spacing="6">
                 <TextBlock Text="{Binding FolderHeader}"
-                           FontSize="15"
+                           FontSize="16"
                            FontWeight="SemiBold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
                 <TextBlock Text="Shortcuts and programs in the user and common Startup folders"
@@ -295,7 +295,7 @@
             <!-- Scheduled task entries -->
             <StackPanel Spacing="6">
                 <TextBlock Text="{Binding TaskHeader}"
-                           FontSize="15"
+                           FontSize="16"
                            FontWeight="SemiBold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
                 <TextBlock Text="Tasks that run at sign-in or startup (full task auditing arrives with the Scheduled Tasks section)"
@@ -316,13 +316,13 @@
         <!-- Scheduled Tasks tab -->
         <TabItem>
             <TabItem.Header>
-                <TextBlock Text="Scheduled Tasks" FontSize="13" />
+                <TextBlock Text="Scheduled Tasks" FontSize="14" />
             </TabItem.Header>
             <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Auto">
             <StackPanel Spacing="6" Margin="0,8,20,16">
                 <TextBlock Text="{Binding ScheduledTasksSectionHeader}"
-                           FontSize="15"
+                           FontSize="16"
                            FontWeight="SemiBold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
                 <TextBlock Text="Every scheduled task on the system, auto-classified. Override the classification or disable tasks (staged)."
@@ -369,13 +369,13 @@
         <!-- Services tab -->
         <TabItem>
             <TabItem.Header>
-                <TextBlock Text="Services" FontSize="13" />
+                <TextBlock Text="Services" FontSize="14" />
             </TabItem.Header>
             <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Auto">
             <StackPanel Spacing="6" Margin="0,8,20,16">
                 <TextBlock Text="{Binding ServicesHeader}"
-                           FontSize="15"
+                           FontSize="16"
                            FontWeight="SemiBold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
                 <TextBlock Text="Windows services. Change startup type (staged), or start, stop, and restart immediately."
