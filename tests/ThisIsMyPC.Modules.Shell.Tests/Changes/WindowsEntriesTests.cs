@@ -113,6 +113,28 @@ public sealed class WindowsEntriesTests
     }
 
     [Fact]
+    public async Task NewZip_UndoRestoresThirdPartyValuesFromLiveSnapshot()
+    {
+        // A value some other tool put on the key must survive our delete+undo.
+        _registry.AddKey(WindowsEntriesChangeFactory.ZipShellNewKeyPath);
+        _registry.SetString(WindowsEntriesChangeFactory.ZipShellNewKeyPath, "ThirdParty", "keep-me");
+
+        var disable = Entry("ctx-win-new-zip").CreateToggle(_registry, false).Changes[0];
+        await Module.ApplyChangeAsync(disable);
+        Assert.Null(GetString(WindowsEntriesChangeFactory.ZipShellNewKeyPath, "ThirdParty"));
+
+        var swapped = disable with
+        {
+            BeforeValue = disable.AfterValue ?? string.Empty,
+            AfterValue = disable.BeforeValue,
+        };
+        var result = await Module.RevertChangeAsync(swapped);
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.Equal("keep-me", GetString(WindowsEntriesChangeFactory.ZipShellNewKeyPath, "ThirdParty"));
+    }
+
+    [Fact]
     public async Task EditWithPaint_DisableWritesBlockedListValue()
     {
         var group = Entry("ctx-win-edit-paint").CreateToggle(_registry, false);
@@ -137,8 +159,8 @@ public sealed class WindowsEntriesTests
             Assert.True(result.IsSuccess, result.ErrorMessage);
         }
 
-        Assert.Equal("", GetString(@"HKCU\Software\Classes\batfile\shell\print", "ProgrammaticAccessOnly"));
-        Assert.Equal("", GetString(@"HKCU\Software\Classes\cmdfile\shell\print", "ProgrammaticAccessOnly"));
+        Assert.Equal("", GetString(@"HKCR\batfile\shell\print", "ProgrammaticAccessOnly"));
+        Assert.Equal("", GetString(@"HKCR\cmdfile\shell\print", "ProgrammaticAccessOnly"));
     }
 
     [Fact]

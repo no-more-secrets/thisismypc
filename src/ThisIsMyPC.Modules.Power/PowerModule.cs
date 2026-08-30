@@ -133,8 +133,16 @@ public sealed class PowerModule : IModule
 
     private OperationResult<bool> ApplyUltimatePerformanceChange(ChangeDescriptor change)
     {
+        var scanner = new PowerPlanScanner(_powerService);
+        var plans = scanner.Scan();
+
         if (change.AfterValue == "1")
         {
+            // Idempotent: history Redo/Restore replays this unconditionally,
+            // and a second copy of the plan helps nobody.
+            if (PowerPlanScanner.FindUltimatePerformance(plans) is not null)
+                return OperationResult<bool>.Success(true);
+
             var duplicated = _powerService.DuplicateScheme(PowerPlanChangeFactory.UltimatePerformanceSourceGuid);
             if (!duplicated.IsSuccess)
             {
@@ -142,17 +150,32 @@ public sealed class PowerModule : IModule
                     duplicated.ErrorMessage!, duplicated.ErrorCategory!.Value, duplicated.Exception);
             }
 
-            // Best-effort marker: the plan works without it, so a failed text
-            // write must not roll back the install.
-            _ = _powerService.WriteSchemeText(
+            // The marker is how scan and removal find our copy across locales.
+            // An unmarked duplicate would be an orphan the UI can never remove,
+            // so a failed text write rolls the install back.
+            var marked = _powerService.WriteSchemeText(
                 duplicated.Value, "Ultimate Performance", PowerPlanChangeFactory.UltimatePerformanceMarker);
+            if (!marked.IsSuccess)
+            {
+                _ = _powerService.DeleteScheme(duplicated.Value);
+                return marked;
+            }
+
             return OperationResult<bool>.Success(true);
         }
 
-        var scanner = new PowerPlanScanner(_powerService);
-        var target = Services.PowerPlanScanner.FindUltimatePerformance(scanner.Scan());
+        // Deletion is destructive and undo can only recreate a factory-settings
+        // copy — so only the plan we created (marker description) may be deleted.
+        var target = PowerPlanScanner.FindMarkedUltimatePerformance(plans);
         if (target is null)
         {
+            if (PowerPlanScanner.FindUltimatePerformance(plans) is not null)
+            {
+                return OperationResult<bool>.Failure(
+                    "This Ultimate Performance plan was not created by ThisIsMyPC. Remove it in Windows power options.",
+                    ErrorCategory.AccessDenied);
+            }
+
             // Already gone — removal is idempotent.
             return OperationResult<bool>.Success(true);
         }

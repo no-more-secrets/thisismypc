@@ -7,9 +7,10 @@ namespace ThisIsMyPC.App.UiTests;
 
 /// <summary>
 /// Renders the curated Windows entries tab with an empty handler scan and the
-/// real registry (read-only: state reads at construction, staging on click,
-/// never an apply).
+/// real registry. Live-state reads make this Category=Diagnostic per CLAUDE.md
+/// (never in CI); it stages only, never applies.
 /// </summary>
+[Trait("Category", "Diagnostic")]
 public class ContextMenuWindowsTabShotTests
 {
     [AvaloniaFact]

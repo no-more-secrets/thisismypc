@@ -101,48 +101,13 @@
                     <TextBlock Text="System power"
                                FontSize="14" FontWeight="SemiBold"
                                Foreground="{StaticResource TextPrimaryBrush}" />
-
-                    <Border IsVisible="{Binding ShowHibernate}"
-                            Padding="16,12" Margin="0,3" CornerRadius="6"
-                            Background="{StaticResource SurfaceBrush}">
-                        <Grid ColumnDefinitions="*,Auto">
-                            <StackPanel Grid.Column="0" Spacing="4">
-                                <TextBlock Text="Hibernation"
-                                           FontSize="14" FontWeight="SemiBold"
-                                           Foreground="{StaticResource TextPrimaryBrush}" />
-                                <TextBlock Text="{Binding HibernateDescription}"
-                                           FontSize="12"
-                                           Foreground="{StaticResource TextSecondaryBrush}"
-                                           TextWrapping="Wrap" />
-                            </StackPanel>
-                            <ToggleSwitch Grid.Column="1" VerticalAlignment="Center"
-                                          IsChecked="{Binding IsHibernateEnabled}"
-                                          Command="{Binding ToggleHibernateCommand}" />
-                        </Grid>
-                    </Border>
-
-                    <Border Padding="16,12" Margin="0,3" CornerRadius="6"
-                            Background="{StaticResource SurfaceBrush}">
-                        <Grid ColumnDefinitions="*,Auto">
-                            <StackPanel Grid.Column="0" Spacing="4">
-                                <TextBlock Text="Ultimate Performance plan"
-                                           FontSize="14" FontWeight="SemiBold"
-                                           Foreground="{StaticResource TextPrimaryBrush}" />
-                                <TextBlock Text="{Binding UltimatePerformanceDescription}"
-                                           FontSize="12"
-                                           Foreground="{StaticResource TextSecondaryBrush}"
-                                           TextWrapping="Wrap" />
-                                <TextBlock Text="{Binding UltimatePerformanceCaveat}"
-                                           IsVisible="{Binding ShowUltimatePerformanceCaveat}"
-                                           FontSize="12"
-                                           Foreground="{StaticResource WarningBrush}"
-                                           TextWrapping="Wrap" />
-                            </StackPanel>
-                            <ToggleSwitch Grid.Column="1" VerticalAlignment="Center"
-                                          IsChecked="{Binding IsUltimatePerformanceInstalled}"
-                                          Command="{Binding ToggleUltimatePerformanceCommand}" />
-                        </Grid>
-                    </Border>
+                    <TextBlock Text="{Binding UltimatePerformanceCaveat}"
+                               IsVisible="{Binding ShowUltimatePerformanceCaveat}"
+                               FontSize="12"
+                               Foreground="{StaticResource WarningBrush}"
+                               TextWrapping="Wrap" />
+                    <ItemsControl ItemsSource="{Binding SystemPowerToggles}"
+                                  ItemTemplate="{StaticResource ToggleSettingRowTemplate}" />
                 </StackPanel>
             </StackPanel>
 

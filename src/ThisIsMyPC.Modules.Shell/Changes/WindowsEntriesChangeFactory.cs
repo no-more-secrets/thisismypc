@@ -19,18 +19,18 @@ public sealed record WindowsMenuEntry(
 
 /// <summary>
 /// Curated "Windows entries" catalog. Recipes ported from Sophia Script (MIT,
-/// (c) farag, Inestic and lotpyre); never shells out to it. Additive verbs live
-/// under the HKCU classes overlay (ShellRegistryPaths.RemapHkcrToHkcu); only
-/// the ShellNew hide touches the HKLM-backed HKCR key, because an HKCU overlay
-/// cannot remove an HKLM-backed key from the merged view.
+/// (c) farag, Inestic and lotpyre); never shells out to it. All paths use real
+/// HKCR (the app runs elevated): reads and writes must hit the same store,
+/// because an HKCU overlay can neither remove an HKLM-backed key nor unmask an
+/// HKLM-backed value from the merged view.
 /// </summary>
 public static class WindowsEntriesChangeFactory
 {
     public const string ModuleId = "Context Menus";
 
     // Root key paths (write side). Additive verbs use the HKCU overlay.
-    public const string MsiExtractKeyPath = @"HKCU\Software\Classes\Msi.Package\shell\Extract";
-    public const string CabInstallKeyPath = @"HKCU\Software\Classes\CABFolder\Shell\runas";
+    public const string MsiExtractKeyPath = @"HKCR\Msi.Package\shell\Extract";
+    public const string CabInstallKeyPath = @"HKCR\CABFolder\Shell\runas";
     public const string ZipShellNewKeyPath = @"HKCR\.zip\CompressedFolder\ShellNew";
 
     /// <summary>Key paths the module accepts Registry_KeyTree changes for.</summary>
@@ -46,8 +46,8 @@ public static class WindowsEntriesChangeFactory
     public const string PhotosEditClsid = "{BFE0E2A4-C70C-4AD7-AC3D-10D1ECEBB5B4}";
     public const string PaintEditClsid = "{2430F218-B743-4FD6-97BF-5C76541B4AE9}";
 
-    private const string BatPrintKeyPath = @"HKCU\Software\Classes\batfile\shell\print";
-    private const string CmdPrintKeyPath = @"HKCU\Software\Classes\cmdfile\shell\print";
+    private const string BatPrintKeyPath = @"HKCR\batfile\shell\print";
+    private const string CmdPrintKeyPath = @"HKCR\cmdfile\shell\print";
     private const string ExplorerKeyPath = @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer";
     private const string ExplorerPolicyKeyPath = @"HKCU\Software\Policies\Microsoft\Windows\Explorer";
 
@@ -61,10 +61,9 @@ public static class WindowsEntriesChangeFactory
             Label: "Extract all on MSI installers",
             Description: "Adds an Extract all entry to .msi files. Unpacks the installer next to it without installing.",
             SystemLocation: MsiExtractKeyPath,
-            ReadState: reg => KeyPresent(reg, @"HKCR\Msi.Package\shell\Extract\Command", $@"{MsiExtractKeyPath}\Command"),
+            ReadState: reg => reg.KeyExists(MsiExtractKeyPath) is { IsSuccess: true, Value: true },
             CreateToggle: (reg, enable) => KeyTreeToggle(
-                reg, "ctx-win-msi-extract", "Extract all on MSI installers", MsiExtractKeyPath,
-                @"HKCR\Msi.Package\shell\Extract\Command", enable,
+                reg, "ctx-win-msi-extract", "Extract all on MSI installers", MsiExtractKeyPath, enable,
                 new RegistryKeyTreeDefinition
                 {
                     Values =
@@ -80,10 +79,9 @@ public static class WindowsEntriesChangeFactory
             Label: "Install on CAB packages",
             Description: "Adds an elevated Install entry to .cab files. Runs DISM to add the package to Windows.",
             SystemLocation: CabInstallKeyPath,
-            ReadState: reg => KeyPresent(reg, @"HKCR\CABFolder\Shell\runas\Command", $@"{CabInstallKeyPath}\Command"),
+            ReadState: reg => reg.KeyExists(CabInstallKeyPath) is { IsSuccess: true, Value: true },
             CreateToggle: (reg, enable) => KeyTreeToggle(
-                reg, "ctx-win-cab-install", "Install on CAB packages", CabInstallKeyPath,
-                @"HKCR\CABFolder\Shell\runas\Command", enable,
+                reg, "ctx-win-cab-install", "Install on CAB packages", CabInstallKeyPath, enable,
                 new RegistryKeyTreeDefinition
                 {
                     Values =
@@ -101,8 +99,7 @@ public static class WindowsEntriesChangeFactory
             SystemLocation: ZipShellNewKeyPath,
             ReadState: reg => reg.KeyExists(ZipShellNewKeyPath) is { IsSuccess: true, Value: true },
             CreateToggle: (reg, enable) => KeyTreeToggle(
-                reg, "ctx-win-new-zip", "New Compressed folder", ZipShellNewKeyPath,
-                ZipShellNewKeyPath, enable,
+                reg, "ctx-win-new-zip", "New Compressed folder", ZipShellNewKeyPath, enable,
                 new RegistryKeyTreeDefinition
                 {
                     Values =
@@ -168,28 +165,25 @@ public static class WindowsEntriesChangeFactory
                 enable, disabledValue: 1)),
     ];
 
-    /// <summary>HKCR merges the HKCU classes overlay on a real system; the fake registry does not, so check both.</summary>
-    private static bool KeyPresent(IRegistryService reg, string hkcrPath, string overlayPath) =>
-        reg.KeyExists(hkcrPath) is { IsSuccess: true, Value: true }
-        || reg.KeyExists(overlayPath) is { IsSuccess: true, Value: true };
-
-    private static bool ValuePresent(IRegistryService reg, string hkcrPath, string overlayPath, string valueName) =>
-        reg.ValueExists(hkcrPath, valueName) is { IsSuccess: true, Value: true }
-        || reg.ValueExists(overlayPath, valueName) is { IsSuccess: true, Value: true };
-
-    /// <summary>Enable materializes the tree; disable deletes the root key recursively.</summary>
+    /// <summary>
+    /// Enable materializes the tree; disable deletes the root key recursively.
+    /// BeforeValue is a live snapshot of the existing tree (never our own
+    /// definition), so undo restores exactly what the machine had.
+    /// </summary>
     private static ChangeGroup KeyTreeToggle(
         IRegistryService registry, string settingId, string label, string keyPath,
-        string presenceProbePath, bool enable, RegistryKeyTreeDefinition definition)
+        bool enable, RegistryKeyTreeDefinition definition)
     {
-        var currentlyPresent = KeyPresent(registry, presenceProbePath, $@"{keyPath}\Command") || (presenceProbePath == keyPath && registry.KeyExists(keyPath) is { IsSuccess: true, Value: true });
+        var currentlyPresent = registry.KeyExists(keyPath) is { IsSuccess: true, Value: true };
         var change = new ChangeDescriptor
         {
             ModuleId = ModuleId,
             SettingId = settingId,
             DisplayName = $"Context menu: {label}",
             SystemLocation = keyPath,
-            BeforeValue = currentlyPresent ? definition.Serialize() : ShellRegistryPaths.AbsentValue,
+            BeforeValue = currentlyPresent
+                ? SnapshotKeyTree(registry, keyPath).Serialize()
+                : ShellRegistryPaths.AbsentValue,
             AfterValue = enable ? definition.Serialize() : ShellRegistryPaths.AbsentValue,
             BeforeDisplay = currentlyPresent ? "Shown" : "Hidden",
             AfterDisplay = enable ? "Shown" : "Hidden",
@@ -221,17 +215,13 @@ public static class WindowsEntriesChangeFactory
         return Wrap(change);
     }
 
-    /// <summary>Hide writes ProgrammaticAccessOnly on the HKCU overlay of both script types.</summary>
+    /// <summary>Hide writes ProgrammaticAccessOnly on both script types (real HKCR paths).</summary>
     private static ChangeGroup PrintScriptsToggle(IRegistryService registry, bool enable)
     {
         var changes = new List<ChangeDescriptor>();
-        foreach (var (hkcrPath, overlayPath) in new[]
+        foreach (var overlayPath in new[] { BatPrintKeyPath, CmdPrintKeyPath })
         {
-            (@"HKCR\batfile\shell\print", BatPrintKeyPath),
-            (@"HKCR\cmdfile\shell\print", CmdPrintKeyPath),
-        })
-        {
-            var currentlyHidden = registry.ValueExists(hkcrPath, "ProgrammaticAccessOnly") is { IsSuccess: true, Value: true };
+            var currentlyHidden = registry.ValueExists(overlayPath, "ProgrammaticAccessOnly") is { IsSuccess: true, Value: true };
             changes.Add(new ChangeDescriptor
             {
                 ModuleId = ModuleId,
@@ -287,6 +277,40 @@ public static class WindowsEntriesChangeFactory
             RestartRequirement = RestartRequirement.None,
         };
         return Wrap(change);
+    }
+
+    /// <summary>
+    /// Recursively captures every value in a key tree so undo can restore the
+    /// machine's real prior state, third-party additions included. Value kind
+    /// is probed strictest-first (binary, expand string, string).
+    /// </summary>
+    private static RegistryKeyTreeDefinition SnapshotKeyTree(IRegistryService registry, string rootPath)
+    {
+        var values = new List<RegistryKeyTreeValue>();
+        Collect(rootPath, "");
+        return new RegistryKeyTreeDefinition { Values = values };
+
+        void Collect(string keyPath, string relative)
+        {
+            if (registry.EnumerateValues(keyPath) is { IsSuccess: true, Value: { } names })
+            {
+                foreach (var name in names)
+                {
+                    if (registry.ReadBinary(keyPath, name) is { IsSuccess: true, Value: { } bin })
+                        values.Add(new(relative, name, RegistryKeyTreeValueKind.Binary, Convert.ToBase64String(bin)));
+                    else if (registry.ReadExpandString(keyPath, name) is { IsSuccess: true, Value: { } expand })
+                        values.Add(new(relative, name, RegistryKeyTreeValueKind.ExpandString, expand));
+                    else if (registry.ReadString(keyPath, name) is { IsSuccess: true, Value: { } text })
+                        values.Add(new(relative, name, RegistryKeyTreeValueKind.String, text));
+                }
+            }
+
+            if (registry.EnumerateSubKeys(keyPath) is { IsSuccess: true, Value: { } subKeys })
+            {
+                foreach (var subKey in subKeys)
+                    Collect($@"{keyPath}\{subKey}", relative.Length == 0 ? subKey : $@"{relative}\{subKey}");
+            }
+        }
     }
 
     private static ChangeGroup Wrap(ChangeDescriptor change) => new()

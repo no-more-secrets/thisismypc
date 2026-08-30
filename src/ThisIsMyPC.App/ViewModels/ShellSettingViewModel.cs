@@ -100,7 +100,8 @@ public sealed partial class ShellSettingViewModel : ViewModelBase, IDisposable
         bool isEnabled,
         IPendingChangesService pendingChangesService,
         Func<bool, ChangeGroup> groupFactory,
-        Func<bool> readRegistryState)
+        Func<bool> readRegistryState,
+        string? rehydrateSettingId = null)
     {
         _pendingChangesService = pendingChangesService;
         _preference = null;
@@ -117,6 +118,37 @@ public sealed partial class ShellSettingViewModel : ViewModelBase, IDisposable
         _suppressStaging = false;
 
         _pendingChangesService.PropertyChanged += OnPendingChangesPropertyChanged;
+
+        if (rehydrateSettingId is not null)
+            RehydrateStagedGroup(rehydrateSettingId);
+    }
+
+    /// <summary>
+    /// Adopts a group staged in an earlier visit to this view (same SettingId),
+    /// so re-toggling replaces it instead of stacking a duplicate. Direction
+    /// comes from the change's Category (Enable/Create = on).
+    /// </summary>
+    private void RehydrateStagedGroup(string settingId)
+    {
+        var existing = _pendingChangesService.PendingGroups.FirstOrDefault(g =>
+            g.Changes.Count >= 1 && g.Changes[0].SettingId == settingId);
+        if (existing is null)
+            return;
+
+        var pendingOn = existing.Changes[0].Category
+            is ChangeCategory.Enable or ChangeCategory.Create;
+        if (pendingOn == _registryIsEnabled)
+        {
+            // Pending target already matches live state — drop the redundant group.
+            _pendingChangesService.Unstage(existing.GroupId);
+            return;
+        }
+
+        _stagedGroupId = existing.GroupId;
+        _suppressStaging = true;
+        IsEnabled = pendingOn;
+        _suppressStaging = false;
+        UpdatePendingState();
     }
 
     partial void OnIsEnabledChanged(bool value)

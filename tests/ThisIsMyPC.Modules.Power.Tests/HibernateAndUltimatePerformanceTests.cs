@@ -155,6 +155,52 @@ public sealed class HibernateAndUltimatePerformanceTests
     }
 
     [Fact]
+    public async Task Apply_RemoveRefusesForeignUltimatePerformancePlan()
+    {
+        // A plan we did not create (no marker) must never be deleted — undo
+        // could only recreate a factory-settings copy.
+        _power.AddPlan(BalancedGuid, "Balanced", isActive: true);
+        _power.AddPlan(Guid.NewGuid(), "Ultimate Performance");
+        var change = PowerPlanChangeFactory.CreateUltimatePerformanceToggle(
+            currentlyInstalled: true, install: false);
+
+        var result = await Module.ApplyChangeAsync(change);
+
+        Assert.False(result.IsSuccess);
+        Assert.DoesNotContain(_power.Calls, c => c.StartsWith("DeleteScheme:", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task Apply_InstallIsIdempotentWhenAlreadyPresent()
+    {
+        _power.AddPlan(BalancedGuid, "Balanced", isActive: true);
+        _power.AddPlan(Guid.NewGuid(), "Ultimate Performance",
+            description: PowerPlanChangeFactory.UltimatePerformanceMarker);
+        var change = PowerPlanChangeFactory.CreateUltimatePerformanceToggle(
+            currentlyInstalled: false, install: true);
+
+        var result = await Module.ApplyChangeAsync(change);
+
+        Assert.True(result.IsSuccess);
+        Assert.DoesNotContain(_power.Calls, c => c.StartsWith("DuplicateScheme:", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task Apply_InstallRollsBackWhenMarkerWriteFails()
+    {
+        _power.AddPlan(BalancedGuid, "Balanced", isActive: true);
+        _power.InjectFailure("WriteSchemeText", ErrorCategory.AccessDenied);
+        var change = PowerPlanChangeFactory.CreateUltimatePerformanceToggle(
+            currentlyInstalled: false, install: true);
+
+        var result = await Module.ApplyChangeAsync(change);
+
+        Assert.False(result.IsSuccess);
+        // The unmarked duplicate would be an orphan the UI cannot remove.
+        Assert.Contains(_power.Calls, c => c.StartsWith("DeleteScheme:", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task Apply_InstallFailureSurfaces()
     {
         _power.InjectFailure("DuplicateScheme", ErrorCategory.AccessDenied);

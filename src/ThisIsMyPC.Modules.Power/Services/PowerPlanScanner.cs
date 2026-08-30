@@ -20,12 +20,17 @@ public sealed class PowerPlanScanner
     /// A plan counts as Ultimate Performance when it carries our marker
     /// description (locale-proof), or matches the hidden source GUID or name
     /// (installed by something else, e.g. winutil or a Workstation SKU).
+    /// Display/idempotency only — deletion must use <see cref="FindMarkedUltimatePerformance"/>.
     /// </summary>
     public static PowerPlan? FindUltimatePerformance(IReadOnlyList<PowerPlan> plans) =>
-        plans.FirstOrDefault(p => p.Description == Changes.PowerPlanChangeFactory.UltimatePerformanceMarker)
+        FindMarkedUltimatePerformance(plans)
         ?? plans.FirstOrDefault(p =>
             p.PlanGuid == Changes.PowerPlanChangeFactory.UltimatePerformanceSourceGuid
             || p.Name.Equals("Ultimate Performance", StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>Only a plan ThisIsMyPC created (marker description) — the sole legal deletion target.</summary>
+    public static PowerPlan? FindMarkedUltimatePerformance(IReadOnlyList<PowerPlan> plans) =>
+        plans.FirstOrDefault(p => p.Description == Changes.PowerPlanChangeFactory.UltimatePerformanceMarker);
 
     public IReadOnlyList<PowerPlan> Scan()
     {

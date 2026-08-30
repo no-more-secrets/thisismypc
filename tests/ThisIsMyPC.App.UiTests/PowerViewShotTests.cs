@@ -6,10 +6,15 @@ using ThisIsMyPC.Modules.Power.Models;
 
 namespace ThisIsMyPC.App.UiTests;
 
-/// <summary>CI-safe: renders the Power view's System power section with fake scan data.</summary>
+/// <summary>
+/// Power view's System power section. Uses the real RegistryService for live
+/// state reads, so this is Category=Diagnostic per CLAUDE.md (never in CI);
+/// it stages only, never applies.
+/// </summary>
+[Trait("Category", "Diagnostic")]
 public class PowerViewShotTests
 {
-    private static PowerScanData CreateScanData(bool hibernate = true, bool ultimateInstalled = false)
+    private static PowerScanData CreateScanData(bool hibernate = true)
     {
         var plans = new List<PowerPlan>
         {
@@ -21,28 +26,14 @@ public class PowerViewShotTests
                 IsActive = true,
             },
         };
-        if (ultimateInstalled)
-        {
-            plans.Add(new PowerPlan
-            {
-                PlanGuid = Guid.NewGuid(),
-                Name = "Ultimate Performance",
-                Description = Modules.Power.Changes.PowerPlanChangeFactory.UltimatePerformanceMarker,
-                IsActive = false,
-            });
-        }
-
-        return new PowerScanData(plans, HibernateEnabled: hibernate, UltimatePerformancePlan: plans.LastOrDefault(
-            p => p.Description == Modules.Power.Changes.PowerPlanChangeFactory.UltimatePerformanceMarker));
+        return new PowerScanData(plans, HibernateEnabled: hibernate);
     }
 
-    // Real registry service: the hibernate toggle reads live state at stage
-    // time (read-only; nothing in these tests applies changes).
     private static readonly IRegistryService Registry =
         new ThisIsMyPC.Interop.Win32.Registry.RegistryService();
 
     [AvaloniaFact]
-    public void SystemPowerSection_RendersBothToggles()
+    public void SystemPowerSection_RendersHibernateRow()
     {
         var queue = new PendingChangesService();
         var viewModel = new PowerViewModel(CreateScanData(), queue, registryService: Registry);
@@ -52,29 +43,30 @@ public class PowerViewShotTests
 
         Assert.True(session.IsTextVisible("System power"));
         Assert.True(session.IsTextVisible("Hibernation"));
-        Assert.True(session.IsTextVisible("Ultimate Performance plan"));
+        // No power service in this session — the Ultimate Performance row must not render.
+        Assert.False(session.IsTextVisible("Ultimate Performance plan"));
     }
 
     [AvaloniaFact]
-    public void TogglingHibernateOff_StagesTheChange()
+    public async Task TogglingHibernate_StagesTheChange()
     {
-        var queue = new PendingChangesService();
-        var viewModel = new PowerViewModel(CreateScanData(hibernate: true), queue, registryService: Registry);
-        using var session = UiSession.ForView(new PowerView(), viewModel, "power-view", height: 1400);
-
-        // The VM stages from the toggle state; flipping via binding + command
-        // mirrors the ToggleSwitch click without pixel-hunting the switch.
-        // Target the opposite of the machine's live state so staging always fires.
+        // Seed the scan with the machine's live state so flipping the row is
+        // guaranteed to differ from the live read at stage time.
         var live = Registry.ReadDWord(
             Modules.Power.Changes.PowerPlanChangeFactory.ModernStandbyKeyPath,
             Modules.Power.Changes.PowerPlanChangeFactory.HibernateValueName);
         var liveEnabled = live is { IsSuccess: true } && live.Value != 0;
-        viewModel.IsHibernateEnabled = !liveEnabled;
-        viewModel.ToggleHibernateCommand.Execute(null);
-        session.Pump();
+
+        var queue = new PendingChangesService();
+        var viewModel = new PowerViewModel(CreateScanData(liveEnabled), queue, registryService: Registry);
+        using var session = UiSession.ForView(new PowerView(), viewModel, "power-view", height: 1400);
+
+        var row = viewModel.SystemPowerToggles.First(r => r.Label == "Hibernation");
+        row.IsEnabled = !liveEnabled;
+        await session.WaitForAsync(() => queue.PendingCount == 1, timeoutMs: 5000, what: "hibernate staging");
         session.Screenshot("hibernate-staged");
 
-        Assert.Equal(1, queue.PendingCount);
-        Assert.Contains("Hibernation", queue.PendingGroups[0].DisplayName, StringComparison.Ordinal);
+        row.IsEnabled = !row.IsEnabled;
+        await session.WaitForAsync(() => queue.PendingCount == 0, timeoutMs: 5000, what: "hibernate unstaging");
     }
 }
