@@ -25,6 +25,23 @@ Windows Update 5, Power 1) + 5 built-in sets (59 entries) + the enumerative modu
   Enterprise/Education(2), `WindowsSku.Tier()`. Spotlight tags `Education`,
   WU/Copilot/Recall/activity-history tag `Pro`. Card callout names the requirement.
 
+## Privacy & Telemetry module — SHIPPED 2026-08-30 (v1, 6 cards)
+
+telemetry-level (AllowTelemetry=1 + DiagTrack companion), error-reporting,
+location (Pro tag), app-launch-tracking, handwriting-data-sharing (Pro tag),
+inking-typing atomic quartet. Privacy Baseline set updated to match.
+
+Open design decisions carried forward:
+- **Directional companions**: the enforcement executor can only disable companion
+  services on apply (restore-to-Manual runs on the undo path only). Toggling
+  telemetry back off leaves DiagTrack disabled — stated in the card copy. Proper
+  fix: a directional companion mode in the executor, or a cross-module DiagTrack
+  start-type change in the telemetry group.
+- v2 candidates: cloud clipboard/cross-device policies, Wi-Fi/hotspot reporting,
+  diagnostic scheduled-task companions, consent-store location per-app controls.
+- Sidebar icon: no "privacy" glyph mapped (same gap as "windows-update") — UI/UX
+  chapter.
+
 ## Future feature (new-module territory): SKU upgrade via generic keys
 
 Sam's idea: the app detects the edition tier and offers to upgrade the machine's

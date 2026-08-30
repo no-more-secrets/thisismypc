@@ -353,6 +353,9 @@
                             <DataTemplate DataType="{x:Type vm:AnnoyancesViewModel}">
                                 <views:AnnoyancesView />
                             </DataTemplate>
+                            <DataTemplate DataType="{x:Type vm:PrivacyViewModel}">
+                                <views:PrivacyView />
+                            </DataTemplate>
                             <DataTemplate DataType="{x:Type vm:WindowsUpdateViewModel}">
                                 <views:WindowsUpdateView />
                             </DataTemplate>

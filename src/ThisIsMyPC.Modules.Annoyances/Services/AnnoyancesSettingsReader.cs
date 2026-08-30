@@ -99,7 +99,7 @@ public sealed class AnnoyancesSettingsReader
             ReadPreference(
                 id: "advertising-id",
                 displayName: "Disable the Advertising ID",
-                description: "Stops apps from using your per-user Advertising ID to build a cross-app profile of you for targeted ads. The comprehensive privacy suite with companion service management arrives in the Privacy & Telemetry module.",
+                description: "Stops apps from using your per-user Advertising ID to build a cross-app profile of you for targeted ads.",
                 keyPath: AnnoyancesRegistryPaths.AdvertisingInfoKeyPath,
                 valueName: "Enabled",
                 section: AnnoyanceSection.AdvertisingAndTracking),
@@ -107,7 +107,7 @@ public sealed class AnnoyancesSettingsReader
             ReadPreference(
                 id: "activity-history",
                 displayName: "Disable activity history collection",
-                description: "Stops Windows from collecting your local application activity history (the Timeline/Activity Feed). Full telemetry controls arrive in the Privacy & Telemetry module.",
+                description: "Stops Windows from collecting your local application activity history (the Timeline/Activity Feed).",
                 keyPath: AnnoyancesRegistryPaths.SystemPoliciesKeyPath,
                 valueName: "EnableActivityFeed",
                 section: AnnoyanceSection.AdvertisingAndTracking),

@@ -190,6 +190,7 @@ public partial class App : Application
         services.AddSingleton<IModule, EnvironmentModule>();
         services.AddSingleton<IModule, StartupModule>();
         services.AddSingleton<IModule, ThisIsMyPC.Modules.Annoyances.AnnoyancesModule>();
+        services.AddSingleton<IModule, ThisIsMyPC.Modules.Privacy.PrivacyModule>();
         services.AddSingleton<IModule, ThisIsMyPC.Modules.WindowsUpdate.WindowsUpdateModule>();
         services.AddSingleton<IModule, PowerModule>();
 
@@ -230,11 +231,13 @@ public partial class App : Application
         // conflict detection (8.3)
         services.AddSingleton<ISetEntryInspector, ThisIsMyPC.Modules.Shell.Services.ShellSetEntryInspector>();
         services.AddSingleton<ISetEntryInspector, ThisIsMyPC.Modules.Annoyances.Services.AnnoyancesSetEntryInspector>();
+        services.AddSingleton<ISetEntryInspector, ThisIsMyPC.Modules.Privacy.Services.PrivacySetEntryInspector>();
         services.AddSingleton<ISetEntryInspector, ThisIsMyPC.Modules.Startup.Services.StartupSetEntryInspector>();
         services.AddSingleton<ISetEntryInspector, ThisIsMyPC.Modules.WindowsUpdate.Services.WindowsUpdateSetEntryInspector>();
 
         // Cross-module search contributors (5-3)
         services.AddSingleton<Core.Search.ISearchSettingsContributor, ThisIsMyPC.Modules.Annoyances.Services.AnnoyancesSearchContributor>();
+        services.AddSingleton<Core.Search.ISearchSettingsContributor, ThisIsMyPC.Modules.Privacy.Services.PrivacySearchContributor>();
         services.AddSingleton<Core.Search.ISearchSettingsContributor, ThisIsMyPC.Modules.WindowsUpdate.Services.WindowsUpdateSearchContributor>();
         services.AddSingleton<Core.Search.ISearchSettingsContributor, ThisIsMyPC.Modules.Shell.Services.ExplorerSearchContributor>();
         services.AddSingleton<Core.Search.ISearchSettingsContributor, ThisIsMyPC.Modules.Shell.Services.ContextMenuSearchContributor>();

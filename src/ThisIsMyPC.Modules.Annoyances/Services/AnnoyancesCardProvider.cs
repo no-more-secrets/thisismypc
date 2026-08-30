@@ -16,8 +16,7 @@ namespace ThisIsMyPC.Modules.Annoyances.Services;
 public sealed class AnnoyancesCardProvider
 {
     private const string SuggestedContentDescription =
-        "Stops the ad-like \"suggested content\" tiles Microsoft injects into the Settings app. "
-        + "The comprehensive privacy suite with companion service management arrives in the Privacy & Telemetry module.";
+        "Stops the ad-like \"suggested content\" tiles Microsoft injects into the Settings app.";
 
     private const string LockScreenAdsDescription =
         "Removes tips, fun facts, and ads from the lock screen. Spotlight wallpapers keep working.";

@@ -420,6 +420,28 @@ public partial class MainWindowViewModel : ViewModelBase
                     }
                 });
             }
+            else if (current?.Module is Modules.Privacy.PrivacyModule)
+            {
+                var scanResult = await current.Module.ScanSystemStateAsync().ConfigureAwait(false);
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    if (epoch != _contentEpoch)
+                        return; // superseded by Home/Set Loader/newer navigation while scanning
+                    if (scanResult.IsSuccess && scanResult.Value is Modules.Privacy.Models.PrivacyScanData privacyData)
+                    {
+                        ContentTitle = current.Module.Info.Name;
+                        ContentDescription = current.Module.Info.Description;
+                        CurrentContent = new PrivacyViewModel(
+                            privacyData, _pendingChangesService, _registryService,
+                            _displayModeStore, _capabilityDetector);
+                    }
+                    else
+                    {
+                        CurrentContent = null;
+                        SetStatus(scanResult.ErrorMessage ?? "Failed to scan privacy settings", StatusSeverity.Error);
+                    }
+                });
+            }
             else if (current?.Module is Modules.Annoyances.AnnoyancesModule)
             {
                 var scanResult = await current.Module.ScanSystemStateAsync().ConfigureAwait(false);

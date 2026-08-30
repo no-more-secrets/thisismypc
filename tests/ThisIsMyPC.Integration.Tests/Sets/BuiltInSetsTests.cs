@@ -84,6 +84,16 @@ public sealed class BuiltInSetsTests
         var versionPin = WindowsUpdateChangeFactory.CreateVersionPinGroup(wuReader.ReadVersionPin(), configure: true)!;
         desired[(versionPin.Changes[0].ModuleId, versionPin.Changes[0].SettingId)] = versionPin.Changes[0].AfterValue!;
 
+        var privacyReader = new ThisIsMyPC.Modules.Privacy.Services.PrivacySettingsReader(new FakeRegistryService());
+        foreach (var pref in privacyReader.ReadSingles())
+        {
+            var change = ThisIsMyPC.Modules.Privacy.Changes.PrivacyChangeFactory.CreateToggle(pref, configure: true);
+            desired[(change.ModuleId, change.SettingId)] = change.AfterValue!;
+        }
+        var inking = ThisIsMyPC.Modules.Privacy.Changes.PrivacyChangeFactory.CreateInkingTypingGroup(
+            privacyReader.ReadInkingTyping(), configure: true, "d");
+        desired[(inking.Changes[0].ModuleId, inking.Changes[0].SettingId)] = inking.Changes[0].AfterValue!;
+
         var taskbar = new TaskbarSettings(
             Alignment: 1, WidgetsEnabled: true, ClassicContextMenu: false, ClassicCommandBar: false);
         foreach (var change in new[]
