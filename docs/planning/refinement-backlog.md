@@ -95,6 +95,13 @@ packaging must follow:
 - One machine, one install, one database — no per-user copies with divergent views
   of machine state.
 
+## UI Gallery (dev-facing, added 2026-08-30)
+
+One-page style reference: type scale, color tokens, text tiers, every
+standardized control class (toolbar-toggle, apply-bar, status text, scope
+badges, pending markers, notification bars). Sidebar bottom, above Settings.
+Release prep: hide it (or gate behind a debug flag) before shipping.
+
 ## AV / SmartScreen readiness (release-readiness chunk, pre-first-release)
 
 The flag risk is Defender PUA heuristics on the app's behavior (elevated +

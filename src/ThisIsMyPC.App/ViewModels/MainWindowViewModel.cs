@@ -809,6 +809,7 @@ public partial class MainWindowViewModel : ViewModelBase
         // PropertyChanged event already fired for that case).
         var previousModule = _navigationService.CurrentModule?.Module;
         (CurrentContent as SetLoaderViewModel)?.Dispose();
+        IsGalleryActive = false;
         IsSetLoaderActive = false;
         IsHomeActive = false;
         IsSettingsActive = false;
@@ -933,6 +934,30 @@ public partial class MainWindowViewModel : ViewModelBase
             capabilityReport: _capabilityDetector?.GetCapabilityReport(),
             ownerMode: _ownerModeService is { } ownerMode ? new OwnerModeSectionViewModel(ownerMode) : null);
         IsSettingsActive = true;
+        IsGalleryActive = false;
+        IsSetLoaderActive = false;
+        IsHomeActive = false;
+        SelectedModule = null;
+        ClearSidebarActives();
+    }
+
+    [ObservableProperty]
+    private bool _isGalleryActive;
+
+    /// <summary>Dev-facing style reference (UI Gallery); hide before release.</summary>
+    [RelayCommand]
+    private void OpenGallery()
+    {
+        _contentEpoch++;
+        IsModuleLoading = false;
+        (CurrentContent as IDisposable)?.Dispose();
+
+        ContentTitle = "UI Gallery";
+        ContentDescription = "Every standardized style and token on one page";
+        CurrentContent = new GalleryViewModel();
+        IsGalleryActive = true;
+        IsSettingsActive = false;
+        IsGalleryActive = false;
         IsSetLoaderActive = false;
         IsHomeActive = false;
         SelectedModule = null;
@@ -969,6 +994,7 @@ public partial class MainWindowViewModel : ViewModelBase
             _driftSection);
         CurrentContent = home;
         IsHomeActive = true;
+        IsGalleryActive = false;
         IsSetLoaderActive = false;
         IsSettingsActive = false;
         SelectedModule = null;

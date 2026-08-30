@@ -1,0 +1,232 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ThisIsMyPC.App.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="1400"
+             x:Class="ThisIsMyPC.App.Views.GalleryView"
+             x:DataType="vm:GalleryViewModel">
+
+    <UserControl.Styles>
+        <!-- Local helpers for the gallery layout only -->
+        <Style Selector="TextBlock.gallery-section">
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+            <Setter Property="Margin" Value="0,24,0,10" />
+        </Style>
+        <Style Selector="TextBlock.gallery-caption">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Foreground" Value="{DynamicResource TextTertiaryBrush}" />
+            <Setter Property="Margin" Value="0,4,0,0" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Border.gallery-swatch">
+            <Setter Property="Width" Value="96" />
+            <Setter Property="Height" Value="44" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SidebarBorderBrush}" />
+        </Style>
+    </UserControl.Styles>
+
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <StackPanel MaxWidth="860" HorizontalAlignment="Left" Margin="24,8,24,32">
+
+            <!-- Type scale -->
+            <TextBlock Classes="gallery-section" Text="Type scale" Margin="0,8,0,10" />
+            <StackPanel Spacing="6">
+                <TextBlock Text="Page title 28 display" FontSize="28" FontWeight="Bold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Text="Section header 16 semibold" FontSize="16" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Text="Row label 14 semibold" FontSize="14" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Text="Body and tabs 14 regular" FontSize="14"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Text="Description 12 in tertiary" FontSize="12"
+                           Foreground="{DynamicResource TextTertiaryBrush}" />
+                <TextBlock Text="HKLM\SOFTWARE\Meta and registry paths 11 mono" FontSize="11"
+                           FontFamily="Cascadia Mono,Consolas,monospace"
+                           Foreground="{DynamicResource TextTertiaryBrush}" />
+            </StackPanel>
+
+            <!-- Color tokens -->
+            <TextBlock Classes="gallery-section" Text="Color tokens" />
+            <WrapPanel>
+                <StackPanel Margin="0,0,12,12">
+                    <Border Classes="gallery-swatch" Background="{DynamicResource BaseBrush}" />
+                    <TextBlock Classes="gallery-caption" Text="Base" />
+                </StackPanel>
+                <StackPanel Margin="0,0,12,12">
+                    <Border Classes="gallery-swatch" Background="{DynamicResource RaisedBrush}" />
+                    <TextBlock Classes="gallery-caption" Text="Raised" />
+                </StackPanel>
+                <StackPanel Margin="0,0,12,12">
+                    <Border Classes="gallery-swatch" Background="{DynamicResource SurfaceBrush}" />
+                    <TextBlock Classes="gallery-caption" Text="Surface" />
+                </StackPanel>
+                <StackPanel Margin="0,0,12,12">
+                    <Border Classes="gallery-swatch" Background="{DynamicResource OverlayBrush}" />
+                    <TextBlock Classes="gallery-caption" Text="Overlay" />
+                </StackPanel>
+                <StackPanel Margin="0,0,12,12">
+                    <Border Classes="gallery-swatch" Background="{DynamicResource RowHoverBrush}" />
+                    <TextBlock Classes="gallery-caption" Text="RowHover" />
+                </StackPanel>
+                <StackPanel Margin="0,0,12,12">
+                    <Border Classes="gallery-swatch" Background="{DynamicResource AccentBrush}" />
+                    <TextBlock Classes="gallery-caption" Text="Accent" />
+                </StackPanel>
+                <StackPanel Margin="0,0,12,12">
+                    <Border Classes="gallery-swatch" Background="{DynamicResource SuccessBrush}" />
+                    <TextBlock Classes="gallery-caption" Text="Success" />
+                </StackPanel>
+                <StackPanel Margin="0,0,12,12">
+                    <Border Classes="gallery-swatch" Background="{DynamicResource WarningBrush}" />
+                    <TextBlock Classes="gallery-caption" Text="Warning" />
+                </StackPanel>
+                <StackPanel Margin="0,0,12,12">
+                    <Border Classes="gallery-swatch" Background="{DynamicResource DangerBrush}" />
+                    <TextBlock Classes="gallery-caption" Text="Danger" />
+                </StackPanel>
+                <StackPanel Margin="0,0,12,12">
+                    <Border Classes="gallery-swatch" Background="{DynamicResource InfoBrush}" />
+                    <TextBlock Classes="gallery-caption" Text="Info" />
+                </StackPanel>
+                <StackPanel Margin="0,0,12,12">
+                    <Border Classes="gallery-swatch" Background="{DynamicResource SuccessMutedBrush}" />
+                    <TextBlock Classes="gallery-caption" Text="SuccessMuted" />
+                </StackPanel>
+                <StackPanel Margin="0,0,12,12">
+                    <Border Classes="gallery-swatch" Background="{DynamicResource WarningMutedBrush}" />
+                    <TextBlock Classes="gallery-caption" Text="WarningMuted" />
+                </StackPanel>
+                <StackPanel Margin="0,0,12,12">
+                    <Border Classes="gallery-swatch" Background="{DynamicResource DangerMutedBrush}" />
+                    <TextBlock Classes="gallery-caption" Text="DangerMuted" />
+                </StackPanel>
+                <StackPanel Margin="0,0,12,12">
+                    <Border Classes="gallery-swatch" Background="{DynamicResource InfoMutedBrush}" />
+                    <TextBlock Classes="gallery-caption" Text="InfoMuted" />
+                </StackPanel>
+            </WrapPanel>
+
+            <!-- Text tiers -->
+            <TextBlock Classes="gallery-section" Text="Text tiers" />
+            <StackPanel Spacing="4">
+                <TextBlock Text="Primary: labels and headings" Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Text="Secondary: supporting copy" Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Text="Tertiary: descriptions and meta" Foreground="{DynamicResource TextTertiaryBrush}" />
+                <TextBlock Text="Disabled: unavailable items" Foreground="{DynamicResource TextDisabledBrush}" />
+            </StackPanel>
+
+            <!-- Controls -->
+            <TextBlock Classes="gallery-section" Text="Controls" />
+            <WrapPanel>
+                <Button Content="Button" Padding="12,6" Margin="0,0,10,10" />
+                <Button Content="Disabled" Padding="12,6" IsEnabled="False" Margin="0,0,10,10" />
+                <Button Classes="apply-bar-apply" Content="Apply" Margin="0,0,10,10" />
+                <Button Classes="apply-bar-discard" Content="Discard" Margin="0,0,10,10" />
+                <ToggleButton Classes="toolbar-toggle" Content="Chip off" Margin="0,0,10,10" />
+                <ToggleButton Classes="toolbar-toggle" Content="Chip on"
+                              IsChecked="{Binding SampleChipChecked}" Margin="0,0,10,10" />
+                <ToggleSwitch IsChecked="{Binding SampleToggleOn}" OnContent="" OffContent=""
+                              VerticalAlignment="Center" Margin="0,0,10,10" />
+                <ComboBox ItemsSource="{Binding SampleOptions}" SelectedItem="{Binding SelectedOption}"
+                          MinWidth="160" Margin="0,0,10,10" />
+            </WrapPanel>
+            <TextBox Text="{Binding SampleText}" Watermark="Search settings" Margin="0,0,0,10" />
+            <ProgressBar IsIndeterminate="True" Height="4" Margin="0,0,0,4" />
+            <TextBlock Text="Indeterminate progress: the module scan overlay bar" FontSize="12"
+                       Foreground="{DynamicResource TextTertiaryBrush}" />
+
+            <!-- Status text -->
+            <TextBlock Classes="gallery-section" Text="Status text" />
+            <StackPanel Spacing="4">
+                <TextBlock Classes="status-success" Text="Changes applied. Explorer refresh may be needed" FontSize="12" />
+                <TextBlock Classes="status-warning" Text="Changes applied. Reboot required" FontSize="12" />
+                <TextBlock Classes="status-error" Text="Failed to apply 2 changes" FontSize="12" />
+            </StackPanel>
+
+            <!-- Status dots -->
+            <TextBlock Classes="gallery-section" Text="Status dots" />
+            <StackPanel Orientation="Horizontal" Spacing="16">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <Ellipse Width="8" Height="8" VerticalAlignment="Center" Fill="{DynamicResource SuccessBrush}" />
+                    <TextBlock Text="Available / running" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <Ellipse Width="8" Height="8" VerticalAlignment="Center" Fill="{DynamicResource WarningBrush}" />
+                    <TextBlock Text="Degraded / stopped" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <Ellipse Width="8" Height="8" VerticalAlignment="Center" Fill="{DynamicResource DangerBrush}" />
+                    <TextBlock Text="Failed" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Scope badges -->
+            <TextBlock Classes="gallery-section" Text="Scope badges" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <StackPanel.Styles>
+                    <Style Selector="Border.scope-badge">
+                        <Setter Property="Padding" Value="8,3" />
+                        <Setter Property="CornerRadius" Value="4" />
+                    </Style>
+                    <Style Selector="Border.scope-badge TextBlock">
+                        <Setter Property="FontSize" Value="11" />
+                        <Setter Property="FontWeight" Value="Medium" />
+                        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+                    </Style>
+                </StackPanel.Styles>
+                <Border Classes="scope-badge file"><TextBlock Text="File" /></Border>
+                <Border Classes="scope-badge folder"><TextBlock Text="Folder" /></Border>
+                <Border Classes="scope-badge background"><TextBlock Text="Background" /></Border>
+                <Border Classes="scope-badge desktop"><TextBlock Text="Desktop" /></Border>
+                <Border Classes="scope-badge"><TextBlock Text="Misc" /></Border>
+            </StackPanel>
+
+            <!-- Pending change rows -->
+            <TextBlock Classes="gallery-section" Text="Pending change markers" />
+            <StackPanel Spacing="6">
+                <Border Classes="pending-enable" Padding="10,6" CornerRadius="6">
+                    <TextBlock Text="Will be enabled" FontSize="12" Foreground="{DynamicResource TextPrimaryBrush}" />
+                </Border>
+                <Border Classes="pending-disable" Padding="10,6" CornerRadius="6">
+                    <TextBlock Text="Will be disabled" FontSize="12" Foreground="{DynamicResource TextPrimaryBrush}" />
+                </Border>
+                <Border Classes="pending-modify" Padding="10,6" CornerRadius="6">
+                    <TextBlock Text="Will be modified" FontSize="12" Foreground="{DynamicResource TextPrimaryBrush}" />
+                </Border>
+            </StackPanel>
+
+            <!-- Notification bars -->
+            <TextBlock Classes="gallery-section" Text="Notification bars" />
+            <StackPanel Spacing="6">
+                <Border Classes="notification-restart" Padding="10,8" CornerRadius="6">
+                    <TextBlock Classes="notification-restart" Text="Explorer restart needed for 3 changes" FontSize="12" />
+                </Border>
+                <Border Classes="notification-refresh" Padding="10,8" CornerRadius="6">
+                    <TextBlock Classes="notification-refresh" Text="Explorer preferences updated. Open windows may need F5 to refresh" FontSize="12" />
+                </Border>
+            </StackPanel>
+
+            <!-- Standard toggle row -->
+            <TextBlock Classes="gallery-section" Text="Toggle row" />
+            <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="16,12">
+                <DockPanel>
+                    <ToggleSwitch DockPanel.Dock="Right" IsChecked="True" OnContent="" OffContent=""
+                                  VerticalAlignment="Top" />
+                    <StackPanel Margin="0,0,16,0">
+                        <TextBlock Text="Row label 14 semibold" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <TextBlock Text="Description 12 tertiary: what the toggle actually does, one or two short sentences."
+                                   FontSize="12" TextWrapping="Wrap"
+                                   Foreground="{DynamicResource TextTertiaryBrush}" Margin="0,2,0,0" />
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
