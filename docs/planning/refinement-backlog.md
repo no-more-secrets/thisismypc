@@ -65,12 +65,18 @@ Consequences, verified against the code and upstream:
   the swap is a prerequisite for the first public release.
 - **App signing plan: OV cert through the LLC at release time.** The LLC
   (Apr 2026) has a DUNS number, verified phone, and domain — everything OV
-  validation checks, with no org-age requirement (~$100-250/yr, key on a
-  hardware token). Azure Trusted Signing is off the table until ~Apr 2029
-  (3-year org history rule). EV remains unnecessary — its only unique value
-  is Hardware Dev Center driver signing, which upstream PawnIO makes moot.
-  Verify current CA pricing at purchase time. Until then the SmartScreen
-  warning is accepted. Only release-signing material stays private (GPLv2 rule).
+  validation checks, with no org-age requirement. Priced 2026-08-30: budget
+  $50-150/yr with cloud signing, no hardware token — Certum Open Source
+  ~$50/yr (check whether it validates the LLC or the individual), SSL.com OV
+  $65-75/yr (verify eSigner usage fees first), Certum standard OV $108-150/yr
+  via SimplySign. Sectigo/DigiCert cost 3-8x more for nothing extra. Certs
+  now max ~459 days validity (CA/B Forum, early 2026) — multi-year buys mean
+  mid-term reissues. Azure Trusted Signing off the table until ~Apr 2029
+  (3-year org history). EV unnecessary: Hardware Dev Center driver signing is
+  moot via upstream PawnIO, and 2026 Microsoft updates reportedly removed the
+  EV SmartScreen advantage anyway. SmartScreen reputation builds from
+  download volume regardless of tier. Only release-signing material stays
+  private (GPLv2 rule).
 
 ## Future feature (new-module territory): SKU upgrade via generic keys
 
