@@ -15,11 +15,11 @@
                     Spacing="8"
                     Margin="24,12,24,0"
                     HorizontalAlignment="Right">
-            <ToggleButton Content="Registry Data"
+            <ToggleButton Classes="toolbar-toggle" Content="Registry Data"
                           IsChecked="{Binding ShowRegistryData}"
                           FontSize="12"
                           Padding="10,4" />
-            <ToggleButton Content="Compact"
+            <ToggleButton Classes="toolbar-toggle" Content="Compact"
                           IsChecked="{Binding IsCompact}"
                           FontSize="12"
                           Padding="10,4" />

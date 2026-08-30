@@ -25,7 +25,7 @@
 
             <!-- Sidebar -->
             <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="{StaticResource RaisedColor}" />
-            <SolidColorBrush x:Key="SidebarItemHoverBrush" Color="#333348" />
+            <SolidColorBrush x:Key="SidebarItemHoverBrush" Color="#3a3a55" />
             <SolidColorBrush x:Key="SidebarItemActiveBrush" Color="#3d5a80" />
             <SolidColorBrush x:Key="SidebarGroupHeaderBrush" Color="#8888aa" />
             <SolidColorBrush x:Key="SidebarBorderBrush" Color="#2a2a3e" />

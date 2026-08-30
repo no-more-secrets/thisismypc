@@ -124,7 +124,7 @@
                                FontSize="15" FontWeight="SemiBold"
                                Foreground="{DynamicResource TextPrimaryBrush}"
                                VerticalAlignment="Center" Margin="12,0" />
-                    <ToggleButton Grid.Column="2" Content="Registry view"
+                    <ToggleButton Grid.Column="2" Classes="toolbar-toggle" Content="Registry view"
                                   Padding="12,6" FontSize="12"
                                   IsChecked="{Binding IsRegistryView}" />
                 </Grid>

@@ -172,6 +172,15 @@ public sealed class UiSession : IDisposable
     // ---- Hands: real input events at real coordinates ----
 
     /// <summary>Left-clicks the center of a control, like a mouse would.</summary>
+    /// <summary>Parks the mouse over a control so :pointerover styles apply; screenshot to inspect them.</summary>
+    public void Hover(Visual target)
+    {
+        Window.MouseMove(CenterOf(target));
+        Pump();
+    }
+
+    public void HoverText(string text) => Hover(FindText(text));
+
     public void Click(Visual target)
     {
         var point = CenterOf(target);

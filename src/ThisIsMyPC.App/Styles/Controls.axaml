@@ -149,6 +149,28 @@
         <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
     </Style>
 
+    <!-- Toolbar toggles (Registry Data / Compact / Registry view): app chrome
+         instead of stock Fluent, so both themes get deliberate contrast and an
+         unmistakable checked state. -->
+    <Style Selector="ToggleButton.toolbar-toggle">
+        <Setter Property="Background" Value="{DynamicResource OverlayBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="4" />
+    </Style>
+    <Style Selector="ToggleButton.toolbar-toggle:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource SidebarItemHoverBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.toolbar-toggle:checked /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+        <Setter Property="Foreground" Value="White" />
+    </Style>
+    <Style Selector="ToggleButton.toolbar-toggle:checked:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+        <Setter Property="Foreground" Value="White" />
+    </Style>
+
     <!-- Multi tab scope badges; kind class picks the tint -->
     <Style Selector="Border.scope-badge">
         <Setter Property="Background" Value="{DynamicResource ScopeBadgeMiscBrush}" />
