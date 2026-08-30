@@ -20,6 +20,17 @@ public partial class EnvironmentViewModel : ViewModelBase
     // System tab (excluding PATH)
     public ObservableCollection<EnvironmentVariableItemViewModel> SystemVariables { get; } = [];
 
+    [ObservableProperty]
+    private string _variableSearchText = string.Empty;
+
+    partial void OnVariableSearchTextChanged(string value)
+    {
+        foreach (var variable in UserVariables)
+            variable.ApplySearch(value);
+        foreach (var variable in SystemVariables)
+            variable.ApplySearch(value);
+    }
+
     public string UserTabHeader => $"User ({UserVariables.Count})";
     public string SystemTabHeader => $"System ({SystemVariables.Count})";
 

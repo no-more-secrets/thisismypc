@@ -11,13 +11,10 @@
                   VerticalScrollBarVisibility="Auto">
         <StackPanel Spacing="8">
 
-            <!-- Registry Info toggle -->
-            <StackPanel Orientation="Horizontal" Spacing="8"
-                        HorizontalAlignment="Right" Margin="0,0,16,4">
-                <TextBox Text="{Binding SearchText}"
-                         Watermark="Search entries"
-                         MinWidth="220"
-                         FontSize="12" />
+            <!-- Search + Registry Info toggle -->
+            <DockPanel Margin="0,0,16,4">
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8"
+                            Margin="12,0,0,0">
                 <TextBlock Text="Registry Info"
                            FontSize="13"
                            Foreground="{DynamicResource TextSecondaryBrush}"
@@ -26,7 +23,10 @@
                               OffContent=""
                               OnContent=""
                               VerticalAlignment="Center" />
-            </StackPanel>
+                </StackPanel>
+                <TextBox Text="{Binding SearchText}"
+                         Watermark="Search entries across every tab" />
+            </DockPanel>
 
             <TabControl>
                 <!-- Multi-scope Tab -->

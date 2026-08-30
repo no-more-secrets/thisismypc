@@ -332,17 +332,18 @@
                            IsVisible="{Binding ScheduledTasksScanError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                            Foreground="{DynamicResource WarningBrush}"
                            FontSize="12" />
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <TextBox Text="{Binding TaskFilterText}"
-                             Watermark="Filter tasks by name, path, or publisher…"
-                             FontSize="12"
-                             MinWidth="300" />
-                    <ComboBox ItemsSource="{Binding ClassificationFilterOptions}"
+                <DockPanel>
+                    <ComboBox DockPanel.Dock="Right"
+                              ItemsSource="{Binding ClassificationFilterOptions}"
                               SelectedItem="{Binding TaskClassificationFilter}"
                               FontSize="12"
                               MinWidth="170"
+                              Margin="8,0,0,0"
                               VerticalAlignment="Center" />
-                </StackPanel>
+                    <TextBox Text="{Binding TaskFilterText}"
+                             Watermark="Filter tasks by name, path, or publisher"
+                             FontSize="12" />
+                </DockPanel>
                 <StackPanel Orientation="Horizontal" Spacing="4" Margin="12,4,0,0">
                     <TextBlock Text="Sort:" FontSize="12"
                                Foreground="{DynamicResource TextSecondaryBrush}"
@@ -386,10 +387,8 @@
                            Foreground="{DynamicResource WarningBrush}"
                            FontSize="12" />
                 <TextBox Text="{Binding ServiceFilterText}"
-                         Watermark="Filter services by name or description…"
-                         FontSize="12"
-                         MaxWidth="400"
-                         HorizontalAlignment="Left" />
+                         Watermark="Filter services by name or description"
+                         FontSize="12" />
                 <StackPanel Orientation="Horizontal" Spacing="4" Margin="12,4,0,0">
                     <TextBlock Text="Sort:" FontSize="12"
                                Foreground="{DynamicResource TextSecondaryBrush}"

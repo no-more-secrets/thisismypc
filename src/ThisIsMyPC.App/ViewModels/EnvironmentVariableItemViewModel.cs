@@ -20,6 +20,15 @@ public partial class EnvironmentVariableItemViewModel : ViewModelBase
     [ObservableProperty]
     private string _value;
 
+    /// <summary>Row visibility under the tab's search box.</summary>
+    [ObservableProperty]
+    private bool _isSearchVisible = true;
+
+    public void ApplySearch(string query) =>
+        IsSearchVisible = query.Length == 0
+            || Name.Contains(query, StringComparison.OrdinalIgnoreCase)
+            || Value.Contains(query, StringComparison.OrdinalIgnoreCase);
+
     [ObservableProperty]
     private string _scope;
 

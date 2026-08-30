@@ -12,24 +12,23 @@
          ~800px max width for readability. -->
     <DockPanel>
         <!-- Display mode toggles (10-2): two independent switches, a 2x2 matrix -->
-        <StackPanel DockPanel.Dock="Top"
-                    Orientation="Horizontal"
-                    Spacing="8"
-                    Margin="24,12,24,0"
-                    HorizontalAlignment="Right">
+        <DockPanel DockPanel.Dock="Top" Margin="24,12,24,0">
+            <StackPanel DockPanel.Dock="Right"
+                        Orientation="Horizontal"
+                        Spacing="8"
+                        Margin="12,0,0,0">
+                <ToggleButton Classes="toolbar-toggle" Content="Registry Data"
+                              IsChecked="{Binding ShowRegistryData}"
+                              FontSize="12"
+                              Padding="10,4" />
+                <ToggleButton Classes="toolbar-toggle" Content="Compact"
+                              IsChecked="{Binding IsCompact}"
+                              FontSize="12"
+                              Padding="10,4" />
+            </StackPanel>
             <TextBox Text="{Binding SearchText}"
-                     Watermark="Search settings"
-                     MinWidth="220"
-                     FontSize="12" />
-            <ToggleButton Classes="toolbar-toggle" Content="Registry Data"
-                          IsChecked="{Binding ShowRegistryData}"
-                          FontSize="12"
-                          Padding="10,4" />
-            <ToggleButton Classes="toolbar-toggle" Content="Compact"
-                          IsChecked="{Binding IsCompact}"
-                          FontSize="12"
-                          Padding="10,4" />
-        </StackPanel>
+                     Watermark="Search settings" />
+        </DockPanel>
 
         <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                       VerticalScrollBarVisibility="Auto">

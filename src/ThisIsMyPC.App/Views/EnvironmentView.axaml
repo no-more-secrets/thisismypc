@@ -11,7 +11,8 @@
     <UserControl.Resources>
         <DataTemplate x:Key="EnvVarRowTemplate" x:DataType="vm:EnvironmentVariableItemViewModel">
             <Border Padding="12,8" Margin="0,2" CornerRadius="4"
-                    Background="{DynamicResource SurfaceBrush}">
+                    Background="{DynamicResource SurfaceBrush}"
+                    IsVisible="{Binding IsSearchVisible}">
                 <Grid ColumnDefinitions="*,2*,Auto">
                     <!-- Display mode -->
                     <TextBlock Grid.Column="0" Text="{Binding Name}"
@@ -127,6 +128,9 @@
                                 Padding="12,6"
                                 FontSize="12" />
                     </DockPanel>
+                    <TextBox Text="{Binding VariableSearchText}"
+                             Watermark="Search variables"
+                             Margin="12,0" />
                     <TextBlock Text="{Binding UserScanError, StringFormat='Failed to read user variables: {0}'}"
                                IsVisible="{Binding UserScanError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                Foreground="{DynamicResource WarningBrush}"
@@ -156,6 +160,9 @@
                                 Padding="12,6"
                                 FontSize="12" />
                     </DockPanel>
+                    <TextBox Text="{Binding VariableSearchText}"
+                             Watermark="Search variables"
+                             Margin="12,0" />
                     <TextBlock Text="{Binding SystemScanError, StringFormat='Failed to read system variables: {0}'}"
                                IsVisible="{Binding SystemScanError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                Foreground="{DynamicResource WarningBrush}"

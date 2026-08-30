@@ -13,9 +13,7 @@
 
             <TextBox Text="{Binding SearchText}"
                      Watermark="Search settings"
-                     MaxWidth="320"
-                     HorizontalAlignment="Left"
-                     Margin="0,8,0,0" />
+                     Margin="0,8,20,0" />
 
             <!-- Explorer Preferences Section -->
             <StackPanel Spacing="8">
