@@ -60,6 +60,41 @@ public sealed class EnforcementExecutor : IEnforcementExecutor
             if (Gate(change, enforcement) is { } gateFailure)
                 return gateFailure;
 
+            // Directional companions: a restore-direction change re-enables its
+            // companions instead of disabling them — same sequence RevertAsync runs.
+            if (enforcement.RestoresCompanions)
+                return await RunRestoreShapedAsync(change, enforcement, applyPrimary).ConfigureAwait(false);
+
+            return await RunConfigureShapedAsync(change, enforcement, applyPrimary, cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            return new EnforcementResult
+            {
+                IsSuccess = false,
+                ErrorMessage = $"Unexpected enforcement error for '{change.SettingId}': {ex.Message}",
+                ErrorCategory = ErrorCategory.ServiceUnavailable,
+            };
+        }
+    }
+
+    /// <summary>
+    /// Configure-shaped sequence: companions disabled (with rollback), GPCache cleared,
+    /// then the primary mutation. Used by ExecuteAsync for configure changes and by
+    /// RevertAsync for changes flagged <see cref="SettingEnforcement.RestoresCompanions"/>
+    /// (undoing a restore re-hardens).
+    /// </summary>
+    private async Task<EnforcementResult> RunConfigureShapedAsync(
+        ChangeDescriptor change,
+        SettingEnforcement enforcement,
+        Func<ChangeDescriptor, Task<OperationResult<bool>>> primaryAction,
+        CancellationToken cancellationToken)
+    {
+        {
             var steps = new List<EnforcementStepResult>();
             var disabled = new List<(string Name, ServiceStatusInfo Before)>();
             var disabledTasks = new List<(string Path, bool WasEnabled)>();
@@ -123,7 +158,7 @@ public sealed class EnforcementExecutor : IEnforcementExecutor
             OperationResult<bool> primary;
             try
             {
-                primary = await applyPrimary(change).ConfigureAwait(false);
+                primary = await primaryAction(change).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
@@ -147,19 +182,6 @@ public sealed class EnforcementExecutor : IEnforcementExecutor
 
             return new EnforcementResult { IsSuccess = true, Steps = steps };
         }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            return new EnforcementResult
-            {
-                IsSuccess = false,
-                ErrorMessage = $"Unexpected enforcement error for '{change.SettingId}': {ex.Message}",
-                ErrorCategory = ErrorCategory.ServiceUnavailable,
-            };
-        }
     }
 
     public async Task<EnforcementResult> RevertAsync(
@@ -179,45 +201,12 @@ public sealed class EnforcementExecutor : IEnforcementExecutor
             if (Gate(change, enforcement) is { } gateFailure)
                 return gateFailure;
 
-            var steps = new List<EnforcementStepResult>();
+            // Reverting a restore-direction change means re-hardening: run the
+            // disable-shaped sequence ExecuteAsync uses for configure changes.
+            if (enforcement.RestoresCompanions)
+                return await RunConfigureShapedAsync(change, enforcement, revertPrimary, cancellationToken).ConfigureAwait(false);
 
-            // Reverse of apply order: primary first, then companion restore.
-            var primary = await revertPrimary(change).ConfigureAwait(false);
-            steps.Add(Step(EnforcementStepType.PrimaryMutation, change.SystemLocation, primary));
-            if (!primary.IsSuccess)
-                return Failure(steps, primary);
-
-            // The cache must not keep serving values from the now-reverted policy
-            // state — clear it again so Windows rebuilds from the restored hive.
-            foreach (var cachePath in enforcement.GPCacheEntries ?? [])
-            {
-                var clear = ClearGPCacheEntry(cachePath);
-                steps.Add(Step(EnforcementStepType.ClearGPCache, cachePath, clear));
-                if (!clear.IsSuccess)
-                    return Failure(steps, clear);
-            }
-
-            // Best-effort restore: the true pre-apply start type is unknown at revert time.
-            // Manual makes the service startable again without forcing it on; services not
-            // currently Disabled are left untouched.
-            foreach (var serviceName in enforcement.CompanionServices ?? [])
-            {
-                var restore = RestoreCompanionToManual(serviceName);
-                steps.Add(Step(EnforcementStepType.EnableService, serviceName, restore));
-                if (!restore.IsSuccess)
-                    return Failure(steps, restore);
-            }
-
-            // Best-effort re-enable: a still-disabled companion task is turned back on.
-            foreach (var taskPath in enforcement.CompanionTasks ?? [])
-            {
-                var restore = RestoreCompanionTask(taskPath);
-                steps.Add(Step(EnforcementStepType.EnableScheduledTask, taskPath, restore));
-                if (!restore.IsSuccess)
-                    return Failure(steps, restore);
-            }
-
-            return new EnforcementResult { IsSuccess = true, Steps = steps };
+            return await RunRestoreShapedAsync(change, enforcement, revertPrimary).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -232,6 +221,57 @@ public sealed class EnforcementExecutor : IEnforcementExecutor
                 ErrorCategory = ErrorCategory.ServiceUnavailable,
             };
         }
+    }
+
+    /// <summary>
+    /// Restore-shaped sequence: primary first, then GPCache clear, then companion
+    /// re-enable. Used by RevertAsync for configure changes and by ExecuteAsync for
+    /// changes flagged <see cref="SettingEnforcement.RestoresCompanions"/>.
+    /// </summary>
+    private async Task<EnforcementResult> RunRestoreShapedAsync(
+        ChangeDescriptor change,
+        SettingEnforcement enforcement,
+        Func<ChangeDescriptor, Task<OperationResult<bool>>> primaryAction)
+    {
+        var steps = new List<EnforcementStepResult>();
+
+        // Reverse of the configure order: primary first, then companion restore.
+        var primary = await primaryAction(change).ConfigureAwait(false);
+        steps.Add(Step(EnforcementStepType.PrimaryMutation, change.SystemLocation, primary));
+        if (!primary.IsSuccess)
+            return Failure(steps, primary);
+
+        // The cache must not keep serving values from the now-reverted policy
+        // state — clear it again so Windows rebuilds from the restored hive.
+        foreach (var cachePath in enforcement.GPCacheEntries ?? [])
+        {
+            var clear = ClearGPCacheEntry(cachePath);
+            steps.Add(Step(EnforcementStepType.ClearGPCache, cachePath, clear));
+            if (!clear.IsSuccess)
+                return Failure(steps, clear);
+        }
+
+        // Best-effort restore: the true pre-apply start type is unknown here.
+        // Manual makes the service startable again without forcing it on; services not
+        // currently Disabled are left untouched.
+        foreach (var serviceName in enforcement.CompanionServices ?? [])
+        {
+            var restore = RestoreCompanionToManual(serviceName);
+            steps.Add(Step(EnforcementStepType.EnableService, serviceName, restore));
+            if (!restore.IsSuccess)
+                return Failure(steps, restore);
+        }
+
+        // Best-effort re-enable: a still-disabled companion task is turned back on.
+        foreach (var taskPath in enforcement.CompanionTasks ?? [])
+        {
+            var restore = RestoreCompanionTask(taskPath);
+            steps.Add(Step(EnforcementStepType.EnableScheduledTask, taskPath, restore));
+            if (!restore.IsSuccess)
+                return Failure(steps, restore);
+        }
+
+        return new EnforcementResult { IsSuccess = true, Steps = steps };
     }
 
     private EnforcementResult? Gate(ChangeDescriptor change, SettingEnforcement enforcement)

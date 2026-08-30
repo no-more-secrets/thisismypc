@@ -178,6 +178,7 @@ public sealed class SetProvider : ISetProvider
             SkuRestriction = document.SkuRestriction,
             OwnerModeRequired = document.OwnerModeRequired,
             AclElevation = document.AclElevation,
+            RestoresCompanions = document.RestoresCompanions,
         };
     }
 }

@@ -26,6 +26,7 @@ internal static class EnforcementJson
             SkuRestriction = enforcement.SkuRestriction,
             OwnerModeRequired = enforcement.OwnerModeRequired,
             AclElevation = enforcement.AclElevation,
+            RestoresCompanions = enforcement.RestoresCompanions,
         };
 
         return JsonSerializer.Serialize(document, SetJsonContext.Default.SetEnforcementDocument);

@@ -37,6 +37,7 @@ public sealed record SetEnforcementDocument
     public WindowsSku? SkuRestriction { get; init; }
     public bool OwnerModeRequired { get; init; }
     public bool AclElevation { get; init; }
+    public bool RestoresCompanions { get; init; }
 }
 
 [JsonSourceGenerationOptions(

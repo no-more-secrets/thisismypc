@@ -32,11 +32,12 @@ location (Pro tag), app-launch-tracking, handwriting-data-sharing (Pro tag),
 inking-typing atomic quartet. Privacy Baseline set updated to match.
 
 Open design decisions carried forward:
-- **Directional companions**: the enforcement executor can only disable companion
-  services on apply (restore-to-Manual runs on the undo path only). Toggling
-  telemetry back off leaves DiagTrack disabled — stated in the card copy. Proper
-  fix: a directional companion mode in the executor, or a cross-module DiagTrack
-  start-type change in the telemetry group.
+- **Directional companions — RESOLVED 2026-08-30** (Sam picked the executor mode):
+  `SettingEnforcement.RestoresCompanions` flips the executor sequence — a
+  restore-direction change runs primary-then-re-enable (services Disabled →
+  Manual); reverting it re-hardens via the disable-shaped sequence. Telemetry
+  toggle is now symmetric in every path. Any future companion-service setting
+  attaches a configure enforcement plus a RestoresCompanions restore enforcement.
 - v2 candidates: cloud clipboard/cross-device policies, Wi-Fi/hotspot reporting,
   diagnostic scheduled-task companions, consent-store location per-app controls.
 - Sidebar icon: no "privacy" glyph mapped (same gap as "windows-update") — UI/UX

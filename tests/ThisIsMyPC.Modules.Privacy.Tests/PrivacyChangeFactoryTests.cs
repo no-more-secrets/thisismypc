@@ -13,17 +13,28 @@ public sealed class PrivacyChangeFactoryTests
     private PrivacySettingsReader Reader => new(_registry);
 
     [Fact]
-    public void TelemetryLevel_CarriesDiagTrackCompanion_OnConfigureOnly()
+    public void TelemetryLevel_CarriesDiagTrackCompanion_InBothDirections()
     {
         var pref = Reader.ReadSingles().Single(p => p.Id == "telemetry-level");
 
         var configure = PrivacyChangeFactory.CreateToggle(pref, configure: true);
         Assert.NotNull(configure.Enforcement);
         Assert.Equal(["DiagTrack"], configure.Enforcement!.CompanionServices);
+        Assert.False(configure.Enforcement.RestoresCompanions);
         Assert.Null(configure.Enforcement.SkuRestriction); // AllowTelemetry supports Home
 
+        // Toggle-off re-enables DiagTrack via the directional companion flag.
         var restore = PrivacyChangeFactory.CreateToggle(pref, configure: false);
-        Assert.Null(restore.Enforcement);
+        Assert.NotNull(restore.Enforcement);
+        Assert.Equal(["DiagTrack"], restore.Enforcement!.CompanionServices);
+        Assert.True(restore.Enforcement.RestoresCompanions);
+    }
+
+    [Fact]
+    public void OtherSingles_CarryNoRestoreEnforcement()
+    {
+        foreach (var pref in Reader.ReadSingles().Where(p => p.Id != "telemetry-level"))
+            Assert.Null(PrivacyChangeFactory.CreateToggle(pref, configure: false).Enforcement);
     }
 
     [Fact]

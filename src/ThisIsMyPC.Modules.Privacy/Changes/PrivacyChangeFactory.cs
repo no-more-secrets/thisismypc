@@ -8,22 +8,20 @@ public static class PrivacyChangeFactory
 {
     public const string ModuleId = "Privacy & Telemetry";
 
-    // DiagTrack is disabled alongside the telemetry policy (the executor stops and
-    // disables it with rollback on apply). Restore asymmetry, known and deliberate:
-    // only History UNDO re-enables DiagTrack (it reverts the original configure
-    // descriptor through EnforcementExecutor.RevertAsync); toggling the card back
-    // off stages a restore descriptor with null Enforcement, which deletes the
-    // policy but leaves DiagTrack disabled — the executor cannot express
-    // "re-enable companion on staged apply" today (its companion semantics are
-    // always disable-with-rollback). The card description states this; the proper
-    // fix (directional companions or a cross-module DiagTrack start-type change)
-    // is a backlog design decision.
-    // AllowTelemetry is one of the few policies whose CSP table includes Home — no
-    // SKU tag.
+    // DiagTrack rides along in both directions via directional companions: configure
+    // disables it (with rollback), restore re-enables it to Manual
+    // (RestoresCompanions). AllowTelemetry is one of the few policies whose CSP
+    // table includes Home — no SKU tag.
     internal static readonly SettingEnforcement TelemetryEnforcement = new()
     {
         CompanionServices = ["DiagTrack"],
         ReversionVectors = ["Windows feature updates"],
+    };
+
+    internal static readonly SettingEnforcement TelemetryRestoreEnforcement = new()
+    {
+        CompanionServices = ["DiagTrack"],
+        RestoresCompanions = true,
     };
 
     // Minimum-tier tags (informational, never gated — FR129): LocationAndSensors and
@@ -33,15 +31,22 @@ public static class PrivacyChangeFactory
         SkuRestriction = Core.Modules.WindowsSku.Pro,
     };
 
-    // Per-id lookup so every staging path (cards, set entries) inherits the
-    // enforcement from this single factory entry point. Attached on the configure
-    // direction only (26-4 rule).
+    // Per-id lookups so every staging path (cards, set entries) inherits the
+    // enforcement from this single factory entry point. Informational tags attach on
+    // configure only (26-4 rule); telemetry additionally carries a restore-direction
+    // enforcement so DiagTrack is re-enabled when the toggle goes back off.
     private static readonly IReadOnlyDictionary<string, SettingEnforcement> ConfigureEnforcement =
         new Dictionary<string, SettingEnforcement>(StringComparer.Ordinal)
         {
             ["telemetry-level"] = TelemetryEnforcement,
             ["location"] = ProPolicyEnforcement,
             ["handwriting-data-sharing"] = ProPolicyEnforcement,
+        };
+
+    private static readonly IReadOnlyDictionary<string, SettingEnforcement> RestoreEnforcement =
+        new Dictionary<string, SettingEnforcement>(StringComparer.Ordinal)
+        {
+            ["telemetry-level"] = TelemetryRestoreEnforcement,
         };
 
     /// <summary>
@@ -65,9 +70,8 @@ public static class PrivacyChangeFactory
             ValueType = pref.ValueType,
             Category = ChangeCategory.Modify,
             RestartRequirement = RestartRequirement.None,
-            Enforcement = configure && ConfigureEnforcement.TryGetValue(pref.Id, out var enforcement)
-                ? enforcement
-                : null,
+            Enforcement = (configure ? ConfigureEnforcement : RestoreEnforcement)
+                .TryGetValue(pref.Id, out var enforcement) ? enforcement : null,
         };
     }
 

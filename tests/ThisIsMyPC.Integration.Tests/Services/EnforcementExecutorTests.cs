@@ -92,6 +92,68 @@ public sealed class EnforcementExecutorTests
     }
 
     [Fact]
+    public async Task Execute_RestoresCompanions_ReEnablesDisabledServiceAfterPrimary()
+    {
+        // Directional companions: a restore-direction change (telemetry toggled back
+        // off) re-enables its companion to Manual instead of disabling it.
+        _services.AddService("SvcA", ServiceState.Stopped, ServiceStartType.Disabled);
+        var change = CreateChange(new SettingEnforcement
+        {
+            CompanionServices = ["SvcA"],
+            RestoresCompanions = true,
+        });
+        var received = new List<ChangeDescriptor>();
+
+        var result = await CreateSut().ExecuteAsync(change, Primary(received));
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.Same(change, Assert.Single(received));
+        Assert.Equal(
+            [EnforcementStepType.PrimaryMutation, EnforcementStepType.EnableService],
+            result.Steps.Select(s => s.StepType));
+        Assert.Equal(ServiceStartType.Manual, _services.GetService("SvcA")!.StartType);
+    }
+
+    [Fact]
+    public async Task Execute_RestoresCompanions_PrimaryFails_CompanionUntouched()
+    {
+        _services.AddService("SvcA", ServiceState.Stopped, ServiceStartType.Disabled);
+        var change = CreateChange(new SettingEnforcement
+        {
+            CompanionServices = ["SvcA"],
+            RestoresCompanions = true,
+        });
+
+        var result = await CreateSut().ExecuteAsync(change, Primary([], succeed: false));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ServiceStartType.Disabled, _services.GetService("SvcA")!.StartType);
+    }
+
+    [Fact]
+    public async Task Revert_OfRestoresCompanionsChange_ReHardens_DisablingTheCompanion()
+    {
+        // Undoing a restore = back to the hardened state: the companion is disabled
+        // again via the configure-shaped sequence.
+        _services.AddService("SvcA", ServiceState.Running, ServiceStartType.Manual);
+        var change = CreateChange(new SettingEnforcement
+        {
+            CompanionServices = ["SvcA"],
+            RestoresCompanions = true,
+        });
+        var received = new List<ChangeDescriptor>();
+
+        var result = await CreateSut().RevertAsync(change, Primary(received));
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.Equal(
+            [EnforcementStepType.DisableService, EnforcementStepType.PrimaryMutation],
+            result.Steps.Select(s => s.StepType));
+        Assert.Equal(ServiceStartType.Disabled, _services.GetService("SvcA")!.StartType);
+        Assert.Equal(ServiceState.Stopped, _services.GetService("SvcA")!.State);
+    }
+
+    [Fact]
     public async Task Execute_SecondCompanionFails_FirstCompanionRestored()
     {
         _services.AddService("SvcA", ServiceState.Running, ServiceStartType.Automatic);

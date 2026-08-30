@@ -25,7 +25,7 @@ public sealed class PrivacySettingsReader
             ReadPreference(
                 id: "telemetry-level",
                 displayName: "Limit diagnostic data to required only",
-                description: "Sets the diagnostic data policy to required data and stops the telemetry collection service (DiagTrack). Turning this off restores the policy but leaves DiagTrack disabled. Re-enable it in Startup & Services, or use Undo in History.",
+                description: "Sets the diagnostic data policy to required data and stops the telemetry collection service (DiagTrack). Turning this off restores the policy and re-enables the service.",
                 section: PrivacySection.DiagnosticData,
                 keyPath: PrivacyRegistryPaths.DataCollectionPoliciesKeyPath,
                 valueName: "AllowTelemetry",

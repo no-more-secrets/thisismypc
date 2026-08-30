@@ -16,4 +16,13 @@ public record SettingEnforcement
     public WindowsSku? SkuRestriction { get; init; }
     public bool OwnerModeRequired { get; init; }
     public bool AclElevation { get; init; }
+
+    /// <summary>
+    /// Direction of companion handling. False (default): this change hardens — the
+    /// executor disables companion services/tasks around the primary mutation.
+    /// True: this change restores — the executor re-enables them (services
+    /// Disabled → Manual) after the primary mutation. Reverting a change runs the
+    /// opposite direction, so undo stays symmetric either way.
+    /// </summary>
+    public bool RestoresCompanions { get; init; }
 }
