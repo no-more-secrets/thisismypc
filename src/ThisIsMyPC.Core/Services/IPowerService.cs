@@ -60,4 +60,16 @@ public interface IPowerService
 
     /// <summary>True when the platform supports Modern Standby (AoAc).</summary>
     bool SupportsModernStandby();
+
+    /// <summary>Enables or disables hibernation (the hiberfile), like powercfg /hibernate.</summary>
+    OperationResult<bool> SetHibernateEnabled(bool enable);
+
+    /// <summary>Duplicates a scheme (including hidden ones); returns the new plan's GUID.</summary>
+    OperationResult<Guid> DuplicateScheme(Guid sourceSchemeGuid);
+
+    /// <summary>Deletes a registered scheme. Fails while the scheme is active.</summary>
+    OperationResult<bool> DeleteScheme(Guid schemeGuid);
+
+    /// <summary>Sets a scheme's friendly name and description.</summary>
+    OperationResult<bool> WriteSchemeText(Guid schemeGuid, string name, string description);
 }

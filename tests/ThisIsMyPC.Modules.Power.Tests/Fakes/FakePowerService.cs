@@ -64,6 +64,50 @@ public sealed class FakePowerService : IPowerService
         return ModernStandbySupported;
     }
 
+    public bool HibernateEnabled { get; set; } = true;
+
+    public OperationResult<bool> SetHibernateEnabled(bool enable)
+    {
+        Calls.Add($"SetHibernateEnabled:{enable}");
+        if (_failures.TryGetValue("SetHibernateEnabled", out var fail))
+            return OperationResult<bool>.Failure("Injected SetHibernateEnabled failure.", fail);
+        HibernateEnabled = enable;
+        return OperationResult<bool>.Success(true);
+    }
+
+    public OperationResult<Guid> DuplicateScheme(Guid sourceSchemeGuid)
+    {
+        Calls.Add($"DuplicateScheme:{sourceSchemeGuid:D}");
+        if (_failures.TryGetValue("DuplicateScheme", out var fail))
+            return OperationResult<Guid>.Failure("Injected DuplicateScheme failure.", fail);
+        var newGuid = Guid.NewGuid();
+        _plans.Add(new PowerPlanInfo(newGuid, "Duplicated plan", null, IsActive: false));
+        return OperationResult<Guid>.Success(newGuid);
+    }
+
+    public OperationResult<bool> DeleteScheme(Guid schemeGuid)
+    {
+        Calls.Add($"DeleteScheme:{schemeGuid:D}");
+        if (_failures.TryGetValue("DeleteScheme", out var fail))
+            return OperationResult<bool>.Failure("Injected DeleteScheme failure.", fail);
+        var removed = _plans.RemoveAll(p => p.PlanGuid == schemeGuid) > 0;
+        return removed
+            ? OperationResult<bool>.Success(true)
+            : OperationResult<bool>.Failure($"No power plan '{schemeGuid:D}'.", ErrorCategory.NotFound);
+    }
+
+    public OperationResult<bool> WriteSchemeText(Guid schemeGuid, string name, string description)
+    {
+        Calls.Add($"WriteSchemeText:{schemeGuid:D}:{name}");
+        if (_failures.TryGetValue("WriteSchemeText", out var fail))
+            return OperationResult<bool>.Failure("Injected WriteSchemeText failure.", fail);
+        var index = _plans.FindIndex(p => p.PlanGuid == schemeGuid);
+        if (index < 0)
+            return OperationResult<bool>.Failure($"No power plan '{schemeGuid:D}'.", ErrorCategory.NotFound);
+        _plans[index] = _plans[index] with { Name = name, Description = description };
+        return OperationResult<bool>.Success(true);
+    }
+
     public OperationResult<bool> SetActivePlan(Guid planGuid)
     {
         Calls.Add($"SetActivePlan:{planGuid:D}");

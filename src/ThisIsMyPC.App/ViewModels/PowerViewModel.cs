@@ -27,8 +27,11 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
     private PowerPlan? _liveActivePlan;
     private string? _stagedGroupId;
     private string? _modernStandbyGroupId;
+    private string? _hibernateGroupId;
+    private string? _ultimateGroupId;
     private bool _isStagingChange;
     private bool _suppressModernStandby;
+    private bool _suppressSystemPower;
     private bool _disposed;
 
     public PowerViewModel(
@@ -66,6 +69,7 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
         }
 
         InitializeModernStandby();
+        InitializeSystemPower(scanData);
 
         _pendingChangesService.PropertyChanged += OnPendingChangesPropertyChanged;
     }
@@ -114,6 +118,150 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
         "Modern Standby (S0 low-power idle) keeps the machine partially awake while sleeping so it can " +
         "sync in the background. Disabling it makes Windows use classic S3 sleep at the next boot " +
         "(only if the firmware still supports S3). Applied via the PlatformAoAcOverride registry value.";
+
+    // ---- System power: hibernation + Ultimate Performance ----
+
+    [ObservableProperty]
+    private bool _showSystemPower;
+
+    [ObservableProperty]
+    private bool _isHibernateEnabled;
+
+    [ObservableProperty]
+    private bool _showHibernate;
+
+    [ObservableProperty]
+    private bool _isUltimatePerformanceInstalled;
+
+    public string HibernateDescription =>
+        "Hibernation writes memory to disk so the machine can power off fully and resume. " +
+        "Disabling it deletes the hiberfile, which also turns off Fast Startup and removes " +
+        "Hibernate from the power menu.";
+
+    public string UltimatePerformanceDescription =>
+        "Registers the hidden Ultimate Performance plan Windows ships for workstations. " +
+        "It removes micro-latencies at the cost of higher idle power use. Removing it deletes " +
+        "the registered copy; the plan must not be active when removed.";
+
+    [RelayCommand]
+    private void ToggleHibernate()
+    {
+        if (_disposed || _registryService is null || _suppressSystemPower)
+            return;
+
+        var enable = IsHibernateEnabled;
+        _isStagingChange = true;
+        try
+        {
+            if (_hibernateGroupId is not null)
+            {
+                _pendingChangesService.Unstage(_hibernateGroupId);
+                _hibernateGroupId = null;
+            }
+
+            var live = ReadHibernateEnabled();
+            if (live is null || enable != live)
+            {
+                var change = PowerPlanChangeFactory.CreateHibernateToggle(live ?? !enable, enable);
+                Stage(change, out _hibernateGroupId);
+            }
+        }
+        finally
+        {
+            _isStagingChange = false;
+        }
+    }
+
+    [RelayCommand]
+    private void ToggleUltimatePerformance()
+    {
+        if (_disposed || _powerService is null || _suppressSystemPower)
+            return;
+
+        var install = IsUltimatePerformanceInstalled;
+        _isStagingChange = true;
+        try
+        {
+            if (_ultimateGroupId is not null)
+            {
+                _pendingChangesService.Unstage(_ultimateGroupId);
+                _ultimateGroupId = null;
+            }
+
+            var live = ReadUltimatePerformanceInstalled();
+            if (install != live)
+            {
+                var change = PowerPlanChangeFactory.CreateUltimatePerformanceToggle(live, install);
+                Stage(change, out _ultimateGroupId);
+            }
+        }
+        finally
+        {
+            _isStagingChange = false;
+        }
+    }
+
+    private void InitializeSystemPower(PowerScanData scanData)
+    {
+        ShowHibernate = _registryService is not null && scanData.HibernateEnabled is not null;
+        ShowSystemPower = ShowHibernate || _powerService is not null;
+
+        _suppressSystemPower = true;
+        IsHibernateEnabled = scanData.HibernateEnabled ?? false;
+        IsUltimatePerformanceInstalled = scanData.UltimatePerformancePlan is not null;
+        _suppressSystemPower = false;
+
+        RehydrateSystemPowerToggle(
+            PowerPlanChangeFactory.HibernateSettingId,
+            ref _hibernateGroupId,
+            pendingOn => IsHibernateEnabled = pendingOn,
+            IsHibernateEnabled);
+        RehydrateSystemPowerToggle(
+            PowerPlanChangeFactory.UltimatePerformanceSettingId,
+            ref _ultimateGroupId,
+            pendingOn => IsUltimatePerformanceInstalled = pendingOn,
+            IsUltimatePerformanceInstalled);
+    }
+
+    /// <summary>Rehydrates a "1"/"0"-valued toggle staged in an earlier visit (Modern Standby convention).</summary>
+    private void RehydrateSystemPowerToggle(
+        string settingId, ref string? groupId, Action<bool> setToggle, bool currentState)
+    {
+        var existing = _pendingChangesService.PendingGroups.FirstOrDefault(g =>
+            g.Changes.Count == 1 &&
+            g.Changes[0].ModuleId == PowerPlanChangeFactory.ModuleId &&
+            g.Changes[0].SettingId == settingId);
+        if (existing is null)
+            return;
+
+        var pendingOn = existing.Changes[0].AfterValue == "1";
+        if (pendingOn == currentState)
+        {
+            _pendingChangesService.Unstage(existing.GroupId);
+        }
+        else
+        {
+            groupId = existing.GroupId;
+            _suppressSystemPower = true;
+            setToggle(pendingOn);
+            _suppressSystemPower = false;
+        }
+    }
+
+    private bool? ReadHibernateEnabled()
+    {
+        var read = _registryService?.ReadDWord(
+            PowerPlanChangeFactory.ModernStandbyKeyPath, PowerPlanChangeFactory.HibernateValueName);
+        return read is { IsSuccess: true } ? read.Value != 0 : null;
+    }
+
+    private bool ReadUltimatePerformanceInstalled()
+    {
+        if (_powerService is null)
+            return false;
+        var scanner = new Modules.Power.Services.PowerPlanScanner(_powerService);
+        return Modules.Power.Services.PowerPlanScanner.FindUltimatePerformance(scanner.Scan()) is not null;
+    }
 
     [RelayCommand]
     private void SelectPlan(PowerPlanItemViewModel? plan)
@@ -359,6 +507,30 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
                 ? IsModernStandbyDisabled // applied — the toggle already shows the new state
                 : ReadModernStandbyOverride() == 0;
             _suppressModernStandby = false;
+        }
+
+        // Hibernation toggle removed externally
+        if (_hibernateGroupId is not null &&
+            !_pendingChangesService.PendingGroups.Any(g => g.GroupId == _hibernateGroupId))
+        {
+            _hibernateGroupId = null;
+            _suppressSystemPower = true;
+            IsHibernateEnabled = isApplying
+                ? IsHibernateEnabled // applied — the toggle already shows the new state
+                : ReadHibernateEnabled() ?? IsHibernateEnabled;
+            _suppressSystemPower = false;
+        }
+
+        // Ultimate Performance toggle removed externally
+        if (_ultimateGroupId is not null &&
+            !_pendingChangesService.PendingGroups.Any(g => g.GroupId == _ultimateGroupId))
+        {
+            _ultimateGroupId = null;
+            _suppressSystemPower = true;
+            IsUltimatePerformanceInstalled = isApplying
+                ? IsUltimatePerformanceInstalled
+                : ReadUltimatePerformanceInstalled();
+            _suppressSystemPower = false;
         }
 
         // Setting rows track their own staged groups; refresh them from the parent

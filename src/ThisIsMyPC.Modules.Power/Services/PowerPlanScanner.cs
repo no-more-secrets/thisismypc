@@ -16,6 +16,17 @@ public sealed class PowerPlanScanner
     /// <summary>Non-null after Scan() when plan enumeration itself failed (list is then empty).</summary>
     public string? LastScanError { get; private set; }
 
+    /// <summary>
+    /// A plan counts as Ultimate Performance when it carries our marker
+    /// description (locale-proof), or matches the hidden source GUID or name
+    /// (installed by something else, e.g. winutil or a Workstation SKU).
+    /// </summary>
+    public static PowerPlan? FindUltimatePerformance(IReadOnlyList<PowerPlan> plans) =>
+        plans.FirstOrDefault(p => p.Description == Changes.PowerPlanChangeFactory.UltimatePerformanceMarker)
+        ?? plans.FirstOrDefault(p =>
+            p.PlanGuid == Changes.PowerPlanChangeFactory.UltimatePerformanceSourceGuid
+            || p.Name.Equals("Ultimate Performance", StringComparison.OrdinalIgnoreCase));
+
     public IReadOnlyList<PowerPlan> Scan()
     {
         LastScanError = null;

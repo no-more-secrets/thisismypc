@@ -199,6 +199,89 @@ public sealed class PowerService : IPowerService
         }
     }
 
+    public OperationResult<bool> SetHibernateEnabled(bool enable)
+    {
+        try
+        {
+            byte input = enable ? (byte)1 : (byte)0;
+            var status = CallNtPowerInformation(SystemReserveHiberFile, ref input, sizeof(byte), 0, 0);
+            return status == 0
+                ? OperationResult<bool>.Success(true)
+                : OperationResult<bool>.Failure(
+                    $"Cannot {(enable ? "enable" : "disable")} hibernation: NTSTATUS 0x{status:X8}.",
+                    status == 0xC0000022 ? ErrorCategory.AccessDenied : ErrorCategory.ServiceUnavailable);
+        }
+        catch (Exception ex)
+        {
+            return OperationResult<bool>.Failure(
+                $"Unexpected error toggling hibernation: {ex.Message}", ErrorCategory.ServiceUnavailable, ex);
+        }
+    }
+
+    public OperationResult<Guid> DuplicateScheme(Guid sourceSchemeGuid)
+    {
+        try
+        {
+            var result = PowerDuplicateScheme(0, in sourceSchemeGuid, out var guidPtr);
+            if (result != ERROR_SUCCESS)
+                return MapError<Guid>(result, $"duplicate power plan {sourceSchemeGuid:D}");
+            try
+            {
+                return OperationResult<Guid>.Success(Marshal.PtrToStructure<Guid>(guidPtr));
+            }
+            finally
+            {
+                LocalFree(guidPtr);
+            }
+        }
+        catch (Exception ex)
+        {
+            return OperationResult<Guid>.Failure(
+                $"Unexpected error duplicating power plan {sourceSchemeGuid:D}: {ex.Message}",
+                ErrorCategory.ServiceUnavailable, ex);
+        }
+    }
+
+    public OperationResult<bool> DeleteScheme(Guid schemeGuid)
+    {
+        try
+        {
+            var result = PowerDeleteScheme(0, in schemeGuid);
+            return result == ERROR_SUCCESS
+                ? OperationResult<bool>.Success(true)
+                : MapError<bool>(result, $"delete power plan {schemeGuid:D}");
+        }
+        catch (Exception ex)
+        {
+            return OperationResult<bool>.Failure(
+                $"Unexpected error deleting power plan {schemeGuid:D}: {ex.Message}",
+                ErrorCategory.ServiceUnavailable, ex);
+        }
+    }
+
+    public OperationResult<bool> WriteSchemeText(Guid schemeGuid, string name, string description)
+    {
+        try
+        {
+            var nameBytes = Encoding.Unicode.GetBytes(name + '\0');
+            var result = PowerWriteFriendlyName(0, in schemeGuid, 0, 0, nameBytes, (uint)nameBytes.Length);
+            if (result != ERROR_SUCCESS)
+                return MapError<bool>(result, $"rename power plan {schemeGuid:D}");
+
+            var descriptionBytes = Encoding.Unicode.GetBytes(description + '\0');
+            result = PowerWriteDescription(0, in schemeGuid, 0, 0, descriptionBytes, (uint)descriptionBytes.Length);
+            return result == ERROR_SUCCESS
+                ? OperationResult<bool>.Success(true)
+                : MapError<bool>(result, $"set the description of power plan {schemeGuid:D}");
+        }
+        catch (Exception ex)
+        {
+            return OperationResult<bool>.Failure(
+                $"Unexpected error writing text of power plan {schemeGuid:D}: {ex.Message}",
+                ErrorCategory.ServiceUnavailable, ex);
+        }
+    }
+
     private static OperationResult<Guid> GetActiveScheme()
     {
         var result = PowerGetActiveScheme(0, out var guidPtr);

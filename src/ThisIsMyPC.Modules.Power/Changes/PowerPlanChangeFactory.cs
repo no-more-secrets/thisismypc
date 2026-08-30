@@ -18,6 +18,17 @@ public static class PowerPlanChangeFactory
     public const string ModernStandbyKeyPath = @"HKLM\SYSTEM\CurrentControlSet\Control\Power";
     public const string ModernStandbyValueName = "PlatformAoAcOverride";
 
+    public const string HibernateSettingId = "hibernation";
+    public const string HibernateValueName = "HibernateEnabled";
+
+    public const string UltimatePerformanceSettingId = "ultimate-performance";
+
+    /// <summary>The hidden scheme Windows ships; installing means duplicating it.</summary>
+    public static readonly Guid UltimatePerformanceSourceGuid = new("e9a42b02-d5df-448d-aa66-1f0000e60cc8");
+
+    /// <summary>Description written on our duplicate so scan and removal find it across locales.</summary>
+    public const string UltimatePerformanceMarker = "Ultimate Performance plan installed by ThisIsMyPC";
+
     /// <summary>Stages one AC or DC value-index write for an individual plan setting.</summary>
     public static ChangeDescriptor CreateSettingChange(
         PowerPlan plan, PowerSetting setting, bool ac, uint currentIndex, uint newIndex)
@@ -61,6 +72,51 @@ public static class PowerPlanChangeFactory
             ValueType = ChangeValueType.Registry_DWord,
             Category = disable ? ChangeCategory.Disable : ChangeCategory.Enable,
             RestartRequirement = RestartRequirement.Reboot,
+        };
+    }
+
+    /// <summary>
+    /// Toggles the hiberfile via CallNtPowerInformation, like powercfg /hibernate.
+    /// Disabling also removes Fast Startup and the Hibernate power-menu entry.
+    /// </summary>
+    public static ChangeDescriptor CreateHibernateToggle(bool currentlyEnabled, bool enable)
+    {
+        return new ChangeDescriptor
+        {
+            ModuleId = ModuleId,
+            SettingId = HibernateSettingId,
+            DisplayName = "Hibernation",
+            SystemLocation = "powrprof:SystemReserveHiberFile",
+            BeforeValue = currentlyEnabled ? "1" : "0",
+            AfterValue = enable ? "1" : "0",
+            BeforeDisplay = currentlyEnabled ? "Enabled" : "Disabled",
+            AfterDisplay = enable ? "Enabled" : "Disabled",
+            ValueType = ChangeValueType.PowerPlan_Setting,
+            Category = enable ? ChangeCategory.Enable : ChangeCategory.Disable,
+            RestartRequirement = RestartRequirement.None,
+        };
+    }
+
+    /// <summary>
+    /// Installs (duplicates the hidden scheme, marks the copy) or removes the
+    /// Ultimate Performance plan. Removal targets the marked or matching plan
+    /// and fails while that plan is active.
+    /// </summary>
+    public static ChangeDescriptor CreateUltimatePerformanceToggle(bool currentlyInstalled, bool install)
+    {
+        return new ChangeDescriptor
+        {
+            ModuleId = ModuleId,
+            SettingId = UltimatePerformanceSettingId,
+            DisplayName = "Ultimate Performance plan",
+            SystemLocation = $"powrprof:PowerDuplicateScheme {UltimatePerformanceSourceGuid:D}",
+            BeforeValue = currentlyInstalled ? "1" : "0",
+            AfterValue = install ? "1" : "0",
+            BeforeDisplay = currentlyInstalled ? "Installed" : "Not installed",
+            AfterDisplay = install ? "Installed" : "Not installed",
+            ValueType = ChangeValueType.PowerPlan_Setting,
+            Category = install ? ChangeCategory.Create : ChangeCategory.Delete,
+            RestartRequirement = RestartRequirement.None,
         };
     }
 

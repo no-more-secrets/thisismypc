@@ -41,8 +41,18 @@ public sealed class PowerModule : IModule
             {
                 var scanner = new PowerPlanScanner(_powerService);
                 var plans = scanner.Scan();
+
+                var hibernateRead = _registryService.ReadDWord(
+                    PowerPlanChangeFactory.ModernStandbyKeyPath,
+                    PowerPlanChangeFactory.HibernateValueName);
+                bool? hibernateEnabled = hibernateRead.IsSuccess ? hibernateRead.Value != 0 : null;
+
                 return OperationResult<object>.Success(
-                    (object)new PowerScanData(plans, scanner.LastScanError));
+                    (object)new PowerScanData(
+                        plans,
+                        scanner.LastScanError,
+                        hibernateEnabled,
+                        Services.PowerPlanScanner.FindUltimatePerformance(plans)));
             }
             catch (Exception ex)
             {
@@ -58,6 +68,10 @@ public sealed class PowerModule : IModule
         {
             ChangeValueType.PowerPlan_Setting when change.SettingId == PowerPlanChangeFactory.ActivePlanSettingId
                 => ApplyActivePlanChange(change),
+            ChangeValueType.PowerPlan_Setting when change.SettingId == PowerPlanChangeFactory.HibernateSettingId
+                => _powerService.SetHibernateEnabled(change.AfterValue == "1"),
+            ChangeValueType.PowerPlan_Setting when change.SettingId == PowerPlanChangeFactory.UltimatePerformanceSettingId
+                => ApplyUltimatePerformanceChange(change),
             ChangeValueType.PowerPlan_Setting when change.SettingId.StartsWith(
                 PowerPlanChangeFactory.SettingIdPrefix, StringComparison.Ordinal)
                 => ApplySettingChange(change),
@@ -115,6 +129,42 @@ public sealed class PowerModule : IModule
         }
 
         return _registryService.WriteDWord(keyPath, valueName, value);
+    }
+
+    private OperationResult<bool> ApplyUltimatePerformanceChange(ChangeDescriptor change)
+    {
+        if (change.AfterValue == "1")
+        {
+            var duplicated = _powerService.DuplicateScheme(PowerPlanChangeFactory.UltimatePerformanceSourceGuid);
+            if (!duplicated.IsSuccess)
+            {
+                return OperationResult<bool>.Failure(
+                    duplicated.ErrorMessage!, duplicated.ErrorCategory!.Value, duplicated.Exception);
+            }
+
+            // Best-effort marker: the plan works without it, so a failed text
+            // write must not roll back the install.
+            _ = _powerService.WriteSchemeText(
+                duplicated.Value, "Ultimate Performance", PowerPlanChangeFactory.UltimatePerformanceMarker);
+            return OperationResult<bool>.Success(true);
+        }
+
+        var scanner = new PowerPlanScanner(_powerService);
+        var target = Services.PowerPlanScanner.FindUltimatePerformance(scanner.Scan());
+        if (target is null)
+        {
+            // Already gone — removal is idempotent.
+            return OperationResult<bool>.Success(true);
+        }
+
+        if (target.IsActive)
+        {
+            return OperationResult<bool>.Failure(
+                "The Ultimate Performance plan is the active plan. Switch to another plan first.",
+                ErrorCategory.ServiceUnavailable);
+        }
+
+        return _powerService.DeleteScheme(target.PlanGuid);
     }
 
     private OperationResult<bool> ApplyActivePlanChange(ChangeDescriptor change)

@@ -17,6 +17,10 @@ public sealed record PowerPlan
 }
 
 /// <summary>Aggregate scan result for the Power Plans module.</summary>
+/// <param name="HibernateEnabled">Null when the state could not be read.</param>
+/// <param name="UltimatePerformancePlan">The registered Ultimate Performance plan, when one exists.</param>
 public sealed record PowerScanData(
     IReadOnlyList<PowerPlan> Plans,
-    string? ScanError = null);
+    string? ScanError = null,
+    bool? HibernateEnabled = null,
+    PowerPlan? UltimatePerformancePlan = null);

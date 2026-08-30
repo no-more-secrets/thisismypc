@@ -62,6 +62,39 @@ internal static partial class NativePower
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static partial nint LocalFree(nint hMem);
 
+    /// <summary>Duplicates a scheme; *destinationSchemeGuid is LocalAlloc'd — free with LocalFree.</summary>
+    [LibraryImport("powrprof.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    internal static partial uint PowerDuplicateScheme(nint rootPowerKey, in Guid sourceSchemeGuid, out nint destinationSchemeGuid);
+
+    [LibraryImport("powrprof.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    internal static partial uint PowerDeleteScheme(nint rootPowerKey, in Guid schemeGuid);
+
+    /// <summary>Buffer is UTF-16 including the terminating null.</summary>
+    [LibraryImport("powrprof.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    internal static partial uint PowerWriteFriendlyName(
+        nint rootPowerKey, in Guid schemeGuid, nint subGroupGuid, nint settingGuid,
+        [In] byte[] buffer, uint bufferSize);
+
+    /// <summary>Buffer is UTF-16 including the terminating null.</summary>
+    [LibraryImport("powrprof.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    internal static partial uint PowerWriteDescription(
+        nint rootPowerKey, in Guid schemeGuid, nint subGroupGuid, nint settingGuid,
+        [In] byte[] buffer, uint bufferSize);
+
+    // POWER_INFORMATION_LEVEL: SystemReserveHiberFile toggles hibernation like
+    // powercfg /hibernate on|off. Returns NTSTATUS (0 = success), not Win32.
+    internal const int SystemReserveHiberFile = 10;
+
+    [LibraryImport("powrprof.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    internal static partial uint CallNtPowerInformation(
+        int informationLevel, ref byte inputBuffer, uint inputBufferLength,
+        nint outputBuffer, uint outputBufferLength);
+
     // ---- Per-plan setting enumeration (Story 4.2) ----
 
     [LibraryImport("powrprof.dll")]
