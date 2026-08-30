@@ -14,6 +14,23 @@ public sealed class WingetUpgradeLiveDiagnosticTests
     public WingetUpgradeLiveDiagnosticTests(Xunit.Abstractions.ITestOutputHelper output) => _output = output;
 
     [Fact]
+    public async Task ListInstalled_ParsesTheLiveTable()
+    {
+        var service = new WingetService();
+
+        var result = await service.ListInstalledAsync();
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        _output.WriteLine($"{result.Value!.Count} installed packages parsed");
+        Assert.NotEmpty(result.Value!);
+        foreach (var package in result.Value!)
+        {
+            Assert.False(string.IsNullOrWhiteSpace(package.PackageId));
+            Assert.DoesNotContain(' ', package.PackageId);
+        }
+    }
+
+    [Fact]
     public async Task ListUpgradable_ParsesTheLiveTable()
     {
         var service = new WingetService();

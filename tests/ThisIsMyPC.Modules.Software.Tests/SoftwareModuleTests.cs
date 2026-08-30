@@ -55,6 +55,36 @@ public class SoftwareModuleTests
     }
 
     [Fact]
+    public async Task ScanSystemState_VersionedFamilyIdCountsAsInstalled()
+    {
+        // Node ships as OpenJS.NodeJS.22 while the catalog lists OpenJS.NodeJS.
+        var fake = new FakeWingetService();
+        fake.InstalledPackages.Add(new InstalledWingetPackage(FirstEntry.WingetId + ".22", "22.0"));
+        var module = CreateModule(fake);
+
+        var result = await module.ScanSystemStateAsync();
+
+        var scan = Assert.IsType<SoftwareScanData>(result.Value);
+        Assert.Contains(FirstEntry.WingetId, scan.InstalledWingetIds);
+    }
+
+    [Fact]
+    public async Task ScanSystemState_ArpRowMatchesByDisplayName()
+    {
+        // winget could not correlate the install to a source package; the row
+        // carries only the display name (the real-world Google Chrome case).
+        var fake = new FakeWingetService();
+        fake.InstalledPackages.Add(new InstalledWingetPackage(
+            PackageId: string.Empty, Version: "1.0", Name: FirstEntry.Name));
+        var module = CreateModule(fake);
+
+        var result = await module.ScanSystemStateAsync();
+
+        var scan = Assert.IsType<SoftwareScanData>(result.Value);
+        Assert.Contains(FirstEntry.WingetId, scan.InstalledWingetIds);
+    }
+
+    [Fact]
     public async Task ScanSystemState_ExportFailureLeavesCatalogBrowsable()
     {
         var module = CreateModule(new FakeWingetService { ListFails = true });

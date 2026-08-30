@@ -9,8 +9,12 @@ public enum WingetSource
     MsStore,
 }
 
-/// <summary>A package winget reports as installed, keyed by its source package id.</summary>
-public sealed record InstalledWingetPackage(string PackageId, string? Version);
+/// <summary>
+/// A package winget reports as installed. <see cref="PackageId"/> is empty for
+/// installs winget could not correlate to a source package (raw ARP rows);
+/// <see cref="Name"/> carries the display name for name-based matching.
+/// </summary>
+public sealed record InstalledWingetPackage(string PackageId, string? Version, string? Name = null);
 
 /// <summary>A package winget reports as having an update available.</summary>
 public sealed record UpgradableWingetPackage(
@@ -27,7 +31,7 @@ public interface IWingetService
     /// <summary>Whether winget.exe is available for the current user. Value is the reported version.</summary>
     Task<OperationResult<string>> GetVersionAsync(CancellationToken cancellationToken = default);
 
-    /// <summary>Package ids currently installed, from <c>winget export</c> (JSON, no table parsing).</summary>
+    /// <summary>Packages currently installed, from the <c>winget list</c> table (local data, fast).</summary>
     Task<OperationResult<IReadOnlyList<InstalledWingetPackage>>> ListInstalledAsync(
         CancellationToken cancellationToken = default);
 

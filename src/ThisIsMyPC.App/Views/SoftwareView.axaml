@@ -31,55 +31,64 @@
                                IsVisible="{Binding !InstalledStateKnown}" />
                 </StackPanel>
 
-                <!-- App list -->
+                <!-- Catalog grid: category sections of compact cards; the
+                     description lives in the card tooltip -->
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                               VerticalScrollBarVisibility="Auto">
-                    <ItemsControl ItemsSource="{Binding FilteredApps}" Margin="0,0,20,16">
+                    <ItemsControl ItemsSource="{Binding FilteredGroups}" Margin="0,0,20,16">
                         <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="vm:SoftwareAppViewModel">
-                                <Border Padding="12,10" Margin="0,2" CornerRadius="4"
-                                        Background="{DynamicResource SurfaceBrush}">
-                                    <DockPanel>
-                                        <Button DockPanel.Dock="Right"
-                                                MinWidth="90"
-                                                Padding="8,4" FontSize="12"
-                                                VerticalAlignment="Center"
-                                                HorizontalContentAlignment="Center"
-                                                Content="{Binding ActionButtonText}"
-                                                Command="{Binding ToggleQueueCommand}" />
-                                        <StackPanel Spacing="2" Margin="0,0,12,0">
-                                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                                <TextBlock Text="{Binding Name}"
-                                                           FontWeight="SemiBold"
-                                                           FontSize="14"
-                                                           Foreground="{DynamicResource TextPrimaryBrush}" />
-                                                <TextBlock Text="Installed"
-                                                           FontSize="11"
-                                                           VerticalAlignment="Center"
-                                                           Foreground="{DynamicResource AccentBrush}"
-                                                           IsVisible="{Binding IsInstalled}" />
-                                                <TextBlock Text="Open source"
-                                                           FontSize="11"
-                                                           VerticalAlignment="Center"
-                                                           Foreground="{DynamicResource TextTertiaryBrush}"
-                                                           IsVisible="{Binding IsOpenSource}" />
-                                            </StackPanel>
-                                            <TextBlock Text="{Binding Description}"
-                                                       FontSize="12"
-                                                       TextWrapping="Wrap"
-                                                       Foreground="{DynamicResource TextSecondaryBrush}" />
-                                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                                <TextBlock Text="{Binding Category}"
-                                                           FontSize="11"
-                                                           Foreground="{DynamicResource TextTertiaryBrush}" />
-                                                <TextBlock Text="{Binding WingetId}"
-                                                           FontFamily="{StaticResource MonoFont}"
-                                                           FontSize="11"
-                                                           Foreground="{DynamicResource TextTertiaryBrush}" />
-                                            </StackPanel>
-                                        </StackPanel>
-                                    </DockPanel>
-                                </Border>
+                            <DataTemplate x:DataType="vm:SoftwareCategoryGroupViewModel">
+                                <StackPanel Spacing="6" Margin="0,0,0,14">
+                                    <TextBlock Text="{Binding Category}"
+                                               FontSize="16"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                                    <ItemsControl ItemsSource="{Binding Apps}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:SoftwareAppViewModel">
+                                                <Border Width="300" Padding="10,7" Margin="0,0,8,8"
+                                                        CornerRadius="4"
+                                                        Background="{DynamicResource SurfaceBrush}"
+                                                        ToolTip.Tip="{Binding Description}">
+                                                    <DockPanel>
+                                                        <Button DockPanel.Dock="Right"
+                                                                MinWidth="76"
+                                                                Padding="6,3" FontSize="12"
+                                                                VerticalAlignment="Center"
+                                                                HorizontalContentAlignment="Center"
+                                                                Content="{Binding ActionButtonText}"
+                                                                Command="{Binding ToggleQueueCommand}" />
+                                                        <StackPanel Margin="0,0,8,0"
+                                                                    VerticalAlignment="Center">
+                                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                                <Ellipse Width="7" Height="7"
+                                                                         VerticalAlignment="Center"
+                                                                         Fill="{DynamicResource SuccessBrush}"
+                                                                         IsVisible="{Binding IsInstalled}"
+                                                                         ToolTip.Tip="Installed" />
+                                                                <TextBlock Text="{Binding Name}"
+                                                                           FontWeight="SemiBold"
+                                                                           FontSize="13"
+                                                                           TextTrimming="CharacterEllipsis"
+                                                                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                                                            </StackPanel>
+                                                            <TextBlock Text="{Binding WingetId}"
+                                                                       FontFamily="{StaticResource MonoFont}"
+                                                                       FontSize="11"
+                                                                       TextTrimming="CharacterEllipsis"
+                                                                       Foreground="{DynamicResource TextTertiaryBrush}" />
+                                                        </StackPanel>
+                                                    </DockPanel>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>

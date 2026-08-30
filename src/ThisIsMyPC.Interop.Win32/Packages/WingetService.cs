@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Text;
-using System.Text.Json;
 using ThisIsMyPC.Core.Packages;
 using ThisIsMyPC.Core.Results;
 
@@ -9,9 +8,8 @@ namespace ThisIsMyPC.Interop.Win32.Packages;
 /// <summary>
 /// Runs winget.exe with explicit argument lists (no shell, no injection surface).
 /// Flag recipe follows CTT winutil (MIT): silent, agreements pre-accepted,
-/// interactivity disabled. Installed-state detection uses <c>winget export</c>
-/// because its JSON output is stable, unlike the localized fixed-width tables
-/// of <c>winget list</c>.
+/// interactivity disabled. Installed-state and update detection parse winget's
+/// localized fixed-width tables by header column offsets (see ParseTableCells).
 /// </summary>
 public sealed class WingetService : IWingetService
 {
@@ -23,7 +21,10 @@ public sealed class WingetService : IWingetService
     // never hang the shell; export feeds the scan. Installs get no artificial
     // deadline — a large package on a slow line legitimately takes a long time.
     private static readonly TimeSpan VersionTimeout = TimeSpan.FromSeconds(15);
-    private static readonly TimeSpan ExportTimeout = TimeSpan.FromMinutes(3);
+    private static readonly TimeSpan ListTimeout = TimeSpan.FromSeconds(90);
+
+    // winget upgrade refreshes sources over the network; far slower than list.
+    private static readonly TimeSpan UpgradeListTimeout = TimeSpan.FromMinutes(3);
 
     // Generous — a large package on a slow line is legitimate — but bounded:
     // a hung silent installer must not wedge the apply pipeline forever.
@@ -49,60 +50,32 @@ public sealed class WingetService : IWingetService
     public async Task<OperationResult<IReadOnlyList<InstalledWingetPackage>>> ListInstalledAsync(
         CancellationToken cancellationToken = default)
     {
-        var exportPath = Path.Combine(
-            Path.GetTempPath(), $"tipc-winget-export-{Guid.NewGuid():N}.json");
-
-        try
-        {
-            var run = await RunWingetAsync(
-                ["export", "-o", exportPath, "--accept-source-agreements", "--disable-interactivity"],
-                cancellationToken, ExportTimeout).ConfigureAwait(false);
-            if (!run.IsSuccess)
-            {
-                return OperationResult<IReadOnlyList<InstalledWingetPackage>>.Failure(
-                    run.ErrorMessage!, run.ErrorCategory!.Value);
-            }
-
-            // winget export exits non-zero when some installed packages have no
-            // known source, but still writes every package it could resolve —
-            // a usable file trumps the exit code.
-            if (!File.Exists(exportPath))
-            {
-                return OperationResult<IReadOnlyList<InstalledWingetPackage>>.Failure(
-                    FormatExitError("winget export", run.Value.ExitCode, run.Value.Output),
-                    ErrorCategory.ServiceUnavailable);
-            }
-
-            var packages = ParseExportFile(exportPath);
-
-            // A non-zero exit with a populated file is the normal "some packages
-            // have no known source" case. Non-zero AND empty means the export as
-            // a whole failed (e.g. every source unreachable) — report that rather
-            // than presenting "nothing installed" as known state.
-            if (run.Value.ExitCode != 0 && packages.Count == 0)
-            {
-                return OperationResult<IReadOnlyList<InstalledWingetPackage>>.Failure(
-                    FormatExitError("winget export", run.Value.ExitCode, run.Value.Output),
-                    ErrorCategory.ServiceUnavailable);
-            }
-
-            return OperationResult<IReadOnlyList<InstalledWingetPackage>>.Success(packages);
-        }
-        catch (JsonException ex)
+        // winget list reads Add/Remove Programs plus the source cache, so it sees
+        // installs winget export cannot map to a source (and it answers from
+        // local data in seconds instead of hitting the network).
+        var run = await RunWingetAsync(
+            ["list", "--accept-source-agreements", "--disable-interactivity"],
+            cancellationToken, ListTimeout).ConfigureAwait(false);
+        if (!run.IsSuccess)
         {
             return OperationResult<IReadOnlyList<InstalledWingetPackage>>.Failure(
-                $"Could not parse winget export output: {ex.Message}",
-                ErrorCategory.ServiceUnavailable, ex);
+                run.ErrorMessage!, run.ErrorCategory!.Value);
         }
-        finally
+
+        var (exitCode, output) = run.Value;
+        var packages = ParseListTable(output);
+
+        // Non-zero with rows is the benign "some sources grumbled" case; non-zero
+        // AND empty means the listing as a whole failed. Never present that as
+        // "nothing installed".
+        if (exitCode != 0 && packages.Count == 0)
         {
-            try
-            {
-                File.Delete(exportPath);
-            }
-            catch (IOException) { }
-            catch (UnauthorizedAccessException) { }
+            return OperationResult<IReadOnlyList<InstalledWingetPackage>>.Failure(
+                FormatExitError("winget list", exitCode, output),
+                ErrorCategory.ServiceUnavailable);
         }
+
+        return OperationResult<IReadOnlyList<InstalledWingetPackage>>.Success(packages);
     }
 
     // winget's "no installed package found matching input criteria" — the
@@ -122,7 +95,7 @@ public sealed class WingetService : IWingetService
     {
         var run = await RunWingetAsync(
             ["upgrade", "--accept-source-agreements", "--disable-interactivity"],
-            cancellationToken, ExportTimeout).ConfigureAwait(false);
+            cancellationToken, UpgradeListTimeout).ConfigureAwait(false);
         if (!run.IsSuccess)
         {
             return OperationResult<IReadOnlyList<UpgradableWingetPackage>>.Failure(
@@ -213,68 +186,85 @@ public sealed class WingetService : IWingetService
         return null;
     }
 
-    private static IReadOnlyList<InstalledWingetPackage> ParseExportFile(string path)
+    /// <summary>
+    /// Parses the fixed-width table of <c>winget upgrade</c> (Name, Id, Version,
+    /// Available, Source). The "require explicit targeting" section repeats
+    /// header and separator and is parsed the same way. Exposed for tests.
+    /// </summary>
+    public static IReadOnlyList<UpgradableWingetPackage> ParseUpgradeTable(string output)
     {
-        using var stream = File.OpenRead(path);
-        return ParseExport(stream);
-    }
+        var packages = new List<UpgradableWingetPackage>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-    /// <summary>Parses a <c>winget export</c> JSON document. Exposed for tests.</summary>
-    public static IReadOnlyList<InstalledWingetPackage> ParseExport(Stream stream)
-    {
-        using var document = JsonDocument.Parse(stream);
-
-        var packages = new List<InstalledWingetPackage>();
-        if (document.RootElement.TryGetProperty("Sources", out var sources)
-            && sources.ValueKind == JsonValueKind.Array)
+        foreach (var cells in ParseTableCells(output, count => count == 5))
         {
-            foreach (var sourceElement in sources.EnumerateArray())
-            {
-                if (!sourceElement.TryGetProperty("Packages", out var packageArray)
-                    || packageArray.ValueKind != JsonValueKind.Array)
-                {
-                    continue;
-                }
+            var id = cells[1];
+            if (id.Length == 0 || cells[2].Length == 0 || cells[3].Length == 0)
+                continue;
+            if (!IsUsableId(id) || !seen.Add(id))
+                continue;
 
-                foreach (var package in packageArray.EnumerateArray())
-                {
-                    if (!package.TryGetProperty("PackageIdentifier", out var id)
-                        || id.ValueKind != JsonValueKind.String)
-                    {
-                        continue;
-                    }
-
-                    string? version = null;
-                    if (package.TryGetProperty("Version", out var versionElement)
-                        && versionElement.ValueKind == JsonValueKind.String)
-                    {
-                        version = versionElement.GetString();
-                    }
-
-                    packages.Add(new InstalledWingetPackage(id.GetString()!, version));
-                }
-            }
+            packages.Add(new UpgradableWingetPackage(
+                PackageId: id,
+                Name: cells[0],
+                InstalledVersion: cells[2],
+                AvailableVersion: cells[3]));
         }
 
         return packages.AsReadOnly();
     }
 
     /// <summary>
-    /// Parses the fixed-width table of <c>winget upgrade</c> without depending on
-    /// the localized column headers: winget always emits Name, Id, Version,
-    /// Available, Source in that order, so the five header-word start offsets on
-    /// the line above each all-dashes separator give the column boundaries to
-    /// slice every data row by. Token counting is not enough — versions can
-    /// contain spaces ("&lt; 3.21.0", "6.6.11 (23272)"). The "require explicit
-    /// targeting" section repeats header and separator and is parsed the same
-    /// way. Exposed for tests.
+    /// Parses the fixed-width table of <c>winget list</c> (Name, Id, Version,
+    /// then Available and/or Source depending on the build). Rows whose id is
+    /// truncated or is an unmatchable ARP identifier are skipped. Exposed for tests.
     /// </summary>
-    public static IReadOnlyList<UpgradableWingetPackage> ParseUpgradeTable(string output)
+    public static IReadOnlyList<InstalledWingetPackage> ParseListTable(string output)
     {
-        var packages = new List<UpgradableWingetPackage>();
+        var packages = new List<InstalledWingetPackage>();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var cells in ParseTableCells(output, count => count is 3 or 4 or 5))
+        {
+            var name = cells[0];
+            var id = cells[1];
+            if (id.Length == 0 || cells[2].Length == 0)
+                continue;
+
+            // Rows winget could not correlate to a source carry raw ARP ids
+            // ("ARP\Machine\X86\Google Chrome") no install can target; keep the
+            // display name so those installs still match the catalog by name.
+            var usableId = IsUsableId(id);
+            if (!usableId && name.Length == 0)
+                continue;
+            if (!seen.Add(usableId ? id : $"name:{name}"))
+                continue;
+
+            packages.Add(new InstalledWingetPackage(
+                PackageId: usableId ? id : string.Empty,
+                Version: cells[2],
+                Name: name.Length > 0 ? name : null));
+        }
+
+        return packages.AsReadOnly();
+    }
+
+    /// <summary>
+    /// Shared core for winget's localized fixed-width tables: winget always
+    /// emits columns in a fixed order and only the header words are localized,
+    /// so the header-word start offsets on the line above each all-dashes
+    /// separator give the boundaries to slice every following row by. Token
+    /// counting cannot work — versions can contain spaces ("&lt; 3.21.0",
+    /// "6.6.11 (23272)"). Rows are returned raw; callers validate cells, which
+    /// also discards blank lines, trailers, and prose between sections.
+    /// </summary>
+    private static List<string[]> ParseTableCells(
+        string output, Func<int, bool> acceptColumnCount)
+    {
+        var rows = new List<string[]>();
         string? previousLine = null;
         int[]? columns = null;
+        var previousWasEmitted = false;
 
         foreach (var rawLine in output.Split('\n'))
         {
@@ -289,48 +279,43 @@ public sealed class WingetService : IWingetService
             var trimmed = line.Trim();
             if (trimmed.Length >= 5 && trimmed.All(c => c == '-'))
             {
-                columns = previousLine is null ? null : FindColumnStarts(previousLine);
+                // The line above a separator is a header, never data. A second
+                // section's header was already sliced under the previous
+                // section's columns; take it back.
+                if (previousWasEmitted)
+                    rows.RemoveAt(rows.Count - 1);
+
+                var starts = previousLine is null ? null : FindColumnStarts(previousLine);
+                columns = starts is not null && acceptColumnCount(starts.Length) ? starts : null;
                 previousLine = line;
+                previousWasEmitted = false;
                 continue;
             }
 
             previousLine = line;
+            previousWasEmitted = false;
             if (columns is null)
                 continue;
 
-            var id = Slice(line, columns[1], columns[2]);
-            var installedVersion = Slice(line, columns[2], columns[3]);
-            var availableVersion = Slice(line, columns[3], columns[4]);
-
-            // Every data row fills all of its columns; a blank line or the
-            // "N upgrades available." trailer leaves some empty and ends the table.
-            if (id.Length == 0 || installedVersion.Length == 0 || availableVersion.Length == 0)
-            {
-                columns = null;
-                continue;
-            }
-
-            // A console-width-truncated id (ellipsis) cannot be targeted, and an
-            // id slice with interior spaces means the row is misaligned (wide
-            // glyphs in the name shift every column). Skip the row, keep the table.
-            if (id.Contains('…', StringComparison.Ordinal)
-                || ValidatePackageId(id) is not null
-                || !seen.Add(id))
-            {
-                continue;
-            }
-
-            packages.Add(new UpgradableWingetPackage(
-                PackageId: id,
-                Name: Slice(line, 0, columns[1]),
-                InstalledVersion: installedVersion,
-                AvailableVersion: availableVersion));
+            var cells = new string[columns.Length];
+            for (var i = 0; i < columns.Length; i++)
+                cells[i] = Slice(line, columns[i], i + 1 < columns.Length ? columns[i + 1] : int.MaxValue);
+            rows.Add(cells);
+            previousWasEmitted = true;
         }
 
-        return packages.AsReadOnly();
+        return rows;
     }
 
-    /// <summary>Start offsets of the five header words, or null when the line is not a five-column header.</summary>
+    /// <summary>
+    /// A console-width-truncated id (ellipsis) cannot be targeted; an id with
+    /// interior whitespace is either a misaligned row (wide glyphs in the name
+    /// shift every column) or a fragment of a trailer/prose line.
+    /// </summary>
+    private static bool IsUsableId(string id) =>
+        !id.Contains('…', StringComparison.Ordinal) && ValidatePackageId(id) is null;
+
+    /// <summary>Start offsets of the header words; null when the line has none.</summary>
     private static int[]? FindColumnStarts(string header)
     {
         var starts = new List<int>();
@@ -340,7 +325,7 @@ public sealed class WingetService : IWingetService
                 starts.Add(i);
         }
 
-        return starts.Count == 5 ? [.. starts] : null;
+        return starts.Count > 0 ? [.. starts] : null;
     }
 
     private static string Slice(string line, int start, int end)

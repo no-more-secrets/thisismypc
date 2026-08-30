@@ -57,11 +57,14 @@ public sealed class SoftwareModule : IActionModule
 
         var version = await _wingetService.GetVersionAsync().ConfigureAwait(false);
 
-        // Installed-state detection is best-effort: a failed export still leaves
+        // Installed-state detection is best-effort: a failed listing still leaves
         // the catalog browsable, it just cannot mark what is already installed.
         var installed = await _wingetService.ListInstalledAsync().ConfigureAwait(false);
         var installedIds = installed.IsSuccess
-            ? installed.Value!.Select(p => p.PackageId).ToHashSet(StringComparer.OrdinalIgnoreCase)
+            ? SoftwareCatalog.Entries
+                .Where(entry => MatchesInstalled(entry, installed.Value!))
+                .Select(entry => entry.WingetId)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase)
             : [];
 
         var appxPackages = await appxTask.ConfigureAwait(false);
@@ -84,7 +87,23 @@ public sealed class SoftwareModule : IActionModule
         return OperationResult<object>.Success(scan);
     }
 
-    /// <summary>Catalog PackageId is the AppX package name — the family name minus the publisher suffix.</summary>
+    /// <summary>
+    /// A catalog entry counts as installed when winget reports its exact id, a
+    /// versioned family variant of it (OpenJS.NodeJS matches OpenJS.NodeJS.22),
+    /// or, for installs winget could not correlate to any source package, the
+    /// same display name (Google Chrome installed outside winget's mapping).
+    /// </summary>
+    private static bool MatchesInstalled(
+        SoftwareCatalogEntry entry, IReadOnlyList<InstalledWingetPackage> installed) =>
+        installed.Any(p =>
+            (p.PackageId.Length > 0
+                && (p.PackageId.Equals(entry.WingetId, StringComparison.OrdinalIgnoreCase)
+                    || p.PackageId.StartsWith(entry.WingetId + ".", StringComparison.OrdinalIgnoreCase)))
+            || (p.PackageId.Length == 0
+                && p.Name is { } name
+                && name.Equals(entry.Name, StringComparison.OrdinalIgnoreCase)));
+
+    /// <summary>Catalog PackageId is the AppX package name; the family name minus the publisher suffix.</summary>
     private static bool MatchesPackageId(AppxPackageInfo package, string packageId) =>
         package.PackageFamilyName.StartsWith(packageId + "_", StringComparison.OrdinalIgnoreCase);
 

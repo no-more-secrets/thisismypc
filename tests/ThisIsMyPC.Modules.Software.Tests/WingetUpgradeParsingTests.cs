@@ -147,4 +147,50 @@ public sealed class WingetUpgradeParsingTests
         Assert.Empty(WingetService.ParseUpgradeTable(string.Empty));
         Assert.Empty(WingetService.ParseUpgradeTable("No installed package found matching input criteria."));
     }
+
+    // ---- winget list (installed detection) ----
+
+    [Fact]
+    public void ListTable_ParsesRowsAndSkipsArpJunk()
+    {
+        // Real winget list traits: empty Available cells, ARP identifiers with
+        // spaces or braces, truncated ids, "Unknown" versions.
+        const string output = """
+            Name                Id                                     Version      Available  Source
+            ------------------------------------------------------------------------------------------
+            Google Chrome       Google.Chrome                          139.0.7258   140.0.7339 winget
+            Node.js             OpenJS.NodeJS                          22.14.0                 winget
+            Some Legacy Tool    {A1B2C3D4-0000-0000-0000-000000000000} 1.0
+            Mystery App         Mystery App 2.5                        2.5
+            Too Long Package    Publisher.SomeVeryLongPackageNameTru…  1.0                     winget
+            Driver Bundle       Vendor.Driver                          Unknown                 winget
+            """;
+
+        var packages = WingetService.ParseListTable(output);
+
+        // Unusable ids (spaces, truncation) survive as name-only rows so the
+        // catalog can still match them by display name.
+        Assert.Equal(["Google.Chrome", "OpenJS.NodeJS", "{A1B2C3D4-0000-0000-0000-000000000000}", "", "", "Vendor.Driver"],
+            packages.Select(p => p.PackageId).ToArray());
+        Assert.Equal("139.0.7258", packages[0].Version);
+        Assert.Equal("Mystery App", packages[3].Name);
+        Assert.Equal("Too Long Package", packages[4].Name);
+        Assert.Equal("Unknown", packages[5].Version);
+    }
+
+    [Fact]
+    public void ListTable_FourColumnVariantParses()
+    {
+        const string output = """
+            Name             Id               Version  Source
+            ----------------------------------------------------
+            Git              Git.Git          2.52.0   winget
+            """;
+
+        var packages = WingetService.ParseListTable(output);
+
+        Assert.Single(packages);
+        Assert.Equal("Git.Git", packages[0].PackageId);
+        Assert.Equal("2.52.0", packages[0].Version);
+    }
 }

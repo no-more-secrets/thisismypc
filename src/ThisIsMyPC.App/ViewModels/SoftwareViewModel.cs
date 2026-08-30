@@ -16,7 +16,11 @@ public sealed partial class SoftwareViewModel : ViewModelBase, IDisposable
     private readonly IPendingActionsService _pendingActionsService;
     private readonly List<SoftwareAppViewModel> _allApps;
 
-    public ObservableCollection<SoftwareAppViewModel> FilteredApps { get; } = [];
+    /// <summary>Catalog grouped by category (winutil-style), post search/filter.</summary>
+    public ObservableCollection<SoftwareCategoryGroupViewModel> FilteredGroups { get; } = [];
+
+    /// <summary>Flat view of every visible app, in group order.</summary>
+    public IEnumerable<SoftwareAppViewModel> FilteredApps => FilteredGroups.SelectMany(g => g.Apps);
 
     public IReadOnlyList<WindowsAppViewModel> WindowsApps { get; }
 
@@ -129,23 +133,30 @@ public sealed partial class SoftwareViewModel : ViewModelBase, IDisposable
 
     private void RefreshFilter()
     {
-        FilteredApps.Clear();
+        FilteredGroups.Clear();
 
-        foreach (var app in _allApps)
+        foreach (var categoryGroup in _allApps
+            .Where(MatchesFilter)
+            .GroupBy(a => a.Category)
+            .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase))
         {
-            if (SelectedCategory != AllCategories && app.Category != SelectedCategory)
-                continue;
-
-            if (SearchText.Length > 0
-                && !app.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase)
-                && !app.Description.Contains(SearchText, StringComparison.OrdinalIgnoreCase)
-                && !app.WingetId.Contains(SearchText, StringComparison.OrdinalIgnoreCase))
+            FilteredGroups.Add(new SoftwareCategoryGroupViewModel
             {
-                continue;
-            }
-
-            FilteredApps.Add(app);
+                Category = categoryGroup.Key,
+                Apps = categoryGroup.ToList(),
+            });
         }
+    }
+
+    private bool MatchesFilter(SoftwareAppViewModel app)
+    {
+        if (SelectedCategory != AllCategories && app.Category != SelectedCategory)
+            return false;
+
+        return SearchText.Length == 0
+            || app.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase)
+            || app.Description.Contains(SearchText, StringComparison.OrdinalIgnoreCase)
+            || app.WingetId.Contains(SearchText, StringComparison.OrdinalIgnoreCase);
     }
 
     private void OnPendingActionsPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -204,6 +215,13 @@ public sealed partial class SoftwareViewModel : ViewModelBase, IDisposable
         _disposed = true;
         _pendingActionsService.PropertyChanged -= OnPendingActionsPropertyChanged;
     }
+}
+
+/// <summary>One category section of the catalog grid.</summary>
+public sealed class SoftwareCategoryGroupViewModel
+{
+    public required string Category { get; init; }
+    public required IReadOnlyList<SoftwareAppViewModel> Apps { get; init; }
 }
 
 public sealed partial class SoftwareAppViewModel : ViewModelBase

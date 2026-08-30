@@ -34,17 +34,20 @@ public class SoftwareViewShotTests
     }
 
     [AvaloniaFact]
-    public void CatalogTab_RendersWithBadges()
+    public void CatalogTab_RendersGroupedGrid()
     {
-        var (session, _, _) = CreateSession();
+        var (session, viewModel, _) = CreateSession();
         using (session)
         {
             session.Screenshot("catalog-initial");
 
             Assert.True(session.IsTextVisible("App Catalog"));
             Assert.True(session.IsTextVisible("Windows Apps"));
-            // Fake install state marks Git/Firefox rows Installed.
-            Assert.True(session.IsTextVisible("Installed"));
+            // Category section headers replace the flat list.
+            Assert.NotEmpty(viewModel.FilteredGroups);
+            Assert.True(session.IsTextVisible(viewModel.FilteredGroups[0].Category));
+            // Fake install state marks Git/Firefox installed (dot on the card).
+            Assert.Contains(viewModel.FilteredApps, a => a.IsInstalled);
         }
     }
 
@@ -79,9 +82,10 @@ public class SoftwareViewShotTests
             session.Type(searchBox, "firefox");
             session.Screenshot("search-firefox");
 
-            Assert.True(viewModel.FilteredApps.Count is > 0 and < 10,
-                $"Expected a filtered list, got {viewModel.FilteredApps.Count}");
-            Assert.Contains(viewModel.FilteredApps, a => a.Name.Contains("Firefox", StringComparison.Ordinal));
+            var visible = viewModel.FilteredApps.ToList();
+            Assert.True(visible.Count is > 0 and < 10,
+                $"Expected a filtered list, got {visible.Count}");
+            Assert.Contains(visible, a => a.Name.Contains("Firefox", StringComparison.Ordinal));
         }
     }
 
