@@ -544,6 +544,28 @@ public partial class MainWindowViewModel : ViewModelBase
                     }
                 });
             }
+            else if (current?.Module is Modules.Software.SoftwareModule)
+            {
+                var scanResult = await current.Module.ScanSystemStateAsync().ConfigureAwait(false);
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    if (epoch != _contentEpoch)
+                        return; // superseded by Home/Set Loader/newer navigation while scanning
+                    if (scanResult.IsSuccess
+                        && scanResult.Value is Modules.Software.Models.SoftwareScanData softwareData
+                        && _pendingActionsService is not null)
+                    {
+                        ContentTitle = current.Module.Info.Name;
+                        ContentDescription = current.Module.Info.Description;
+                        CurrentContent = new SoftwareViewModel(softwareData, _pendingActionsService);
+                    }
+                    else
+                    {
+                        CurrentContent = null;
+                        SetStatus(scanResult.ErrorMessage ?? "Failed to load the app catalog", StatusSeverity.Error);
+                    }
+                });
+            }
             else if (current?.Module is EnvironmentModule)
             {
                 var scanResult = await current.Module.ScanSystemStateAsync().ConfigureAwait(false);

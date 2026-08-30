@@ -1,0 +1,82 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ThisIsMyPC.App.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="ThisIsMyPC.App.Views.SoftwareView"
+             x:DataType="vm:SoftwareViewModel">
+
+    <DockPanel>
+        <!-- Toolbar: search + category filter + installed-state note -->
+        <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,8,20,8">
+            <DockPanel>
+                <ComboBox DockPanel.Dock="Right"
+                          MinWidth="180"
+                          ItemsSource="{Binding Categories}"
+                          SelectedItem="{Binding SelectedCategory}" />
+                <TextBox Text="{Binding SearchText}"
+                         Watermark="Search apps"
+                         Margin="0,0,8,0" />
+            </DockPanel>
+            <TextBlock Text="Installed state could not be read from winget. Apps still install normally."
+                       FontSize="12"
+                       Foreground="{StaticResource WarningBrush}"
+                       IsVisible="{Binding !InstalledStateKnown}" />
+        </StackPanel>
+
+        <!-- App list -->
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding FilteredApps}" Margin="0,0,20,16">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:SoftwareAppViewModel">
+                        <Border Padding="12,10" Margin="0,2" CornerRadius="4"
+                                Background="{StaticResource SurfaceBrush}">
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right"
+                                        MinWidth="90"
+                                        Padding="8,4" FontSize="12"
+                                        VerticalAlignment="Center"
+                                        HorizontalContentAlignment="Center"
+                                        Content="{Binding ActionButtonText}"
+                                        Command="{Binding ToggleQueueCommand}" />
+                                <StackPanel Spacing="2" Margin="0,0,12,0">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <TextBlock Text="{Binding Name}"
+                                                   FontWeight="SemiBold"
+                                                   FontSize="13"
+                                                   Foreground="{StaticResource TextPrimaryBrush}" />
+                                        <TextBlock Text="Installed"
+                                                   FontSize="11"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="{StaticResource AccentBrush}"
+                                                   IsVisible="{Binding IsInstalled}" />
+                                        <TextBlock Text="Open source"
+                                                   FontSize="11"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                                   IsVisible="{Binding IsOpenSource}" />
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding Description}"
+                                               FontSize="12"
+                                               TextWrapping="Wrap"
+                                               Foreground="{StaticResource TextSecondaryBrush}" />
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <TextBlock Text="{Binding Category}"
+                                                   FontSize="11"
+                                                   Foreground="{StaticResource TextTertiaryBrush}" />
+                                        <TextBlock Text="{Binding WingetId}"
+                                                   FontFamily="{StaticResource MonoFont}"
+                                                   FontSize="11"
+                                                   Foreground="{StaticResource TextTertiaryBrush}" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>
