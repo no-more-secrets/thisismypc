@@ -23,7 +23,7 @@ public sealed class PrivacyModuleTests
 
         Assert.True(result.IsSuccess, result.ErrorMessage);
         var scanData = Assert.IsType<PrivacyScanData>(result.Value);
-        Assert.Equal(5, scanData.Preferences.Count);
+        Assert.Equal(7, scanData.Preferences.Count);
         Assert.Equal(4, scanData.InkingTyping.Count);
     }
 

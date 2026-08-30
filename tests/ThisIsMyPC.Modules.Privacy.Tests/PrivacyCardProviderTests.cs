@@ -17,12 +17,13 @@ public sealed class PrivacyCardProviderTests
     }
 
     [Fact]
-    public void BuildCards_SixCards_GroupedBySection()
+    public void BuildCards_EightCards_GroupedBySection()
     {
         var cards = Build();
 
         Assert.Equal(
             ["telemetry-level", "error-reporting", "location", "app-launch-tracking",
+             "cross-device-clipboard", "online-speech",
              "inking-typing", "handwriting-data-sharing"],
             cards.Select(c => c.Model.SettingId));
         Assert.Equal(
@@ -46,7 +47,7 @@ public sealed class PrivacyCardProviderTests
     {
         var cards = Build();
 
-        foreach (var id in new[] { "location", "handwriting-data-sharing" })
+        foreach (var id in new[] { "location", "cross-device-clipboard", "handwriting-data-sharing" })
         {
             var card = cards.Single(c => c.Model.SettingId == id);
             Assert.Equal(WindowsSku.Pro, card.Model.SkuRestriction);

@@ -105,14 +105,6 @@ public sealed class AnnoyancesSettingsReader
                 section: AnnoyanceSection.AdvertisingAndTracking),
 
             ReadPreference(
-                id: "activity-history",
-                displayName: "Disable activity history collection",
-                description: "Stops Windows from collecting your local application activity history (the Timeline/Activity Feed).",
-                keyPath: AnnoyancesRegistryPaths.SystemPoliciesKeyPath,
-                valueName: "EnableActivityFeed",
-                section: AnnoyanceSection.AdvertisingAndTracking),
-
-            ReadPreference(
                 id: "tailored-experiences",
                 displayName: "Disable tailored experiences",
                 description: "Stops Microsoft from using your diagnostic data to personalize tips, ads, and recommendations.",
@@ -382,6 +374,47 @@ public sealed class AnnoyancesSettingsReader
                 description: "SoftLandingEnabled entry.",
                 keyPath: cdm,
                 valueName: "SoftLandingEnabled"),
+        ];
+    }
+
+    /// <summary>
+    /// The three System policies behind activity history: collection, local
+    /// publishing, and cloud upload (winutil sets all three; a lone
+    /// EnableActivityFeed leaves upload paths live). Surfaced as ONE toggle (a single
+    /// atomic group), so not in ReadAll. Policies default to absent: restore deletes.
+    /// </summary>
+    public IReadOnlyList<AnnoyancePreference> ReadActivityHistory()
+    {
+        var system = AnnoyancesRegistryPaths.SystemPoliciesKeyPath;
+        return
+        [
+            ReadPreference(
+                id: "activity-history",
+                displayName: "Activity feed (EnableActivityFeed)",
+                description: "Activity feed collection entry.",
+                keyPath: system,
+                valueName: "EnableActivityFeed",
+                section: AnnoyanceSection.AdvertisingAndTracking,
+                suppressedValue: "0",
+                defaultValue: ""),
+            ReadPreference(
+                id: "activity-history",
+                displayName: "Activity publishing (PublishUserActivities)",
+                description: "User activity publishing entry.",
+                keyPath: system,
+                valueName: "PublishUserActivities",
+                section: AnnoyanceSection.AdvertisingAndTracking,
+                suppressedValue: "0",
+                defaultValue: ""),
+            ReadPreference(
+                id: "activity-history",
+                displayName: "Activity upload (UploadUserActivities)",
+                description: "User activity cloud upload entry.",
+                keyPath: system,
+                valueName: "UploadUserActivities",
+                section: AnnoyanceSection.AdvertisingAndTracking,
+                suppressedValue: "0",
+                defaultValue: ""),
         ];
     }
 

@@ -50,7 +50,9 @@ public sealed class PrivacySetEntryInspectorTests
         var change = Assert.Single(group!.Changes);
         Assert.Equal("", change.AfterValue);
         Assert.Equal("1", change.BeforeValue);
-        Assert.Null(change.Enforcement);
+        // Directional companion: the restore re-enables WerSvc.
+        Assert.True(change.Enforcement!.RestoresCompanions);
+        Assert.Equal(["WerSvc"], change.Enforcement.CompanionServices);
     }
 
     [Fact]

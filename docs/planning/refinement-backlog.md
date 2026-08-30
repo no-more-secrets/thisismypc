@@ -38,8 +38,16 @@ Open design decisions carried forward:
   Manual); reverting it re-hardens via the disable-shaped sequence. Telemetry
   toggle is now symmetric in every path. Any future companion-service setting
   attaches a configure enforcement plus a RestoresCompanions restore enforcement.
-- v2 candidates: cloud clipboard/cross-device policies, Wi-Fi/hotspot reporting,
-  diagnostic scheduled-task companions, consent-store location per-app controls.
+- **v2 SHIPPED 2026-08-30** (6 → 8 cards): cross-device-clipboard (Pro tag per the
+  Privacy CSP), online-speech (consent flag, delete-restore), error-reporting
+  upgraded with directional WerSvc companions. Annoyances activity-history
+  upgraded from a lone EnableActivityFeed to the full trio
+  (+PublishUserActivities +UploadUserActivities, delete-restore) closing the
+  winutil depth gap. Neither new Privacy card joins the baseline set: disabling
+  online speech kills voice typing, clipboard sync is a feature choice.
+- v3 candidates: diagnostic scheduled-task companions (overlaps Clean Boot
+  entries — decide ownership first), consent-store per-app location controls,
+  Wi-Fi hotspot reporting (verify still exists on current builds).
 - Sidebar icon: no "privacy" glyph mapped (same gap as "windows-update") — UI/UX
   chapter.
 

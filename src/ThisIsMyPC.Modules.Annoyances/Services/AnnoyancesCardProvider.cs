@@ -24,6 +24,9 @@ public sealed class AnnoyancesCardProvider
     private const string PreinstalledAppsDescription =
         "Stops promotions for OEM and preinstalled apps and the related feature tips.";
 
+    private const string ActivityHistoryDescription =
+        "Stops Windows from collecting, publishing, and uploading your activity history (the Timeline feed).";
+
     private const string EdgeDebloatDescription =
         "Turns off the shopping assistant, Microsoft Rewards, and personalization reporting in Edge by policy.";
 
@@ -62,6 +65,7 @@ public sealed class AnnoyancesCardProvider
         AddSectionSingles(cards, scanData, AnnoyanceSection.BingAndEdge, driftFragile: true);
         cards.Add(EdgeDebloatCard(scanData));
 
+        cards.Add(ActivityHistoryCard(scanData));
         AddSectionSingles(cards, scanData, AnnoyanceSection.AdvertisingAndTracking, driftFragile: false);
         cards.Add(SuggestedContentCard(scanData));
 
@@ -169,6 +173,30 @@ public sealed class AnnoyancesCardProvider
             description: PreinstalledAppsDescription,
             suppress),
         ReadCurrentState = () => _liveReader.ReadPreinstalledApps().All(p => p.IsSuppressed),
+    };
+
+    private SettingCardSource ActivityHistoryCard(AnnoyancesScanData scanData) => new()
+    {
+        Model = new SettingCardModel
+        {
+            SettingId = "activity-history",
+            ModuleId = AnnoyanceChangeFactory.ModuleId,
+            DisplayName = "Disable activity history",
+            Description = ActivityHistoryDescription,
+            ControlType = SettingControlType.Toggle,
+            CurrentValue = scanData.ActivityHistory.All(p => p.IsSuppressed) ? "1" : "0",
+            CurrentDisplayValue = scanData.ActivityHistory.All(p => p.IsSuppressed) ? "Suppressed" : "Windows default",
+            RegistryPath = AnnoyancesRegistryPaths.SystemPoliciesKeyPath,
+            ValueName = "EnableActivityFeed",
+            RegistryValueType = nameof(ChangeValueType.Registry_DWord),
+            GroupId = SectionGroups[AnnoyanceSection.AdvertisingAndTracking],
+            SkuRestriction = AnnoyanceChangeFactory
+                .CreateActivityHistoryToggle(scanData.ActivityHistory, suppress: true, ActivityHistoryDescription)
+                .Changes[0].Enforcement?.SkuRestriction,
+        },
+        CreateToggleGroup = suppress => AnnoyanceChangeFactory.CreateActivityHistoryToggle(
+            _liveReader.ReadActivityHistory(), suppress, ActivityHistoryDescription),
+        ReadCurrentState = () => _liveReader.ReadActivityHistory().All(p => p.IsSuppressed),
     };
 
     private SettingCardSource EdgeDebloatCard(AnnoyancesScanData scanData) => new()

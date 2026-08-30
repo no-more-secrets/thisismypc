@@ -67,6 +67,10 @@ public sealed class BuiltInSetsTests
             reader.ReadPreinstalledApps(), "preinstalled-apps", "Preinstalled", "d", suppress: true);
         desired[(preinstalled.Changes[0].ModuleId, preinstalled.Changes[0].SettingId)] = preinstalled.Changes[0].AfterValue!;
 
+        var activity = AnnoyanceChangeFactory.CreateActivityHistoryToggle(
+            reader.ReadActivityHistory(), suppress: true, "d");
+        desired[(activity.Changes[0].ModuleId, activity.Changes[0].SettingId)] = activity.Changes[0].AfterValue!;
+
         var bing = AnnoyanceChangeFactory.CreateBingSearchToggle(reader.ReadBingSearch(), suppress: true);
         desired[(bing.Changes[0].ModuleId, bing.Changes[0].SettingId)] = bing.Changes[0].AfterValue!;
 

@@ -17,7 +17,8 @@ public sealed class PrivacySettingsReaderTests
         var prefs = Reader.ReadSingles();
 
         Assert.Equal(
-            ["telemetry-level", "error-reporting", "location", "app-launch-tracking", "handwriting-data-sharing"],
+            ["telemetry-level", "error-reporting", "location", "app-launch-tracking",
+             "cross-device-clipboard", "online-speech", "handwriting-data-sharing"],
             prefs.Select(p => p.Id));
         Assert.Equal(prefs.Count, prefs.Select(p => p.Id).Distinct().Count());
     }
@@ -27,7 +28,8 @@ public sealed class PrivacySettingsReaderTests
     {
         // Policies default to "no value at all": DefaultValue is empty (delete to restore)
         var prefs = Reader.ReadSingles();
-        foreach (var id in new[] { "telemetry-level", "error-reporting", "location", "handwriting-data-sharing" })
+        foreach (var id in new[] { "telemetry-level", "error-reporting", "location",
+            "cross-device-clipboard", "online-speech", "handwriting-data-sharing" })
         {
             var pref = prefs.Single(p => p.Id == id);
             Assert.Equal("", pref.DefaultValue);
@@ -78,7 +80,7 @@ public sealed class PrivacySettingsReaderTests
     {
         var scan = Reader.ReadAll();
 
-        Assert.Equal(5, scan.Preferences.Count);
+        Assert.Equal(7, scan.Preferences.Count);
         Assert.Equal(4, scan.InkingTyping.Count);
     }
 }

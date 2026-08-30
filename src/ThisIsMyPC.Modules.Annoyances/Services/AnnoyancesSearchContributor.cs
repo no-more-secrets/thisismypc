@@ -49,6 +49,10 @@ public sealed class AnnoyancesSearchContributor : ISearchSettingsContributor
             "Stops OEM app promotions and feature suggestion tips.",
             ["OemPreInstalledAppsEnabled", "PreInstalledAppsEnabled", "SoftLandingEnabled", "bloatware"]));
         entries.Add(new SearchEntry(
+            ModuleId, "activity-history", "Disable activity history",
+            "Stops activity collection, publishing, and cloud upload.",
+            ["EnableActivityFeed", "PublishUserActivities", "UploadUserActivities", "timeline"]));
+        entries.Add(new SearchEntry(
             ModuleId, "edge-debloat", "Debloat Microsoft Edge",
             "Turns off the shopping assistant, Microsoft Rewards, and personalization reporting.",
             ["EdgeShoppingAssistantEnabled", "ShowMicrosoftRewards", "PersonalizationReportingEnabled", "edge"]));

@@ -40,6 +40,8 @@ public sealed class AnnoyancesSetEntryInspector : ISetEntryInspector
                 return InspectGroup("OEM and preinstalled app promotions", _reader.ReadPreinstalledApps(), entry);
             case "edge-debloat":
                 return InspectGroup("Edge shopping, Rewards, and personalization", _reader.ReadEdgeDebloat(), entry);
+            case "activity-history":
+                return InspectGroup("Activity history", _reader.ReadActivityHistory(), entry);
             case "bing-search":
                 return InspectBingSearch(entry);
         }
@@ -145,6 +147,15 @@ public sealed class AnnoyancesSetEntryInspector : ISetEntryInspector
                         displayName: "Edge shopping, Rewards, and personalization",
                         description: "Turns off the shopping assistant, Microsoft Rewards, and personalization reporting in Edge.",
                         suppress)
+                    : null;
+            }
+            case "activity-history":
+            {
+                var prefs = _reader.ReadActivityHistory();
+                return Direction(entry, prefs[0]) is { } suppress
+                    ? AnnoyanceChangeFactory.CreateActivityHistoryToggle(
+                        prefs, suppress,
+                        description: "Stops Windows from collecting, publishing, and uploading your activity history.")
                     : null;
             }
             case "bing-search":

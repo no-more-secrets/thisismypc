@@ -31,13 +31,21 @@ public sealed class AdvertisingAndTrackingTests
     }
 
     [Fact]
-    public void ActivityHistory_TargetsHklmSystemPolicy()
+    public void ActivityHistory_IsAnAtomicTrioOfSystemPolicies()
     {
-        var pref = Reader.ReadAll().Single(p => p.Id == "activity-history");
+        var prefs = Reader.ReadActivityHistory();
 
-        Assert.Equal(@"HKLM\SOFTWARE\Policies\Microsoft\Windows\System", pref.RegistryKeyPath);
-        Assert.Equal("EnableActivityFeed", pref.RegistryValueName);
-        Assert.False(pref.IsSuppressed); // missing policy = feed on
+        Assert.Equal(
+            ["EnableActivityFeed", "PublishUserActivities", "UploadUserActivities"],
+            prefs.Select(p => p.RegistryValueName));
+        Assert.All(prefs, p =>
+        {
+            Assert.Equal("activity-history", p.Id);
+            Assert.Equal(@"HKLM\SOFTWARE\Policies\Microsoft\Windows\System", p.RegistryKeyPath);
+            Assert.Equal("0", p.SuppressedValue);
+            Assert.Equal("", p.DefaultValue); // policies restore by deletion
+            Assert.False(p.IsSuppressed); // missing policy = feed on
+        });
     }
 
     [Fact]

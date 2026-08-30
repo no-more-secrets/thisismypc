@@ -19,7 +19,7 @@ public partial class PrivacyViewModel : ViewModelBase, IDisposable
         new Dictionary<string, string>
         {
             ["Diagnostic Data"] = "Diagnostic data collection and crash reporting",
-            ["Permissions & Tracking"] = "Location and app launch tracking",
+            ["Permissions & Tracking"] = "Location, app launch tracking, clipboard sync, and online speech",
             ["Personalization"] = "Inking, typing, and handwriting data collection",
         };
 

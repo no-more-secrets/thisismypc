@@ -39,17 +39,20 @@ public class SkuRestrictionTagTests
     }
 
     [Fact]
-    public void ActivityHistory_CarriesHomeTag_OnSuppressOnly()
+    public void ActivityHistory_CarriesProTag_OnSuppressOnly()
     {
-        var pref = Reader().ReadAll().Single(p => p.Id == "activity-history");
+        // Now a three-value group (collection + publishing + upload, the winutil trio).
+        var prefs = Reader().ReadActivityHistory();
 
-        var suppress = AnnoyanceChangeFactory.CreateToggle(pref, suppress: true);
-        var restore = AnnoyanceChangeFactory.CreateToggle(pref, suppress: false);
+        var suppress = AnnoyanceChangeFactory.CreateActivityHistoryToggle(prefs, suppress: true, "d");
+        var restore = AnnoyanceChangeFactory.CreateActivityHistoryToggle(prefs, suppress: false, "d");
 
-        Assert.NotNull(suppress.Enforcement);
-        Assert.Equal(WindowsSku.Pro, suppress.Enforcement!.SkuRestriction);
-        Assert.Null(suppress.Enforcement.ReversionVectors); // SKU-only, no drift claim
-        Assert.Null(restore.Enforcement);
+        Assert.All(suppress.Changes, c =>
+        {
+            Assert.Equal(WindowsSku.Pro, c.Enforcement!.SkuRestriction);
+            Assert.Null(c.Enforcement.ReversionVectors); // SKU-only, no drift claim
+        });
+        Assert.All(restore.Changes, c => Assert.Null(c.Enforcement));
     }
 
     [Fact]
@@ -96,7 +99,8 @@ public class SkuRestrictionTagTests
             reader.ReadRecall(),
             reader.ReadLockScreenAds(),
             reader.ReadPreinstalledApps(),
-            reader.ReadEdgeDebloat()));
+            reader.ReadEdgeDebloat(),
+            reader.ReadActivityHistory()));
 
         var copilot = cards.Single(c => c.Model.SettingId == "copilot");
         var recall = cards.Single(c => c.Model.SettingId == "recall");

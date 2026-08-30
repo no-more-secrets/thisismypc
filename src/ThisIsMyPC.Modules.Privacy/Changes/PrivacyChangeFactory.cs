@@ -24,6 +24,18 @@ public static class PrivacyChangeFactory
         RestoresCompanions = true,
     };
 
+    // WerSvc rides along with the error-reporting policy the same directional way.
+    internal static readonly SettingEnforcement ErrorReportingEnforcement = new()
+    {
+        CompanionServices = ["WerSvc"],
+    };
+
+    internal static readonly SettingEnforcement ErrorReportingRestoreEnforcement = new()
+    {
+        CompanionServices = ["WerSvc"],
+        RestoresCompanions = true,
+    };
+
     // Minimum-tier tags (informational, never gated — FR129): LocationAndSensors and
     // TabletPC policies list Pro/Enterprise/Education in the Policy CSP.
     internal static readonly SettingEnforcement ProPolicyEnforcement = new()
@@ -39,7 +51,9 @@ public static class PrivacyChangeFactory
         new Dictionary<string, SettingEnforcement>(StringComparer.Ordinal)
         {
             ["telemetry-level"] = TelemetryEnforcement,
+            ["error-reporting"] = ErrorReportingEnforcement,
             ["location"] = ProPolicyEnforcement,
+            ["cross-device-clipboard"] = ProPolicyEnforcement,
             ["handwriting-data-sharing"] = ProPolicyEnforcement,
         };
 
@@ -47,6 +61,7 @@ public static class PrivacyChangeFactory
         new Dictionary<string, SettingEnforcement>(StringComparer.Ordinal)
         {
             ["telemetry-level"] = TelemetryRestoreEnforcement,
+            ["error-reporting"] = ErrorReportingRestoreEnforcement,
         };
 
     /// <summary>

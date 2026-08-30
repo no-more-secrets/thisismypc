@@ -35,7 +35,7 @@ public sealed class PrivacySettingsReader
             ReadPreference(
                 id: "error-reporting",
                 displayName: "Disable Windows Error Reporting",
-                description: "Stops crash reports from being sent to Microsoft. Local crash logs in Event Viewer keep working.",
+                description: "Stops crash reports from being sent to Microsoft and stops the reporting service (WerSvc). Local crash logs in Event Viewer keep working.",
                 section: PrivacySection.DiagnosticData,
                 keyPath: PrivacyRegistryPaths.ErrorReportingPoliciesKeyPath,
                 valueName: "Disabled",
@@ -62,6 +62,28 @@ public sealed class PrivacySettingsReader
                 valueName: "Start_TrackProgs",
                 configuredValue: "0",
                 defaultValue: "1"),
+
+            ReadPreference(
+                id: "cross-device-clipboard",
+                displayName: "Disable clipboard sync across devices",
+                description: "Stops clipboard contents from syncing to your other devices through the cloud. The local clipboard keeps working.",
+                section: PrivacySection.PermissionsAndTracking,
+                keyPath: PrivacyRegistryPaths.SystemPoliciesKeyPath,
+                valueName: "AllowCrossDeviceClipboard",
+                configuredValue: "0",
+                defaultValue: ""),
+
+            // HasAccepted is a consent flag: restore deletes it rather than writing
+            // an acceptance the user never gave (the inking-typing rule).
+            ReadPreference(
+                id: "online-speech",
+                displayName: "Disable online speech recognition",
+                description: "Stops voice input from being sent to Microsoft's cloud speech services. Voice typing and other online speech features stop working.",
+                section: PrivacySection.PermissionsAndTracking,
+                keyPath: PrivacyRegistryPaths.OnlineSpeechKeyPath,
+                valueName: "HasAccepted",
+                configuredValue: "0",
+                defaultValue: ""),
 
             ReadPreference(
                 id: "handwriting-data-sharing",

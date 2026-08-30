@@ -46,7 +46,8 @@ public sealed class AnnoyancesModule : IModule
                     _settingsReader.ReadRecall(),
                     _settingsReader.ReadLockScreenAds(),
                     _settingsReader.ReadPreinstalledApps(),
-                    _settingsReader.ReadEdgeDebloat());
+                    _settingsReader.ReadEdgeDebloat(),
+                    _settingsReader.ReadActivityHistory());
                 return OperationResult<object>.Success(scanData);
             }
             catch (Exception ex)

@@ -8,4 +8,5 @@ public sealed record AnnoyancesScanData(
     IReadOnlyList<AnnoyancePreference> Recall,
     IReadOnlyList<AnnoyancePreference> LockScreenAds,
     IReadOnlyList<AnnoyancePreference> PreinstalledApps,
-    IReadOnlyList<AnnoyancePreference> EdgeDebloat);
+    IReadOnlyList<AnnoyancePreference> EdgeDebloat,
+    IReadOnlyList<AnnoyancePreference> ActivityHistory);

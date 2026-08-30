@@ -14,6 +14,12 @@ public static class PrivacyRegistryPaths
     public const string TabletPcPoliciesKeyPath =
         @"HKLM\SOFTWARE\Policies\Microsoft\Windows\TabletPC";
 
+    public const string SystemPoliciesKeyPath =
+        @"HKLM\SOFTWARE\Policies\Microsoft\Windows\System";
+
+    public const string OnlineSpeechKeyPath =
+        @"HKCU\Software\Microsoft\Speech_OneCore\Settings\OnlineSpeechPrivacy";
+
     public const string ExplorerAdvancedKeyPath =
         @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced";
 

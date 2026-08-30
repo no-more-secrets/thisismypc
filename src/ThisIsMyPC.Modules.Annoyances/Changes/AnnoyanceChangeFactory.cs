@@ -46,7 +46,6 @@ public static class AnnoyanceChangeFactory
     private static readonly IReadOnlyDictionary<string, SettingEnforcement> TierRestrictedSingles =
         new Dictionary<string, SettingEnforcement>(StringComparer.Ordinal)
         {
-            ["activity-history"] = ProPolicyEnforcement,
             ["spotlight-collection-desktop"] = EducationPolicyEnforcement,
             ["consumer-features"] = EducationPolicyEnforcement,
         };
@@ -133,6 +132,20 @@ public static class AnnoyanceChangeFactory
             description: "Disables the Windows Copilot assistant by policy in both machine and user scope.",
             suppress,
             suppressEnforcement: CopilotDriftEnforcement);
+
+    /// <summary>
+    /// One atomic ChangeGroup for the activity-history System policy trio, with the
+    /// Pro minimum-tier tag on suppress (the ActivityFeed policies list Pro+ only).
+    /// </summary>
+    public static ChangeGroup CreateActivityHistoryToggle(
+        IReadOnlyList<AnnoyancePreference> prefs, bool suppress, string description)
+        => CreateGroupToggle(
+            prefs,
+            settingId: "activity-history",
+            displayName: "Activity history",
+            description,
+            suppress,
+            suppressEnforcement: ProPolicyEnforcement);
 
     /// <summary>
     /// One atomic ChangeGroup for the Recall/WindowsAI policy trio, with the Pro

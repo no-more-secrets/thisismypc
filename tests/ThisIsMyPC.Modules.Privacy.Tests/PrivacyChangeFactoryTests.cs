@@ -31,10 +31,27 @@ public sealed class PrivacyChangeFactoryTests
     }
 
     [Fact]
+    public void ErrorReporting_CarriesWerSvcCompanion_InBothDirections()
+    {
+        var pref = Reader.ReadSingles().Single(p => p.Id == "error-reporting");
+
+        var configure = PrivacyChangeFactory.CreateToggle(pref, configure: true);
+        Assert.Equal(["WerSvc"], configure.Enforcement!.CompanionServices);
+        Assert.False(configure.Enforcement.RestoresCompanions);
+
+        var restore = PrivacyChangeFactory.CreateToggle(pref, configure: false);
+        Assert.Equal(["WerSvc"], restore.Enforcement!.CompanionServices);
+        Assert.True(restore.Enforcement.RestoresCompanions);
+    }
+
+    [Fact]
     public void OtherSingles_CarryNoRestoreEnforcement()
     {
-        foreach (var pref in Reader.ReadSingles().Where(p => p.Id != "telemetry-level"))
+        foreach (var pref in Reader.ReadSingles().Where(
+            p => p.Id is not "telemetry-level" and not "error-reporting"))
+        {
             Assert.Null(PrivacyChangeFactory.CreateToggle(pref, configure: false).Enforcement);
+        }
     }
 
     [Fact]
