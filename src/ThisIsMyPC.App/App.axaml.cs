@@ -181,6 +181,7 @@ public partial class App : Application
         services.AddSingleton(new ThisIsMyPC.Modules.Startup.Services.TaskClassificationOverrideStore(
             System.IO.Path.Combine(AppConstants.DataDirectoryPath, "task-classifications.txt")));
         services.AddSingleton<IAppxPackageService, AppxPackageService>();
+        services.AddSingleton<IWingetService, ThisIsMyPC.Interop.Win32.Packages.WingetService>();
         services.AddSingleton<IPowerService, ThisIsMyPC.Interop.Win32.Power.PowerService>();
         services.AddSingleton<IRestorePointService, ThisIsMyPC.Interop.Win32.Restore.RestorePointService>();
 
