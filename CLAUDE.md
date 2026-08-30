@@ -58,6 +58,37 @@ dotnet test --filter "Category!=Integration&Category!=Diagnostic"   # what CI ru
   touching the live system (excluded from CI).
 - The TIPC001 analyzer (`analyzers/`) auto-applies to every project.
 
+## UI work: use the sight harness, not Sam's eyes
+
+`tests/ThisIsMyPC.App.UiTests` renders the real UI headlessly (Avalonia.Headless
++ Skia) and saves PNG screenshots you can Read as images. **Any XAML/view-model
+change MUST be verified by looking at rendered screenshots before commit** —
+never by reasoning about XAML, and never by asking Sam to launch the app.
+Manual verification from Sam is reserved for things only the elevated exe can
+show (real applies, tray, UAC).
+
+```
+dotnet test tests/ThisIsMyPC.App.UiTests --configuration Release --filter "Category!=Diagnostic"  # CI-safe view tests
+dotnet test tests/ThisIsMyPC.App.UiTests --configuration Release --filter "Category=Diagnostic"   # full-app walkthrough, ~8s
+```
+
+- Screenshots land in `artifacts/ui-shots/<suite>/` (gitignored). Read the PNGs;
+  the loop is edit → run → look → fix.
+- `UiSession` is the driver. `ForView(view, vm, suite)` hosts one view with fake
+  data (CI-safe). `ForMainWindow(suite)` boots the real MainWindow on the real
+  service graph with test-safe swaps (fake winget/restore-point/updater, temp
+  data paths) — scans read the live system, so those tests carry
+  `Category=Diagnostic`.
+- Interact like a person, not through commands: `ClickText("Windows Apps")`
+  sends real mouse events; `Type(box, "text")` sends keystrokes;
+  `WaitForAsync(...)` pumps while background scans finish;
+  `DescribeVisibleText()` lists what's on screen when a find fails.
+- Never click Apply in a `ForMainWindow` session against real modules — staging
+  is read-only, applying writes to the live system. Apply-flow tests use fake
+  modules or `ForView`.
+- New views: add a screenshot test to the CI-safe suite, and the walkthrough
+  picks up new sidebar modules automatically.
+
 ## Architecture must-rules (violations get caught in review)
 
 Full rules: `_bmad-output/planning-artifacts/architecture.md` (esp. the "AI agent MUST" list).
