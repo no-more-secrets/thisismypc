@@ -63,20 +63,20 @@ Consequences, verified against the code and upstream:
   the binary, per the threat model) as part of release readiness. Unsigned
   packages must never pass the current Authenticode verifier by accident —
   the swap is a prerequisite for the first public release.
-- **App signing plan: OV cert through the LLC at release time.** The LLC
-  (Apr 2026) has a DUNS number, verified phone, and domain — everything OV
-  validation checks, with no org-age requirement. Priced 2026-08-30: budget
-  $50-150/yr with cloud signing, no hardware token — Certum Open Source
-  ~$50/yr (check whether it validates the LLC or the individual), SSL.com OV
-  $65-75/yr (verify eSigner usage fees first), Certum standard OV $108-150/yr
-  via SimplySign. Sectigo/DigiCert cost 3-8x more for nothing extra. Certs
-  now max ~459 days validity (CA/B Forum, early 2026) — multi-year buys mean
-  mid-term reissues. Azure Trusted Signing off the table until ~Apr 2029
-  (3-year org history). EV unnecessary: Hardware Dev Center driver signing is
-  moot via upstream PawnIO, and 2026 Microsoft updates reportedly removed the
-  EV SmartScreen advantage anyway. SmartScreen reputation builds from
-  download volume regardless of tier. Only release-signing material stays
-  private (GPLv2 rule).
+- **App signing plan (FINAL, Sam 2026-08-30): SSL.com OV cert under the LLC,
+  hardware-token delivery.** The publisher line must show the LLC, so the
+  individual-validated Certum Open Source cert is out. Real prices verified
+  2026-08-30: SSL.com OV cert $65-75/yr + FIPS USB token + shipping = ~$150-200
+  first year, ~$70/yr after; sign locally with the token on release day. Avoid
+  SSL.com eSigner (adds $20/mo). Upgrade path if CI cloud signing is ever
+  needed: Certum Standard Cloud via SimplySign, flat ~€209/yr, no usage fees.
+  Validation uses the LLC registration + DUNS + phone callback; no org-age
+  requirement. Certs max ~459 days (CA/B Forum, early 2026) — multi-year buys
+  mean mid-term reissues. Azure Trusted Signing unavailable until ~Apr 2029
+  (3-year org history). EV unnecessary: driver signing is moot via upstream
+  PawnIO and the EV SmartScreen advantage is reportedly gone in 2026.
+  SmartScreen reputation builds from download volume regardless. Only
+  release-signing material stays private (GPLv2 rule).
 
 ## Future feature (new-module territory): SKU upgrade via generic keys
 
