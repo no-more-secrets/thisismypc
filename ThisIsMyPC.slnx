@@ -26,6 +26,7 @@
     <Project Path="tests/ThisIsMyPC.Modules.Annoyances.Tests/ThisIsMyPC.Modules.Annoyances.Tests.csproj" />
     <Project Path="tests/ThisIsMyPC.Modules.Privacy.Tests/ThisIsMyPC.Modules.Privacy.Tests.csproj" />
     <Project Path="tests/ThisIsMyPC.Modules.Software.Tests/ThisIsMyPC.Modules.Software.Tests.csproj" />
+    <Project Path="tests/ThisIsMyPC.App.UiTests/ThisIsMyPC.App.UiTests.csproj" />
     <Project Path="tests/ThisIsMyPC.Modules.Power.Tests/ThisIsMyPC.Modules.Power.Tests.csproj" />
     <Project Path="tests/ThisIsMyPC.Modules.Shell.Tests/ThisIsMyPC.Modules.Shell.Tests.csproj" />
     <Project Path="tests/ThisIsMyPC.Modules.Startup.Tests/ThisIsMyPC.Modules.Startup.Tests.csproj" />

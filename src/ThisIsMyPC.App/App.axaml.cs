@@ -161,7 +161,9 @@ public partial class App : Application
             Serilog.Log.Warning("Settings were reset to defaults; previous file preserved as settings.json.bad");
     }
 
-    private static void ConfigureServices(IServiceCollection services)
+    // Internal so the headless UI test harness can build the real service graph
+    // and swap in test-safe substitutes (winget, restore points, data paths).
+    internal static void ConfigureServices(IServiceCollection services)
     {
         // Installation guard (pre-created in Program.Main)
         if (Program.InstallGuard is not null)
