@@ -1,9 +1,9 @@
 # CLAUDE.md
 
-Operating guidance for Claude Code in this repository. **How to DO things only.** Rationale
-lives in `_bmad-output/planning-artifacts/`, current status and plans in
-`docs/planning/` (`refinement-backlog.md` is the master list). Never append history here;
-replace stale text.
+Operating guidance for Claude Code in this repo. **How to DO things only.** Detailed plans
+and status live in `docs/planning/` (`refinement-backlog.md` is the master list); BMAD-era
+rationale in `_bmad-output/planning-artifacts/`. Never append history here; replace stale
+text.
 
 **Em dashes are banned everywhere.** This file, code comments, docs, commit messages,
 UI strings, chat replies. Use periods, semicolons, colons, or commas; even a
@@ -12,38 +12,44 @@ dash you find in text you touch.
 
 ## What this is
 
-**ThisIsMyPC**: Windows system-control app (Armoury Crate / Autoruns / ShellExView /
-ExplorerPatcher / HWiNFO consolidated). C# / .NET (`net10.0-windows10.0.22621.0`),
-Avalonia 11 + CommunityToolkit.Mvvm, xUnit. Runs elevated (`app.manifest` requireAdministrator).
+**ThisIsMyPC** is a Windows system-control app that consolidates the trusted-utility
+zoo (winutil / O&O ShutUp10 / Autoruns / ShellExView / UniGetUI territory) with
+before-state capture and undo for everything. Post-release ambition: replace OEM
+control bloatware (Armoury Crate, Vantage, Omen Hub) with clean hardware modules.
+C# / .NET (`net10.0-windows10.0.22621.0`), Avalonia 11 + CommunityToolkit.Mvvm, xUnit.
+Runs elevated (`app.manifest` requireAdministrator). **The app corresponds to the PC,
+not a user profile**; machine-scoped decisions win (one install, one database,
+all-profiles coverage).
 
-## Where the project is: BMAD is closed
+## Roadmap
 
-Every defined BMAD story shipped (epics 1-10, 25-28 complete; 20-1 standalone).
-Epics that never got stories (11-19, 20-remainder, 21-24) were retired and form
-the backlog menu for what comes next. Do not run the BMAD workflow (`_bmad/`)
-for new work.
+Full detail, ordering rationale, and per-module deferred lists:
+`docs/planning/refinement-backlog.md`.
 
-**The current chapter** is Sam's post-BMAD plan, two tracks:
-1. **Custom modules ported from open-source Windows utilities**: the retired epics
-   (display/DDC-CI, system info, ASUS/ATKACPI, OpenRGB, drivers, network/firewall,
-   profiles, privacy/telemetry, WU remainder, software install) are the menu, not a
-   contract. ⛔ Never shell out to opaque binaries (O&O ShutUp etc.); port their
-   registry/API recipes into set definitions or modules; opaque tools break the
-   before-state/undo guarantees.
-2. **UI/UX overhaul**: light theme, toasts, card highlight/observable degradation,
-   the actionable Owner Mode callout, save-form dedup, and everything tagged
-   "deferred to the UI/UX chapter" in story files. Naming/branding decisions are Sam's.
+1. **UI/UX chapter (current)**: light theme, toasts, card highlight/observable
+   degradation, actionable Owner Mode callout, copy sweep of old card descriptions,
+   multi-choice card control (unblocks deferred Explorer toggles), missing sidebar
+   icons.
+2. **Display / DDC-CI module**: last feature module before release.
+3. **Release prep**. Hard blockers: GPG update-verifier swap, TWEAKS.md move-out,
+   machine-scope packaging (Program Files + admin-owned ProgramData, Velopack
+   machine-wide). Process: SSL.com OV cert purchase, Defender false-positive
+   submission, VirusTotal CI canary, winget distribution.
+4. **Post-release menu**: retired BMAD epics (ASUS/ATKACPI, OpenRGB, drivers,
+   network/firewall, profiles, WU remainder) and install-engine leftovers
+   (OneDrive/Edge removal, OEM tools, progress/cancel).
 
-`_bmad-output/planning-artifacts/` (PRD, architecture, epics) remains the reference
-spec; `TWEAKS.md` there contains personal-machine details, move out before the repo
-goes public.
+BMAD is closed; never run the `_bmad/` workflow. ⛔ Never shell out to opaque binaries
+(O&O ShutUp etc.); port their registry/API recipes into set definitions or modules, or
+the before-state/undo guarantees break.
 
 ## How work runs here
 
 - **Commit straight to `main`.** No feature branches or PR ceremony.
-- Work cycle: implement → full test suite → fresh-context code review for anything
-  substantial → commit → update whatever tracking doc the current chapter uses.
-  Don't ask "proceed?" between tasks. Stop only for irreversible things and
+- Work cycle: implement, full test suite, fresh-context code review for anything
+  substantial, commit, then update `refinement-backlog.md` if the change closes or
+  adds an item.
+- Don't ask "proceed?" between tasks. Stop only for irreversible things and
   naming/branding (Sam's).
 
 ## Build & test
@@ -93,6 +99,8 @@ dotnet test tests/ThisIsMyPC.App.UiTests --configuration Release --filter "Categ
   modules or `ForView`.
 - New views: add a screenshot test to the CI-safe suite, and the walkthrough
   picks up new sidebar modules automatically.
+- The harness evolves with the UI/UX chapter: as the visual feedback and
+  interaction loop improves, update this section to match.
 
 ## Architecture must-rules (violations get caught in review)
 
@@ -101,10 +109,14 @@ Full rules: `_bmad-output/planning-artifacts/architecture.md` (esp. the "AI agen
 - **Core is pure**: data types, interfaces, services logic. No Win32/COM/WMI calls
   (those live in `Interop.*` projects). Production `EnforcementExecutor` goes in
   `App/Services/`, not Core.
-- **Every mutation goes through the pending-changes pipeline**: `ChangeDescriptor` (requires
-  non-null `BeforeValue`) → `ChangeGroup` → `IPendingChangesService.Stage` → `ApplyAllAsync`
-  with rollback. Changes are built by static factories (see
+- **Every reversible mutation goes through the pending-changes pipeline**: `ChangeDescriptor`
+  (requires non-null `BeforeValue`) → `ChangeGroup` → `IPendingChangesService.Stage` →
+  `ApplyAllAsync` with rollback. Changes are built by static factories (see
   `Modules.Shell/Changes/*ChangeFactory.cs`).
+- **One-way operations** (installs, uninstalls, upgrades) go through
+  `IPendingActionsService` instead; no fabricated before-states, no history,
+  continue-on-failure. Reversible = change, irreversible = action; a module needing
+  actions implements `IActionModule`. `Modules.Software` is the reference.
 - **Enforcement routing**: `Enforcement != null` → `IEnforcementExecutor`; `null` → module
   delegate directly. No other heuristics; never route everything through the executor; the
   executor never calls modules directly (delegate pattern).
