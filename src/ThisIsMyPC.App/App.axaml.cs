@@ -193,6 +193,7 @@ public partial class App : Application
         services.AddSingleton<IModule, ThisIsMyPC.Modules.Annoyances.AnnoyancesModule>();
         services.AddSingleton<IModule, ThisIsMyPC.Modules.Privacy.PrivacyModule>();
         services.AddSingleton<IModule, ThisIsMyPC.Modules.WindowsUpdate.WindowsUpdateModule>();
+        services.AddSingleton<IModule, ThisIsMyPC.Modules.Software.SoftwareModule>();
         services.AddSingleton<IModule, PowerModule>();
 
         // Update services

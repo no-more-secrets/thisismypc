@@ -9,6 +9,7 @@
     <Project Path="src/ThisIsMyPC.Service/ThisIsMyPC.Service.csproj" />
     <Project Path="src/ThisIsMyPC.Modules.Annoyances/ThisIsMyPC.Modules.Annoyances.csproj" />
     <Project Path="src/ThisIsMyPC.Modules.Privacy/ThisIsMyPC.Modules.Privacy.csproj" />
+    <Project Path="src/ThisIsMyPC.Modules.Software/ThisIsMyPC.Modules.Software.csproj" />
     <Project Path="src/ThisIsMyPC.Modules.Power/ThisIsMyPC.Modules.Power.csproj" />
     <Project Path="src/ThisIsMyPC.Modules.Shell/ThisIsMyPC.Modules.Shell.csproj" />
     <Project Path="src/ThisIsMyPC.Modules.Startup/ThisIsMyPC.Modules.Startup.csproj" />
@@ -24,6 +25,7 @@
     <Project Path="tests/ThisIsMyPC.Ipc.Tests/ThisIsMyPC.Ipc.Tests.csproj" />
     <Project Path="tests/ThisIsMyPC.Modules.Annoyances.Tests/ThisIsMyPC.Modules.Annoyances.Tests.csproj" />
     <Project Path="tests/ThisIsMyPC.Modules.Privacy.Tests/ThisIsMyPC.Modules.Privacy.Tests.csproj" />
+    <Project Path="tests/ThisIsMyPC.Modules.Software.Tests/ThisIsMyPC.Modules.Software.Tests.csproj" />
     <Project Path="tests/ThisIsMyPC.Modules.Power.Tests/ThisIsMyPC.Modules.Power.Tests.csproj" />
     <Project Path="tests/ThisIsMyPC.Modules.Shell.Tests/ThisIsMyPC.Modules.Shell.Tests.csproj" />
     <Project Path="tests/ThisIsMyPC.Modules.Startup.Tests/ThisIsMyPC.Modules.Startup.Tests.csproj" />

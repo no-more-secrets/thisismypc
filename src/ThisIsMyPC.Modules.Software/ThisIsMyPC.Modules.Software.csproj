@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\ThisIsMyPC.Core\ThisIsMyPC.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Data\catalog.json" LogicalName="ThisIsMyPC.Modules.Software.Data.catalog.json" />
+  </ItemGroup>
+</Project>
