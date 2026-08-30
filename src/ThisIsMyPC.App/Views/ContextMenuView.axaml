@@ -16,7 +16,7 @@
                         HorizontalAlignment="Right" Margin="0,0,16,4">
                 <TextBlock Text="Registry Info"
                            FontSize="13"
-                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
                            VerticalAlignment="Center" />
                 <ToggleSwitch IsChecked="{Binding IsRegistryViewMode}"
                               OffContent=""
@@ -33,7 +33,7 @@
                     <StackPanel Spacing="4" Margin="0,8,0,0">
                         <TextBlock Text="Handlers that appear in multiple right-click contexts. One toggle controls all scopes."
                                    FontSize="12"
-                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                   Foreground="{DynamicResource TextTertiaryBrush}"
                                    FontStyle="Italic"
                                    TextWrapping="Wrap"
                                    Margin="0,0,0,4" />
@@ -80,7 +80,7 @@
                     <StackPanel Spacing="8" Margin="0,8,0,0">
                         <TextBlock Text="System entries like Display settings and Personalize are built-in and not toggleable."
                                    FontSize="12"
-                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                   Foreground="{DynamicResource TextTertiaryBrush}"
                                    FontStyle="Italic"
                                    TextWrapping="Wrap" />
                         <ItemsControl ItemsSource="{Binding DesktopHandlers}"
@@ -99,48 +99,48 @@
                             <!-- Drive -->
                             <StackPanel Spacing="4">
                                 <TextBlock Text="Drive" FontSize="14" FontWeight="SemiBold"
-                                           Foreground="{StaticResource TextSecondaryBrush}" />
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
                                 <ItemsControl ItemsSource="{Binding DriveMiscHandlers}"
                                               ItemTemplate="{StaticResource ToggleSettingRowTemplate}" />
                                 <TextBlock Text="No third-party handlers detected"
                                            FontSize="12" FontStyle="Italic"
-                                           Foreground="{StaticResource TextTertiaryBrush}"
+                                           Foreground="{DynamicResource TextTertiaryBrush}"
                                            IsVisible="{Binding !DriveMiscHandlers.Count}" />
                             </StackPanel>
 
                             <!-- This PC -->
                             <StackPanel Spacing="4">
                                 <TextBlock Text="This PC" FontSize="14" FontWeight="SemiBold"
-                                           Foreground="{StaticResource TextSecondaryBrush}" />
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
                                 <ItemsControl ItemsSource="{Binding ThisPcMiscHandlers}"
                                               ItemTemplate="{StaticResource ToggleSettingRowTemplate}" />
                                 <TextBlock Text="No third-party handlers detected"
                                            FontSize="12" FontStyle="Italic"
-                                           Foreground="{StaticResource TextTertiaryBrush}"
+                                           Foreground="{DynamicResource TextTertiaryBrush}"
                                            IsVisible="{Binding !ThisPcMiscHandlers.Count}" />
                             </StackPanel>
 
                             <!-- Network -->
                             <StackPanel Spacing="4">
                                 <TextBlock Text="Network" FontSize="14" FontWeight="SemiBold"
-                                           Foreground="{StaticResource TextSecondaryBrush}" />
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
                                 <ItemsControl ItemsSource="{Binding NetworkMiscHandlers}"
                                               ItemTemplate="{StaticResource ToggleSettingRowTemplate}" />
                                 <TextBlock Text="No third-party handlers detected"
                                            FontSize="12" FontStyle="Italic"
-                                           Foreground="{StaticResource TextTertiaryBrush}"
+                                           Foreground="{DynamicResource TextTertiaryBrush}"
                                            IsVisible="{Binding !NetworkMiscHandlers.Count}" />
                             </StackPanel>
 
                             <!-- Recycle Bin -->
                             <StackPanel Spacing="4">
                                 <TextBlock Text="Recycle Bin" FontSize="14" FontWeight="SemiBold"
-                                           Foreground="{StaticResource TextSecondaryBrush}" />
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
                                 <ItemsControl ItemsSource="{Binding RecycleBinMiscHandlers}"
                                               ItemTemplate="{StaticResource ToggleSettingRowTemplate}" />
                                 <TextBlock Text="No third-party handlers detected"
                                            FontSize="12" FontStyle="Italic"
-                                           Foreground="{StaticResource TextTertiaryBrush}"
+                                           Foreground="{DynamicResource TextTertiaryBrush}"
                                            IsVisible="{Binding !RecycleBinMiscHandlers.Count}" />
                             </StackPanel>
                         </StackPanel>
@@ -154,7 +154,7 @@
                     <StackPanel Spacing="4" Margin="0,8,0,0">
                         <TextBlock Text="Built-in Windows entries. Add useful ones and hide the rest."
                                    FontSize="12"
-                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                   Foreground="{DynamicResource TextTertiaryBrush}"
                                    FontStyle="Italic"
                                    TextWrapping="Wrap"
                                    Margin="0,0,0,4" />
@@ -171,7 +171,7 @@
                     <StackPanel Spacing="8" Margin="0,8,0,0">
                         <TextBlock Text="Select a file extension to see its specific context menu entries"
                                    FontSize="12"
-                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                   Foreground="{DynamicResource TextTertiaryBrush}"
                                    FontStyle="Italic" />
                         <AutoCompleteBox ItemsSource="{Binding AvailableExtensions}"
                                          SelectedItem="{Binding SelectedExtension, Mode=TwoWay}"
@@ -186,7 +186,7 @@
                                      Margin="0,0,0,4" />
                         <TextBlock Text="Select a file extension above to scan for registered context menu entries"
                                    FontSize="12"
-                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                   Foreground="{DynamicResource TextTertiaryBrush}"
                                    FontStyle="Italic"
                                    IsVisible="{Binding !PerFileTypeHandlers.Count}" />
                         <ItemsControl ItemsSource="{Binding PerFileTypeHandlers}"
@@ -202,7 +202,7 @@
                     <StackPanel DataContext="{Binding Custom}" Spacing="8" Margin="0,8,0,0">
                         <TextBlock Text="Your own right-click entries. Changes stage in the review panel; the list below shows what is applied on the system."
                                    FontSize="12" FontStyle="Italic"
-                                   Foreground="{StaticResource TextTertiaryBrush}" />
+                                   Foreground="{DynamicResource TextTertiaryBrush}" />
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <Button Content="Create New Entry" Command="{Binding OpenCreateFormCommand}" />
                             <Button Content="Refresh" Command="{Binding RefreshCommand}" />
@@ -210,7 +210,7 @@
 
                         <!-- Create/Edit form -->
                         <Border IsVisible="{Binding IsFormOpen}"
-                                Background="{StaticResource SurfaceBrush}"
+                                Background="{DynamicResource SurfaceBrush}"
                                 CornerRadius="6" Padding="12">
                             <StackPanel Spacing="8" MaxWidth="560" HorizontalAlignment="Left">
                                 <TextBlock Text="{Binding FormHeader}" FontWeight="SemiBold" FontSize="13" />
@@ -230,7 +230,7 @@
                                               MinWidth="200" />
                                 </StackPanel>
                                 <TextBlock Text="{Binding FormError}"
-                                           Foreground="{StaticResource DangerBrush}"
+                                           Foreground="{DynamicResource DangerBrush}"
                                            FontSize="12"
                                            IsVisible="{Binding FormError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                                 <StackPanel Orientation="Horizontal" Spacing="8">
@@ -243,12 +243,12 @@
                         <!-- Existing entries -->
                         <TextBlock Text="No custom entries applied yet"
                                    FontSize="12" FontStyle="Italic"
-                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                   Foreground="{DynamicResource TextTertiaryBrush}"
                                    IsVisible="{Binding !Entries.Count}" />
                         <ItemsControl ItemsSource="{Binding Entries}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:CustomVerbEntryViewModel">
-                                    <Border Background="{StaticResource SurfaceBrush}"
+                                    <Border Background="{DynamicResource SurfaceBrush}"
                                             CornerRadius="6" Padding="10" Margin="0,0,0,6">
                                         <Grid ColumnDefinitions="*,Auto,Auto">
                                             <StackPanel Grid.Column="0" Spacing="2">
@@ -256,13 +256,13 @@
                                                     <TextBlock Text="{Binding Label}" FontWeight="SemiBold" FontSize="13" />
                                                     <TextBlock Text="{Binding ScopeDisplay}"
                                                                FontSize="11"
-                                                               Foreground="{StaticResource TextTertiaryBrush}"
+                                                               Foreground="{DynamicResource TextTertiaryBrush}"
                                                                VerticalAlignment="Center" />
                                                 </StackPanel>
                                                 <TextBlock Text="{Binding Command}"
                                                            FontFamily="{StaticResource MonoFont}"
                                                            FontSize="11"
-                                                           Foreground="{StaticResource TextTertiaryBrush}"
+                                                           Foreground="{DynamicResource TextTertiaryBrush}"
                                                            TextTrimming="CharacterEllipsis" />
                                             </StackPanel>
                                             <Button Grid.Column="1" Content="Edit" Margin="8,0,0,0"

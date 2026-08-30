@@ -55,7 +55,7 @@ public sealed class PowerPlanChangeFactoryTests
         Assert.Equal("Power Plans", change.ModuleId);
         Assert.Equal($"power-setting:{BalancedGuid:D}:{SettingGuid:D}:DC", change.SettingId);
         Assert.Equal($"{BalancedGuid:D}/{SubgroupGuid:D}/{SettingGuid:D}/DC", change.SystemLocation);
-        Assert.Equal("Balanced — Sleep after (On battery)", change.DisplayName);
+        Assert.Equal("Balanced: Sleep after (On battery)", change.DisplayName);
         Assert.Equal("1", change.BeforeValue);
         Assert.Equal("0", change.AfterValue);
         Assert.Equal("1 minute", change.BeforeDisplay);
@@ -86,7 +86,7 @@ public sealed class PowerPlanChangeFactoryTests
         Assert.Equal($"power-setting:{BalancedGuid:D}:{SettingGuid:D}:AC", change.SettingId);
         Assert.Equal("5 %", change.BeforeDisplay);
         Assert.Equal("100 %", change.AfterDisplay);
-        Assert.Equal("Balanced — Minimum processor state (Plugged in)", change.DisplayName);
+        Assert.Equal("Balanced: Minimum processor state (Plugged in)", change.DisplayName);
     }
 
     [Fact]
@@ -96,7 +96,7 @@ public sealed class PowerPlanChangeFactoryTests
 
         Assert.Equal("modern-standby", change.SettingId);
         Assert.Equal(@"HKLM\SYSTEM\CurrentControlSet\Control\Power\PlatformAoAcOverride", change.SystemLocation);
-        Assert.Equal(string.Empty, change.BeforeValue); // absent — revert deletes
+        Assert.Equal(string.Empty, change.BeforeValue); // absent; revert deletes
         Assert.Equal("0", change.AfterValue);
         Assert.Equal(ChangeValueType.Registry_DWord, change.ValueType);
         Assert.Equal(ChangeCategory.Disable, change.Category);

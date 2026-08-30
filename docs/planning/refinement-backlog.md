@@ -124,6 +124,15 @@ required: edition changes are effectively one-way, involve a reboot, and must be
 heavily confirmed — likely paired with the SKU callout ("this setting needs Pro —
 upgrade edition?" flow). Belongs with the install-engine chapter, not refinement.
 
+## 0a2. Light theme — DONE 2026-08-31
+
+Palette moved to theme dictionaries (Styles/Theme.axaml, Dark + Light variants,
+every key in both), all consumers swept to DynamicResource, ThemeService applies
+the persisted choice at startup and live from Settings (Dark / Light / Follow
+Windows). Sight harness: UiSession.SetTheme + light walkthrough suite
+(walkthrough-light/). Drag ghost and insert line in PathEditorView resolve theme
+brushes at use time; RowHoverBrush replaces hardcoded hover whites.
+
 ## 0b. UI copy sweep (UI/UX chapter)
 
 Sam's rule: user-visible strings are product copy — short declarative sentences, no

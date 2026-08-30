@@ -10,7 +10,7 @@
     <Border Padding="16,12"
             Margin="0,2"
             CornerRadius="6"
-            Background="{StaticResource SurfaceBrush}"
+            Background="{DynamicResource SurfaceBrush}"
             Classes.pending-enable="{Binding IsPendingEnable}"
             Classes.pending-disable="{Binding IsPendingDisable}">
         <DockPanel>
@@ -27,19 +27,19 @@
                 <TextBlock Text="{Binding DisplayName}"
                            FontWeight="SemiBold"
                            FontSize="14"
-                           Foreground="{StaticResource TextPrimaryBrush}" />
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
 
                 <!-- Plain-English description; collapsed in Compact mode -->
                 <TextBlock Text="{Binding Description}"
                            FontSize="12"
-                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
                            TextWrapping="Wrap"
                            IsVisible="{Binding IsDescriptionVisible}" />
 
                 <!-- Badges & callouts (10-3) — visible in EVERY display mode;
                      safety-critical information is never hidden by display preference -->
                 <StackPanel Spacing="2">
-                    <Border Background="{StaticResource WarningMutedBrush}"
+                    <Border Background="{DynamicResource WarningMutedBrush}"
                             CornerRadius="3"
                             Padding="6,1"
                             Margin="0,2,0,0"
@@ -48,31 +48,31 @@
                         <TextBlock Text="{Binding EnforcementSummary}"
                                    FontSize="11"
                                    TextWrapping="Wrap"
-                                   Foreground="{StaticResource WarningBrush}" />
+                                   Foreground="{DynamicResource WarningBrush}" />
                     </Border>
                     <TextBlock Text="{Binding ReversionRisksText}"
                                FontSize="11"
-                               Foreground="{StaticResource WarningBrush}"
+                               Foreground="{DynamicResource WarningBrush}"
                                TextWrapping="Wrap"
                                IsVisible="{Binding HasReversionRisks}" />
                     <TextBlock Text="{Binding SkuNotice}"
                                FontSize="11"
-                               Foreground="{StaticResource InfoBrush}"
+                               Foreground="{DynamicResource InfoBrush}"
                                TextWrapping="Wrap"
                                IsVisible="{Binding HasSkuNotice}" />
                     <TextBlock Text="{Binding OwnerModeCallout}"
                                FontSize="11"
-                               Foreground="{StaticResource InfoBrush}"
+                               Foreground="{DynamicResource InfoBrush}"
                                TextWrapping="Wrap"
                                IsVisible="{Binding IsOwnerModeDegraded}" />
-                    <Border Background="{StaticResource InfoMutedBrush}"
+                    <Border Background="{DynamicResource InfoMutedBrush}"
                             CornerRadius="3"
                             Padding="6,1"
                             HorizontalAlignment="Left"
                             IsVisible="{Binding ShowOwnerModeBadge}">
                         <TextBlock Text="Owner Mode"
                                    FontSize="11"
-                                   Foreground="{StaticResource InfoBrush}" />
+                                   Foreground="{DynamicResource InfoBrush}" />
                     </Border>
                 </StackPanel>
 
@@ -80,7 +80,7 @@
                 <TextBlock Text="{Binding SystemPath}"
                            FontFamily="{StaticResource MonoFont}"
                            FontSize="11"
-                           Foreground="{StaticResource TextTertiaryBrush}"
+                           Foreground="{DynamicResource TextTertiaryBrush}"
                            TextWrapping="Wrap"
                            IsVisible="{Binding SystemPath, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
@@ -92,10 +92,10 @@
                         <TextBlock Text="{Binding Model.RegistryValueType}"
                                    FontFamily="{StaticResource MonoFont}"
                                    FontSize="11"
-                                   Foreground="{StaticResource TextTertiaryBrush}" />
+                                   Foreground="{DynamicResource TextTertiaryBrush}" />
                         <TextBlock Text="{Binding Model.CurrentDisplayValue}"
                                    FontSize="11"
-                                   Foreground="{StaticResource TextTertiaryBrush}" />
+                                   Foreground="{DynamicResource TextTertiaryBrush}" />
                     </StackPanel>
                 </StackPanel>
             </StackPanel>

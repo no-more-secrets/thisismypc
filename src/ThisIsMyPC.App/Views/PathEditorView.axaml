@@ -11,7 +11,7 @@
         <StackPanel Spacing="4">
             <TextBlock Text="{Binding CharacterCountText}"
                        FontSize="11"
-                       Foreground="{StaticResource TextTertiaryBrush}" />
+                       Foreground="{DynamicResource TextTertiaryBrush}" />
 
             <ItemsControl x:Name="EntriesList"
                           ItemsSource="{Binding Entries}"
@@ -19,13 +19,13 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:PathEntryViewModel">
                         <Border Padding="0" Margin="0,1" CornerRadius="4"
-                                Background="{StaticResource SurfaceBrush}"
+                                Background="{DynamicResource SurfaceBrush}"
                                 DragDrop.AllowDrop="True">
                             <Grid ColumnDefinitions="Auto,*,Auto">
                                 <!-- Drag handle with index -->
                                 <Border Grid.Column="0"
                                         PointerPressed="OnGripPointerPressed"
-                                        Background="{StaticResource OverlayBrush}"
+                                        Background="{DynamicResource OverlayBrush}"
                                         Cursor="SizeAll"
                                         Padding="6,0,10,0"
                                         CornerRadius="4,0,0,4"
@@ -34,12 +34,12 @@
                                                 VerticalAlignment="Center">
                                         <TextBlock Text="&#x283F;"
                                                    FontSize="11"
-                                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                                   Foreground="{DynamicResource TextTertiaryBrush}"
                                                    VerticalAlignment="Center" />
                                         <TextBlock Text="{Binding Index}"
                                                    Width="22" FontSize="12"
                                                    TextAlignment="Right"
-                                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                                   Foreground="{DynamicResource TextTertiaryBrush}"
                                                    VerticalAlignment="Center" />
                                     </StackPanel>
                                 </Border>
@@ -56,14 +56,14 @@
                                 <Button Grid.Column="2"
                                         Command="{Binding $parent[ItemsControl].((vm:PathEditorViewModel)DataContext).RemoveEntryCommand}"
                                         CommandParameter="{Binding}"
-                                        Background="{StaticResource OverlayBrush}"
+                                        Background="{DynamicResource OverlayBrush}"
                                         CornerRadius="0,4,4,0"
                                         Padding="10,0"
                                         VerticalAlignment="Stretch"
                                         VerticalContentAlignment="Center"
                                         HorizontalContentAlignment="Center">
                                     <TextBlock Text="&#x2715;"
-                                               Foreground="{StaticResource DangerBrush}"
+                                               Foreground="{DynamicResource DangerBrush}"
                                                FontSize="14"
                                                FontWeight="Bold"
                                                Margin="0,-1,0,0" />

@@ -14,16 +14,16 @@
     </Style>
 
     <Style Selector="Button.sidebar-item:pointerover /template/ ContentPresenter">
-        <Setter Property="Background" Value="{StaticResource SidebarItemHoverBrush}" />
+        <Setter Property="Background" Value="{DynamicResource SidebarItemHoverBrush}" />
     </Style>
 
     <Style Selector="Button.sidebar-item.active">
-        <Setter Property="Background" Value="{StaticResource SidebarItemActiveBrush}" />
-        <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+        <Setter Property="Background" Value="{DynamicResource SidebarItemActiveBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
     </Style>
 
     <Style Selector="Button.sidebar-item.active /template/ ContentPresenter">
-        <Setter Property="Background" Value="{StaticResource SidebarItemActiveBrush}" />
+        <Setter Property="Background" Value="{DynamicResource SidebarItemActiveBrush}" />
     </Style>
 
     <Style Selector="Button.sidebar-item.unavailable">
@@ -35,7 +35,7 @@
     <Style Selector="TextBlock.sidebar-group-header">
         <Setter Property="FontSize" Value="11" />
         <Setter Property="FontWeight" Value="SemiBold" />
-        <Setter Property="Foreground" Value="{StaticResource SidebarGroupHeaderBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource SidebarGroupHeaderBrush}" />
         <Setter Property="Margin" Value="15,16,0,4" />
         <Setter Property="LetterSpacing" Value="1.5" />
     </Style>
@@ -52,7 +52,7 @@
     </Style>
 
     <Style Selector="Button.sidebar-toggle:pointerover /template/ ContentPresenter">
-        <Setter Property="Background" Value="{StaticResource SidebarItemHoverBrush}" />
+        <Setter Property="Background" Value="{DynamicResource SidebarItemHoverBrush}" />
     </Style>
 
     <!-- Apply bar: Pending count button (transparent, clickable) -->
@@ -69,8 +69,8 @@
 
     <!-- Apply bar: Apply button -->
     <Style Selector="Button.apply-bar-apply">
-        <Setter Property="Background" Value="{StaticResource AccentBrush}" />
-        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+        <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
         <Setter Property="Padding" Value="16,8" />
         <Setter Property="CornerRadius" Value="4" />
         <Setter Property="Cursor" Value="Hand" />
@@ -82,13 +82,13 @@
     </Style>
 
     <Style Selector="Button.apply-bar-apply:pointerover /template/ ContentPresenter">
-        <Setter Property="Background" Value="{StaticResource AccentColorLight}" />
+        <Setter Property="Background" Value="{DynamicResource AccentColorLight}" />
     </Style>
 
     <!-- Apply bar: Discard button -->
     <Style Selector="Button.apply-bar-discard">
-        <Setter Property="Background" Value="{StaticResource OverlayBrush}" />
-        <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+        <Setter Property="Background" Value="{DynamicResource OverlayBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
         <Setter Property="Padding" Value="16,8" />
         <Setter Property="CornerRadius" Value="4" />
         <Setter Property="Cursor" Value="Hand" />
@@ -99,22 +99,22 @@
     </Style>
 
     <Style Selector="Button.apply-bar-discard:pointerover /template/ ContentPresenter">
-        <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+        <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
     </Style>
 
     <!-- Pending state tinting: enable/create (green-ish) -->
     <Style Selector="Border.pending-enable">
-        <Setter Property="Background" Value="{StaticResource SuccessMutedBrush}" />
+        <Setter Property="Background" Value="{DynamicResource SuccessMutedBrush}" />
     </Style>
 
     <!-- Pending state tinting: disable/delete (red-ish, slightly more prominent) -->
     <Style Selector="Border.pending-disable">
-        <Setter Property="Background" Value="{StaticResource DangerMutedBrush}" />
+        <Setter Property="Background" Value="{DynamicResource DangerMutedBrush}" />
     </Style>
 
     <!-- Pending state tinting: modify (neutral warning) -->
     <Style Selector="Border.pending-modify">
-        <Setter Property="Background" Value="{StaticResource WarningMutedBrush}" />
+        <Setter Property="Background" Value="{DynamicResource WarningMutedBrush}" />
     </Style>
 
     <!-- Inactive handler: dimmed appearance -->
@@ -124,17 +124,17 @@
 
     <!-- Notification bar: restart (amber warning) -->
     <Style Selector="Border.notification-restart">
-        <Setter Property="BorderBrush" Value="{StaticResource WarningBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource WarningBrush}" />
     </Style>
     <Style Selector="TextBlock.notification-restart">
-        <Setter Property="Foreground" Value="{StaticResource WarningBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource WarningBrush}" />
     </Style>
 
     <!-- Notification bar: refresh (green success — softer than restart) -->
     <Style Selector="Border.notification-refresh">
-        <Setter Property="BorderBrush" Value="{StaticResource SuccessBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource SuccessBrush}" />
     </Style>
     <Style Selector="TextBlock.notification-refresh">
-        <Setter Property="Foreground" Value="{StaticResource SuccessBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}" />
     </Style>
 </Styles>

@@ -891,7 +891,7 @@ public partial class MainWindowViewModel : ViewModelBase
         CurrentContent = new SettingsViewModel(
             _settingsService,
             _moduleSettingsContributors,
-            applyTheme: ApplyTheme,
+            applyTheme: Services.ThemeService.Apply,
             installedModuleIds: _navigationService.Modules.Select(m => m.Module.Info.Name).ToList(),
             appVersion: typeof(MainWindowViewModel).Assembly.GetName().Version?.ToString(3) ?? "0.0.0",
             capabilityReport: _capabilityDetector?.GetCapabilityReport(),
@@ -901,18 +901,6 @@ public partial class MainWindowViewModel : ViewModelBase
         IsHomeActive = false;
         SelectedModule = null;
         ClearSidebarActives();
-    }
-
-    private static void ApplyTheme(string theme)
-    {
-        // The palette itself is dark-only until the UI/UX overhaul; setting the variant
-        // is still correct so Fluent-derived control chrome follows the choice.
-        if (Application.Current is { } app)
-        {
-            app.RequestedThemeVariant = theme == "light"
-                ? Avalonia.Styling.ThemeVariant.Light
-                : Avalonia.Styling.ThemeVariant.Dark;
-        }
     }
 
     [ObservableProperty]

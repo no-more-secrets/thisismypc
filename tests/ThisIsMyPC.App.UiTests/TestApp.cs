@@ -33,10 +33,6 @@ public sealed class TestApp : Application
         Styles.Add(new FluentTheme());
         Styles.Add(new StyleInclude(new Uri("avares://ThisIsMyPC.App/"))
         {
-            Source = new Uri("avares://ThisIsMyPC.App/Styles/Theme.axaml"),
-        });
-        Styles.Add(new StyleInclude(new Uri("avares://ThisIsMyPC.App/"))
-        {
             Source = new Uri("avares://ThisIsMyPC.App/Styles/Typography.axaml"),
         });
         Styles.Add(new StyleInclude(new Uri("avares://ThisIsMyPC.App/"))
@@ -45,6 +41,10 @@ public sealed class TestApp : Application
         });
 
         var resources = new ResourceDictionary();
+        resources.MergedDictionaries.Add(new ResourceInclude(new Uri("avares://ThisIsMyPC.App/"))
+        {
+            Source = new Uri("avares://ThisIsMyPC.App/Styles/Theme.axaml"),
+        });
         resources.MergedDictionaries.Add(new ResourceInclude(new Uri("avares://ThisIsMyPC.App/"))
         {
             Source = new Uri("avares://ThisIsMyPC.App/Templates/ToggleSettingRowTemplate.axaml"),

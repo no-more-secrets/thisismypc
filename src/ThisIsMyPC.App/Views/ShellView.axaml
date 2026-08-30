@@ -16,10 +16,10 @@
                 <TextBlock Text="Explorer Preferences"
                            FontSize="18"
                            FontWeight="SemiBold"
-                           Foreground="{StaticResource TextPrimaryBrush}" />
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
                 <TextBlock Text="Control how Windows Explorer displays files and folders"
                            FontSize="13"
-                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
                            Margin="0,0,0,4" />
                 <ItemsControl ItemsSource="{Binding ExplorerSettings}"
                               ItemTemplate="{StaticResource ToggleSettingRowTemplate}" />
@@ -30,10 +30,10 @@
                 <TextBlock Text="Taskbar"
                            FontSize="18"
                            FontWeight="SemiBold"
-                           Foreground="{StaticResource TextPrimaryBrush}" />
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
                 <TextBlock Text="Customize taskbar alignment, widgets, and context menu style"
                            FontSize="13"
-                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
                            Margin="0,0,0,4" />
                 <ItemsControl ItemsSource="{Binding TaskbarSettings}"
                               ItemTemplate="{StaticResource ToggleSettingRowTemplate}" />

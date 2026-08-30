@@ -19,10 +19,10 @@
                     <TextBlock Text="Advanced"
                                FontWeight="SemiBold"
                                FontSize="13"
-                               Foreground="{StaticResource TextSecondaryBrush}" />
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
                     <TextBlock Text="(rarely needed)"
                                FontSize="12"
-                               Foreground="{StaticResource TextTertiaryBrush}"
+                               Foreground="{DynamicResource TextTertiaryBrush}"
                                VerticalAlignment="Center" />
                 </StackPanel>
             </Expander.Header>
@@ -30,7 +30,7 @@
             <!-- Module-specific advanced controls go here -->
             <Border Padding="0,8"
                     Margin="0,4,0,0"
-                    BorderBrush="{StaticResource SidebarBorderBrush}"
+                    BorderBrush="{DynamicResource SidebarBorderBrush}"
                     BorderThickness="0,1,0,0">
                 <ContentPresenter />
             </Border>

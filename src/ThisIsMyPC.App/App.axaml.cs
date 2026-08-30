@@ -56,6 +56,11 @@ public partial class App : Application
             LogSetDiscovery(_serviceProvider.GetRequiredService<ISetProvider>());
             InitializeSettings(_serviceProvider.GetRequiredService<Core.Settings.ISettingsService>());
 
+            // Saved theme before MainWindow exists so the first frame is already themed.
+            Services.ThemeService.Apply(_serviceProvider
+                .GetRequiredService<Core.Settings.ISettingsService>()
+                .GetApp(Core.Settings.AppSettingKeys.Theme, Services.ThemeService.Dark));
+
             // 10-4: live OpenDyslexic body-font override (before MainWindow exists so
             // the first render already uses the preferred font)
             _fontService = new AccessibilityFontService(

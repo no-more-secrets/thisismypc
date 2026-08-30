@@ -8,8 +8,8 @@
              x:Class="ThisIsMyPC.App.Views.ReviewPanelView"
              x:DataType="vm:ReviewPanelViewModel">
 
-    <Border Background="{StaticResource RaisedBrush}"
-            BorderBrush="{StaticResource SidebarBorderBrush}"
+    <Border Background="{DynamicResource RaisedBrush}"
+            BorderBrush="{DynamicResource SidebarBorderBrush}"
             BorderThickness="1"
             CornerRadius="8"
             Width="450"
@@ -20,18 +20,18 @@
             <!-- Header -->
             <Border DockPanel.Dock="Top"
                     Padding="16,12"
-                    BorderBrush="{StaticResource SidebarBorderBrush}"
+                    BorderBrush="{DynamicResource SidebarBorderBrush}"
                     BorderThickness="0,0,0,1">
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Right"
                                Text="{Binding HeaderCountText}"
-                               Foreground="{StaticResource TextTertiaryBrush}"
+                               Foreground="{DynamicResource TextTertiaryBrush}"
                                FontSize="12"
                                VerticalAlignment="Center" />
                     <TextBlock Text="Review Pending Changes"
                                FontWeight="SemiBold"
                                FontSize="15"
-                               Foreground="{StaticResource TextPrimaryBrush}"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
                                VerticalAlignment="Center" />
                 </DockPanel>
             </Border>
@@ -39,7 +39,7 @@
             <!-- Footer: status message + action buttons -->
             <Border DockPanel.Dock="Bottom"
                     Padding="16,10"
-                    BorderBrush="{StaticResource SidebarBorderBrush}"
+                    BorderBrush="{DynamicResource SidebarBorderBrush}"
                     BorderThickness="0,1,0,0">
                 <StackPanel Spacing="8">
                     <!-- Error/status feedback -->
@@ -85,11 +85,11 @@
                     <TextBlock Text="No pending changes"
                                FontSize="14"
                                HorizontalAlignment="Center"
-                               Foreground="{StaticResource TextSecondaryBrush}" />
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
                     <TextBlock Text="Make changes in a module to see them here"
                                FontSize="12"
                                HorizontalAlignment="Center"
-                               Foreground="{StaticResource TextTertiaryBrush}" />
+                               Foreground="{DynamicResource TextTertiaryBrush}" />
                 </StackPanel>
 
                 <!-- Grouped change items + one-way actions -->
@@ -112,20 +112,20 @@
                                         <TextBlock Text="{Binding DisplayName}"
                                                    FontWeight="SemiBold"
                                                    FontSize="13"
-                                                   Foreground="{StaticResource TextPrimaryBrush}" />
+                                                   Foreground="{DynamicResource TextPrimaryBrush}" />
 
                                         <!-- Before -> After -->
                                         <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2,0,0">
                                             <TextBlock Text="{Binding BeforeDisplay}"
                                                        FontSize="12"
-                                                       Foreground="{StaticResource TextSecondaryBrush}" />
+                                                       Foreground="{DynamicResource TextSecondaryBrush}" />
                                             <TextBlock Text="&#x2192;"
                                                        FontSize="12"
-                                                       Foreground="{StaticResource TextTertiaryBrush}" />
+                                                       Foreground="{DynamicResource TextTertiaryBrush}" />
                                             <TextBlock Text="{Binding AfterDisplay}"
                                                        FontSize="12"
                                                        FontWeight="SemiBold"
-                                                       Foreground="{StaticResource TextPrimaryBrush}" />
+                                                       Foreground="{DynamicResource TextPrimaryBrush}" />
                                             <!-- Clickable registry detail count -->
                                             <ToggleButton IsVisible="{Binding HasMultipleDetails}"
                                                           IsChecked="{Binding IsExpanded}"
@@ -137,7 +137,7 @@
                                                           Cursor="Hand">
                                                 <TextBlock Text="{Binding DetailCount, StringFormat='({0} registry operations)'}"
                                                            FontSize="11"
-                                                           Foreground="{StaticResource TextTertiaryBrush}" />
+                                                           Foreground="{DynamicResource TextTertiaryBrush}" />
                                             </ToggleButton>
                                         </StackPanel>
 
@@ -150,23 +150,23 @@
                                                     <Border Margin="0,1"
                                                             Padding="8,4"
                                                             CornerRadius="2"
-                                                            Background="#08FFFFFF">
+                                                            Background="{DynamicResource RowHoverBrush}">
                                                         <StackPanel Spacing="1">
                                                             <TextBlock Text="{Binding SystemLocation}"
                                                                        FontFamily="{StaticResource MonoFont}"
                                                                        FontSize="11"
-                                                                       Foreground="{StaticResource TextTertiaryBrush}" />
+                                                                       Foreground="{DynamicResource TextTertiaryBrush}" />
                                                             <StackPanel Orientation="Horizontal" Spacing="4">
                                                                 <TextBlock Text="{Binding BeforeDisplay}"
                                                                            FontSize="11"
-                                                                           Foreground="{StaticResource TextSecondaryBrush}" />
+                                                                           Foreground="{DynamicResource TextSecondaryBrush}" />
                                                                 <TextBlock Text="&#x2192;"
                                                                            FontSize="11"
-                                                                           Foreground="{StaticResource TextTertiaryBrush}" />
+                                                                           Foreground="{DynamicResource TextTertiaryBrush}" />
                                                                 <TextBlock Text="{Binding AfterDisplay}"
                                                                            FontSize="11"
                                                                            FontWeight="SemiBold"
-                                                                           Foreground="{StaticResource TextPrimaryBrush}" />
+                                                                           Foreground="{DynamicResource TextPrimaryBrush}" />
                                                             </StackPanel>
                                                         </StackPanel>
                                                     </Border>
@@ -185,11 +185,11 @@
                                    FontWeight="SemiBold"
                                    FontSize="12"
                                    Margin="4,6,0,2"
-                                   Foreground="{StaticResource WarningBrush}" />
+                                   Foreground="{DynamicResource WarningBrush}" />
                         <TextBlock Text="These run on Apply. They cannot be undone from history and are not included in saved sets."
                                    FontSize="11"
                                    Margin="4,0,0,4"
-                                   Foreground="{StaticResource TextTertiaryBrush}" />
+                                   Foreground="{DynamicResource TextTertiaryBrush}" />
                         <ItemsControl ItemsSource="{Binding ReviewActions}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:ReviewActionViewModel">
@@ -197,7 +197,7 @@
                                             Padding="12,8"
                                             CornerRadius="4"
                                             BorderThickness="1"
-                                            BorderBrush="{StaticResource SidebarBorderBrush}">
+                                            BorderBrush="{DynamicResource SidebarBorderBrush}">
                                         <DockPanel>
                                             <Button DockPanel.Dock="Right"
                                                     Classes="apply-bar-discard"
@@ -210,15 +210,15 @@
                                                 <TextBlock Text="{Binding DisplayName}"
                                                            FontWeight="SemiBold"
                                                            FontSize="13"
-                                                           Foreground="{StaticResource TextPrimaryBrush}" />
+                                                           Foreground="{DynamicResource TextPrimaryBrush}" />
                                                 <TextBlock Text="{Binding Detail}"
                                                            FontFamily="{StaticResource MonoFont}"
                                                            FontSize="11"
-                                                           Foreground="{StaticResource TextTertiaryBrush}" />
+                                                           Foreground="{DynamicResource TextTertiaryBrush}" />
                                                 <TextBlock Text="{Binding UndoHint}"
                                                            IsVisible="{Binding HasUndoHint}"
                                                            FontSize="11"
-                                                           Foreground="{StaticResource TextSecondaryBrush}" />
+                                                           Foreground="{DynamicResource TextSecondaryBrush}" />
                                             </StackPanel>
                                         </DockPanel>
                                     </Border>

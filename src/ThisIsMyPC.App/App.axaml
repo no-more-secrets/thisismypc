@@ -5,7 +5,6 @@
 
     <Application.Styles>
         <FluentTheme />
-        <StyleInclude Source="avares://ThisIsMyPC.App/Styles/Theme.axaml" />
         <StyleInclude Source="avares://ThisIsMyPC.App/Styles/Typography.axaml" />
         <StyleInclude Source="avares://ThisIsMyPC.App/Styles/Controls.axaml" />
     </Application.Styles>
@@ -13,6 +12,7 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://ThisIsMyPC.App/Styles/Theme.axaml" />
                 <ResourceInclude Source="avares://ThisIsMyPC.App/Templates/ToggleSettingRowTemplate.axaml" />
                 <ResourceInclude Source="avares://ThisIsMyPC.App/Templates/MultiScopeRowTemplate.axaml" />
             </ResourceDictionary.MergedDictionaries>

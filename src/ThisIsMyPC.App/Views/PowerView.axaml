@@ -17,59 +17,59 @@
 
                 <!-- Scan failure -->
                 <Border IsVisible="{Binding HasScanError}"
-                        Background="{StaticResource DangerMutedBrush}"
+                        Background="{DynamicResource DangerMutedBrush}"
                         CornerRadius="4" Padding="12,8">
                     <TextBlock Text="{Binding ScanError}"
-                               Foreground="{StaticResource DangerBrush}"
+                               Foreground="{DynamicResource DangerBrush}"
                                TextWrapping="Wrap" FontSize="12" />
                 </Border>
 
                 <!-- Modern Standby machines often register only Balanced -->
                 <TextBlock IsVisible="{Binding HasNoPlans}"
                            Text="No power plans are registered on this machine."
-                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
                            FontSize="13" />
 
                 <ItemsControl ItemsSource="{Binding Plans}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:PowerPlanItemViewModel">
                             <Border Padding="16,12" Margin="0,3" CornerRadius="6"
-                                    Background="{StaticResource SurfaceBrush}">
+                                    Background="{DynamicResource SurfaceBrush}">
                                 <Grid ColumnDefinitions="*,Auto">
                                     <StackPanel Grid.Column="0" Spacing="4">
                                         <StackPanel Orientation="Horizontal" Spacing="8">
                                             <TextBlock Text="{Binding Name}"
                                                        FontSize="14" FontWeight="SemiBold"
-                                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                                       Foreground="{DynamicResource TextPrimaryBrush}"
                                                        VerticalAlignment="Center" />
                                             <Border IsVisible="{Binding IsActive}"
-                                                    Background="{StaticResource SuccessMutedBrush}"
+                                                    Background="{DynamicResource SuccessMutedBrush}"
                                                     CornerRadius="3" Padding="6,2">
                                                 <TextBlock Text="Active"
                                                            FontSize="11" FontWeight="SemiBold"
-                                                           Foreground="{StaticResource SuccessBrush}" />
+                                                           Foreground="{DynamicResource SuccessBrush}" />
                                             </Border>
                                             <Border IsVisible="{Binding IsPendingTarget}"
-                                                    Background="{StaticResource InfoMutedBrush}"
+                                                    Background="{DynamicResource InfoMutedBrush}"
                                                     CornerRadius="3" Padding="6,2">
                                                 <TextBlock Text="Pending switch"
                                                            FontSize="11" FontWeight="SemiBold"
-                                                           Foreground="{StaticResource InfoBrush}" />
+                                                           Foreground="{DynamicResource InfoBrush}" />
                                             </Border>
                                         </StackPanel>
                                         <TextBlock IsVisible="{Binding HasDescription}"
                                                    Text="{Binding DescriptionText}"
                                                    FontSize="12"
-                                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                                    TextWrapping="Wrap" />
                                         <TextBlock IsVisible="{Binding IsNormallyHidden}"
                                                    Text="{Binding HiddenNote}"
                                                    FontSize="12"
-                                                   Foreground="{StaticResource WarningBrush}"
+                                                   Foreground="{DynamicResource WarningBrush}"
                                                    TextWrapping="Wrap" />
                                         <TextBlock Text="{Binding GuidText}"
                                                    FontSize="11" FontFamily="Consolas,monospace"
-                                                   Foreground="{StaticResource TextTertiaryBrush}" />
+                                                   Foreground="{DynamicResource TextTertiaryBrush}" />
                                     </StackPanel>
 
                                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4"
@@ -100,11 +100,11 @@
                 <StackPanel Spacing="4" IsVisible="{Binding ShowSystemPower}" Margin="0,8,0,0">
                     <TextBlock Text="System power"
                                FontSize="14" FontWeight="SemiBold"
-                               Foreground="{StaticResource TextPrimaryBrush}" />
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
                     <TextBlock Text="{Binding UltimatePerformanceCaveat}"
                                IsVisible="{Binding ShowUltimatePerformanceCaveat}"
                                FontSize="12"
-                               Foreground="{StaticResource WarningBrush}"
+                               Foreground="{DynamicResource WarningBrush}"
                                TextWrapping="Wrap" />
                     <ItemsControl ItemsSource="{Binding SystemPowerToggles}"
                                   ItemTemplate="{StaticResource ToggleSettingRowTemplate}" />
@@ -122,7 +122,7 @@
                     <TextBlock Grid.Column="1"
                                Text="{Binding SettingsPlan.Name, FallbackValue=''}"
                                FontSize="15" FontWeight="SemiBold"
-                               Foreground="{StaticResource TextPrimaryBrush}"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
                                VerticalAlignment="Center" Margin="12,0" />
                     <ToggleButton Grid.Column="2" Content="Registry view"
                                   Padding="12,6" FontSize="12"
@@ -131,33 +131,33 @@
 
                 <TextBlock IsVisible="{Binding IsLoadingSettings}"
                            Text="Loading settings…"
-                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
                            FontSize="13" />
 
                 <Border IsVisible="{Binding HasSettingsError}"
-                        Background="{StaticResource DangerMutedBrush}"
+                        Background="{DynamicResource DangerMutedBrush}"
                         CornerRadius="4" Padding="12,8">
                     <TextBlock Text="{Binding SettingsError}"
-                               Foreground="{StaticResource DangerBrush}"
+                               Foreground="{DynamicResource DangerBrush}"
                                TextWrapping="Wrap" FontSize="12" />
                 </Border>
 
                 <!-- Modern Standby (AC5) -->
                 <Border IsVisible="{Binding ShowModernStandby}"
                         Padding="16,12" CornerRadius="6"
-                        Background="{StaticResource SurfaceBrush}">
+                        Background="{DynamicResource SurfaceBrush}">
                     <Grid ColumnDefinitions="*,Auto">
                         <StackPanel Grid.Column="0" Spacing="4">
                             <TextBlock Text="Disable Modern Standby"
                                        FontSize="14" FontWeight="SemiBold"
-                                       Foreground="{StaticResource TextPrimaryBrush}" />
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
                             <TextBlock Text="{Binding ModernStandbyDescription}"
                                        FontSize="12"
-                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
                                        TextWrapping="Wrap" />
                             <TextBlock Text="Requires a restart to take effect."
                                        FontSize="12"
-                                       Foreground="{StaticResource WarningBrush}" />
+                                       Foreground="{DynamicResource WarningBrush}" />
                         </StackPanel>
                         <ToggleSwitch Grid.Column="1" VerticalAlignment="Center"
                                       IsChecked="{Binding IsModernStandbyDisabled}"
@@ -171,20 +171,20 @@
                             <StackPanel Spacing="4" Margin="0,8,0,0">
                                 <TextBlock Text="{Binding GroupName}"
                                            FontSize="14" FontWeight="SemiBold"
-                                           Foreground="{StaticResource TextPrimaryBrush}" />
+                                           Foreground="{DynamicResource TextPrimaryBrush}" />
                                 <ItemsControl ItemsSource="{Binding Settings}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="vm:PowerSettingItemViewModel">
                                             <Border Padding="12,8" Margin="0,2" CornerRadius="4"
-                                                    Background="{StaticResource SurfaceBrush}">
+                                                    Background="{DynamicResource SurfaceBrush}">
                                                 <StackPanel Spacing="4">
                                                     <TextBlock Text="{Binding Name}"
                                                                FontSize="13" FontWeight="SemiBold"
-                                                               Foreground="{StaticResource TextPrimaryBrush}" />
+                                                               Foreground="{DynamicResource TextPrimaryBrush}" />
                                                     <TextBlock IsVisible="{Binding HasDescription}"
                                                                Text="{Binding DescriptionText}"
                                                                FontSize="12"
-                                                               Foreground="{StaticResource TextSecondaryBrush}"
+                                                               Foreground="{DynamicResource TextSecondaryBrush}"
                                                                TextWrapping="Wrap" />
 
                                                     <!-- Registry view (AC3) -->
@@ -192,13 +192,13 @@
                                                                 Spacing="2">
                                                         <TextBlock Text="{Binding SettingGuidText, StringFormat='Setting: {0}'}"
                                                                    FontSize="11" FontFamily="Consolas,monospace"
-                                                                   Foreground="{StaticResource TextTertiaryBrush}" />
+                                                                   Foreground="{DynamicResource TextTertiaryBrush}" />
                                                         <TextBlock Text="{Binding SubgroupGuidText, StringFormat='Subgroup: {0}'}"
                                                                    FontSize="11" FontFamily="Consolas,monospace"
-                                                                   Foreground="{StaticResource TextTertiaryBrush}" />
+                                                                   Foreground="{DynamicResource TextTertiaryBrush}" />
                                                         <TextBlock Text="{Binding RawValuesText}"
                                                                    FontSize="11" FontFamily="Consolas,monospace"
-                                                                   Foreground="{StaticResource TextTertiaryBrush}" />
+                                                                   Foreground="{DynamicResource TextTertiaryBrush}" />
                                                     </StackPanel>
 
                                                     <Grid ColumnDefinitions="Auto,220,16,Auto,220,Auto"
@@ -206,7 +206,7 @@
                                                         <TextBlock Grid.Column="0" Text="Plugged in:"
                                                                    FontSize="12" Margin="0,0,8,0"
                                                                    VerticalAlignment="Center"
-                                                                   Foreground="{StaticResource TextSecondaryBrush}" />
+                                                                   Foreground="{DynamicResource TextSecondaryBrush}" />
                                                         <ComboBox Grid.Column="1"
                                                                   ItemsSource="{Binding Options}"
                                                                   SelectedIndex="{Binding SelectedAcOptionIndex}"
@@ -222,7 +222,7 @@
                                                         <TextBlock Grid.Column="3" Text="On battery:"
                                                                    FontSize="12" Margin="0,0,8,0"
                                                                    VerticalAlignment="Center"
-                                                                   Foreground="{StaticResource TextSecondaryBrush}" />
+                                                                   Foreground="{DynamicResource TextSecondaryBrush}" />
                                                         <ComboBox Grid.Column="4"
                                                                   ItemsSource="{Binding Options}"
                                                                   SelectedIndex="{Binding SelectedDcOptionIndex}"
@@ -239,16 +239,16 @@
                                                                     Spacing="4" Margin="8,0,0,0"
                                                                     VerticalAlignment="Center">
                                                             <Border IsVisible="{Binding HasPendingAc}"
-                                                                    Background="{StaticResource InfoMutedBrush}"
+                                                                    Background="{DynamicResource InfoMutedBrush}"
                                                                     CornerRadius="3" Padding="5,2">
                                                                 <TextBlock Text="AC pending" FontSize="10"
-                                                                           Foreground="{StaticResource InfoBrush}" />
+                                                                           Foreground="{DynamicResource InfoBrush}" />
                                                             </Border>
                                                             <Border IsVisible="{Binding HasPendingDc}"
-                                                                    Background="{StaticResource InfoMutedBrush}"
+                                                                    Background="{DynamicResource InfoMutedBrush}"
                                                                     CornerRadius="3" Padding="5,2">
                                                                 <TextBlock Text="DC pending" FontSize="10"
-                                                                           Foreground="{StaticResource InfoBrush}" />
+                                                                           Foreground="{DynamicResource InfoBrush}" />
                                                             </Border>
                                                         </StackPanel>
                                                     </Grid>
@@ -256,7 +256,7 @@
                                                     <TextBlock IsVisible="{Binding IsRangeEditor}"
                                                                Text="{Binding RangeHint}"
                                                                FontSize="11"
-                                                               Foreground="{StaticResource TextTertiaryBrush}" />
+                                                               Foreground="{DynamicResource TextTertiaryBrush}" />
                                                 </StackPanel>
                                             </Border>
                                         </DataTemplate>

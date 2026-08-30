@@ -13,7 +13,7 @@
         <StackPanel MaxWidth="800" HorizontalAlignment="Left" Margin="24,16,24,24" Spacing="16">
 
             <!-- 5-2: first-launch capability summary (dismissible, once) -->
-            <Border Background="{StaticResource SurfaceBrush}" CornerRadius="8" Padding="20,16"
+            <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="20,16"
                     IsVisible="{Binding FirstLaunchBanner.IsVisible, FallbackValue=False}">
                 <StackPanel Spacing="10" DataContext="{Binding FirstLaunchBanner}"
                             x:DataType="vm:FirstLaunchBannerViewModel">
@@ -23,10 +23,10 @@
                         <StackPanel>
                             <TextBlock Text="Welcome - here's what this system supports"
                                        FontWeight="SemiBold" FontSize="15"
-                                       Foreground="{StaticResource TextPrimaryBrush}" />
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
                             <TextBlock Text="This summary shows once. It stays available under Settings."
                                        FontSize="12"
-                                       Foreground="{StaticResource TextTertiaryBrush}" />
+                                       Foreground="{DynamicResource TextTertiaryBrush}" />
                         </StackPanel>
                     </DockPanel>
 
@@ -41,16 +41,16 @@
                                     <StackPanel>
                                         <StackPanel Orientation="Horizontal" Spacing="6">
                                             <Ellipse Width="8" Height="8" VerticalAlignment="Center"
-                                                     Fill="{StaticResource SuccessBrush}"
+                                                     Fill="{DynamicResource SuccessBrush}"
                                                      IsVisible="{Binding IsAvailable}" />
                                             <Ellipse Width="8" Height="8" VerticalAlignment="Center"
-                                                     Fill="{StaticResource WarningBrush}"
+                                                     Fill="{DynamicResource WarningBrush}"
                                                      IsVisible="{Binding !IsAvailable}" />
                                             <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold"
-                                                       Foreground="{StaticResource TextPrimaryBrush}" />
+                                                       Foreground="{DynamicResource TextPrimaryBrush}" />
                                         </StackPanel>
                                         <TextBlock Text="{Binding Detail}" FontSize="12" TextWrapping="Wrap"
-                                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                                   Foreground="{DynamicResource TextTertiaryBrush}"
                                                    Margin="14,0,8,0" />
                                     </StackPanel>
                                 </DockPanel>
@@ -60,23 +60,23 @@
 
                     <TextBlock Text="Hardware ecosystems"
                                FontWeight="SemiBold" FontSize="13"
-                               Foreground="{StaticResource TextSecondaryBrush}" />
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
                     <ItemsControl ItemsSource="{Binding CapabilityRows}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:FirstLaunchRowViewModel">
                                 <StackPanel Margin="0,2,0,2">
                                     <StackPanel Orientation="Horizontal" Spacing="6">
                                         <Ellipse Width="8" Height="8" VerticalAlignment="Center"
-                                                 Fill="{StaticResource SuccessBrush}"
+                                                 Fill="{DynamicResource SuccessBrush}"
                                                  IsVisible="{Binding IsAvailable}" />
                                         <Ellipse Width="8" Height="8" VerticalAlignment="Center"
-                                                 Fill="{StaticResource WarningBrush}"
+                                                 Fill="{DynamicResource WarningBrush}"
                                                  IsVisible="{Binding !IsAvailable}" />
                                         <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold"
-                                                   Foreground="{StaticResource TextPrimaryBrush}" />
+                                                   Foreground="{DynamicResource TextPrimaryBrush}" />
                                     </StackPanel>
                                     <TextBlock Text="{Binding Detail}" FontSize="12" TextWrapping="Wrap"
-                                               Foreground="{StaticResource TextTertiaryBrush}"
+                                               Foreground="{DynamicResource TextTertiaryBrush}"
                                                Margin="14,0,8,0" />
                                 </StackPanel>
                             </DataTemplate>
@@ -86,16 +86,16 @@
             </Border>
 
             <!-- 28-3: drift report from the Owner Mode service -->
-            <Border Background="{StaticResource SurfaceBrush}" CornerRadius="8" Padding="20,16"
+            <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="20,16"
                     IsVisible="{Binding DriftSection, Converter={x:Static ObjectConverters.IsNotNull}}">
                 <StackPanel Spacing="8" DataContext="{Binding DriftSection}"
                             x:DataType="vm:DriftSectionViewModel">
                     <TextBlock Text="{Binding Header}"
                                FontWeight="SemiBold" FontSize="15"
-                               Foreground="{StaticResource TextPrimaryBrush}" />
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
                     <TextBlock Text="Likely a Windows update or policy refresh. Reapplying stages the fix for your review - nothing changes until you apply."
                                FontSize="12"
-                               Foreground="{StaticResource TextTertiaryBrush}" />
+                               Foreground="{DynamicResource TextTertiaryBrush}" />
                     <ItemsControl ItemsSource="{Binding Rows}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:DriftRowViewModel">
@@ -105,9 +105,9 @@
                                             Padding="10,2" FontSize="12" />
                                     <StackPanel Margin="0,0,12,0">
                                         <TextBlock Text="{Binding DisplayName}" FontSize="13" FontWeight="SemiBold"
-                                                   Foreground="{StaticResource TextPrimaryBrush}" />
+                                                   Foreground="{DynamicResource TextPrimaryBrush}" />
                                         <TextBlock Text="{Binding Detail}" FontSize="12" TextWrapping="Wrap"
-                                                   Foreground="{StaticResource TextTertiaryBrush}" />
+                                                   Foreground="{DynamicResource TextTertiaryBrush}" />
                                     </StackPanel>
                                 </DockPanel>
                             </DataTemplate>
@@ -123,16 +123,16 @@
             </Border>
 
             <!-- 9-3: unreviewed monitoring detections -->
-            <Border Background="{StaticResource SurfaceBrush}" CornerRadius="8" Padding="20,16"
+            <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="20,16"
                     IsVisible="{Binding MonitoringSection, Converter={x:Static ObjectConverters.IsNotNull}}">
                 <StackPanel Spacing="8" DataContext="{Binding MonitoringSection}"
                             x:DataType="vm:MonitoringSectionViewModel">
                     <TextBlock Text="{Binding Header}"
                                FontWeight="SemiBold" FontSize="15"
-                               Foreground="{StaticResource TextPrimaryBrush}" />
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
                     <TextBlock Text="Programs added these to your boot sequence since the last review."
                                FontSize="12"
-                               Foreground="{StaticResource TextTertiaryBrush}" />
+                               Foreground="{DynamicResource TextTertiaryBrush}" />
                     <ItemsControl ItemsSource="{Binding Rows}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:DetectionRowViewModel">
@@ -145,9 +145,9 @@
                                     </StackPanel>
                                     <StackPanel Margin="0,0,12,0">
                                         <TextBlock Text="{Binding DisplayName}" FontSize="13" FontWeight="SemiBold"
-                                                   Foreground="{StaticResource TextPrimaryBrush}" />
+                                                   Foreground="{DynamicResource TextPrimaryBrush}" />
                                         <TextBlock Text="{Binding Detail}" FontSize="12"
-                                                   Foreground="{StaticResource TextTertiaryBrush}" />
+                                                   Foreground="{DynamicResource TextTertiaryBrush}" />
                                     </StackPanel>
                                 </DockPanel>
                             </DataTemplate>
@@ -157,33 +157,33 @@
             </Border>
 
             <!-- System Identity -->
-            <Border Background="{StaticResource SurfaceBrush}" CornerRadius="8" Padding="20,16">
+            <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="20,16">
                 <StackPanel Spacing="8">
                     <TextBlock Text="{Binding Identity.MachineName}"
                                FontWeight="SemiBold" FontSize="18"
-                               Foreground="{StaticResource TextPrimaryBrush}" />
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
                     <Grid ColumnDefinitions="Auto,16,*" RowDefinitions="Auto,4,Auto,4,Auto,4,Auto">
-                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Windows" FontSize="13" Foreground="{StaticResource TextTertiaryBrush}" />
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Windows" FontSize="13" Foreground="{DynamicResource TextTertiaryBrush}" />
                         <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" Spacing="6">
-                            <TextBlock Text="{Binding Identity.WindowsEdition}" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" />
-                            <TextBlock Text="{Binding Identity.WindowsVersion}" FontSize="13" Foreground="{StaticResource TextTertiaryBrush}" />
+                            <TextBlock Text="{Binding Identity.WindowsEdition}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <TextBlock Text="{Binding Identity.WindowsVersion}" FontSize="13" Foreground="{DynamicResource TextTertiaryBrush}" />
                         </StackPanel>
-                        <TextBlock Grid.Row="2" Grid.Column="0" Text="CPU" FontSize="13" Foreground="{StaticResource TextTertiaryBrush}" />
-                        <TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding Identity.Cpu}" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap" />
-                        <TextBlock Grid.Row="4" Grid.Column="0" Text="GPU" FontSize="13" Foreground="{StaticResource TextTertiaryBrush}" />
-                        <TextBlock Grid.Row="4" Grid.Column="2" Text="{Binding Identity.Gpu}" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap" />
-                        <TextBlock Grid.Row="6" Grid.Column="0" Text="RAM" FontSize="13" Foreground="{StaticResource TextTertiaryBrush}" />
-                        <TextBlock Grid.Row="6" Grid.Column="2" Text="{Binding Identity.Ram}" FontSize="13" Foreground="{StaticResource TextSecondaryBrush}" />
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="CPU" FontSize="13" Foreground="{DynamicResource TextTertiaryBrush}" />
+                        <TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding Identity.Cpu}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="GPU" FontSize="13" Foreground="{DynamicResource TextTertiaryBrush}" />
+                        <TextBlock Grid.Row="4" Grid.Column="2" Text="{Binding Identity.Gpu}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
+                        <TextBlock Grid.Row="6" Grid.Column="0" Text="RAM" FontSize="13" Foreground="{DynamicResource TextTertiaryBrush}" />
+                        <TextBlock Grid.Row="6" Grid.Column="2" Text="{Binding Identity.Ram}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
                     </Grid>
                 </StackPanel>
             </Border>
 
             <!-- Quick Actions -->
-            <Border Background="{StaticResource SurfaceBrush}" CornerRadius="8" Padding="20,16">
+            <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="20,16">
                 <StackPanel Spacing="10">
                     <TextBlock Text="Quick Actions"
                                FontWeight="SemiBold" FontSize="15"
-                               Foreground="{StaticResource TextPrimaryBrush}" />
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
                     <ItemsControl ItemsSource="{Binding QuickActions}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -198,7 +198,7 @@
                                         Padding="12,8">
                                     <StackPanel Orientation="Horizontal" Spacing="8">
                                         <PathIcon Width="16" Height="16"
-                                                  Foreground="{StaticResource TextSecondaryBrush}"
+                                                  Foreground="{DynamicResource TextSecondaryBrush}"
                                                   Data="{Binding IconGeometry}" />
                                         <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
                                     </StackPanel>
@@ -210,14 +210,14 @@
             </Border>
 
             <!-- Recent Activity -->
-            <Border Background="{StaticResource SurfaceBrush}" CornerRadius="8" Padding="20,16">
+            <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="20,16">
                 <StackPanel Spacing="10">
                     <TextBlock Text="Recent Activity"
                                FontWeight="SemiBold" FontSize="15"
-                               Foreground="{StaticResource TextPrimaryBrush}" />
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
                     <TextBlock Text="No changes applied yet — changes you apply will show up here."
                                FontSize="12"
-                               Foreground="{StaticResource TextTertiaryBrush}"
+                               Foreground="{DynamicResource TextTertiaryBrush}"
                                IsVisible="{Binding !HasRecentActivity}" />
                     <ItemsControl ItemsSource="{Binding RecentActivity}">
                         <ItemsControl.ItemTemplate>
@@ -226,17 +226,17 @@
                                     <TextBlock DockPanel.Dock="Right"
                                                Text="{Binding AppliedAtDisplay}"
                                                FontSize="12"
-                                               Foreground="{StaticResource TextTertiaryBrush}"
+                                               Foreground="{DynamicResource TextTertiaryBrush}"
                                                Margin="8,0,0,0" />
                                     <TextBlock DockPanel.Dock="Right"
                                                Text="Restored"
                                                FontSize="12"
-                                               Foreground="{StaticResource WarningBrush}"
+                                               Foreground="{DynamicResource WarningBrush}"
                                                Margin="8,0,0,0"
                                                IsVisible="{Binding IsReverted}" />
                                     <TextBlock Text="{Binding DisplayName}"
                                                FontSize="13"
-                                               Foreground="{StaticResource TextSecondaryBrush}"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
                                                TextTrimming="CharacterEllipsis" />
                                 </DockPanel>
                             </DataTemplate>

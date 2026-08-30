@@ -194,8 +194,8 @@ public sealed partial class SettingsViewModel : ViewModelBase
                 new SettingChoiceItemViewModel(
                     settings, null, AppSettingKeys.Theme,
                     "Theme",
-                    "Dark is the only finished palette today - the light palette arrives with the UI/UX overhaul. Your choice is remembered.",
-                    [new("dark", "Dark"), new("light", "Light (coming with UI overhaul)")],
+                    "Dark, light, or follow Windows. Applies immediately.",
+                    [new("dark", "Dark"), new("light", "Light"), new("system", "Follow Windows")],
                     settings.GetApp(AppSettingKeys.Theme, "dark"),
                     applyTheme),
                 new SettingChoiceItemViewModel(

@@ -11,16 +11,16 @@
     <UserControl.Resources>
         <DataTemplate x:Key="EnvVarRowTemplate" x:DataType="vm:EnvironmentVariableItemViewModel">
             <Border Padding="12,8" Margin="0,2" CornerRadius="4"
-                    Background="{StaticResource SurfaceBrush}">
+                    Background="{DynamicResource SurfaceBrush}">
                 <Grid ColumnDefinitions="*,2*,Auto">
                     <!-- Display mode -->
                     <TextBlock Grid.Column="0" Text="{Binding Name}"
                                FontWeight="SemiBold"
-                               Foreground="{StaticResource TextPrimaryBrush}"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
                                VerticalAlignment="Center"
                                IsVisible="{Binding !IsEditing}" />
                     <TextBlock Grid.Column="1" Text="{Binding Value}"
-                               Foreground="{StaticResource TextSecondaryBrush}"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
                                VerticalAlignment="Center"
                                TextTrimming="CharacterEllipsis"
                                Margin="8,0"
@@ -43,7 +43,7 @@
                                 Padding="8,4" FontSize="12" />
                         <Button Content="Delete" Command="{Binding DeleteCommand}"
                                 IsVisible="{Binding !IsEditing}"
-                                Foreground="{StaticResource DangerBrush}"
+                                Foreground="{DynamicResource DangerBrush}"
                                 Padding="8,4" FontSize="12" />
                         <Button Content="Save" Command="{Binding ConfirmEditCommand}"
                                 IsVisible="{Binding IsEditing}"
@@ -73,16 +73,16 @@
                         <TextBlock Text="User PATH"
                                    FontSize="15"
                                    FontWeight="SemiBold"
-                                   Foreground="{StaticResource TextPrimaryBrush}" />
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
                         <TextBlock Text="Per-user PATH entries, appended after system PATH"
                                    FontSize="12"
-                                   Foreground="{StaticResource TextSecondaryBrush}" />
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
                         <Panel IsVisible="{Binding UserPathEditor, Converter={x:Static ObjectConverters.IsNotNull}}">
                             <views:PathEditorView DataContext="{Binding UserPathEditor}" />
                         </Panel>
                         <TextBlock Text="No user PATH variable found"
                                    FontSize="12" FontStyle="Italic"
-                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                   Foreground="{DynamicResource TextTertiaryBrush}"
                                    IsVisible="{Binding UserPathEditor, Converter={x:Static ObjectConverters.IsNull}}" />
                     </StackPanel>
 
@@ -91,16 +91,16 @@
                         <TextBlock Text="System PATH"
                                    FontSize="15"
                                    FontWeight="SemiBold"
-                                   Foreground="{StaticResource TextPrimaryBrush}" />
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
                         <TextBlock Text="System-wide PATH entries, inherited by all users"
                                    FontSize="12"
-                                   Foreground="{StaticResource TextSecondaryBrush}" />
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
                         <Panel IsVisible="{Binding SystemPathEditor, Converter={x:Static ObjectConverters.IsNotNull}}">
                             <views:PathEditorView DataContext="{Binding SystemPathEditor}" />
                         </Panel>
                         <TextBlock Text="No system PATH variable found"
                                    FontSize="12" FontStyle="Italic"
-                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                   Foreground="{DynamicResource TextTertiaryBrush}"
                                    IsVisible="{Binding SystemPathEditor, Converter={x:Static ObjectConverters.IsNull}}" />
                     </StackPanel>
 
@@ -119,7 +119,7 @@
                     <DockPanel Margin="12,0">
                         <TextBlock Text="Per-user variables (excluding PATH)"
                                    FontSize="12"
-                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                    VerticalAlignment="Center" />
                         <Button Content="Add Variable"
                                 Command="{Binding AddUserVariableCommand}"
@@ -129,7 +129,7 @@
                     </DockPanel>
                     <TextBlock Text="{Binding UserScanError, StringFormat='Failed to read user variables: {0}'}"
                                IsVisible="{Binding UserScanError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                               Foreground="{StaticResource WarningBrush}"
+                               Foreground="{DynamicResource WarningBrush}"
                                FontSize="12" />
                     <ItemsControl ItemsSource="{Binding UserVariables}"
                                   ItemTemplate="{StaticResource EnvVarRowTemplate}" />
@@ -148,7 +148,7 @@
                     <DockPanel Margin="12,0">
                         <TextBlock Text="System-wide variables (excluding PATH)"
                                    FontSize="12"
-                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                    VerticalAlignment="Center" />
                         <Button Content="Add Variable"
                                 Command="{Binding AddSystemVariableCommand}"
@@ -158,7 +158,7 @@
                     </DockPanel>
                     <TextBlock Text="{Binding SystemScanError, StringFormat='Failed to read system variables: {0}'}"
                                IsVisible="{Binding SystemScanError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                               Foreground="{StaticResource WarningBrush}"
+                               Foreground="{DynamicResource WarningBrush}"
                                FontSize="12" />
                     <ItemsControl ItemsSource="{Binding SystemVariables}"
                                   ItemTemplate="{StaticResource EnvVarRowTemplate}" />

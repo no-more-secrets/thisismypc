@@ -37,10 +37,10 @@
                         <TextBlock Text="{Binding Header}"
                                    FontWeight="SemiBold"
                                    FontSize="16"
-                                   Foreground="{StaticResource TextPrimaryBrush}" />
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
                         <TextBlock Text="{Binding Subtitle}"
                                    FontSize="12"
-                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                   Foreground="{DynamicResource TextTertiaryBrush}"
                                    TextWrapping="Wrap"
                                    Margin="0,2,0,8"
                                    IsVisible="{Binding Subtitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />

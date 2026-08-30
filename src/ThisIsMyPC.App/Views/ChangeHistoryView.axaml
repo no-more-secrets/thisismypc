@@ -8,8 +8,8 @@
              x:Class="ThisIsMyPC.App.Views.ChangeHistoryView"
              x:DataType="vm:ChangeHistoryViewModel">
 
-    <Border Background="{StaticResource RaisedBrush}"
-            BorderBrush="{StaticResource SidebarBorderBrush}"
+    <Border Background="{DynamicResource RaisedBrush}"
+            BorderBrush="{DynamicResource SidebarBorderBrush}"
             BorderThickness="1"
             CornerRadius="8"
             Width="450"
@@ -20,7 +20,7 @@
             <!-- Header -->
             <Border DockPanel.Dock="Top"
                     Padding="16,12"
-                    BorderBrush="{StaticResource SidebarBorderBrush}"
+                    BorderBrush="{DynamicResource SidebarBorderBrush}"
                     BorderThickness="0,0,0,1">
                 <DockPanel>
                     <StackPanel DockPanel.Dock="Right"
@@ -28,7 +28,7 @@
                                 Spacing="8"
                                 VerticalAlignment="Center">
                         <TextBlock Text="{Binding EntryCountText}"
-                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                   Foreground="{DynamicResource TextTertiaryBrush}"
                                    FontSize="12"
                                    VerticalAlignment="Center" />
                         <Button Classes="apply-bar-discard"
@@ -46,7 +46,7 @@
                                 <Panel>
                                     <TextBlock Text="Clear" IsVisible="{Binding !IsConfirmingClear}" />
                                     <TextBlock Text="Confirm Clear" IsVisible="{Binding IsConfirmingClear}"
-                                               Foreground="{StaticResource DangerBrush}" />
+                                               Foreground="{DynamicResource DangerBrush}" />
                                 </Panel>
                             </Button.Content>
                         </Button>
@@ -54,7 +54,7 @@
                     <TextBlock Text="Change History"
                                FontWeight="SemiBold"
                                FontSize="15"
-                               Foreground="{StaticResource TextPrimaryBrush}"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
                                VerticalAlignment="Center" />
                 </DockPanel>
             </Border>
@@ -66,13 +66,13 @@
                 <TextBlock Text="{Binding ErrorMessage}"
                            FontSize="12"
                            TextWrapping="Wrap"
-                           Foreground="{StaticResource DangerBrush}" />
+                           Foreground="{DynamicResource DangerBrush}" />
             </Border>
 
             <!-- Create Set from Selection (8.5) -->
             <Border DockPanel.Dock="Bottom"
                     Padding="16,10"
-                    BorderBrush="{StaticResource SidebarBorderBrush}"
+                    BorderBrush="{DynamicResource SidebarBorderBrush}"
                     BorderThickness="0,1,0,0"
                     IsVisible="{Binding !!TotalGroupCount}">
                 <StackPanel Spacing="8">
@@ -98,12 +98,12 @@
                     <TextBlock Text="No changes recorded yet"
                                FontSize="14"
                                HorizontalAlignment="Center"
-                               Foreground="{StaticResource TextSecondaryBrush}" />
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
                     <TextBlock Text="Changes applied through ThisIsMyPC will appear here."
                                FontSize="12"
                                HorizontalAlignment="Center"
                                TextWrapping="Wrap"
-                               Foreground="{StaticResource TextTertiaryBrush}" />
+                               Foreground="{DynamicResource TextTertiaryBrush}" />
                 </StackPanel>
 
                 <!-- Grouped history list -->
@@ -118,7 +118,7 @@
                                     <TextBlock Text="{Binding DateHeader}"
                                                FontSize="12"
                                                FontWeight="SemiBold"
-                                               Foreground="{StaticResource TextTertiaryBrush}"
+                                               Foreground="{DynamicResource TextTertiaryBrush}"
                                                Margin="4,8,0,4"
                                                LetterSpacing="0.5" />
 
@@ -170,14 +170,14 @@
                                                                        Text="{Binding AppliedAtDisplay}"
                                                                        FontSize="11"
                                                                        Margin="8,0,0,0"
-                                                                       Foreground="{StaticResource TextTertiaryBrush}"
+                                                                       Foreground="{DynamicResource TextTertiaryBrush}"
                                                                        VerticalAlignment="Center" />
 
                                                             <TextBlock DockPanel.Dock="Right"
                                                                        Text="Restored"
                                                                        FontSize="11"
                                                                        Margin="6,0,0,0"
-                                                                       Foreground="{StaticResource WarningBrush}"
+                                                                       Foreground="{DynamicResource WarningBrush}"
                                                                        VerticalAlignment="Center"
                                                                        IsVisible="{Binding IsReverted}" />
 
@@ -185,7 +185,7 @@
                                                             <TextBlock Text="{Binding DisplayName}"
                                                                        FontWeight="SemiBold"
                                                                        FontSize="13"
-                                                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                                                       Foreground="{DynamicResource TextPrimaryBrush}"
                                                                        TextTrimming="CharacterEllipsis"
                                                                        ToolTip.Tip="{Binding DisplayName}" />
                                                         </DockPanel>
@@ -194,14 +194,14 @@
                                                         <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2,0,0">
                                                             <TextBlock Text="{Binding BeforeDisplay}"
                                                                        FontSize="12"
-                                                                       Foreground="{StaticResource TextSecondaryBrush}" />
+                                                                       Foreground="{DynamicResource TextSecondaryBrush}" />
                                                             <TextBlock Text="&#x2192;"
                                                                        FontSize="12"
-                                                                       Foreground="{StaticResource TextTertiaryBrush}" />
+                                                                       Foreground="{DynamicResource TextTertiaryBrush}" />
                                                             <TextBlock Text="{Binding AfterDisplay}"
                                                                        FontSize="12"
                                                                        FontWeight="SemiBold"
-                                                                       Foreground="{StaticResource TextPrimaryBrush}" />
+                                                                       Foreground="{DynamicResource TextPrimaryBrush}" />
                                                             <!-- Clickable registry detail count -->
                                                             <ToggleButton IsVisible="{Binding HasMultipleDetails}"
                                                                           IsChecked="{Binding IsExpanded}"
@@ -212,7 +212,7 @@
                                                                           Cursor="Hand">
                                                                 <TextBlock Text="{Binding DetailCountText}"
                                                                            FontSize="11"
-                                                                           Foreground="{StaticResource TextTertiaryBrush}" />
+                                                                           Foreground="{DynamicResource TextTertiaryBrush}" />
                                                             </ToggleButton>
                                                         </StackPanel>
 
@@ -225,7 +225,7 @@
                                                                     <Border Margin="0,1"
                                                                             Padding="8,4"
                                                                             CornerRadius="2"
-                                                                            Background="#08FFFFFF">
+                                                                            Background="{DynamicResource RowHoverBrush}">
                                                                         <DockPanel>
                                                                             <!-- Restore/Redo button per entry -->
                                                                             <StackPanel DockPanel.Dock="Right"
@@ -251,18 +251,18 @@
                                                                                 <TextBlock Text="{Binding SystemLocation}"
                                                                                            FontFamily="{StaticResource MonoFont}"
                                                                                            FontSize="11"
-                                                                                           Foreground="{StaticResource TextTertiaryBrush}" />
+                                                                                           Foreground="{DynamicResource TextTertiaryBrush}" />
                                                                                 <StackPanel Orientation="Horizontal" Spacing="4">
                                                                                     <TextBlock Text="{Binding BeforeDisplay}"
                                                                                                FontSize="11"
-                                                                                               Foreground="{StaticResource TextSecondaryBrush}" />
+                                                                                               Foreground="{DynamicResource TextSecondaryBrush}" />
                                                                                     <TextBlock Text="&#x2192;"
                                                                                                FontSize="11"
-                                                                                               Foreground="{StaticResource TextTertiaryBrush}" />
+                                                                                               Foreground="{DynamicResource TextTertiaryBrush}" />
                                                                                     <TextBlock Text="{Binding AfterDisplay}"
                                                                                                FontSize="11"
                                                                                                FontWeight="SemiBold"
-                                                                                               Foreground="{StaticResource TextPrimaryBrush}" />
+                                                                                               Foreground="{DynamicResource TextPrimaryBrush}" />
                                                                                 </StackPanel>
                                                                             </StackPanel>
                                                                         </DockPanel>

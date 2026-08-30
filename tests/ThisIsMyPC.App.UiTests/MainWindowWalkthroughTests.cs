@@ -41,6 +41,48 @@ public class MainWindowWalkthroughTests
         }
     }
 
+    /// <summary>Same walkthrough in the Light variant, into walkthrough-light/.</summary>
+    [AvaloniaFact(Timeout = 300_000)]
+    public async Task VisitEveryModuleInLightTheme()
+    {
+        using var session = UiSession.ForMainWindow("walkthrough-light");
+        var viewModel = (MainWindowViewModel)session.Window.DataContext!;
+
+        try
+        {
+            session.SetTheme(Avalonia.Styling.ThemeVariant.Light);
+            await session.WaitForAsync(
+                () => viewModel.SidebarGroups.Count > 0, timeoutMs: 30_000, what: "sidebar population");
+            session.Screenshot("home");
+
+            var moduleNames = viewModel.SidebarGroups
+                .SelectMany(g => g.Items)
+                .Where(i => i.IsAvailable)
+                .Select(i => i.Name)
+                .ToList();
+            Assert.NotEmpty(moduleNames);
+
+            foreach (var name in moduleNames)
+            {
+                session.ClickText(name);
+                await session.WaitForAsync(
+                    () => viewModel.CurrentContent is not null && viewModel.ContentTitle == name,
+                    timeoutMs: 120_000,
+                    what: $"'{name}' content load");
+                session.Screenshot(Slug(name));
+            }
+
+            session.ClickText("Settings");
+            await session.WaitForAsync(
+                () => viewModel.ContentTitle == "Settings", timeoutMs: 30_000, what: "settings load");
+            session.Screenshot("settings");
+        }
+        finally
+        {
+            session.SetTheme(Avalonia.Styling.ThemeVariant.Dark);
+        }
+    }
+
     private static string Slug(string name) =>
         new(name.Select(c => char.IsLetterOrDigit(c) ? char.ToLowerInvariant(c) : '-').ToArray());
 }

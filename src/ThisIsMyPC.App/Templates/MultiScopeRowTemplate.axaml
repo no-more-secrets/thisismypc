@@ -8,7 +8,7 @@
         <Border Padding="16,12"
                 Margin="0,2"
                 CornerRadius="6"
-                Background="{StaticResource SurfaceBrush}"
+                Background="{DynamicResource SurfaceBrush}"
                 Classes.pending-enable="{Binding IsPendingEnable}"
                 Classes.inactive="{Binding IsInactive, FallbackValue=False}"
                 Classes.pending-disable="{Binding IsPendingDisable}">
@@ -26,7 +26,7 @@
                     <TextBlock Text="{Binding Label}"
                                FontWeight="SemiBold"
                                FontSize="14"
-                               Foreground="{StaticResource TextPrimaryBrush}" />
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
 
                     <!-- Scope badges row -->
                     <ItemsControl ItemsSource="{Binding ScopeBadges}">
@@ -44,7 +44,7 @@
                                     <TextBlock Text="{Binding Label}"
                                                FontSize="11"
                                                FontWeight="Medium"
-                                               Foreground="{StaticResource TextPrimaryBrush}" />
+                                               Foreground="{DynamicResource TextPrimaryBrush}" />
                                 </Border>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
@@ -53,13 +53,13 @@
                     <!-- Description -->
                     <TextBlock Text="{Binding Description}"
                                FontSize="12"
-                               Foreground="{StaticResource TextSecondaryBrush}"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
                                TextWrapping="Wrap" />
 
                     <!-- Inactive reason -->
                     <TextBlock Text="{Binding InactiveReason, FallbackValue=''}"
                                FontSize="12"
-                               Foreground="{StaticResource TextTertiaryBrush}"
+                               Foreground="{DynamicResource TextTertiaryBrush}"
                                FontStyle="Italic"
                                TextWrapping="Wrap"
                                IsVisible="{Binding InactiveReason, FallbackValue='', Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
@@ -67,7 +67,7 @@
                     <!-- Warning text -->
                     <TextBlock Text="{Binding WarningText}"
                                FontSize="12"
-                               Foreground="{StaticResource DangerBrush}"
+                               Foreground="{DynamicResource DangerBrush}"
                                TextWrapping="Wrap"
                                IsVisible="{Binding WarningText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
@@ -75,7 +75,7 @@
                     <TextBlock Text="{Binding SystemPath}"
                                FontFamily="{StaticResource MonoFont}"
                                FontSize="11"
-                               Foreground="{StaticResource TextTertiaryBrush}"
+                               Foreground="{DynamicResource TextTertiaryBrush}"
                                Margin="0,2,0,0" />
                 </StackPanel>
             </DockPanel>

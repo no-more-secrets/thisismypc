@@ -10,15 +10,15 @@
         Title="ThisIsMyPC"
         MinWidth="900" MinHeight="600"
         Width="1200" Height="800"
-        Background="{StaticResource BaseBrush}"
+        Background="{DynamicResource BaseBrush}"
         FontFamily="{DynamicResource BodyFont}">
 
     <Grid ColumnDefinitions="Auto,*">
 
         <!-- Sidebar -->
         <Border Grid.Column="0"
-                Background="{StaticResource SidebarBackgroundBrush}"
-                BorderBrush="{StaticResource SidebarBorderBrush}"
+                Background="{DynamicResource SidebarBackgroundBrush}"
+                BorderBrush="{DynamicResource SidebarBorderBrush}"
                 BorderThickness="0,0,1,0"
                 Width="{Binding IsSidebarCollapsed, Converter={x:Static vm:SidebarWidthConverter.Instance}}">
 
@@ -30,7 +30,7 @@
                         ToolTip.Tip="Toggle sidebar">
                     <PathIcon Data="M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z"
                               Width="16" Height="16"
-                              Foreground="{StaticResource TextSecondaryBrush}" />
+                              Foreground="{DynamicResource TextSecondaryBrush}" />
                 </Button>
 
                 <!-- Home (not a module — ungrouped, pinned above the module groups) -->
@@ -42,11 +42,11 @@
                         ToolTip.Tip="System overview and recent activity">
                     <StackPanel Orientation="Horizontal" Spacing="10">
                         <PathIcon Width="18" Height="18"
-                                  Foreground="{StaticResource TextSecondaryBrush}"
+                                  Foreground="{DynamicResource TextSecondaryBrush}"
                                   Data="M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z" />
                         <TextBlock Text="Home"
                                    VerticalAlignment="Center"
-                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
                                    IsVisible="{Binding !IsSidebarCollapsed}" />
                     </StackPanel>
                 </Button>
@@ -62,11 +62,11 @@
                             ToolTip.Tip="Browse and preview tweak sets">
                         <StackPanel Orientation="Horizontal" Spacing="10">
                             <PathIcon Width="18" Height="18"
-                                      Foreground="{StaticResource TextSecondaryBrush}"
+                                      Foreground="{DynamicResource TextSecondaryBrush}"
                                       Data="M12,16L19.36,10.27L21,9L12,2L3,9L4.63,10.27M12,18.54L4.62,12.81L3,14.07L12,21.07L21,14.07L19.37,12.8L12,18.54Z" />
                             <TextBlock Text="Set Loader"
                                        VerticalAlignment="Center"
-                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
                                        IsVisible="{Binding !IsSidebarCollapsed}" />
                         </StackPanel>
                     </Button>
@@ -77,11 +77,11 @@
                         <StackPanel Orientation="Horizontal" Spacing="10">
                             <!-- Material: Settings gear icon -->
                             <PathIcon Width="18" Height="18"
-                                      Foreground="{StaticResource TextSecondaryBrush}"
+                                      Foreground="{DynamicResource TextSecondaryBrush}"
                                       Data="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z" />
                             <TextBlock Text="Settings"
                                        VerticalAlignment="Center"
-                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
                                        IsVisible="{Binding !IsSidebarCollapsed}" />
                         </StackPanel>
                     </Button>
@@ -93,7 +93,7 @@
                     <TextBox Text="{Binding SearchQuery, Mode=TwoWay}"
                              Watermark="Search settings..."
                              FontSize="13" />
-                    <Border Background="{StaticResource OverlayBrush}"
+                    <Border Background="{DynamicResource OverlayBrush}"
                             CornerRadius="6" Padding="6" Margin="0,4,0,0"
                             IsVisible="{Binding HasSearchResults}">
                         <ItemsControl ItemsSource="{Binding SearchResults}">
@@ -108,10 +108,10 @@
                                         <StackPanel>
                                             <TextBlock Text="{Binding Name}" FontSize="13"
                                                        TextWrapping="Wrap"
-                                                       Foreground="{StaticResource TextPrimaryBrush}" />
+                                                       Foreground="{DynamicResource TextPrimaryBrush}" />
                                             <TextBlock Text="{Binding ModuleLine}" FontSize="11"
                                                        TextWrapping="Wrap"
-                                                       Foreground="{StaticResource TextTertiaryBrush}" />
+                                                       Foreground="{DynamicResource TextTertiaryBrush}" />
                                         </StackPanel>
                                     </Button>
                                 </DataTemplate>
@@ -145,11 +145,11 @@
                                                         ToolTip.Tip="{Binding TooltipText}">
                                                     <StackPanel Orientation="Horizontal" Spacing="10">
                                                         <PathIcon Width="18" Height="18"
-                                                                  Foreground="{StaticResource TextSecondaryBrush}"
+                                                                  Foreground="{DynamicResource TextSecondaryBrush}"
                                                                   Data="{Binding IconGeometry}" />
                                                         <TextBlock Text="{Binding Name}"
                                                                    VerticalAlignment="Center"
-                                                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                                                   Foreground="{DynamicResource TextPrimaryBrush}"
                                                                    IsVisible="{Binding !$parent[Window].((vm:MainWindowViewModel)DataContext).IsSidebarCollapsed}" />
                                                     </StackPanel>
                                                 </Button>
@@ -171,10 +171,10 @@
                 <TextBlock Text="{Binding ContentTitle}"
                            FontFamily="{StaticResource DisplayFont}"
                            FontSize="28"
-                           Foreground="{StaticResource TextPrimaryBrush}" />
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
                 <TextBlock Text="{Binding ContentDescription}"
                            FontSize="14"
-                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
                            Margin="0,4,0,0" />
             </StackPanel>
 
@@ -183,7 +183,7 @@
                     Margin="0,16,0,0"
                     Padding="16,10"
                     CornerRadius="8"
-                    Background="{StaticResource RaisedBrush}"
+                    Background="{DynamicResource RaisedBrush}"
                     Classes.notification-restart="{Binding IsRestartActionAvailable}"
                     Classes.notification-refresh="{Binding !IsRestartActionAvailable}"
                     BorderThickness="1"
@@ -213,8 +213,8 @@
             <!-- Apply bar with review panel popup -->
             <Panel DockPanel.Dock="Bottom" Margin="0,16,0,0">
                 <Border x:Name="ApplyBar"
-                        Background="{StaticResource RaisedBrush}"
-                        BorderBrush="{StaticResource SidebarBorderBrush}"
+                        Background="{DynamicResource RaisedBrush}"
+                        BorderBrush="{DynamicResource SidebarBorderBrush}"
                         BorderThickness="0,1,0,0"
                         Padding="16,10"
                         CornerRadius="8">
@@ -232,13 +232,13 @@
                                     IsEnabled="{Binding CanModifyPending}">
                                 <StackPanel Orientation="Horizontal" Spacing="6">
                                     <TextBlock Text="Apply" VerticalAlignment="Center" />
-                                    <Border Background="{StaticResource OverlayBrush}"
+                                    <Border Background="{DynamicResource OverlayBrush}"
                                             CornerRadius="10"
                                             Padding="7,2"
                                             IsVisible="{Binding HasPendingChanges}">
                                         <TextBlock Text="{Binding PendingCount}"
                                                    FontSize="12"
-                                                   Foreground="{StaticResource TextPrimaryBrush}" />
+                                                   Foreground="{DynamicResource TextPrimaryBrush}" />
                                     </Border>
                                 </StackPanel>
                             </Button>
@@ -255,7 +255,7 @@
                                     <!-- Fluent UI: Clock icon -->
                                     <PathIcon Data="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"
                                               Width="14" Height="14"
-                                              Foreground="{StaticResource TextSecondaryBrush}" />
+                                              Foreground="{DynamicResource TextSecondaryBrush}" />
                                     <TextBlock Text="History"
                                                VerticalAlignment="Center"
                                                FontSize="13" />
@@ -271,9 +271,9 @@
                                     <!-- Material: Restore (counterclockwise clock) icon -->
                                     <PathIcon Data="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"
                                               Width="14" Height="14"
-                                              Foreground="{StaticResource TextSecondaryBrush}" />
+                                              Foreground="{DynamicResource TextSecondaryBrush}" />
                                     <TextBlock Text="Restore point"
-                                               Foreground="{StaticResource TextSecondaryBrush}"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
                                                FontSize="13" />
                                 </StackPanel>
                             </Button>
@@ -281,7 +281,7 @@
                             <Button Classes="apply-bar-count"
                                     Command="{Binding OpenReviewPanelCommand}">
                                 <TextBlock Text="{Binding PendingCountText}"
-                                           Foreground="{StaticResource TextSecondaryBrush}"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
                                            FontSize="13" />
                             </Button>
 
@@ -293,10 +293,10 @@
                                     ToolTip.Tip="A newer version is available - click to open the releases page">
                                 <StackPanel Orientation="Horizontal" Spacing="6">
                                     <Ellipse Width="8" Height="8"
-                                             Fill="{StaticResource SuccessBrush}"
+                                             Fill="{DynamicResource SuccessBrush}"
                                              VerticalAlignment="Center" />
                                     <TextBlock Text="{Binding UpdateBadgeText}"
-                                               Foreground="{StaticResource TextSecondaryBrush}"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
                                                FontSize="13" />
                                 </StackPanel>
                             </Button>
@@ -335,7 +335,7 @@
             </Panel>
 
             <!-- Module content area -->
-            <Border Background="{StaticResource SurfaceBrush}"
+            <Border Background="{DynamicResource SurfaceBrush}"
                     CornerRadius="8"
                     Padding="24">
                 <Panel>
@@ -388,11 +388,11 @@
                                    FontSize="18"
                                    FontWeight="SemiBold"
                                    HorizontalAlignment="Center"
-                                   Foreground="{StaticResource TextSecondaryBrush}" />
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
                         <TextBlock Text="Module content coming in future stories"
                                    FontSize="14"
                                    HorizontalAlignment="Center"
-                                   Foreground="{StaticResource TextTertiaryBrush}" />
+                                   Foreground="{DynamicResource TextTertiaryBrush}" />
                     </StackPanel>
                 </Panel>
             </Border>

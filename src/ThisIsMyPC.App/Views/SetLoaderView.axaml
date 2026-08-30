@@ -17,14 +17,14 @@
             <Setter Property="Margin" Value="0,0,0,8" />
         </Style>
         <Style Selector="Border.set-card-body">
-            <Setter Property="Background" Value="{StaticResource RaisedBrush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource SidebarBorderBrush}" />
+            <Setter Property="Background" Value="{DynamicResource RaisedBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SidebarBorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="8" />
             <Setter Property="Padding" Value="12" />
         </Style>
         <Style Selector="Border.set-card-body.selected">
-            <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
         </Style>
     </UserControl.Styles>
 
@@ -38,18 +38,18 @@
                         <TextBlock Text="{Binding Name}"
                                    FontSize="15"
                                    FontWeight="SemiBold"
-                                   Foreground="{StaticResource TextPrimaryBrush}" />
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
                         <TextBlock Text="{Binding Description}"
                                    FontSize="12"
                                    TextWrapping="Wrap"
-                                   Foreground="{StaticResource TextSecondaryBrush}" />
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
                         <TextBlock Text="{Binding MetaLine}"
                                    FontSize="11"
                                    TextWrapping="Wrap"
-                                   Foreground="{StaticResource TextTertiaryBrush}" />
+                                   Foreground="{DynamicResource TextTertiaryBrush}" />
                         <TextBlock Text="{Binding Author, StringFormat='by {0}'}"
                                    FontSize="11"
-                                   Foreground="{StaticResource TextTertiaryBrush}" />
+                                   Foreground="{DynamicResource TextTertiaryBrush}" />
                     </StackPanel>
                 </Border>
             </Button>
@@ -66,14 +66,14 @@
                 <TextBlock Text="No sets found. Built-in sets ship with the application; user sets go in %APPDATA%\ThisIsMyPC\sets."
                            FontSize="13"
                            TextWrapping="Wrap"
-                           Foreground="{StaticResource TextTertiaryBrush}"
+                           Foreground="{DynamicResource TextTertiaryBrush}"
                            IsVisible="{Binding HasNoSets}" />
 
                 <StackPanel IsVisible="{Binding HasTweakSets}" Spacing="4" Margin="0,0,0,12">
                     <TextBlock Text="TWEAK SETS"
                                FontSize="11"
                                FontWeight="SemiBold"
-                               Foreground="{StaticResource TextTertiaryBrush}"
+                               Foreground="{DynamicResource TextTertiaryBrush}"
                                Margin="0,0,0,4" />
                     <ItemsControl ItemsSource="{Binding TweakSets}"
                                   ItemTemplate="{StaticResource SetCardTemplate}" />
@@ -83,7 +83,7 @@
                     <TextBlock Text="OPTIMIZATION PACKS"
                                FontSize="11"
                                FontWeight="SemiBold"
-                               Foreground="{StaticResource TextTertiaryBrush}"
+                               Foreground="{DynamicResource TextTertiaryBrush}"
                                Margin="0,0,0,4" />
                     <ItemsControl ItemsSource="{Binding OptimizationPacks}"
                                   ItemTemplate="{StaticResource SetCardTemplate}" />
@@ -100,19 +100,19 @@
                 <TextBlock Text="Select a set to preview its changes"
                            FontSize="15"
                            HorizontalAlignment="Center"
-                           Foreground="{StaticResource TextSecondaryBrush}" />
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBlock Text="Every change is shown with its current system value before anything is staged"
                            FontSize="12"
                            HorizontalAlignment="Center"
-                           Foreground="{StaticResource TextTertiaryBrush}" />
+                           Foreground="{DynamicResource TextTertiaryBrush}" />
             </StackPanel>
 
             <DockPanel IsVisible="{Binding !HasNoSelection}">
 
                 <!-- Stage footer -->
                 <Border DockPanel.Dock="Bottom"
-                        Background="{StaticResource RaisedBrush}"
-                        BorderBrush="{StaticResource SidebarBorderBrush}"
+                        Background="{DynamicResource RaisedBrush}"
+                        BorderBrush="{DynamicResource SidebarBorderBrush}"
                         BorderThickness="0,1,0,0"
                         Padding="12,10"
                         CornerRadius="8"
@@ -127,7 +127,7 @@
                                    FontSize="12"
                                    VerticalAlignment="Center"
                                    TextWrapping="Wrap"
-                                   Foreground="{StaticResource SuccessBrush}" />
+                                   Foreground="{DynamicResource SuccessBrush}" />
                     </DockPanel>
                 </Border>
 
@@ -140,12 +140,12 @@
                                 <TextBlock Text="{Binding GroupName}"
                                            FontSize="13"
                                            FontWeight="SemiBold"
-                                           Foreground="{StaticResource AccentBrush}"
+                                           Foreground="{DynamicResource AccentBrush}"
                                            IsVisible="{Binding HasHeader}" />
                                 <ItemsControl ItemsSource="{Binding Entries}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="vm:SetEntryPreviewViewModel">
-                                            <Border Background="{StaticResource RaisedBrush}"
+                                            <Border Background="{DynamicResource RaisedBrush}"
                                                     CornerRadius="6"
                                                     Padding="12,10"
                                                     Margin="0,0,0,6"
@@ -168,23 +168,23 @@
                                                                 IsVisible="{Binding !IsSkipped}">
                                                         <TextBlock Text="{Binding CurrentDisplay}"
                                                                    FontSize="12"
-                                                                   Foreground="{StaticResource TextSecondaryBrush}" />
+                                                                   Foreground="{DynamicResource TextSecondaryBrush}" />
                                                         <TextBlock Text="&#x2192;"
                                                                    FontSize="12"
-                                                                   Foreground="{StaticResource TextTertiaryBrush}" />
+                                                                   Foreground="{DynamicResource TextTertiaryBrush}" />
                                                         <TextBlock Text="{Binding ProposedDisplay}"
                                                                    FontSize="12"
                                                                    FontWeight="SemiBold"
-                                                                   Foreground="{StaticResource AccentBrush}" />
+                                                                   Foreground="{DynamicResource AccentBrush}" />
                                                         <TextBlock Text="already applied"
                                                                    FontSize="11"
                                                                    VerticalAlignment="Center"
-                                                                   Foreground="{StaticResource SuccessBrush}"
+                                                                   Foreground="{DynamicResource SuccessBrush}"
                                                                    IsVisible="{Binding IsApplied}" />
                                                         <TextBlock Text="already staged"
                                                                    FontSize="11"
                                                                    VerticalAlignment="Center"
-                                                                   Foreground="{StaticResource InfoBrush}"
+                                                                   Foreground="{DynamicResource InfoBrush}"
                                                                    IsVisible="{Binding IsAlreadyStaged}" />
                                                     </StackPanel>
 
@@ -192,27 +192,27 @@
                                                         <TextBlock Text="{Binding SettingName}"
                                                                    FontSize="13"
                                                                    FontWeight="SemiBold"
-                                                                   Foreground="{StaticResource TextPrimaryBrush}" />
+                                                                   Foreground="{DynamicResource TextPrimaryBrush}" />
                                                         <TextBlock Text="{Binding Description}"
                                                                    FontSize="12"
                                                                    TextWrapping="Wrap"
-                                                                   Foreground="{StaticResource TextSecondaryBrush}" />
+                                                                   Foreground="{DynamicResource TextSecondaryBrush}" />
                                                         <TextBlock Text="{Binding SkipReason}"
                                                                    FontSize="12"
                                                                    FontStyle="Italic"
                                                                    TextWrapping="Wrap"
-                                                                   Foreground="{StaticResource WarningBrush}"
+                                                                   Foreground="{DynamicResource WarningBrush}"
                                                                    IsVisible="{Binding IsSkipped}" />
                                                         <TextBlock Text="{Binding ConflictText}"
                                                                    FontSize="12"
                                                                    TextWrapping="Wrap"
-                                                                   Foreground="{StaticResource WarningBrush}"
+                                                                   Foreground="{DynamicResource WarningBrush}"
                                                                    IsVisible="{Binding HasConflict}" />
                                                         <TextBlock Text="{Binding SkuNotice}"
                                                                    FontSize="12"
                                                                    FontStyle="Italic"
                                                                    TextWrapping="Wrap"
-                                                                   Foreground="{StaticResource InfoBrush}"
+                                                                   Foreground="{DynamicResource InfoBrush}"
                                                                    IsVisible="{Binding HasSkuNotice}" />
                                                     </StackPanel>
                                                 </DockPanel>

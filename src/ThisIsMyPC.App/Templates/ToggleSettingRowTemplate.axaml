@@ -21,7 +21,7 @@
         <Border Padding="16,12"
                 Margin="0,2"
                 CornerRadius="6"
-                Background="{StaticResource SurfaceBrush}"
+                Background="{DynamicResource SurfaceBrush}"
                 Classes.inactive="{Binding IsInactive, FallbackValue=False}"
                 Classes.pending-enable="{Binding IsPendingEnable}"
                 Classes.pending-disable="{Binding IsPendingDisable}">
@@ -39,19 +39,19 @@
                     <TextBlock Text="{Binding Label}"
                                FontWeight="SemiBold"
                                FontSize="14"
-                               Foreground="{StaticResource TextPrimaryBrush}" />
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
 
                     <!-- Description (collapse when empty) -->
                     <TextBlock Text="{Binding Description}"
                                FontSize="12"
-                               Foreground="{StaticResource TextSecondaryBrush}"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
                                TextWrapping="Wrap"
                                IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
                     <!-- Inactive reason (shown instead of warning for inactive entries) -->
                     <TextBlock Text="{Binding InactiveReason, FallbackValue=''}"
                                FontSize="12"
-                               Foreground="{StaticResource TextTertiaryBrush}"
+                               Foreground="{DynamicResource TextTertiaryBrush}"
                                FontStyle="Italic"
                                TextWrapping="Wrap"
                                IsVisible="{Binding InactiveReason, FallbackValue={x:False}, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
@@ -59,14 +59,14 @@
                     <!-- Warning text (Critical/System handlers — hidden when inactive) -->
                     <TextBlock Text="{Binding WarningText}"
                                FontSize="12"
-                               Foreground="{StaticResource DangerBrush}"
+                               Foreground="{DynamicResource DangerBrush}"
                                TextWrapping="Wrap"
                                IsVisible="{Binding WarningText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
                     <!-- Disable method info + migrate action (context menu handlers only) -->
                     <TextBlock Text="{Binding DisableMethodText, FallbackValue=''}"
                                FontSize="11"
-                               Foreground="{StaticResource WarningBrush}"
+                               Foreground="{DynamicResource WarningBrush}"
                                IsVisible="{Binding DisableMethodText, FallbackValue={x:False}, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                     <Button Content="Migrate to Blocked List"
                             Command="{Binding MigrateCommand, FallbackValue={x:Null}}"

@@ -1,57 +1,127 @@
-<Styles xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <Styles.Resources>
-        <!-- Accent -->
-        <Color x:Key="AccentColor">#5b8dd9</Color>
-        <Color x:Key="AccentColorLight">#4a78c0</Color>
-        <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!--
+      Palette for both theme variants. Every key exists in both dictionaries;
+      consumers reference them with DynamicResource so the running app restyles
+      when Application.RequestedThemeVariant changes.
+    -->
+    <ResourceDictionary.ThemeDictionaries>
 
-        <!-- Background Tiers (dark theme) -->
-        <Color x:Key="BaseColor">#1a1a2e</Color>
-        <Color x:Key="RaisedColor">#242438</Color>
-        <Color x:Key="SurfaceColor">#2d2d42</Color>
-        <Color x:Key="OverlayColor">#383850</Color>
-        <SolidColorBrush x:Key="BaseBrush" Color="{StaticResource BaseColor}" />
-        <SolidColorBrush x:Key="RaisedBrush" Color="{StaticResource RaisedColor}" />
-        <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}" />
-        <SolidColorBrush x:Key="OverlayBrush" Color="{StaticResource OverlayColor}" />
+        <ResourceDictionary x:Key="Dark">
+            <!-- Accent -->
+            <Color x:Key="AccentColor">#5b8dd9</Color>
+            <Color x:Key="AccentColorLight">#4a78c0</Color>
+            <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
 
-        <!-- Sidebar -->
-        <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="{StaticResource RaisedColor}" />
-        <SolidColorBrush x:Key="SidebarItemHoverBrush" Color="#333348" />
-        <SolidColorBrush x:Key="SidebarItemActiveBrush" Color="#3d5a80" />
-        <SolidColorBrush x:Key="SidebarGroupHeaderBrush" Color="#8888aa" />
-        <SolidColorBrush x:Key="SidebarBorderBrush" Color="#2a2a3e" />
+            <!-- Background tiers -->
+            <Color x:Key="BaseColor">#1a1a2e</Color>
+            <Color x:Key="RaisedColor">#242438</Color>
+            <Color x:Key="SurfaceColor">#2d2d42</Color>
+            <Color x:Key="OverlayColor">#383850</Color>
+            <SolidColorBrush x:Key="BaseBrush" Color="{StaticResource BaseColor}" />
+            <SolidColorBrush x:Key="RaisedBrush" Color="{StaticResource RaisedColor}" />
+            <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}" />
+            <SolidColorBrush x:Key="OverlayBrush" Color="{StaticResource OverlayColor}" />
 
-        <!-- Semantic Colors -->
-        <Color x:Key="SuccessColor">#4caf50</Color>
-        <Color x:Key="SuccessMutedColor">#2d4a2e</Color>
-        <Color x:Key="WarningColor">#ffb74d</Color>
-        <Color x:Key="WarningMutedColor">#4a3a1e</Color>
-        <Color x:Key="DangerColor">#ef5350</Color>
-        <Color x:Key="DangerMutedColor">#4a2020</Color>
-        <Color x:Key="InfoColor">#29b6f6</Color>
-        <Color x:Key="InfoMutedColor">#1e3a4a</Color>
-        <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}" />
-        <SolidColorBrush x:Key="SuccessMutedBrush" Color="{StaticResource SuccessMutedColor}" />
-        <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}" />
-        <SolidColorBrush x:Key="WarningMutedBrush" Color="{StaticResource WarningMutedColor}" />
-        <SolidColorBrush x:Key="DangerBrush" Color="{StaticResource DangerColor}" />
-        <SolidColorBrush x:Key="DangerMutedBrush" Color="{StaticResource DangerMutedColor}" />
-        <SolidColorBrush x:Key="InfoBrush" Color="{StaticResource InfoColor}" />
-        <SolidColorBrush x:Key="InfoMutedBrush" Color="{StaticResource InfoMutedColor}" />
+            <!-- Sidebar -->
+            <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="{StaticResource RaisedColor}" />
+            <SolidColorBrush x:Key="SidebarItemHoverBrush" Color="#333348" />
+            <SolidColorBrush x:Key="SidebarItemActiveBrush" Color="#3d5a80" />
+            <SolidColorBrush x:Key="SidebarGroupHeaderBrush" Color="#8888aa" />
+            <SolidColorBrush x:Key="SidebarBorderBrush" Color="#2a2a3e" />
 
-        <!-- Scope Badge Colors (muted tints for Multi tab scope badges) -->
-        <SolidColorBrush x:Key="ScopeBadgeFileBrush" Color="#2e5984" />
-        <SolidColorBrush x:Key="ScopeBadgeFolderBrush" Color="#2e7854" />
-        <SolidColorBrush x:Key="ScopeBadgeBackgroundBrush" Color="#6e5a2e" />
-        <SolidColorBrush x:Key="ScopeBadgeDesktopBrush" Color="#5a2e6e" />
-        <SolidColorBrush x:Key="ScopeBadgeMiscBrush" Color="#4a4a5e" />
+            <!-- Semantic -->
+            <Color x:Key="SuccessColor">#4caf50</Color>
+            <Color x:Key="SuccessMutedColor">#2d4a2e</Color>
+            <Color x:Key="WarningColor">#ffb74d</Color>
+            <Color x:Key="WarningMutedColor">#4a3a1e</Color>
+            <Color x:Key="DangerColor">#ef5350</Color>
+            <Color x:Key="DangerMutedColor">#4a2020</Color>
+            <Color x:Key="InfoColor">#29b6f6</Color>
+            <Color x:Key="InfoMutedColor">#1e3a4a</Color>
+            <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}" />
+            <SolidColorBrush x:Key="SuccessMutedBrush" Color="{StaticResource SuccessMutedColor}" />
+            <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}" />
+            <SolidColorBrush x:Key="WarningMutedBrush" Color="{StaticResource WarningMutedColor}" />
+            <SolidColorBrush x:Key="DangerBrush" Color="{StaticResource DangerColor}" />
+            <SolidColorBrush x:Key="DangerMutedBrush" Color="{StaticResource DangerMutedColor}" />
+            <SolidColorBrush x:Key="InfoBrush" Color="{StaticResource InfoColor}" />
+            <SolidColorBrush x:Key="InfoMutedBrush" Color="{StaticResource InfoMutedColor}" />
 
-        <!-- Text (alpha-channel white for proper adaptation across background tiers) -->
-        <SolidColorBrush x:Key="TextPrimaryBrush" Color="#FFFFFF" />
-        <SolidColorBrush x:Key="TextSecondaryBrush" Color="#CCFFFFFF" />
-        <SolidColorBrush x:Key="TextTertiaryBrush" Color="#99FFFFFF" />
-        <SolidColorBrush x:Key="TextDisabledBrush" Color="#66FFFFFF" />
-    </Styles.Resources>
-</Styles>
+            <!-- Scope badges (Multi tab); badge text uses TextPrimaryBrush -->
+            <SolidColorBrush x:Key="ScopeBadgeFileBrush" Color="#2e5984" />
+            <SolidColorBrush x:Key="ScopeBadgeFolderBrush" Color="#2e7854" />
+            <SolidColorBrush x:Key="ScopeBadgeBackgroundBrush" Color="#6e5a2e" />
+            <SolidColorBrush x:Key="ScopeBadgeDesktopBrush" Color="#5a2e6e" />
+            <SolidColorBrush x:Key="ScopeBadgeMiscBrush" Color="#4a4a5e" />
+
+            <!-- Text (alpha channel adapts across background tiers) -->
+            <SolidColorBrush x:Key="TextPrimaryBrush" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="TextSecondaryBrush" Color="#CCFFFFFF" />
+            <SolidColorBrush x:Key="TextTertiaryBrush" Color="#99FFFFFF" />
+            <SolidColorBrush x:Key="TextDisabledBrush" Color="#66FFFFFF" />
+
+            <!-- Subtle full-width row hover -->
+            <SolidColorBrush x:Key="RowHoverBrush" Color="#08FFFFFF" />
+        </ResourceDictionary>
+
+        <ResourceDictionary x:Key="Light">
+            <!-- Accent (darker than the dark variant's for contrast on white) -->
+            <Color x:Key="AccentColor">#3a6bbf</Color>
+            <Color x:Key="AccentColorLight">#2f5aa8</Color>
+            <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
+
+            <!-- Background tiers -->
+            <Color x:Key="BaseColor">#f2f3f8</Color>
+            <Color x:Key="RaisedColor">#e8eaf1</Color>
+            <Color x:Key="SurfaceColor">#ffffff</Color>
+            <Color x:Key="OverlayColor">#dfe2ec</Color>
+            <SolidColorBrush x:Key="BaseBrush" Color="{StaticResource BaseColor}" />
+            <SolidColorBrush x:Key="RaisedBrush" Color="{StaticResource RaisedColor}" />
+            <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}" />
+            <SolidColorBrush x:Key="OverlayBrush" Color="{StaticResource OverlayColor}" />
+
+            <!-- Sidebar -->
+            <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="{StaticResource RaisedColor}" />
+            <SolidColorBrush x:Key="SidebarItemHoverBrush" Color="#dde0ea" />
+            <SolidColorBrush x:Key="SidebarItemActiveBrush" Color="#c9d9f0" />
+            <SolidColorBrush x:Key="SidebarGroupHeaderBrush" Color="#6a6f88" />
+            <SolidColorBrush x:Key="SidebarBorderBrush" Color="#d5d8e2" />
+
+            <!-- Semantic (text-weight colors darkened for white surfaces) -->
+            <Color x:Key="SuccessColor">#2e7d32</Color>
+            <Color x:Key="SuccessMutedColor">#d8ecd9</Color>
+            <Color x:Key="WarningColor">#9a6700</Color>
+            <Color x:Key="WarningMutedColor">#f3e8cd</Color>
+            <Color x:Key="DangerColor">#c62828</Color>
+            <Color x:Key="DangerMutedColor">#f3d9d9</Color>
+            <Color x:Key="InfoColor">#0277bd</Color>
+            <Color x:Key="InfoMutedColor">#d7e9f5</Color>
+            <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}" />
+            <SolidColorBrush x:Key="SuccessMutedBrush" Color="{StaticResource SuccessMutedColor}" />
+            <SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}" />
+            <SolidColorBrush x:Key="WarningMutedBrush" Color="{StaticResource WarningMutedColor}" />
+            <SolidColorBrush x:Key="DangerBrush" Color="{StaticResource DangerColor}" />
+            <SolidColorBrush x:Key="DangerMutedBrush" Color="{StaticResource DangerMutedColor}" />
+            <SolidColorBrush x:Key="InfoBrush" Color="{StaticResource InfoColor}" />
+            <SolidColorBrush x:Key="InfoMutedBrush" Color="{StaticResource InfoMutedColor}" />
+
+            <!-- Scope badges: pastel tints so near-black badge text stays readable -->
+            <SolidColorBrush x:Key="ScopeBadgeFileBrush" Color="#c9dcf3" />
+            <SolidColorBrush x:Key="ScopeBadgeFolderBrush" Color="#c9e8d8" />
+            <SolidColorBrush x:Key="ScopeBadgeBackgroundBrush" Color="#ecdfb9" />
+            <SolidColorBrush x:Key="ScopeBadgeDesktopBrush" Color="#e3cdef" />
+            <SolidColorBrush x:Key="ScopeBadgeMiscBrush" Color="#d9d9e3" />
+
+            <!-- Text -->
+            <SolidColorBrush x:Key="TextPrimaryBrush" Color="#E014142A" />
+            <SolidColorBrush x:Key="TextSecondaryBrush" Color="#A614142A" />
+            <SolidColorBrush x:Key="TextTertiaryBrush" Color="#7A14142A" />
+            <SolidColorBrush x:Key="TextDisabledBrush" Color="#5214142A" />
+
+            <!-- Subtle full-width row hover -->
+            <SolidColorBrush x:Key="RowHoverBrush" Color="#0A000000" />
+        </ResourceDictionary>
+
+    </ResourceDictionary.ThemeDictionaries>
+</ResourceDictionary>

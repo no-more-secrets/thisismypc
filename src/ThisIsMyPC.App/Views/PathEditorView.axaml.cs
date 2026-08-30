@@ -10,7 +10,18 @@ namespace ThisIsMyPC.App.Views;
 
 public partial class PathEditorView : UserControl
 {
-    private static readonly IBrush AccentBrush = new SolidColorBrush(Color.FromRgb(0x40, 0x9E, 0xFF));
+    /// <summary>Drag visuals are built in code, so theme brushes are resolved at use time.</summary>
+    private static IBrush ThemeBrush(string key, Color fallback)
+    {
+        if (Application.Current is { } app
+            && app.TryGetResource(key, app.ActualThemeVariant, out var resource)
+            && resource is IBrush brush)
+        {
+            return brush;
+        }
+
+        return new SolidColorBrush(fallback);
+    }
 
     private Control? _dragSourceRow;
     private Border? _dragGhost;
@@ -138,9 +149,9 @@ public partial class PathEditorView : UserControl
             Opacity = 0.5,
             Padding = new Thickness(8, 4),
             CornerRadius = new CornerRadius(4),
-            BorderBrush = new SolidColorBrush(Color.FromRgb(0x55, 0x55, 0x66)),
+            BorderBrush = ThemeBrush("OverlayBrush", Color.FromRgb(0x55, 0x55, 0x66)),
             BorderThickness = new Thickness(1),
-            Background = new SolidColorBrush(Color.FromArgb(0xCC, 0x22, 0x22, 0x2E)),
+            Background = ThemeBrush("RaisedBrush", Color.FromArgb(0xCC, 0x22, 0x22, 0x2E)),
             IsHitTestVisible = false,
             Width = EntriesList.Bounds.Width,
             Child = new StackPanel
@@ -153,14 +164,14 @@ public partial class PathEditorView : UserControl
                     {
                         Text = entry.Index.ToString(),
                         FontSize = 11,
-                        Foreground = new SolidColorBrush(Color.FromRgb(0x77, 0x77, 0x88)),
+                        Foreground = ThemeBrush("TextTertiaryBrush", Color.FromRgb(0x77, 0x77, 0x88)),
                         VerticalAlignment = VerticalAlignment.Center,
                     },
                     new TextBlock
                     {
                         Text = entry.Path,
                         FontSize = 12,
-                        Foreground = new SolidColorBrush(Color.FromRgb(0x99, 0x99, 0xAA)),
+                        Foreground = ThemeBrush("TextSecondaryBrush", Color.FromRgb(0x99, 0x99, 0xAA)),
                         VerticalAlignment = VerticalAlignment.Center,
                     },
                 },
@@ -196,7 +207,7 @@ public partial class PathEditorView : UserControl
             _insertLine = new Border
             {
                 Height = 2,
-                Background = AccentBrush,
+                Background = ThemeBrush("AccentBrush", Color.FromRgb(0x40, 0x9E, 0xFF)),
                 IsHitTestVisible = false,
                 Width = EntriesList.Bounds.Width,
             };

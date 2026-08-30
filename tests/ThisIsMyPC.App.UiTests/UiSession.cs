@@ -36,6 +36,17 @@ public sealed class UiSession : IDisposable
         Directory.CreateDirectory(_shotDirectory);
     }
 
+    /// <summary>
+    /// Switches the app-wide theme variant, like the Settings theme choice does.
+    /// Reset to Dark on Dispose so sessions stay order-independent.
+    /// </summary>
+    public void SetTheme(Avalonia.Styling.ThemeVariant variant)
+    {
+        if (Application.Current is { } app)
+            app.RequestedThemeVariant = variant;
+        Pump();
+    }
+
     /// <summary>Hosts a single view + view model in a bare window (CI-safe path).</summary>
     public static UiSession ForView(Control view, object viewModel, string suiteName,
         double width = 1000, double height = 700)
@@ -47,6 +58,9 @@ public sealed class UiSession : IDisposable
             Content = view,
             DataContext = viewModel,
         };
+        // The real MainWindow paints BaseBrush behind every view; without it,
+        // light-theme cards would float on the default white void.
+        window.Bind(Window.BackgroundProperty, window.GetResourceObservable("BaseBrush"));
         view.DataContext = viewModel;
         var session = new UiSession(window, suiteName);
         window.Show();

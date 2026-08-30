@@ -17,11 +17,11 @@
                 <StackPanel Margin="0,0,16,0">
                     <TextBlock Text="{Binding DisplayName}"
                                FontWeight="SemiBold"
-                               Foreground="{StaticResource TextPrimaryBrush}" />
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
                     <TextBlock Text="{Binding Description}"
                                FontSize="12"
                                TextWrapping="Wrap"
-                               Foreground="{StaticResource TextTertiaryBrush}"
+                               Foreground="{DynamicResource TextTertiaryBrush}"
                                Margin="0,2,0,0" />
                 </StackPanel>
             </DockPanel>
@@ -36,11 +36,11 @@
                 <StackPanel Margin="0,0,16,0">
                     <TextBlock Text="{Binding DisplayName}"
                                FontWeight="SemiBold"
-                               Foreground="{StaticResource TextPrimaryBrush}" />
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
                     <TextBlock Text="{Binding Description}"
                                FontSize="12"
                                TextWrapping="Wrap"
-                               Foreground="{StaticResource TextTertiaryBrush}"
+                               Foreground="{DynamicResource TextTertiaryBrush}"
                                Margin="0,2,0,0" />
                 </StackPanel>
             </DockPanel>
@@ -62,11 +62,11 @@
                 <StackPanel Margin="0,0,16,0">
                     <TextBlock Text="{Binding DisplayName}"
                                FontWeight="SemiBold"
-                               Foreground="{StaticResource TextPrimaryBrush}" />
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
                     <TextBlock Text="{Binding Description}"
                                FontSize="12"
                                TextWrapping="Wrap"
-                               Foreground="{StaticResource TextTertiaryBrush}"
+                               Foreground="{DynamicResource TextTertiaryBrush}"
                                Margin="0,2,0,0" />
                 </StackPanel>
             </DockPanel>
@@ -83,10 +83,10 @@
                             <TextBlock Text="{Binding Header}"
                                        FontWeight="SemiBold"
                                        FontSize="16"
-                                       Foreground="{StaticResource TextPrimaryBrush}" />
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
                             <TextBlock Text="{Binding Subtitle}"
                                        FontSize="12"
-                                       Foreground="{StaticResource TextTertiaryBrush}"
+                                       Foreground="{DynamicResource TextTertiaryBrush}"
                                        TextWrapping="Wrap"
                                        Margin="0,2,0,10"
                                        IsVisible="{Binding Subtitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
@@ -102,10 +102,10 @@
                 <TextBlock Text="Module Preferences"
                            FontWeight="SemiBold"
                            FontSize="16"
-                           Foreground="{StaticResource TextPrimaryBrush}" />
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
                 <TextBlock Text="{Binding ModulePreferencesPlaceholder}"
                            FontSize="12"
-                           Foreground="{StaticResource TextTertiaryBrush}"
+                           Foreground="{DynamicResource TextTertiaryBrush}"
                            TextWrapping="Wrap"
                            Margin="0,2,0,0" />
             </StackPanel>
@@ -116,21 +116,21 @@
                 <TextBlock Text="Owner Mode Service"
                            FontWeight="SemiBold"
                            FontSize="16"
-                           Foreground="{StaticResource TextPrimaryBrush}" />
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
                 <TextBlock Text="{Binding Description}"
                            FontSize="12"
-                           Foreground="{StaticResource TextTertiaryBrush}"
+                           Foreground="{DynamicResource TextTertiaryBrush}"
                            TextWrapping="Wrap"
                            Margin="0,2,0,10" />
                 <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
                     <Ellipse Width="8" Height="8" VerticalAlignment="Center"
-                             Fill="{StaticResource SuccessBrush}"
+                             Fill="{DynamicResource SuccessBrush}"
                              IsVisible="{Binding IsRunning}" />
                     <Ellipse Width="8" Height="8" VerticalAlignment="Center"
-                             Fill="{StaticResource WarningBrush}"
+                             Fill="{DynamicResource WarningBrush}"
                              IsVisible="{Binding !IsRunning}" />
                     <TextBlock Text="{Binding StateText}" FontSize="13" FontWeight="SemiBold"
-                               Foreground="{StaticResource TextPrimaryBrush}" />
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <Button Content="Enable Service" Command="{Binding EnableCommand}" Padding="12,6" />
@@ -141,7 +141,7 @@
                 </StackPanel>
                 <TextBlock Text="{Binding ErrorText}"
                            FontSize="12"
-                           Foreground="{StaticResource DangerBrush}"
+                           Foreground="{DynamicResource DangerBrush}"
                            TextWrapping="Wrap"
                            Margin="0,8,0,0"
                            IsVisible="{Binding ErrorText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
@@ -153,10 +153,10 @@
                 <TextBlock Text="System Capabilities"
                            FontWeight="SemiBold"
                            FontSize="16"
-                           Foreground="{StaticResource TextPrimaryBrush}" />
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
                 <TextBlock Text="What this system supports - the same summary shown on first launch."
                            FontSize="12"
-                           Foreground="{StaticResource TextTertiaryBrush}"
+                           Foreground="{DynamicResource TextTertiaryBrush}"
                            Margin="0,2,0,10" />
                 <ItemsControl ItemsSource="{Binding SystemCapabilityRows}">
                     <ItemsControl.ItemTemplate>
@@ -164,16 +164,16 @@
                             <StackPanel Margin="0,2,0,4">
                                 <StackPanel Orientation="Horizontal" Spacing="6">
                                     <Ellipse Width="8" Height="8" VerticalAlignment="Center"
-                                             Fill="{StaticResource SuccessBrush}"
+                                             Fill="{DynamicResource SuccessBrush}"
                                              IsVisible="{Binding IsAvailable}" />
                                     <Ellipse Width="8" Height="8" VerticalAlignment="Center"
-                                             Fill="{StaticResource WarningBrush}"
+                                             Fill="{DynamicResource WarningBrush}"
                                              IsVisible="{Binding !IsAvailable}" />
                                     <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold"
-                                               Foreground="{StaticResource TextPrimaryBrush}" />
+                                               Foreground="{DynamicResource TextPrimaryBrush}" />
                                 </StackPanel>
                                 <TextBlock Text="{Binding Detail}" FontSize="12" TextWrapping="Wrap"
-                                           Foreground="{StaticResource TextTertiaryBrush}"
+                                           Foreground="{DynamicResource TextTertiaryBrush}"
                                            Margin="14,0,0,0" />
                             </StackPanel>
                         </DataTemplate>
@@ -186,10 +186,10 @@
                 <TextBlock Text="Backup &amp; Transfer"
                            FontWeight="SemiBold"
                            FontSize="16"
-                           Foreground="{StaticResource TextPrimaryBrush}" />
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
                 <TextBlock Text="Export these preferences to a JSON file, or import a file exported on another machine."
                            FontSize="12"
-                           Foreground="{StaticResource TextTertiaryBrush}"
+                           Foreground="{DynamicResource TextTertiaryBrush}"
                            TextWrapping="Wrap"
                            Margin="0,2,0,10" />
                 <StackPanel Orientation="Horizontal" Spacing="8">
@@ -200,13 +200,13 @@
                 <StackPanel IsVisible="{Binding HasImportPreview}" Margin="0,12,0,0">
                     <TextBlock Text="{Binding ImportPreviewSummary}"
                                FontWeight="SemiBold"
-                               Foreground="{StaticResource TextPrimaryBrush}"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
                                TextWrapping="Wrap" />
                     <ItemsControl ItemsSource="{Binding ImportPreviewRows}" Margin="0,8,0,8">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:SettingsImportRowWrapper">
                                 <TextBlock FontSize="12" TextWrapping="Wrap" Margin="0,0,0,3"
-                                           Foreground="{StaticResource TextSecondaryBrush}"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
                                            Text="{Binding Display}" />
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
@@ -219,7 +219,7 @@
 
                 <TextBlock Text="{Binding TransferStatus}"
                            FontSize="12"
-                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
                            TextWrapping="Wrap"
                            Margin="0,10,0,0"
                            IsVisible="{Binding TransferStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />

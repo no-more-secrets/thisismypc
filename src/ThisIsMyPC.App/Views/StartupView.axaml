@@ -10,24 +10,24 @@
     <UserControl.Resources>
         <DataTemplate x:Key="StartupEntryRowTemplate" x:DataType="vm:StartupEntryItemViewModel">
             <Border Padding="12,8" Margin="0,2" CornerRadius="4"
-                    Background="{StaticResource SurfaceBrush}">
+                    Background="{DynamicResource SurfaceBrush}">
                 <Grid ColumnDefinitions="2*,*,Auto,Auto" RowDefinitions="Auto,Auto">
                     <StackPanel Grid.Column="0" Grid.Row="0" Orientation="Horizontal" Spacing="8">
                         <TextBlock Text="{Binding Name}"
                                    FontWeight="SemiBold"
-                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
                                    VerticalAlignment="Center" />
                         <TextBlock Text="{Binding DescriptionText}"
                                    IsVisible="{Binding HasDescription}"
                                    FontSize="12"
-                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                    TextTrimming="CharacterEllipsis"
                                    VerticalAlignment="Center" />
                     </StackPanel>
                     <TextBlock Grid.Column="1" Grid.Row="0"
                                Text="{Binding PublisherText}"
                                FontSize="12"
-                               Foreground="{StaticResource TextSecondaryBrush}"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
                                TextTrimming="CharacterEllipsis"
                                Margin="8,0"
                                VerticalAlignment="Center" />
@@ -37,11 +37,11 @@
                                    IsVisible="{Binding HasPendingChange}"
                                    FontSize="11"
                                    FontWeight="SemiBold"
-                                   Foreground="{StaticResource WarningBrush}"
+                                   Foreground="{DynamicResource WarningBrush}"
                                    VerticalAlignment="Center" />
                         <TextBlock Text="{Binding StateText}"
                                    FontSize="12"
-                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                    VerticalAlignment="Center" />
                     </StackPanel>
                     <ToggleSwitch Grid.Column="3" Grid.Row="0"
@@ -58,11 +58,11 @@
                                 IsVisible="{Binding !IsRegistryViewMode}">
                         <TextBlock Text="{Binding SourceLabel}"
                                    FontSize="11"
-                                   Foreground="{StaticResource TextTertiaryBrush}" />
+                                   Foreground="{DynamicResource TextTertiaryBrush}" />
                         <TextBlock Text="{Binding FileLocationText}"
                                    FontSize="11"
                                    FontFamily="{StaticResource MonoFont}"
-                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                   Foreground="{DynamicResource TextTertiaryBrush}"
                                    TextTrimming="CharacterEllipsis" />
                     </StackPanel>
 
@@ -73,12 +73,12 @@
                         <TextBlock Text="{Binding RegistryLocationText}"
                                    FontSize="11"
                                    FontFamily="{StaticResource MonoFont}"
-                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                   Foreground="{DynamicResource TextTertiaryBrush}"
                                    TextTrimming="CharacterEllipsis" />
                         <TextBlock Text="{Binding FileLocationText}"
                                    FontSize="11"
                                    FontFamily="{StaticResource MonoFont}"
-                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                   Foreground="{DynamicResource TextTertiaryBrush}"
                                    TextTrimming="CharacterEllipsis" />
                     </StackPanel>
                 </Grid>
@@ -87,17 +87,17 @@
 
         <DataTemplate x:Key="ScheduledTaskRowTemplate" x:DataType="vm:ScheduledTaskItemViewModel">
             <Border Padding="12,8" Margin="0,2" CornerRadius="4"
-                    Background="{StaticResource SurfaceBrush}">
+                    Background="{DynamicResource SurfaceBrush}">
                 <Grid ColumnDefinitions="2*,Auto,Auto,Auto" RowDefinitions="Auto,Auto,Auto">
                     <StackPanel Grid.Column="0" Grid.Row="0" Spacing="2" Margin="0,0,8,0">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <TextBlock Text="{Binding Name}"
                                        FontWeight="SemiBold"
-                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
                                        TextTrimming="CharacterEllipsis"
                                        VerticalAlignment="Center" />
                             <Border IsVisible="{Binding IsCompanionTask}"
-                                    Background="{StaticResource WarningBrush}"
+                                    Background="{DynamicResource WarningBrush}"
                                     CornerRadius="3" Padding="5,1"
                                     VerticalAlignment="Center"
                                     ToolTip.Tip="{Binding CompanionDescription}">
@@ -108,34 +108,34 @@
                                        IsVisible="{Binding HasPendingChange}"
                                        FontSize="11"
                                        FontWeight="SemiBold"
-                                       Foreground="{StaticResource WarningBrush}"
+                                       Foreground="{DynamicResource WarningBrush}"
                                        VerticalAlignment="Center" />
                         </StackPanel>
                         <TextBlock Text="{Binding DescriptionText}"
                                    IsVisible="{Binding HasDescription}"
                                    FontSize="11"
-                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                    TextTrimming="CharacterEllipsis"
                                    MaxLines="1" />
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <TextBlock Text="{Binding PublisherText}"
                                        FontSize="11"
-                                       Foreground="{StaticResource TextTertiaryBrush}" />
+                                       Foreground="{DynamicResource TextTertiaryBrush}" />
                             <TextBlock Text="{Binding TriggersText}"
                                        FontSize="11"
-                                       Foreground="{StaticResource TextTertiaryBrush}" />
+                                       Foreground="{DynamicResource TextTertiaryBrush}" />
                             <TextBlock Text="{Binding LastRunText, StringFormat='Last run: {0}'}"
                                        FontSize="11"
-                                       Foreground="{StaticResource TextTertiaryBrush}" />
+                                       Foreground="{DynamicResource TextTertiaryBrush}" />
                             <TextBlock Text="{Binding LastResultText}"
                                        FontSize="11"
                                        FontFamily="{StaticResource MonoFont}"
-                                       Foreground="{StaticResource TextTertiaryBrush}" />
+                                       Foreground="{DynamicResource TextTertiaryBrush}" />
                         </StackPanel>
                         <TextBlock Text="{Binding Path}"
                                    FontSize="11"
                                    FontFamily="{StaticResource MonoFont}"
-                                   Foreground="{StaticResource TextTertiaryBrush}"
+                                   Foreground="{DynamicResource TextTertiaryBrush}"
                                    TextTrimming="CharacterEllipsis" />
                     </StackPanel>
 
@@ -151,7 +151,7 @@
                                Text="{Binding StateText}"
                                FontSize="12"
                                FontWeight="SemiBold"
-                               Foreground="{StaticResource TextSecondaryBrush}"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
                                Margin="0,0,12,0"
                                VerticalAlignment="Center" />
 
@@ -167,34 +167,34 @@
 
         <DataTemplate x:Key="ServiceRowTemplate" x:DataType="vm:ServiceItemViewModel">
             <Border Padding="12,8" Margin="0,2" CornerRadius="4"
-                    Background="{StaticResource SurfaceBrush}">
+                    Background="{DynamicResource SurfaceBrush}">
                 <Grid ColumnDefinitions="2*,Auto,Auto,Auto" RowDefinitions="Auto,Auto,Auto">
                     <StackPanel Grid.Column="0" Grid.Row="0" Spacing="2" Margin="0,0,8,0">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <TextBlock Text="{Binding DisplayName}"
                                        FontWeight="SemiBold"
-                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
                                        TextTrimming="CharacterEllipsis"
                                        VerticalAlignment="Center" />
                             <TextBlock Text="{Binding ServiceName}"
                                        FontSize="11"
                                        FontFamily="{StaticResource MonoFont}"
-                                       Foreground="{StaticResource TextTertiaryBrush}"
+                                       Foreground="{DynamicResource TextTertiaryBrush}"
                                        VerticalAlignment="Center" />
                             <TextBlock Text="Pending"
                                        IsVisible="{Binding HasPendingChange}"
                                        FontSize="11"
                                        FontWeight="SemiBold"
-                                       Foreground="{StaticResource WarningBrush}"
+                                       Foreground="{DynamicResource WarningBrush}"
                                        VerticalAlignment="Center" />
                         </StackPanel>
                         <TextBlock Text="{Binding PerUserLabel}"
                                    IsVisible="{Binding IsPerUserInstance}"
                                    FontSize="11" FontStyle="Italic"
-                                   Foreground="{StaticResource TextTertiaryBrush}" />
+                                   Foreground="{DynamicResource TextTertiaryBrush}" />
                         <TextBlock Text="{Binding DescriptionText}"
                                    FontSize="11"
-                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                    TextTrimming="CharacterEllipsis"
                                    MaxLines="1" />
                     </StackPanel>
@@ -203,7 +203,7 @@
                                Text="{Binding StateText}"
                                FontSize="12"
                                FontWeight="SemiBold"
-                               Foreground="{StaticResource TextSecondaryBrush}"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
                                Margin="0,0,12,0"
                                MinWidth="70"
                                VerticalAlignment="Center" />
@@ -229,7 +229,7 @@
                                Text="{Binding ActionError}"
                                IsVisible="{Binding ActionError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                FontSize="11"
-                               Foreground="{StaticResource DangerBrush}"
+                               Foreground="{DynamicResource DangerBrush}"
                                TextWrapping="Wrap"
                                Margin="0,4,0,0" />
                 </Grid>
@@ -244,7 +244,7 @@
             <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
                 <TextBlock Text="Registry Info"
                            FontSize="13"
-                           Foreground="{StaticResource TextSecondaryBrush}"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
                            VerticalAlignment="Center" />
                 <ToggleSwitch IsChecked="{Binding IsRegistryViewMode}"
                               OffContent=""
@@ -257,15 +257,15 @@
                 <TextBlock Text="{Binding RegistryHeader}"
                            FontSize="15"
                            FontWeight="SemiBold"
-                           Foreground="{StaticResource TextPrimaryBrush}" />
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
                 <TextBlock Text="Programs launched from registry Run keys at sign-in"
                            FontSize="12"
-                           Foreground="{StaticResource TextSecondaryBrush}" />
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
                 <ItemsControl ItemsSource="{Binding RegistryEntries}"
                               ItemTemplate="{StaticResource StartupEntryRowTemplate}" />
                 <TextBlock Text="No registry startup entries found"
                            FontSize="12" FontStyle="Italic"
-                           Foreground="{StaticResource TextTertiaryBrush}"
+                           Foreground="{DynamicResource TextTertiaryBrush}"
                            IsVisible="{Binding !HasRegistryEntries}" />
             </StackPanel>
 
@@ -274,15 +274,15 @@
                 <TextBlock Text="{Binding FolderHeader}"
                            FontSize="15"
                            FontWeight="SemiBold"
-                           Foreground="{StaticResource TextPrimaryBrush}" />
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
                 <TextBlock Text="Shortcuts and programs in the user and common Startup folders"
                            FontSize="12"
-                           Foreground="{StaticResource TextSecondaryBrush}" />
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
                 <ItemsControl ItemsSource="{Binding FolderEntries}"
                               ItemTemplate="{StaticResource StartupEntryRowTemplate}" />
                 <TextBlock Text="No startup folder entries found"
                            FontSize="12" FontStyle="Italic"
-                           Foreground="{StaticResource TextTertiaryBrush}"
+                           Foreground="{DynamicResource TextTertiaryBrush}"
                            IsVisible="{Binding !HasFolderEntries}" />
             </StackPanel>
 
@@ -291,15 +291,15 @@
                 <TextBlock Text="{Binding TaskHeader}"
                            FontSize="15"
                            FontWeight="SemiBold"
-                           Foreground="{StaticResource TextPrimaryBrush}" />
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
                 <TextBlock Text="Tasks that run at sign-in or startup (full task auditing arrives with the Scheduled Tasks section)"
                            FontSize="12"
-                           Foreground="{StaticResource TextSecondaryBrush}" />
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
                 <ItemsControl ItemsSource="{Binding TaskEntries}"
                               ItemTemplate="{StaticResource StartupEntryRowTemplate}" />
                 <TextBlock Text="No startup-related scheduled tasks found"
                            FontSize="12" FontStyle="Italic"
-                           Foreground="{StaticResource TextTertiaryBrush}"
+                           Foreground="{DynamicResource TextTertiaryBrush}"
                            IsVisible="{Binding !HasTaskEntries}" />
             </StackPanel>
 
@@ -308,13 +308,13 @@
                 <TextBlock Text="{Binding ScheduledTasksSectionHeader}"
                            FontSize="15"
                            FontWeight="SemiBold"
-                           Foreground="{StaticResource TextPrimaryBrush}" />
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
                 <TextBlock Text="Every scheduled task on the system, auto-classified — override the classification or disable tasks (staged)"
                            FontSize="12"
-                           Foreground="{StaticResource TextSecondaryBrush}" />
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBlock Text="{Binding ScheduledTasksScanError, StringFormat='Task scan failed: {0}'}"
                            IsVisible="{Binding ScheduledTasksScanError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                           Foreground="{StaticResource WarningBrush}"
+                           Foreground="{DynamicResource WarningBrush}"
                            FontSize="12" />
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <TextBox Text="{Binding TaskFilterText}"
@@ -329,7 +329,7 @@
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="4" Margin="12,4,0,0">
                     <TextBlock Text="Sort:" FontSize="12"
-                               Foreground="{StaticResource TextSecondaryBrush}"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
                                VerticalAlignment="Center" />
                     <Button Content="Name" Command="{Binding SortTasksCommand}" CommandParameter="Name"
                             Padding="8,2" FontSize="12" />
@@ -344,7 +344,7 @@
                               ItemTemplate="{StaticResource ScheduledTaskRowTemplate}" />
                 <TextBlock Text="No tasks match the current filter"
                            FontSize="12" FontStyle="Italic"
-                           Foreground="{StaticResource TextTertiaryBrush}"
+                           Foreground="{DynamicResource TextTertiaryBrush}"
                            IsVisible="{Binding !HasVisibleTasks}" />
             </StackPanel>
 
@@ -353,13 +353,13 @@
                 <TextBlock Text="{Binding ServicesHeader}"
                            FontSize="15"
                            FontWeight="SemiBold"
-                           Foreground="{StaticResource TextPrimaryBrush}" />
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
                 <TextBlock Text="Windows services — change startup type (staged), or start/stop/restart immediately"
                            FontSize="12"
-                           Foreground="{StaticResource TextSecondaryBrush}" />
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBlock Text="{Binding ServicesScanError, StringFormat='Service scan failed: {0}'}"
                            IsVisible="{Binding ServicesScanError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                           Foreground="{StaticResource WarningBrush}"
+                           Foreground="{DynamicResource WarningBrush}"
                            FontSize="12" />
                 <TextBox Text="{Binding ServiceFilterText}"
                          Watermark="Filter services by name or description…"
@@ -368,7 +368,7 @@
                          HorizontalAlignment="Left" />
                 <StackPanel Orientation="Horizontal" Spacing="4" Margin="12,4,0,0">
                     <TextBlock Text="Sort:" FontSize="12"
-                               Foreground="{StaticResource TextSecondaryBrush}"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
                                VerticalAlignment="Center" />
                     <Button Content="Name" Command="{Binding SortServicesCommand}" CommandParameter="Name"
                             Padding="8,2" FontSize="12" />
@@ -381,7 +381,7 @@
                               ItemTemplate="{StaticResource ServiceRowTemplate}" />
                 <TextBlock Text="No services match the current filter"
                            FontSize="12" FontStyle="Italic"
-                           Foreground="{StaticResource TextTertiaryBrush}"
+                           Foreground="{DynamicResource TextTertiaryBrush}"
                            IsVisible="{Binding !HasVisibleServices}" />
             </StackPanel>
 
