@@ -158,10 +158,9 @@ Update COM service registration, not a registry write).
 
 ## 4. Power Plans module
 
-- Hibernation on/off (winutil/Sophia: `powercfg /hibernate` + `HibernateEnabled`) —
-  needs a powercfg interop call, fits existing Power interop
-- Ultimate Performance plan install/remove (winutil: `powercfg -duplicatescheme
-  e9a42b02-...`) — plan-level action, not a toggle
+- Hibernation on/off — DONE 2026-08-30 (CallNtPowerInformation, no powercfg shell)
+- Ultimate Performance plan install/remove — DONE 2026-08-30 (PowerDuplicateScheme
+  + marker description for locale-proof detection; removal refuses while active)
 - Network adapter power saving (Sophia) — NIC device setting, not powrprof; flag
   for design (may belong to a future network module instead)
 - Melody `PowerPlans` repo: candidate importable plan definitions (CC0 upstream is
