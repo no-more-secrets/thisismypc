@@ -2,7 +2,7 @@
 
 Gap analysis (2026-08-29) of shipped modules vs. the open-source recipe sources
 (Sophia Script 7.2.0 [MIT], CTT winutil [MIT], Melody [CC0], ExplorerPatcher [GPLv2]).
-Scope rule for this chapter: **refine existing modules first** — absorb recipes that fit
+Scope rule for this chapter: **refine existing modules first**: absorb recipes that fit
 modules we already ship before building new modules. Recipes port into our
 catalogs/sets with full before-state + undo; never shell out to the source tools.
 
@@ -10,7 +10,7 @@ Current coverage baseline: ~40 fixed toggles (Explorer 13, Annoyances 21 cards,
 Windows Update 5, Power 1) + 5 built-in sets (59 entries) + the enumerative modules
 (Context Menus, Environment, Startup & Services, Power grid).
 
-## 0. Housekeeping — DONE 2026-08-29
+## 0. Housekeeping: DONE 2026-08-29
 
 - `NotificationSettingsReader` deleted; its unique coverage migrated to Annoyances:
   `lock-screen-ads` upgraded to an atomic pair (overlay + SubscribedContent-338387,
@@ -21,19 +21,19 @@ Windows Update 5, Power 1) + 5 built-in sets (59 entries) + the enumerative modu
   tag (the policy is honored on Enterprise/Education only per the Policy CSP; the
   card description carries the Pro caveat the single-SKU tag cannot express).
 - SKU model upgraded to tiers (2026-08-29, Sam's design): `SkuRestriction` now means
-  the MINIMUM edition tier honoring the policy — Home(0) < Pro(1) <
+  the MINIMUM edition tier honoring the policy: Home(0) < Pro(1) <
   Enterprise/Education(2), `WindowsSku.Tier()`. Spotlight tags `Education`,
   WU/Copilot/Recall/activity-history tag `Pro`. Card callout names the requirement.
 
-## Privacy & Telemetry module — SHIPPED 2026-08-30 (v1, 6 cards)
+## Privacy & Telemetry module: SHIPPED 2026-08-30 (v1, 6 cards)
 
 telemetry-level (AllowTelemetry=1 + DiagTrack companion), error-reporting,
 location (Pro tag), app-launch-tracking, handwriting-data-sharing (Pro tag),
 inking-typing atomic quartet. Privacy Baseline set updated to match.
 
 Open design decisions carried forward:
-- **Directional companions — RESOLVED 2026-08-30** (Sam picked the executor mode):
-  `SettingEnforcement.RestoresCompanions` flips the executor sequence — a
+- **Directional companions: RESOLVED 2026-08-30** (Sam picked the executor mode):
+  `SettingEnforcement.RestoresCompanions` flips the executor sequence: a
   restore-direction change runs primary-then-re-enable (services Disabled →
   Manual); reverting it re-hardens via the disable-shaped sequence. Telemetry
   toggle is now symmetric in every path. Any future companion-service setting
@@ -46,7 +46,7 @@ Open design decisions carried forward:
   winutil depth gap. Neither new Privacy card joins the baseline set: disabling
   online speech kills voice typing, clipboard sync is a feature choice.
 - v3 candidates: diagnostic scheduled-task companions (overlaps Clean Boot
-  entries — decide ownership first), consent-store per-app location controls,
+  entries: decide ownership first), consent-store per-app location controls,
   Wi-Fi hotspot reporting (verify still exists on current builds).
 - Sidebar icons: DONE 2026-08-30 (privacy shield, windows-update refresh arrow,
   environment chevrons).
@@ -55,13 +55,13 @@ Open design decisions carried forward:
 
 Consequences, verified against the code and upstream:
 - **Hardware modules stay feasible**: use the upstream-signed PawnIO release
-  (what FanControl/LHM ship) — no cert needed on our side. Constraint: never
+  (what FanControl/LHM ship): no cert needed on our side. Constraint: never
   fork or patch the driver; consume upstream releases only. Supersedes
   ADR-001's "we EV-sign PawnIO" assumption.
 - **Update integrity moves to the GPG path**: replace AuthenticodeUpdateVerifier
   with the planned GPG manifest verifier (offline key, public key hardcoded in
   the binary, per the threat model) as part of release readiness. Unsigned
-  packages must never pass the current Authenticode verifier by accident —
+  packages must never pass the current Authenticode verifier by accident:
   the swap is a prerequisite for the first public release.
 - **App signing plan (FINAL, Sam 2026-08-30): SSL.com OV cert under the LLC,
   hardware-token delivery.** The publisher line must show the LLC, so the
@@ -71,7 +71,7 @@ Consequences, verified against the code and upstream:
   SSL.com eSigner (adds $20/mo). Upgrade path if CI cloud signing is ever
   needed: Certum Standard Cloud via SimplySign, flat ~€209/yr, no usage fees.
   Validation uses the LLC registration + DUNS + phone callback; no org-age
-  requirement. Certs max ~459 days (CA/B Forum, early 2026) — multi-year buys
+  requirement. Certs max ~459 days (CA/B Forum, early 2026): multi-year buys
   mean mid-term reissues. Azure Trusted Signing unavailable until ~Apr 2029
   (3-year org history). EV unnecessary: driver signing is moot via upstream
   PawnIO and the EV SmartScreen advantage is reportedly gone in 2026.
@@ -80,11 +80,11 @@ Consequences, verified against the code and upstream:
 
 ## Machine-scope packaging (Sam, 2026-08-30): the app corresponds to the PC, not a profile
 
-Product identity decision — the app is machine-scoped, matching requireAdministrator,
+Product identity decision: the app is machine-scoped, matching requireAdministrator,
 the Session 0 service, and Epic 28's all-profiles HKU\{sid} drift mapping. Release
 packaging must follow:
 - **Binaries in `C:\Program Files\`** (admin-only write; deep-research DLL-sideloading
-  rule). Velopack's default per-user `%LocalAppData%` install violates this — use its
+  rule). Velopack's default per-user `%LocalAppData%` install violates this: use its
   machine-wide install mode.
 - **Mutable state (settings, change DB) in `%ProgramData%\ThisIsMyPC`**, folder created
   and owned by Administrators/SYSTEM with an admin-only DACL. Not hardened `%APPDATA%`:
@@ -92,7 +92,7 @@ packaging must follow:
   WRITE_DAC), so a profile-folder lockdown is undoable by user-level malware.
 - Keep integrity validation of stored state in the elevated service regardless of
   folder (defense in depth per threat model tm2:120-134).
-- One machine, one install, one database — no per-user copies with divergent views
+- One machine, one install, one database: no per-user copies with divergent views
   of machine state.
 
 ## UI Gallery (dev-facing, added 2026-08-30)
@@ -124,14 +124,14 @@ everything reversible and user-confirmed. Pre-release process items:
 
 Sam's idea: the app detects the edition tier and offers to upgrade the machine's
 SKU by redeeming Microsoft's published generic (non-activating) edition-change
-keys — the documented prerequisite step before redeeming a real key of the higher
+keys: the documented prerequisite step before redeeming a real key of the higher
 edition (Home → Pro → Education/Enterprise). Mechanics: `changepk.exe /ProductKey`
 or slmgr with the generic key triggers the edition-change servicing path. Care
 required: edition changes are effectively one-way, involve a reboot, and must be
-heavily confirmed — likely paired with the SKU callout ("this setting needs Pro —
+heavily confirmed: likely paired with the SKU callout ("this setting needs Pro:
 upgrade edition?" flow). Belongs with the install-engine chapter, not refinement.
 
-## 0a2. Light theme — DONE 2026-08-31
+## 0a2. Light theme: DONE 2026-08-31
 
 Palette moved to theme dictionaries (Styles/Theme.axaml, Dark + Light variants,
 every key in both), all consumers swept to DynamicResource, ThemeService applies
@@ -157,7 +157,7 @@ Preferences placeholder), Explorer title-restating descriptions rewritten to car
 real information, Annoyances/WU tightened, every em dash purged from src (321 in
 strings and comments). Docs and tests still carry em dashes; purge on touch.
 
-## 1. Explorer module — DONE 2026-08-29 (13 → 26 toggles)
+## 1. Explorer module: DONE 2026-08-29 (13 → 26 toggles)
 
 Shipped: item checkboxes, Quick Access recent/frequent, transfer dialog detailed
 mode, merge conflicts, restore folder windows, seconds in clock, Task View button,
@@ -169,16 +169,16 @@ delete-to-restore now supported in the Explorer reader and ShellModule).
 
 Deferred remainder (needs a non-toggle control or riskier writes):
 - Taskbar search mode hidden/icon/box (`Search\SearchboxTaskbarMode`) and taskbar
-  button combining (`ADV\TaskbarGlomLevel`) — multi-state; wait for a choice
+  button combining (`ADV\TaskbarGlomLevel`): multi-state; wait for a choice
   control in the Explorer view (or card ControlType) in the UI/UX chapter
-- Recycle Bin delete confirmation — SHELLSTATE binary blob bit, not a value write
+- Recycle Bin delete confirmation: SHELLSTATE binary blob bit, not a value write
 - Explorer Home and Gallery pinning (winutil: `System.IsPinnedToNameSpaceTree`
-  on two HKCU Classes CLSIDs) — key-presence style write, model like the classic
+  on two HKCU Classes CLSIDs): key-presence style write, model like the classic
   context menu toggles
-- Folder-type auto-discovery off (shell bags `FolderType=NotSpecified`) —
+- Folder-type auto-discovery off (shell bags `FolderType=NotSpecified`):
   destructive Bags/BagMRU reset, one-shot action not a toggle
 
-## 2. Windows Annoyances module — DONE 2026-08-29 (→ 30 cards)
+## 2. Windows Annoyances module: DONE 2026-08-29 (→ 30 cards)
 
 Shipped: consumer-features master policy (Education/Enterprise tag),
 tailored-experiences, language-list-access, xbox-game-tips, and the edge-debloat
@@ -190,9 +190,9 @@ by deleting the value, the WU/Power convention).
 Deferred remainder:
 - Game Bar `UseNexusForGameBarEnabled` (Xbox button binding): needs care, some
   controllers rely on it
-- Widgets AppX removal — DONE 2026-08-30 via the install engine's Windows Apps tab
+- Widgets AppX removal: DONE 2026-08-30 via the install engine's Windows Apps tab
 
-## 3. Windows Update module — DONE 2026-08-29 (5 → 8 cards)
+## 3. Windows Update module: DONE 2026-08-29 (5 → 8 cards)
 
 Shipped as the "Update Experience" group (UX\Settings state values, no GPCache,
 no SKU tag): restart-notifications, active-hours-manual, continuous-innovation.
@@ -202,13 +202,13 @@ Update COM service registration, not a registry write).
 
 ## 4. Power Plans module
 
-- Hibernation on/off — DONE 2026-08-30 (CallNtPowerInformation, no powercfg shell)
-- Ultimate Performance plan install/remove — DONE 2026-08-30 (PowerDuplicateScheme
+- Hibernation on/off: DONE 2026-08-30 (CallNtPowerInformation, no powercfg shell)
+- Ultimate Performance plan install/remove: DONE 2026-08-30 (PowerDuplicateScheme
   + marker description for locale-proof detection; removal refuses while active)
-- Network adapter power saving (Sophia) — NIC device setting, not powrprof; flag
+- Network adapter power saving (Sophia): NIC device setting, not powrprof; flag
   for design (may belong to a future network module instead)
 - "Hibernate instead of sleep" preset (Sam's laptop pattern, 2026-08-30): for
-  machines where sleep is unreliable and eventually powers off losing work —
+  machines where sleep is unreliable and eventually powers off losing work:
   on battery set Sleep-after to never and Hibernate-after to a short timer.
   Both are ordinary DC value-index writes the settings grid already exposes;
   package as a curated preset/set once sets can carry PowerPlan_Setting
@@ -217,9 +217,9 @@ Update COM service registration, not a registry write).
 - Melody `PowerPlans` repo: candidate importable plan definitions (CC0 upstream is
   batch; port as data)
 - Note: winutil's S0/S3 items already reachable via our dynamic grid +
-  `modern-standby` toggle — no work needed.
+  `modern-standby` toggle: no work needed.
 
-## 5. Context Menus module — Windows entries catalog DONE 2026-08-30
+## 5. Context Menus module: Windows entries catalog DONE 2026-08-30
 
 Shipped as the "Windows" tab (9 toggles from Sophia's recipes): MSI Extract all,
 CAB Install, New Compressed folder, Edit with Clipchamp/Photos/Paint (Blocked
@@ -227,12 +227,12 @@ CLSIDs), Print on batch files (ProgrammaticAccessOnly on the HKCU overlay),
 15+ selection verb limit, Store Open With policy. New `Registry_KeyTree`
 change type (allowlisted root paths only) covers the verb-key entries;
 additive verbs live under the HKCU classes overlay.
-- Deferred: "Open Terminal as admin" — Sophia edits Windows Terminal's
+- Deferred: "Open Terminal as admin": Sophia edits Windows Terminal's
   settings.json and launches wt.exe to generate it; not a registry toggle, does
   not fit the before-state/undo model. Revisit only with a file-content change
   design.
 
-## 6. Clean Boot set cross-check — DONE 2026-08-30
+## 6. Clean Boot set cross-check: DONE 2026-08-30
 
 - Added Sophia's remaining Application Experience tasks: ProgramDataUpdater and
   MareBackup (both telemetry/compat inventory uploads).
@@ -314,3 +314,27 @@ OpenRGB (GPLv2) are portable/compatible.
 
 Ordering: DDC/CI ships pre-release (driverless Win32). Fans and RGB are
 post-release; fans last (kernel driver + AV reputation risk).
+
+## Agent interface (Sam, 2026-08-31): CLI first; deferred until the app is fully featured
+
+Decision: users bring their own coding agent (Claude Code etc.) and drive
+ThisIsMyPC through a CLI; an MCP server, if ever, is a thin wrapper over the
+same commands, never a second implementation. Deferred until the app is
+fully featured and the refinement chapters have matured; do not start
+pre-release.
+
+Shape agreed in brainstorm:
+- **Agent proposes, human disposes.** CLI surface: list modules, scan, read
+  state, stage changes, stage one-way actions, read the pending queue. NO
+  apply command by default; staged work appears in the GUI's normal review
+  bar and the human applies there. This is the prompt-injection story: the
+  agent cannot do anything the user does not approve on screen.
+- Transport: small unelevated CLI process talking to the elevated app over
+  the hardened named pipe (28-1 envelope; extend, never change).
+- Exchange format: set definitions. An agent authors a set file, the app
+  gives preview + before-state + undo for free; also the community
+  share-my-setup format.
+- Free win to consider early: read-only diagnostics (agent reads scan data
+  to answer "why is my context menu slow").
+- Possible later opt-in: a "trusted apply" mode for full automation; ship
+  without it first.
