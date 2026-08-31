@@ -25,6 +25,19 @@ public sealed class DdcMonitorService : IMonitorService
     private readonly System.Collections.Concurrent.ConcurrentDictionary<(string Id, byte Code), int> _lastWrites = new();
 
     /// <summary>
+    /// The capabilities request and the probe of every declared vendor code
+    /// dominate scan time (a refusing code stalls for a DDC timeout each).
+    /// Neither changes while the same monitor sits on the same port, so
+    /// rescans reuse the first scan's answers; keyed by id + model name so
+    /// a swapped monitor misses the cache.
+    /// </summary>
+    private sealed record CachedCapabilities(
+        IReadOnlyDictionary<int, IReadOnlyList<int>> CodeValues,
+        IReadOnlyList<int> AnsweringVendorCodes);
+
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, CachedCapabilities> _capabilitiesCache = new();
+
+    /// <summary>
     /// Names for vendor VCP codes (0xE0-0xFF are manufacturer-specific per
     /// MCCS). Verified on ASUS monitors; unknown codes render as "Feature 0xNN"
     /// so a wrong guess never mislabels a control.
@@ -120,7 +133,7 @@ public sealed class DdcMonitorService : IMonitorService
         return status.BatteryFlag is not (128 or 255);
     }
 
-    private static MonitorDevice ReadDevice(
+    private MonitorDevice ReadDevice(
         NativeDisplay.PHYSICAL_MONITOR physical, string deviceName, int index)
     {
         var id = $"{deviceName}|{index}";
@@ -161,8 +174,29 @@ public sealed class DdcMonitorService : IMonitorService
         }
 
         // One capabilities request (slow, scan-time only) feeds both the input
-        // list and the vendor feature rows.
-        var codeValues = ReadCodeValueGroups(physical.hPhysicalMonitor);
+        // list and the vendor feature rows; cached after the first success.
+        var cacheKey = $"{id}|{name}";
+        IReadOnlyDictionary<int, IReadOnlyList<int>>? codeValues;
+        IReadOnlyList<int>? knownVendorCodes = null;
+        if (_capabilitiesCache.TryGetValue(cacheKey, out var cached))
+        {
+            codeValues = cached.CodeValues;
+            knownVendorCodes = cached.AnsweringVendorCodes;
+        }
+        else
+        {
+            codeValues = ReadCodeValueGroups(physical.hPhysicalMonitor);
+        }
+
+        var vendorFeatures = codeValues is null
+            ? []
+            : BuildVendorFeatures(physical.hPhysicalMonitor, codeValues, knownVendorCodes);
+
+        if (codeValues is not null && knownVendorCodes is null)
+        {
+            _capabilitiesCache[cacheKey] = new CachedCapabilities(
+                codeValues, vendorFeatures.Select(f => f.Code).ToList());
+        }
 
         return new MonitorDevice
         {
@@ -176,9 +210,7 @@ public sealed class DdcMonitorService : IMonitorService
             CurrentInput = currentInput,
             InputSources = BuildInputSources(
                 codeValues ?? new Dictionary<int, IReadOnlyList<int>>(), currentInput),
-            VendorFeatures = codeValues is null
-                ? []
-                : BuildVendorFeatures(physical.hPhysicalMonitor, codeValues),
+            VendorFeatures = vendorFeatures,
             PowerOffValue = codeValues is not null
                 && codeValues.TryGetValue(VcpPowerMode, out var powerModes)
                 ? VcpCapabilities.ChoosePowerOffValue(powerModes)
@@ -239,15 +271,21 @@ public sealed class DdcMonitorService : IMonitorService
     /// <summary>
     /// Vendor codes (0xE0-0xFF) with a declared value list become controls.
     /// The current value read costs one GetVCP per feature; a refusal drops
-    /// the feature rather than showing a control that cannot work.
+    /// the feature rather than showing a control that cannot work. On a
+    /// cached rescan only the codes that answered before are probed, so
+    /// refusing codes pay their DDC timeout once per session.
     /// </summary>
     private static IReadOnlyList<VendorVcpFeature> BuildVendorFeatures(
-        nint handle, IReadOnlyDictionary<int, IReadOnlyList<int>> codeValues)
+        nint handle, IReadOnlyDictionary<int, IReadOnlyList<int>> codeValues,
+        IReadOnlyList<int>? knownAnsweringCodes)
     {
         var features = new List<VendorVcpFeature>();
         foreach (var (code, values) in codeValues.OrderBy(p => p.Key))
         {
             if (code is < 0xE0 or > 0xFF || values.Count < 2)
+                continue;
+
+            if (knownAnsweringCodes is not null && !knownAnsweringCodes.Contains(code))
                 continue;
 
             if (NativeDisplay.GetVCPFeatureAndVCPFeatureReply(handle, (byte)code, out _, out var current, out _) == 0)

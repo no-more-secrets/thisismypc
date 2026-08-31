@@ -283,6 +283,11 @@ DDC displays), per-monitor Screen off via VCP 0xD6 (button only when the
 capabilities string declares it; prefers soft off 04, then 05, then standby
 02; never enters the re-apply memory).
 
+Scan speed: the capabilities string and the answering-vendor-code set are
+cached per session (keyed monitor id + model name), so only the first
+Display visit pays the multi-second DDC probe. Deferred: persist that
+cache to disk keyed by model if the first visit ever matters.
+
 Deferred (install Twinkle Tray from the catalog for these): time-of-day
 scheduling, sun-based dimming, hotkeys, idle dimming.
 
