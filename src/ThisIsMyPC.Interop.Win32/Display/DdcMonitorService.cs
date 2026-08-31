@@ -141,22 +141,44 @@ public sealed class DdcMonitorService : IMonitorService
             Contrast = contrast,
             ContrastMax = contrastMax,
             CurrentInput = currentInput,
-            InputSources = BuildInputSources(codeValues, currentInput),
-            VendorFeatures = BuildVendorFeatures(physical.hPhysicalMonitor, codeValues),
+            InputSources = BuildInputSources(
+                codeValues ?? new Dictionary<int, IReadOnlyList<int>>(), currentInput),
+            VendorFeatures = codeValues is null
+                ? []
+                : BuildVendorFeatures(physical.hPhysicalMonitor, codeValues),
+            DdcError = codeValues is null
+                ? "The monitor's feature list could not be read this time. Input and vendor controls are hidden; leave and reopen this page to retry."
+                : null,
         };
     }
 
-    private static IReadOnlyDictionary<int, IReadOnlyList<int>> ReadCodeValueGroups(nint handle)
+    /// <summary>
+    /// The capabilities request is the flakiest DDC operation (monitors time
+    /// out, replies arrive truncated), so it retries. Null means every attempt
+    /// failed; the card tells the user instead of silently showing fewer
+    /// controls.
+    /// </summary>
+    private static IReadOnlyDictionary<int, IReadOnlyList<int>>? ReadCodeValueGroups(nint handle)
     {
-        if (NativeDisplay.GetCapabilitiesStringLength(handle, out var length) == 0 || length <= 1)
-            return new Dictionary<int, IReadOnlyList<int>>();
+        for (var attempt = 0; attempt < 3; attempt++)
+        {
+            if (attempt > 0)
+                Thread.Sleep(100);
 
-        var buffer = new byte[length];
-        if (NativeDisplay.CapabilitiesRequestAndCapabilitiesReply(handle, buffer, length) == 0)
-            return new Dictionary<int, IReadOnlyList<int>>();
+            if (NativeDisplay.GetCapabilitiesStringLength(handle, out var length) == 0 || length <= 1)
+                continue;
 
-        var capabilities = Encoding.ASCII.GetString(buffer).TrimEnd('\0');
-        return VcpCapabilities.ParseCodeValueGroups(capabilities);
+            var buffer = new byte[length];
+            if (NativeDisplay.CapabilitiesRequestAndCapabilitiesReply(handle, buffer, length) == 0)
+                continue;
+
+            var capabilities = Encoding.ASCII.GetString(buffer).TrimEnd('\0');
+            var map = VcpCapabilities.ParseCodeValueGroups(capabilities);
+            if (map.Count > 0)
+                return map;
+        }
+
+        return null;
     }
 
     /// <summary>A monitor with a current input but no capabilities still gets that one entry.</summary>
