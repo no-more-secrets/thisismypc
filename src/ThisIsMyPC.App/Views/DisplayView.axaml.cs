@@ -26,11 +26,12 @@ public partial class DisplayView : UserControl
             return;
         }
 
-        // Snapping sliders step by their tick; continuous ones by 1/20 of
-        // range (5 on a 0-100 monitor), so one notch is a visible change.
-        var step = slider.IsSnapToTickEnabled && slider.TickFrequency >= 1
-            ? slider.TickFrequency
-            : Math.Max(1, Math.Round((slider.Maximum - slider.Minimum) / 20));
+        // One notch is a visible change: 1/20 of range (5 on a 0-100
+        // monitor), never smaller than the tick so discrete sliders
+        // (blue light's 0-4) step exactly one level.
+        var step = Math.Max(
+            Math.Max(1, slider.TickFrequency),
+            Math.Round((slider.Maximum - slider.Minimum) / 20));
 
         slider.Value = Math.Clamp(
             slider.Value + Math.Sign(e.Delta.Y) * step, slider.Minimum, slider.Maximum);

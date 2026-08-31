@@ -123,6 +123,12 @@
             <!-- Selected tab: accent pipe + full-strength label -->
             <SolidColorBrush x:Key="TabItemHeaderSelectedPipeFill" Color="{StaticResource AccentColor}" />
             <SolidColorBrush x:Key="TabItemHeaderForegroundSelected" Color="#FFFFFF" />
+
+            <!-- Slider thumb stays accent through hover and press (stock
+                 Fluent fades it to a low-contrast gray when grabbed) -->
+            <SolidColorBrush x:Key="SliderThumbBackground" Color="{StaticResource AccentColor}" />
+            <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="{StaticResource AccentColorLight}" />
+            <SolidColorBrush x:Key="SliderThumbBackgroundPressed" Color="#3f68a8" />
         </ResourceDictionary>
 
         <ResourceDictionary x:Key="Light">
@@ -236,6 +242,12 @@
             <!-- Selected tab: accent pipe + full-strength label -->
             <SolidColorBrush x:Key="TabItemHeaderSelectedPipeFill" Color="{StaticResource AccentColor}" />
             <SolidColorBrush x:Key="TabItemHeaderForegroundSelected" Color="#E014142A" />
+
+            <!-- Slider thumb stays accent through hover and press (stock
+                 Fluent fades it to a low-contrast gray when grabbed) -->
+            <SolidColorBrush x:Key="SliderThumbBackground" Color="{StaticResource AccentColor}" />
+            <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="{StaticResource AccentColorLight}" />
+            <SolidColorBrush x:Key="SliderThumbBackgroundPressed" Color="#274b8f" />
         </ResourceDictionary>
 
     </ResourceDictionary.ThemeDictionaries>

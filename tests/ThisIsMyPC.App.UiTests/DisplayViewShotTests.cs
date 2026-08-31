@@ -1,4 +1,9 @@
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
+using Avalonia.Input;
+using Avalonia.VisualTree;
 using Avalonia.Styling;
 using ThisIsMyPC.App.ViewModels;
 using ThisIsMyPC.App.Views;
@@ -170,6 +175,85 @@ public class DisplayViewShotTests
 
         Assert.Contains(monitors.Writes, w => w == @"vcp:\\.\DISPLAY2|0:0xE6=4");
         Assert.True(gappyFeature.IsCombo); // 0, 2, 5 is gappy: combo, not slider
+    }
+
+    [AvaloniaFact]
+    public void DraggingTheBrightnessSlider_WithRealMouse_WritesThroughTheService()
+    {
+        var monitors = new StubMonitorService();
+        var viewModel = new DisplayViewModel(SampleData(), monitors, new StubPowerService());
+        using var session = UiSession.ForView(new DisplayView(), viewModel, "display-view");
+
+        var slider = session.Window.GetVisualDescendants().OfType<Slider>()
+            .First(s => ReferenceEquals(s.DataContext, viewModel.Monitors[1]));
+
+        var mid = slider.Bounds.Height / 2;
+        var from = slider.TranslatePoint(new Point(slider.Bounds.Width * 0.5, mid), session.Window)!.Value;
+        var to = slider.TranslatePoint(new Point(slider.Bounds.Width * 0.9, mid), session.Window)!.Value;
+
+        session.Window.MouseMove(from);
+        session.Window.MouseDown(from, MouseButton.Left);
+        session.Pump();
+        session.Window.MouseMove(to);
+        session.Pump();
+        session.Screenshot("display-slider-pressed");
+        session.Window.MouseUp(to, MouseButton.Left);
+        session.Pump();
+
+        Assert.True(viewModel.Monitors[1].Brightness > 70,
+            $"drag did not move the slider; value is {viewModel.Monitors[1].Brightness}");
+        for (var i = 0; i < 200 && monitors.Writes.Count == 0; i++)
+        {
+            session.Pump();
+            Thread.Sleep(10);
+        }
+
+        Assert.Contains(monitors.Writes, w => w.StartsWith(@"brightness:\\.\DISPLAY2|0="));
+    }
+
+    [AvaloniaFact]
+    public void ScrollingOverTheSlider_StepsTheValue()
+    {
+        var monitors = new StubMonitorService();
+        var viewModel = new DisplayViewModel(SampleData(), monitors, new StubPowerService());
+        using var session = UiSession.ForView(new DisplayView(), viewModel, "display-view");
+
+        var slider = session.Window.GetVisualDescendants().OfType<Slider>()
+            .First(s => ReferenceEquals(s.DataContext, viewModel.Monitors[1]));
+        var point = slider.TranslatePoint(
+            new Point(slider.Bounds.Width / 2, slider.Bounds.Height / 2), session.Window)!.Value;
+
+        session.Window.MouseWheel(point, new Vector(0, 1));
+        session.Pump();
+
+        Assert.Equal(60, viewModel.Monitors[1].Brightness); // 55 + one 5-step notch
+    }
+
+    [AvaloniaFact]
+    public void TypingAnExactValue_AppliesOnEnter()
+    {
+        var monitors = new StubMonitorService();
+        var viewModel = new DisplayViewModel(SampleData(), monitors, new StubPowerService());
+        using var session = UiSession.ForView(new DisplayView(), viewModel, "display-view");
+
+        var box = session.Window.GetVisualDescendants().OfType<TextBox>()
+            .First(t => ReferenceEquals(t.DataContext, viewModel.Monitors[1]));
+
+        session.Click(box);
+        box.SelectAll();
+        session.Window.KeyTextInput("62");
+        session.Pump();
+        session.Window.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None);
+        session.Pump();
+
+        Assert.Equal(62, viewModel.Monitors[1].Brightness);
+        for (var i = 0; i < 200 && monitors.Writes.Count == 0; i++)
+        {
+            session.Pump();
+            Thread.Sleep(10);
+        }
+
+        Assert.Contains(monitors.Writes, w => w == @"brightness:\\.\DISPLAY2|0=62");
     }
 
     [AvaloniaFact]

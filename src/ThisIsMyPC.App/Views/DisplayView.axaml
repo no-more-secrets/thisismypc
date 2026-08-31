@@ -124,6 +124,7 @@
                                                  ToolTip.Tip="Type an exact value; Enter applies it." />
                                         <Slider Minimum="0" Maximum="{Binding BrightnessMax}"
                                                 Value="{Binding Brightness}"
+                                                TickFrequency="1" IsSnapToTickEnabled="True"
                                                 Margin="8,0" />
                                     </DockPanel>
 
@@ -148,6 +149,7 @@
                                                  ToolTip.Tip="Type an exact value; Enter applies it." />
                                         <Slider Minimum="0" Maximum="{Binding ContrastMax}"
                                                 Value="{Binding Contrast}"
+                                                TickFrequency="1" IsSnapToTickEnabled="True"
                                                 Margin="8,0" />
                                     </DockPanel>
 
