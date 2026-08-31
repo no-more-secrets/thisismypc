@@ -83,6 +83,7 @@ public class DisplayViewShotTests
                 Brightness = 55,
                 Contrast = 80,
                 CurrentInput = 0x11,
+                PowerOffValue = 0x04,
                 InputSources =
                 [
                     new MonitorInputSource(0x0F, "DisplayPort 1"),
@@ -169,5 +170,64 @@ public class DisplayViewShotTests
 
         Assert.Contains(monitors.Writes, w => w == @"vcp:\\.\DISPLAY2|0:0xE6=4");
         Assert.True(gappyFeature.IsCombo); // 0, 2, 5 is gappy: combo, not slider
+    }
+
+    [AvaloniaFact]
+    public void LinkedBrightness_MovesEveryDdcMonitorToTheSameFraction()
+    {
+        var monitors = new StubMonitorService();
+        var viewModel = new DisplayViewModel(SampleData(), monitors, new StubPowerService());
+        using var session = UiSession.ForView(new DisplayView(), viewModel, "display-view");
+
+        Assert.True(viewModel.CanLinkBrightness); // built-in + VG27AQ both dimmable
+        viewModel.LinkBrightness = true;
+        session.Screenshot("display-link-toggle");
+
+        viewModel.Monitors[1].Brightness = 40;
+
+        // The DDC-less "Older monitor" must stay untouched; the built-in panel
+        // follows to the same fraction of its range (both are 0-100 here).
+        Assert.Equal(40, viewModel.Monitors[0].Brightness);
+
+        for (var i = 0; i < 200 && monitors.Writes.Count < 2; i++)
+        {
+            session.Pump();
+            Thread.Sleep(10);
+        }
+
+        Assert.Contains(monitors.Writes, w => w == @"brightness:\\.\DISPLAY2|0=40");
+    }
+
+    [AvaloniaFact]
+    public void UnlinkedBrightness_LeavesOtherMonitorsAlone()
+    {
+        var monitors = new StubMonitorService();
+        var viewModel = new DisplayViewModel(SampleData(), monitors, new StubPowerService());
+        using var session = UiSession.ForView(new DisplayView(), viewModel, "display-view");
+
+        viewModel.Monitors[1].Brightness = 40;
+        Assert.Equal(70, viewModel.Monitors[0].Brightness);
+    }
+
+    [AvaloniaFact]
+    public void ScreenOffButton_WritesPowerModeD6()
+    {
+        var monitors = new StubMonitorService();
+        var viewModel = new DisplayViewModel(SampleData(), monitors, new StubPowerService());
+        using var session = UiSession.ForView(new DisplayView(), viewModel, "display-view");
+
+        var external = viewModel.Monitors[1];
+        Assert.True(external.CanTurnOffScreen);
+        Assert.False(viewModel.Monitors[0].CanTurnOffScreen); // internal panel: never
+        Assert.False(viewModel.Monitors[2].CanTurnOffScreen); // no declared 0xD6
+
+        external.TurnOffScreenCommand.Execute(null);
+        for (var i = 0; i < 200 && !monitors.Writes.Any(w => w.StartsWith("vcp")); i++)
+        {
+            session.Pump();
+            Thread.Sleep(10);
+        }
+
+        Assert.Contains(monitors.Writes, w => w == @"vcp:\\.\DISPLAY2|0:0xD6=4");
     }
 }

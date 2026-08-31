@@ -16,6 +16,7 @@ public sealed class DdcMonitorService : IMonitorService
     private const byte VcpBrightness = 0x10;
     private const byte VcpContrast = 0x12;
     private const byte VcpInputSource = 0x60;
+    private const byte VcpPowerMode = 0xD6;
 
     // Session memory of successful writes, keyed monitor id + VCP code.
     // Monitors forget DDC state across sleep; ReapplyLastWrites pushes these
@@ -168,6 +169,10 @@ public sealed class DdcMonitorService : IMonitorService
             VendorFeatures = codeValues is null
                 ? []
                 : BuildVendorFeatures(physical.hPhysicalMonitor, codeValues),
+            PowerOffValue = codeValues is not null
+                && codeValues.TryGetValue(VcpPowerMode, out var powerModes)
+                ? VcpCapabilities.ChoosePowerOffValue(powerModes)
+                : null,
             DdcError = codeValues is null
                 ? "The monitor's feature list could not be read this time. Input and vendor controls are hidden; leave and reopen this page to retry."
                 : null,
@@ -268,7 +273,10 @@ public sealed class DdcMonitorService : IMonitorService
                             ErrorCategory.ServiceUnavailable);
                     }
 
-                    if (record && code != VcpInputSource)
+                    // Input source and power mode never enter the re-apply
+                    // memory: pushing either back after a wake would switch
+                    // inputs or turn the screen off under the user.
+                    if (record && code is not (VcpInputSource or VcpPowerMode))
                         _lastWrites[(monitorId, code)] = value;
 
                     return OperationResult<bool>.Success(true);

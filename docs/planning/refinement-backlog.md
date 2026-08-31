@@ -276,9 +276,15 @@ as a synthetic row through the active power plan's VIDEO brightness setting
 Controls apply LIVE: documented carve-out from the pending pipeline
 (ephemeral hardware state, sliders are their own undo).
 
+Also ported (2026-08-31): real monitor names from EDID, session-scoped DDC
+re-apply after resume/display change (input source and power mode excluded),
+linked multi-monitor brightness (fraction-of-range, toggle appears with 2+
+DDC displays), per-monitor Screen off via VCP 0xD6 (button only when the
+capabilities string declares it; prefers soft off 04, then 05, then standby
+02; never enters the re-apply memory).
+
 Deferred (install Twinkle Tray from the catalog for these): time-of-day
-scheduling, sun-based dimming, hotkeys, idle dimming, linked multi-monitor
-sliders, DDC monitor power (0xD6).
+scheduling, sun-based dimming, hotkeys, idle dimming.
 
 **Tray quick-controls flyout (Sam, 2026-08-31): NOT a Twinkle Tray port.**
 The tray flyout is the app's shared hardware quick-controls surface; it will

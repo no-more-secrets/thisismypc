@@ -72,4 +72,26 @@ public sealed class VcpCapabilitiesTests
         Assert.Single(map);
         Assert.True(map.ContainsKey(0xE6));
     }
+
+    [Fact]
+    public void PowerOff_PrefersSoftOffThenHardOffThenStandby()
+    {
+        Assert.Equal(0x04, VcpCapabilities.ChoosePowerOffValue([0x01, 0x04, 0x05]));
+        Assert.Equal(0x05, VcpCapabilities.ChoosePowerOffValue([0x01, 0x05]));
+        Assert.Equal(0x02, VcpCapabilities.ChoosePowerOffValue([0x01, 0x02, 0x03]));
+    }
+
+    [Fact]
+    public void PowerOff_OnOnlyOrEmptyYieldsNoControl()
+    {
+        Assert.Null(VcpCapabilities.ChoosePowerOffValue([0x01]));
+        Assert.Null(VcpCapabilities.ChoosePowerOffValue([]));
+    }
+
+    [Fact]
+    public void PowerOff_RealWorldSampleChoosesSoftOff()
+    {
+        var map = VcpCapabilities.ParseCodeValueGroups(RealWorldSample);
+        Assert.Equal(0x04, VcpCapabilities.ChoosePowerOffValue(map[0xD6]));
+    }
 }

@@ -47,6 +47,12 @@ public sealed record MonitorDevice
     /// <summary>Vendor features (0xE0-0xFF) with declared discrete values.</summary>
     public IReadOnlyList<VendorVcpFeature> VendorFeatures { get; init; } = [];
 
+    /// <summary>
+    /// The VCP 0xD6 value that powers this monitor's screen off, when its
+    /// capabilities declare one. Null hides the screen-off control.
+    /// </summary>
+    public int? PowerOffValue { get; init; }
+
     /// <summary>Why DDC is unavailable, for the card's degraded note.</summary>
     public string? DdcError { get; init; }
 }

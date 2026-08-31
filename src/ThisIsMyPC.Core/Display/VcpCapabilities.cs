@@ -67,6 +67,24 @@ public static class VcpCapabilities
         return result;
     }
 
+    /// <summary>
+    /// Picks the value to write to VCP 0xD6 (power mode) to turn the screen
+    /// off, from the values the monitor declares. MCCS: 01 on, 02 standby,
+    /// 03 suspend, 04 off, 05 power-off-button. Prefers the soft off (04),
+    /// then hard off (05), then standby (02); null when nothing usable is
+    /// declared so no control renders.
+    /// </summary>
+    public static int? ChoosePowerOffValue(IReadOnlyList<int> declaredPowerModes)
+    {
+        foreach (var preferred in (int[])[0x04, 0x05, 0x02])
+        {
+            if (declaredPowerModes.Contains(preferred))
+                return preferred;
+        }
+
+        return null;
+    }
+
     private static string? ExtractSection(string text, string name)
     {
         var marker = name + "(";

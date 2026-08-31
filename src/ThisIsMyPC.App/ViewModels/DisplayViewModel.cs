@@ -22,12 +22,47 @@ public sealed partial class DisplayViewModel : ViewModelBase
     public bool HasScanError => ScanError is { Length: > 0 };
     public bool HasNoMonitors => Monitors.Count == 0;
 
+    /// <summary>The link toggle only earns screen space with two or more dimmable displays.</summary>
+    public bool CanLinkBrightness { get; }
+
+    [ObservableProperty]
+    private bool _linkBrightness;
+
+    private bool _syncingLinkedBrightness;
+
     public DisplayViewModel(DisplayScanData data, IMonitorService monitorService, IPowerService powerService)
     {
         ScanError = data.ScanError;
         var panel = new InternalPanelService(powerService);
         foreach (var device in data.Monitors)
-            Monitors.Add(new MonitorItemViewModel(device, monitorService, panel));
+            Monitors.Add(new MonitorItemViewModel(device, monitorService, panel, OnMonitorBrightnessChanged));
+
+        CanLinkBrightness = Monitors.Count(m => m.SupportsDdc) >= 2;
+    }
+
+    /// <summary>
+    /// Linked mode moves every dimmable display to the same fraction of its
+    /// own range, so a 0-100 monitor and a 0-255 one stay visually together.
+    /// </summary>
+    private void OnMonitorBrightnessChanged(MonitorItemViewModel source, double value)
+    {
+        if (!LinkBrightness || _syncingLinkedBrightness)
+            return;
+
+        _syncingLinkedBrightness = true;
+        try
+        {
+            var fraction = value / Math.Max(1, source.BrightnessMax);
+            foreach (var monitor in Monitors)
+            {
+                if (monitor != source && monitor.SupportsDdc)
+                    monitor.Brightness = Math.Round(fraction * monitor.BrightnessMax);
+            }
+        }
+        finally
+        {
+            _syncingLinkedBrightness = false;
+        }
     }
 }
 
@@ -36,6 +71,7 @@ public sealed partial class MonitorItemViewModel : ViewModelBase
     private readonly MonitorDevice _device;
     private readonly IMonitorService _monitors;
     private readonly InternalPanelService _panel;
+    private readonly Action<MonitorItemViewModel, double>? _brightnessChanged;
 
     // Latest-wins write coalescing: a moving slider produces values faster
     // than DDC accepts them; one write runs at a time and only the newest
@@ -45,11 +81,16 @@ public sealed partial class MonitorItemViewModel : ViewModelBase
     private int _contrastWriting;
     private int? _contrastPending;
 
-    public MonitorItemViewModel(MonitorDevice device, IMonitorService monitors, InternalPanelService panel)
+    public MonitorItemViewModel(
+        MonitorDevice device,
+        IMonitorService monitors,
+        InternalPanelService panel,
+        Action<MonitorItemViewModel, double>? brightnessChanged = null)
     {
         _device = device;
         _monitors = monitors;
         _panel = panel;
+        _brightnessChanged = brightnessChanged;
         _brightness = device.Brightness;
         _contrast = device.Contrast ?? 0;
         _selectedInput = device.InputSources.FirstOrDefault(i => i.Value == device.CurrentInput);
@@ -102,8 +143,13 @@ public sealed partial class MonitorItemViewModel : ViewModelBase
 
     public bool HasError => LastError.Length > 0;
 
-    partial void OnBrightnessChanged(double value) =>
+    public bool CanTurnOffScreen => _device.PowerOffValue is not null && !_device.IsInternalPanel;
+
+    partial void OnBrightnessChanged(double value)
+    {
+        _brightnessChanged?.Invoke(this, value);
         _ = PushAsync((int)value, brightness: true);
+    }
 
     partial void OnContrastChanged(double value) =>
         _ = PushAsync((int)value, brightness: false);
@@ -118,6 +164,16 @@ public sealed partial class MonitorItemViewModel : ViewModelBase
 
         var result = await Task.Run(() => _monitors.SetInputSource(_device.Id, input.Value)).ConfigureAwait(true);
         LastError = result.IsSuccess ? string.Empty : result.ErrorMessage ?? "Input switch failed.";
+    }
+
+    [RelayCommand]
+    private async Task TurnOffScreenAsync()
+    {
+        if (_device.PowerOffValue is not { } off)
+            return;
+
+        var result = await Task.Run(() => _monitors.SetVcpValue(_device.Id, 0xD6, off)).ConfigureAwait(true);
+        LastError = result.IsSuccess ? string.Empty : result.ErrorMessage ?? "Screen off failed.";
     }
 
     private async Task PushAsync(int value, bool brightness)
