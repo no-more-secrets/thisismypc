@@ -60,11 +60,23 @@
                                Foreground="{DynamicResource InfoBrush}"
                                TextWrapping="Wrap"
                                IsVisible="{Binding HasSkuNotice}" />
-                    <TextBlock Text="{Binding OwnerModeCallout}"
-                               FontSize="11"
-                               Foreground="{DynamicResource InfoBrush}"
-                               TextWrapping="Wrap"
-                               IsVisible="{Binding IsOwnerModeDegraded}" />
+                    <StackPanel Spacing="4" IsVisible="{Binding IsOwnerModeDegraded}">
+                        <TextBlock Text="{Binding OwnerModeCallout}"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource InfoBrush}"
+                                   TextWrapping="Wrap" />
+                        <Button Content="Turn on Owner Mode"
+                                FontSize="11"
+                                Padding="8,3"
+                                HorizontalAlignment="Left"
+                                Command="{Binding TurnOnOwnerModeCommand}"
+                                IsVisible="{Binding CanTurnOnOwnerMode}" />
+                        <TextBlock Text="{Binding OwnerModeError}"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource DangerBrush}"
+                                   TextWrapping="Wrap"
+                                   IsVisible="{Binding OwnerModeError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    </StackPanel>
                     <Border Background="{DynamicResource InfoMutedBrush}"
                             CornerRadius="3"
                             Padding="6,1"

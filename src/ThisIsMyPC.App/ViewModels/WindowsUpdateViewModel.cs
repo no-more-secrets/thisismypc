@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Modules.WindowsUpdate.Models;
@@ -11,7 +11,7 @@ namespace ThisIsMyPC.App.ViewModels;
 /// AnnoyancesViewModel). The module's WindowsUpdateCardProvider supplies
 /// SettingCardSources; this VM wraps them in interactive card VMs grouped by section.
 /// </summary>
-public partial class WindowsUpdateViewModel : ViewModelBase, IDisposable
+public partial class WindowsUpdateViewModel : ViewModelBase, IDisposable, ISearchFocusTarget
 {
     public ObservableCollection<SettingCardGroupViewModel> CardGroups { get; } = [];
 
@@ -49,7 +49,8 @@ public partial class WindowsUpdateViewModel : ViewModelBase, IDisposable
         IPendingChangesService pendingChangesService,
         IRegistryService registryService,
         DisplayModePreferencesStore? displayModeStore = null,
-        ICapabilityDetector? capabilityDetector = null)
+        ICapabilityDetector? capabilityDetector = null,
+        Services.IOwnerModeLifecycle? ownerMode = null)
     {
         _displayModeStore = displayModeStore;
         // Factories re-read live state at stage time; a scan-time snapshot would bake
@@ -57,7 +58,7 @@ public partial class WindowsUpdateViewModel : ViewModelBase, IDisposable
         var provider = new WindowsUpdateCardProvider(new WindowsUpdateSettingsReader(registryService));
 
         var cards = provider.BuildCards(scanData)
-            .Select(source => new SettingCardViewModel(source, pendingChangesService, capabilityDetector))
+            .Select(source => new SettingCardViewModel(source, pendingChangesService, capabilityDetector, ownerMode))
             .ToList();
 
         foreach (var group in cards.GroupBy(c => c.Model.GroupId ?? string.Empty))
@@ -107,3 +108,4 @@ public partial class WindowsUpdateViewModel : ViewModelBase, IDisposable
         }
     }
 }
+

@@ -193,14 +193,22 @@ public partial class MainWindowViewModel : ViewModelBase
         _settingsService.SetApp(Core.Settings.AppSettingKeys.DriftLastRecorded, stamp);
     }
 
-    // 9-2: gated notifications surface in the status bar (toast rendering is a UI/UX-chapter item)
+    /// <summary>In-app toast stack rendered top-right over the content area.</summary>
+    public ToastStackViewModel ToastStack { get; } = new();
+
+    // 9-2: gated notifications surface as in-app toasts (monitoring detections
+    // warn; the rest inform). The status bar stays reserved for the apply pipeline.
     private void OnNotificationRaised(object? sender, Core.Notifications.AppNotification notification)
     {
+        var severity = notification.Type == Core.Notifications.NotificationType.Monitoring
+            ? ToastSeverity.Warning
+            : ToastSeverity.Info;
+
         if (Dispatcher.UIThread.CheckAccess())
-            SetStatus($"{notification.Title}: {notification.Message}", StatusSeverity.Warning);
+            ToastStack.Show(notification.Title, notification.Message, severity);
         else
             Dispatcher.UIThread.Post(() =>
-                SetStatus($"{notification.Title}: {notification.Message}", StatusSeverity.Warning));
+                ToastStack.Show(notification.Title, notification.Message, severity));
     }
 
     // FR64: auto restore point when a batch stages this many individual changes
@@ -468,7 +476,7 @@ public partial class MainWindowViewModel : ViewModelBase
                         ContentDescription = current.Module.Info.Description;
                         CurrentContent = new WindowsUpdateViewModel(
                             updateData, _pendingChangesService, _registryService,
-                            _displayModeStore, _capabilityDetector);
+                            _displayModeStore, _capabilityDetector, _ownerModeService);
                     }
                     else
                     {
@@ -490,7 +498,7 @@ public partial class MainWindowViewModel : ViewModelBase
                         ContentDescription = current.Module.Info.Description;
                         CurrentContent = new PrivacyViewModel(
                             privacyData, _pendingChangesService, _registryService,
-                            _displayModeStore, _capabilityDetector);
+                            _displayModeStore, _capabilityDetector, _ownerModeService);
                     }
                     else
                     {
@@ -512,7 +520,7 @@ public partial class MainWindowViewModel : ViewModelBase
                         ContentDescription = current.Module.Info.Description;
                         CurrentContent = new AnnoyancesViewModel(
                             annoyancesData, _pendingChangesService, _registryService,
-                            _displayModeStore, _capabilityDetector);
+                            _displayModeStore, _capabilityDetector, _ownerModeService);
                     }
                     else
                     {
@@ -747,6 +755,10 @@ public partial class MainWindowViewModel : ViewModelBase
         HasSearchResults = SearchResults.Count > 0;
     }
 
+    // Set when navigation came from a search result; the arriving content VM
+    // consumes it (5-3: the matching card should be what the user lands on).
+    private string? _pendingSearchFocus;
+
     [RelayCommand]
     private void SelectSearchResult(SearchResultViewModel? result)
     {
@@ -754,8 +766,21 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
 
         SearchQuery = string.Empty;
+        _pendingSearchFocus = result.Name;
         NavigateToModuleByName(result.ModuleId);
-        SetStatus($"Look for \"{result.Name}\" in {result.ModuleId}", StatusSeverity.Success);
+    }
+
+    partial void OnCurrentContentChanged(object? value)
+    {
+        // Content flips to null while the module scans; only real content consumes.
+        if (value is null || _pendingSearchFocus is not { } focus)
+            return;
+
+        _pendingSearchFocus = null;
+        if (value is ISearchFocusTarget target)
+            target.SearchText = focus;
+        else
+            SetStatus($"Look for \"{focus}\" on this page", StatusSeverity.Success);
     }
 
     private const string FirstLaunchDismissedKey = "firstLaunchBannerDismissed";

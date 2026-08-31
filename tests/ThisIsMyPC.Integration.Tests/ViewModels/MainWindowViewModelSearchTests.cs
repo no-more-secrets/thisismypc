@@ -63,6 +63,41 @@ public sealed class MainWindowViewModelSearchTests
         Assert.Equal("FakeModule", vm.SelectedModule?.Name);
         Assert.False(vm.IsHomeActive);
         Assert.Equal(string.Empty, vm.SearchQuery);
+    }
+
+    private sealed class FocusablePage : ISearchFocusTarget
+    {
+        public string SearchText { get; set; } = string.Empty;
+    }
+
+    [Fact]
+    public async Task SelectingAResult_FocusesTheArrivingPageOnTheSetting()
+    {
+        var vm = CreateViewModel();
+        await vm.InitializeAsync();
+        vm.SearchQuery = "TaskbarAl";
+        var result = Assert.Single(vm.SearchResults);
+
+        vm.SelectSearchResultCommand.Execute(result);
+
+        // FakeModule builds no content VM; simulate the page arriving.
+        var page = new FocusablePage();
+        vm.CurrentContent = page;
+
+        Assert.Equal("Taskbar alignment", page.SearchText);
+    }
+
+    [Fact]
+    public async Task PageWithoutFocusSupport_GetsTheStatusFallback()
+    {
+        var vm = CreateViewModel();
+        await vm.InitializeAsync();
+        vm.SearchQuery = "TaskbarAl";
+        var result = Assert.Single(vm.SearchResults);
+
+        vm.SelectSearchResultCommand.Execute(result);
+        vm.CurrentContent = new object();
+
         Assert.Contains("Taskbar alignment", vm.StatusMessage, StringComparison.Ordinal);
     }
 }

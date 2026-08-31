@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:views="using:ThisIsMyPC.App.Views"
+        xmlns:controls="using:ThisIsMyPC.App.Controls"
         mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
         x:Class="ThisIsMyPC.App.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
@@ -13,6 +14,7 @@
         Background="{DynamicResource BaseBrush}"
         FontFamily="{DynamicResource BodyFont}">
 
+    <Panel>
     <Grid ColumnDefinitions="Auto,*">
 
         <!-- Sidebar -->
@@ -444,4 +446,11 @@
             </Border>
         </DockPanel>
     </Grid>
+
+    <!-- Toast overlay: transient notifications, top-right over the content area -->
+    <controls:ToastHostControl DataContext="{Binding ToastStack}"
+                               HorizontalAlignment="Right"
+                               VerticalAlignment="Top"
+                               Margin="0,16,24,0" />
+    </Panel>
 </Window>

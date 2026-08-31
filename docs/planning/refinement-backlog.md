@@ -133,6 +133,23 @@ required: edition changes are effectively one-way, involve a reboot, and must be
 heavily confirmed: likely paired with the SKU callout ("this setting needs Pro:
 upgrade edition?" flow). Belongs with the install-engine chapter, not refinement.
 
+## 0d. UI/UX chapter closers: DONE 2026-08-31
+
+- **In-app toasts**: ToastStackViewModel + ToastHostControl overlay top-right in
+  MainWindow (severity accent bar, close button, 6 s auto-dismiss, cap 4, oldest
+  yields). Gated notifications (9-2) route here; the status bar stays reserved
+  for the apply pipeline.
+- **Actionable Owner Mode callout + observable degradation**: degraded cards now
+  carry a Turn on Owner Mode button (IOwnerModeLifecycle, implemented by
+  OwnerModeService) and refresh live on StateChanged; enabling the service
+  un-degrades every visible card to the badge state. Callout copy no longer
+  claims the service is unshipped. No shipped card sets OwnerModeRequired yet;
+  sets can, and the path is screenshot-tested (owner-mode-card suite).
+- **Search lands on the card**: selecting a cross-module search result pre-fills
+  the target page's own search box (ISearchFocusTarget: Explorer, Annoyances,
+  Privacy, Windows Update), so the matched card is the page content on arrival.
+  Pages without per-setting filters keep the status-bar fallback.
+
 ## 0a2. Light theme: DONE 2026-08-31
 
 Palette moved to theme dictionaries (Styles/Theme.axaml, Dark + Light variants,

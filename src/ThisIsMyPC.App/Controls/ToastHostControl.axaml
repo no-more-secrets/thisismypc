@@ -1,0 +1,63 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ThisIsMyPC.App.ViewModels"
+             x:Class="ThisIsMyPC.App.Controls.ToastHostControl"
+             x:DataType="vm:ToastStackViewModel">
+
+    <!-- In-app toast stack (UI/UX chapter). Hosted top-right over the content
+         area; each card carries a severity accent bar and a close button, and
+         auto-dismisses after a few seconds (ToastStackViewModel owns timing). -->
+    <UserControl.Styles>
+        <Style Selector="Rectangle.toast-info">
+            <Setter Property="Fill" Value="{DynamicResource InfoBrush}" />
+        </Style>
+        <Style Selector="Rectangle.toast-success">
+            <Setter Property="Fill" Value="{DynamicResource SuccessBrush}" />
+        </Style>
+        <Style Selector="Rectangle.toast-warning">
+            <Setter Property="Fill" Value="{DynamicResource WarningBrush}" />
+        </Style>
+    </UserControl.Styles>
+
+    <ItemsControl ItemsSource="{Binding Toasts}" Width="340">
+        <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:ToastViewModel">
+                <Border Background="{DynamicResource OverlayBrush}"
+                        BorderBrush="{DynamicResource OutlineStrongBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Margin="0,0,0,8"
+                        ClipToBounds="True">
+                    <Grid ColumnDefinitions="3,*,Auto">
+                        <Rectangle Grid.Column="0"
+                                   Classes.toast-info="{Binding IsInfo}"
+                                   Classes.toast-success="{Binding IsSuccess}"
+                                   Classes.toast-warning="{Binding IsWarning}" />
+                        <StackPanel Grid.Column="1" Spacing="2" Margin="12,8">
+                            <TextBlock Text="{Binding Title}"
+                                       FontWeight="SemiBold"
+                                       FontSize="13"
+                                       TextWrapping="Wrap"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock Text="{Binding Message}"
+                                       FontSize="12"
+                                       TextWrapping="Wrap"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                        </StackPanel>
+                        <Button Grid.Column="2"
+                                Command="{Binding DismissCommand}"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Padding="8"
+                                VerticalAlignment="Top"
+                                ToolTip.Tip="Dismiss">
+                            <PathIcon Data="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"
+                                      Width="10" Height="10"
+                                      Foreground="{DynamicResource TextTertiaryBrush}" />
+                        </Button>
+                    </Grid>
+                </Border>
+            </DataTemplate>
+        </ItemsControl.ItemTemplate>
+    </ItemsControl>
+</UserControl>

@@ -14,7 +14,7 @@ public sealed class SettingCardBadgeTests
     private sealed class StubDetector : ICapabilityDetector
     {
         public WindowsSku? Sku { get; init; }
-        public bool OwnerMode { get; init; }
+        public bool OwnerMode { get; set; }
         public string? SkuDetectionFailureReason => null;
         public bool IsSkuRestricted(WindowsSku? restriction)
             => restriction is { } required && Sku is { } current && current.Tier() < required.Tier();
@@ -24,11 +24,32 @@ public sealed class SettingCardBadgeTests
         public IReadOnlyList<CapabilityReportRow> GetCapabilityReport() => [];
     }
 
+    /// <summary>Turning the fake on flips the paired detector and raises StateChanged, like the real service.</summary>
+    private sealed class FakeOwnerModeLifecycle(StubDetector detector) : ThisIsMyPC.App.Services.IOwnerModeLifecycle
+    {
+        public event EventHandler? StateChanged;
+        public string? FailWith { get; set; }
+        public int EnableCalls { get; private set; }
+
+        public void RaiseStateChanged() => StateChanged?.Invoke(this, EventArgs.Empty);
+
+        public Task<Core.Results.OperationResult<bool>> EnableAsync(CancellationToken cancellationToken = default)
+        {
+            EnableCalls++;
+            if (FailWith is not null)
+                return Task.FromResult(Core.Results.OperationResult<bool>.Failure(FailWith, Core.Results.ErrorCategory.ServiceUnavailable));
+            detector.OwnerMode = true;
+            StateChanged?.Invoke(this, EventArgs.Empty);
+            return Task.FromResult(Core.Results.OperationResult<bool>.Success(true));
+        }
+    }
+
     private SettingCardViewModel CreateVm(
         EnforcementProfile? enforcement = null,
         WindowsSku? skuRestriction = null,
         bool ownerModeRequired = false,
-        ICapabilityDetector? detector = null)
+        ICapabilityDetector? detector = null,
+        ThisIsMyPC.App.Services.IOwnerModeLifecycle? ownerMode = null)
     {
         var source = new SettingCardSource
         {
@@ -53,7 +74,7 @@ public sealed class SettingCardBadgeTests
             },
             ReadCurrentState = () => false,
         };
-        return new SettingCardViewModel(source, _pending, detector);
+        return new SettingCardViewModel(source, _pending, detector, ownerMode);
     }
 
     [Fact]
@@ -147,7 +168,8 @@ public sealed class SettingCardBadgeTests
         Assert.False(vm.IsOwnerModeDegraded);
         Assert.True(vm.IsControlEnabled);
         Assert.True(vm.ShowOwnerModeBadge);
-        Assert.Null(vm.OwnerModeCallout);
+        // The callout string always exists; IsOwnerModeDegraded gates its visibility.
+        Assert.False(vm.CanTurnOnOwnerMode);
     }
 
     [Fact]
@@ -167,6 +189,73 @@ public sealed class SettingCardBadgeTests
         Assert.False(vm.IsOwnerModeDegraded);
         Assert.True(vm.IsControlEnabled);
         Assert.False(vm.ShowOwnerModeBadge);
+    }
+
+    [Fact]
+    public void DegradedWithLifecycle_OffersTurnOnAction()
+    {
+        var detector = new StubDetector { OwnerMode = false };
+        var vm = CreateVm(
+            ownerModeRequired: true,
+            detector: detector,
+            ownerMode: new FakeOwnerModeLifecycle(detector));
+
+        Assert.True(vm.IsOwnerModeDegraded);
+        Assert.True(vm.CanTurnOnOwnerMode);
+    }
+
+    [Fact]
+    public void DegradedWithoutLifecycle_NoTurnOnAction()
+    {
+        var vm = CreateVm(ownerModeRequired: true, detector: new StubDetector { OwnerMode = false });
+
+        Assert.True(vm.IsOwnerModeDegraded);
+        Assert.False(vm.CanTurnOnOwnerMode);
+    }
+
+    [Fact]
+    public async Task TurnOnOwnerMode_Success_UnDegradesTheCardLive()
+    {
+        var detector = new StubDetector { OwnerMode = false };
+        var lifecycle = new FakeOwnerModeLifecycle(detector);
+        var vm = CreateVm(ownerModeRequired: true, detector: detector, ownerMode: lifecycle);
+
+        await vm.TurnOnOwnerModeCommand.ExecuteAsync(null);
+
+        Assert.Equal(1, lifecycle.EnableCalls);
+        Assert.False(vm.IsOwnerModeDegraded);
+        Assert.True(vm.IsControlEnabled);
+        Assert.True(vm.ShowOwnerModeBadge);
+        Assert.Null(vm.OwnerModeError);
+    }
+
+    [Fact]
+    public async Task TurnOnOwnerMode_Failure_SurfacesErrorAndStaysDegraded()
+    {
+        var detector = new StubDetector { OwnerMode = false };
+        var lifecycle = new FakeOwnerModeLifecycle(detector) { FailWith = "SCM said no" };
+        var vm = CreateVm(ownerModeRequired: true, detector: detector, ownerMode: lifecycle);
+
+        await vm.TurnOnOwnerModeCommand.ExecuteAsync(null);
+
+        Assert.True(vm.IsOwnerModeDegraded);
+        Assert.False(vm.IsControlEnabled);
+        Assert.Equal("SCM said no", vm.OwnerModeError);
+    }
+
+    [Fact]
+    public void ExternalStateChange_RefreshesDegradation()
+    {
+        var detector = new StubDetector { OwnerMode = false };
+        var lifecycle = new FakeOwnerModeLifecycle(detector);
+        var vm = CreateVm(ownerModeRequired: true, detector: detector, ownerMode: lifecycle);
+
+        // Another card's button (or the Settings section) started the service.
+        detector.OwnerMode = true;
+        lifecycle.RaiseStateChanged();
+
+        Assert.False(vm.IsOwnerModeDegraded);
+        Assert.True(vm.ShowOwnerModeBadge);
     }
 
     [Fact]

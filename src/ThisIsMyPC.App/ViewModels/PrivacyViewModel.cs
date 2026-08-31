@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Modules.Privacy.Models;
@@ -11,7 +11,7 @@ namespace ThisIsMyPC.App.ViewModels;
 /// supplies SettingCardSources; this VM wraps them in interactive card VMs grouped
 /// by section, in provider order (Annoyances pattern).
 /// </summary>
-public partial class PrivacyViewModel : ViewModelBase, IDisposable
+public partial class PrivacyViewModel : ViewModelBase, IDisposable, ISearchFocusTarget
 {
     public ObservableCollection<SettingCardGroupViewModel> CardGroups { get; } = [];
 
@@ -50,7 +50,8 @@ public partial class PrivacyViewModel : ViewModelBase, IDisposable
         IPendingChangesService pendingChangesService,
         IRegistryService registryService,
         DisplayModePreferencesStore? displayModeStore = null,
-        ICapabilityDetector? capabilityDetector = null)
+        ICapabilityDetector? capabilityDetector = null,
+        Services.IOwnerModeLifecycle? ownerMode = null)
     {
         _displayModeStore = displayModeStore;
         // Factories re-read live state at stage time; a scan-time snapshot would bake
@@ -58,7 +59,7 @@ public partial class PrivacyViewModel : ViewModelBase, IDisposable
         var provider = new PrivacyCardProvider(new PrivacySettingsReader(registryService));
 
         var cards = provider.BuildCards(scanData)
-            .Select(source => new SettingCardViewModel(source, pendingChangesService, capabilityDetector))
+            .Select(source => new SettingCardViewModel(source, pendingChangesService, capabilityDetector, ownerMode))
             .ToList();
 
         foreach (var group in cards.GroupBy(c => c.Model.GroupId ?? string.Empty))
@@ -108,3 +109,4 @@ public partial class PrivacyViewModel : ViewModelBase, IDisposable
         }
     }
 }
+

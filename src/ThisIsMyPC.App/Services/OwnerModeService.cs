@@ -19,7 +19,7 @@ public enum OwnerModeState
 /// (registration stays so re-enabling is one click). State is queried live from the
 /// SCM; the service can be managed externally and the UI must not drift from it.
 /// </summary>
-public sealed class OwnerModeService
+public sealed class OwnerModeService : IOwnerModeLifecycle
 {
     public const string ServiceName = "ThisIsMyPC";
     public const string ServiceDisplayName = "ThisIsMyPC Owner Mode Service";

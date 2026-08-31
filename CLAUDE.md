@@ -26,12 +26,11 @@ all-profiles coverage).
 Full detail, ordering rationale, and per-module deferred lists:
 `docs/planning/refinement-backlog.md`.
 
-1. **UI/UX chapter (current)**: light theme, toasts, card highlight/observable
-   degradation, actionable Owner Mode callout, copy sweep of old card descriptions,
-   multi-choice card control (unblocks deferred Explorer toggles), missing sidebar
-   icons.
-2. **Display / DDC-CI module**: last feature module before release.
-3. **Release prep**. Hard blockers: GPG update-verifier swap, TWEAKS.md move-out,
+1. **UI/UX chapter: DONE 2026-08-31** (light theme, toasts, actionable Owner Mode
+   callout with live degradation, search-to-card focus, copy sweep, multi-choice
+   card control, sidebar icons).
+2. **Display / DDC-CI module: SHIPPED 2026-08-30.**
+3. **Release prep (current)**. Hard blockers: GPG update-verifier swap, TWEAKS.md move-out,
    machine-scope packaging (Program Files + admin-owned ProgramData, Velopack
    machine-wide). Process: SSL.com OV cert purchase, Defender false-positive
    submission, VirusTotal CI canary, winget distribution.

@@ -1,6 +1,8 @@
 using System.ComponentModel;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using ThisIsMyPC.App.Services;
 using ThisIsMyPC.Core.Cards;
 using ThisIsMyPC.Core.Services;
 
@@ -17,6 +19,8 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
 {
     private readonly IPendingChangesService _pendingChangesService;
     private readonly SettingCardSource _source;
+    private readonly ICapabilityDetector? _capabilityDetector;
+    private readonly IOwnerModeLifecycle? _ownerMode;
     private bool _registryIsEnabled;
     private bool _suppressStaging;
     private bool _isStagingChange;
@@ -63,15 +67,74 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
 
     /// <summary>
     /// Owner Mode degradation: control visible but inert, card fully readable.
+    /// Observable: the card un-degrades live when the service starts.
     /// </summary>
-    public bool IsOwnerModeDegraded { get; }
-    public string? OwnerModeCallout { get; }
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsControlEnabled))]
+    [NotifyPropertyChangedFor(nameof(CanTurnOnOwnerMode))]
+    private bool _isOwnerModeDegraded;
+
+    public string? OwnerModeCallout { get; private set; }
 
     /// <summary>Subtle badge when Owner Mode is required AND available.</summary>
-    public bool ShowOwnerModeBadge { get; }
+    [ObservableProperty]
+    private bool _showOwnerModeBadge;
 
     /// <summary>The only thing degradation disables is the control itself.</summary>
     public bool IsControlEnabled => !IsOwnerModeDegraded;
+
+    /// <summary>The callout button needs the lifecycle service to act.</summary>
+    public bool CanTurnOnOwnerMode => IsOwnerModeDegraded && _ownerMode is not null;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(TurnOnOwnerModeCommand))]
+    private bool _isEnablingOwnerMode;
+
+    [ObservableProperty]
+    private string? _ownerModeError;
+
+    [RelayCommand(CanExecute = nameof(CanExecuteTurnOnOwnerMode))]
+    private async Task TurnOnOwnerModeAsync()
+    {
+        if (_ownerMode is null)
+            return;
+
+        IsEnablingOwnerMode = true;
+        OwnerModeError = null;
+        try
+        {
+            var result = await _ownerMode.EnableAsync();
+            if (!result.IsSuccess)
+                OwnerModeError = result.ErrorMessage ?? "Starting the Owner Mode service failed.";
+        }
+        finally
+        {
+            IsEnablingOwnerMode = false;
+            RefreshOwnerModeState();
+        }
+    }
+
+    private bool CanExecuteTurnOnOwnerMode() => !IsEnablingOwnerMode;
+
+    private void OnOwnerModeStateChanged(object? sender, EventArgs e)
+    {
+        if (Dispatcher.UIThread.CheckAccess())
+            RefreshOwnerModeState();
+        else
+            Dispatcher.UIThread.Post(RefreshOwnerModeState);
+    }
+
+    private void RefreshOwnerModeState()
+    {
+        if (!Model.OwnerModeRequired)
+            return;
+
+        var available = _capabilityDetector?.IsOwnerModeAvailable == true;
+        IsOwnerModeDegraded = !available;
+        ShowOwnerModeBadge = available;
+        if (available)
+            OwnerModeError = null;
+    }
 
     [ObservableProperty]
     private bool _isEnabled;
@@ -96,12 +159,14 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
     public SettingCardViewModel(
         SettingCardSource source,
         IPendingChangesService pendingChangesService,
-        ICapabilityDetector? capabilityDetector = null)
+        ICapabilityDetector? capabilityDetector = null,
+        IOwnerModeLifecycle? ownerMode = null)
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(pendingChangesService);
         _source = source;
         _pendingChangesService = pendingChangesService;
+        _capabilityDetector = capabilityDetector;
         Model = source.Model;
 
         // SKU callout only when the detected edition sits below the minimum tier
@@ -116,14 +181,15 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
         }
 
         // Owner Mode degradation: no detector means the service can't be reached;
-        // treat as unavailable (safe default).
+        // treat as unavailable (safe default). The lifecycle event keeps the state
+        // live: turning the service on un-degrades every visible card.
         if (Model.OwnerModeRequired)
         {
-            var ownerModeAvailable = capabilityDetector?.IsOwnerModeAvailable == true;
-            IsOwnerModeDegraded = !ownerModeAvailable;
-            ShowOwnerModeBadge = ownerModeAvailable;
-            if (IsOwnerModeDegraded)
-                OwnerModeCallout = "This setting requires Owner Mode to persist across updates. Owner Mode arrives with the background service.";
+            _ownerMode = ownerMode;
+            OwnerModeCallout = "Needs Owner Mode. The background service keeps this setting applied when Windows reverts it.";
+            RefreshOwnerModeState();
+            if (_ownerMode is not null)
+                _ownerMode.StateChanged += OnOwnerModeStateChanged;
         }
 
         _registryIsEnabled = Model.CurrentValue == "1";
@@ -243,6 +309,8 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
     {
         _disposed = true;
         _pendingChangesService.PropertyChanged -= OnPendingChangesPropertyChanged;
+        if (_ownerMode is not null)
+            _ownerMode.StateChanged -= OnOwnerModeStateChanged;
         _debounceCts?.Cancel();
         _debounceCts?.Dispose();
         _debounceCts = null;
