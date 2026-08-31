@@ -35,6 +35,67 @@ public static class TaskbarChangeFactory
         };
     }
 
+    /// <summary>Win11 SearchboxTaskbarMode display names by value.</summary>
+    public static readonly IReadOnlyDictionary<int, string> SearchboxModeNames =
+        new Dictionary<int, string>
+        {
+            [0] = "Hidden",
+            [1] = "Icon only",
+            [2] = "Icon and label",
+            [3] = "Search box",
+        };
+
+    /// <summary>TaskbarGlomLevel display names by value.</summary>
+    public static readonly IReadOnlyDictionary<int, string> ButtonCombiningNames =
+        new Dictionary<int, string>
+        {
+            [0] = "Always, hide labels",
+            [1] = "When taskbar is full",
+            [2] = "Never",
+        };
+
+    public static ChangeDescriptor CreateSearchboxModeChange(TaskbarSettings current, int newMode)
+    {
+        if (!SearchboxModeNames.ContainsKey(newMode))
+            throw new ArgumentOutOfRangeException(nameof(newMode), newMode, "Taskbar search mode must be 0-3.");
+
+        return new ChangeDescriptor
+        {
+            ModuleId = ModuleId,
+            SettingId = "taskbar-search-mode",
+            DisplayName = "Taskbar search",
+            SystemLocation = $@"{ShellRegistryPaths.SearchKeyPath}\SearchboxTaskbarMode",
+            BeforeValue = current.SearchboxMode.ToString(),
+            AfterValue = newMode.ToString(),
+            BeforeDisplay = SearchboxModeNames.GetValueOrDefault(current.SearchboxMode, current.SearchboxMode.ToString()),
+            AfterDisplay = SearchboxModeNames[newMode],
+            ValueType = ChangeValueType.Registry_DWord,
+            Category = ChangeCategory.Modify,
+            RestartRequirement = RestartRequirement.ExplorerRestart,
+        };
+    }
+
+    public static ChangeDescriptor CreateButtonCombiningChange(TaskbarSettings current, int newLevel)
+    {
+        if (!ButtonCombiningNames.ContainsKey(newLevel))
+            throw new ArgumentOutOfRangeException(nameof(newLevel), newLevel, "Taskbar button combining must be 0-2.");
+
+        return new ChangeDescriptor
+        {
+            ModuleId = ModuleId,
+            SettingId = "taskbar-button-combining",
+            DisplayName = "Combine taskbar buttons",
+            SystemLocation = $@"{ShellRegistryPaths.AdvancedKeyPath}\TaskbarGlomLevel",
+            BeforeValue = current.ButtonCombining.ToString(),
+            AfterValue = newLevel.ToString(),
+            BeforeDisplay = ButtonCombiningNames.GetValueOrDefault(current.ButtonCombining, current.ButtonCombining.ToString()),
+            AfterDisplay = ButtonCombiningNames[newLevel],
+            ValueType = ChangeValueType.Registry_DWord,
+            Category = ChangeCategory.Modify,
+            RestartRequirement = RestartRequirement.ExplorerRestart,
+        };
+    }
+
     public static ChangeDescriptor CreateWidgetsToggle(TaskbarSettings current, bool enable)
     {
         return new ChangeDescriptor

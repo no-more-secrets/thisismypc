@@ -27,6 +27,16 @@ public sealed class TaskbarSettingsReader
         var commandBarResult = _registryService.KeyExists(ShellRegistryPaths.CommandBarKeyPath);
         var classicCommandBar = commandBarResult.IsSuccess && commandBarResult.Value!;
 
-        return new TaskbarSettings(alignment, widgetsEnabled, classicContextMenu, classicCommandBar);
+        // Win11 values: 0 hidden, 1 icon only, 2 icon and label, 3 search box (default)
+        var searchboxResult = _registryService.ReadDWord(ShellRegistryPaths.SearchKeyPath, "SearchboxTaskbarMode");
+        var searchboxMode = searchboxResult.IsSuccess ? searchboxResult.Value! : 3;
+
+        // 0 always combine and hide labels (default), 1 combine when full, 2 never
+        var glomResult = _registryService.ReadDWord(ShellRegistryPaths.AdvancedKeyPath, "TaskbarGlomLevel");
+        var buttonCombining = glomResult.IsSuccess ? glomResult.Value! : 0;
+
+        return new TaskbarSettings(
+            alignment, widgetsEnabled, classicContextMenu, classicCommandBar,
+            searchboxMode, buttonCombining);
     }
 }

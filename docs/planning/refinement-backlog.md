@@ -167,10 +167,16 @@ notifications, Snap Assist, Aero Shake. Search entries now derive from the reade
 Follow-up 2026-08-30: shortcut-suffix shipped (string prefs + AbsentValue
 delete-to-restore now supported in the Explorer reader and ShellModule).
 
+Multi-choice rows SHIPPED 2026-08-31: ShellChoiceSettingViewModel +
+ChoiceSettingRowTemplate (combo row, pending-modify tint, same staging
+lifecycle as toggles). Taskbar search mode (SearchboxTaskbarMode 0-3, Win11
+names) and taskbar button combining (TaskbarGlomLevel 0-2) shipped on it,
+both Modify-category with ExplorerRestart. The shared card renderer's
+Dropdown ControlType (SettingCardModel already declares it) stays
+unimplemented until a card module needs one; first candidate is a
+telemetry-level card (AllowTelemetry 0-3) in Privacy.
+
 Deferred remainder (needs a non-toggle control or riskier writes):
-- Taskbar search mode hidden/icon/box (`Search\SearchboxTaskbarMode`) and taskbar
-  button combining (`ADV\TaskbarGlomLevel`): multi-state; wait for a choice
-  control in the Explorer view (or card ControlType) in the UI/UX chapter
 - Recycle Bin delete confirmation: SHELLSTATE binary blob bit, not a value write
 - Explorer Home and Gallery pinning (winutil: `System.IsPinnedToNameSpaceTree`
   on two HKCU Classes CLSIDs): key-presence style write, model like the classic

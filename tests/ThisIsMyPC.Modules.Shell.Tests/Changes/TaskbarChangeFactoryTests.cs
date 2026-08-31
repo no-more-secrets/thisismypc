@@ -155,4 +155,61 @@ public sealed class TaskbarChangeFactoryTests
 
         Assert.Equal(ShellRegistryPaths.CommandBarKeyPath, change.SystemLocation);
     }
+
+    [Fact]
+    public void CreateSearchboxModeChange_hidden_to_icon_only()
+    {
+        var taskbar = MakeTaskbar() with { SearchboxMode = 0 };
+        var change = TaskbarChangeFactory.CreateSearchboxModeChange(taskbar, newMode: 1);
+
+        Assert.Equal("taskbar-search-mode", change.SettingId);
+        Assert.Equal($@"{ShellRegistryPaths.SearchKeyPath}\SearchboxTaskbarMode", change.SystemLocation);
+        Assert.Equal("0", change.BeforeValue);
+        Assert.Equal("1", change.AfterValue);
+        Assert.Equal("Hidden", change.BeforeDisplay);
+        Assert.Equal("Icon only", change.AfterDisplay);
+        Assert.Equal(ChangeValueType.Registry_DWord, change.ValueType);
+        Assert.Equal(ChangeCategory.Modify, change.Category);
+        Assert.Equal(RestartRequirement.ExplorerRestart, change.RestartRequirement);
+    }
+
+    [Fact]
+    public void CreateSearchboxModeChange_rejects_unknown_modes()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(
+            () => TaskbarChangeFactory.CreateSearchboxModeChange(MakeTaskbar(), newMode: 4));
+    }
+
+    [Fact]
+    public void CreateSearchboxModeChange_unknown_current_value_displays_raw_number()
+    {
+        var taskbar = MakeTaskbar() with { SearchboxMode = 9 };
+        var change = TaskbarChangeFactory.CreateSearchboxModeChange(taskbar, newMode: 3);
+
+        Assert.Equal("9", change.BeforeDisplay);
+        Assert.Equal("Search box", change.AfterDisplay);
+    }
+
+    [Fact]
+    public void CreateButtonCombiningChange_always_to_never()
+    {
+        var taskbar = MakeTaskbar(); // ButtonCombining defaults to 0
+        var change = TaskbarChangeFactory.CreateButtonCombiningChange(taskbar, newLevel: 2);
+
+        Assert.Equal("taskbar-button-combining", change.SettingId);
+        Assert.Equal($@"{ShellRegistryPaths.AdvancedKeyPath}\TaskbarGlomLevel", change.SystemLocation);
+        Assert.Equal("0", change.BeforeValue);
+        Assert.Equal("2", change.AfterValue);
+        Assert.Equal("Always, hide labels", change.BeforeDisplay);
+        Assert.Equal("Never", change.AfterDisplay);
+        Assert.Equal(ChangeCategory.Modify, change.Category);
+        Assert.Equal(RestartRequirement.ExplorerRestart, change.RestartRequirement);
+    }
+
+    [Fact]
+    public void CreateButtonCombiningChange_rejects_unknown_levels()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(
+            () => TaskbarChangeFactory.CreateButtonCombiningChange(MakeTaskbar(), newLevel: 3));
+    }
 }

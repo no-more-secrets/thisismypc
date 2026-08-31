@@ -14,6 +14,7 @@ public partial class ShellViewModel : ViewModelBase
 
     public ObservableCollection<ShellSettingViewModel> ExplorerSettings { get; } = [];
     public ObservableCollection<ShellSettingViewModel> TaskbarSettings { get; } = [];
+    public ObservableCollection<ShellChoiceSettingViewModel> TaskbarChoiceSettings { get; } = [];
 
     [ObservableProperty]
     private string _searchText = string.Empty;
@@ -23,6 +24,8 @@ public partial class ShellViewModel : ViewModelBase
         foreach (var row in ExplorerSettings)
             row.ApplySearch(value);
         foreach (var row in TaskbarSettings)
+            row.ApplySearch(value);
+        foreach (var row in TaskbarChoiceSettings)
             row.ApplySearch(value);
     }
 
@@ -82,6 +85,40 @@ public partial class ShellViewModel : ViewModelBase
             {
                 var result = registryService.ReadDWord(AdvancedKeyPath, "TaskbarDa");
                 return result.IsSuccess && result.Value == 1;
+            }));
+
+        TaskbarChoiceSettings.Add(new ShellChoiceSettingViewModel(
+            label: "Taskbar search",
+            description: "How search appears on the taskbar (takes effect after Explorer restarts)",
+            systemPath: $@"{Modules.Shell.ShellRegistryPaths.SearchKeyPath}\SearchboxTaskbarMode",
+            options: TaskbarChangeFactory.SearchboxModeNames
+                .OrderBy(p => p.Key)
+                .Select(p => new ShellChoiceOption(p.Key, p.Value))
+                .ToList(),
+            currentValue: taskbar.SearchboxMode,
+            pendingChangesService: pendingChangesService,
+            changeFactory: mode => TaskbarChangeFactory.CreateSearchboxModeChange(taskbar, mode),
+            readRegistryValue: () =>
+            {
+                var result = registryService.ReadDWord(Modules.Shell.ShellRegistryPaths.SearchKeyPath, "SearchboxTaskbarMode");
+                return result.IsSuccess ? result.Value! : 3;
+            }));
+
+        TaskbarChoiceSettings.Add(new ShellChoiceSettingViewModel(
+            label: "Combine taskbar buttons",
+            description: "When windows of the same app share one taskbar button (takes effect after Explorer restarts)",
+            systemPath: $@"{AdvancedKeyPath}\TaskbarGlomLevel",
+            options: TaskbarChangeFactory.ButtonCombiningNames
+                .OrderBy(p => p.Key)
+                .Select(p => new ShellChoiceOption(p.Key, p.Value))
+                .ToList(),
+            currentValue: taskbar.ButtonCombining,
+            pendingChangesService: pendingChangesService,
+            changeFactory: level => TaskbarChangeFactory.CreateButtonCombiningChange(taskbar, level),
+            readRegistryValue: () =>
+            {
+                var result = registryService.ReadDWord(AdvancedKeyPath, "TaskbarGlomLevel");
+                return result.IsSuccess ? result.Value! : 0;
             }));
 
         TaskbarSettings.Add(new ShellSettingViewModel(

@@ -53,6 +53,10 @@ public sealed class TestApp : Application
         {
             Source = new Uri("avares://ThisIsMyPC.App/Templates/MultiScopeRowTemplate.axaml"),
         });
+        resources.MergedDictionaries.Add(new ResourceInclude(new Uri("avares://ThisIsMyPC.App/"))
+        {
+            Source = new Uri("avares://ThisIsMyPC.App/Templates/ChoiceSettingRowTemplate.axaml"),
+        });
         Resources = resources;
     }
 }

@@ -41,6 +41,8 @@
                            Margin="0,0,0,4" />
                 <ItemsControl ItemsSource="{Binding TaskbarSettings}"
                               ItemTemplate="{StaticResource ToggleSettingRowTemplate}" />
+                <ItemsControl ItemsSource="{Binding TaskbarChoiceSettings}"
+                              ItemTemplate="{StaticResource ChoiceSettingRowTemplate}" />
             </StackPanel>
 
         </StackPanel>

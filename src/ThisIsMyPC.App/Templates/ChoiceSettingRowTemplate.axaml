@@ -1,0 +1,45 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:vm="using:ThisIsMyPC.App.ViewModels">
+
+    <!-- Multi-choice setting row: label/description left, combo right.
+         DataContext: ShellChoiceSettingViewModel. A pending selection tints
+         the card with the Modify color (there is no enable/disable
+         direction to a value change). -->
+    <DataTemplate x:Key="ChoiceSettingRowTemplate" DataType="vm:ShellChoiceSettingViewModel">
+        <Border Padding="16,8"
+                Margin="0,2"
+                CornerRadius="6"
+                Classes="card"
+                IsVisible="{Binding IsSearchVisible}"
+                Classes.pending-modify="{Binding HasPendingChange}">
+            <DockPanel>
+                <ComboBox DockPanel.Dock="Right"
+                          ItemsSource="{Binding Options}"
+                          SelectedItem="{Binding SelectedOption}"
+                          MinWidth="180"
+                          VerticalAlignment="Top"
+                          Margin="16,0,0,0">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate DataType="vm:ShellChoiceOption">
+                            <TextBlock Text="{Binding DisplayName}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+
+                <StackPanel Spacing="2">
+                    <TextBlock Text="{Binding Label}"
+                               FontWeight="SemiBold"
+                               FontSize="14"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <TextBlock Text="{Binding Description}"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               TextWrapping="Wrap"
+                               IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
+    </DataTemplate>
+
+</ResourceDictionary>

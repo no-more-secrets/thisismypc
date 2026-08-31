@@ -6,6 +6,7 @@ namespace ThisIsMyPC.Modules.Shell;
 public static class ShellRegistryPaths
 {
     public const string AdvancedKeyPath = @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced";
+    public const string SearchKeyPath = @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search";
     public const string ExplorerKeyPath = @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer";
     public const string OperationStatusManagerKeyPath = ExplorerKeyPath + @"\OperationStatusManager";
     public const string NamingTemplatesKeyPath = ExplorerKeyPath + @"\NamingTemplates";
