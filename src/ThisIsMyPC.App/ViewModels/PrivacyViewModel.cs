@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Modules.Privacy.Models;
@@ -109,4 +109,3 @@ public partial class PrivacyViewModel : ViewModelBase, IDisposable, ISearchFocus
         }
     }
 }
-

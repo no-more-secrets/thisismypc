@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Modules.WindowsUpdate.Models;
@@ -108,4 +108,3 @@ public partial class WindowsUpdateViewModel : ViewModelBase, IDisposable, ISearc
         }
     }
 }
-

@@ -72,13 +72,13 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsControlEnabled))]
     [NotifyPropertyChangedFor(nameof(CanTurnOnOwnerMode))]
+    [NotifyPropertyChangedFor(nameof(ShowOwnerModeBadge))]
     private bool _isOwnerModeDegraded;
 
     public string? OwnerModeCallout { get; private set; }
 
     /// <summary>Subtle badge when Owner Mode is required AND available.</summary>
-    [ObservableProperty]
-    private bool _showOwnerModeBadge;
+    public bool ShowOwnerModeBadge => Model.OwnerModeRequired && !IsOwnerModeDegraded;
 
     /// <summary>The only thing degradation disables is the control itself.</summary>
     public bool IsControlEnabled => !IsOwnerModeDegraded;
@@ -131,7 +131,6 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
 
         var available = _capabilityDetector?.IsOwnerModeAvailable == true;
         IsOwnerModeDegraded = !available;
-        ShowOwnerModeBadge = available;
         if (available)
             OwnerModeError = null;
     }

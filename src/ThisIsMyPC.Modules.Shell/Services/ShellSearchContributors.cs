@@ -29,14 +29,17 @@ public sealed class ExplorerSearchContributor : ISearchSettingsContributor
         entries.Add(new SearchEntry(
             ModuleId, "taskbar-alignment", "Taskbar alignment",
             "Left-align or center the taskbar.", ["TaskbarAl", "taskbar"]));
+        // Names must equal the Shell page row labels: search-to-card focus
+        // pre-fills the page filter with the entry name, and a mismatch
+        // filters the page empty.
         entries.Add(new SearchEntry(
-            ModuleId, "taskbar-widgets", "Widgets button",
-            "Show or hide the taskbar Widgets button.", ["TaskbarDa", "widgets"]));
+            ModuleId, "taskbar-widgets", "Taskbar widgets",
+            "Show or hide the taskbar Widgets button.", ["TaskbarDa", "widgets", "widgets button"]));
         entries.Add(new SearchEntry(
-            ModuleId, "classic-context-menu", "Classic (full) right-click menu",
-            "Restore the Windows 10 style context menu.", ["InprocServer32", "context menu", "right click"]));
+            ModuleId, "classic-context-menu", "Classic context menu",
+            "Restore the Windows 10 style full right-click menu.", ["InprocServer32", "context menu", "right click"]));
         entries.Add(new SearchEntry(
-            ModuleId, "classic-command-bar", "Classic Explorer command bar",
+            ModuleId, "classic-command-bar", "Use classic command bar",
             "Restore the classic ribbon-style command bar.", ["command bar", "ribbon"]));
 
         return entries;

@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Modules.Shell.Changes;
@@ -151,4 +151,3 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget
         return result.Value.ToString() == pref.EnabledValue;
     }
 }
-

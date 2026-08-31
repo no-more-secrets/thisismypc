@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Modules.Annoyances.Models;
@@ -118,4 +118,3 @@ public partial class AnnoyancesViewModel : ViewModelBase, IDisposable, ISearchFo
         }
     }
 }
-

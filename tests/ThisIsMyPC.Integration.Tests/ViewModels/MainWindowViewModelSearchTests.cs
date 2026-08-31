@@ -88,6 +88,43 @@ public sealed class MainWindowViewModelSearchTests
     }
 
     [Fact]
+    public async Task SelectingAResultForThePageOnScreen_FocusesItImmediately()
+    {
+        var vm = CreateViewModel();
+        await vm.InitializeAsync();
+
+        // Land on FakeModule's page first (arriving page consumes the first focus).
+        vm.SearchQuery = "TaskbarAl";
+        vm.SelectSearchResultCommand.Execute(Assert.Single(vm.SearchResults));
+        var page = new FocusablePage();
+        vm.CurrentContent = page;
+        page.SearchText = string.Empty;
+
+        // Same module again: no navigation event fires, the live page must react.
+        vm.SearchQuery = "TaskbarAl";
+        vm.SelectSearchResultCommand.Execute(Assert.Single(vm.SearchResults));
+
+        Assert.Equal("Taskbar alignment", page.SearchText);
+    }
+
+    [Fact]
+    public async Task SupersededNavigation_DropsThePendingFocus()
+    {
+        var vm = CreateViewModel();
+        await vm.InitializeAsync();
+        vm.SearchQuery = "TaskbarAl";
+
+        vm.SelectSearchResultCommand.Execute(Assert.Single(vm.SearchResults));
+        // The user bails to Home before the module page arrives.
+        vm.OpenHomeCommand.Execute(null);
+
+        // A later page must not inherit the stale focus.
+        var page = new FocusablePage();
+        vm.CurrentContent = page;
+        Assert.Equal(string.Empty, page.SearchText);
+    }
+
+    [Fact]
     public async Task PageWithoutFocusSupport_GetsTheStatusFallback()
     {
         var vm = CreateViewModel();

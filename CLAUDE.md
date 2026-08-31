@@ -26,15 +26,14 @@ all-profiles coverage).
 Full detail, ordering rationale, and per-module deferred lists:
 `docs/planning/refinement-backlog.md`.
 
-1. **UI/UX chapter: DONE 2026-08-31** (light theme, toasts, actionable Owner Mode
-   callout with live degradation, search-to-card focus, copy sweep, multi-choice
-   card control, sidebar icons).
-2. **Display / DDC-CI module: SHIPPED 2026-08-30.**
-3. **Release prep (current)**. Hard blockers: GPG update-verifier swap, TWEAKS.md move-out,
+Feature work is complete (all modules plus the UI/UX chapter; history in the
+backlog).
+
+1. **Release prep (current)**. Hard blockers: GPG update-verifier swap, TWEAKS.md move-out,
    machine-scope packaging (Program Files + admin-owned ProgramData, Velopack
    machine-wide). Process: SSL.com OV cert purchase, Defender false-positive
    submission, VirusTotal CI canary, winget distribution.
-4. **Post-release menu**: retired BMAD epics (ASUS/ATKACPI, OpenRGB, drivers,
+2. **Post-release menu**: retired BMAD epics (ASUS/ATKACPI, OpenRGB, drivers,
    network/firewall, profiles, WU remainder) and install-engine leftovers
    (OneDrive/Edge removal, OEM tools, progress/cancel).
 
