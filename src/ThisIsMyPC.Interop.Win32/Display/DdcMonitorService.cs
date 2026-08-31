@@ -17,6 +17,12 @@ public sealed class DdcMonitorService : IMonitorService
     private const byte VcpContrast = 0x12;
     private const byte VcpInputSource = 0x60;
 
+    // Session memory of successful writes, keyed monitor id + VCP code.
+    // Monitors forget DDC state across sleep; ReapplyLastWrites pushes these
+    // back after a resume or display change. Input source is deliberately
+    // excluded: silently re-switching inputs after wake would fight the user.
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<(string Id, byte Code), int> _lastWrites = new();
+
     /// <summary>
     /// Names for vendor VCP codes (0xE0-0xFF are manufacturer-specific per
     /// MCCS). Verified on ASUS monitors; unknown codes render as "Feature 0xNN"
@@ -80,6 +86,21 @@ public sealed class DdcMonitorService : IMonitorService
     public OperationResult<bool> SetVcpValue(string monitorId, int vcpCode, int value) =>
         SetVcp(monitorId, (byte)vcpCode, value);
 
+    public OperationResult<bool> ReapplyLastWrites()
+    {
+        var failures = 0;
+        foreach (var ((id, code), value) in _lastWrites)
+        {
+            if (!SetVcp(id, code, value, record: false).IsSuccess)
+                failures++;
+        }
+
+        return failures == 0
+            ? OperationResult<bool>.Success(true)
+            : OperationResult<bool>.Failure(
+                $"{failures} monitor setting(s) could not be re-applied.", ErrorCategory.ServiceUnavailable);
+    }
+
     public bool HasSystemBattery()
     {
         if (NativeDisplay.GetSystemPowerStatus(out var status) == 0)
@@ -92,8 +113,9 @@ public sealed class DdcMonitorService : IMonitorService
         NativeDisplay.PHYSICAL_MONITOR physical, string deviceName, int index)
     {
         var id = $"{deviceName}|{index}";
-        var name = physical.szPhysicalMonitorDescription is { Length: > 0 } d
-            ? d : deviceName.TrimStart('\\', '.');
+        var name = ReadEdidName(deviceName, index)
+            ?? (physical.szPhysicalMonitorDescription is { Length: > 0 } d
+                ? d : deviceName.TrimStart('\\', '.'));
 
         // Brightness answers on effectively every DDC-capable monitor; treat a
         // refusal here as "no DDC" rather than probing the whole VCP table.
@@ -228,7 +250,7 @@ public sealed class DdcMonitorService : IMonitorService
         return features;
     }
 
-    private OperationResult<bool> SetVcp(string monitorId, byte code, int value)
+    private OperationResult<bool> SetVcp(string monitorId, byte code, int value, bool record = true)
     {
         try
         {
@@ -246,6 +268,9 @@ public sealed class DdcMonitorService : IMonitorService
                             ErrorCategory.ServiceUnavailable);
                     }
 
+                    if (record && code != VcpInputSource)
+                        _lastWrites[(monitorId, code)] = value;
+
                     return OperationResult<bool>.Success(true);
                 }
                 finally
@@ -262,6 +287,41 @@ public sealed class DdcMonitorService : IMonitorService
         {
             return OperationResult<bool>.Failure(
                 $"DDC/CI is unavailable on this system: {ex.Message}", ErrorCategory.ServiceUnavailable, ex);
+        }
+    }
+
+    /// <summary>
+    /// The model name from the monitor's EDID, read via the PnP registry entry
+    /// its device interface path points at. Null on any hiccup; callers fall
+    /// back to the driver description ("Generic PnP Monitor").
+    /// </summary>
+    private static string? ReadEdidName(string adapterDeviceName, int monitorIndex)
+    {
+        try
+        {
+            var device = new NativeDisplay.DISPLAY_DEVICEW
+            {
+                cb = (uint)System.Runtime.InteropServices.Marshal.SizeOf<NativeDisplay.DISPLAY_DEVICEW>(),
+            };
+            if (NativeDisplay.EnumDisplayDevicesW(
+                    adapterDeviceName, (uint)monitorIndex, ref device,
+                    NativeDisplay.EDD_GET_DEVICE_INTERFACE_NAME) == 0)
+            {
+                return null;
+            }
+
+            // DeviceID: \\?\DISPLAY#GSM5B08#5&2e4cb92&0&UID4352#{guid}
+            var parts = device.DeviceID.Split('#');
+            if (parts.Length < 3)
+                return null;
+
+            using var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(
+                $@"SYSTEM\CurrentControlSet\Enum\DISPLAY\{parts[1]}\{parts[2]}\Device Parameters");
+            return EdidParser.ParseMonitorName(key?.GetValue("EDID") as byte[]);
+        }
+        catch (Exception ex) when (ex is System.Security.SecurityException or UnauthorizedAccessException or IOException)
+        {
+            return null;
         }
     }
 

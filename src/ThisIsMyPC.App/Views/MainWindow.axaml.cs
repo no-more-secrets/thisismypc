@@ -20,6 +20,7 @@ public partial class MainWindow : Window
         PropertyChanged += OnWindowPropertyChanged;
         Loaded += OnLoaded;
         AddHandler(PointerPressedEvent, OnGlobalPointerPressed, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+        HookDisplayChanges();
 #if DEBUG
         KeyDown += OnDebugKeyDown;
 #endif
@@ -47,6 +48,58 @@ public partial class MainWindow : Window
 
         if (!hitFocusable)
             FocusManager?.ClearFocus();
+    }
+
+    // --- Resume/display-change watch: monitors forget DDC state across sleep ---
+
+    private int _reapplyScheduled;
+
+    private void HookDisplayChanges()
+    {
+        try
+        {
+            Win32Properties.AddWndProcHookCallback(this, DisplayWndProcHook);
+        }
+        catch (InvalidOperationException)
+        {
+            // Headless/test platforms have no Win32 window; the feature is
+            // desktop-only and everything else works without it.
+        }
+    }
+
+    private nint DisplayWndProcHook(nint hWnd, uint msg, nint wParam, nint lParam, ref bool handled)
+    {
+        const uint WM_DISPLAYCHANGE = 0x007E;
+        const uint WM_POWERBROADCAST = 0x0218;
+        const int PBT_APMRESUMEAUTOMATIC = 0x0012;
+        const int PBT_APMRESUMESUSPEND = 0x0007;
+
+        var isResume = msg == WM_POWERBROADCAST
+            && wParam is PBT_APMRESUMEAUTOMATIC or PBT_APMRESUMESUSPEND;
+        if (msg == WM_DISPLAYCHANGE || isResume)
+            ScheduleDisplayReapply();
+
+        return 0;
+    }
+
+    private async void ScheduleDisplayReapply()
+    {
+        // One pending re-apply at a time; a burst of messages (resume fires
+        // several) collapses into a single delayed pass.
+        if (System.Threading.Interlocked.Exchange(ref _reapplyScheduled, 1) == 1)
+            return;
+
+        try
+        {
+            // Monitors need a moment after wake before DDC answers.
+            await System.Threading.Tasks.Task.Delay(4000);
+            if (DataContext is MainWindowViewModel vm)
+                await vm.HandleDisplayTopologyChangedAsync();
+        }
+        finally
+        {
+            _reapplyScheduled = 0;
+        }
     }
 
     private async void OnLoaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)

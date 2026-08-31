@@ -966,6 +966,34 @@ public partial class MainWindowViewModel : ViewModelBase
         ClearSidebarActives();
     }
 
+    /// <summary>
+    /// After resume or a display change: re-push this session's monitor writes
+    /// (monitors forget DDC state across sleep), then quietly refresh the
+    /// Display page if it is open so stale monitors never linger.
+    /// </summary>
+    public async Task HandleDisplayTopologyChangedAsync()
+    {
+        if (_monitorService is null)
+            return;
+
+        await Task.Run(() => _monitorService.ReapplyLastWrites()).ConfigureAwait(true);
+
+        if (CurrentContent is not DisplayViewModel
+            || SelectedModule?.Module is not Modules.Display.DisplayModule module
+            || _powerService is null)
+        {
+            return;
+        }
+
+        var epoch = _contentEpoch;
+        var scan = await module.ScanSystemStateAsync().ConfigureAwait(true);
+        if (epoch != _contentEpoch)
+            return; // the user navigated away meanwhile
+
+        if (scan.IsSuccess && scan.Value is Modules.Display.Models.DisplayScanData data)
+            CurrentContent = new DisplayViewModel(data, _monitorService, _powerService);
+    }
+
     [ObservableProperty]
     private bool _isGalleryActive;
 

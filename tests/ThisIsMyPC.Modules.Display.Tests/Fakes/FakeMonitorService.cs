@@ -44,5 +44,11 @@ public sealed class FakeMonitorService : IMonitorService
         return OperationResult<bool>.Success(true);
     }
 
+    public OperationResult<bool> ReapplyLastWrites()
+    {
+        Calls.Add("ReapplyLastWrites");
+        return OperationResult<bool>.Success(true);
+    }
+
     public bool HasSystemBattery() => HasBattery;
 }

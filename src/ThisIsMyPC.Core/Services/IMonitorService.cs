@@ -28,6 +28,13 @@ public interface IMonitorService
     /// <summary>Sets an arbitrary VCP code (vendor features like a blue light filter).</summary>
     OperationResult<bool> SetVcpValue(string monitorId, int vcpCode, int value);
 
+    /// <summary>
+    /// Re-pushes this session's successful writes (brightness, contrast,
+    /// vendor features; never input source). Called after resume or a display
+    /// change, when monitors may have reset their DDC state.
+    /// </summary>
+    OperationResult<bool> ReapplyLastWrites();
+
     /// <summary>True when the machine has a system battery (laptop heuristic for the internal panel).</summary>
     bool HasSystemBattery();
 }

@@ -43,6 +43,8 @@ public class DisplayViewShotTests
             return OperationResult<bool>.Success(true);
         }
 
+        public OperationResult<bool> ReapplyLastWrites() => OperationResult<bool>.Success(true);
+
         public bool HasSystemBattery() => false;
     }
 

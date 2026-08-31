@@ -277,9 +277,14 @@ Controls apply LIVE: documented carve-out from the pending pipeline
 (ephemeral hardware state, sliders are their own undo).
 
 Deferred (install Twinkle Tray from the catalog for these): time-of-day
-scheduling, sun-based dimming, hotkeys, idle dimming, EDID friendly names
-(cards show the driver description, often "Generic PnP Monitor"), linked
-multi-monitor sliders, WM_DISPLAYCHANGE auto-rescan.
+scheduling, sun-based dimming, hotkeys, idle dimming, linked multi-monitor
+sliders, DDC monitor power (0xD6).
+
+**Tray quick-controls flyout (Sam, 2026-08-31): NOT a Twinkle Tray port.**
+The tray flyout is the app's shared hardware quick-controls surface; it will
+carry brightness now and RGB modes / fan profiles later, on the existing
+TrayService. Design it once as a platform when a second hardware module
+exists; modules contribute controls to it.
 
 ## Hardware chapter doctrine (Sam, 2026-08-30): modules derive from device analysis
 
