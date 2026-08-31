@@ -8,6 +8,37 @@
              x:Class="ThisIsMyPC.App.Views.DisplayView"
              x:DataType="vm:DisplayViewModel">
 
+    <UserControl.DataTemplates>
+        <!-- One vendor feature row; picked up implicitly by both the named
+             list and the Advanced expander. -->
+        <DataTemplate DataType="{x:Type vm:VendorFeatureViewModel}">
+            <DockPanel Margin="0,0,0,8">
+                <TextBlock DockPanel.Dock="Left" Text="{Binding Name}" Width="90"
+                           VerticalAlignment="Center" FontSize="12"
+                           TextWrapping="Wrap"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock DockPanel.Dock="Right" Width="36"
+                           Text="{Binding Value, StringFormat={}{0:0}}"
+                           VerticalAlignment="Center" FontSize="12"
+                           TextAlignment="Right"
+                           IsVisible="{Binding IsSlider}"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <Panel Margin="8,0">
+                    <Slider Minimum="{Binding Minimum}"
+                            Maximum="{Binding Maximum}"
+                            Value="{Binding Value}"
+                            TickFrequency="1"
+                            IsSnapToTickEnabled="True"
+                            IsVisible="{Binding IsSlider}" />
+                    <ComboBox ItemsSource="{Binding Values}"
+                              SelectedItem="{Binding SelectedValue}"
+                              IsVisible="{Binding IsCombo}"
+                              HorizontalAlignment="Stretch" />
+                </Panel>
+            </DockPanel>
+        </DataTemplate>
+    </UserControl.DataTemplates>
+
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
         <StackPanel MaxWidth="760" HorizontalAlignment="Left" Spacing="10">
 
@@ -79,38 +110,9 @@
                                                 Margin="8,0" />
                                     </DockPanel>
 
-                                    <!-- Vendor features (blue light filter etc.) -->
+                                    <!-- Named vendor features (blue light filter etc.) -->
                                     <ItemsControl ItemsSource="{Binding VendorFeatures}"
-                                                  IsVisible="{Binding HasVendorFeatures}">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate x:DataType="vm:VendorFeatureViewModel">
-                                                <DockPanel Margin="0,0,0,8">
-                                                    <TextBlock DockPanel.Dock="Left" Text="{Binding Name}" Width="90"
-                                                               VerticalAlignment="Center" FontSize="12"
-                                                               TextWrapping="Wrap"
-                                                               Foreground="{DynamicResource TextSecondaryBrush}" />
-                                                    <TextBlock DockPanel.Dock="Right" Width="36"
-                                                               Text="{Binding Value, StringFormat={}{0:0}}"
-                                                               VerticalAlignment="Center" FontSize="12"
-                                                               TextAlignment="Right"
-                                                               IsVisible="{Binding IsSlider}"
-                                                               Foreground="{DynamicResource TextPrimaryBrush}" />
-                                                    <Panel Margin="8,0">
-                                                        <Slider Minimum="{Binding Minimum}"
-                                                                Maximum="{Binding Maximum}"
-                                                                Value="{Binding Value}"
-                                                                TickFrequency="1"
-                                                                IsSnapToTickEnabled="True"
-                                                                IsVisible="{Binding IsSlider}" />
-                                                        <ComboBox ItemsSource="{Binding Values}"
-                                                                  SelectedItem="{Binding SelectedValue}"
-                                                                  IsVisible="{Binding IsCombo}"
-                                                                  HorizontalAlignment="Stretch" />
-                                                    </Panel>
-                                                </DockPanel>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
+                                                  IsVisible="{Binding HasVendorFeatures}" />
 
                                     <!-- Input source -->
                                     <DockPanel IsVisible="{Binding HasInputSources}">
@@ -132,6 +134,28 @@
                                             </ComboBox.ItemTemplate>
                                         </ComboBox>
                                     </DockPanel>
+                                    <!-- Unnamed vendor codes: real controls the monitor
+                                         declares, meaning unknown; kept out of the way -->
+                                    <Expander IsExpanded="False"
+                                              HorizontalAlignment="Stretch"
+                                              IsVisible="{Binding HasAdvancedVendorFeatures}">
+                                        <Expander.Header>
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="Advanced"
+                                                           FontWeight="SemiBold" FontSize="12"
+                                                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                                                <TextBlock Text="unnamed monitor features; effects vary"
+                                                           FontSize="11"
+                                                           Foreground="{DynamicResource TextTertiaryBrush}"
+                                                           VerticalAlignment="Center" />
+                                            </StackPanel>
+                                        </Expander.Header>
+                                        <Border Padding="0,8,0,0" Margin="0,4,0,0"
+                                                BorderBrush="{DynamicResource OutlineBrush}"
+                                                BorderThickness="0,1,0,0">
+                                            <ItemsControl ItemsSource="{Binding AdvancedVendorFeatures}" />
+                                        </Border>
+                                    </Expander>
                                 </StackPanel>
 
                                 <TextBlock Text="{Binding LastError}"

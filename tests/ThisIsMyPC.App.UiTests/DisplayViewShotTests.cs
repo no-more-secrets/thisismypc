@@ -89,7 +89,7 @@ public class DisplayViewShotTests
                 ],
                 VendorFeatures =
                 [
-                    new VendorVcpFeature(0xE6, "Blue light filter", [0, 1, 2, 3, 4], Current: 1),
+                    new VendorVcpFeature(0xE6, "Blue light filter", [0, 1, 2, 3, 4], Current: 1, IsNamed: true),
                     new VendorVcpFeature(0xE0, "Feature 0xE0", [0, 2, 5], Current: 2),
                 ],
             },
@@ -153,8 +153,8 @@ public class DisplayViewShotTests
         var viewModel = new DisplayViewModel(SampleData(), monitors, new StubPowerService());
         using var session = UiSession.ForView(new DisplayView(), viewModel, "display-view");
 
-        var blueLight = viewModel.Monitors[1].VendorFeatures[0];
-        var gappyFeature = viewModel.Monitors[1].VendorFeatures[1];
+        var blueLight = Assert.Single(viewModel.Monitors[1].VendorFeatures);
+        var gappyFeature = Assert.Single(viewModel.Monitors[1].AdvancedVendorFeatures);
         Assert.Equal("Blue light filter", blueLight.Name);
         Assert.True(blueLight.IsSlider); // 0-4 contiguous
         blueLight.Value = 4;

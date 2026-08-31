@@ -54,15 +54,27 @@ public sealed partial class MonitorItemViewModel : ViewModelBase
         _contrast = device.Contrast ?? 0;
         _selectedInput = device.InputSources.FirstOrDefault(i => i.Value == device.CurrentInput);
         VendorFeatures = device.VendorFeatures
-            .Select(f => new VendorFeatureViewModel(
-                f,
-                write: (code, value) => monitors.SetVcpValue(device.Id, code, value),
-                reportError: error => LastError = error))
+            .Where(f => f.IsNamed)
+            .Select(BuildFeature)
             .ToList();
+        AdvancedVendorFeatures = device.VendorFeatures
+            .Where(f => !f.IsNamed)
+            .Select(BuildFeature)
+            .ToList();
+
+        VendorFeatureViewModel BuildFeature(VendorVcpFeature f) => new(
+            f,
+            write: (code, value) => monitors.SetVcpValue(device.Id, code, value),
+            reportError: error => LastError = error);
     }
 
+    /// <summary>Features with a known meaning (blue light filter); always visible.</summary>
     public IReadOnlyList<VendorFeatureViewModel> VendorFeatures { get; }
     public bool HasVendorFeatures => VendorFeatures.Count > 0;
+
+    /// <summary>Unnamed vendor codes; live behind the Advanced expander.</summary>
+    public IReadOnlyList<VendorFeatureViewModel> AdvancedVendorFeatures { get; }
+    public bool HasAdvancedVendorFeatures => AdvancedVendorFeatures.Count > 0;
 
     public string Name => _device.Name;
     public bool IsInternalPanel => _device.IsInternalPanel;

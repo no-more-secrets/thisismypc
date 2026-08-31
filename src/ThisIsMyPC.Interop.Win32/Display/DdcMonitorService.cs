@@ -194,11 +194,13 @@ public sealed class DdcMonitorService : IMonitorService
             if (NativeDisplay.GetVCPFeatureAndVCPFeatureReply(handle, (byte)code, out _, out var current, out _) == 0)
                 continue;
 
+            var isNamed = VendorFeatureNames.TryGetValue(code, out var name);
             features.Add(new VendorVcpFeature(
                 code,
-                VendorFeatureNames.TryGetValue(code, out var name) ? name : $"Feature 0x{code:X2}",
+                isNamed ? name! : $"Feature 0x{code:X2}",
                 values.Distinct().Order().ToList(),
-                (int)(current & 0xFF)));
+                (int)(current & 0xFF),
+                isNamed));
         }
 
         return features;
