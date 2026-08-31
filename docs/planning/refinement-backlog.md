@@ -264,3 +264,21 @@ serializing the sandbox users.
   (G-Helper/OmenMon)
 - File associations, user shell folder relocation, WSL → unscoped
 - Visual effects/performance preset (winutil) → decide module home later
+
+## Hardware chapter doctrine (Sam, 2026-08-30): modules derive from device analysis
+
+Monitor, fan, and RGB control are not three flat modules; a device-analysis
+layer picks the backend per machine. On a Strix laptop the ASUS ATKACPI/WMI
+platform serves all three (the G-Helper approach); on a ROG-parts desktop each
+capability needs its distinct generic service: DDC/CI (dxva2 VCP codes) for
+monitors, LibreHardwareMonitor (MPL-2.0; PawnIO driver, never blocklisted
+WinRing0) for fans, OpenRGB SDK server protocol (GPLv2, license match) for
+lighting. CapabilityDetector's hardware probes are the seed; modules consume
+detection and select backends, never assume one.
+
+Licensing: G-Helper is GPL-3.0, incompatible with this GPLv2 repo for code
+porting; treat it as protocol documentation only. Twinkle Tray (MIT) and
+OpenRGB (GPLv2) are portable/compatible.
+
+Ordering: DDC/CI ships pre-release (driverless Win32). Fans and RGB are
+post-release; fans last (kernel driver + AV reputation risk).
