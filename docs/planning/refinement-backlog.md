@@ -83,22 +83,21 @@ Consequences, verified against the code and upstream:
   SmartScreen reputation builds from download volume regardless. Only
   release-signing material stays private (GPLv2 rule).
 
-## Machine-scope packaging (Sam, 2026-08-30): the app corresponds to the PC, not a profile
+## Machine-scope packaging: SHIPPED 2026-08-31 (docs/release/packaging.md)
 
-Product identity decision: the app is machine-scoped, matching requireAdministrator,
-the Session 0 service, and Epic 28's all-profiles HKU\{sid} drift mapping. Release
-packaging must follow:
-- **Binaries in `C:\Program Files\`** (admin-only write; deep-research DLL-sideloading
-  rule). Velopack's default per-user `%LocalAppData%` install violates this: use its
-  machine-wide install mode.
-- **Mutable state (settings, change DB) in `%ProgramData%\ThisIsMyPC`**, folder created
-  and owned by Administrators/SYSTEM with an admin-only DACL. Not hardened `%APPDATA%`:
-  users own their profile folders, and ownership beats a DACL (owner can retake
-  WRITE_DAC), so a profile-folder lockdown is undoable by user-level malware.
+The app corresponds to the PC, not a profile. Implemented:
+- **All mutable state now lives in `%ProgramData%\ThisIsMyPC`** (settings,
+  history.db, sets, monitoring, drift baseline): AppConstants collapsed to one
+  DataDirectoryPath; DACL-hardened at startup; LegacyDataMigration copies old
+  `%APPDATA%\ThisIsMyPC` data across once and marks the old folder.
+- **tools/build-release.ps1** publishes App + Service into one staging dir and
+  packs the Velopack per-machine MSI (`--msi --instLocation PerMachine`, WiX 5,
+  Program Files, elevation required). Per-user Setup.exe and portable zip are
+  not shipped.
+- Open at release: MSI publisher line needs the final LLC name; Authenticode
+  signing on release day; UpdateUrl org must match the publishing repo.
 - Keep integrity validation of stored state in the elevated service regardless of
   folder (defense in depth per threat model tm2:120-134).
-- One machine, one install, one database: no per-user copies with divergent views
-  of machine state.
 
 ## UI Gallery (dev-facing, added 2026-08-30)
 

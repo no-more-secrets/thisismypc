@@ -34,7 +34,7 @@ public sealed class DriftWatchdog : IHostedService, IDriftReportSource
         _registry = registry;
         _logger = logger;
         _baselinePath = baselinePath
-            ?? Path.Combine(AppConstants.MachineDataDirectoryPath, DriftBaselineStore.FileName);
+            ?? Path.Combine(AppConstants.DataDirectoryPath, DriftBaselineStore.FileName);
         _baselineTrustCheck = baselineTrustCheck ?? IsOwnedByAdminsOrSystem;
     }
 

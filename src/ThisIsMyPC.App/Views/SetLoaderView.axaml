@@ -63,7 +63,7 @@
                       HorizontalScrollBarVisibility="Disabled"
                       VerticalScrollBarVisibility="Auto">
             <StackPanel Spacing="4">
-                <TextBlock Text="No presets found. Built-in presets ship with the application; your own go in %APPDATA%\ThisIsMyPC\sets."
+                <TextBlock Text="No presets found. Built-in presets ship with the application; your own go in %ProgramData%\ThisIsMyPC\sets."
                            FontSize="13"
                            TextWrapping="Wrap"
                            Foreground="{DynamicResource TextTertiaryBrush}"

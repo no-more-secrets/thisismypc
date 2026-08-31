@@ -28,7 +28,7 @@ public sealed class DriftBaselineStore : IDriftBaselineStore
 
     public DriftBaselineStore(string? path = null, string? userSid = null)
     {
-        _path = path ?? Path.Combine(AppConstants.MachineDataDirectoryPath, FileName);
+        _path = path ?? Path.Combine(AppConstants.DataDirectoryPath, FileName);
         _userSid = userSid;
     }
 

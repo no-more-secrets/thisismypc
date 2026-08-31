@@ -907,7 +907,7 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         _contentEpoch++;
         IsModuleLoading = false;
-        // Fresh disk read on every open: user sets dropped into %APPDATA% appear
+        // Fresh disk read on every open: user sets dropped into %ProgramData% appear
         // without an app restart. Outgoing content may also be a module VM reached
         // without a navigation event; its subscriptions must not outlive the switch.
         (CurrentContent as IDisposable)?.Dispose();

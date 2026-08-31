@@ -81,6 +81,10 @@ sealed class Program
             else
                 Log.Warning("Data directory DACL hardening failed: {Error}", daclResult.ErrorMessage);
 
+            // Pre-machine-scope builds stored data in %APPDATA%; bring it along
+            // once, after hardening and before any service opens the files.
+            LegacyDataMigration.CopyFromUserProfile(dataDir, Log.Logger);
+
             BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
         }
         catch (Exception ex)

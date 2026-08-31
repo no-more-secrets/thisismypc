@@ -66,7 +66,7 @@ public partial class SaveSetFormViewModel : ViewModelBase
             Category = IsOptimizationPack ? SetCategory.OptimizationPack : SetCategory.TweakSet,
         };
 
-        // File I/O off the UI thread; a slow roaming %APPDATA% must not freeze the popup.
+        // File I/O off the UI thread; slow disk must not freeze the popup.
         var result = await Task.Run(() => _write(metadata)).ConfigureAwait(true);
 
         if (!result.Success)

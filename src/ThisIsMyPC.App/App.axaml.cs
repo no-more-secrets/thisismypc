@@ -95,19 +95,8 @@ public partial class App : Application
             // 9-3: opt-in monitoring loop (runs only while the app is in memory)
             _serviceProvider.GetRequiredService<Core.Monitoring.MonitoringService>().Start();
 
-            // 28-3: the machine-wide drift directory must be SYSTEM/Administrators-only;
-            // ProgramData's default ACL would let a standard user own and rewrite the
-            // baseline a SYSTEM service consumes.
-            try
-            {
-                System.IO.Directory.CreateDirectory(AppConstants.MachineDataDirectoryPath);
-                _serviceProvider.GetRequiredService<IDataDirectoryGuard>()
-                    .EnsureHardened(AppConstants.MachineDataDirectoryPath);
-            }
-            catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException)
-            {
-                Serilog.Log.Warning(ex, "Machine data directory hardening failed");
-            }
+            // The machine data directory (drift baseline included) is created and
+            // DACL-hardened once in Program.Main, before anything reads it.
 
             // 28-3: one drift-report fetch; silently a no-op when the service is off
             _ = mainViewModel.LoadDriftReportAsync();
