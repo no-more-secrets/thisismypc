@@ -22,7 +22,8 @@
                                FontSize="12"
                                TextWrapping="Wrap"
                                Foreground="{DynamicResource TextTertiaryBrush}"
-                               Margin="0,2,0,0" />
+                               Margin="0,2,0,0"
+                               IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                 </StackPanel>
             </DockPanel>
         </DataTemplate>
@@ -41,7 +42,8 @@
                                FontSize="12"
                                TextWrapping="Wrap"
                                Foreground="{DynamicResource TextTertiaryBrush}"
-                               Margin="0,2,0,0" />
+                               Margin="0,2,0,0"
+                               IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                 </StackPanel>
             </DockPanel>
         </DataTemplate>
@@ -67,7 +69,8 @@
                                FontSize="12"
                                TextWrapping="Wrap"
                                Foreground="{DynamicResource TextTertiaryBrush}"
-                               Margin="0,2,0,0" />
+                               Margin="0,2,0,0"
+                               IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                 </StackPanel>
             </DockPanel>
         </DataTemplate>

@@ -194,26 +194,26 @@ public sealed partial class SettingsViewModel : ViewModelBase
                 new SettingChoiceItemViewModel(
                     settings, null, AppSettingKeys.Theme,
                     "Theme",
-                    "Dark, light, or follow Windows. Applies immediately.",
-                    [new("dark", "Dark"), new("light", "Light"), new("system", "Follow Windows")],
+                    "",
+                    [new("dark", "Dark"), new("light", "Light"), new("system", "System")],
                     settings.GetApp(AppSettingKeys.Theme, "dark"),
                     applyTheme),
                 new SettingChoiceItemViewModel(
                     settings, null, AppSettingKeys.CloseAction,
                     "When I close the window",
-                    "Tray options need Tray mode enabled below; without it the app falls back to exiting.",
+                    "Tray choice requires Tray mode below.",
                     [new("exit", "Exit the app"), new("tray", "Keep running in the tray"), new("taskbar", "Minimize to taskbar")],
                     settings.GetApp(AppSettingKeys.CloseAction, "exit")),
                 new SettingChoiceItemViewModel(
                     settings, null, AppSettingKeys.MinimizeAction,
                     "When I minimize the window",
-                    "Tray option needs Tray mode enabled below; without it the app minimizes to the taskbar.",
+                    "Tray choice requires Tray mode below.",
                     [new("taskbar", "Minimize to taskbar"), new("tray", "Minimize to tray")],
                     settings.GetApp(AppSettingKeys.MinimizeAction, "taskbar")),
                 new SettingToggleItemViewModel(
                     settings, null, AppSettingKeys.DyslexiaFont,
                     "Dyslexia-friendly font",
-                    "Switches body text to OpenDyslexic, a dyslexia-friendly font. Headings and registry paths keep their fonts. Takes effect immediately.",
+                    "Switches body text to OpenDyslexic.",
                     settings.GetAppBool(AppSettingKeys.DyslexiaFont, false)),
             ],
         });
@@ -226,37 +226,37 @@ public sealed partial class SettingsViewModel : ViewModelBase
                 new SettingToggleItemViewModel(
                     settings, null, AppSettingKeys.TrayMode,
                     "Tray mode",
-                    "Show a tray icon and allow the app to keep running in the background.",
+                    "Shows a tray icon and unlocks the tray options above.",
                     settings.GetAppBool(AppSettingKeys.TrayMode, false)),
                 new SettingToggleItemViewModel(
                     settings, null, AppSettingKeys.AutoStart,
                     "Start with Windows",
-                    "Launch ThisIsMyPC automatically at sign-in.",
+                    "",
                     settings.GetAppBool(AppSettingKeys.AutoStart, false)),
                 new SettingToggleItemViewModel(
                     settings, null, AppSettingKeys.MonitoringEnabled,
                     "Startup & service monitoring",
-                    "While the app is running (foreground or tray), watch for programs adding new startup entries, services, or scheduled tasks. Detections appear on Home. Never runs when the app is closed.",
+                    "Watches for new startup entries, services, and scheduled tasks while the app runs. Detections appear on Home.",
                     settings.GetAppBool(AppSettingKeys.MonitoringEnabled, false)),
                 new SettingToggleItemViewModel(
                     settings, null, AppSettingKeys.Notifications,
                     "Notifications",
-                    "Master switch for all notifications. Off means events are only visible inside the app.",
+                    "Master switch; off keeps events in-app only.",
                     settings.GetAppBool(AppSettingKeys.Notifications, true)),
                 new SettingToggleItemViewModel(
                     settings, null, AppSettingKeys.NotifyMonitoring,
                     "Notify: monitoring alerts",
-                    "New startup entries or services detected by background monitoring.",
+                    "New startup entries or services were detected.",
                     settings.GetAppBool(AppSettingKeys.NotifyMonitoring, true)),
                 new SettingToggleItemViewModel(
                     settings, null, AppSettingKeys.NotifyUpdates,
                     "Notify: update available",
-                    "A newer ThisIsMyPC release was found by the launch check.",
+                    "A newer release was found at launch.",
                     settings.GetAppBool(AppSettingKeys.NotifyUpdates, true)),
                 new SettingToggleItemViewModel(
                     settings, null, AppSettingKeys.UpdateCheck,
                     "Check for updates",
-                    "On launch, compare the app version against GitHub Releases. Only version numbers are transmitted - never telemetry or system data. Turn off for fully offline use.",
+                    "Compares the app version against GitHub Releases at launch. Only version numbers are sent; turn off for offline use.",
                     settings.GetAppBool(AppSettingKeys.UpdateCheck, true)),
             ],
         });
