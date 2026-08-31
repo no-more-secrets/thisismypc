@@ -140,6 +140,15 @@ Windows). Sight harness: UiSession.SetTheme + light walkthrough suite
 (walkthrough-light/). Drag ghost and insert line in PathEditorView resolve theme
 brushes at use time; RowHoverBrush replaces hardcoded hover whites.
 
+## 0c. Interaction consistency + outline style: DONE 2026-08-30
+
+One token family for every clickable (Outline/OutlineStrong, ControlHover/
+ControlPressed, AccentHover/AccentPressed) wired through Fluent resource-key
+overrides in Theme.axaml, so stock controls and custom classes share hover,
+press, and disabled states. Everything gets a 1px outline: buttons, chips,
+combo boxes, text inputs, and all Surface cards (new Border.card class, 23
+sites converted). ToggleSwitch now uses the app accent, not the Windows one.
+
 ## 0b. UI copy sweep: DONE 2026-08-30
 
 Sam's rule: user-visible strings are product copy; short declarative sentences, no

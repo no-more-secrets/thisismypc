@@ -10,7 +10,7 @@
     <UserControl.Resources>
         <DataTemplate x:Key="StartupEntryRowTemplate" x:DataType="vm:StartupEntryItemViewModel">
             <Border Padding="12,8" Margin="0,2" CornerRadius="4"
-                    Background="{DynamicResource SurfaceBrush}">
+                    Classes="card">
                 <Grid ColumnDefinitions="2*,*,Auto,Auto" RowDefinitions="Auto,Auto">
                     <StackPanel Grid.Column="0" Grid.Row="0" Orientation="Horizontal" Spacing="8">
                         <TextBlock Text="{Binding Name}"
@@ -87,7 +87,7 @@
 
         <DataTemplate x:Key="ScheduledTaskRowTemplate" x:DataType="vm:ScheduledTaskItemViewModel">
             <Border Padding="12,8" Margin="0,2" CornerRadius="4"
-                    Background="{DynamicResource SurfaceBrush}">
+                    Classes="card">
                 <Grid ColumnDefinitions="2*,Auto,Auto,Auto" RowDefinitions="Auto,Auto,Auto">
                     <StackPanel Grid.Column="0" Grid.Row="0" Spacing="2" Margin="0,0,8,0">
                         <StackPanel Orientation="Horizontal" Spacing="8">
@@ -167,7 +167,7 @@
 
         <DataTemplate x:Key="ServiceRowTemplate" x:DataType="vm:ServiceItemViewModel">
             <Border Padding="12,8" Margin="0,2" CornerRadius="4"
-                    Background="{DynamicResource SurfaceBrush}">
+                    Classes="card">
                 <Grid ColumnDefinitions="2*,Auto,Auto,Auto" RowDefinitions="Auto,Auto,Auto">
                     <StackPanel Grid.Column="0" Grid.Row="0" Spacing="2" Margin="0,0,8,0">
                         <StackPanel Orientation="Horizontal" Spacing="8">

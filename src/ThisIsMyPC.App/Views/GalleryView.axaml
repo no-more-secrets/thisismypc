@@ -214,7 +214,7 @@
 
             <!-- Standard toggle row -->
             <TextBlock Classes="gallery-section" Text="Toggle row" />
-            <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="16,12">
+            <Border Classes="card" CornerRadius="8" Padding="16,12">
                 <DockPanel>
                     <ToggleSwitch DockPanel.Dock="Right" IsChecked="True" OnContent="" OffContent=""
                                   VerticalAlignment="Top" />

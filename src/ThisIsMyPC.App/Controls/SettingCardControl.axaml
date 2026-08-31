@@ -10,7 +10,7 @@
     <Border Padding="16,12"
             Margin="0,2"
             CornerRadius="6"
-            Background="{DynamicResource SurfaceBrush}"
+            Classes="card"
             Classes.pending-enable="{Binding IsPendingEnable}"
             Classes.pending-disable="{Binding IsPendingDisable}">
         <DockPanel>

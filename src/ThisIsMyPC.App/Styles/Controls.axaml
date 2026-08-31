@@ -1,6 +1,29 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
+    <!-- Interaction baseline: every clickable gets a hand cursor. Colors and
+         hover/press states come from the Fluent resource-key overrides in
+         Theme.axaml, so stock controls and custom classes share one system. -->
+    <Style Selector="Button">
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="ToggleButton">
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="ToggleSwitch">
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="ComboBox">
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+
+    <!-- Standard content card: surface fill plus the universal outline -->
+    <Style Selector="Border.card">
+        <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource OutlineBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
     <!-- Sidebar module item button -->
     <Style Selector="Button.sidebar-item">
         <Setter Property="Background" Value="Transparent" />
@@ -15,6 +38,10 @@
 
     <Style Selector="Button.sidebar-item:pointerover /template/ ContentPresenter">
         <Setter Property="Background" Value="{DynamicResource SidebarItemHoverBrush}" />
+    </Style>
+
+    <Style Selector="Button.sidebar-item:pressed /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource ControlPressedBrush}" />
     </Style>
 
     <Style Selector="Button.sidebar-item.active">
@@ -55,6 +82,10 @@
         <Setter Property="Background" Value="{DynamicResource SidebarItemHoverBrush}" />
     </Style>
 
+    <Style Selector="Button.sidebar-toggle:pressed /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource ControlPressedBrush}" />
+    </Style>
+
     <!-- Apply bar: Pending count button (transparent, clickable) -->
     <Style Selector="Button.apply-bar-count">
         <Setter Property="Background" Value="Transparent" />
@@ -65,15 +96,24 @@
 
     <Style Selector="Button.apply-bar-count /template/ ContentPresenter">
         <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+
+    <Style Selector="Button.apply-bar-count:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource RowHoverBrush}" />
+    </Style>
+
+    <Style Selector="Button.apply-bar-count:pressed /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource RowHoverBrush}" />
     </Style>
 
     <!-- Apply bar: Apply button -->
     <Style Selector="Button.apply-bar-apply">
         <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
-        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="BorderThickness" Value="0" />
         <Setter Property="Padding" Value="16,8" />
         <Setter Property="CornerRadius" Value="4" />
-        <Setter Property="Cursor" Value="Hand" />
         <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
 
@@ -82,16 +122,23 @@
     </Style>
 
     <Style Selector="Button.apply-bar-apply:pointerover /template/ ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource AccentColorLight}" />
+        <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}" />
+        <Setter Property="Foreground" Value="White" />
+    </Style>
+
+    <Style Selector="Button.apply-bar-apply:pressed /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource AccentPressedBrush}" />
+        <Setter Property="Foreground" Value="White" />
     </Style>
 
     <!-- Apply bar: Discard button -->
     <Style Selector="Button.apply-bar-discard">
         <Setter Property="Background" Value="{DynamicResource OverlayBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource OutlineBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
         <Setter Property="Padding" Value="16,8" />
         <Setter Property="CornerRadius" Value="4" />
-        <Setter Property="Cursor" Value="Hand" />
     </Style>
 
     <Style Selector="Button.apply-bar-discard:disabled">
@@ -99,7 +146,12 @@
     </Style>
 
     <Style Selector="Button.apply-bar-discard:pointerover /template/ ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+        <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource OutlineStrongBrush}" />
+    </Style>
+
+    <Style Selector="Button.apply-bar-discard:pressed /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource ControlPressedBrush}" />
     </Style>
 
     <!-- Pending state tinting: enable/create (green-ish) -->
@@ -155,19 +207,30 @@
     <Style Selector="ToggleButton.toolbar-toggle">
         <Setter Property="Background" Value="{DynamicResource OverlayBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
-        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="BorderBrush" Value="{DynamicResource OutlineBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="4" />
     </Style>
     <Style Selector="ToggleButton.toolbar-toggle:pointerover /template/ ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource SidebarItemHoverBrush}" />
+        <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource OutlineStrongBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.toolbar-toggle:pressed /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource ControlPressedBrush}" />
     </Style>
     <Style Selector="ToggleButton.toolbar-toggle:checked /template/ ContentPresenter">
         <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
         <Setter Property="Foreground" Value="White" />
     </Style>
     <Style Selector="ToggleButton.toolbar-toggle:checked:pointerover /template/ ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+        <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}" />
+        <Setter Property="Foreground" Value="White" />
+    </Style>
+    <Style Selector="ToggleButton.toolbar-toggle:checked:pressed /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource AccentPressedBrush}" />
         <Setter Property="Foreground" Value="White" />
     </Style>
 

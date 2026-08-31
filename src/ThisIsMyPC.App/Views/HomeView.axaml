@@ -13,7 +13,7 @@
         <StackPanel MaxWidth="800" HorizontalAlignment="Left" Margin="24,16,24,24" Spacing="16">
 
             <!-- 5-2: first-launch capability summary (dismissible, once) -->
-            <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="20,16"
+            <Border Classes="card" CornerRadius="8" Padding="20,16"
                     IsVisible="{Binding FirstLaunchBanner.IsVisible, FallbackValue=False}">
                 <StackPanel Spacing="10" DataContext="{Binding FirstLaunchBanner}"
                             x:DataType="vm:FirstLaunchBannerViewModel">
@@ -86,7 +86,7 @@
             </Border>
 
             <!-- 28-3: drift report from the Owner Mode service -->
-            <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="20,16"
+            <Border Classes="card" CornerRadius="8" Padding="20,16"
                     IsVisible="{Binding DriftSection, Converter={x:Static ObjectConverters.IsNotNull}}">
                 <StackPanel Spacing="8" DataContext="{Binding DriftSection}"
                             x:DataType="vm:DriftSectionViewModel">
@@ -123,7 +123,7 @@
             </Border>
 
             <!-- 9-3: unreviewed monitoring detections -->
-            <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="20,16"
+            <Border Classes="card" CornerRadius="8" Padding="20,16"
                     IsVisible="{Binding MonitoringSection, Converter={x:Static ObjectConverters.IsNotNull}}">
                 <StackPanel Spacing="8" DataContext="{Binding MonitoringSection}"
                             x:DataType="vm:MonitoringSectionViewModel">
@@ -157,7 +157,7 @@
             </Border>
 
             <!-- System Identity -->
-            <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="20,16">
+            <Border Classes="card" CornerRadius="8" Padding="20,16">
                 <StackPanel Spacing="8">
                     <TextBlock Text="{Binding Identity.MachineName}"
                                FontWeight="SemiBold" FontSize="18"
@@ -179,7 +179,7 @@
             </Border>
 
             <!-- Quick Actions -->
-            <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="20,16">
+            <Border Classes="card" CornerRadius="8" Padding="20,16">
                 <StackPanel Spacing="10">
                     <TextBlock Text="Quick Actions"
                                FontWeight="SemiBold" FontSize="16"
@@ -210,7 +210,7 @@
             </Border>
 
             <!-- Recent Activity -->
-            <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="20,16">
+            <Border Classes="card" CornerRadius="8" Padding="20,16">
                 <StackPanel Spacing="10">
                     <TextBlock Text="Recent Activity"
                                FontWeight="SemiBold" FontSize="16"

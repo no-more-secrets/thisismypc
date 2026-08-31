@@ -58,7 +58,7 @@
                                             <DataTemplate x:DataType="vm:SoftwareAppViewModel">
                                                 <Border Width="300" Padding="10,7" Margin="0,0,8,8"
                                                         CornerRadius="4"
-                                                        Background="{DynamicResource SurfaceBrush}"
+                                                        Classes="card"
                                                         ToolTip.Tip="{Binding Description}">
                                                     <DockPanel>
                                                         <Button DockPanel.Dock="Right"
@@ -150,7 +150,7 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:SoftwareUpdateViewModel">
                                 <Border Padding="12,10" Margin="0,2" CornerRadius="4"
-                                        Background="{DynamicResource SurfaceBrush}">
+                                        Classes="card">
                                     <DockPanel>
                                         <Button DockPanel.Dock="Right"
                                                 MinWidth="90"
@@ -210,7 +210,7 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:WindowsAppViewModel">
                                 <Border Padding="12,10" Margin="0,2" CornerRadius="4"
-                                        Background="{DynamicResource SurfaceBrush}">
+                                        Classes="card">
                                     <DockPanel>
                                         <Button DockPanel.Dock="Right"
                                                 MinWidth="90"

@@ -8,7 +8,7 @@
         <Border Padding="16,12"
                 Margin="0,2"
                 CornerRadius="6"
-                Background="{DynamicResource SurfaceBrush}"
+                Classes="card"
                 IsVisible="{Binding IsSearchVisible, FallbackValue=True}"
                 Classes.pending-enable="{Binding IsPendingEnable}"
                 Classes.inactive="{Binding IsInactive, FallbackValue=False}"

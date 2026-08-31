@@ -21,7 +21,7 @@
         <Border Padding="16,8"
                 Margin="0,2"
                 CornerRadius="6"
-                Background="{DynamicResource SurfaceBrush}"
+                Classes="card"
                 IsVisible="{Binding IsSearchVisible, FallbackValue=True}"
                 Classes.inactive="{Binding IsInactive, FallbackValue=False}"
                 Classes.pending-enable="{Binding IsPendingEnable}"

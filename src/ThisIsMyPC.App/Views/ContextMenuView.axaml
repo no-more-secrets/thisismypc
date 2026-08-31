@@ -214,7 +214,7 @@
 
                         <!-- Create/Edit form -->
                         <Border IsVisible="{Binding IsFormOpen}"
-                                Background="{DynamicResource SurfaceBrush}"
+                                Classes="card"
                                 CornerRadius="6" Padding="12">
                             <StackPanel Spacing="8" MaxWidth="560" HorizontalAlignment="Left">
                                 <TextBlock Text="{Binding FormHeader}" FontWeight="SemiBold" FontSize="14" />
@@ -252,7 +252,7 @@
                         <ItemsControl ItemsSource="{Binding Entries}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:CustomVerbEntryViewModel">
-                                    <Border Background="{DynamicResource SurfaceBrush}"
+                                    <Border Classes="card"
                                             CornerRadius="6" Padding="10" Margin="0,0,0,6">
                                         <Grid ColumnDefinitions="*,Auto,Auto">
                                             <StackPanel Grid.Column="0" Spacing="2">

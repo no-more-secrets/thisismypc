@@ -63,6 +63,62 @@
 
             <!-- Subtle full-width row hover -->
             <SolidColorBrush x:Key="RowHoverBrush" Color="#08FFFFFF" />
+
+            <!-- Interaction system: one hover/press/outline family for every
+                 clickable. Rest = Overlay, hover = ControlHover, press =
+                 ControlPressed; accent-filled controls darken through
+                 AccentHover/AccentPressed. -->
+            <SolidColorBrush x:Key="OutlineBrush" Color="#3f3f5a" />
+            <SolidColorBrush x:Key="OutlineStrongBrush" Color="#56567c" />
+            <SolidColorBrush x:Key="ControlHoverBrush" Color="#42425e" />
+            <SolidColorBrush x:Key="ControlPressedBrush" Color="#4c4c6a" />
+            <SolidColorBrush x:Key="AccentHoverBrush" Color="{StaticResource AccentColorLight}" />
+            <SolidColorBrush x:Key="AccentPressedBrush" Color="#3f68a8" />
+
+            <!-- Fluent resource-key overrides: stock Button/ToggleButton/
+                 ComboBox/TextBox/ToggleSwitch read these, so their states come
+                 from the same tokens as the custom classes. -->
+            <SolidColorBrush x:Key="ButtonBackground" Color="{StaticResource OverlayColor}" />
+            <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#42425e" />
+            <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#4c4c6a" />
+            <SolidColorBrush x:Key="ButtonBackgroundDisabled" Color="{StaticResource OverlayColor}" Opacity="0.5" />
+            <SolidColorBrush x:Key="ButtonForeground" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="ButtonForegroundDisabled" Color="#66FFFFFF" />
+            <SolidColorBrush x:Key="ButtonBorderBrush" Color="#3f3f5a" />
+            <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#56567c" />
+            <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#56567c" />
+            <SolidColorBrush x:Key="ButtonBorderBrushDisabled" Color="#3f3f5a" />
+            <SolidColorBrush x:Key="ToggleButtonBackground" Color="{StaticResource OverlayColor}" />
+            <SolidColorBrush x:Key="ToggleButtonBackgroundPointerOver" Color="#42425e" />
+            <SolidColorBrush x:Key="ToggleButtonBackgroundPressed" Color="#4c4c6a" />
+            <SolidColorBrush x:Key="ToggleButtonBackgroundChecked" Color="{StaticResource AccentColor}" />
+            <SolidColorBrush x:Key="ToggleButtonBackgroundCheckedPointerOver" Color="{StaticResource AccentColorLight}" />
+            <SolidColorBrush x:Key="ToggleButtonBackgroundCheckedPressed" Color="#3f68a8" />
+            <SolidColorBrush x:Key="ToggleButtonForeground" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="ToggleButtonForegroundChecked" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="ToggleButtonBorderBrush" Color="#3f3f5a" />
+            <SolidColorBrush x:Key="ToggleButtonBorderBrushPointerOver" Color="#56567c" />
+            <SolidColorBrush x:Key="ToggleButtonBorderBrushChecked" Color="{StaticResource AccentColor}" />
+            <SolidColorBrush x:Key="TextControlBackground" Color="{StaticResource SurfaceColor}" />
+            <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="{StaticResource SurfaceColor}" />
+            <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="{StaticResource SurfaceColor}" />
+            <SolidColorBrush x:Key="TextControlBorderBrush" Color="#3f3f5a" />
+            <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#56567c" />
+            <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="{StaticResource AccentColor}" />
+            <SolidColorBrush x:Key="ComboBoxBackground" Color="{StaticResource OverlayColor}" />
+            <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="#42425e" />
+            <SolidColorBrush x:Key="ComboBoxBackgroundPressed" Color="#4c4c6a" />
+            <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="#3f3f5a" />
+            <SolidColorBrush x:Key="ComboBoxBorderBrushPointerOver" Color="#56567c" />
+            <SolidColorBrush x:Key="ComboBoxBorderBrushPressed" Color="#56567c" />
+            <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="{StaticResource AccentColor}" />
+            <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="{StaticResource AccentColorLight}" />
+            <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="#3f68a8" />
+            <SolidColorBrush x:Key="ToggleSwitchStrokeOn" Color="{StaticResource AccentColor}" />
+            <SolidColorBrush x:Key="ToggleSwitchStrokeOnPointerOver" Color="{StaticResource AccentColorLight}" />
+            <SolidColorBrush x:Key="ToggleSwitchStrokeOnPressed" Color="#3f68a8" />
         </ResourceDictionary>
 
         <ResourceDictionary x:Key="Light">
@@ -121,7 +177,61 @@
 
             <!-- Subtle full-width row hover -->
             <SolidColorBrush x:Key="RowHoverBrush" Color="#0A000000" />
+
+            <!-- Interaction system (see the Dark dictionary's comment) -->
+            <SolidColorBrush x:Key="OutlineBrush" Color="#d0d4e0" />
+            <SolidColorBrush x:Key="OutlineStrongBrush" Color="#b0b6c8" />
+            <SolidColorBrush x:Key="ControlHoverBrush" Color="#d6dae6" />
+            <SolidColorBrush x:Key="ControlPressedBrush" Color="#c9cedd" />
+            <SolidColorBrush x:Key="AccentHoverBrush" Color="{StaticResource AccentColorLight}" />
+            <SolidColorBrush x:Key="AccentPressedBrush" Color="#274b8f" />
+
+            <!-- Fluent resource-key overrides -->
+            <SolidColorBrush x:Key="ButtonBackground" Color="{StaticResource OverlayColor}" />
+            <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#d6dae6" />
+            <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#c9cedd" />
+            <SolidColorBrush x:Key="ButtonBackgroundDisabled" Color="{StaticResource OverlayColor}" Opacity="0.5" />
+            <SolidColorBrush x:Key="ButtonForeground" Color="#E014142A" />
+            <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#E014142A" />
+            <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#E014142A" />
+            <SolidColorBrush x:Key="ButtonForegroundDisabled" Color="#5214142A" />
+            <SolidColorBrush x:Key="ButtonBorderBrush" Color="#d0d4e0" />
+            <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="#b0b6c8" />
+            <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="#b0b6c8" />
+            <SolidColorBrush x:Key="ButtonBorderBrushDisabled" Color="#d0d4e0" />
+            <SolidColorBrush x:Key="ToggleButtonBackground" Color="{StaticResource OverlayColor}" />
+            <SolidColorBrush x:Key="ToggleButtonBackgroundPointerOver" Color="#d6dae6" />
+            <SolidColorBrush x:Key="ToggleButtonBackgroundPressed" Color="#c9cedd" />
+            <SolidColorBrush x:Key="ToggleButtonBackgroundChecked" Color="{StaticResource AccentColor}" />
+            <SolidColorBrush x:Key="ToggleButtonBackgroundCheckedPointerOver" Color="{StaticResource AccentColorLight}" />
+            <SolidColorBrush x:Key="ToggleButtonBackgroundCheckedPressed" Color="#274b8f" />
+            <SolidColorBrush x:Key="ToggleButtonForeground" Color="#E014142A" />
+            <SolidColorBrush x:Key="ToggleButtonForegroundChecked" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="ToggleButtonBorderBrush" Color="#d0d4e0" />
+            <SolidColorBrush x:Key="ToggleButtonBorderBrushPointerOver" Color="#b0b6c8" />
+            <SolidColorBrush x:Key="ToggleButtonBorderBrushChecked" Color="{StaticResource AccentColor}" />
+            <SolidColorBrush x:Key="TextControlBackground" Color="{StaticResource SurfaceColor}" />
+            <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="{StaticResource SurfaceColor}" />
+            <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="{StaticResource SurfaceColor}" />
+            <SolidColorBrush x:Key="TextControlBorderBrush" Color="#d0d4e0" />
+            <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#b0b6c8" />
+            <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="{StaticResource AccentColor}" />
+            <SolidColorBrush x:Key="ComboBoxBackground" Color="{StaticResource OverlayColor}" />
+            <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="#d6dae6" />
+            <SolidColorBrush x:Key="ComboBoxBackgroundPressed" Color="#c9cedd" />
+            <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="#d0d4e0" />
+            <SolidColorBrush x:Key="ComboBoxBorderBrushPointerOver" Color="#b0b6c8" />
+            <SolidColorBrush x:Key="ComboBoxBorderBrushPressed" Color="#b0b6c8" />
+            <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="{StaticResource AccentColor}" />
+            <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="{StaticResource AccentColorLight}" />
+            <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="#274b8f" />
+            <SolidColorBrush x:Key="ToggleSwitchStrokeOn" Color="{StaticResource AccentColor}" />
+            <SolidColorBrush x:Key="ToggleSwitchStrokeOnPointerOver" Color="{StaticResource AccentColorLight}" />
+            <SolidColorBrush x:Key="ToggleSwitchStrokeOnPressed" Color="#274b8f" />
         </ResourceDictionary>
 
     </ResourceDictionary.ThemeDictionaries>
+
+    <!-- Shared: uniform rounding for every stock control -->
+    <CornerRadius x:Key="ControlCornerRadius">4</CornerRadius>
 </ResourceDictionary>

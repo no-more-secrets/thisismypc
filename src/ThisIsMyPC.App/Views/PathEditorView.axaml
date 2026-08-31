@@ -19,7 +19,7 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:PathEntryViewModel">
                         <Border Padding="0" Margin="0,1" CornerRadius="4"
-                                Background="{DynamicResource SurfaceBrush}"
+                                Classes="card"
                                 DragDrop.AllowDrop="True">
                             <Grid ColumnDefinitions="Auto,*,Auto">
                                 <!-- Drag handle with index -->

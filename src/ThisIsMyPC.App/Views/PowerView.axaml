@@ -34,7 +34,7 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:PowerPlanItemViewModel">
                             <Border Padding="16,12" Margin="0,3" CornerRadius="6"
-                                    Background="{DynamicResource SurfaceBrush}">
+                                    Classes="card">
                                 <Grid ColumnDefinitions="*,Auto">
                                     <StackPanel Grid.Column="0" Spacing="4">
                                         <StackPanel Orientation="Horizontal" Spacing="8">
@@ -150,7 +150,7 @@
                 <!-- Modern Standby (AC5) -->
                 <Border IsVisible="{Binding ShowModernStandby}"
                         Padding="16,12" CornerRadius="6"
-                        Background="{DynamicResource SurfaceBrush}">
+                        Classes="card">
                     <Grid ColumnDefinitions="*,Auto">
                         <StackPanel Grid.Column="0" Spacing="4">
                             <TextBlock Text="Disable Modern Standby"
@@ -181,7 +181,7 @@
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="vm:PowerSettingItemViewModel">
                                             <Border Padding="12,8" Margin="0,2" CornerRadius="4"
-                                                    Background="{DynamicResource SurfaceBrush}">
+                                                    Classes="card">
                                                 <StackPanel Spacing="4">
                                                     <TextBlock Text="{Binding Name}"
                                                                FontSize="14" FontWeight="SemiBold"
