@@ -33,6 +33,21 @@
         <Setter Property="Cursor" Value="Hand" />
     </Style>
 
+    <!-- Tabs share the page edge geometry: stock Fluent pads the tab content
+         area 12px per side, which pushed tab pages' scrollbars out of the
+         shared lane and indented their content relative to every other page.
+         Headers lose their built-in side padding for the same reason (the
+         first header sits flush with page content); the margin keeps the
+         24px rhythm between headers. -->
+    <Style Selector="TabControl">
+        <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style Selector="TabItem">
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Margin" Value="0,0,24,0" />
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+
     <!-- Sliders: hand cursor and a thumb that grows toward the pointer.
          Wheel-to-adjust is wired per view (DisplayView) because it must win
          over the page's ScrollViewer. The body carries a button-style

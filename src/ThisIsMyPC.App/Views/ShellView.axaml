@@ -10,11 +10,11 @@
 
     <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                   VerticalScrollBarVisibility="Auto">
-        <StackPanel Spacing="16" Margin="0,0,8,16">
+        <StackPanel Spacing="16" Margin="0,0,8,24">
 
             <TextBox Text="{Binding SearchText}"
                      Watermark="Search settings"
-                     Margin="0,8,0,0" />
+                     Margin="0,12,0,0" />
 
             <!-- Explorer Preferences Section -->
             <StackPanel Spacing="8">

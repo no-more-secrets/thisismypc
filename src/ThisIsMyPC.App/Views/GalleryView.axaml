@@ -31,10 +31,10 @@
     </UserControl.Styles>
 
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-        <StackPanel MaxWidth="860" HorizontalAlignment="Left" Margin="0,8,8,32">
+        <StackPanel MaxWidth="860" HorizontalAlignment="Left" Margin="0,12,8,24">
 
             <!-- Type scale -->
-            <TextBlock Classes="gallery-section" Text="Type scale" Margin="0,8,0,10" />
+            <TextBlock Classes="gallery-section" Text="Type scale" Margin="0,0,0,10" />
             <StackPanel Spacing="6">
                 <TextBlock Text="Page title 28 display" FontSize="28" FontWeight="Bold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
