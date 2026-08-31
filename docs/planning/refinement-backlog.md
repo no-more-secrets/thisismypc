@@ -109,6 +109,23 @@ Debug builds only since 2026-08-31 (compile-time gate on the sidebar button);
 Release also drops the Debug-only log console window. Nothing left for release
 prep here.
 
+## Repo publication hygiene (release blocker: the repo is private today, goes public GPLv2)
+
+- **TWEAKS.md moved out 2026-08-31**: the personal machine audit now lives at
+  `C:\Users\user\Dev-Projects\laptop-debloat\TWEAKS.md` (only copy; back it up)
+  and is gitignored so it cannot come back.
+- **Git history still contains it** (entered at ada10cb) along with whatever
+  else `_bmad-output/` history holds. Before flipping the repo public, either
+  scrub history (`git filter-repo` on the file paths) or publish with fresh
+  history; do a full history review for personal data either way. Sam's call
+  which; scrubbing rewrites every SHA, so do it after development quiets, right
+  before publication.
+- **Owner mismatch to resolve at publication**: `AppConstants.UpdateUrl` points
+  at `github.com/No-More-Secrets/thisismypc`; the actual remote is
+  `github.com/samboland/thisismypc` (private). The update verifier derives its
+  manifest URL from UpdateUrl, so whichever org/name ships must match where
+  releases are published. Naming is Sam's decision.
+
 ## AV / SmartScreen readiness (release-readiness chunk, pre-first-release)
 
 The flag risk is Defender PUA heuristics on the app's behavior (elevated +

@@ -29,10 +29,12 @@ Full detail, ordering rationale, and per-module deferred lists:
 Feature work is complete (all modules plus the UI/UX chapter; history in the
 backlog).
 
-1. **Release prep (current)**. Hard blockers: GPG update-verifier swap, TWEAKS.md move-out,
-   machine-scope packaging (Program Files + admin-owned ProgramData, Velopack
-   machine-wide). Process: SSL.com OV cert purchase, Defender false-positive
-   submission, VirusTotal CI canary, winget distribution.
+1. **Release prep (current)**. Hard blockers: machine-scope packaging (Program
+   Files + admin-owned ProgramData, Velopack machine-wide), GPG release-key
+   ceremony (Sam, docs/release/update-signing.md), git-history scrub before the
+   repo goes public (see publication hygiene in the backlog). Process: SSL.com
+   OV cert purchase, Defender false-positive submission, VirusTotal CI canary,
+   winget distribution.
 2. **Post-release menu**: retired BMAD epics (ASUS/ATKACPI, OpenRGB, drivers,
    network/firewall, profiles, WU remainder) and install-engine leftovers
    (OneDrive/Edge removal, OEM tools, progress/cancel).
