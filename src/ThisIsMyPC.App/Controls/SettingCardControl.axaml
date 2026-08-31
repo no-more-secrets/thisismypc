@@ -7,7 +7,7 @@
     <!-- Card renderer (Epic 10). One control, visual states; never four templates.
          Display modes (10-2) drive IsDescriptionVisible / IsRegistryDataVisible;
          enforcement badges and Owner Mode degradation arrive in 10-3. -->
-    <Border Padding="16,12"
+    <Border Padding="14,6"
             Margin="0,2"
             CornerRadius="6"
             Classes="card"
@@ -20,7 +20,9 @@
                           IsChecked="{Binding IsEnabled}"
                           IsVisible="{Binding IsToggle}"
                           IsEnabled="{Binding IsControlEnabled}"
-                          VerticalAlignment="Top"
+                          OnContent="{x:Null}" OffContent="{x:Null}"
+                          MinHeight="0"
+                          VerticalAlignment="Center"
                           Margin="16,0,0,0" />
 
             <StackPanel Spacing="2">

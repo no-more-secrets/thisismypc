@@ -18,7 +18,7 @@
          FallbackValue is set on optional bindings to suppress binding errors. -->
 
     <DataTemplate x:Key="ToggleSettingRowTemplate">
-        <Border Padding="16,8"
+        <Border Padding="14,6"
                 Margin="0,2"
                 CornerRadius="6"
                 Classes="card"
@@ -27,11 +27,14 @@
                 Classes.pending-enable="{Binding IsPendingEnable}"
                 Classes.pending-disable="{Binding IsPendingDisable}">
             <DockPanel>
-                <!-- Toggle switch on the right -->
+                <!-- Toggle switch on the right; no On/Off labels, the pill
+                     shows state, and MinHeight 0 lets the row stay short -->
                 <ToggleSwitch DockPanel.Dock="Right"
                               IsChecked="{Binding IsEnabled}"
                               IsEnabled="{Binding IsToggleEnabled, FallbackValue=True}"
-                              VerticalAlignment="Top"
+                              OnContent="{x:Null}" OffContent="{x:Null}"
+                              MinHeight="0"
+                              VerticalAlignment="Center"
                               Margin="16,0,0,0" />
 
                 <!-- Setting info on the left -->
