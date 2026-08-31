@@ -10,7 +10,7 @@
     <!-- Read-only dashboard (10.5): system identity, quick actions, recent activity -->
     <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                   VerticalScrollBarVisibility="Auto">
-        <StackPanel MaxWidth="800" HorizontalAlignment="Left" Margin="0,12,8,24" Spacing="16">
+        <StackPanel MaxWidth="800" HorizontalAlignment="Left" Margin="0,12,16,24" Spacing="16">
 
             <!-- 5-2: first-launch capability summary (dismissible, once) -->
             <Border Classes="card" CornerRadius="8" Padding="20,16"

@@ -9,7 +9,7 @@
 
     <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                   VerticalScrollBarVisibility="Auto">
-        <StackPanel Spacing="8" Margin="0,12,8,24">
+        <StackPanel Spacing="8" Margin="0,12,16,24">
 
             <!-- Search + Registry Info toggle -->
             <DockPanel Margin="0,0,16,4">
@@ -99,7 +99,7 @@
                     </TabItem.Header>
                     <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                                   VerticalScrollBarVisibility="Auto">
-                        <StackPanel Spacing="12" Margin="0,8,8,0">
+                        <StackPanel Spacing="12" Margin="0,8,16,0">
                             <!-- Drive -->
                             <StackPanel Spacing="4">
                                 <TextBlock Text="Drive" FontSize="14" FontWeight="SemiBold"

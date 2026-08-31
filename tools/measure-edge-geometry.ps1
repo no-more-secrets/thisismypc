@@ -2,7 +2,8 @@
 # Measures edge geometry of MainWindow screenshots (dark theme) so page parity
 # is verified in pixels, never by reasoning about XAML.
 # Usage: .\tools\measure-edge-geometry.ps1 (Get-ChildItem artifacts\ui-shots\walkthrough\*.png).FullName | Format-Table -AutoSize
-# Expected on every page: ContentL 25, ContentR 31, LaneFrom 10, ContentT 37 (+/-3 for glyphs).
+# Expected on every page: ContentL 25, ContentR 23, LaneFrom 10, ContentT 37 (+/-3 for glyphs);
+# ContentR minus LaneTo is the content-to-thumb gap, ~10px by design.
 # Base #1a1a2e window bg, Raised #242438 card bg, Outline #3f3f5a border.
 Add-Type -AssemblyName System.Drawing
 
@@ -44,13 +45,14 @@ function Measure-Shot($path) {
         }
 
         # X extremes: rows well clear of the rounded corners; columns clear of the 1px border.
-        # The last 30px before the card's right border are treated as the scrollbar lane and
-        # tracked separately, so a scrollbar thumb never poses as content.
+        # The last 18px before the card's right border are treated as the scrollbar lane and
+        # tracked separately, so a scrollbar thumb never poses as content (content sits at
+        # 23 from the border by design, safely outside the zone).
         $minX = -1; $maxX = -1; $laneMin = -1; $laneMax = -1
         for ($y = $cardTop + 14; $y -lt $cardBottom - 14; $y += 2) {
             for ($x = $cardLeft + 3; $x -lt $cardRight - 2; $x++) {
                 if (Test-Bg $bmp.GetPixel($x, $y)) { continue }
-                if ($x -ge $cardRight - 30) {
+                if ($x -ge $cardRight - 18) {
                     if ($laneMin -lt 0 -or $x -lt $laneMin) { $laneMin = $x }
                     if ($x -gt $laneMax) { $laneMax = $x }
                     continue

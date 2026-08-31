@@ -104,19 +104,22 @@ dotnet test tests/ThisIsMyPC.App.UiTests --configuration Release --filter "Categ
 
 ### Edge-geometry contract (every module page, no exceptions)
 
-The MainWindow host Border pads 24 left/top/bottom and 6 right; the 10px
-scrollbar lane plus each view's 8px content right margin fill the remaining 18,
-so bg-to-content measures 24 on both sides. Inside a page: first element starts
-12px below the host padding; scrolled content ends 24px above it. Views never
-set their own left margins or extra scrollbar clearance. `Controls.axaml` zeroes
-TabControl/TabItem padding globally (stock Fluent pads tab content 12px per
-side, which pushes scrollbars out of the lane and indents content); a new tab
-page needs `Margin="0,12,0,0"` on its TabControl and nothing else.
+The MainWindow host Border pads 24 left/top/bottom and 6 right. Every view
+gives its scroll content a 16px right margin: the scrollbar overlays the
+viewport (it reserves no space), so 16 leaves a ~10px gap between content and
+the 4px thumb and puts bg-to-content at ~24 on both sides. Fixed chrome above
+a scroller (card-page toolbar rows) uses right margin 16 too, so it shares the
+content edge exactly. Inside a page: first element starts 12px below the host
+padding; scrolled content ends 24px above it. Views never set their own left
+margins. `Controls.axaml` zeroes TabControl/TabItem padding globally (stock
+Fluent pads tab content 12px per side, which pushes scrollbars out of the lane
+and indents content); a new tab page needs `Margin="0,12,0,0"` on its
+TabControl and nothing else.
 
 After touching any page layout, verify parity in pixels, not by eye and never
 from XAML: screenshot the pages (walkthrough or `EdgeGeometryShotTests`), then
 run `tools/measure-edge-geometry.ps1` over the PNGs. Every page must read
-ContentL 25 and LaneFrom 10; ContentR 31 except width-capped pages (Home,
+ContentL 25 and LaneFrom 10; ContentR 23 except width-capped pages (Home,
 Settings, Display, Gallery cap content width, so their ContentR is large);
 ContentT 37 give or take 4, except tab pages (~55: Fluent centers header text
 in the tab min-height). Any page off those numbers is the bug, even if it

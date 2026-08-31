@@ -31,7 +31,7 @@
     </UserControl.Styles>
 
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-        <StackPanel MaxWidth="860" HorizontalAlignment="Left" Margin="0,12,8,24">
+        <StackPanel MaxWidth="860" HorizontalAlignment="Left" Margin="0,12,16,24">
 
             <!-- Type scale -->
             <TextBlock Classes="gallery-section" Text="Type scale" Margin="0,0,0,10" />
