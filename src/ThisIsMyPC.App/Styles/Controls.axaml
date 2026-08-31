@@ -33,6 +33,23 @@
         <Setter Property="Cursor" Value="Hand" />
     </Style>
 
+    <!-- Sliders: hand cursor and a thumb that grows toward the pointer.
+         Wheel-to-adjust is wired per view (DisplayView) because it must win
+         over the page's ScrollViewer. -->
+    <Style Selector="Slider">
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="Slider /template/ Thumb">
+        <Setter Property="Transitions">
+            <Transitions>
+                <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.08" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Slider:pointerover /template/ Thumb">
+        <Setter Property="RenderTransform" Value="scale(1.15)" />
+    </Style>
+
     <!-- Loading indicators fill with the app accent, not Fluent gray -->
     <Style Selector="ProgressBar">
         <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />

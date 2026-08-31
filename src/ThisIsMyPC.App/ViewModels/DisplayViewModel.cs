@@ -147,12 +147,30 @@ public sealed partial class MonitorItemViewModel : ViewModelBase
 
     partial void OnBrightnessChanged(double value)
     {
+        // Typed values can land outside the range; re-set to the clamped
+        // value and let that change run the real path.
+        var clamped = Math.Clamp(value, 0, BrightnessMax);
+        if (clamped != value)
+        {
+            Brightness = clamped;
+            return;
+        }
+
         _brightnessChanged?.Invoke(this, value);
         _ = PushAsync((int)value, brightness: true);
     }
 
-    partial void OnContrastChanged(double value) =>
+    partial void OnContrastChanged(double value)
+    {
+        var clamped = Math.Clamp(value, 0, ContrastMax);
+        if (clamped != value)
+        {
+            Contrast = clamped;
+            return;
+        }
+
         _ = PushAsync((int)value, brightness: false);
+    }
 
     partial void OnLastErrorChanged(string value) => OnPropertyChanged(nameof(HasError));
 
