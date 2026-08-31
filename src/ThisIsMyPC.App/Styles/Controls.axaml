@@ -10,11 +10,29 @@
     <Style Selector="ToggleButton">
         <Setter Property="Cursor" Value="Hand" />
     </Style>
+
+    <!-- One press motion for every pressable: the whole control shrinks
+         about its center by the same percentage (stock Fluent scales Buttons
+         but not ToggleButtons, so chips and buttons moved differently). -->
+    <Style Selector="Button:pressed">
+        <Setter Property="RenderTransform" Value="scale(0.98)" />
+    </Style>
+    <Style Selector="ToggleButton:pressed">
+        <Setter Property="RenderTransform" Value="scale(0.98)" />
+    </Style>
+    <Style Selector="ComboBox:pressed">
+        <Setter Property="RenderTransform" Value="scale(0.98)" />
+    </Style>
     <Style Selector="ToggleSwitch">
         <Setter Property="Cursor" Value="Hand" />
     </Style>
     <Style Selector="ComboBox">
         <Setter Property="Cursor" Value="Hand" />
+    </Style>
+
+    <!-- Loading indicators fill with the app accent, not Fluent gray -->
+    <Style Selector="ProgressBar">
+        <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
     </Style>
 
     <!-- Standard content card: surface fill plus the universal outline -->

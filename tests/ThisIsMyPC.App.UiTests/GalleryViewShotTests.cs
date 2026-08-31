@@ -28,6 +28,8 @@ public class GalleryViewShotTests
             Assert.True(session.IsTextVisible("Color tokens"));
 
             var scroller = session.Find<Avalonia.Controls.ScrollViewer>(_ => true);
+            scroller.Offset = new Avalonia.Vector(0, 300);
+            session.Screenshot("gallery-light-mid");
             scroller.ScrollToEnd();
             session.Screenshot("gallery-light-bottom");
             session.SetTheme(ThemeVariant.Dark);

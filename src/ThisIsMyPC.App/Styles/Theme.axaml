@@ -119,6 +119,10 @@
             <SolidColorBrush x:Key="ToggleSwitchStrokeOn" Color="{StaticResource AccentColor}" />
             <SolidColorBrush x:Key="ToggleSwitchStrokeOnPointerOver" Color="{StaticResource AccentColorLight}" />
             <SolidColorBrush x:Key="ToggleSwitchStrokeOnPressed" Color="#3f68a8" />
+
+            <!-- Selected tab: accent pipe + full-strength label -->
+            <SolidColorBrush x:Key="TabItemHeaderSelectedPipeFill" Color="{StaticResource AccentColor}" />
+            <SolidColorBrush x:Key="TabItemHeaderForegroundSelected" Color="#FFFFFF" />
         </ResourceDictionary>
 
         <ResourceDictionary x:Key="Light">
@@ -228,6 +232,10 @@
             <SolidColorBrush x:Key="ToggleSwitchStrokeOn" Color="{StaticResource AccentColor}" />
             <SolidColorBrush x:Key="ToggleSwitchStrokeOnPointerOver" Color="{StaticResource AccentColorLight}" />
             <SolidColorBrush x:Key="ToggleSwitchStrokeOnPressed" Color="#274b8f" />
+
+            <!-- Selected tab: accent pipe + full-strength label -->
+            <SolidColorBrush x:Key="TabItemHeaderSelectedPipeFill" Color="{StaticResource AccentColor}" />
+            <SolidColorBrush x:Key="TabItemHeaderForegroundSelected" Color="#E014142A" />
         </ResourceDictionary>
 
     </ResourceDictionary.ThemeDictionaries>

@@ -138,7 +138,8 @@
             </WrapPanel>
             <TextBox Text="{Binding SampleText}" Watermark="Search settings" Margin="0,0,0,10" />
             <ProgressBar IsIndeterminate="True" Height="4" Margin="0,0,0,4" />
-            <TextBlock Text="Indeterminate progress: the module scan overlay bar" FontSize="12"
+            <ProgressBar Minimum="0" Maximum="100" Value="60" Height="4" Margin="0,0,0,4" />
+            <TextBlock Text="Progress: indeterminate (the module scan overlay) and determinate" FontSize="12"
                        Foreground="{DynamicResource TextTertiaryBrush}" />
 
             <!-- Status text -->
