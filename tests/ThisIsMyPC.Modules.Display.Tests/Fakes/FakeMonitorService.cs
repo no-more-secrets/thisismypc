@@ -38,5 +38,11 @@ public sealed class FakeMonitorService : IMonitorService
         return OperationResult<bool>.Success(true);
     }
 
+    public OperationResult<bool> SetVcpValue(string monitorId, int vcpCode, int value)
+    {
+        Calls.Add($"SetVcpValue:{monitorId}:0x{vcpCode:X2}={value}");
+        return OperationResult<bool>.Success(true);
+    }
+
     public bool HasSystemBattery() => HasBattery;
 }

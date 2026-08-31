@@ -79,6 +79,39 @@
                                                 Margin="8,0" />
                                     </DockPanel>
 
+                                    <!-- Vendor features (blue light filter etc.) -->
+                                    <ItemsControl ItemsSource="{Binding VendorFeatures}"
+                                                  IsVisible="{Binding HasVendorFeatures}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:VendorFeatureViewModel">
+                                                <DockPanel Margin="0,0,0,8">
+                                                    <TextBlock DockPanel.Dock="Left" Text="{Binding Name}" Width="90"
+                                                               VerticalAlignment="Center" FontSize="12"
+                                                               TextWrapping="Wrap"
+                                                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                                                    <TextBlock DockPanel.Dock="Right" Width="36"
+                                                               Text="{Binding Value, StringFormat={}{0:0}}"
+                                                               VerticalAlignment="Center" FontSize="12"
+                                                               TextAlignment="Right"
+                                                               IsVisible="{Binding IsSlider}"
+                                                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                                                    <Panel Margin="8,0">
+                                                        <Slider Minimum="{Binding Minimum}"
+                                                                Maximum="{Binding Maximum}"
+                                                                Value="{Binding Value}"
+                                                                TickFrequency="1"
+                                                                IsSnapToTickEnabled="True"
+                                                                IsVisible="{Binding IsSlider}" />
+                                                        <ComboBox ItemsSource="{Binding Values}"
+                                                                  SelectedItem="{Binding SelectedValue}"
+                                                                  IsVisible="{Binding IsCombo}"
+                                                                  HorizontalAlignment="Stretch" />
+                                                    </Panel>
+                                                </DockPanel>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+
                                     <!-- Input source -->
                                     <DockPanel IsVisible="{Binding HasInputSources}">
                                         <TextBlock DockPanel.Dock="Left" Text="Input" Width="90"

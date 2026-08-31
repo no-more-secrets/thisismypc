@@ -51,4 +51,25 @@ public sealed class VcpCapabilitiesTests
         var values = VcpCapabilities.ParseInputSourceValues("(vcp(14(05 08) 160(01) 60(11)))");
         Assert.Equal([0x11], values);
     }
+
+    [Fact]
+    public void CodeValueGroups_MapEveryDeclaredGroup()
+    {
+        var map = VcpCapabilities.ParseCodeValueGroups("(vcp(10 12 60(0F 11) E6(00 01 02 03 04) E1(00 01)))");
+
+        Assert.Equal(3, map.Count);
+        Assert.Equal([0x0F, 0x11], map[0x60]);
+        Assert.Equal([0, 1, 2, 3, 4], map[0xE6]);
+        Assert.Equal([0, 1], map[0xE1]);
+        Assert.False(map.ContainsKey(0x10)); // no group declared
+    }
+
+    [Fact]
+    public void CodeValueGroups_SkipLongVendorTokens()
+    {
+        var map = VcpCapabilities.ParseCodeValueGroups("(vcp(160(01) E6(00 01)))");
+
+        Assert.Single(map);
+        Assert.True(map.ContainsKey(0xE6));
+    }
 }

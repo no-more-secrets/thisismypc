@@ -53,7 +53,16 @@ public sealed partial class MonitorItemViewModel : ViewModelBase
         _brightness = device.Brightness;
         _contrast = device.Contrast ?? 0;
         _selectedInput = device.InputSources.FirstOrDefault(i => i.Value == device.CurrentInput);
+        VendorFeatures = device.VendorFeatures
+            .Select(f => new VendorFeatureViewModel(
+                f,
+                write: (code, value) => monitors.SetVcpValue(device.Id, code, value),
+                reportError: error => LastError = error))
+            .ToList();
     }
+
+    public IReadOnlyList<VendorFeatureViewModel> VendorFeatures { get; }
+    public bool HasVendorFeatures => VendorFeatures.Count > 0;
 
     public string Name => _device.Name;
     public bool IsInternalPanel => _device.IsInternalPanel;
@@ -142,5 +151,81 @@ public sealed partial class MonitorItemViewModel : ViewModelBase
         return brightness
             ? _monitors.SetBrightness(_device.Id, value)
             : _monitors.SetContrast(_device.Id, value);
+    }
+}
+
+/// <summary>
+/// One vendor VCP feature row. Contiguous value lists (0 1 2 3 4) render as a
+/// snapping slider; gappy lists as a combo. Writes are live like everything
+/// else on this page.
+/// </summary>
+public sealed partial class VendorFeatureViewModel : ViewModelBase
+{
+    private readonly VendorVcpFeature _feature;
+    private readonly Func<int, int, OperationResult<bool>> _write;
+    private readonly Action<string> _reportError;
+    private int _writing;
+    private int? _pending;
+
+    public VendorFeatureViewModel(
+        VendorVcpFeature feature,
+        Func<int, int, OperationResult<bool>> write,
+        Action<string> reportError)
+    {
+        _feature = feature;
+        _write = write;
+        _reportError = reportError;
+        _value = feature.Current ?? feature.Values[0];
+        _selectedValue = feature.Values.Contains((int)_value) ? (int)_value : feature.Values[0];
+        IsSlider = IsContiguous(feature.Values);
+    }
+
+    public string Name => _feature.Name;
+    public bool IsSlider { get; }
+    public bool IsCombo => !IsSlider;
+    public double Minimum => _feature.Values[0];
+    public double Maximum => _feature.Values[^1];
+    public IReadOnlyList<int> Values => _feature.Values;
+
+    [ObservableProperty]
+    private double _value;
+
+    [ObservableProperty]
+    private int _selectedValue;
+
+    partial void OnValueChanged(double value) => _ = PushAsync((int)value);
+
+    partial void OnSelectedValueChanged(int value) => _ = PushAsync(value);
+
+    private async Task PushAsync(int value)
+    {
+        _pending = value;
+        if (Interlocked.Exchange(ref _writing, 1) == 1)
+            return;
+
+        try
+        {
+            while (_pending is { } next)
+            {
+                _pending = null;
+                var result = await Task.Run(() => _write(_feature.Code, next)).ConfigureAwait(true);
+                _reportError(result.IsSuccess ? string.Empty : result.ErrorMessage ?? "Write failed.");
+            }
+        }
+        finally
+        {
+            _writing = 0;
+        }
+    }
+
+    private static bool IsContiguous(IReadOnlyList<int> values)
+    {
+        for (var i = 1; i < values.Count; i++)
+        {
+            if (values[i] != values[i - 1] + 1)
+                return false;
+        }
+
+        return values.Count >= 2;
     }
 }

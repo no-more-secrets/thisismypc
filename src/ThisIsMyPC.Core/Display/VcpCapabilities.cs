@@ -15,11 +15,20 @@ public static class VcpCapabilities
     /// only. Empty when the string is malformed, has no vcp section, or lists
     /// 60 without a value group.
     /// </summary>
-    public static IReadOnlyList<int> ParseInputSourceValues(string capabilities)
+    public static IReadOnlyList<int> ParseInputSourceValues(string capabilities) =>
+        ParseCodeValueGroups(capabilities).TryGetValue(0x60, out var values) ? values : [];
+
+    /// <summary>
+    /// Every VCP code in the vcp(...) section that declares an explicit value
+    /// group, mapped to its allowed values (low byte). Codes listed without a
+    /// group are omitted.
+    /// </summary>
+    public static IReadOnlyDictionary<int, IReadOnlyList<int>> ParseCodeValueGroups(string capabilities)
     {
+        var result = new Dictionary<int, IReadOnlyList<int>>();
         var vcpBody = ExtractSection(capabilities, "vcp");
         if (vcpBody is null)
-            return [];
+            return result;
 
         var i = 0;
         while (i < vcpBody.Length)
@@ -46,11 +55,16 @@ public static class VcpCapabilities
                 continue;
             }
 
-            if (token.Equals("60", StringComparison.OrdinalIgnoreCase) && groupBody is not null)
-                return ParseHexList(groupBody);
+            // Codes are one byte; longer tokens are vendor extensions we skip.
+            if (token.Length <= 2 && groupBody is not null
+                && int.TryParse(token, System.Globalization.NumberStyles.HexNumber,
+                    System.Globalization.CultureInfo.InvariantCulture, out var code))
+            {
+                result[code] = ParseHexList(groupBody);
+            }
         }
 
-        return [];
+        return result;
     }
 
     private static string? ExtractSection(string text, string name)

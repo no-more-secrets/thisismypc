@@ -37,6 +37,12 @@ public class DisplayViewShotTests
             return OperationResult<bool>.Success(true);
         }
 
+        public OperationResult<bool> SetVcpValue(string monitorId, int vcpCode, int value)
+        {
+            Writes.Add($"vcp:{monitorId}:0x{vcpCode:X2}={value}");
+            return OperationResult<bool>.Success(true);
+        }
+
         public bool HasSystemBattery() => false;
     }
 
@@ -80,6 +86,11 @@ public class DisplayViewShotTests
                     new MonitorInputSource(0x0F, "DisplayPort 1"),
                     new MonitorInputSource(0x11, "HDMI 1"),
                     new MonitorInputSource(0x12, "HDMI 2"),
+                ],
+                VendorFeatures =
+                [
+                    new VendorVcpFeature(0xE6, "Blue light filter", [0, 1, 2, 3, 4], Current: 1),
+                    new VendorVcpFeature(0xE0, "Feature 0xE0", [0, 2, 5], Current: 2),
                 ],
             },
             new MonitorDevice
@@ -133,5 +144,28 @@ public class DisplayViewShotTests
         }
 
         Assert.Contains(monitors.Writes, w => w == @"brightness:\\.\DISPLAY2|0=30");
+    }
+
+    [AvaloniaFact]
+    public void MovingAVendorFeatureSlider_WritesItsVcpCode()
+    {
+        var monitors = new StubMonitorService();
+        var viewModel = new DisplayViewModel(SampleData(), monitors, new StubPowerService());
+        using var session = UiSession.ForView(new DisplayView(), viewModel, "display-view");
+
+        var blueLight = viewModel.Monitors[1].VendorFeatures[0];
+        var gappyFeature = viewModel.Monitors[1].VendorFeatures[1];
+        Assert.Equal("Blue light filter", blueLight.Name);
+        Assert.True(blueLight.IsSlider); // 0-4 contiguous
+        blueLight.Value = 4;
+
+        for (var i = 0; i < 200 && monitors.Writes.Count == 0; i++)
+        {
+            session.Pump();
+            Thread.Sleep(10);
+        }
+
+        Assert.Contains(monitors.Writes, w => w == @"vcp:\\.\DISPLAY2|0:0xE6=4");
+        Assert.True(gappyFeature.IsCombo); // 0, 2, 5 is gappy: combo, not slider
     }
 }

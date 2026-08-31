@@ -25,6 +25,9 @@ public interface IMonitorService
     /// <summary>Sets VCP 0x60. The monitor may go dark if the target input has no signal.</summary>
     OperationResult<bool> SetInputSource(string monitorId, int value);
 
+    /// <summary>Sets an arbitrary VCP code (vendor features like a blue light filter).</summary>
+    OperationResult<bool> SetVcpValue(string monitorId, int vcpCode, int value);
+
     /// <summary>True when the machine has a system battery (laptop heuristic for the internal panel).</summary>
     bool HasSystemBattery();
 }

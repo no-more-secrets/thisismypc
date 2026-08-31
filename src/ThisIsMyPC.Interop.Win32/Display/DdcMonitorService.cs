@@ -17,6 +17,16 @@ public sealed class DdcMonitorService : IMonitorService
     private const byte VcpContrast = 0x12;
     private const byte VcpInputSource = 0x60;
 
+    /// <summary>
+    /// Names for vendor VCP codes (0xE0-0xFF are manufacturer-specific per
+    /// MCCS). Verified on ASUS monitors; unknown codes render as "Feature 0xNN"
+    /// so a wrong guess never mislabels a control.
+    /// </summary>
+    private static readonly Dictionary<int, string> VendorFeatureNames = new()
+    {
+        [0xE6] = "Blue light filter",
+    };
+
     /// <summary>MCCS input source names; unknown values render as "Input 0xNN".</summary>
     private static readonly Dictionary<int, string> InputNames = new()
     {
@@ -67,6 +77,9 @@ public sealed class DdcMonitorService : IMonitorService
     public OperationResult<bool> SetInputSource(string monitorId, int value) =>
         SetVcp(monitorId, VcpInputSource, value);
 
+    public OperationResult<bool> SetVcpValue(string monitorId, int vcpCode, int value) =>
+        SetVcp(monitorId, (byte)vcpCode, value);
+
     public bool HasSystemBattery()
     {
         if (NativeDisplay.GetSystemPowerStatus(out var status) == 0)
@@ -114,7 +127,9 @@ public sealed class DdcMonitorService : IMonitorService
             currentInput = (int)(input & 0xFF);
         }
 
-        var inputs = ReadInputSources(physical.hPhysicalMonitor, currentInput);
+        // One capabilities request (slow, scan-time only) feeds both the input
+        // list and the vendor feature rows.
+        var codeValues = ReadCodeValueGroups(physical.hPhysicalMonitor);
 
         return new MonitorDevice
         {
@@ -126,29 +141,31 @@ public sealed class DdcMonitorService : IMonitorService
             Contrast = contrast,
             ContrastMax = contrastMax,
             CurrentInput = currentInput,
-            InputSources = inputs,
+            InputSources = BuildInputSources(codeValues, currentInput),
+            VendorFeatures = BuildVendorFeatures(physical.hPhysicalMonitor, codeValues),
         };
     }
 
-    /// <summary>
-    /// Input options come from the capabilities string (slow, scan-time only).
-    /// A monitor that reports a current input but no capabilities still gets
-    /// that one entry so the combo is honest.
-    /// </summary>
-    private static IReadOnlyList<MonitorInputSource> ReadInputSources(nint handle, int? currentInput)
+    private static IReadOnlyDictionary<int, IReadOnlyList<int>> ReadCodeValueGroups(nint handle)
+    {
+        if (NativeDisplay.GetCapabilitiesStringLength(handle, out var length) == 0 || length <= 1)
+            return new Dictionary<int, IReadOnlyList<int>>();
+
+        var buffer = new byte[length];
+        if (NativeDisplay.CapabilitiesRequestAndCapabilitiesReply(handle, buffer, length) == 0)
+            return new Dictionary<int, IReadOnlyList<int>>();
+
+        var capabilities = Encoding.ASCII.GetString(buffer).TrimEnd('\0');
+        return VcpCapabilities.ParseCodeValueGroups(capabilities);
+    }
+
+    /// <summary>A monitor with a current input but no capabilities still gets that one entry.</summary>
+    private static IReadOnlyList<MonitorInputSource> BuildInputSources(
+        IReadOnlyDictionary<int, IReadOnlyList<int>> codeValues, int? currentInput)
     {
         var values = new List<int>();
-
-        if (NativeDisplay.GetCapabilitiesStringLength(handle, out var length) != 0 && length > 1)
-        {
-            var buffer = new byte[length];
-            if (NativeDisplay.CapabilitiesRequestAndCapabilitiesReply(handle, buffer, length) != 0)
-            {
-                var capabilities = Encoding.ASCII.GetString(buffer).TrimEnd('\0');
-                values.AddRange(VcpCapabilities.ParseInputSourceValues(capabilities));
-            }
-        }
-
+        if (codeValues.TryGetValue(VcpInputSource, out var declared))
+            values.AddRange(declared);
         if (values.Count == 0 && currentInput is { } current)
             values.Add(current);
 
@@ -158,6 +175,33 @@ public sealed class DdcMonitorService : IMonitorService
             .Select(v => new MonitorInputSource(
                 v, InputNames.TryGetValue(v, out var n) ? n : $"Input 0x{v:X2}"))
             .ToList();
+    }
+
+    /// <summary>
+    /// Vendor codes (0xE0-0xFF) with a declared value list become controls.
+    /// The current value read costs one GetVCP per feature; a refusal drops
+    /// the feature rather than showing a control that cannot work.
+    /// </summary>
+    private static IReadOnlyList<VendorVcpFeature> BuildVendorFeatures(
+        nint handle, IReadOnlyDictionary<int, IReadOnlyList<int>> codeValues)
+    {
+        var features = new List<VendorVcpFeature>();
+        foreach (var (code, values) in codeValues.OrderBy(p => p.Key))
+        {
+            if (code is < 0xE0 or > 0xFF || values.Count < 2)
+                continue;
+
+            if (NativeDisplay.GetVCPFeatureAndVCPFeatureReply(handle, (byte)code, out _, out var current, out _) == 0)
+                continue;
+
+            features.Add(new VendorVcpFeature(
+                code,
+                VendorFeatureNames.TryGetValue(code, out var name) ? name : $"Feature 0x{code:X2}",
+                values.Distinct().Order().ToList(),
+                (int)(current & 0xFF)));
+        }
+
+        return features;
     }
 
     private OperationResult<bool> SetVcp(string monitorId, byte code, int value)

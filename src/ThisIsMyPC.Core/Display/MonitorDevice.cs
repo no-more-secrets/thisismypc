@@ -4,6 +4,17 @@ namespace ThisIsMyPC.Core.Display;
 public sealed record MonitorInputSource(int Value, string Name);
 
 /// <summary>
+/// A vendor-specific VCP feature (codes 0xE0-0xFF) the monitor's capabilities
+/// string declares with a discrete value list, e.g. an ASUS blue light filter
+/// at 0xE6 with levels 0-4.
+/// </summary>
+public sealed record VendorVcpFeature(
+    int Code,
+    string Name,
+    IReadOnlyList<int> Values,
+    int? Current);
+
+/// <summary>
 /// One physical display as the Display module presents it. External monitors
 /// come from DDC/CI enumeration; the built-in panel of a laptop is a synthetic
 /// entry controlled through the active power plan's brightness setting.
@@ -31,6 +42,9 @@ public sealed record MonitorDevice
     public int? CurrentInput { get; init; }
 
     public IReadOnlyList<MonitorInputSource> InputSources { get; init; } = [];
+
+    /// <summary>Vendor features (0xE0-0xFF) with declared discrete values.</summary>
+    public IReadOnlyList<VendorVcpFeature> VendorFeatures { get; init; } = [];
 
     /// <summary>Why DDC is unavailable, for the card's degraded note.</summary>
     public string? DdcError { get; init; }
