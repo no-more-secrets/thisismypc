@@ -319,12 +319,12 @@
     </Style>
     <Style Selector="ToggleButton.toolbar-toggle:checked /template/ ContentPresenter">
         <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentOutlineBrush}" />
         <Setter Property="Foreground" Value="White" />
     </Style>
     <Style Selector="ToggleButton.toolbar-toggle:checked:pointerover /template/ ContentPresenter">
         <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentOutlineBrush}" />
         <Setter Property="Foreground" Value="White" />
     </Style>
     <Style Selector="ToggleButton.toolbar-toggle:checked:pressed /template/ ContentPresenter">

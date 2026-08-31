@@ -11,7 +11,11 @@
             <!-- Accent -->
             <Color x:Key="AccentColor">#5b8dd9</Color>
             <Color x:Key="AccentColorLight">#4a78c0</Color>
+            <!-- Ring on accent-filled controls, lighter than the fill the same
+                 way Outline sits lighter than Overlay on neutral controls -->
+            <Color x:Key="AccentOutlineColor">#7fa6e3</Color>
             <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
+            <SolidColorBrush x:Key="AccentOutlineBrush" Color="{StaticResource AccentOutlineColor}" />
 
             <!-- Background tiers -->
             <Color x:Key="BaseColor">#1a1a2e</Color>
@@ -100,7 +104,9 @@
             <SolidColorBrush x:Key="ToggleButtonForegroundChecked" Color="#FFFFFF" />
             <SolidColorBrush x:Key="ToggleButtonBorderBrush" Color="#3f3f5a" />
             <SolidColorBrush x:Key="ToggleButtonBorderBrushPointerOver" Color="#56567c" />
-            <SolidColorBrush x:Key="ToggleButtonBorderBrushChecked" Color="{StaticResource AccentColor}" />
+            <SolidColorBrush x:Key="ToggleButtonBorderBrushChecked" Color="{StaticResource AccentOutlineColor}" />
+            <SolidColorBrush x:Key="ToggleButtonBorderBrushCheckedPointerOver" Color="{StaticResource AccentOutlineColor}" />
+            <SolidColorBrush x:Key="ToggleButtonBorderBrushCheckedPressed" Color="{StaticResource AccentOutlineColor}" />
             <SolidColorBrush x:Key="TextControlBackground" Color="{StaticResource SurfaceColor}" />
             <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="{StaticResource SurfaceColor}" />
             <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="{StaticResource SurfaceColor}" />
@@ -116,9 +122,10 @@
             <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="{StaticResource AccentColor}" />
             <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="{StaticResource AccentColorLight}" />
             <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="#3f68a8" />
-            <SolidColorBrush x:Key="ToggleSwitchStrokeOn" Color="{StaticResource AccentColor}" />
-            <SolidColorBrush x:Key="ToggleSwitchStrokeOnPointerOver" Color="{StaticResource AccentColorLight}" />
-            <SolidColorBrush x:Key="ToggleSwitchStrokeOnPressed" Color="#3f68a8" />
+            <!-- On-state ring: same outline treatment as every other control -->
+            <SolidColorBrush x:Key="ToggleSwitchStrokeOn" Color="{StaticResource AccentOutlineColor}" />
+            <SolidColorBrush x:Key="ToggleSwitchStrokeOnPointerOver" Color="{StaticResource AccentOutlineColor}" />
+            <SolidColorBrush x:Key="ToggleSwitchStrokeOnPressed" Color="{StaticResource AccentOutlineColor}" />
 
             <!-- Off state styled like a button: solid grey pill with the
                  subtle outline, obvious full-pill hover wash; disabled is
@@ -164,7 +171,11 @@
             <!-- Accent (darker than the dark variant's for contrast on white) -->
             <Color x:Key="AccentColor">#3a6bbf</Color>
             <Color x:Key="AccentColorLight">#2f5aa8</Color>
+            <!-- Ring on accent-filled controls, darker than the fill the same
+                 way light-theme outlines sit darker than their fills -->
+            <Color x:Key="AccentOutlineColor">#2c539a</Color>
             <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
+            <SolidColorBrush x:Key="AccentOutlineBrush" Color="{StaticResource AccentOutlineColor}" />
 
             <!-- Background tiers -->
             <Color x:Key="BaseColor">#f2f3f8</Color>
@@ -248,7 +259,9 @@
             <SolidColorBrush x:Key="ToggleButtonForegroundChecked" Color="#FFFFFF" />
             <SolidColorBrush x:Key="ToggleButtonBorderBrush" Color="#d0d4e0" />
             <SolidColorBrush x:Key="ToggleButtonBorderBrushPointerOver" Color="#b0b6c8" />
-            <SolidColorBrush x:Key="ToggleButtonBorderBrushChecked" Color="{StaticResource AccentColor}" />
+            <SolidColorBrush x:Key="ToggleButtonBorderBrushChecked" Color="{StaticResource AccentOutlineColor}" />
+            <SolidColorBrush x:Key="ToggleButtonBorderBrushCheckedPointerOver" Color="{StaticResource AccentOutlineColor}" />
+            <SolidColorBrush x:Key="ToggleButtonBorderBrushCheckedPressed" Color="{StaticResource AccentOutlineColor}" />
             <SolidColorBrush x:Key="TextControlBackground" Color="{StaticResource SurfaceColor}" />
             <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="{StaticResource SurfaceColor}" />
             <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="{StaticResource SurfaceColor}" />
@@ -264,9 +277,10 @@
             <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="{StaticResource AccentColor}" />
             <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="{StaticResource AccentColorLight}" />
             <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="#274b8f" />
-            <SolidColorBrush x:Key="ToggleSwitchStrokeOn" Color="{StaticResource AccentColor}" />
-            <SolidColorBrush x:Key="ToggleSwitchStrokeOnPointerOver" Color="{StaticResource AccentColorLight}" />
-            <SolidColorBrush x:Key="ToggleSwitchStrokeOnPressed" Color="#274b8f" />
+            <!-- On-state ring: same outline treatment as every other control -->
+            <SolidColorBrush x:Key="ToggleSwitchStrokeOn" Color="{StaticResource AccentOutlineColor}" />
+            <SolidColorBrush x:Key="ToggleSwitchStrokeOnPointerOver" Color="{StaticResource AccentOutlineColor}" />
+            <SolidColorBrush x:Key="ToggleSwitchStrokeOnPressed" Color="{StaticResource AccentOutlineColor}" />
 
             <!-- Off state styled like a button: solid grey pill with the
                  subtle outline, obvious full-pill hover wash; disabled is
@@ -312,4 +326,8 @@
 
     <!-- Shared: uniform rounding for every stock control -->
     <CornerRadius x:Key="ControlCornerRadius">4</CornerRadius>
+
+    <!-- Fluent paints the on-state pill with zero stroke thickness, which
+         swallows ToggleSwitchStrokeOn; 1px matches every other outline -->
+    <Thickness x:Key="ToggleSwitchOnStrokeThickness">1</Thickness>
 </ResourceDictionary>
