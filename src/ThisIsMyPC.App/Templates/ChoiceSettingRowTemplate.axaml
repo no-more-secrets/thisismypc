@@ -28,14 +28,22 @@
                 </ComboBox>
 
                 <StackPanel Spacing="2">
-                    <TextBlock Text="{Binding Label}"
-                               FontWeight="SemiBold"
-                               FontSize="14"
-                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Text="{Binding Label}"
+                                   FontWeight="SemiBold"
+                                   FontSize="14"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <Border Classes="info-icon"
+                                ToolTip.Tip="{Binding Description}"
+                                IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                            <TextBlock Classes="info-icon-glyph" />
+                        </Border>
+                    </StackPanel>
                     <TextBlock Text="{Binding Description}"
                                FontSize="12"
                                Foreground="{DynamicResource TextSecondaryBrush}"
-                               TextWrapping="Wrap"
+                               MaxLines="1"
+                               TextTrimming="CharacterEllipsis"
                                IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                 </StackPanel>
             </DockPanel>

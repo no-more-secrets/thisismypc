@@ -24,16 +24,23 @@
                           Margin="16,0,0,0" />
 
             <StackPanel Spacing="2">
-                <TextBlock Text="{Binding DisplayName}"
-                           FontWeight="SemiBold"
-                           FontSize="14"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <TextBlock Text="{Binding DisplayName}"
+                               FontWeight="SemiBold"
+                               FontSize="14"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <Border Classes="info-icon" ToolTip.Tip="{Binding Description}">
+                        <TextBlock Classes="info-icon-glyph" />
+                    </Border>
+                </StackPanel>
 
-                <!-- Plain-English description; collapsed in Compact mode -->
+                <!-- One-line description; the info icon holds the full text.
+                     Collapsed entirely in Compact mode. -->
                 <TextBlock Text="{Binding Description}"
                            FontSize="12"
                            Foreground="{DynamicResource TextSecondaryBrush}"
-                           TextWrapping="Wrap"
+                           MaxLines="1"
+                           TextTrimming="CharacterEllipsis"
                            IsVisible="{Binding IsDescriptionVisible}" />
 
                 <!-- Badges & callouts (10-3); visible in EVERY display mode;

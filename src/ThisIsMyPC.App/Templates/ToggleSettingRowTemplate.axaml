@@ -36,17 +36,25 @@
 
                 <!-- Setting info on the left -->
                 <StackPanel Spacing="2">
-                    <!-- Label -->
-                    <TextBlock Text="{Binding Label}"
-                               FontWeight="SemiBold"
-                               FontSize="14"
-                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <!-- Label + info icon carrying the full description -->
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Text="{Binding Label}"
+                                   FontWeight="SemiBold"
+                                   FontSize="14"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <Border Classes="info-icon"
+                                ToolTip.Tip="{Binding Description}"
+                                IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                            <TextBlock Classes="info-icon-glyph" />
+                        </Border>
+                    </StackPanel>
 
-                    <!-- Description (collapse when empty) -->
+                    <!-- One-line description; the info icon holds the rest -->
                     <TextBlock Text="{Binding Description}"
                                FontSize="12"
                                Foreground="{DynamicResource TextSecondaryBrush}"
-                               TextWrapping="Wrap"
+                               MaxLines="1"
+                               TextTrimming="CharacterEllipsis"
                                IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
                     <!-- Inactive reason (shown instead of warning for inactive entries) -->

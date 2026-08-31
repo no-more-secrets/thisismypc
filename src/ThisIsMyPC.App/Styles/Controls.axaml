@@ -35,9 +35,26 @@
 
     <!-- Sliders: hand cursor and a thumb that grows toward the pointer.
          Wheel-to-adjust is wired per view (DisplayView) because it must win
-         over the page's ScrollViewer. -->
+         over the page's ScrollViewer. The body carries a button-style
+         outline and hover wash (fills come from the SliderContainer*
+         resources in Theme.axaml). -->
     <Style Selector="Slider">
         <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="BorderBrush" Value="{DynamicResource OutlineBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Padding" Value="8,0" />
+    </Style>
+    <Style Selector="Slider:pointerover">
+        <Setter Property="BorderBrush" Value="{DynamicResource OutlineStrongBrush}" />
+    </Style>
+    <Style Selector="Slider:disabled">
+        <Setter Property="BorderBrush" Value="{DynamicResource OutlineBrush}" />
+    </Style>
+    <!-- The container grid has square corners; without clipping they poke
+         past the rounded border as light slivers at the edges. -->
+    <Style Selector="Slider /template/ Border">
+        <Setter Property="ClipToBounds" Value="True" />
     </Style>
     <Style Selector="Slider /template/ Thumb">
         <Setter Property="Transitions">
@@ -48,6 +65,41 @@
     </Style>
     <Style Selector="Slider:pointerover /template/ Thumb">
         <Setter Property="RenderTransform" Value="scale(1.15)" />
+    </Style>
+
+    <!-- Scrollbars keep their own lane: the Fluent overlay bar expands OVER
+         content on hover, which has intruded on cards repeatedly. Disabling
+         auto-hide arranges content beside the bar instead of underneath it. -->
+    <Style Selector="ScrollViewer">
+        <Setter Property="AllowAutoHide" Value="False" />
+    </Style>
+
+    <!-- Info icon: a small circled i whose tooltip carries the full
+         description, so rows and cards can stay one line tall. -->
+    <Style Selector="Border.info-icon">
+        <Setter Property="Width" Value="15" />
+        <Setter Property="Height" Value="15" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="BorderBrush" Value="{DynamicResource OutlineStrongBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Cursor" Value="Help" />
+        <Setter Property="ToolTip.ShowDelay" Value="150" />
+    </Style>
+    <Style Selector="Border.info-icon:pointerover">
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    </Style>
+    <Style Selector="TextBlock.info-icon-glyph">
+        <Setter Property="Text" Value="i" />
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Foreground" Value="{DynamicResource TextTertiaryBrush}" />
+    </Style>
+    <Style Selector="Border.info-icon:pointerover TextBlock.info-icon-glyph">
+        <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
     </Style>
 
     <!-- Loading indicators fill with the app accent, not Fluent gray -->
