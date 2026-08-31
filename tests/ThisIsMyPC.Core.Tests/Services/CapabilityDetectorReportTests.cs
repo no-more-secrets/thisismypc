@@ -40,10 +40,6 @@ public class CapabilityDetectorReportTests
     {
         var detector = new CapabilityDetector(new FakeRegistryService());
 
-        var ddc = detector.GetAvailability(SystemCapability.DdcCi);
-        Assert.False(ddc.IsAvailable);
-        Assert.NotNull(ddc.Reason);
-
         // Fake registry: HWiNFO keys absent → unavailable with install remediation
         var hwinfo = detector.GetAvailability(SystemCapability.HwInfo);
         Assert.False(hwinfo.IsAvailable);

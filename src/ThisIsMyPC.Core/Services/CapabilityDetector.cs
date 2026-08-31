@@ -93,12 +93,11 @@ public sealed class CapabilityDetector : ICapabilityDetector
         SystemCapability.Wmi => new ModuleAvailability(true),
         SystemCapability.NativeApi => new ModuleAvailability(true),
 
-        // Hardware territory; reported honestly so the summary can say what
-        // would be possible once the display module ships.
+        // dxva2.dll ships with Windows; whether each monitor answers DDC/CI is
+        // a per-monitor question the Display module reports on its cards.
         SystemCapability.DdcCi => new ModuleAvailability(
-            false,
-            "Display control (DDC/CI) is not implemented yet.",
-            "Monitor brightness and input control are planned for a future update."),
+            true,
+            RemediationHint: "Per-monitor DDC/CI support is shown in the Display module."),
         SystemCapability.HwInfo => DetectHwInfo(),
         SystemCapability.AsusAtkacpi => DetectFile(
             Path.Combine(Environment.SystemDirectory, "drivers", "atkwmiacpi64.sys"),

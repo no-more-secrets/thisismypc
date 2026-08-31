@@ -385,6 +385,9 @@
                             <DataTemplate DataType="{x:Type vm:GalleryViewModel}">
                                 <views:GalleryView />
                             </DataTemplate>
+                            <DataTemplate DataType="{x:Type vm:DisplayViewModel}">
+                                <views:DisplayView />
+                            </DataTemplate>
                             <DataTemplate DataType="{x:Type vm:StartupViewModel}">
                                 <views:StartupView />
                             </DataTemplate>

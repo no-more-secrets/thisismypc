@@ -1,0 +1,137 @@
+using Avalonia.Headless.XUnit;
+using Avalonia.Styling;
+using ThisIsMyPC.App.ViewModels;
+using ThisIsMyPC.App.Views;
+using ThisIsMyPC.Core.Display;
+using ThisIsMyPC.Core.Results;
+using ThisIsMyPC.Core.Services;
+using ThisIsMyPC.Modules.Display.Models;
+
+namespace ThisIsMyPC.App.UiTests;
+
+/// <summary>CI-safe: renders the Display module with fake monitors in both themes.</summary>
+public class DisplayViewShotTests
+{
+    private sealed class StubMonitorService : IMonitorService
+    {
+        public List<string> Writes { get; } = [];
+
+        public OperationResult<IReadOnlyList<MonitorDevice>> EnumerateMonitors() =>
+            OperationResult<IReadOnlyList<MonitorDevice>>.Success([]);
+
+        public OperationResult<bool> SetBrightness(string monitorId, int value)
+        {
+            Writes.Add($"brightness:{monitorId}={value}");
+            return OperationResult<bool>.Success(true);
+        }
+
+        public OperationResult<bool> SetContrast(string monitorId, int value)
+        {
+            Writes.Add($"contrast:{monitorId}={value}");
+            return OperationResult<bool>.Success(true);
+        }
+
+        public OperationResult<bool> SetInputSource(string monitorId, int value)
+        {
+            Writes.Add($"input:{monitorId}={value}");
+            return OperationResult<bool>.Success(true);
+        }
+
+        public bool HasSystemBattery() => false;
+    }
+
+    private sealed class StubPowerService : IPowerService
+    {
+        public OperationResult<IReadOnlyList<PowerPlanInfo>> EnumeratePlans() =>
+            OperationResult<IReadOnlyList<PowerPlanInfo>>.Success([]);
+        public OperationResult<bool> SetActivePlan(Guid planGuid) => OperationResult<bool>.Success(true);
+        public OperationResult<IReadOnlyList<PowerSettingInfo>> EnumeratePlanSettings(Guid planGuid) =>
+            OperationResult<IReadOnlyList<PowerSettingInfo>>.Success([]);
+        public OperationResult<bool> WriteSettingIndex(Guid planGuid, Guid subgroupGuid, Guid settingGuid, bool ac, uint valueIndex) =>
+            OperationResult<bool>.Success(true);
+        public bool SupportsModernStandby() => false;
+        public OperationResult<bool> SetHibernateEnabled(bool enable) => OperationResult<bool>.Success(true);
+        public OperationResult<Guid> DuplicateScheme(Guid sourceSchemeGuid) => OperationResult<Guid>.Success(Guid.NewGuid());
+        public OperationResult<bool> DeleteScheme(Guid schemeGuid) => OperationResult<bool>.Success(true);
+        public OperationResult<bool> WriteSchemeText(Guid schemeGuid, string name, string description) =>
+            OperationResult<bool>.Success(true);
+    }
+
+    private static DisplayScanData SampleData() => new(
+        [
+            new MonitorDevice
+            {
+                Id = "internal-panel",
+                Name = "Built-in display",
+                IsInternalPanel = true,
+                SupportsDdc = true,
+                Brightness = 70,
+            },
+            new MonitorDevice
+            {
+                Id = @"\\.\DISPLAY2|0",
+                Name = "ASUS VG27AQ",
+                SupportsDdc = true,
+                Brightness = 55,
+                Contrast = 80,
+                CurrentInput = 0x11,
+                InputSources =
+                [
+                    new MonitorInputSource(0x0F, "DisplayPort 1"),
+                    new MonitorInputSource(0x11, "HDMI 1"),
+                    new MonitorInputSource(0x12, "HDMI 2"),
+                ],
+            },
+            new MonitorDevice
+            {
+                Id = @"\\.\DISPLAY3|0",
+                Name = "Older monitor",
+                SupportsDdc = false,
+                DdcError = "This monitor did not answer DDC/CI. Some monitors need it enabled in their on-screen menu.",
+            },
+        ],
+        ScanError: null);
+
+    [AvaloniaFact]
+    public void DisplayView_RendersMonitorsInBothThemes()
+    {
+        var monitors = new StubMonitorService();
+        var viewModel = new DisplayViewModel(SampleData(), monitors, new StubPowerService());
+        using var session = UiSession.ForView(new DisplayView(), viewModel, "display-view");
+
+        try
+        {
+            session.Screenshot("display-dark");
+            Assert.True(session.IsTextVisible("Built-in display"));
+            Assert.True(session.IsTextVisible("ASUS VG27AQ"));
+
+            session.SetTheme(ThemeVariant.Light);
+            session.Screenshot("display-light");
+            Assert.True(session.IsTextVisible("Older monitor"));
+        }
+        finally
+        {
+            session.SetTheme(ThemeVariant.Dark);
+        }
+    }
+
+    [AvaloniaFact]
+    public void MovingTheBrightnessSlider_WritesThroughTheService()
+    {
+        var monitors = new StubMonitorService();
+        var viewModel = new DisplayViewModel(SampleData(), monitors, new StubPowerService());
+        using var session = UiSession.ForView(new DisplayView(), viewModel, "display-view");
+
+        var external = viewModel.Monitors[1];
+        external.Brightness = 30;
+
+        // The write coalescer runs on the thread pool; give it a moment.
+        for (var i = 0; i < 200 && monitors.Writes.Count == 0; i++)
+        {
+            session.Pump();
+            Thread.Sleep(10);
+        }
+
+        Assert.Contains(monitors.Writes, w => w == @"brightness:\\.\DISPLAY2|0=30");
+    }
+}

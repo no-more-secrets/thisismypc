@@ -185,19 +185,17 @@ public sealed class CapabilityDetectorTests
         Assert.True(detector.GetAvailability(SystemCapability.Registry).IsAvailable);
     }
 
-    // 5-1: Com/Wmi/NativeApi are now always-available; HwInfo is registry-driven
+    // Com/Wmi/NativeApi are always-available; HwInfo is registry-driven
     // (CapabilityDetectorReportTests); AsusAtkacpi/OpenRgb probe the live file system
     // so their outcome is environment-dependent and not asserted here.
-    [Theory]
-    [InlineData(SystemCapability.DdcCi)]
-    public void UndetectedCapabilities_ReportUnavailableWithReason(SystemCapability capability)
+    [Fact]
+    public void DdcCi_IsAvailable_PerMonitorSupportIsTheDisplayModulesJob()
     {
         var detector = CreateDetector("Professional", out _);
 
-        var availability = detector.GetAvailability(capability);
-        Assert.False(availability.IsAvailable);
-        Assert.False(string.IsNullOrWhiteSpace(availability.Reason));
-        Assert.False(detector.IsAvailable(capability));
+        var availability = detector.GetAvailability(SystemCapability.DdcCi);
+        Assert.True(availability.IsAvailable);
+        Assert.False(string.IsNullOrWhiteSpace(availability.RemediationHint));
     }
 
     [Fact]

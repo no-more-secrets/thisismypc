@@ -1,0 +1,114 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ThisIsMyPC.App.ViewModels"
+             xmlns:core="using:ThisIsMyPC.Core.Display"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="700"
+             x:Class="ThisIsMyPC.App.Views.DisplayView"
+             x:DataType="vm:DisplayViewModel">
+
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <StackPanel MaxWidth="760" HorizontalAlignment="Left" Spacing="10">
+
+            <TextBlock Text="Changes here apply immediately; sliders are their own undo."
+                       FontSize="12"
+                       Foreground="{DynamicResource TextTertiaryBrush}" />
+
+            <TextBlock Text="{Binding ScanError}"
+                       Classes="status-warning"
+                       FontSize="12" TextWrapping="Wrap"
+                       IsVisible="{Binding HasScanError}" />
+
+            <TextBlock Text="No controllable displays were found. External monitors may need DDC/CI enabled in their on-screen menu."
+                       FontSize="12"
+                       Foreground="{DynamicResource TextTertiaryBrush}"
+                       IsVisible="{Binding HasNoMonitors}" />
+
+            <ItemsControl ItemsSource="{Binding Monitors}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:MonitorItemViewModel">
+                        <Border Classes="card" CornerRadius="6" Padding="16,12" Margin="0,0,0,8">
+                            <StackPanel Spacing="8">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="{Binding Name}"
+                                               FontWeight="SemiBold" FontSize="14"
+                                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                                    <Border Background="{DynamicResource InfoMutedBrush}"
+                                            CornerRadius="3" Padding="6,1"
+                                            VerticalAlignment="Center"
+                                            IsVisible="{Binding IsInternalPanel}">
+                                        <TextBlock Text="Built-in" FontSize="11"
+                                                   Foreground="{DynamicResource InfoBrush}" />
+                                    </Border>
+                                </StackPanel>
+
+                                <TextBlock Text="{Binding DdcError}"
+                                           FontSize="12" TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextTertiaryBrush}"
+                                           IsVisible="{Binding HasDdcError}" />
+
+                                <StackPanel Spacing="8" IsVisible="{Binding SupportsDdc}">
+                                    <!-- Brightness -->
+                                    <DockPanel>
+                                        <TextBlock DockPanel.Dock="Left" Text="Brightness" Width="90"
+                                                   VerticalAlignment="Center" FontSize="12"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                                        <TextBlock DockPanel.Dock="Right" Width="36"
+                                                   Text="{Binding Brightness, StringFormat={}{0:0}}"
+                                                   VerticalAlignment="Center" FontSize="12"
+                                                   TextAlignment="Right"
+                                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                                        <Slider Minimum="0" Maximum="{Binding BrightnessMax}"
+                                                Value="{Binding Brightness}"
+                                                Margin="8,0" />
+                                    </DockPanel>
+
+                                    <!-- Contrast -->
+                                    <DockPanel IsVisible="{Binding HasContrast}">
+                                        <TextBlock DockPanel.Dock="Left" Text="Contrast" Width="90"
+                                                   VerticalAlignment="Center" FontSize="12"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                                        <TextBlock DockPanel.Dock="Right" Width="36"
+                                                   Text="{Binding Contrast, StringFormat={}{0:0}}"
+                                                   VerticalAlignment="Center" FontSize="12"
+                                                   TextAlignment="Right"
+                                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                                        <Slider Minimum="0" Maximum="{Binding ContrastMax}"
+                                                Value="{Binding Contrast}"
+                                                Margin="8,0" />
+                                    </DockPanel>
+
+                                    <!-- Input source -->
+                                    <DockPanel IsVisible="{Binding HasInputSources}">
+                                        <TextBlock DockPanel.Dock="Left" Text="Input" Width="90"
+                                                   VerticalAlignment="Center" FontSize="12"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                                        <Button DockPanel.Dock="Right" Content="Switch"
+                                                Command="{Binding SetInputCommand}"
+                                                Padding="12,4" Margin="8,0,0,0"
+                                                ToolTip.Tip="The monitor may go dark if the chosen input has no signal; use its physical buttons to come back." />
+                                        <ComboBox ItemsSource="{Binding InputSources}"
+                                                  SelectedItem="{Binding SelectedInput}"
+                                                  Margin="8,0,0,0"
+                                                  HorizontalAlignment="Stretch">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate x:DataType="core:MonitorInputSource">
+                                                    <TextBlock Text="{Binding Name}" />
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                    </DockPanel>
+                                </StackPanel>
+
+                                <TextBlock Text="{Binding LastError}"
+                                           Classes="status-error" FontSize="12" TextWrapping="Wrap"
+                                           IsVisible="{Binding HasError}" />
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

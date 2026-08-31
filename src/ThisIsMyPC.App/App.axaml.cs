@@ -190,6 +190,7 @@ public partial class App : Application
         services.AddSingleton<IAppxPackageService, AppxPackageService>();
         services.AddSingleton<IWingetService, ThisIsMyPC.Interop.Win32.Packages.WingetService>();
         services.AddSingleton<IPowerService, ThisIsMyPC.Interop.Win32.Power.PowerService>();
+        services.AddSingleton<IMonitorService, ThisIsMyPC.Interop.Win32.Display.DdcMonitorService>();
         services.AddSingleton<IRestorePointService, ThisIsMyPC.Interop.Win32.Restore.RestorePointService>();
 
         // Modules (explicit DI registration, NativeAOT-safe)
@@ -202,6 +203,7 @@ public partial class App : Application
         services.AddSingleton<IModule, ThisIsMyPC.Modules.WindowsUpdate.WindowsUpdateModule>();
         services.AddSingleton<IModule, ThisIsMyPC.Modules.Software.SoftwareModule>();
         services.AddSingleton<IModule, PowerModule>();
+        services.AddSingleton<IModule, ThisIsMyPC.Modules.Display.DisplayModule>();
 
         // Update services
         services.AddSingleton<IUpdateVerifier, AuthenticodeUpdateVerifier>();

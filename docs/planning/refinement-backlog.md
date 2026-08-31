@@ -265,6 +265,22 @@ serializing the sandbox users.
 - File associations, user shell folder relocation, WSL → unscoped
 - Visual effects/performance preset (winutil) → decide module home later
 
+## Display module: v1 SHIPPED 2026-08-30 (first Hardware-group module)
+
+Absorbed Twinkle Tray's core, lean scope: per-monitor brightness/contrast
+sliders and input switching over DDC/CI (dxva2, fresh handles per operation so
+display changes never strand a stale handle), input options parsed from the
+MCCS capabilities string (VcpCapabilities in Core, unit-tested), laptop panel
+as a synthetic row through the active power plan's VIDEO brightness setting
+(no WMI, NativeAOT-safe, gated on GetSystemPowerStatus battery presence).
+Controls apply LIVE: documented carve-out from the pending pipeline
+(ephemeral hardware state, sliders are their own undo).
+
+Deferred (install Twinkle Tray from the catalog for these): time-of-day
+scheduling, sun-based dimming, hotkeys, idle dimming, EDID friendly names
+(cards show the driver description, often "Generic PnP Monitor"), linked
+multi-monitor sliders, WM_DISPLAYCHANGE auto-rescan.
+
 ## Hardware chapter doctrine (Sam, 2026-08-30): modules derive from device analysis
 
 Monitor, fan, and RGB control are not three flat modules; a device-analysis

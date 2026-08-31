@@ -37,6 +37,7 @@
     <ProjectReference Include="..\ThisIsMyPC.Core\ThisIsMyPC.Core.csproj" />
     <ProjectReference Include="..\ThisIsMyPC.Ipc.Contracts\ThisIsMyPC.Ipc.Contracts.csproj" />
     <ProjectReference Include="..\ThisIsMyPC.Modules.Annoyances\ThisIsMyPC.Modules.Annoyances.csproj" />
+    <ProjectReference Include="..\ThisIsMyPC.Modules.Display\ThisIsMyPC.Modules.Display.csproj" />
     <ProjectReference Include="..\ThisIsMyPC.Modules.Privacy\ThisIsMyPC.Modules.Privacy.csproj" />
     <ProjectReference Include="..\ThisIsMyPC.Modules.Software\ThisIsMyPC.Modules.Software.csproj" />
   </ItemGroup>

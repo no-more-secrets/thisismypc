@@ -33,6 +33,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IRegistryService _registryService;
     private readonly IServiceControlService? _serviceControlService;
     private readonly IPowerService? _powerService;
+    private readonly IMonitorService? _monitorService;
     private readonly DisplayModePreferencesStore? _displayModeStore;
     private readonly Services.OwnerModeService? _ownerModeService;
     private readonly Ipc.Contracts.IIpcClient? _ipcClient;
@@ -311,6 +312,7 @@ public partial class MainWindowViewModel : ViewModelBase
         IScheduledTaskService? scheduledTaskService = null,
         Modules.Startup.Services.TaskClassificationOverrideStore? taskClassificationOverrides = null,
         IPowerService? powerService = null,
+        IMonitorService? monitorService = null,
         DisplayModePreferencesStore? displayModeStore = null,
         Services.OwnerModeService? ownerModeService = null,
         Ipc.Contracts.IIpcClient? ipcClient = null,
@@ -323,6 +325,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _ipcClient = ipcClient;
         _displayModeStore = displayModeStore;
         _powerService = powerService;
+        _monitorService = monitorService;
         _navigationService = navigationService;
         _pendingChangesService = pendingChangesService;
         _changeHistoryService = changeHistoryService;
@@ -559,6 +562,28 @@ public partial class MainWindowViewModel : ViewModelBase
                     {
                         CurrentContent = null;
                         SetStatus(scanResult.ErrorMessage ?? "Failed to scan power plans", StatusSeverity.Error);
+                    }
+                });
+            }
+            else if (current?.Module is Modules.Display.DisplayModule)
+            {
+                var scanResult = await current.Module.ScanSystemStateAsync().ConfigureAwait(false);
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    if (epoch != _contentEpoch)
+                        return; // superseded by Home/Set Loader/newer navigation while scanning
+                    if (scanResult.IsSuccess
+                        && scanResult.Value is Modules.Display.Models.DisplayScanData displayData
+                        && _monitorService is not null && _powerService is not null)
+                    {
+                        ContentTitle = current.Module.Info.Name;
+                        ContentDescription = current.Module.Info.Description;
+                        CurrentContent = new DisplayViewModel(displayData, _monitorService, _powerService);
+                    }
+                    else
+                    {
+                        CurrentContent = null;
+                        SetStatus(scanResult.ErrorMessage ?? "Failed to scan displays", StatusSeverity.Error);
                     }
                 });
             }
