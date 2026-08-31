@@ -12,7 +12,7 @@
         <!-- One vendor feature row; picked up implicitly by both the named
              list and the Advanced expander. -->
         <DataTemplate DataType="{x:Type vm:VendorFeatureViewModel}">
-            <DockPanel Margin="0,0,0,8">
+            <DockPanel Margin="0,0,0,8" ToolTip.Tip="{Binding Hint}">
                 <TextBlock DockPanel.Dock="Left" Text="{Binding Name}" Width="100"
                            VerticalAlignment="Center" FontSize="12"
                            TextWrapping="Wrap"

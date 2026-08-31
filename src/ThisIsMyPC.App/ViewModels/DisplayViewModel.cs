@@ -271,6 +271,7 @@ public sealed partial class VendorFeatureViewModel : ViewModelBase
     }
 
     public string Name => _feature.Name;
+    public string? Hint => _feature.Hint;
     public bool IsSlider { get; }
     public bool IsCombo => !IsSlider;
     public double Minimum => _feature.Values[0];

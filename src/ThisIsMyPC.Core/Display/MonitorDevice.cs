@@ -13,7 +13,8 @@ public sealed record VendorVcpFeature(
     string Name,
     IReadOnlyList<int> Values,
     int? Current,
-    bool IsNamed = false);
+    bool IsNamed = false,
+    string? Hint = null);
 
 /// <summary>
 /// One physical display as the Display module presents it. External monitors

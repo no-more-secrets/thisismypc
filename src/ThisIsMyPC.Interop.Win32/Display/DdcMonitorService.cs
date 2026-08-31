@@ -34,6 +34,16 @@ public sealed class DdcMonitorService : IMonitorService
         [0xE6] = "Blue light filter",
     };
 
+    /// <summary>
+    /// Side effects worth warning about, shown as the row's tooltip.
+    /// Diagnosed live on a PG27UCDM: at levels 3-4 the monitor accepts
+    /// brightness writes, reports success, and ignores them.
+    /// </summary>
+    private static readonly Dictionary<int, string> VendorFeatureHints = new()
+    {
+        [0xE6] = "Levels 3 and 4 lock brightness on many ASUS monitors; the brightness slider stops working until this is lowered.",
+    };
+
     /// <summary>MCCS input source names; unknown values render as "Input 0xNN".</summary>
     private static readonly Dictionary<int, string> InputNames = new()
     {
@@ -249,7 +259,8 @@ public sealed class DdcMonitorService : IMonitorService
                 isNamed ? name! : $"Feature 0x{code:X2}",
                 values.Distinct().Order().ToList(),
                 (int)(current & 0xFF),
-                isNamed));
+                isNamed,
+                VendorFeatureHints.TryGetValue(code, out var hint) ? hint : null));
         }
 
         return features;
