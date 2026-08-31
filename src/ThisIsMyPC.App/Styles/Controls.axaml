@@ -23,6 +23,9 @@
     <Style Selector="ComboBox:pressed">
         <Setter Property="RenderTransform" Value="scale(0.98)" />
     </Style>
+    <Style Selector="ToggleSwitch:pressed">
+        <Setter Property="RenderTransform" Value="scale(0.98)" />
+    </Style>
     <Style Selector="ToggleSwitch">
         <Setter Property="Cursor" Value="Hand" />
     </Style>
