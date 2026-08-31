@@ -321,6 +321,42 @@ OpenRGB (GPLv2) are portable/compatible.
 Ordering: DDC/CI ships pre-release (driverless Win32). Fans and RGB are
 post-release; fans last (kernel driver + AV reputation risk).
 
+## ExplorerPatcher gap analysis (2026-08-31): mined out; integrate, don't imitate
+
+Full EP feature inventory reviewed against our coverage. Verdict: EP's
+headline surface (Win10 taskbar, Win10 Start, Alt-Tab styles, tray flyouts,
+menu skinning) is injection-only via the C:\Windows\dxgi.dll sideload; since
+24H2 removed the legacy code paths, EP ships its own taskbar reimplementation
+(ep_taskbar.*.dll) whose source is unpublished. None of that is portable;
+EP is a Software-catalog install for users who want the Win10 shell.
+
+Portable remainder to add (small batch on existing infrastructure):
+- Win+X shows Command Prompt instead of PowerShell (DontUsePowerShellOnWinX,
+  Advanced key): hidden native toggle
+- Desktop build watermark (PaintDesktopVersion): minor toggle
+- Start layout density (Advanced\Start_Layout: 1 more pins / 0 default /
+  2 more recommendations): multi-choice row (not from EP; same family)
+
+Verification needed: MS removed the classic command bar / ribbon code in
+24H2. Our "Use classic command bar" CLSID toggle may be inert on current
+builds; test on a machine without EP injected (EP's taskbar/shell hooks mask
+stock behavior; Sam's desktop runs EP) and add a "no effect on 24H2+"
+callout or retire the card.
+
+**Detected-tool integration (Sam, 2026-08-31): post-release candidate.**
+EP persists every setting as plain registry under HKCU\Software\
+ExplorerPatcher, and its GPLv2 source documents their meanings; that is
+inspectable state with a documented contract, so a curated EP settings
+section can ride the normal pending-changes pipeline (before-state, staged
+review, undo) with zero process control. Shape: detect EP installed, expose
+curated cards, note Explorer-restart needs, tolerate per-version value
+renames, and warn when values are residue of an uninstalled EP. The
+generalized doctrine: integrate tools whose state is inspectable and
+documented (EP, OpenRGB SDK); install-but-never-drive opaque ones
+(FanControl: closed source, undocumented JSON config, CLI-only control
+= the banned shell-out; fans arrive post-release via our own LHM+PawnIO
+module).
+
 ## Agent interface (Sam, 2026-08-31): CLI first; deferred until the app is fully featured
 
 Decision: users bring their own coding agent (Claude Code etc.) and drive
