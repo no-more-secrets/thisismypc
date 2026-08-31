@@ -120,6 +120,21 @@
             <SolidColorBrush x:Key="ToggleSwitchStrokeOnPointerOver" Color="{StaticResource AccentColorLight}" />
             <SolidColorBrush x:Key="ToggleSwitchStrokeOnPressed" Color="#3f68a8" />
 
+            <!-- Off state styled like a button: solid grey pill with the
+                 subtle outline, obvious full-pill hover wash; disabled is
+                 solid grey, never an outline-only ghost -->
+            <SolidColorBrush x:Key="ToggleSwitchFillOff" Color="{StaticResource OverlayColor}" />
+            <SolidColorBrush x:Key="ToggleSwitchFillOffPointerOver" Color="#42425e" />
+            <SolidColorBrush x:Key="ToggleSwitchFillOffPressed" Color="#4c4c6a" />
+            <SolidColorBrush x:Key="ToggleSwitchStrokeOff" Color="#3f3f5a" />
+            <SolidColorBrush x:Key="ToggleSwitchStrokeOffPointerOver" Color="#56567c" />
+            <SolidColorBrush x:Key="ToggleSwitchStrokeOffPressed" Color="#56567c" />
+            <SolidColorBrush x:Key="ToggleSwitchFillOffDisabled" Color="{StaticResource OverlayColor}" />
+            <SolidColorBrush x:Key="ToggleSwitchStrokeOffDisabled" Color="#3f3f5a" />
+            <SolidColorBrush x:Key="ToggleSwitchKnobFillOffDisabled" Color="#56567c" />
+            <SolidColorBrush x:Key="ToggleSwitchFillOnDisabled" Color="#56567c" />
+            <SolidColorBrush x:Key="ToggleSwitchKnobFillOnDisabled" Color="{StaticResource OverlayColor}" />
+
             <!-- Selected tab: accent pipe + full-strength label -->
             <SolidColorBrush x:Key="TabItemHeaderSelectedPipeFill" Color="{StaticResource AccentColor}" />
             <SolidColorBrush x:Key="TabItemHeaderForegroundSelected" Color="#FFFFFF" />
@@ -252,6 +267,21 @@
             <SolidColorBrush x:Key="ToggleSwitchStrokeOn" Color="{StaticResource AccentColor}" />
             <SolidColorBrush x:Key="ToggleSwitchStrokeOnPointerOver" Color="{StaticResource AccentColorLight}" />
             <SolidColorBrush x:Key="ToggleSwitchStrokeOnPressed" Color="#274b8f" />
+
+            <!-- Off state styled like a button: solid grey pill with the
+                 subtle outline, obvious full-pill hover wash; disabled is
+                 solid grey, never an outline-only ghost -->
+            <SolidColorBrush x:Key="ToggleSwitchFillOff" Color="{StaticResource OverlayColor}" />
+            <SolidColorBrush x:Key="ToggleSwitchFillOffPointerOver" Color="#d6dae6" />
+            <SolidColorBrush x:Key="ToggleSwitchFillOffPressed" Color="#c9cedd" />
+            <SolidColorBrush x:Key="ToggleSwitchStrokeOff" Color="#d0d4e0" />
+            <SolidColorBrush x:Key="ToggleSwitchStrokeOffPointerOver" Color="#b0b6c8" />
+            <SolidColorBrush x:Key="ToggleSwitchStrokeOffPressed" Color="#b0b6c8" />
+            <SolidColorBrush x:Key="ToggleSwitchFillOffDisabled" Color="{StaticResource OverlayColor}" />
+            <SolidColorBrush x:Key="ToggleSwitchStrokeOffDisabled" Color="#d0d4e0" />
+            <SolidColorBrush x:Key="ToggleSwitchKnobFillOffDisabled" Color="#b0b6c8" />
+            <SolidColorBrush x:Key="ToggleSwitchFillOnDisabled" Color="#b0b6c8" />
+            <SolidColorBrush x:Key="ToggleSwitchKnobFillOnDisabled" Color="{StaticResource OverlayColor}" />
 
             <!-- Selected tab: accent pipe + full-strength label -->
             <SolidColorBrush x:Key="TabItemHeaderSelectedPipeFill" Color="{StaticResource AccentColor}" />

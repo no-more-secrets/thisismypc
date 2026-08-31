@@ -39,12 +39,6 @@
                             <TextBlock Classes="info-icon-glyph" />
                         </Border>
                     </StackPanel>
-                    <TextBlock Text="{Binding Description}"
-                               FontSize="12"
-                               Foreground="{DynamicResource TextSecondaryBrush}"
-                               MaxLines="1"
-                               TextTrimming="CharacterEllipsis"
-                               IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                 </StackPanel>
             </DockPanel>
         </Border>

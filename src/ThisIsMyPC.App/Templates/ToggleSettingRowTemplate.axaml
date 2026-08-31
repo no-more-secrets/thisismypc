@@ -49,14 +49,6 @@
                         </Border>
                     </StackPanel>
 
-                    <!-- One-line description; the info icon holds the rest -->
-                    <TextBlock Text="{Binding Description}"
-                               FontSize="12"
-                               Foreground="{DynamicResource TextSecondaryBrush}"
-                               MaxLines="1"
-                               TextTrimming="CharacterEllipsis"
-                               IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-
                     <!-- Inactive reason (shown instead of warning for inactive entries) -->
                     <TextBlock Text="{Binding InactiveReason, FallbackValue=''}"
                                FontSize="12"

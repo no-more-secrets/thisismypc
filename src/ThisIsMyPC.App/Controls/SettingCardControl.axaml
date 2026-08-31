@@ -34,15 +34,6 @@
                     </Border>
                 </StackPanel>
 
-                <!-- One-line description; the info icon holds the full text.
-                     Collapsed entirely in Compact mode. -->
-                <TextBlock Text="{Binding Description}"
-                           FontSize="12"
-                           Foreground="{DynamicResource TextSecondaryBrush}"
-                           MaxLines="1"
-                           TextTrimming="CharacterEllipsis"
-                           IsVisible="{Binding IsDescriptionVisible}" />
-
                 <!-- Badges & callouts (10-3); visible in EVERY display mode;
                      safety-critical information is never hidden by display preference -->
                 <StackPanel Spacing="2">
