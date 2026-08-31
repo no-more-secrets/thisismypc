@@ -67,7 +67,7 @@
             </TabItem.Header>
             <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Auto">
-                <StackPanel Spacing="20" Margin="0,8,20,16">
+                <StackPanel Spacing="20" Margin="0,8,8,16">
 
                     <!-- User PATH -->
                     <StackPanel Spacing="6">
@@ -116,7 +116,7 @@
             </TabItem.Header>
             <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Auto">
-                <StackPanel Spacing="8" Margin="0,8,20,16">
+                <StackPanel Spacing="8" Margin="0,8,8,16">
                     <DockPanel Margin="12,0">
                         <TextBlock Text="Per-user variables (excluding PATH)"
                                    FontSize="12"
@@ -148,7 +148,7 @@
             </TabItem.Header>
             <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Auto">
-                <StackPanel Spacing="8" Margin="0,8,20,16">
+                <StackPanel Spacing="8" Margin="0,8,8,16">
                     <DockPanel Margin="12,0">
                         <TextBlock Text="System-wide variables (excluding PATH)"
                                    FontSize="12"

@@ -78,7 +78,7 @@
 
     <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                   VerticalScrollBarVisibility="Auto">
-        <StackPanel MaxWidth="720" HorizontalAlignment="Left" Margin="24,16,24,24">
+        <StackPanel MaxWidth="720" HorizontalAlignment="Left" Margin="0,16,8,24">
             <ItemsControl ItemsSource="{Binding Sections}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:SettingsSectionViewModel">

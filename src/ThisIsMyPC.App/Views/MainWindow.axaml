@@ -352,12 +352,15 @@
                 </Popup>
             </Panel>
 
-            <!-- Module content area -->
+            <!-- Module content area. Right padding is 6, not 24: shared
+                 geometry puts the scrollbar lane (10px) plus the views' 8px
+                 content margin inside the remaining 18, so bg-to-content is
+                 24 on both sides on every tab. -->
             <Border Background="{DynamicResource RaisedBrush}"
                     BorderBrush="{DynamicResource OutlineBrush}"
                     BorderThickness="1"
                     CornerRadius="8"
-                    Padding="24">
+                    Padding="24,24,6,24">
                 <Panel>
                     <ContentControl Content="{Binding CurrentContent}">
                         <ContentControl.DataTemplates>

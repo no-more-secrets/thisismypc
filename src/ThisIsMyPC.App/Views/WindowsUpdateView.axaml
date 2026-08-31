@@ -10,7 +10,7 @@
 
     <!-- Card-rendered module tab (Epic 10, Annoyances layout). -->
     <DockPanel>
-        <DockPanel DockPanel.Dock="Top" Margin="24,12,24,0">
+        <DockPanel DockPanel.Dock="Top" Margin="0,12,18,0">
             <StackPanel DockPanel.Dock="Right"
                         Orientation="Horizontal"
                         Spacing="8"
@@ -31,7 +31,7 @@
         <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                       VerticalScrollBarVisibility="Auto">
         <ItemsControl ItemsSource="{Binding CardGroups}"
-                      Margin="24,16,24,24">
+                      Margin="0,16,8,24">
             <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:SettingCardGroupViewModel">
                     <StackPanel Margin="0,0,0,20"

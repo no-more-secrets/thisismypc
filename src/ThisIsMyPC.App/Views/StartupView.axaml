@@ -245,7 +245,7 @@
             </TabItem.Header>
             <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Auto">
-                <StackPanel Spacing="20" Margin="0,8,20,16">
+                <StackPanel Spacing="20" Margin="0,8,8,16">
 
                     <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
                         <TextBlock Text="Registry Info"
@@ -320,7 +320,7 @@
             </TabItem.Header>
             <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Auto">
-            <StackPanel Spacing="6" Margin="0,8,20,16">
+            <StackPanel Spacing="6" Margin="0,8,8,16">
                 <TextBlock Text="{Binding ScheduledTasksSectionHeader}"
                            FontSize="16"
                            FontWeight="SemiBold"
@@ -374,7 +374,7 @@
             </TabItem.Header>
             <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Auto">
-            <StackPanel Spacing="6" Margin="0,8,20,16">
+            <StackPanel Spacing="6" Margin="0,8,8,16">
                 <TextBlock Text="{Binding ServicesHeader}"
                            FontSize="16"
                            FontWeight="SemiBold"

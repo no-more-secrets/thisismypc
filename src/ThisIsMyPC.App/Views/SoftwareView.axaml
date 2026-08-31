@@ -15,7 +15,7 @@
             </TabItem.Header>
             <DockPanel>
                 <!-- Toolbar: search + category filter + installed-state note -->
-                <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,8,20,8">
+                <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,8,8,8">
                     <DockPanel>
                         <ComboBox DockPanel.Dock="Right"
                                   MinWidth="180"
@@ -40,7 +40,7 @@
                      description lives in the card tooltip -->
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                               VerticalScrollBarVisibility="Auto">
-                    <ItemsControl ItemsSource="{Binding FilteredGroups}" Margin="0,0,20,16">
+                    <ItemsControl ItemsSource="{Binding FilteredGroups}" Margin="0,0,8,16">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:SoftwareCategoryGroupViewModel">
                                 <StackPanel Spacing="6" Margin="0,0,0,14">
@@ -113,7 +113,7 @@
                 <TextBlock Text="Updates" FontSize="14" />
             </TabItem.Header>
             <DockPanel>
-                <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,8,20,8">
+                <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,8,8,8">
                     <DockPanel>
                         <Button DockPanel.Dock="Right"
                                 Padding="8,4" FontSize="12"
@@ -146,7 +146,7 @@
 
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                               VerticalScrollBarVisibility="Auto">
-                    <ItemsControl ItemsSource="{Binding FilteredUpdates}" Margin="0,0,20,16">
+                    <ItemsControl ItemsSource="{Binding FilteredUpdates}" Margin="0,0,8,16">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:SoftwareUpdateViewModel">
                                 <Border Padding="12,10" Margin="0,2" CornerRadius="4"
@@ -191,7 +191,7 @@
                 <TextBlock Text="Windows Apps" FontSize="14" />
             </TabItem.Header>
             <DockPanel>
-                <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,8,20,8">
+                <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,8,8,8">
                     <TextBox Text="{Binding WindowsAppsSearchText}"
                              Watermark="Search Windows apps" />
                     <TextBlock Text="Removal deletes the app for all users and stops it from auto-installing for new accounts. Apps with a Store listing can be reinstalled here."
@@ -206,7 +206,7 @@
 
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                               VerticalScrollBarVisibility="Auto">
-                    <ItemsControl ItemsSource="{Binding FilteredWindowsApps}" Margin="0,0,20,16">
+                    <ItemsControl ItemsSource="{Binding FilteredWindowsApps}" Margin="0,0,8,16">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:WindowsAppViewModel">
                                 <Border Padding="12,10" Margin="0,2" CornerRadius="4"

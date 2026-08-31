@@ -12,7 +12,7 @@
         <Panel>
 
             <!-- ======== Plan list ======== -->
-            <StackPanel Spacing="12" Margin="0,8,20,16"
+            <StackPanel Spacing="12" Margin="0,8,8,16"
                         IsVisible="{Binding !IsSettingsView}">
 
                 <!-- Scan failure -->
@@ -117,7 +117,7 @@
             </StackPanel>
 
             <!-- ======== Settings panel ======== -->
-            <StackPanel Spacing="12" Margin="0,8,20,16"
+            <StackPanel Spacing="12" Margin="0,8,8,16"
                         IsVisible="{Binding IsSettingsView}">
 
                 <Grid ColumnDefinitions="Auto,*,Auto">

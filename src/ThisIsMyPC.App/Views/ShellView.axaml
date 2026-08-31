@@ -10,13 +10,11 @@
 
     <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                   VerticalScrollBarVisibility="Auto">
-        <!-- 20px right margin keeps content clear of the scrollbar lane,
-             matching EnvironmentView -->
-        <StackPanel Spacing="16" Margin="0,0,20,16">
+        <StackPanel Spacing="16" Margin="0,0,8,16">
 
             <TextBox Text="{Binding SearchText}"
                      Watermark="Search settings"
-                     Margin="0,8,20,0" />
+                     Margin="0,8,0,0" />
 
             <!-- Explorer Preferences Section -->
             <StackPanel Spacing="8">
