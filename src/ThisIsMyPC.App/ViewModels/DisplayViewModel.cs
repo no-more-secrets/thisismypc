@@ -218,6 +218,10 @@ public sealed partial class MonitorItemViewModel : ViewModelBase
 
                 var result = await Task.Run(() => Write(next, brightness)).ConfigureAwait(true);
                 LastError = result.IsSuccess ? string.Empty : result.ErrorMessage ?? "Write failed.";
+
+                // Pace the stream: monitors wedge their DDC processing when
+                // writes arrive back to back (Twinkle Tray throttles too).
+                await Task.Delay(60).ConfigureAwait(true);
             }
         }
         finally
@@ -296,6 +300,9 @@ public sealed partial class VendorFeatureViewModel : ViewModelBase
                 _pending = null;
                 var result = await Task.Run(() => _write(_feature.Code, next)).ConfigureAwait(true);
                 _reportError(result.IsSuccess ? string.Empty : result.ErrorMessage ?? "Write failed.");
+
+                // Same DDC pacing as the brightness/contrast coalescer.
+                await Task.Delay(60).ConfigureAwait(true);
             }
         }
         finally
