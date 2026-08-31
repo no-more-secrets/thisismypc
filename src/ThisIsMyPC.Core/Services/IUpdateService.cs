@@ -5,7 +5,8 @@ namespace ThisIsMyPC.Core.Services;
 public interface IUpdateService
 {
     Task<OperationResult<UpdateCheckResult>> CheckForUpdateAsync();
-    Task<OperationResult<bool>> DownloadUpdateAsync(IProgress<int>? progress = null);
+    Task<OperationResult<bool>> DownloadUpdateAsync(
+        IProgress<int>? progress = null, CancellationToken cancellationToken = default);
     void ApplyUpdateAndRestart();
 }
 

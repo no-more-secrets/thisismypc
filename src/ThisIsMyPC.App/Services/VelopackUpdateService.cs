@@ -51,7 +51,8 @@ public sealed class VelopackUpdateService : IUpdateService, IDisposable
         }
     }
 
-    public async Task<OperationResult<bool>> DownloadUpdateAsync(IProgress<int>? progress = null)
+    public async Task<OperationResult<bool>> DownloadUpdateAsync(
+        IProgress<int>? progress = null, CancellationToken cancellationToken = default)
     {
         if (_pendingUpdate is null)
         {
@@ -63,7 +64,8 @@ public sealed class VelopackUpdateService : IUpdateService, IDisposable
         try
         {
             Action<int>? progressAction = progress is not null ? v => progress.Report(v) : null;
-            await _manager.DownloadUpdatesAsync(_pendingUpdate, progressAction).ConfigureAwait(false);
+            await _manager.DownloadUpdatesAsync(_pendingUpdate, progressAction, cancelToken: cancellationToken)
+                .ConfigureAwait(false);
 
             var version = _pendingUpdate.TargetFullRelease.Version.ToString();
             _logger.Information("Update {Version} downloaded", version);
@@ -73,7 +75,7 @@ public sealed class VelopackUpdateService : IUpdateService, IDisposable
                 // Fail-closed: an unresolved package path is a rejection, not a skip.
                 _logger.Information("Verifying update integrity for {Version}", version);
                 var packagePath = ResolveUpdatePackagePath();
-                var verification = await _verifier.VerifyPackageAsync(version, packagePath)
+                var verification = await _verifier.VerifyPackageAsync(version, packagePath, cancellationToken)
                     .ConfigureAwait(false);
 
                 if (!verification.IsSuccess)
@@ -120,36 +122,34 @@ public sealed class VelopackUpdateService : IUpdateService, IDisposable
     }
 
     /// <summary>
-    /// Attempts to find the downloaded update package in Velopack's staging directory.
-    /// Returns null if the path cannot be resolved; the verifier rejects null (fail-closed).
+    /// Resolves the exact file Velopack will apply (_pendingUpdate's target
+    /// release) in the staging directory; verifying any other file, such as
+    /// newest-by-mtime, would let a stale or delta package answer for the one
+    /// being installed. Returns null if absent; the verifier rejects null
+    /// (fail-closed).
     /// </summary>
     private string? ResolveUpdatePackagePath()
     {
         try
         {
-            var packagesDir = Path.Combine(AppContext.BaseDirectory, "packages");
-            if (!Directory.Exists(packagesDir))
+            var fileName = _pendingUpdate?.TargetFullRelease.FileName;
+            if (string.IsNullOrEmpty(fileName))
             {
-                _logger.Debug("Velopack packages directory not found at {Path}", packagesDir);
+                _logger.Debug("Pending update has no target release file name");
                 return null;
             }
 
-            // Find the most recently written .nupkg file in the packages directory
-            var newest = Directory.GetFiles(packagesDir, "*.nupkg")
-                .Select(f => new FileInfo(f))
-                .OrderByDescending(f => f.LastWriteTimeUtc)
-                .FirstOrDefault();
-
-            if (newest is null)
+            var path = Path.Combine(AppContext.BaseDirectory, "packages", fileName);
+            if (!File.Exists(path))
             {
-                _logger.Debug("No .nupkg files found in {Path}", packagesDir);
+                _logger.Debug("Downloaded package not found at {Path}", path);
                 return null;
             }
 
-            _logger.Debug("Resolved update package path: {Path}", newest.FullName);
-            return newest.FullName;
+            _logger.Debug("Resolved update package path: {Path}", path);
+            return path;
         }
-#pragma warning disable CA1031 // Path resolution failure should not block updates
+#pragma warning disable CA1031 // Path resolution failure must reject, not crash
         catch (Exception ex)
 #pragma warning restore CA1031
         {

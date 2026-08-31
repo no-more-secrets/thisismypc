@@ -1,4 +1,4 @@
-namespace ThisIsMyPC.Core.Updates;
+﻿namespace ThisIsMyPC.Core.Updates;
 
 /// <summary>
 /// The signed release manifest: sha256sum format, one entry per release asset
@@ -23,14 +23,16 @@ public sealed class ReleaseManifest
         _digestsByFileName.TryGetValue(fileName, out var digest) ? digest : null;
 
     /// <summary>
-    /// Parses sha256sum output. Tolerates blank lines, CRLF, and the binary-mode
-    /// asterisk before the file name; rejects malformed lines outright (a manifest
-    /// that cannot be read exactly must not be trusted partially).
+    /// Parses sha256sum output: exactly "&lt;64 hex&gt;  &lt;name&gt;" (text mode) or
+    /// "&lt;64 hex&gt; *&lt;name&gt;" (binary mode) per line. Tolerates blank lines,
+    /// CRLF, and a leading UTF-8 BOM; anything else rejects the whole manifest
+    /// (a manifest that cannot be read exactly must not be trusted partially).
     /// </summary>
     public static ReleaseManifest? TryParse(string content)
     {
         if (string.IsNullOrWhiteSpace(content))
             return null;
+        content = content.TrimStart('\uFEFF');
 
         var digests = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var rawLine in content.Split('\n'))
@@ -39,15 +41,16 @@ public sealed class ReleaseManifest
             if (line.Length == 0)
                 continue;
 
-            // "<64 hex>  <name>" or "<64 hex> *<name>"
-            if (line.Length < 67 || line[64] != ' ')
+            if (line.Length < 67)
                 return null;
             var digest = line[..64];
             if (!digest.All(Uri.IsHexDigit))
                 return null;
+            var separator = line[64..66];
+            if (separator is not ("  " or " *"))
+                return null;
 
-            var name = line[65] is ' ' or '*' ? line[66..] : line[65..];
-            name = name.Trim();
+            var name = line[66..];
             if (name.Length == 0 || name.Contains('/', StringComparison.Ordinal)
                 || name.Contains('\\', StringComparison.Ordinal))
             {

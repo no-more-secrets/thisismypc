@@ -141,6 +141,37 @@ public sealed class GpgManifestVerifierTests : IDisposable
     }
 
     [Fact]
+    public async Task DowngradeReplay_PackageNameWithoutTargetVersion_IsRejected()
+    {
+        // A genuinely signed OLD release (manifest and package both authentic)
+        // replayed under a new version tag must not verify as the new version.
+        var oldPackage = Encoding.UTF8.GetBytes("old release payload");
+        var path = WritePackage("ThisIsMyPC-1.0.0-full.nupkg", oldPackage);
+        var oldManifest = ManifestFor("ThisIsMyPC-1.0.0-full.nupkg", oldPackage);
+        var verifier = CreateVerifier(oldManifest, SignDetachedArmored(oldManifest));
+
+        var result = await verifier.VerifyPackageAsync("2.0.0", path);
+
+        Assert.False(result.IsSuccess);
+        Assert.Contains("downgrade", result.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task ManifestWithUtf8Bom_StillVerifies()
+    {
+        var package = Encoding.UTF8.GetBytes("release payload");
+        var path = WritePackage("ThisIsMyPC-1.0.0-full.nupkg", package);
+        var manifest = Encoding.UTF8.GetPreamble()
+            .Concat(ManifestFor("ThisIsMyPC-1.0.0-full.nupkg", package))
+            .ToArray();
+        var verifier = CreateVerifier(manifest, SignDetachedArmored(manifest));
+
+        var result = await verifier.VerifyPackageAsync("1.0.0", path);
+
+        Assert.True(result.IsSuccess);
+    }
+
+    [Fact]
     public async Task MissingManifest_IsRejected()
     {
         var package = Encoding.UTF8.GetBytes("release payload");

@@ -15,7 +15,8 @@ internal sealed class FakeUpdateService : IUpdateService
         return Task.FromResult(NextResult);
     }
 
-    public Task<OperationResult<bool>> DownloadUpdateAsync(IProgress<int>? progress = null) =>
+    public Task<OperationResult<bool>> DownloadUpdateAsync(
+        IProgress<int>? progress = null, CancellationToken cancellationToken = default) =>
         Task.FromResult(OperationResult<bool>.Success(true));
 
     public void ApplyUpdateAndRestart()

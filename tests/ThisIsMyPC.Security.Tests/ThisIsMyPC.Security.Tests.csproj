@@ -7,6 +7,7 @@
   <ItemGroup>
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="BouncyCastle.Cryptography" />
     <PackageReference Include="Serilog" />
     <PackageReference Include="Serilog.Formatting.Compact" />
     <PackageReference Include="xunit" />

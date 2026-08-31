@@ -10,7 +10,8 @@ public sealed class UiFakeUpdateService : IUpdateService
         Task.FromResult(OperationResult<UpdateCheckResult>.Success(
             new UpdateCheckResult(IsAvailable: false, Version: null, ReleaseNotes: null)));
 
-    public Task<OperationResult<bool>> DownloadUpdateAsync(IProgress<int>? progress = null) =>
+    public Task<OperationResult<bool>> DownloadUpdateAsync(
+        IProgress<int>? progress = null, CancellationToken cancellationToken = default) =>
         Task.FromResult(OperationResult<bool>.Success(true));
 
     public void ApplyUpdateAndRestart()

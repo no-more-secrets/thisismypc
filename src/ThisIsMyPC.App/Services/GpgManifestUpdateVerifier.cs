@@ -26,9 +26,13 @@ public sealed class GpgManifestUpdateVerifier : IUpdateVerifier
     /// </summary>
     public const string ReleasePublicKeyArmored = "";
 
-    /// <summary>Release assets live under the tag; tags are v{version}.</summary>
-    private const string ManifestUrlFormat =
-        "https://github.com/No-More-Secrets/thisismypc/releases/download/v{0}/SHA256SUMS";
+    /// <summary>
+    /// Release assets live under the tag; tags are v{version}. Derived from
+    /// AppConstants.UpdateUrl so a repo rename cannot leave the verifier
+    /// fetching from a stale (and eventually squattable) owner name.
+    /// </summary>
+    private static readonly string ManifestUrlFormat =
+        Core.AppConstants.UpdateUrl + "/download/v{0}/SHA256SUMS";
 
     private const int MaxManifestBytes = 1024 * 1024;
 
@@ -84,6 +88,17 @@ public sealed class GpgManifestUpdateVerifier : IUpdateVerifier
                 return Reject(updateVersion, "The release manifest is malformed.");
 
             var fileName = Path.GetFileName(packageFilePath);
+
+            // Version binding (anti-downgrade): a genuinely signed manifest from
+            // an OLD release replayed under a new tag still verifies, so the
+            // package name itself must carry the version being installed
+            // (Velopack names packages {PackId}-{Version}-*.nupkg).
+            if (!fileName.Contains(updateVersion, StringComparison.OrdinalIgnoreCase))
+            {
+                return Reject(updateVersion,
+                    $"The package name {fileName} does not carry version {updateVersion}; possible downgrade replay.");
+            }
+
             var expectedDigest = manifest.DigestFor(fileName);
             if (expectedDigest is null)
                 return Reject(updateVersion, $"The release manifest does not list the package {fileName}.");
@@ -157,7 +172,13 @@ public sealed class GpgManifestUpdateVerifier : IUpdateVerifier
 
     private static HttpClient CreateHttpClient()
     {
-        var client = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+        var client = new HttpClient
+        {
+            Timeout = TimeSpan.FromSeconds(30),
+            // Oversized bodies throw before buffering past the cap; the catch
+            // below turns that into a rejection.
+            MaxResponseContentBufferSize = MaxManifestBytes,
+        };
         client.DefaultRequestHeaders.UserAgent.ParseAdd("ThisIsMyPC-Updater");
         return client;
     }
