@@ -70,10 +70,11 @@
 
                 <!-- Settings alone at the bottom -->
                 <StackPanel DockPanel.Dock="Bottom" Margin="0,8,0,8">
-                    <!-- Dev-facing style reference; hide before release -->
+                    <!-- Dev-facing style reference; Debug builds only -->
                     <Button Classes="sidebar-item"
                             Classes.active="{Binding IsGalleryActive}"
                             Command="{Binding OpenGalleryCommand}"
+                            IsVisible="{x:Static vm:MainWindowViewModel.IsGalleryVisible}"
                             ToolTip.Tip="Standardized styles and tokens (dev)">
                         <StackPanel Orientation="Horizontal" Spacing="10">
                             <!-- Palette swatch icon -->

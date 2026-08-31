@@ -100,7 +100,9 @@ packaging must follow:
 One-page style reference: type scale, color tokens, text tiers, every
 standardized control class (toolbar-toggle, apply-bar, status text, scope
 badges, pending markers, notification bars). Sidebar bottom, above Settings.
-Release prep: hide it (or gate behind a debug flag) before shipping.
+Debug builds only since 2026-08-31 (compile-time gate on the sidebar button);
+Release also drops the Debug-only log console window. Nothing left for release
+prep here.
 
 ## AV / SmartScreen readiness (release-readiness chunk, pre-first-release)
 

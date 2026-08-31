@@ -30,6 +30,11 @@
     <PackageReference Include="Serilog" />
     <PackageReference Include="Velopack" />
     <PackageReference Include="Serilog.Formatting.Compact" />
+    <!-- Debug-only: feeds the separate log console; all uses sit behind #if DEBUG -->
+    <PackageReference Include="Serilog.Sinks.Console">
+      <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
+      <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="Serilog.Sinks.File" />
   </ItemGroup>
 

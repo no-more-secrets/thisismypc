@@ -19,6 +19,14 @@ sealed class Program
     [STAThread]
     public static void Main(string[] args)
     {
+#if DEBUG
+        // Debug builds get a separate console window streaming verbose logs.
+        // Must run before anything touches System.Console (handles are cached).
+        var hasDebugConsole = DebugConsole.Attach();
+        if (hasDebugConsole)
+            Console.Title = "ThisIsMyPC logs (Debug)";
+#endif
+
         VelopackApp.Build()
             .SetAutoApplyOnStartup(false)
             .Run();
@@ -28,7 +36,7 @@ sealed class Program
 
         var logPath = Path.Combine(dataDir, "logs", "thisismypc-.log");
 
-        Log.Logger = new LoggerConfiguration()
+        var loggerConfiguration = new LoggerConfiguration()
 #if DEBUG
             .MinimumLevel.Verbose()
 #else
@@ -40,8 +48,18 @@ sealed class Program
                 logPath,
                 rollingInterval: RollingInterval.Day,
                 retainedFileCountLimit: 7,
-                fileSizeLimitBytes: 10 * 1024 * 1024)
-            .CreateLogger();
+                fileSizeLimitBytes: 10 * 1024 * 1024);
+
+#if DEBUG
+        if (hasDebugConsole)
+        {
+            loggerConfiguration = loggerConfiguration.WriteTo.Console(
+                outputTemplate: "[{Timestamp:HH:mm:ss.fff} {Level:u3}] {SourceContext}{NewLine}    {Message:lj}{NewLine}{Exception}",
+                formatProvider: System.Globalization.CultureInfo.InvariantCulture);
+        }
+#endif
+
+        Log.Logger = loggerConfiguration.CreateLogger();
 
 #pragma warning disable CA1031 // Top-level crash handler must catch all exceptions
         try

@@ -997,7 +997,14 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isGalleryActive;
 
-    /// <summary>Dev-facing style reference (UI Gallery); hide before release.</summary>
+    /// <summary>The UI Gallery is a dev-facing style reference; Release builds hide it.</summary>
+#if DEBUG
+    public static bool IsGalleryVisible => true;
+#else
+    public static bool IsGalleryVisible => false;
+#endif
+
+    /// <summary>Dev-facing style reference (UI Gallery); Debug builds only.</summary>
     [RelayCommand]
     private void OpenGallery()
     {
@@ -1010,7 +1017,6 @@ public partial class MainWindowViewModel : ViewModelBase
         CurrentContent = new GalleryViewModel();
         IsGalleryActive = true;
         IsSettingsActive = false;
-        IsGalleryActive = false;
         IsSetLoaderActive = false;
         IsHomeActive = false;
         SelectedModule = null;
