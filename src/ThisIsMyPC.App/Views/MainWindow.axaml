@@ -190,6 +190,7 @@
                 <TextBlock Text="{Binding ContentTitle}"
                            FontFamily="{StaticResource DisplayFont}"
                            FontSize="28"
+                           FontWeight="Bold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
                 <TextBlock Text="{Binding ContentDescription}"
                            FontSize="14"

@@ -3,6 +3,8 @@
     <Styles.Resources>
         <FontFamily x:Key="BodyFont">avares://ThisIsMyPC.App/Assets/Fonts#IBM Plex Sans</FontFamily>
         <FontFamily x:Key="MonoFont">avares://ThisIsMyPC.App/Assets/Fonts#IBM Plex Mono</FontFamily>
-        <FontFamily x:Key="DisplayFont">TW Cen MT Condensed Extra Bold, Futura Condensed ExtraBold, Impact, sans-serif</FontFamily>
+        <!-- Page titles use the standard display style from the UI Gallery type
+             scale (IBM Plex Sans Bold 28), not a separate brand face. -->
+        <FontFamily x:Key="DisplayFont">avares://ThisIsMyPC.App/Assets/Fonts#IBM Plex Sans</FontFamily>
     </Styles.Resources>
 </Styles>
