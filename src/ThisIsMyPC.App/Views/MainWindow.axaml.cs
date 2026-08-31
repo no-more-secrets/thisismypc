@@ -19,9 +19,34 @@ public partial class MainWindow : Window
 
         PropertyChanged += OnWindowPropertyChanged;
         Loaded += OnLoaded;
+        AddHandler(PointerPressedEvent, OnGlobalPointerPressed, Avalonia.Interactivity.RoutingStrategies.Tunnel);
 #if DEBUG
         KeyDown += OnDebugKeyDown;
 #endif
+    }
+
+    /// <summary>
+    /// Clicking empty space releases keyboard focus. Avalonia only moves focus
+    /// when the click lands on a focusable control, so without this a search
+    /// box stays highlighted and keeps eating keystrokes after clicking away.
+    /// </summary>
+    private void OnGlobalPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (e.Source is not Visual source)
+            return;
+
+        var hitFocusable = false;
+        for (Visual? v = source; v is not null; v = Avalonia.VisualTree.VisualExtensions.GetVisualParent(v))
+        {
+            if (v is IInputElement { Focusable: true })
+            {
+                hitFocusable = true;
+                break;
+            }
+        }
+
+        if (!hitFocusable)
+            FocusManager?.ClearFocus();
     }
 
     private async void OnLoaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
