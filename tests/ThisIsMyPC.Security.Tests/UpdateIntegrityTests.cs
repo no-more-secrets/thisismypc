@@ -7,16 +7,17 @@ namespace ThisIsMyPC.Security.Tests;
 public class UpdateIntegrityTests
 {
     [Fact]
-    public void IUpdateVerifier_InterfaceExists_WithVerifyPackageIntegrity()
+    public void IUpdateVerifier_IsAsync_TakesVersionAndPackagePath()
     {
-        var method = typeof(IUpdateVerifier).GetMethod(nameof(IUpdateVerifier.VerifyPackageIntegrity));
+        var method = typeof(IUpdateVerifier).GetMethod(nameof(IUpdateVerifier.VerifyPackageAsync));
         Assert.NotNull(method);
-        Assert.Equal(typeof(OperationResult<bool>), method!.ReturnType);
+        Assert.Equal(typeof(Task<OperationResult<bool>>), method!.ReturnType);
 
         var parameters = method.GetParameters();
-        Assert.Equal(2, parameters.Length);
-        Assert.Equal(typeof(string), parameters[0].ParameterType);   // updateVersion
-        Assert.Equal(typeof(string), parameters[1].ParameterType);   // packageFilePath (nullable)
+        Assert.Equal(3, parameters.Length);
+        Assert.Equal(typeof(string), parameters[0].ParameterType);            // updateVersion
+        Assert.Equal(typeof(string), parameters[1].ParameterType);            // packageFilePath (nullable)
+        Assert.Equal(typeof(CancellationToken), parameters[2].ParameterType);
     }
 
     [Fact]
@@ -47,40 +48,5 @@ public class UpdateIntegrityTests
         Assert.True(result.IsAvailable);
         Assert.Equal("2.0.0", result.Version);
         Assert.Equal("Bug fixes", result.ReleaseNotes);
-    }
-
-    [Fact]
-    public void FailingVerifier_CausesDownloadRejection_SimulatedFlow()
-    {
-        // Simulate the verification flow without calling real Velopack:
-        // If a verifier returns failure, the update service should reject.
-        IUpdateVerifier verifier = new RejectingVerifier();
-        var result = verifier.VerifyPackageIntegrity("1.0.0");
-
-        Assert.False(result.IsSuccess);
-        Assert.Contains("rejected", result.ErrorMessage, StringComparison.OrdinalIgnoreCase);
-    }
-
-    [Fact]
-    public void PassingVerifier_AllowsUpdate_SimulatedFlow()
-    {
-        IUpdateVerifier verifier = new PassingVerifier();
-        var result = verifier.VerifyPackageIntegrity("1.0.0");
-
-        Assert.True(result.IsSuccess);
-    }
-
-    private sealed class RejectingVerifier : IUpdateVerifier
-    {
-        public OperationResult<bool> VerifyPackageIntegrity(string updateVersion, string? packageFilePath = null)
-            => OperationResult<bool>.Failure(
-                "Update rejected: unsigned package.",
-                ErrorCategory.AccessDenied);
-    }
-
-    private sealed class PassingVerifier : IUpdateVerifier
-    {
-        public OperationResult<bool> VerifyPackageIntegrity(string updateVersion, string? packageFilePath = null)
-            => OperationResult<bool>.Success(true);
     }
 }

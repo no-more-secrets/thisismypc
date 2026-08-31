@@ -70,9 +70,11 @@ public sealed class VelopackUpdateService : IUpdateService, IDisposable
 
             if (_verifier is not null)
             {
+                // Fail-closed: an unresolved package path is a rejection, not a skip.
                 _logger.Information("Verifying update integrity for {Version}", version);
                 var packagePath = ResolveUpdatePackagePath();
-                var verification = _verifier.VerifyPackageIntegrity(version, packagePath);
+                var verification = await _verifier.VerifyPackageAsync(version, packagePath)
+                    .ConfigureAwait(false);
 
                 if (!verification.IsSuccess)
                 {
@@ -119,7 +121,7 @@ public sealed class VelopackUpdateService : IUpdateService, IDisposable
 
     /// <summary>
     /// Attempts to find the downloaded update package in Velopack's staging directory.
-    /// Returns null if the path cannot be resolved (verifier falls back to current binary).
+    /// Returns null if the path cannot be resolved; the verifier rejects null (fail-closed).
     /// </summary>
     private string? ResolveUpdatePackagePath()
     {

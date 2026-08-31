@@ -58,11 +58,16 @@ Consequences, verified against the code and upstream:
   (what FanControl/LHM ship): no cert needed on our side. Constraint: never
   fork or patch the driver; consume upstream releases only. Supersedes
   ADR-001's "we EV-sign PawnIO" assumption.
-- **Update integrity moves to the GPG path**: replace AuthenticodeUpdateVerifier
-  with the planned GPG manifest verifier (offline key, public key hardcoded in
-  the binary, per the threat model) as part of release readiness. Unsigned
-  packages must never pass the current Authenticode verifier by accident:
-  the swap is a prerequisite for the first public release.
+- **Update integrity: GPG manifest verifier SHIPPED 2026-08-31.**
+  GpgManifestUpdateVerifier replaces AuthenticodeUpdateVerifier: each release
+  publishes SHA256SUMS + detached SHA256SUMS.asc (offline key), the app embeds
+  the public key and fail-closes on everything (no manifest, bad signature,
+  digest mismatch, unresolved package path; the old verify-own-binary fallback
+  is gone). Embedded key is EMPTY until Sam runs the key ceremony
+  (docs/release/update-signing.md; a pinned test flips with the key commit),
+  so every update is rejected until then: correct direction, but the ceremony
+  is a release blocker. Tooling: tools/new-release-manifest.ps1. Release tags
+  must be v{version}.
 - **App signing plan (FINAL, Sam 2026-08-30): SSL.com OV cert under the LLC,
   hardware-token delivery.** The publisher line must show the LLC, so the
   individual-validated Certum Open Source cert is out. Real prices verified

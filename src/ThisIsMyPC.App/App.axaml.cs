@@ -205,8 +205,9 @@ public partial class App : Application
         services.AddSingleton<IModule, PowerModule>();
         services.AddSingleton<IModule, ThisIsMyPC.Modules.Display.DisplayModule>();
 
-        // Update services
-        services.AddSingleton<IUpdateVerifier, AuthenticodeUpdateVerifier>();
+        // Update services. GPG manifest verification (tm2:54): fail-closed,
+        // offline release key, public key hardcoded in the verifier.
+        services.AddSingleton<IUpdateVerifier, GpgManifestUpdateVerifier>();
         services.AddSingleton<IUpdateService>(sp =>
             new VelopackUpdateService(
                 AppConstants.UpdateUrl,

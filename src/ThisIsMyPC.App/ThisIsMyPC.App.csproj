@@ -29,6 +29,7 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="Serilog" />
     <PackageReference Include="Velopack" />
+    <PackageReference Include="BouncyCastle.Cryptography" />
     <PackageReference Include="Serilog.Formatting.Compact" />
     <!-- Debug-only: feeds the separate log console; all uses sit behind #if DEBUG -->
     <PackageReference Include="Serilog.Sinks.Console">
