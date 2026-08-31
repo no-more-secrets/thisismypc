@@ -18,7 +18,7 @@
         <!-- Sidebar -->
         <Border Grid.Column="0"
                 Background="{DynamicResource SidebarBackgroundBrush}"
-                BorderBrush="{DynamicResource SidebarBorderBrush}"
+                BorderBrush="{DynamicResource OutlineBrush}"
                 BorderThickness="0,0,1,0"
                 Width="{Binding IsSidebarCollapsed, Converter={x:Static vm:SidebarWidthConverter.Instance}}">
 
@@ -230,8 +230,8 @@
             <Panel DockPanel.Dock="Bottom" Margin="0,16,0,0">
                 <Border x:Name="ApplyBar"
                         Background="{DynamicResource RaisedBrush}"
-                        BorderBrush="{DynamicResource SidebarBorderBrush}"
-                        BorderThickness="0,1,0,0"
+                        BorderBrush="{DynamicResource OutlineBrush}"
+                        BorderThickness="1"
                         Padding="16,10"
                         CornerRadius="8">
                     <DockPanel>
@@ -354,6 +354,8 @@
 
             <!-- Module content area -->
             <Border Background="{DynamicResource RaisedBrush}"
+                    BorderBrush="{DynamicResource OutlineBrush}"
+                    BorderThickness="1"
                     CornerRadius="8"
                     Padding="24">
                 <Panel>

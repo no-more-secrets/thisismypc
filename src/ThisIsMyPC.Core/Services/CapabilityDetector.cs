@@ -93,12 +93,12 @@ public sealed class CapabilityDetector : ICapabilityDetector
         SystemCapability.Wmi => new ModuleAvailability(true),
         SystemCapability.NativeApi => new ModuleAvailability(true),
 
-        // Retired hardware territory; reported honestly so the summary can say what
-        // would be possible; the modules themselves arrive with the post-BMAD work.
+        // Hardware territory; reported honestly so the summary can say what
+        // would be possible once the display module ships.
         SystemCapability.DdcCi => new ModuleAvailability(
             false,
             "Display control (DDC/CI) is not implemented yet.",
-            "Monitor brightness/input control arrives with the post-BMAD display work."),
+            "Monitor brightness and input control are planned for a future update."),
         SystemCapability.HwInfo => DetectHwInfo(),
         SystemCapability.AsusAtkacpi => DetectFile(
             Path.Combine(Environment.SystemDirectory, "drivers", "atkwmiacpi64.sys"),

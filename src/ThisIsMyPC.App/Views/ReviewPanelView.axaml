@@ -9,7 +9,7 @@
              x:DataType="vm:ReviewPanelViewModel">
 
     <Border Background="{DynamicResource RaisedBrush}"
-            BorderBrush="{DynamicResource SidebarBorderBrush}"
+            BorderBrush="{DynamicResource OutlineBrush}"
             BorderThickness="1"
             CornerRadius="8"
             Width="450"
@@ -20,7 +20,7 @@
             <!-- Header -->
             <Border DockPanel.Dock="Top"
                     Padding="16,12"
-                    BorderBrush="{DynamicResource SidebarBorderBrush}"
+                    BorderBrush="{DynamicResource OutlineBrush}"
                     BorderThickness="0,0,0,1">
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Right"
@@ -39,7 +39,7 @@
             <!-- Footer: status message + action buttons -->
             <Border DockPanel.Dock="Bottom"
                     Padding="16,10"
-                    BorderBrush="{DynamicResource SidebarBorderBrush}"
+                    BorderBrush="{DynamicResource OutlineBrush}"
                     BorderThickness="0,1,0,0">
                 <StackPanel Spacing="8">
                     <!-- Error/status feedback -->
@@ -199,7 +199,7 @@
                                             Padding="12,8"
                                             CornerRadius="4"
                                             BorderThickness="1"
-                                            BorderBrush="{DynamicResource SidebarBorderBrush}">
+                                            BorderBrush="{DynamicResource OutlineBrush}">
                                         <DockPanel>
                                             <Button DockPanel.Dock="Right"
                                                     Classes="apply-bar-discard"

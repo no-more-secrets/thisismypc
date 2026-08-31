@@ -9,7 +9,7 @@
              x:DataType="vm:ChangeHistoryViewModel">
 
     <Border Background="{DynamicResource RaisedBrush}"
-            BorderBrush="{DynamicResource SidebarBorderBrush}"
+            BorderBrush="{DynamicResource OutlineBrush}"
             BorderThickness="1"
             CornerRadius="8"
             Width="450"
@@ -20,7 +20,7 @@
             <!-- Header -->
             <Border DockPanel.Dock="Top"
                     Padding="16,12"
-                    BorderBrush="{DynamicResource SidebarBorderBrush}"
+                    BorderBrush="{DynamicResource OutlineBrush}"
                     BorderThickness="0,0,0,1">
                 <DockPanel>
                     <StackPanel DockPanel.Dock="Right"
@@ -72,7 +72,7 @@
             <!-- Create Set from Selection (8.5) -->
             <Border DockPanel.Dock="Bottom"
                     Padding="16,10"
-                    BorderBrush="{DynamicResource SidebarBorderBrush}"
+                    BorderBrush="{DynamicResource OutlineBrush}"
                     BorderThickness="0,1,0,0"
                     IsVisible="{Binding !!TotalGroupCount}">
                 <StackPanel Spacing="8">

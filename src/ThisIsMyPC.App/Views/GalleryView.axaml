@@ -26,7 +26,7 @@
             <Setter Property="Height" Value="44" />
             <Setter Property="CornerRadius" Value="6" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="BorderBrush" Value="{DynamicResource SidebarBorderBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource OutlineBrush}" />
         </Style>
     </UserControl.Styles>
 

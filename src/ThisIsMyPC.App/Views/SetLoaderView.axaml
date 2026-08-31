@@ -18,7 +18,7 @@
         </Style>
         <Style Selector="Border.set-card-body">
             <Setter Property="Background" Value="{DynamicResource RaisedBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource SidebarBorderBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource OutlineBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="8" />
             <Setter Property="Padding" Value="12" />
@@ -112,7 +112,7 @@
                 <!-- Stage footer -->
                 <Border DockPanel.Dock="Bottom"
                         Background="{DynamicResource RaisedBrush}"
-                        BorderBrush="{DynamicResource SidebarBorderBrush}"
+                        BorderBrush="{DynamicResource OutlineBrush}"
                         BorderThickness="0,1,0,0"
                         Padding="12,10"
                         CornerRadius="8"

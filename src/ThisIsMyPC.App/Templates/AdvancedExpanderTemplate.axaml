@@ -30,7 +30,7 @@
             <!-- Module-specific advanced controls go here -->
             <Border Padding="0,8"
                     Margin="0,4,0,0"
-                    BorderBrush="{DynamicResource SidebarBorderBrush}"
+                    BorderBrush="{DynamicResource OutlineBrush}"
                     BorderThickness="0,1,0,0">
                 <ContentPresenter />
             </Border>
