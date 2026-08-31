@@ -16,6 +16,7 @@
                 <ResourceInclude Source="avares://ThisIsMyPC.App/Templates/ToggleSettingRowTemplate.axaml" />
                 <ResourceInclude Source="avares://ThisIsMyPC.App/Templates/MultiScopeRowTemplate.axaml" />
                 <ResourceInclude Source="avares://ThisIsMyPC.App/Templates/ChoiceSettingRowTemplate.axaml" />
+                <ResourceInclude Source="avares://ThisIsMyPC.App/Styles/ScrollBarTheme.axaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

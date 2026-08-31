@@ -1,0 +1,83 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Minimal scrollbars, ported from the Uprooted project's spec: a bare
+         4px rounded thumb in the text color at low opacity, no arrows, no
+         visible track. Opacity steps up on hover and press. The thin thumb
+         overlays content by design; it never expands, so it never intrudes
+         (replaces both the stock growing overlay bar and the reserved-lane
+         workaround). -->
+
+    <ControlTheme x:Key="MinimalScrollThumb" TargetType="Thumb">
+        <Setter Property="Background" Value="{DynamicResource TextPrimaryBrush}" />
+        <Setter Property="Opacity" Value="0.15" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}" CornerRadius="2" />
+            </ControlTemplate>
+        </Setter>
+        <Setter Property="Transitions">
+            <Transitions>
+                <DoubleTransition Property="Opacity" Duration="0:0:0.1" />
+            </Transitions>
+        </Setter>
+        <Style Selector="^:pointerover">
+            <Setter Property="Opacity" Value="0.3" />
+        </Style>
+        <Style Selector="^:pressed">
+            <Setter Property="Opacity" Value="0.5" />
+        </Style>
+    </ControlTheme>
+
+    <ControlTheme x:Key="MinimalScrollPageButton" TargetType="RepeatButton">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="Transparent" />
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+
+    <ControlTheme x:Key="{x:Type ScrollBar}" TargetType="ScrollBar">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="Transparent">
+                    <Track Minimum="{TemplateBinding Minimum}"
+                           Maximum="{TemplateBinding Maximum}"
+                           Value="{TemplateBinding Value, Mode=TwoWay}"
+                           ViewportSize="{TemplateBinding ViewportSize}"
+                           Orientation="{TemplateBinding Orientation}"
+                           IsDirectionReversed="True">
+                        <Track.DecreaseButton>
+                            <RepeatButton Name="PART_PageUpButton"
+                                          Theme="{StaticResource MinimalScrollPageButton}"
+                                          Focusable="False" />
+                        </Track.DecreaseButton>
+                        <Track.IncreaseButton>
+                            <RepeatButton Name="PART_PageDownButton"
+                                          Theme="{StaticResource MinimalScrollPageButton}"
+                                          Focusable="False" />
+                        </Track.IncreaseButton>
+                        <Thumb Name="thumb" Theme="{StaticResource MinimalScrollThumb}" />
+                    </Track>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+        <Style Selector="^:vertical">
+            <Setter Property="Width" Value="10" />
+        </Style>
+        <Style Selector="^:vertical /template/ Thumb">
+            <Setter Property="Width" Value="4" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="^:horizontal">
+            <Setter Property="Height" Value="10" />
+        </Style>
+        <Style Selector="^:horizontal /template/ Thumb">
+            <Setter Property="Height" Value="4" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+    </ControlTheme>
+
+</ResourceDictionary>

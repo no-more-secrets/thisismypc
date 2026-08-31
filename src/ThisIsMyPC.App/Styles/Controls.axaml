@@ -67,13 +67,6 @@
         <Setter Property="RenderTransform" Value="scale(1.15)" />
     </Style>
 
-    <!-- Scrollbars keep their own lane: the Fluent overlay bar expands OVER
-         content on hover, which has intruded on cards repeatedly. Disabling
-         auto-hide arranges content beside the bar instead of underneath it. -->
-    <Style Selector="ScrollViewer">
-        <Setter Property="AllowAutoHide" Value="False" />
-    </Style>
-
     <!-- Info icon: a small circled i whose tooltip carries the full
          description, so rows and cards can stay one line tall. -->
     <Style Selector="Border.info-icon">
