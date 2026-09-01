@@ -33,8 +33,8 @@ backlog).
    publication-day: GPG release-key ceremony (docs/release/update-signing.md),
    git-history scrub before the repo goes public (backlog: publication
    hygiene), UpdateUrl org/repo name (docs/release/packaging.md; publisher
-   is NMS, short for No More Secrets, LLC, settled 2026-09-01). Process: SSL.com OV cert
-   purchase, Defender false-positive submission, VirusTotal CI canary, winget
+   is NMS, short for No More Secrets, LLC, settled 2026-09-01). Process: OV cert delivery
+   (purchased 2026-09-01, token due about 2026-09-08), Defender false-positive submission, VirusTotal CI canary, winget
    distribution.
 2. **Post-release menu**: retired BMAD epics (ASUS/ATKACPI, OpenRGB, drivers,
    network/firewall, profiles, WU remainder) and install-engine leftovers

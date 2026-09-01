@@ -68,6 +68,11 @@ Consequences, verified against the code and upstream:
   so every update is rejected until then: correct direction, but the ceremony
   is a release blocker. Tooling: tools/new-release-manifest.ps1. Release tags
   must be v{version}.
+- **OV cert PURCHASED 2026-09-01**; identity validation underway, token
+  expected by about 2026-09-08. On arrival: install the token driver, confirm
+  the cert shows in `Cert:\CurrentUser\My` with a reachable private key,
+  test-sign a scratch exe, then `build-release.ps1 -SignThumbprint` (wired
+  2026-09-01: vpk `--signParams`, SSL.com timestamp, post-pack verification).
 - **App signing plan (FINAL, Sam 2026-08-30): SSL.com OV cert under the LLC,
   hardware-token delivery.** The publisher line must show the LLC, so the
   individual-validated Certum Open Source cert is out. Real prices verified

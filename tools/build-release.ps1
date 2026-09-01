@@ -19,7 +19,19 @@ param(
     # warnings; needs the VS installer dir on PATH for the native link step).
     # Default off until a full manual pass on an AOT build; the Service stays
     # CoreCLR either way.
-    [switch]$Aot
+    [switch]$Aot,
+
+    # SHA-1 thumbprint of the SSL.com OV code-signing certificate (No More
+    # Secrets, LLC) as it appears in Cert:\CurrentUser\My once the hardware
+    # token is plugged in. When given, vpk runs signtool over every exe, dll,
+    # and the MSI during pack, with an RFC 3161 timestamp from SSL.com, so the
+    # signatures outlive the certificate. SHA256SUMS is written afterwards and
+    # therefore covers the signed files. Omit for unsigned test builds.
+    [ValidatePattern('^[0-9A-Fa-f]{40}$')]
+    [string]$SignThumbprint,
+
+    # RFC 3161 timestamp server used with -SignThumbprint.
+    [string]$TimestampUrl = 'http://ts.ssl.com'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -57,6 +69,17 @@ if (-not (Test-Path (Join-Path $staging 'ThisIsMyPC.Service.exe'))) {
     throw 'ThisIsMyPC.Service.exe missing from staging; Owner Mode enable would break'
 }
 
+$signArgs = @()
+if ($SignThumbprint) {
+    $cert = Get-ChildItem Cert:\CurrentUser\My | Where-Object { $_.Thumbprint -eq $SignThumbprint.ToUpperInvariant() }
+    if (-not $cert) { throw "No certificate with thumbprint $SignThumbprint in Cert:\CurrentUser\My. Is the token plugged in?" }
+    if (-not $cert.HasPrivateKey) { throw 'Certificate found but its private key is not reachable (token driver or PIN).' }
+    Write-Host "Signing as: $($cert.Subject) (expires $($cert.NotAfter.ToString('yyyy-MM-dd')))"
+    $signArgs = @('--signParams', "/fd sha256 /tr $TimestampUrl /td sha256 /sha1 $SignThumbprint")
+} else {
+    Write-Host 'Unsigned build (no -SignThumbprint). Do not publish this.'
+}
+
 Write-Host 'Packing per-machine MSI with Velopack...'
 vpk pack `
     --packId ThisIsMyPC `
@@ -67,8 +90,15 @@ vpk pack `
     --packAuthors $Authors `
     --msi --instLocation PerMachine `
     --noPortable `
-    --outputDir $output
+    --outputDir $output @signArgs
 if ($LASTEXITCODE -ne 0) { throw 'vpk pack failed' }
+
+if ($SignThumbprint) {
+    Write-Host 'Verifying Authenticode signatures on the packed assets...'
+    $unsigned = Get-ChildItem $output -Include *.exe, *.msi -Recurse |
+        Where-Object { (Get-AuthenticodeSignature $_.FullName).Status -ne 'Valid' }
+    if ($unsigned) { throw "Unsigned or invalid signature: $($unsigned.Name -join ', ')" }
+}
 
 Write-Host 'Writing SHA256SUMS...'
 & (Join-Path $PSScriptRoot 'new-release-manifest.ps1') -AssetDirectory $output

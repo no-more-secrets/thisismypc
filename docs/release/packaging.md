@@ -35,11 +35,18 @@ exe for Owner Mode enable), packs the MSI, and writes `SHA256SUMS`. Then follow
 - Publisher line is `NMS` (Sam, 2026-09-01), the short form of No More
   Secrets, LLC: the `-Authors` default in build-release.ps1 and the assembly
   Company in Directory.Build.props both use it, so the install path is
-  `Program FilesNMSThisIsMyPC`. The OV certificate subject and the
-  assembly Copyright carry the full legal name. Release contact for Defender submissions and cert validation:
-  inquiries@no-more-secrets.com.
-- Authenticode-sign the binaries with the SSL.com OV cert on release day
-  (backlog: signing plan); the GPG manifest layer works with or without it.
+  `Program Files\NMS\ThisIsMyPC`. The OV certificate subject and the
+  assembly Copyright carry the full legal name. Release contact for Defender
+  submissions and cert validation: inquiries@no-more-secrets.com.
+- Authenticode signing: the SSL.com OV certificate was purchased 2026-09-01;
+  identity validation is underway and the hardware token is expected within
+  about a week. On release day plug the token in, find the thumbprint with
+  `Get-ChildItem Cert:\CurrentUser\My`, and run
+  `build-release.ps1 -Version x.y.z -SignThumbprint <40 hex>`. vpk then signs
+  every exe, dll, and the MSI with an SSL.com RFC 3161 timestamp, the script
+  verifies each signature, and SHA256SUMS is computed over the signed files.
+  Builds without `-SignThumbprint` are unsigned test builds. The GPG manifest
+  layer works with or without Authenticode.
 - `AppConstants.UpdateUrl` points at github.com/No-More-Secrets/thisismypc
   (the public repo, created 2026-09-01). The private development remote is
   still samboland/thisismypc; nothing is pushed to the public repo until Sam
