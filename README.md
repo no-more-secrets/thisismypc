@@ -250,8 +250,8 @@ reviews enforce, in one place:
 
 ## License
 
-[GPLv2](LICENSE), every component, including the Owner Mode service. Open
+[GPLv2](LICENSE) for every component, including the Owner Mode service. Open
 source makes the code inspectable; it is not a substitute for an audit. See
 [docs/why-gplv2.md](docs/why-gplv2.md).
 
-Published by No More Secrets, LLC.
+Copyright (c) 2026 No More Secrets, LLC. See [NOTICE](NOTICE).
