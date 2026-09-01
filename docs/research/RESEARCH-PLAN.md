@@ -14,7 +14,7 @@ Extract structured, implementation-ready data from both exports to feed into sto
 
 ## Phase 1: ShellExView Export (Epic 2, Story 2.2)
 
-**Input:** `docs/research/Shell_Extensions_List.html`
+**Input:** ShellExView HTML export (personal machine data, kept outside the repo)
 **Feeds:** Story 2.2 (Context Menu Handler Management)
 **Output:** `docs/research/context-menu-handlers-analysis.md`
 
@@ -36,7 +36,7 @@ Extract structured, implementation-ready data from both exports to feed into sto
 
 ## Phase 2: Autoruns Export (Epic 3)
 
-**Input:** `docs/research/autoruns.csv`
+**Input:** Autoruns CSV export (personal machine data, kept outside the repo)
 **Feeds:** Epic 3 stories 3.1–3.4
 **Output:** `docs/research/autoruns-analysis.md`
 

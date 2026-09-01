@@ -1,6 +1,6 @@
 # Deep Research Index
 
-External research documents produced via deep-research tools (Gemini, etc.) for architectural and implementation decisions. Original PDFs preserved in `pdf-originals/`.
+External research documents produced via deep-research tools (Gemini, etc.) for architectural and implementation decisions.
 
 ## Master Summary
 
@@ -35,4 +35,4 @@ External research documents produced via deep-research tools (Gemini, etc.) for 
 
 ## Original PDFs
 
-Original research PDFs are preserved in [`pdf-originals/`](./pdf-originals/) for verification against the markdown conversions.
+The original PDFs are kept outside the repo; the markdown files here are the conversions.
