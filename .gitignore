@@ -6,6 +6,8 @@ TWEAKS.md
 [Oo]bj/
 [Dd]ebug/
 [Rr]elease/
+# The build-output rule above would swallow the release DOCS; keep them tracked
+!docs/release/
 x64/
 x86/
 publish/
