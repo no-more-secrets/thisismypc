@@ -39,12 +39,16 @@ public static class LoggingSetup
     }
 
     /// <summary>
-    /// Installs the global configuration: a daily JSON file under
+    /// Installs the configuration: a daily JSON file under
     /// <c>{dataDir}\logs</c> (10 MB size cap, 7 files kept) and, when asked,
     /// a console target for the Debug log window. Returns the app logger.
+    /// Production passes no factory and configures the global LogManager;
+    /// tests pass their own LogFactory so parallel test classes that log
+    /// through the global manager cannot write into a test's file.
     /// </summary>
-    public static Logger Configure(string dataDir, bool verbose, bool console)
+    public static Logger Configure(string dataDir, bool verbose, bool console, LogFactory? factory = null)
     {
+        factory ??= LogManager.LogFactory;
         var file = new FileTarget("file")
         {
             FileName = Path.Combine(dataDir, "logs", "thisismypc-${shortdate}.log"),
@@ -55,7 +59,7 @@ public static class LoggingSetup
 
         var minimum = verbose ? LogLevel.Trace : LogLevel.Info;
 
-        LogManager.Setup().LoadConfiguration(builder =>
+        factory.Setup().LoadConfiguration(builder =>
         {
             // Start from an empty configuration: the builder otherwise merges
             // into whatever LogManager already holds, and a second Configure
@@ -80,6 +84,6 @@ public static class LoggingSetup
             }
         });
 
-        return LogManager.GetLogger(AppLoggerName);
+        return factory.GetLogger(AppLoggerName);
     }
 }
