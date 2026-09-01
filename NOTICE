@@ -3,7 +3,12 @@ Copyright (c) 2026 No More Secrets, LLC
 
 This program is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License version 2 as published by the Free
-Software Foundation. See LICENSE for the full text.
+Software Foundation, version 2 only, not any later version. See LICENSE for
+the full text.
+
+The license is v2-only because code derived from ExplorerPatcher and OpenRGB
+is included, and both are licensed GPLv2 without the "or any later version"
+clause.
 
 This program is distributed in the hope that it will be useful, but WITHOUT
 ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS

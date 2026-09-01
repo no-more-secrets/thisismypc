@@ -250,8 +250,10 @@ reviews enforce, in one place:
 
 ## License
 
-[GPLv2](LICENSE) for every component, including the Owner Mode service. Open
-source makes the code inspectable; it is not a substitute for an audit. See
-[docs/why-gplv2.md](docs/why-gplv2.md).
+[GPLv2](LICENSE), version 2 only, for every component, including the Owner
+Mode service. It is v2-only rather than "v2 or later" because the repo
+includes code derived from ExplorerPatcher and OpenRGB, and both are GPLv2
+without the "or later" clause. Open source makes the code inspectable; it is
+not a substitute for an audit. See [docs/why-gplv2.md](docs/why-gplv2.md).
 
 Copyright (c) 2026 No More Secrets, LLC. See [NOTICE](NOTICE).
