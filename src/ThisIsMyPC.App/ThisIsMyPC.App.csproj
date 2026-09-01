@@ -7,8 +7,12 @@
     <!-- CA1724: App class name conflicts with ThisIsMyPC.App namespace (unavoidable convention) -->
     <NoWarn>CA1515;CA1724</NoWarn>
     <!-- NativeAOT probe/publish: opt in with -p:AotPublish=true so normal
-         builds and the netstandard2.0 analyzer project stay untouched -->
+         builds and the netstandard2.0 analyzer project stay untouched.
+         ControlFlowGuard: the AOT toolchain does not enable CFG by default
+         (the CoreCLR apphost does); without it the native image ships with
+         zero guarded call targets. -->
     <PublishAot Condition="'$(AotPublish)' == 'true'">true</PublishAot>
+    <ControlFlowGuard Condition="'$(AotPublish)' == 'true'">Guard</ControlFlowGuard>
   </PropertyGroup>
 
   <ItemGroup>

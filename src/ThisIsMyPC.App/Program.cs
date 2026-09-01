@@ -19,6 +19,11 @@ sealed class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        // First: drop working directory and PATH from every DLL resolution in
+        // the process (System32 + application dir only). Must precede any code
+        // that could fault in a library.
+        Interop.Win32.Security.DllSearchHardening.Apply();
+
 #if DEBUG
         // Debug builds get a separate console window streaming verbose logs.
         // Must run before anything touches System.Console (handles are cached).

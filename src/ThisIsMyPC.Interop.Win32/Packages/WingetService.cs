@@ -338,9 +338,26 @@ public sealed class WingetService : IWingetService
     private static async Task<OperationResult<(int ExitCode, string Output)>> RunWingetAsync(
         string[] arguments, CancellationToken cancellationToken, TimeSpan? timeout = null)
     {
+        var wingetPath = ResolveWingetPath();
+        if (wingetPath is null)
+        {
+            return OperationResult<(int, string)>.Failure(
+                "winget is not available. Install 'App Installer' from the Microsoft Store.",
+                ErrorCategory.ServiceUnavailable);
+        }
+
+        // The alias lives under the user profile (user-writable); this elevated
+        // process must not run it unverified. Signature checked once per path.
+        var trusted = VerifyWingetOnce(wingetPath);
+        if (!trusted.IsSuccess)
+        {
+            return OperationResult<(int, string)>.Failure(
+                $"Refusing to run winget: {trusted.ErrorMessage}", ErrorCategory.AccessDenied);
+        }
+
         var startInfo = new ProcessStartInfo
         {
-            FileName = ResolveWingetPath(),
+            FileName = wingetPath,
             UseShellExecute = false,
             CreateNoWindow = true,
             RedirectStandardOutput = true,
@@ -407,14 +424,71 @@ public sealed class WingetService : IWingetService
         }
     }
 
-    private static string ResolveWingetPath()
+    /// <summary>
+    /// Resolves winget to a FULL path: the per-user app execution alias first
+    /// (survives elevation; same user's token), then an explicit PATH walk.
+    /// Never hands CreateProcess a bare name: its own search order starts in
+    /// attacker-influencable directories, and the signature gate below needs a
+    /// concrete file to verify.
+    /// </summary>
+    private static string? ResolveWingetPath()
     {
-        // The per-user app execution alias survives elevation because the token
-        // is the same user's; fall back to PATH resolution via CreateProcess.
         var alias = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Microsoft", "WindowsApps", "winget.exe");
-        return File.Exists(alias) ? alias : "winget.exe";
+        if (File.Exists(alias))
+            return alias;
+
+        foreach (var dir in (Environment.GetEnvironmentVariable("PATH") ?? "").Split(';'))
+        {
+            if (dir.Length == 0)
+                continue;
+            try
+            {
+                var candidate = Path.Combine(dir.Trim(), "winget.exe");
+                if (File.Exists(candidate))
+                    return candidate;
+            }
+            catch (ArgumentException)
+            {
+                // Malformed PATH entry; skip it.
+            }
+        }
+
+        return null;
+    }
+
+    // One verification per resolved path per process: winget runs constantly
+    // during scans and installs, and the file is immutable while trusted.
+    private static readonly Lock VerifyLock = new();
+    private static string? _verifiedWingetPath;
+
+    private static OperationResult<bool> VerifyWingetOnce(string wingetPath)
+    {
+        lock (VerifyLock)
+        {
+            if (string.Equals(_verifiedWingetPath, wingetPath, StringComparison.OrdinalIgnoreCase))
+                return OperationResult<bool>.Success(true);
+
+            // The alias is a zero-byte reparse stub with no signature of its
+            // own; verify the packaged executable it launches. Residual TOCTOU
+            // (alias swapped between verify and launch) is accepted: the
+            // attacker needs user-context write either way, and the gate
+            // removes the durable replace-the-alias escalation.
+            var target = Security.AppExecutionAlias.ResolveTarget(wingetPath);
+            if (target is null)
+            {
+                return OperationResult<bool>.Failure(
+                    "The winget launcher could not be resolved to a real executable.",
+                    ErrorCategory.AccessDenied);
+            }
+
+            var result = Security.AuthenticodeVerifier.VerifyTrusted(
+                target, requiredSubjectFragment: "Microsoft Corporation");
+            if (result.IsSuccess)
+                _verifiedWingetPath = wingetPath;
+            return result;
+        }
     }
 
     private static string FormatExitError(string operationName, int exitCode, string output)
