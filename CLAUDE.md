@@ -32,9 +32,10 @@ backlog).
 1. **Release prep (current)**. Remaining hard blockers, all Sam-gated or
    publication-day: GPG release-key ceremony (docs/release/update-signing.md),
    git-history scrub before the repo goes public (backlog: publication
-   hygiene), LLC name for the MSI publisher line + UpdateUrl org
-   (docs/release/packaging.md). Process: SSL.com OV cert purchase, Defender
-   false-positive submission, VirusTotal CI canary, winget distribution.
+   hygiene), UpdateUrl org/repo name (docs/release/packaging.md; publisher
+   is No More Secrets, LLC, settled 2026-09-01). Process: SSL.com OV cert
+   purchase, Defender false-positive submission, VirusTotal CI canary, winget
+   distribution.
 2. **Post-release menu**: retired BMAD epics (ASUS/ATKACPI, OpenRGB, drivers,
    network/firewall, profiles, WU remainder) and install-engine leftovers
    (OneDrive/Edge removal, OEM tools, progress/cancel).
