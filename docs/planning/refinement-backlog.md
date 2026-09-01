@@ -125,15 +125,14 @@ prep here.
   manifest URL from UpdateUrl, so whichever org/name ships must match where
   releases are published. Naming is Sam's decision.
 
-## Binary hardening: Sam's final checklist worked 2026-08-31
+## Binary hardening: DONE 2026-08-31
 
-Full item-by-item record: `docs/release/hardening-checklist.md`. Verified: CFG/
-DEP/ASLR/CET/EHCONT on both CoreCLR and AOT exes (AOT needed ControlFlowGuard
-enabled; dumpbin-proven), IPC boundary audited against tm1 (all prescriptions
-already implemented). Implemented but NOT yet built/tested/committed (session
-lost shell access): SetDefaultDllDirectories at both entry points, WinVerifyTrust
-gate on winget (alias reparse-target resolution + Microsoft signer check). Run
-the verification debt commands in that doc first thing next session.
+Full item-by-item record: `docs/release/hardening-checklist.md`. CFG/DEP/ASLR/CET/
+EHCONT verified on both CoreCLR and AOT exes, IPC boundary audited against tm1,
+SetDefaultDllDirectories at both entry points, WinVerifyTrust gate on winget.
+All built, tested (ChildProcessGateTests incl. a live Integration case), and
+committed; ultra review over the batch (044a4ad..f1d3739) returned zero findings
+on 2026-09-01.
 
 ## AV / SmartScreen readiness (release-readiness chunk, pre-first-release)
 
