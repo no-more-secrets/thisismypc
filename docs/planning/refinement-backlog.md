@@ -94,8 +94,8 @@ The app corresponds to the PC, not a profile. Implemented:
   packs the Velopack per-machine MSI (`--msi --instLocation PerMachine`, WiX 5,
   Program Files, elevation required). Per-user Setup.exe and portable zip are
   not shipped.
-- Publisher settled 2026-09-01: No More Secrets, LLC (build script, assembly
-  metadata, packaging.md). Open at release: Authenticode signing on release
+- Publisher settled 2026-09-01: NMS, short for No More Secrets, LLC (build
+  script, assembly metadata, packaging.md); cert subject is the full name. Open at release: Authenticode signing on release
   day; UpdateUrl org must match the publishing repo.
 - Keep integrity validation of stored state in the elevated service regardless of
   folder (defense in depth per threat model tm2:120-134).

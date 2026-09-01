@@ -10,9 +10,10 @@ param(
     [ValidatePattern('^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$')]
     [string]$Version,
 
-    # Shown as the MSI publisher and the Program Files vendor folder. Must
-    # match the OV certificate subject (No More Secrets, LLC).
-    [string]$Authors = 'No More Secrets, LLC',
+    # Shown as the MSI publisher and the Program Files vendor folder. Short
+    # form of the legal publisher (No More Secrets, LLC); the OV cert subject
+    # carries the full name.
+    [string]$Authors = 'NMS',
 
     # NativeAOT publish for the App (probe-proven 2026-08-31, zero trim
     # warnings; needs the VS installer dir on PATH for the native link step).

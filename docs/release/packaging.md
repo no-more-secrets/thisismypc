@@ -32,11 +32,11 @@ exe for Owner Mode enable), packs the MSI, and writes `SHA256SUMS`. Then follow
 
 ## Open items before first release
 
-- Publisher is `No More Secrets, LLC` (Sam, 2026-09-01): the `-Authors`
-  default in build-release.ps1, the assembly Company/Copyright in
-  Directory.Build.props, and the OV certificate subject must all match it.
-  Install path becomes `Program FilesNo More Secrets, LLCThisIsMyPC`.
-  Release contact for Defender submissions and cert validation:
+- Publisher line is `NMS` (Sam, 2026-09-01), the short form of No More
+  Secrets, LLC: the `-Authors` default in build-release.ps1 and the assembly
+  Company in Directory.Build.props both use it, so the install path is
+  `Program FilesNMSThisIsMyPC`. The OV certificate subject and the
+  assembly Copyright carry the full legal name. Release contact for Defender submissions and cert validation:
   inquiries@no-more-secrets.com.
 - Authenticode-sign the binaries with the SSL.com OV cert on release day
   (backlog: signing plan); the GPG manifest layer works with or without it.

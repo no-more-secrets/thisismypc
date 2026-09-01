@@ -5,9 +5,9 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AnalysisLevel>latest-all</AnalysisLevel>
-    <!-- Publisher identity: shows in exe version resources (Company/Copyright) and must match the MSI publisher and the OV cert subject. -->
-    <Company>No More Secrets, LLC</Company>
-    <Authors>No More Secrets, LLC</Authors>
+    <!-- Publisher identity in exe version resources. Company is the short form used on the MSI publisher line; Copyright names the legal entity. -->
+    <Company>NMS</Company>
+    <Authors>NMS</Authors>
     <Product>ThisIsMyPC</Product>
     <Copyright>Copyright (c) 2026 No More Secrets, LLC. GPLv2.</Copyright>
   </PropertyGroup>
