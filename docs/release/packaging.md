@@ -40,8 +40,10 @@ exe for Owner Mode enable), packs the MSI, and writes `SHA256SUMS`. Then follow
   inquiries@no-more-secrets.com.
 - Authenticode-sign the binaries with the SSL.com OV cert on release day
   (backlog: signing plan); the GPG manifest layer works with or without it.
-- `AppConstants.UpdateUrl` (No-More-Secrets/thisismypc) must match the org/repo that
-  actually hosts releases; current remote is samboland/thisismypc. Sam's call.
+- `AppConstants.UpdateUrl` points at github.com/No-More-Secrets/thisismypc
+  (the public repo, created 2026-09-01). The private development remote is
+  still samboland/thisismypc; nothing is pushed to the public repo until Sam
+  has verified the scrubbed history.
 - NativeAOT works (probed 2026-08-31): `-p:AotPublish=true` (or
   `build-release.ps1 -Aot`) produces a ~34 MB native App exe with ZERO trim
   warnings after the two shared row templates gained compiled bindings

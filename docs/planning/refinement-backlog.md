@@ -120,11 +120,11 @@ prep here.
   history; do a full history review for personal data either way. Sam's call
   which; scrubbing rewrites every SHA, so do it after development quiets, right
   before publication.
-- **Owner mismatch to resolve at publication**: `AppConstants.UpdateUrl` points
-  at `github.com/No-More-Secrets/thisismypc`; the actual remote is
-  `github.com/samboland/thisismypc` (private). The update verifier derives its
-  manifest URL from UpdateUrl, so whichever org/name ships must match where
-  releases are published. Naming is Sam's decision.
+- **Public home settled 2026-09-01**: `github.com/No-More-Secrets/thisismypc`
+  (empty public repo under the free org). `AppConstants.UpdateUrl` points there.
+  Development continues on the private samboland/thisismypc remote; the public
+  repo receives the scrubbed history only after Sam explicitly verifies it is
+  safe. Never push there without that go-ahead.
 
 ## Binary hardening: DONE 2026-08-31
 
