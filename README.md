@@ -3,8 +3,8 @@
 A Windows 11 system-control app that puts the scattered power-user utilities
 in one place and makes every change reversible. It covers the ground of
 Autoruns, ShellExView, O&O ShutUp10, winutil, and UniGetUI, with a before-state
-captured for every mutation and undo for all of it. GPLv2, no telemetry, no
-account, one install per machine.
+captured for every mutation and undo for all of it. It is GPLv2, it has no
+telemetry and no account, and it installs once per machine.
 
 ## What it does
 
