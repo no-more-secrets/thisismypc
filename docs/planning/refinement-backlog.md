@@ -119,6 +119,16 @@ prep here.
   clean (build + 1,336 CI tests). The mirror waits for Sam's explicit
   verification before anything reaches the public remote; commits made after
   the rewrite must be replayed through the same recipe first.
+- **Serilog is Apache-2.0, GPLv2-only cannot link it (found 2026-09-01)**:
+  the nuspec audit shows Serilog, Serilog.Sinks.File, Serilog.Sinks.Console,
+  and Serilog.Formatting.Compact are Apache-2.0; every other shipped package
+  is MIT. FSF treats Apache-2.0 as incompatible with GPLv2, and the project is
+  v2-only because of ExplorerPatcher and OpenRGB. Replace before publication.
+  Candidates: Microsoft.Extensions.Logging (MIT, already a transitive
+  dependency) plus a small rolling-file provider in App/Services; NLog
+  (BSD-3); ZLogger (MIT). Requirements to keep: NativeAOT-safe, rolling file
+  under `%ProgramData%\ThisIsMyPC\logs`, structured properties, the Debug
+  console window. xunit is Apache-2.0 too but test-only, never distributed.
 - **Public home settled 2026-09-01**: `github.com/No-More-Secrets/thisismypc`
   (empty public repo under the free org). `AppConstants.UpdateUrl` points there.
   Development continues on the private samboland/thisismypc remote; the public
