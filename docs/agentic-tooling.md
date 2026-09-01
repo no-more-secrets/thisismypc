@@ -10,14 +10,6 @@ Skills are invoked via `/skill-name` in Claude Code. They inject domain-specific
 
 Source: `~/.claude/skills/` (symlinked from `~/.agents/skills/`)
 
-### Avalonia / UI
-
-| Skill | Trigger | Purpose |
-|---|---|---|
-| `avalonia-zafiro-development` | Writing any Avalonia code | **Mandatory.** Core conventions, Zafiro toolkit rules, functional-reactive MVVM, cross-platform patterns. |
-| `avalonia-layout-zafiro` | Building UI layouts | Shared styles, layout patterns, Zafiro component usage. |
-| `avalonia-viewmodels-zafiro` | Creating ViewModels or wizards | ViewModel lifecycle, ReactiveUI patterns, wizard flow design. |
-
 ### .NET / C#
 
 | Skill | Trigger | Purpose |
@@ -56,34 +48,9 @@ Source: `~/.claude/skills/` (symlinked from `~/.agents/skills/`)
 
 MCP servers extend Claude Code with live tool access to external systems.
 
-### Avalonia DevTools (`avalonia_devtools`)
+### context7
 
-**Config:** Global (`~/.claude.json`)
-```json
-{
-  "avalonia_devtools": {
-    "type": "stdio",
-    "command": "avdt",
-    "args": ["mcp"]
-  }
-}
-```
-
-**Tools provided:**
-- `attach-to-file` -- Inspect/preview a specific XAML file without running the app
-- `attach-to-app` -- Connect to a running Avalonia application
-- `tree` / `search` -- Navigate the visual tree, find nodes
-- `props` / `set-prop` -- Read/write control properties
-- `styles` / `resources` -- Inspect styles and resources
-- `screenshot` -- Capture UI screenshots
-- `action` / `input` / `pseudo-class` -- Simulate interactions
-
-**Usage rules:**
-- Use `attach-to-file` when inspecting/designing XAML in isolation
-- Use `attach-to-app` when debugging a running application
-- Node IDs from `tree`/`search` are internal -- never show to user
-- After XAML changes, invalidate node IDs by calling `tree`/`search` again
-- Project must reference `AvaloniaUI.DiagnosticsSupport` package
+User-scope plugin. Pulls current Avalonia and .NET reference docs; use it before answering API questions from memory.
 
 ### Docker MCP (`MCP_DOCKER`)
 
@@ -123,10 +90,10 @@ Primary IDE for building, debugging, XAML preview, and NativeAOT diagnostics. VS
 | **CsWin32** | Source generator support for NativeMethods.txt editing |
 | **EditorConfig Language Service** | Syntax highlighting/validation for .editorconfig naming rules |
 | **SQLite/SQL Server Compact Toolbox** | Inspect history.db during development |
-| **Markdown Editor** | Edit story files and docs without leaving VS |
+| **Markdown Editor** | Edit docs without leaving VS |
 | **Roslynator** | 500+ analyzers/refactorings on top of AnalysisLevel=latest-all |
 | **SonarLint** | Security issue detection (important for admin-level system tool) |
-| **Fine Code Coverage** | Inline test coverage visualization across 5 test projects |
+| **Fine Code Coverage** | Inline test coverage visualization across the 14 test projects |
 | **ILLink Analyzer** | Surfaces trimming/NativeAOT warnings in editor before publish (if available) |
 
 **Skip:** ReSharper (heavy; Roslynator + built-in analyzers covers it), GitHub Copilot (using Claude Code).
@@ -137,7 +104,7 @@ Primary IDE for building, debugging, XAML preview, and NativeAOT diagnostics. VS
 
 ### When to invoke skills
 
-- **Before writing any Avalonia UI code:** `/avalonia-zafiro-development` is mandatory per skill definition
+- **Before writing any Avalonia UI code:** read `docs/avalonia-guide.md`. The app uses CommunityToolkit.Mvvm and compiled bindings; there is no Zafiro or ReactiveUI in the solution
 - **Before P/Invoke or COM work:** `/dotnet-native-interop` + `/dotnet-native-aot` (NativeAOT compatibility)
 - **Before performance-sensitive code:** `/dotnet-performance-patterns`
 - **During code review:** `/dotnet-best-practices` + `/dotnet-design-pattern-review`
@@ -147,14 +114,20 @@ Primary IDE for building, debugging, XAML preview, and NativeAOT diagnostics. VS
 ### Skill stacking
 
 Multiple skills can be active in one session. For a typical module implementation task, invoke:
-1. `avalonia-zafiro-development` (if UI involved)
-2. `dotnet-csharp-modern-patterns` (C# 14 idioms)
-3. `dotnet-native-aot` (NativeAOT safety check)
+1. `dotnet-csharp-modern-patterns` (C# 14 idioms)
+2. `dotnet-native-aot` (NativeAOT safety check)
+3. `dotnet-csharp-dependency-injection` (module registration)
 
-### MCP server usage
+### UI verification: the sight harness
 
-- Always use Avalonia DevTools `attach-to-file` for XAML validation during UI development
-- Prefer `attach-to-file` over `attach-to-app` when designing layouts (no running app needed)
+`tests/ThisIsMyPC.App.UiTests` renders the real UI headlessly (Avalonia.Headless + Skia) and saves PNG screenshots to `artifacts/ui-shots/<suite>/`. Read the PNGs as images. Every XAML or ViewModel change is verified this way before commit, never by reasoning about XAML and never by asking for a manual launch.
+
+```
+dotnet test tests/ThisIsMyPC.App.UiTests --configuration Release --filter "Category!=Diagnostic"  # CI-safe view tests
+dotnet test tests/ThisIsMyPC.App.UiTests --configuration Release --filter "Category=Diagnostic"   # full-app walkthrough
+```
+
+`UiSession` is the driver: `ForView` hosts one view on fake data, `ForMainWindow` boots the real window on the real service graph with test-safe swaps. Full rules, including the edge-geometry contract, are in `CLAUDE.md`.
 
 ### Agent parallelization
 

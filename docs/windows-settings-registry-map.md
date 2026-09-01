@@ -1,14 +1,14 @@
 # Windows Settings → Registry Map
 
 **ThisIsMyPC Master Reference**
-**Started March 2026 — Living Document**
+**Started March 2026. Living document.**
 **Target: Windows 11 25H2**
 
 ---
 
 ## Purpose
 
-This document maps every Windows setting to its underlying registry key(s). It serves as the single source of truth for ThisIsMyPC's implementation — if a setting isn't validated here, it doesn't get implemented.
+This document maps Windows settings to their underlying registry keys. A setting is implemented only after it is validated here.
 
 ---
 
@@ -50,16 +50,16 @@ Every entry must include all of the following fields:
 
 Each entry gets one of these tags in its heading:
 
-- `[CONFIRMED]` — ProcMon-validated on our target build
-- `[RESEARCHED]` — From reliable sources but not yet ProcMon-validated
-- `[STALE]` — Was confirmed on a previous build, needs revalidation
-- `[BLOCKED]` — Write-protected by UCPD or other system mechanism
+- `[CONFIRMED]`: ProcMon-validated on the target build
+- `[RESEARCHED]`: From reliable sources but not yet ProcMon-validated
+- `[STALE]`: Was confirmed on a previous build, needs revalidation
+- `[BLOCKED]`: Write-protected by UCPD or other system mechanism
 
 ### Naming Conventions
 
 - Use the exact value name from the registry, case-sensitive (e.g., `TaskbarAl` not `taskbaral`)
 - Use full registry paths with no abbreviations (e.g., `HKCU\Software\Microsoft\...` not `HKCU\...\Advanced`)
-- Group entries by the ThisIsMyPC module/story they belong to, then by UI location
+- Group entries by the ThisIsMyPC module they belong to, then by UI location
 
 ### When to Revalidate
 
@@ -70,7 +70,7 @@ Each entry gets one of these tags in its heading:
 
 ---
 
-## Explorer & Context Menus (Epic 2)
+## Explorer & Context Menus
 
 ### Taskbar
 
@@ -106,7 +106,7 @@ Each entry gets one of these tags in its heading:
 | **Writer** | SystemSettings.exe |
 | **Watchers** | Explorer.EXE (immediate read after write) |
 | **Validated** | 2026-03-07, 25H2 |
-| **Gotchas** | UCPD write-protection reported on some 24H2 builds; NOT observed on our 25H2 install. Still catch ACCESS_DENIED gracefully. |
+| **Gotchas** | UCPD write-protection reported on some 24H2 builds; not observed on 25H2 during validation. Every write returned SUCCESS. Explorer watches the key via `RegNotifyChangeKeyValue` and re-reads the value at once. Still catch ACCESS_DENIED and surface it as a policy error in case protection returns. |
 
 #### Widgets Full Disable (Policy) `[RESEARCHED]`
 
@@ -121,9 +121,9 @@ Each entry gets one of these tags in its heading:
 | **Scope** | HKLM (requires admin) |
 | **Effect** | Reboot or `gpupdate /force` |
 | **Writer** | Group Policy engine |
-| **Watchers** | — |
+| **Watchers** | none observed |
 | **Validated** | Not yet ProcMon-validated |
-| **Gotchas** | This is the nuclear option — disables the entire Widgets feature, not just the taskbar icon. Different from TaskbarDa which only hides the button. |
+| **Gotchas** | This is the nuclear option: disables the entire Widgets feature, not just the taskbar icon. Different from TaskbarDa which only hides the button. |
 
 ### Context Menu
 
@@ -131,7 +131,7 @@ Each entry gets one of these tags in its heading:
 
 | Field | Value |
 |---|---|
-| **UI Location** | None — no built-in Settings toggle |
+| **UI Location** | None: no built-in Settings toggle |
 | **Key** | `HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32` |
 | **Value** | `(Default)` |
 | **Type** | REG_SZ |
@@ -161,7 +161,7 @@ Each entry gets one of these tags in its heading:
 | **Writer** | Explorer.EXE |
 | **Watchers** | Explorer.EXE |
 | **Validated** | 2026-03-08, 25H2 (ProcMon + reg export diff) |
-| **Gotchas** | Value is `1`/`2`, not `0`/`1` — easy mistake |
+| **Gotchas** | Value is `1`/`2`, not `0`/`1`: easy mistake |
 
 #### Show File Extensions `[CONFIRMED]`
 
@@ -178,7 +178,7 @@ Each entry gets one of these tags in its heading:
 | **Writer** | Explorer.EXE |
 | **Watchers** | Explorer.EXE |
 | **Validated** | 2026-03-08, 25H2 (ProcMon + reg export diff) |
-| **Gotchas** | Inverted logic — `0` means show, `1` means hide |
+| **Gotchas** | Inverted logic: `0` means show, `1` means hide |
 
 #### Show Protected OS Files `[CONFIRMED]`
 
@@ -195,7 +195,7 @@ Each entry gets one of these tags in its heading:
 | **Writer** | Explorer.EXE |
 | **Watchers** | Explorer.EXE |
 | **Validated** | 2026-03-08, 25H2 (ProcMon + reg export diff) |
-| **Gotchas** | There's also a `SuperHidden` value in the same key — it's inert (a legacy typo). Only `ShowSuperHidden` does anything. |
+| **Gotchas** | There's also a `SuperHidden` value in the same key: it's inert (a legacy typo). Only `ShowSuperHidden` does anything. |
 
 #### Launch Explorer To `[CONFIRMED]`
 
@@ -267,7 +267,7 @@ All under `HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager
 | **Writer** | SystemSettings.exe |
 | **Watchers** | Explorer.EXE (reads `SoftLandingEnabled` after this write) |
 | **Validated** | 2026-03-07, 25H2 |
-| **Gotchas** | Explorer reads `SoftLandingEnabled` as a companion value — both should be set to 0 for complete suppression |
+| **Gotchas** | Explorer reads `SoftLandingEnabled` as a companion value after each write; set both to 0 for complete suppression. No SubscribedContent IDs beyond those listed in this section were observed in the 25H2 trace |
 
 #### Suggested Content in Settings `[RESEARCHED]`
 
@@ -282,7 +282,7 @@ All under `HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager
 | **Scope** | HKCU |
 | **Effect** | Next Settings app launch |
 | **Writer** | SystemSettings.exe |
-| **Watchers** | — |
+| **Watchers** | none observed |
 | **Validated** | Not yet ProcMon-validated |
 | **Gotchas** | Two additional values also control Settings suggestions: `SubscribedContent-353694Enabled` and `SubscribedContent-353696Enabled`. Set all three to 0. |
 
@@ -299,7 +299,7 @@ All under `HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager
 | **Scope** | HKCU |
 | **Effect** | Next logon |
 | **Writer** | SystemSettings.exe |
-| **Watchers** | — |
+| **Watchers** | none observed |
 | **Validated** | Not yet ProcMon-validated |
 | **Gotchas** | Also set `ScoobeSystemSettingEnabled` to `0` at `HKCU\Software\Microsoft\Windows\CurrentVersion\UserProfileEngagement` for complete suppression |
 
@@ -316,7 +316,7 @@ All under `HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager
 | **Scope** | HKCU |
 | **Effect** | Next lock screen display |
 | **Writer** | SystemSettings.exe |
-| **Watchers** | — |
+| **Watchers** | none observed |
 | **Validated** | Not yet ProcMon-validated |
 | **Gotchas** | Also set `RotatingLockScreenOverlayEnabled` to `0` in the same key. For full Spotlight disable, also set `RotatingLockScreenEnabled` to `0`. |
 
@@ -324,7 +324,7 @@ All under `HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager
 
 | Field | Value |
 |---|---|
-| **UI Location** | No direct toggle — controlled by Store/content delivery |
+| **UI Location** | No direct toggle: controlled by Store/content delivery |
 | **Key** | `HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager` |
 | **Value** | `SilentInstalledAppsEnabled` |
 | **Type** | REG_DWORD |
@@ -333,7 +333,7 @@ All under `HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager
 | **Scope** | HKCU |
 | **Effect** | Next content delivery cycle |
 | **Writer** | ContentDeliveryManager service |
-| **Watchers** | — |
+| **Watchers** | none observed |
 | **Validated** | Not yet ProcMon-validated |
 | **Gotchas** | This prevents Windows from auto-installing apps like Candy Crush, TikTok, etc. Feature updates may reset this to 1. |
 
@@ -341,7 +341,7 @@ All under `HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager
 
 | Field | Value |
 |---|---|
-| **UI Location** | No direct toggle — companion to SubscribedContent-338389Enabled |
+| **UI Location** | No direct toggle: companion to SubscribedContent-338389Enabled |
 | **Key** | `HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager` |
 | **Value** | `SoftLandingEnabled` |
 | **Type** | REG_DWORD |
@@ -349,12 +349,12 @@ All under `HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager
 | **Default** | `1` |
 | **Scope** | HKCU |
 | **Effect** | Immediate (Explorer reads this live) |
-| **Writer** | — |
-| **Watchers** | Explorer.EXE (confirmed via ProcMon — reads this after SubscribedContent-338389Enabled changes) |
+| **Writer** | none observed |
+| **Watchers** | Explorer.EXE (confirmed via ProcMon: reads this after SubscribedContent-338389Enabled changes) |
 | **Validated** | 2026-03-07, 25H2 (observed as watcher, not directly toggled) |
-| **Gotchas** | No Settings UI toggle for this — it's a companion value. Set it alongside SubscribedContent-338389Enabled for complete suppression. |
+| **Gotchas** | No Settings UI toggle for this: it's a companion value. Set it alongside SubscribedContent-338389Enabled for complete suppression. |
 
-#### Navigation Pane — Show All Folders `[CONFIRMED]`
+#### Navigation Pane: Show All Folders `[CONFIRMED]`
 
 | Field | Value |
 |---|---|
@@ -369,9 +369,9 @@ All under `HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager
 | **Writer** | Explorer.EXE |
 | **Watchers** | Explorer.EXE |
 | **Validated** | 2026-03-08, 25H2 (reg export diff) |
-| **Gotchas** | Shows Control Panel, Recycle Bin, and other virtual folders in the nav pane tree. Requires Explorer restart — not visible in already-open windows. |
+| **Gotchas** | Shows Control Panel, Recycle Bin, and other virtual folders in the nav pane tree. Requires Explorer restart: not visible in already-open windows. |
 
-#### Navigation Pane — Expand to Current Folder `[CONFIRMED]`
+#### Navigation Pane: Expand to Current Folder `[CONFIRMED]`
 
 | Field | Value |
 |---|---|
@@ -386,7 +386,7 @@ All under `HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager
 | **Writer** | Explorer.EXE |
 | **Watchers** | Explorer.EXE |
 | **Validated** | 2026-03-08, 25H2 (reg export diff) |
-| **Gotchas** | Requires Explorer restart — not visible in already-open windows. |
+| **Gotchas** | Requires Explorer restart: not visible in already-open windows. |
 
 #### Compact View Mode `[CONFIRMED]`
 
@@ -419,23 +419,23 @@ All under `HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager
 | **Effect** | Immediate |
 | **Writer** | Explorer.EXE |
 | **Watchers** | Explorer.EXE |
-| **Validated** | 2026-03-08, 25H2 — ProcMon + full registry diff confirmed |
-| **Gotchas** | **NOT a standalone DWORD.** The widely-cited `Policies\Explorer\ConfirmFileDelete` DWORD does not exist on Win11 25H2. The setting is stored as a bit flag inside the `ShellState` binary blob. Implementation requires reading the blob, flipping bit 2 of byte 4, and writing back. Same binary format also stores folder view defaults. The `SHGetSetSettings` Shell API may abstract this. Deferred from Story 2.4 — requires new `ChangeValueType` and binary blob read/write infrastructure. |
+| **Validated** | 2026-03-08, 25H2: ProcMon + full registry diff confirmed |
+| **Gotchas** | **NOT a standalone DWORD.** The widely-cited `Policies\Explorer\ConfirmFileDelete` DWORD does not exist on Win11 25H2. The setting is stored as a bit flag inside the `ShellState` binary blob. Implementation requires reading the blob, flipping bit 2 of byte 4, and writing back. Same binary format also stores folder view defaults. The `SHGetSetSettings` Shell API may abstract this. Not implemented: requires a new `ChangeValueType` and binary blob read/write support. |
 
-### Environment Variables (Story 2.5)
+### Environment Variables
 
 #### User Environment Variables `[RESEARCHED]`
 
 | Field | Value |
 |---|---|
-| **UI Location** | `Settings → System → About → Advanced system settings → Environment Variables → User variables` |
+| **UI Location** | `Settings > System > About > Advanced system settings > Environment Variables → User variables` |
 | **Key** | `HKCU\Environment` |
 | **Value** | (variable name, e.g., `PATH`, `TEMP`) |
 | **Type** | REG_SZ or REG_EXPAND_SZ |
 | **Data** | Variable value |
 | **Default** | Varies |
 | **Scope** | HKCU |
-| **Effect** | After `WM_SETTINGCHANGE` broadcast — new processes only |
+| **Effect** | After `WM_SETTINGCHANGE` broadcast: new processes only |
 | **Writer** | SystemPropertiesAdvanced.exe / rundll32.exe |
 | **Watchers** | All processes (via WM_SETTINGCHANGE) |
 | **Validated** | Not yet ProcMon-validated |
@@ -445,14 +445,14 @@ All under `HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager
 
 | Field | Value |
 |---|---|
-| **UI Location** | `Settings → System → About → Advanced system settings → Environment Variables → System variables` |
+| **UI Location** | `Settings > System > About > Advanced system settings > Environment Variables → System variables` |
 | **Key** | `HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment` |
 | **Value** | (variable name, e.g., `PATH`, `PROCESSOR_ARCHITECTURE`) |
 | **Type** | REG_SZ or REG_EXPAND_SZ |
 | **Data** | Variable value |
 | **Default** | Varies |
 | **Scope** | HKLM (requires admin) |
-| **Effect** | After `WM_SETTINGCHANGE` broadcast — new processes only |
+| **Effect** | After `WM_SETTINGCHANGE` broadcast: new processes only |
 | **Writer** | SystemPropertiesAdvanced.exe / rundll32.exe |
 | **Watchers** | All processes (via WM_SETTINGCHANGE) |
 | **Validated** | Not yet ProcMon-validated |
@@ -460,11 +460,9 @@ All under `HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager
 
 ---
 
-## Future Epics (Placeholder Sections)
+## Startup & Services
 
-### Startup & Services (Epic 3)
-
-#### Startup — User Run Key `[RESEARCHED]`
+#### Startup: User Run Key `[RESEARCHED]`
 
 | Field | Value |
 |---|---|
@@ -479,9 +477,9 @@ All under `HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager
 | **Writer** | Application installers, user configuration |
 | **Watchers** | Explorer.EXE (at logon), Task Manager |
 | **Validated** | Not yet ProcMon-validated |
-| **Gotchas** | This is the most common startup location for user-installed apps. Autoruns export shows 13 entries on a power-user machine. Task Manager uses `StartupApproved\Run` (see below) to disable entries without deleting them. |
+| **Gotchas** | This is the most common startup location for user-installed apps. Task Manager uses `StartupApproved\Run` (see below) to disable entries without deleting them. |
 
-#### Startup — Machine Run Key `[RESEARCHED]`
+#### Startup: Machine Run Key `[RESEARCHED]`
 
 | Field | Value |
 |---|---|
@@ -496,9 +494,9 @@ All under `HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager
 | **Writer** | Application installers |
 | **Watchers** | Explorer.EXE (at logon) |
 | **Validated** | Not yet ProcMon-validated |
-| **Gotchas** | Typically has fewer entries than HKCU Run. Autoruns export shows 1 entry here. |
+| **Gotchas** | Typically has fewer entries than HKCU Run. |
 
-#### Startup — Machine Run Key (32-bit) `[RESEARCHED]`
+#### Startup: Machine Run Key (32-bit) `[RESEARCHED]`
 
 | Field | Value |
 |---|---|
@@ -513,9 +511,9 @@ All under `HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager
 | **Writer** | 32-bit application installers |
 | **Watchers** | Explorer.EXE (at logon) |
 | **Validated** | Not yet ProcMon-validated |
-| **Gotchas** | On 64-bit Windows, 32-bit installers often write here instead of the native Run key. Autoruns export shows 13 entries -- more than the native HKLM Run key. |
+| **Gotchas** | On 64-bit Windows, 32-bit installers often write here instead of the native Run key. |
 
-#### Startup — User Startup Folder `[RESEARCHED]`
+#### Startup: User Startup Folder `[RESEARCHED]`
 
 | Field | Value |
 |---|---|
@@ -530,9 +528,9 @@ All under `HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager
 | **Writer** | Windows shell |
 | **Watchers** | Explorer.EXE (at logon) |
 | **Validated** | Not yet ProcMon-validated |
-| **Gotchas** | The registry value points to the folder path. The actual startup items are `.lnk` shortcuts in that folder. To disable, Autoruns moves shortcuts to an `AutorunsDisabled` subfolder. 4 entries in export. |
+| **Gotchas** | The registry value points to the folder path. The actual startup items are `.lnk` shortcuts in that folder. To disable, Autoruns moves shortcuts to an `AutorunsDisabled` subfolder. |
 
-#### Startup — Common Startup Folder `[RESEARCHED]`
+#### Startup: Common Startup Folder `[RESEARCHED]`
 
 | Field | Value |
 |---|---|
@@ -547,9 +545,9 @@ All under `HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager
 | **Writer** | Application installers |
 | **Watchers** | Explorer.EXE (at logon) |
 | **Validated** | Not yet ProcMon-validated |
-| **Gotchas** | Same `AutorunsDisabled` subfolder convention for disabling. 5 entries in export. |
+| **Gotchas** | Same `AutorunsDisabled` subfolder convention for disabling. |
 
-#### Startup — StartupApproved (Task Manager Disable State) `[RESEARCHED]`
+#### Startup: StartupApproved (Task Manager Disable State) `[RESEARCHED]`
 
 | Field | Value |
 |---|---|
@@ -566,13 +564,13 @@ All under `HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager
 | **Validated** | Not yet ProcMon-validated -- confirm byte format on 25H2 |
 | **Gotchas** | This is how Task Manager disables startup items without deleting the Run key entry. Critical for compatibility -- ThisIsMyPC must read and honor these values. Additional variants exist: `StartupApproved\Run32` (HKCU and HKLM), `StartupApproved\Run` (HKLM), `StartupApproved\StartupFolder` (HKLM). |
 
-#### Startup — Active Setup `[RESEARCHED]`
+#### Startup: Active Setup `[RESEARCHED]`
 
 | Field | Value |
 |---|---|
-| **UI Location** | None — no Windows UI for Active Setup |
+| **UI Location** | None: no Windows UI for Active Setup |
 | **Key** | `HKLM\SOFTWARE\Microsoft\Active Setup\Installed Components\{GUID}` |
-| **Value** | `StubPath` (REG_SZ — command to run), `IsInstalled` (REG_DWORD), `Version` (REG_SZ) |
+| **Value** | `StubPath` (REG_SZ: command to run), `IsInstalled` (REG_DWORD), `Version` (REG_SZ) |
 | **Type** | Multiple values per subkey |
 | **Data** | `StubPath` = command line; `IsInstalled` = `1` (active) or `0` (inactive); `Version` = version string |
 | **Default** | Varies per component |
@@ -581,13 +579,13 @@ All under `HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager
 | **Writer** | Application installers, Windows Setup |
 | **Watchers** | Explorer.EXE (at first logon per user) |
 | **Validated** | Not yet ProcMon-validated |
-| **Gotchas** | Active Setup runs commands once per user at first logon. Each user profile tracks which components have run via `HKCU\Software\Microsoft\Active Setup\Installed Components`. 32-bit variant at `HKLM\SOFTWARE\Wow6432Node\Microsoft\Active Setup\Installed Components`. 8 + 2 entries in export. Display as read-only unless specifically targeting Active Setup management. |
+| **Gotchas** | Active Setup runs commands once per user at first logon. Each user profile tracks which components have run via `HKCU\Software\Microsoft\Active Setup\Installed Components`. 32-bit variant at `HKLM\SOFTWARE\Wow6432Node\Microsoft\Active Setup\Installed Components`. Display as read-only unless specifically targeting Active Setup management. |
 
-#### Startup — Winlogon Shell `[RESEARCHED]`
+#### Startup: Winlogon Shell `[RESEARCHED]`
 
 | Field | Value |
 |---|---|
-| **UI Location** | None — no Windows UI |
+| **UI Location** | None: no Windows UI |
 | **Key** | `HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon` |
 | **Value** | `Shell` |
 | **Type** | REG_SZ |
@@ -600,11 +598,11 @@ All under `HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager
 | **Validated** | Not yet ProcMon-validated |
 | **Gotchas** | Modifying this replaces the Windows shell entirely. Display as read-only / informational in the UI. Malware sometimes appends additional executables here. |
 
-#### Startup — Winlogon Userinit `[RESEARCHED]`
+#### Startup: Winlogon Userinit `[RESEARCHED]`
 
 | Field | Value |
 |---|---|
-| **UI Location** | None — no Windows UI |
+| **UI Location** | None: no Windows UI |
 | **Key** | `HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon` |
 | **Value** | `Userinit` |
 | **Type** | REG_SZ |
@@ -617,7 +615,7 @@ All under `HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager
 | **Validated** | Not yet ProcMon-validated |
 | **Gotchas** | System-critical. Modifying or deleting this prevents user logon. Display as read-only / informational. The trailing comma allows additional programs to be appended (comma-separated). |
 
-#### Services — Service Registry Location `[RESEARCHED]`
+#### Services: Service Registry Location `[RESEARCHED]`
 
 | Field | Value |
 |---|---|
@@ -632,14 +630,14 @@ All under `HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager
 | **Writer** | Service Control Manager (SCM), application installers |
 | **Watchers** | services.exe (SCM) |
 | **Validated** | Not yet ProcMon-validated |
-| **Gotchas** | **Prefer the SCM API** (`OpenSCManager`/`OpenService`/`ChangeServiceConfig`) over direct registry writes. Direct registry modification bypasses SCM validation and can cause inconsistencies. The registry path is documented here for read-only scanning and as the underlying storage reference. 327 entries in export (296 Microsoft, 29 third-party). |
+| **Gotchas** | **Prefer the SCM API** (`OpenSCManager`/`OpenService`/`ChangeServiceConfig`) over direct registry writes. Direct registry modification bypasses SCM validation and can cause inconsistencies. The registry path is documented here for read-only scanning and as the underlying storage reference. |
 
-#### Scheduled Tasks — Task Scheduler (API, Not Registry) `[RESEARCHED]`
+#### Scheduled Tasks: Task Scheduler (API, Not Registry) `[RESEARCHED]`
 
 | Field | Value |
 |---|---|
 | **UI Location** | `taskschd.msc`, `schtasks.exe` |
-| **Key** | N/A — not stored in registry |
+| **Key** | N/A, not stored in registry |
 | **Value** | N/A |
 | **Type** | XML files in `%SystemRoot%\System32\Tasks\<TaskPath>` |
 | **Data** | Task definitions (triggers, actions, conditions, settings) |
@@ -648,30 +646,14 @@ All under `HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager
 | **Effect** | Immediate (Task Scheduler service picks up changes) |
 | **Writer** | Task Scheduler service, `schtasks.exe`, application installers |
 | **Watchers** | Schedule service (svsvc) |
-| **Validated** | N/A — API-based, no registry to validate |
-| **Gotchas** | Use the Task Scheduler COM API (`ITaskService`, `ITaskFolder`, `IRegisteredTask`) or the `Microsoft.Win32.TaskScheduler` NuGet package. Do NOT parse XML files directly. 278 entries in export (249 Microsoft, 16 third-party). Many third-party tasks have empty Company fields — fall back to executable version info. |
-
-### Power Plans (Epic 4)
-
-_To be populated as settings are ProcMon-validated._
-
-### Privacy & Telemetry Control (Epic 18)
-
-_To be populated as settings are ProcMon-validated._
-
-### Windows Update Control (Epic 19)
-
-_To be populated as settings are ProcMon-validated._
-
-### Network & Firewall Management (Epic 20)
-
-_To be populated as settings are ProcMon-validated._
+| **Validated** | N/A, API-based, no registry to validate |
+| **Gotchas** | Use the Task Scheduler COM API (`ITaskService`, `ITaskFolder`, `IRegisteredTask`) or the `Microsoft.Win32.TaskScheduler` NuGet package. Do NOT parse XML files directly. Many third-party tasks have empty Company fields; fall back to executable version info. |
 
 ---
 
 ## Appendix: Context Menu Handler Enumeration Paths
 
-These are not individual settings but scan targets for story 2.2. Context menu handlers are registered across multiple HKCR locations:
+These are not individual settings but scan targets for the Context Menus module. Context menu handlers are registered across multiple HKCR locations:
 
 | Registry Path | Applies To |
 |---|---|
@@ -688,7 +670,7 @@ To disable a handler, prefix its `(Default)` CLSID value with `-` (e.g., `{GUID}
 
 ## Appendix: ProcMon Quick Reference
 
-For anyone on the team who needs to validate a new setting:
+To validate a new setting:
 
 1. Download ProcMon from [Sysinternals](https://learn.microsoft.com/en-us/sysinternals/downloads/procmon)
 2. Run as admin

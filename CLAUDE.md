@@ -132,7 +132,8 @@ Full rules: `_bmad-output/planning-artifacts/architecture.md` (esp. the "AI agen
 
 - **Core is pure**: data types, interfaces, services logic. No Win32/COM/WMI calls
   (those live in `Interop.*` projects). Production `EnforcementExecutor` goes in
-  `App/Services/`, not Core.
+  `App/Services/`, not Core. COM under NativeAOT: `LibraryImport` CoCreateInstance
+  plus hand-rolled vtables (see `Interop.Com`); no `ComWrappers`, no WMI.
 - **Every reversible mutation goes through the pending-changes pipeline**: `ChangeDescriptor`
   (requires non-null `BeforeValue`) → `ChangeGroup` → `IPendingChangesService.Stage` →
   `ApplyAllAsync` with rollback. Changes are built by static factories (see

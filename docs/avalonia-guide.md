@@ -1,6 +1,6 @@
 # Avalonia Development Guide
 
-Patterns and constraints established during Epic 1 (Stories 1.1-1.5). Consult before starting any story that involves Avalonia UI, ViewModels, or XAML.
+Patterns and constraints for Avalonia UI, ViewModels, and XAML in this app. Read before touching either.
 
 ## Compiled Bindings
 
@@ -23,13 +23,13 @@ Every `DataTemplate` inside an `ItemsControl` must also declare `x:DataType`:
 <DataTemplate x:DataType="vm:SidebarItemViewModel">
 ```
 
-For reusable templates that have no concrete ViewModel (e.g., generic setting row templates shared across modules), disable compiled bindings explicitly:
+Shared row templates (`Templates/ToggleSettingRowTemplate.axaml`, `ChoiceSettingRowTemplate.axaml`, `MultiScopeRowTemplate.axaml`, `AdvancedExpanderTemplate.axaml`) are typed against interfaces such as `IToggleSettingRow` (`ViewModels/IToggleSettingRow.cs`) so their bindings compile too:
 
 ```xml
-<ResourceDictionary ... x:CompileBindings="False">
+<DataTemplate x:Key="ToggleSettingRowTemplate" x:DataType="vm:IToggleSettingRow">
 ```
 
-See `Templates/ToggleSettingRowTemplate.axaml` for this pattern.
+Row ViewModels that do not use an optional member return a constant that hides that part of the row. Never disable compiled bindings for a template: NativeAOT trimming breaks reflection bindings silently, and the AOT publish gate is zero trim warnings.
 
 ## Classes Binding
 
@@ -53,7 +53,7 @@ Then styled via selectors in `Controls.axaml`:
 
 ```xml
 <Style Selector="Border.pending-enable">
-    <Setter Property="Background" Value="{StaticResource SuccessMutedBrush}" />
+    <Setter Property="Background" Value="{DynamicResource SuccessMutedBrush}" />
 </Style>
 ```
 
@@ -140,7 +140,7 @@ await connection.OpenAsync().ConfigureAwait(false);
 
 These constraints affect every piece of code in the project:
 
-1. **No reflection.** No `Type.GetType()`, no `Activator.CreateInstance()`. The template-generated `ViewLocator.cs` was removed in Story 1.1 for this reason.
+1. **No reflection.** No `Type.GetType()`, no `Activator.CreateInstance()`. The template-generated `ViewLocator.cs` was removed for this reason.
 2. **Explicit DI registration.** All services and modules registered by type in `App.axaml.cs ConfigureServices()`. No assembly scanning.
 3. **String-typed values.** `ChangeDescriptor` uses `string BeforeValue/AfterValue` with a `ChangeValueType` enum discriminator. No `object?`, no boxing.
 4. **Converters as singletons.** Custom `IValueConverter` implementations use a static `Instance` field instead of XAML instantiation:
@@ -228,42 +228,52 @@ Defined in `Styles/Typography.axaml`:
 ```xml
 <FontFamily x:Key="BodyFont">avares://ThisIsMyPC.App/Assets/Fonts#IBM Plex Sans</FontFamily>
 <FontFamily x:Key="MonoFont">avares://ThisIsMyPC.App/Assets/Fonts#IBM Plex Mono</FontFamily>
-<FontFamily x:Key="DisplayFont">TW Cen MT Condensed Extra Bold, Futura Condensed ExtraBold, Impact, sans-serif</FontFamily>
+<FontFamily x:Key="DisplayFont">avares://ThisIsMyPC.App/Assets/Fonts#IBM Plex Sans</FontFamily>
 ```
 
-The `avares://` protocol references embedded font assets. Font files (TTF) are in `Assets/Fonts/`. The `#FontFamilyName` suffix after the directory path is how Avalonia resolves the font family from TTF files in a folder.
+The `avares://` protocol references embedded font assets. Font files are in `Assets/Fonts/`: IBM Plex Sans, IBM Plex Mono, and OpenDyslexic (the accessibility swap driven by `Services/AccessibilityFontService.cs`). The `#FontFamilyName` suffix after the directory path is how Avalonia resolves the font family from the files in a folder.
 
-Display font uses a fallback chain since TW Cen MT is not bundled (licensing). Set `FontFamily="{StaticResource BodyFont}"` on the Window root so all controls inherit it.
+Page titles use IBM Plex Sans Bold 28, not a separate brand face. Set `FontFamily="{DynamicResource BodyFont}"` on the Window root so all controls inherit it; the accessibility font swap replaces the resource at runtime.
 
-### Background Tiers
+### Theme Variants
 
-Four elevation levels, darkest to lightest:
+`Styles/Theme.axaml` holds one `ResourceDictionary.ThemeDictionaries` with a `Dark` and a `Light` dictionary. Every key exists in both. Consumers reference brushes with `DynamicResource`, never `StaticResource`, so the running app restyles when `Services/ThemeService.cs` sets `Application.RequestedThemeVariant`. `App.axaml` requests `Dark` by default.
 
-| Tier | Key | Hex | Usage |
-|------|-----|-----|-------|
-| Base | `BaseBrush` | `#1a1a2e` | Window background |
-| Raised | `RaisedBrush` | `#242438` | Sidebar, apply bar, popups |
-| Surface | `SurfaceBrush` | `#2d2d42` | Content area, cards |
-| Overlay | `OverlayBrush` | `#383850` | Hover states, secondary buttons |
+Background tiers, darkest to lightest in the dark variant:
+
+| Tier | Key | Dark | Light | Usage |
+|------|-----|------|-------|-------|
+| Base | `BaseBrush` | `#1a1a2e` | `#f2f3f8` | Window background |
+| Raised | `RaisedBrush` | `#242438` | `#e8eaf1` | Sidebar, apply bar, popups |
+| Surface | `SurfaceBrush` | `#2d2d42` | `#ffffff` | Content area, cards |
+| Overlay | `OverlayBrush` | `#383850` | `#dfe2ec` | Hover states, secondary buttons |
+
+Add a new color to both dictionaries or the other variant throws at resource lookup.
 
 ### Text Opacity via Alpha Channel
 
-Use alpha-channel white values, not flat grays. This ensures text adapts correctly across all background tiers:
+Text brushes are alpha-channel values over the tier backgrounds, not flat grays, so text reads correctly on every tier. Dark uses white with alpha; light uses a near-black with alpha:
 
 ```xml
-<SolidColorBrush x:Key="TextPrimaryBrush" Color="#FFFFFF" />       <!-- 100% -->
-<SolidColorBrush x:Key="TextSecondaryBrush" Color="#CCFFFFFF" />   <!-- 80% -->
-<SolidColorBrush x:Key="TextTertiaryBrush" Color="#99FFFFFF" />    <!-- 60% -->
-<SolidColorBrush x:Key="TextDisabledBrush" Color="#66FFFFFF" />    <!-- 40% -->
+<!-- Dark -->
+<SolidColorBrush x:Key="TextPrimaryBrush" Color="#FFFFFF" />
+<SolidColorBrush x:Key="TextSecondaryBrush" Color="#CCFFFFFF" />
+<!-- Light -->
+<SolidColorBrush x:Key="TextPrimaryBrush" Color="#E014142A" />
+<SolidColorBrush x:Key="TextSecondaryBrush" Color="#A614142A" />
 ```
 
 ### Semantic Colors
 
-Each semantic color has a full and muted variant. Muted variants are for subtle background tinting:
+Each semantic color has a full and muted variant. Muted variants are for subtle background tinting. Both live in each theme dictionary:
 
 ```xml
-<SolidColorBrush x:Key="SuccessBrush" Color="#4caf50" />       <!-- Text/icon -->
-<SolidColorBrush x:Key="SuccessMutedBrush" Color="#2d4a2e" />  <!-- Background tint -->
+<!-- Dark -->
+<Color x:Key="SuccessColor">#4caf50</Color>       <!-- Text/icon -->
+<Color x:Key="SuccessMutedColor">#2d4a2e</Color>  <!-- Background tint -->
+<!-- Light -->
+<Color x:Key="SuccessColor">#2e7d32</Color>
+<Color x:Key="SuccessMutedColor">#d8ecd9</Color>
 ```
 
 Available semantics: `Success` (green), `Warning` (amber), `Danger` (red), `Info` (cyan).
@@ -274,7 +284,7 @@ Avalonia's FluentTheme overrides `Background` on `Button:pointerover` via the in
 
 ```xml
 <Style Selector="Button.sidebar-item:pointerover /template/ ContentPresenter">
-    <Setter Property="Background" Value="{StaticResource SidebarItemHoverBrush}" />
+    <Setter Property="Background" Value="{DynamicResource SidebarItemHoverBrush}" />
 </Style>
 ```
 
@@ -344,7 +354,7 @@ private static void ConfigureServices(IServiceCollection services)
 }
 ```
 
-New modules added in future epics follow the same pattern -- one explicit `AddSingleton<IModule, ConcreteModule>()` call per module.
+Every module follows the same pattern: one explicit `AddSingleton<IModule, ConcreteModule>()` call per module.
 
 ## Layout Patterns
 

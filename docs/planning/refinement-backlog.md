@@ -111,15 +111,14 @@ prep here.
 
 ## Repo publication hygiene (release blocker: the repo is private today, goes public GPLv2)
 
-- **TWEAKS.md moved out 2026-08-31**: the personal machine audit now lives at
-  `C:\Users\user\Dev-Projects\laptop-debloat\TWEAKS.md` (only copy; back it up)
-  and is gitignored so it cannot come back.
-- **Git history still contains it** (entered at ada10cb) along with whatever
-  else `_bmad-output/` history holds. Before flipping the repo public, either
-  scrub history (`git filter-repo` on the file paths) or publish with fresh
-  history; do a full history review for personal data either way. Sam's call
-  which; scrubbing rewrites every SHA, so do it after development quiets, right
-  before publication.
+- **Personal machine audit (TWEAKS.md)** lives outside the repo and is
+  gitignored so it cannot come back.
+- **History scrubbed 2026-09-01** with git filter-repo in a local mirror: one
+  author identity, machine dumps and TWEAKS.md purged from every commit,
+  hostname and user paths text-replaced, BMAD framework trees dropped. Verified
+  clean (build + 1,336 CI tests). The mirror waits for Sam's explicit
+  verification before anything reaches the public remote; commits made after
+  the rewrite must be replayed through the same recipe first.
 - **Public home settled 2026-09-01**: `github.com/No-More-Secrets/thisismypc`
   (empty public repo under the free org). `AppConstants.UpdateUrl` points there.
   Development continues on the private samboland/thisismypc remote; the public
@@ -313,7 +312,8 @@ serializing the sandbox users.
 - Defender, SmartScreen, DoH/DNS, LSA → security module (mind the deep-research
   warning: never write Defender policy hives)
 - Install/uninstall engine v1 SHIPPED 2026-08-30 (Modules.Software: winget
-  catalog + inbox-app removal; see `docs/planning/install-engine-plan.md`).
+  catalog + inbox-app removal). Not yet verified in the running elevated app:
+  sidebar entry, catalog staging, review panel actions section, a real install.
   `winget upgrade` management SHIPPED 2026-08-30 (Updates tab: header-offset
   table parser in WingetService, upgrade: actions through the queue).
   Still there: OneDrive/Edge full removal, VCRedist/.NET bundles, OEM tools

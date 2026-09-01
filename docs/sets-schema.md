@@ -2,13 +2,13 @@
 
 Set definitions are JSON files loaded by `ISetProvider` (`Core/Sets/SetProvider.cs`) from:
 
-- **Built-in sets**: `<install dir>\sets\` — bundled with the application
-- **User sets**: `%APPDATA%\ThisIsMyPC\sets\` — user-created (Story 8.5) or hand-copied
+- **Built-in sets**: `<install dir>\sets\`, bundled with the application (`AppContext.BaseDirectory`)
+- **User sets**: `%ProgramData%\ThisIsMyPC\sets\`, saved from the review panel or hand-copied. The root is `AppConstants.DataDirectoryPath` (machine-scoped data directory)
 
 Property names are camelCase (matching is case-insensitive). Comments (`//`) and trailing
 commas are tolerated. Unknown properties are ignored, so newer files degrade gracefully on
 older app versions. A file that fails to parse, or is missing any required field, is
-skipped with a warning — it never breaks loading of other sets.
+skipped with a warning: it never breaks loading of other sets.
 
 ## Top-level object
 
@@ -25,7 +25,7 @@ skipped with a warning — it never breaks loading of other sets.
 
 | Property | Type | Required | Notes |
 |---|---|---|---|
-| `moduleId` | string | yes | Target module — the module's `IModule.Info.Name` string, e.g. `"Explorer"`, `"Windows Annoyances"`, `"Context Menus"` |
+| `moduleId` | string | yes | Target module: the module's `IModule.Info.Name` string, e.g. `"Explorer"`, `"Windows Annoyances"`, `"Context Menus"` |
 | `settingId` | string | yes | The module's setting key, e.g. `"taskbar-widgets"` |
 | `value` | string | yes | Desired value, string-typed exactly like `ChangeDescriptor.AfterValue`. The module knows the value type; before-values are captured from the live system at staging time and are never stored in set files |
 | `description` | string | yes | Human-readable explanation shown in the preview |
@@ -38,17 +38,17 @@ skipped with a warning — it never breaks loading of other sets.
 | Property | Type | Notes |
 |---|---|---|
 | `companionServices` | string[] | Services stopped + disabled around the mutation (e.g. `["DiagTrack"]`) |
-| `companionTasks` | string[] | Scheduled task paths (not yet supported by the executor — entries carrying this fail to apply with a clear error) |
-| `gpCacheEntries` | string[] | Registry keys recursively deleted before the primary write so Windows rebuilds them from the policy hive (e.g. `["HKLM\\SOFTWARE\\Microsoft\\WindowsUpdate\\UpdatePolicy\\GPCache"]`). Paths must be hive-rooted, at least three levels deep, and contain a `GPCache` segment — anything else fails the whole change before any step runs. Cleared again on revert; never restored (derived state) |
+| `companionTasks` | string[] | Scheduled task paths disabled around the mutation. Executed when a scheduled-task service is registered; without one the change fails its gate before any step runs (`App/Services/EnforcementExecutor.cs`) |
+| `gpCacheEntries` | string[] | Registry keys recursively deleted before the primary write so Windows rebuilds them from the policy hive (e.g. `["HKLM\\SOFTWARE\\Microsoft\\WindowsUpdate\\UpdatePolicy\\GPCache"]`). Paths must be hive-rooted, at least three levels deep, and contain a `GPCache` segment: anything else fails the whole change before any step runs. Cleared again on revert; never restored (derived state) |
 | `reversionVectors` | string[] | Informational reversion risks shown to the user, e.g. `["Windows feature updates"]` |
-| `skuRestriction` | string | `"Home"`, `"Pro"`, `"Enterprise"`, or `"Education"` — the SKU the entry is blocked/cosmetic on |
+| `skuRestriction` | string | `"Home"`, `"Pro"`, `"Enterprise"`, or `"Education"`: the SKU the entry is blocked/cosmetic on |
 | `ownerModeRequired` | bool | Requires the Owner Mode service (v1.0) |
-| `aclElevation` | bool | Requires registry ownership transfer (not yet supported) |
+| `aclElevation` | bool | Requires registry ownership transfer. Not supported: the executor gate fails the change |
 
 ## Toggle value convention
 
 For settings a module surfaces as a suppress/restore toggle, `value` is the **primary
-registry value the module writes in the desired state** — the same string the module's
+registry value the module writes in the desired state**: the same string the module's
 change factory would put in `ChangeDescriptor.AfterValue`. For group toggles (one
 settingId covering several registry values, e.g. `copilot`, `recall`,
 `settings-suggested-content`, `bing-search` in Windows Annoyances), `value` is the

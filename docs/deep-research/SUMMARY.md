@@ -483,17 +483,17 @@ Synthesizing all four context menu research documents, the complete taxonomy of 
 
 ### 8.18 Gap Closure: Deductive Findings
 
-Five open questions resolved through deductive analysis of the full research corpus (see [context-menu-gap-closure.md](./context-menu-gap-closure.md) for full reasoning chains):
+Five open questions resolved through deductive analysis of the full research corpus:
 
 1. **Per-handler Tier 1 promotion does not exist** [CONFIRMED]. No OS-provided mechanism to promote a single legacy `IContextMenu` handler into the modern Tier 1 menu. Each vendor must adopt PackagedCom/Sparse Manifest or build a proprietary bridge DLL (as Adobe did with `ContextMenuShim64.dll`). The `{86ca1aa0}` hack is all-or-nothing. [cm:199] [cm2:52-63] [cm3:111-114] [cm4:§4]
 
-2. **OneDrive uses a single handler** [INFERRED — HIGH]. All entries (Share, Copy Link, Manage access, View online, Version history, Folder color, Free up space, Move to OneDrive) are injected by the single `FileSyncEx` CLSID `{CB3D0F55-BC2C-4C1A-85ED-23ED75B5106B}` during one `QueryContextMenu` pass. Verb set determined by sync state evaluation at `IShellExtInit::Initialize` time. The "Folder color" PKEY write happens at `InvokeCommand`, not during menu construction. [cm3:117-135] [cm4:§2.1-2.3]
+2. **OneDrive uses a single handler** [INFERRED: HIGH]. All entries (Share, Copy Link, Manage access, View online, Version history, Folder color, Free up space, Move to OneDrive) are injected by the single `FileSyncEx` CLSID `{CB3D0F55-BC2C-4C1A-85ED-23ED75B5106B}` during one `QueryContextMenu` pass. Verb set determined by sync state evaluation at `IShellExtInit::Initialize` time. The "Folder color" PKEY write happens at `InvokeCommand`, not during menu construction. [cm3:117-135] [cm4:§2.1-2.3]
 
-3. **Content-inspecting scan is top-level only, no timeout** [INFERRED — HIGH/MODERATE]. WMP Legacy's `desktop.ini` → heuristic scan operates on the immediate directory only — synchronous UI-thread execution makes recursion infeasible. No framework-enforced timeout exists; latency bounded only by I/O throughput. `SystemFileAssociations\Directory.Image` and `Directory.Document` also exist but are unlikely to carry aggressive handlers on stock Windows 11. [cm4:§3]
+3. **Content-inspecting scan is top-level only, no timeout** [INFERRED: HIGH/MODERATE]. WMP Legacy's `desktop.ini` → heuristic scan operates on the immediate directory only: synchronous UI-thread execution makes recursion infeasible. No framework-enforced timeout exists; latency bounded only by I/O throughput. `SystemFileAssociations\Directory.Image` and `Directory.Document` also exist but are unlikely to carry aggressive handlers on stock Windows 11. [cm4:§3]
 
-4. **NVIDIA App CLSID `{F2E8B4A1...}` is likely hallucinated** [REQUIRES VERIFICATION]. Suspiciously clean hex pattern. Verification PowerShell commands provided in gap closure doc. The primary OneDrive CLSID `{CB3D0F55...}` is confirmed authentic across multiple independent sources. [cm4:§5.2]
+4. **NVIDIA App CLSID `{F2E8B4A1...}` is real** [VERIFIED 2026-09-01]. The gap-closure pass flagged the clean hex pattern as a possible hallucination; a live registry dump and a ShellExView export both list it, and the app carries it in `KnownHandlerDisplayNames.cs`.
 
-5. **Drag-drop menu is permanently legacy-only** [INFERRED — HIGH]. `DragDropHandlers` require `IShellExtInit` + `IContextMenu` (legacy interfaces). `IExplorerCommand` handlers don't implement these. The `ContextMenuIExplorerCommandShim` intercepts static right-click only, not drag-drop. No `desktop5:ItemType` schema exists for drag-drop surfaces. No modern handler has ever been observed in the drag-drop menu. [cm4:§1, §4.1]
+5. **Drag-drop menu is permanently legacy-only** [INFERRED: HIGH]. `DragDropHandlers` require `IShellExtInit` + `IContextMenu` (legacy interfaces). `IExplorerCommand` handlers don't implement these. The `ContextMenuIExplorerCommandShim` intercepts static right-click only, not drag-drop. No `desktop5:ItemType` schema exists for drag-drop surfaces. No modern handler has ever been observed in the drag-drop menu. [cm4:§1, §4.1]
 
 ## 9. Configuration Surface: Enforcement Mechanisms
 
