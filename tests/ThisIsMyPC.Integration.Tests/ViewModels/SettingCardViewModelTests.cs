@@ -75,7 +75,7 @@ public sealed class SettingCardViewModelTests
         var vm = CreateVm();
 
         vm.IsEnabled = true;
-        await Task.Delay(350); // debounce is 250ms
+        await Debounce.UntilAsync(() => _pendingService.PendingCount == 1);
 
         Assert.Equal(1, _pendingService.PendingCount);
         Assert.True(vm.HasPendingChange);
@@ -89,9 +89,9 @@ public sealed class SettingCardViewModelTests
         var vm = CreateVm();
 
         vm.IsEnabled = true;
-        await Task.Delay(350);
+        await Debounce.UntilAsync(() => _pendingService.PendingCount == 1);
         vm.IsEnabled = false;
-        await Task.Delay(350);
+        await Debounce.UntilAsync(() => _pendingService.PendingCount == 0);
 
         Assert.Equal(0, _pendingService.PendingCount);
         Assert.False(vm.HasPendingChange);
@@ -103,7 +103,7 @@ public sealed class SettingCardViewModelTests
         var vm = CreateVm(initiallyEnabled: true);
 
         vm.IsEnabled = false;
-        await Task.Delay(350);
+        await Debounce.UntilAsync(() => vm.IsPendingDisable);
 
         Assert.True(vm.IsPendingDisable);
         Assert.False(vm.IsPendingEnable);
@@ -114,7 +114,7 @@ public sealed class SettingCardViewModelTests
     {
         var vm = CreateVm();
         vm.IsEnabled = true;
-        await Task.Delay(350);
+        await Debounce.SettleAsync();
 
         _pendingService.DiscardAll();
         await Task.Delay(50);
@@ -131,7 +131,7 @@ public sealed class SettingCardViewModelTests
         // Live state changed outside the app between scan and toggle.
         _liveState = true;
         vm.IsEnabled = true;
-        await Task.Delay(350);
+        await Debounce.SettleAsync();
 
         // Desired == live → nothing staged (no cosmetic no-op changes).
         Assert.Equal(0, _pendingService.PendingCount);
@@ -145,7 +145,7 @@ public sealed class SettingCardViewModelTests
         vm.IsEnabled = true;
         vm.IsEnabled = false;
         vm.IsEnabled = true;
-        await Task.Delay(350);
+        await Debounce.UntilAsync(() => _pendingService.PendingCount == 1);
 
         Assert.Equal(1, _pendingService.PendingCount);
         var change = _pendingService.PendingGroups.Single().Changes.Single();
@@ -157,7 +157,7 @@ public sealed class SettingCardViewModelTests
     {
         var vm = CreateVm();
         vm.IsEnabled = true;
-        await Task.Delay(350);
+        await Debounce.SettleAsync();
 
         vm.Dispose();
         _pendingService.DiscardAll();

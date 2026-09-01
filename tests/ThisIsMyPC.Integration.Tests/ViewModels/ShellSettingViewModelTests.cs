@@ -107,7 +107,7 @@ public sealed class ShellSettingViewModelTests : IDisposable
             readRegistryState: () => false);
 
         vm.IsEnabled = true;
-        await Task.Delay(350); // debounce is 250ms
+        await Debounce.UntilAsync(() => _pendingService.PendingGroups.Any());
 
         var group = Assert.Single(_pendingService.PendingGroups);
         Assert.Equal(2, group.Changes.Count);
@@ -127,9 +127,9 @@ public sealed class ShellSettingViewModelTests : IDisposable
             readRegistryState: () => false);
 
         vm.IsEnabled = true;
-        await Task.Delay(350);
+        await Debounce.UntilAsync(() => _pendingService.PendingCount == 1);
         vm.IsEnabled = false;
-        await Task.Delay(350);
+        await Debounce.UntilAsync(() => _pendingService.PendingCount == 0);
 
         Assert.Empty(_pendingService.PendingGroups);
         Assert.False(vm.HasPendingChange);
@@ -142,7 +142,7 @@ public sealed class ShellSettingViewModelTests : IDisposable
         var vm = new ShellSettingViewModel(pref, _pendingService, () => false);
 
         vm.IsEnabled = true;
-        await Task.Delay(350); // debounce is 250ms
+        await Debounce.UntilAsync(() => _pendingService.PendingCount == 1);
 
         Assert.Equal(1, _pendingService.PendingCount);
     }
@@ -154,11 +154,11 @@ public sealed class ShellSettingViewModelTests : IDisposable
         var vm = new ShellSettingViewModel(pref, _pendingService, () => false);
 
         vm.IsEnabled = true;
-        await Task.Delay(350);
+        await Debounce.UntilAsync(() => _pendingService.PendingCount == 1);
         Assert.Equal(1, _pendingService.PendingCount);
 
         vm.IsEnabled = false;
-        await Task.Delay(350);
+        await Debounce.UntilAsync(() => _pendingService.PendingCount == 0);
         Assert.Equal(0, _pendingService.PendingCount);
     }
 
@@ -169,7 +169,7 @@ public sealed class ShellSettingViewModelTests : IDisposable
         var vm = new ShellSettingViewModel(pref, _pendingService, () => false);
 
         vm.IsEnabled = true;
-        await Task.Delay(350);
+        await Debounce.UntilAsync(() => vm.HasPendingChange);
 
         Assert.True(vm.HasPendingChange);
         Assert.True(vm.IsPendingEnable);

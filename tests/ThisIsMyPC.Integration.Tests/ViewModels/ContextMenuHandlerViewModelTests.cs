@@ -125,7 +125,7 @@ public sealed class ContextMenuHandlerViewModelTests : IDisposable
         var vm = CreateVm(isEnabled: true);
         vm.IsEnabled = false;
 
-        await Task.Delay(350);
+        await Debounce.UntilAsync(() => _pendingService.PendingCount > 0);
 
         Assert.True(_pendingService.PendingCount > 0);
     }
@@ -136,12 +136,12 @@ public sealed class ContextMenuHandlerViewModelTests : IDisposable
         var vm = CreateVm(isEnabled: true);
         vm.IsEnabled = false;
 
-        await Task.Delay(350);
+        await Debounce.UntilAsync(() => _pendingService.PendingCount > 0);
         Assert.True(_pendingService.PendingCount > 0);
 
         vm.IsEnabled = true;
 
-        await Task.Delay(350);
+        await Debounce.UntilAsync(() => _pendingService.PendingCount == 0);
         Assert.Equal(0, _pendingService.PendingCount);
     }
 
@@ -372,7 +372,7 @@ public sealed class ContextMenuHandlerViewModelTests : IDisposable
         var vm = CreateModernVm();
         vm.IsEnabled = false;
 
-        await Task.Delay(350);
+        await Debounce.SettleAsync();
 
         Assert.Equal(0, _pendingService.PendingCount);
     }
@@ -593,7 +593,7 @@ public sealed class ContextMenuHandlerViewModelTests : IDisposable
         _disposables.Add(vm);
 
         vm.IsEnabled = false;
-        await Task.Delay(350);
+        await Debounce.SettleAsync();
 
         Assert.Equal(0, _pendingService.PendingCount);
     }

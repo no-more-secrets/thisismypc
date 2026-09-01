@@ -114,7 +114,7 @@ Debug builds only since 2026-08-31 (compile-time gate on the sidebar button);
 Release also drops the Debug-only log console window. Nothing left for release
 prep here.
 
-## Repo publication hygiene (release blocker: the repo is private today, goes public GPLv2)
+## Repo publication hygiene (public since 2026-09-01, GPLv2)
 
 - **Personal machine audit (TWEAKS.md)** lives outside the repo and is
   gitignored so it cannot come back.
@@ -138,11 +138,11 @@ prep here.
   (GHSA-xrw6-gwf8-vvr9, Linux D-Bus only but restored regardless); pinned to
   0.21.3 via CentralPackageTransitivePinningEnabled. `dotnet list package
   --vulnerable --include-transitive` is clean; rerun it before each release.
-- **Public home settled 2026-09-01**: `github.com/No-More-Secrets/thisismypc`
-  (empty public repo under the free org). `AppConstants.UpdateUrl` points there.
-  Development continues on the private samboland/thisismypc remote; the public
-  repo receives the scrubbed history only after Sam explicitly verifies it is
-  safe. Never push there without that go-ahead.
+- **PUBLISHED 2026-09-01**: `github.com/No-More-Secrets/thisismypc` carries
+  the scrubbed history and is now `origin`. The former private repo
+  samboland/thisismypc is frozen as an archive (remote `private-archive`); its
+  unscrubbed history is also backed up locally. `AppConstants.UpdateUrl`
+  points at the public repo.
 
 ## Binary hardening: DONE 2026-08-31
 

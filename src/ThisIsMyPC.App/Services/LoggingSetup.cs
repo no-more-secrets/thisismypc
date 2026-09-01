@@ -57,6 +57,11 @@ public static class LoggingSetup
 
         LogManager.Setup().LoadConfiguration(builder =>
         {
+            // Start from an empty configuration: the builder otherwise merges
+            // into whatever LogManager already holds, and a second Configure
+            // call (tests, or a future reconfigure) would keep the old targets.
+            builder.Configuration = new LoggingConfiguration();
+
             // Rule order matters: the interop rule must come first. Events
             // below Warn from interop loggers stop there; Warn and above fall
             // through to the catch-all rules.

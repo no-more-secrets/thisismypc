@@ -48,9 +48,8 @@ exe for Owner Mode enable), packs the MSI, and writes `SHA256SUMS`. Then follow
   Builds without `-SignThumbprint` are unsigned test builds. The GPG manifest
   layer works with or without Authenticode.
 - `AppConstants.UpdateUrl` points at github.com/No-More-Secrets/thisismypc
-  (the public repo, created 2026-09-01). The private development remote is
-  still samboland/thisismypc; nothing is pushed to the public repo until Sam
-  has verified the scrubbed history.
+  (the public repo, live since 2026-09-01 with the scrubbed history). The
+  former private repo samboland/thisismypc is frozen as an archive.
 - NativeAOT works (probed 2026-08-31): `-p:AotPublish=true` (or
   `build-release.ps1 -Aot`) produces a ~34 MB native App exe with ZERO trim
   warnings after the two shared row templates gained compiled bindings

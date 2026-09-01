@@ -54,8 +54,7 @@ matching path for the whole session:
 gh repo view No-More-Secrets/thisismypc --json viewerPermission -q .viewerPermission
 ```
 
-- **Owner session** (`ADMIN` or `WRITE`, or `origin` is the private
-  `samboland/thisismypc` remote): you work for the repo owner (Sam). Commit
+- **Owner session** (`ADMIN` or `WRITE`): you work for the repo owner (Sam). Commit
   straight to `main`; no feature branches, no PR. Push after every commit.
   Update `refinement-backlog.md` when a change closes or adds an item.
 - **Contributor session** (`READ`, `NONE`, an error, or `origin` is a fork):

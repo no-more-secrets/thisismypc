@@ -81,7 +81,7 @@ public sealed class AnnoyancesDisplayModeTests : IDisposable
         var vm = await CreateVmAsync();
         var card = AllCards(vm).First();
         card.IsEnabled = !card.IsEnabled;
-        await Task.Delay(350); // debounce
+        await Debounce.UntilAsync(() => card.HasPendingChange);
         Assert.True(card.HasPendingChange);
 
         var before = AllCards(vm).ToList();

@@ -75,8 +75,6 @@ if ($gh) {
     $perm = & gh repo view No-More-Secrets/thisismypc --json viewerPermission -q .viewerPermission 2>$null
     if ($LASTEXITCODE -eq 0 -and ($perm -eq 'ADMIN' -or $perm -eq 'WRITE')) { $role = 'owner' }
 }
-$origin = & git remote get-url origin 2>$null
-if ($origin -match 'samboland/thisismypc') { $role = 'owner' }
 if ($role -eq 'owner') {
     Ok 'Owner session: commit straight to main, push after every commit, keep the backlog current.'
 } else {
