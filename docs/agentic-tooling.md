@@ -93,40 +93,9 @@ MCP servers extend Claude Code with live tool access to external systems.
 
 ## Plugins (Claude Code Official)
 
-Enabled in `.claude/settings.json`:
+User-scope plugins: `context7` (live library docs; keep it, it pulls current Avalonia and .NET references). `neon` is installed at user scope for other projects and disabled for this repo in `.claude/settings.json`.
 
-| Plugin | Purpose |
-|---|---|
-| `ralph-loop` | Autonomous coding loop with self-review cycles. `/ralph-loop:ralph-loop` to start, `/ralph-loop:cancel-ralph` to stop. |
-| `frontend-design` | Production-grade frontend interface design. `/frontend-design:frontend-design` to invoke. |
-
----
-
-## BMAD Agents
-
-BMAD (Build Manage Architect Deploy) is an agent framework installed at `_bmad/`. It provides specialized agents for project lifecycle tasks. Key agents used so far:
-
-| Agent | Invocation | Purpose |
-|---|---|---|
-| Product brief | `/bmad-bmm-create-product-brief` | Collaborative product brief creation |
-| PRD | `/bmad-bmm-create-prd` | Full PRD generation |
-| UX Design | `/bmad-bmm-create-ux-design` | UX specification and design patterns |
-| Architecture | `/bmad-bmm-create-architecture` | Architecture solution design |
-| Technical research | `/bmad-bmm-technical-research` | Domain/technology research |
-| Brainstorming | `/bmad-brainstorming` | Feature ideation sessions |
-| Code review | `/bmad-bmm-code-review` | Adversarial code review |
-| Story creation | `/bmad-bmm-create-story` | Implementation story files |
-| Dev story | `/bmad-bmm-dev-story` | Execute story implementation |
-
-Full list: run `/bmad-help` for routing guidance.
-
----
-
-## GSD (Get Stuff Done)
-
-Project management and execution framework at `~/.claude/commands/gsd/`. Provides milestone tracking, phase planning, parallel execution, and debugging workflows.
-
-Key commands: `/gsd:progress`, `/gsd:plan-phase`, `/gsd:execute-phase`, `/gsd:debug`
+Removed 2026-09-01: `ralph-loop`, `frontend-design` (project plugins, no fit for an Avalonia desktop app), the 54 BMAD skills under `.claude/skills/`, and the GSD framework (user-scope agents and commands). BMAD is closed; its planning history stays in `_bmad-output/`. Backups of the user-scope removals: `~/.claude/backups/trim-2026-09-01/`.
 
 ---
 
@@ -139,15 +108,10 @@ Claude Code's built-in `Agent` tool supports specialized subagent types:
 | `Explore` | Fast codebase exploration -- file patterns, keyword search, architecture questions |
 | `Plan` | Software architect -- implementation strategy, step-by-step plans, trade-offs |
 | `general-purpose` | Complex multi-step tasks, research, code changes |
-| `gsd-executor` | GSD plan execution with atomic commits |
-| `gsd-phase-researcher` | Research before planning a phase |
-| `gsd-planner` | Phase plan creation |
-| `gsd-debugger` | Scientific debugging with persistent state |
-| `gsd-verifier` | Goal-backward verification of phase completion |
 
 ---
 
-## IDE Setup — Visual Studio 2026
+## IDE Setup: Visual Studio 2026
 
 Primary IDE for building, debugging, XAML preview, and NativeAOT diagnostics. VS Code + Claude Code remains the agentic workflow environment.
 
