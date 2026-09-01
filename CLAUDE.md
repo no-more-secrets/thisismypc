@@ -46,12 +46,29 @@ the before-state/undo guarantees break.
 
 ## How work runs here
 
-- **Commit straight to `main`.** No feature branches or PR ceremony.
-- Work cycle: implement, full test suite, fresh-context code review for anything
-  substantial, commit, then update `refinement-backlog.md` if the change closes or
-  adds an item.
-- Don't ask "proceed?" between tasks. Stop only for irreversible things and
-  naming/branding (Sam's).
+**Determine the role of this session once, at the start**, and follow the
+matching path for the whole session:
+
+```
+gh repo view No-More-Secrets/thisismypc --json viewerPermission -q .viewerPermission
+```
+
+- **Owner session** (`ADMIN` or `WRITE`, or `origin` is the private
+  `samboland/thisismypc` remote): you work for the repo owner (Sam). Commit
+  straight to `main`; no feature branches, no PR. Push after every commit.
+  Update `refinement-backlog.md` when a change closes or adds an item.
+- **Contributor session** (`READ`, `NONE`, an error, or `origin` is a fork):
+  you work for a contributor. Never commit to `main`. For anything beyond a
+  small fix, open or pick an issue on `No-More-Secrets/thisismypc` first and
+  get the approach agreed there. Branch from `main`, and finish with a PR
+  against `No-More-Secrets/thisismypc` using the PR template. Mention the
+  backlog item the PR touches instead of editing the backlog.
+
+The cycle is the same in both roles: implement, full test suite, sight harness
+screenshots for any UI change, fresh-context code review (`/code-review`) for
+anything substantial, commit. Don't ask "proceed?" between tasks. Stop only for
+irreversible things and naming/branding; those are the owner's decisions, and a
+contributor session raises them in the issue.
 
 ## Build & test
 

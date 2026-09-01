@@ -5,9 +5,8 @@ in one place and makes every change reversible. It covers the ground of
 Autoruns, ShellExView, O&O ShutUp10, winutil, and UniGetUI, with a state capture for every change and thorough undo options. It is GPLv2, it has no
 telemetry and no account, and it covers an entire Windows install.
 
-This repository is developed by an AI coding agent (Claude Code) under a human
-owner. This file and everything under `docs/` are AI-written and checked
-against the code. If you are reading this through your own agent, the
+This repository is developed by AI coding agents (Claude Code) under the human owner (Sam Boland). This file and everything under `docs/` are AI-written and checked
+against the code. If you are reading this through a non-Claude agent, the
 operating rules it needs are in [CLAUDE.md](CLAUDE.md); the doc index with
 what each file is for is [docs/README.md](docs/README.md).
 
@@ -83,20 +82,116 @@ the service talk over a hardened named pipe whose message envelope is in
 - Installed per machine from an MSI into `Program Files`. No per-user install,
   no portable build.
 
-## Build and test
+## Development
+
+This project is built with Claude Code and expects contributors to work the
+same way: a person sets direction and reviews, their agent does the work. The
+sections below are written so the agent can follow them directly. Everything
+here is also in [CLAUDE.md](CLAUDE.md), which the agent loads on its own when
+it opens the repo; that file is the authority if the two ever differ.
+
+### Prerequisites
+
+- Windows 11 x64. The app, the Integration tests, and the Diagnostic tests
+  read and write the live system. The CI-safe test tier runs on any Windows
+  machine.
+- .NET 10 SDK. Visual Studio 2026 is optional (XAML preview, debugging);
+  `dotnet` from a terminal is enough.
+- An elevated terminal for the app and for the Integration and Diagnostic
+  test tiers.
+- Claude Code with the GitHub CLI (`gh`) signed in. The agent uses `gh` to
+  tell whether it is working for the owner or a contributor, and for issues
+  and PRs.
+
+### Get the code
+
+```
+gh repo fork No-More-Secrets/thisismypc --clone    # contributor
+git clone https://github.com/No-More-Secrets/thisismypc.git   # read-only
+```
+
+### Build and test
 
 ```
 dotnet build --configuration Release
 dotnet test --filter "Category!=Integration&Category!=Diagnostic"   # what CI runs
+dotnet test --filter "Category=Integration"                         # live registry, elevated
+dotnet test --filter "Category=Diagnostic"                          # live-system dumps, elevated
 ```
 
-Tests tagged Integration or Diagnostic read the live system and are excluded
-from CI. UI changes are verified with a headless Avalonia harness in
-`tests/ThisIsMyPC.App.UiTests` that drives the real windows and writes
-screenshots to `artifacts/ui-shots/`; an agent reads those PNGs instead of
-asking a human to launch the app. Release builds are packed by
-`tools/build-release.ps1` and can be published NativeAOT
-([docs/release/packaging.md](docs/release/packaging.md)).
+Three tiers. CI-safe tests use fakes from `tests/ThisIsMyPC.Core.Tests/Fakes/`
+and must stay green on every commit. Integration tests write to sandbox keys
+under HKCU and read the real registry. Diagnostic tests dump what the app
+would show for the current machine; see
+[docs/testing/context-menu-diagnostics.md](docs/testing/context-menu-diagnostics.md).
+
+One test project per module, mirroring `src/`. A new dependency gets its
+version in `Directory.Packages.props` and a versionless `PackageReference` in
+the csproj. The TIPC001 analyzer applies to every project and fails the build
+on unsafe DLL search paths.
+
+### UI changes
+
+Any XAML or view-model change is verified by looking at rendered pixels, not
+by reasoning about XAML:
+
+```
+dotnet test tests/ThisIsMyPC.App.UiTests --configuration Release --filter "Category!=Diagnostic"  # single views, fake data
+dotnet test tests/ThisIsMyPC.App.UiTests --configuration Release --filter "Category=Diagnostic"   # full app walkthrough, ~8s
+```
+
+The harness renders the real UI headlessly (Avalonia.Headless + Skia), drives
+it with real mouse and keyboard events, and writes PNGs to
+`artifacts/ui-shots/<suite>/`. The agent reads the PNGs as images and iterates
+until the screenshot is right. `tools/measure-edge-geometry.ps1` checks the
+page margin contract in pixels. New views get a screenshot test; the
+walkthrough picks up new sidebar modules on its own. Nothing in this loop
+needs a human to launch the app.
+
+### The work cycle
+
+1. The agent reads `CLAUDE.md` and determines its role with
+   `gh repo view No-More-Secrets/thisismypc --json viewerPermission`. Write
+   access means it works for the owner and commits to `main`. Anything else
+   means it works for a contributor: branch, then PR.
+2. Pick the work. Owner sessions take items from
+   [docs/planning/refinement-backlog.md](docs/planning/refinement-backlog.md).
+   Contributor sessions start from an issue; for anything beyond a small fix,
+   open the issue first and get the approach agreed before writing code.
+3. Implement under the architecture rules below.
+4. Run the full CI-safe suite, plus Integration for anything touching the
+   registry or services, plus the sight harness for anything visual.
+5. Run a fresh-context code review (`/code-review` in Claude Code) for
+   anything substantial and fix what it finds.
+6. Commit. Owner sessions push to `main`. Contributor sessions push the
+   branch and open a PR with the template filled in.
+
+### Issues and pull requests
+
+Issues are the design conversation. A useful issue names the module, the
+setting or behavior, the registry or API surface involved, and how the
+before-state would be captured. The templates under `.github/ISSUE_TEMPLATE`
+ask for exactly that so an agent can fill them.
+
+A PR is reviewed by a fresh-context agent and by the owner. The template
+checklist is what they check:
+
+- CI-safe tests green; Integration run locally if the change touches the
+  live system.
+- Screenshots attached for any UI change.
+- Every reversible change goes through the pending-changes pipeline with a
+  real before-state; one-way operations go through the actions queue.
+- No new opaque binaries; recipes are ported into set definitions or modules.
+- No em dashes in code, comments, docs, or the commit message.
+- The backlog item the PR closes or adds is named in the description; the
+  owner edits the backlog itself.
+
+Naming, branding, and anything irreversible on a user machine are the
+owner's decisions; raise them in the issue rather than deciding in the PR.
+
+Release builds are packed by `tools/build-release.ps1` and can be published
+NativeAOT ([docs/release/packaging.md](docs/release/packaging.md)). Releases
+are cut by the owner only.
 
 ## Architecture
 
@@ -139,16 +234,16 @@ OneDrive and Edge removal, hardware sensors.
 
 ## Contributing
 
-Contributions are expected to arrive through agents as much as through
-people. Point the agent at [CLAUDE.md](CLAUDE.md) first; it holds the build
-commands, the test categories, the UI verification loop, and the architecture
-rules that reviews enforce. The short version:
+The workflow is under Development above. Modules are the extension point:
+implement `IModule`, register it, add a test project mirroring `src/`. Set
+definitions are the second extension point and need no code. The rules that
+reviews enforce, in one place:
 
-- Modules are the extension point. Implement `IModule`, register it, add a
-  test project mirroring `src/`.
 - Every reversible change goes through the pending-changes pipeline with a
   real before-state. That rule is what makes undo trustworthy.
 - One-way operations go through the actions queue, never the change pipeline.
+- Core stays pure: no Win32, COM, or WMI calls outside the `Interop.*`
+  projects.
 - Never shell out to opaque third-party binaries; port their registry or API
   recipes into set definitions or modules instead.
 - No em dashes anywhere in the repo, including commit messages.
