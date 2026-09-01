@@ -92,7 +92,7 @@ EH Continuation table present.
 - **Reflection metadata: OK / deliberate.** NativeAOT trims unreachable
   metadata by definition; the two reflection-binding templates were converted
   to compiled bindings (zero IL trim warnings). Stack-trace metadata is
-  deliberately KEPT (`StackTraceSupport` default): Serilog crash logs need
+  deliberately KEPT (`StackTraceSupport` default): NLog crash logs need
   frames, and the metadata discloses nothing an open-source repo does not.
 
 ## Verification (paid 2026-08-31, follow-up session)

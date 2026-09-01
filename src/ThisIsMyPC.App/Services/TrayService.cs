@@ -16,6 +16,8 @@ namespace ThisIsMyPC.App.Services;
 /// </summary>
 public sealed class TrayService : IDisposable
 {
+    private static readonly NLog.Logger Log = NLog.LogManager.GetLogger("ThisIsMyPC.App.Services.TrayService");
+
     private readonly ISettingsService _settings;
     private readonly IPendingChangesService _pendingChanges;
     private readonly Action _openWindow;
@@ -87,7 +89,7 @@ public sealed class TrayService : IDisposable
             // Without an icon the Win32 tray never materializes; report and keep
             // IsTrayActive false so hide-to-tray falls back to terminating.
             _iconLoadFailed = true;
-            Serilog.Log.Error(ex, "Tray icon asset failed to load; tray mode is unavailable this session");
+            Log.Error(ex, "Tray icon asset failed to load; tray mode is unavailable this session");
             return null;
         }
 

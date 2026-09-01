@@ -32,6 +32,8 @@ namespace ThisIsMyPC.App;
 
 public partial class App : Application
 {
+    private static readonly NLog.Logger Log = NLog.LogManager.GetLogger("ThisIsMyPC.App");
+
     private ServiceProvider? _serviceProvider;
     private WindowPersistenceController? _windowController;
     private TrayService? _trayService;
@@ -141,18 +143,18 @@ public partial class App : Application
         // Until Story 8.4 bundles built-in sets, the missing built-in directory warning
         // is expected on every install.
         var load = setProvider.LoadSets();
-        Serilog.Log.Information("Set discovery: {Count} set(s) loaded", load.Sets.Count);
+        Log.Info("Set discovery: {Count} set(s) loaded", load.Sets.Count);
         foreach (var warning in load.Warnings)
-            Serilog.Log.Warning("Set discovery: {Warning}", warning);
+            Log.Warn("Set discovery: {Warning}", warning);
     }
 
     private static void InitializeSettings(Core.Settings.ISettingsService settingsService)
     {
         settingsService.Initialize();
         if (settingsService.LoadError is { } error)
-            Serilog.Log.Warning("Settings load: {Error}", error);
+            Log.Warn("Settings load: {Error}", error);
         if (settingsService.SettingsWereReset)
-            Serilog.Log.Warning("Settings were reset to defaults; previous file preserved as settings.json.bad");
+            Log.Warn("Settings were reset to defaults; previous file preserved as settings.json.bad");
     }
 
     // Internal so the headless UI test harness can build the real service graph

@@ -15,6 +15,8 @@ namespace ThisIsMyPC.App.Services;
 /// </summary>
 public sealed class MonitoringSnapshotProvider : IMonitoringSnapshotProvider
 {
+    private static readonly NLog.Logger Log = NLog.LogManager.GetLogger("ThisIsMyPC.App.Services.MonitoringSnapshotProvider");
+
     private readonly StartupScanner _startupScanner;
     private readonly IServiceControlService _serviceControl;
     private readonly IScheduledTaskService _taskService;
@@ -48,7 +50,7 @@ public sealed class MonitoringSnapshotProvider : IMonitoringSnapshotProvider
 #pragma warning disable CA1031 // best-effort capture; a failing source is omitted, never fatal
         catch (Exception ex)
         {
-            Serilog.Log.Warning(ex, "Monitoring: startup entry scan failed");
+            Log.Warn(ex, "Monitoring: startup entry scan failed");
         }
 #pragma warning restore CA1031
 

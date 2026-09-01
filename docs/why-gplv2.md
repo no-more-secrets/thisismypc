@@ -181,12 +181,11 @@ The priority order when an Apache 2.0 library looks useful:
 
 Package audit, 2026-09-01, from the nuspec license fields: Avalonia,
 CommunityToolkit.Mvvm, the Microsoft.Extensions packages, Microsoft.Data.Sqlite,
-CsWin32, BouncyCastle, and Velopack are MIT. Serilog and its three sinks are
-Apache-2.0 and are linked into the shipped binaries, which is exactly the
-conflict this section describes. Replacing Serilog with an MIT or BSD logger is
-a release blocker tracked in `docs/planning/refinement-backlog.md`. xunit is
-Apache-2.0 too, but it is test-only and never distributed, so it does not
-combine with the program.
+CsWin32, BouncyCastle, and Velopack are MIT; NLog is BSD-3-Clause. The audit
+found Serilog and its three sinks were Apache-2.0 and linked into the shipped
+binaries, exactly the conflict this section describes; they were replaced by
+NLog the same day. xunit is Apache-2.0 too, but it is test-only and never
+distributed, so it does not combine with the program.
 
 ## The Commitment
 

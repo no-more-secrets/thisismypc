@@ -1,4 +1,4 @@
-using Serilog;
+using NLog;
 
 namespace ThisIsMyPC.App.Services;
 
@@ -52,14 +52,14 @@ internal static class LegacyDataMigration
             File.WriteAllText(
                 Path.Combine(legacyDir, MarkerFileName),
                 $"Data moved to {machineDataDir} on {DateTime.Now:yyyy-MM-dd}. This folder is no longer read.");
-            logger.Information(
+            logger.Info(
                 "Migrated {Count} legacy items from {Legacy} to {Machine}", copied, legacyDir, machineDataDir);
         }
 #pragma warning disable CA1031 // Migration is best-effort; a failure must not block startup
         catch (Exception ex)
 #pragma warning restore CA1031
         {
-            logger.Warning(ex, "Legacy data migration failed; continuing with a fresh machine data directory");
+            logger.Warn(ex, "Legacy data migration failed; continuing with a fresh machine data directory");
         }
     }
 

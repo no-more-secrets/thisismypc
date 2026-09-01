@@ -197,7 +197,7 @@ are cut by the owner only.
 
 .NET 10, C# 14, Avalonia 11, CommunityToolkit.Mvvm. P/Invoke through CsWin32,
 COM through hand-rolled vtables so the app stays NativeAOT-clean. SQLite for
-history, Serilog for logs, Velopack for updates, xUnit for tests.
+history, NLog for logs, Velopack for updates, xUnit for tests.
 
 ```
 src/

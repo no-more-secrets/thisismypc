@@ -1,4 +1,4 @@
-using Serilog;
+using NLog;
 using ThisIsMyPC.Core.Results;
 using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Interop.Win32.Security;
@@ -29,7 +29,7 @@ public sealed class DataDirectoryGuard : IDataDirectoryGuard
     public DataDirectoryGuard(ISecurityApi? securityApi = null, ILogger? logger = null)
     {
         _securityApi = securityApi ?? new SecurityApi();
-        _logger = logger ?? Log.Logger;
+        _logger = logger ?? LogManager.GetLogger("ThisIsMyPC.Interop.Win32.DataDirectoryGuard");
     }
 
     public OperationResult<DaclStatus> EnsureHardened(string directoryPath)
@@ -45,7 +45,7 @@ public sealed class DataDirectoryGuard : IDataDirectoryGuard
                 return OperationResult<DaclStatus>.Success(DaclStatus.Verified);
             }
 
-            _logger.Information("Data directory DACL requires update, applying: {Path}", directoryPath);
+            _logger.Info("Data directory DACL requires update, applying: {Path}", directoryPath);
             return ApplyDacl(directoryPath, isFirstTime);
         }
 #pragma warning disable CA1031 // Guard must not crash the app; log and return failure
@@ -64,19 +64,19 @@ public sealed class DataDirectoryGuard : IDataDirectoryGuard
     {
         if (info.Error is not null)
         {
-            _logger.Warning("Failed to read DACL for verification: {Error}", info.Error);
+            _logger.Warn("Failed to read DACL for verification: {Error}", info.Error);
             return false;
         }
 
         if (!info.IsProtected)
         {
-            _logger.Warning("DACL inheritance is not disabled on {Path}", directoryPath);
+            _logger.Warn("DACL inheritance is not disabled on {Path}", directoryPath);
             return false;
         }
 
         if (info.Entries.Count != 2)
         {
-            _logger.Warning("Expected 2 ACEs, found {Count} on {Path}", info.Entries.Count, directoryPath);
+            _logger.Warn("Expected 2 ACEs, found {Count} on {Path}", info.Entries.Count, directoryPath);
             return false;
         }
 
@@ -84,13 +84,13 @@ public sealed class DataDirectoryGuard : IDataDirectoryGuard
         {
             if (!ExpectedSids.Contains(ace.Sid))
             {
-                _logger.Warning("Unexpected ACE SID {Sid} on {Path}", ace.Sid, directoryPath);
+                _logger.Warn("Unexpected ACE SID {Sid} on {Path}", ace.Sid, directoryPath);
                 return false;
             }
 
             if (ace.AccessMask != FileAllAccess)
             {
-                _logger.Warning("Unexpected access mask {Mask} for SID {Sid} on {Path}",
+                _logger.Warn("Unexpected access mask {Mask} for SID {Sid} on {Path}",
                     ace.AccessMask, ace.Sid, directoryPath);
                 return false;
             }
@@ -99,7 +99,7 @@ public sealed class DataDirectoryGuard : IDataDirectoryGuard
         var foundSids = new HashSet<string>(info.Entries.Select(e => e.Sid));
         if (!ExpectedSids.SetEquals(foundSids))
         {
-            _logger.Warning("Missing expected SIDs on {Path}", directoryPath);
+            _logger.Warn("Missing expected SIDs on {Path}", directoryPath);
             return false;
         }
 
@@ -119,7 +119,7 @@ public sealed class DataDirectoryGuard : IDataDirectoryGuard
         }
 
         var status = isFirstTime ? DaclStatus.Created : DaclStatus.Repaired;
-        _logger.Information("DACL {Status} successfully on {Path}", status, directoryPath);
+        _logger.Info("DACL {Status} successfully on {Path}", status, directoryPath);
         return OperationResult<DaclStatus>.Success(status);
     }
 }

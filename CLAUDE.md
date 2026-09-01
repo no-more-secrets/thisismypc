@@ -30,8 +30,7 @@ Feature work is complete (all modules plus the UI/UX chapter; history in the
 backlog).
 
 1. **Release prep (current)**. Remaining hard blockers, all Sam-gated or
-   publication-day: replace Serilog (Apache-2.0, incompatible with GPLv2-only;
-   backlog: publication hygiene), GPG release-key ceremony (docs/release/update-signing.md),
+   publication-day: GPG release-key ceremony (docs/release/update-signing.md),
    git-history scrub before the repo goes public (backlog: publication
    hygiene), UpdateUrl org/repo name (docs/release/packaging.md; publisher
    is NMS, short for No More Secrets, LLC, settled 2026-09-01). Process: SSL.com OV cert

@@ -10,6 +10,8 @@ namespace ThisIsMyPC.App.Views;
 
 public partial class SettingsView : UserControl
 {
+    private static readonly NLog.Logger Log = NLog.LogManager.GetLogger("ThisIsMyPC.App.Views.SettingsView");
+
     public SettingsView()
     {
         InitializeComponent();
@@ -40,7 +42,7 @@ public partial class SettingsView : UserControl
         }
         catch (Exception ex)
         {
-            Serilog.Log.Warning(ex, "Settings export failed");
+            Log.Warn(ex, "Settings export failed");
         }
     }
 
@@ -66,7 +68,7 @@ public partial class SettingsView : UserControl
         }
         catch (Exception ex)
         {
-            Serilog.Log.Warning(ex, "Settings import failed");
+            Log.Warn(ex, "Settings import failed");
         }
     }
 }

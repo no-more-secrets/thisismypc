@@ -2,7 +2,7 @@ using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using Org.BouncyCastle.Bcpg.OpenPgp;
-using Serilog;
+using NLog;
 using ThisIsMyPC.Core.Results;
 using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Core.Updates;
@@ -49,7 +49,7 @@ public sealed class GpgManifestUpdateVerifier : IUpdateVerifier
     {
         _publicKeyArmored = publicKeyArmored ?? ReleasePublicKeyArmored;
         _fetchAsync = fetchAsync ?? FetchOverHttpAsync;
-        _logger = logger ?? Log.Logger;
+        _logger = logger ?? LogManager.GetLogger("ThisIsMyPC.App.Services.GpgManifestUpdateVerifier");
     }
 
     public async Task<OperationResult<bool>> VerifyPackageAsync(
@@ -107,7 +107,7 @@ public sealed class GpgManifestUpdateVerifier : IUpdateVerifier
             if (!string.Equals(expectedDigest, actualDigest, StringComparison.OrdinalIgnoreCase))
                 return Reject(updateVersion, "The downloaded package does not match the signed manifest digest.");
 
-            _logger.Information(
+            _logger.Info(
                 "Update {Version} verified: signed manifest matched, SHA-256 {Digest} confirmed for {File}",
                 updateVersion, actualDigest, fileName);
             return OperationResult<bool>.Success(true);
@@ -128,7 +128,7 @@ public sealed class GpgManifestUpdateVerifier : IUpdateVerifier
 
     private OperationResult<bool> Reject(string version, string reason)
     {
-        _logger.Warning("Update {Version} rejected: {Reason}", version, reason);
+        _logger.Warn("Update {Version} rejected: {Reason}", version, reason);
         return OperationResult<bool>.Failure(reason, ErrorCategory.AccessDenied);
     }
 
@@ -143,7 +143,7 @@ public sealed class GpgManifestUpdateVerifier : IUpdateVerifier
         if (new PgpObjectFactory(signatureStream).NextPgpObject() is not PgpSignatureList signatures
             || signatures.Count == 0)
         {
-            _logger.Warning("SHA256SUMS.asc did not contain a detached signature");
+            _logger.Warn("SHA256SUMS.asc did not contain a detached signature");
             return false;
         }
 
@@ -190,19 +190,19 @@ public sealed class GpgManifestUpdateVerifier : IUpdateVerifier
             using var response = await SharedHttp.GetAsync(uri, cancellationToken).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
             {
-                _logger.Warning("Fetching {Uri} returned {Status}", uri, response.StatusCode);
+                _logger.Warn("Fetching {Uri} returned {Status}", uri, response.StatusCode);
                 return null;
             }
             return await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (HttpRequestException ex)
         {
-            _logger.Warning(ex, "Fetching {Uri} failed", uri);
+            _logger.Warn(ex, "Fetching {Uri} failed", uri);
             return null;
         }
         catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            _logger.Warning("Fetching {Uri} timed out", uri);
+            _logger.Warn("Fetching {Uri} timed out", uri);
             return null;
         }
     }

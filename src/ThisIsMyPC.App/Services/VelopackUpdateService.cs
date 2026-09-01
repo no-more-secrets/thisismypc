@@ -1,4 +1,4 @@
-using Serilog;
+using NLog;
 using ThisIsMyPC.Core.Results;
 using ThisIsMyPC.Core.Services;
 using Velopack;
@@ -16,7 +16,7 @@ public sealed class VelopackUpdateService : IUpdateService, IDisposable
     {
         _manager = new UpdateManager(updateUrl);
         _verifier = verifier;
-        _logger = logger ?? Log.Logger;
+        _logger = logger ?? LogManager.GetLogger("ThisIsMyPC.App.Services.VelopackUpdateService");
     }
 
     public async Task<OperationResult<UpdateCheckResult>> CheckForUpdateAsync()
@@ -34,7 +34,7 @@ public sealed class VelopackUpdateService : IUpdateService, IDisposable
 
             _pendingUpdate = update;
             var version = update.TargetFullRelease.Version.ToString();
-            _logger.Information("Update available: {Version}", version);
+            _logger.Info("Update available: {Version}", version);
 
             return OperationResult<UpdateCheckResult>.Success(
                 new UpdateCheckResult(true, version, null));
@@ -43,7 +43,7 @@ public sealed class VelopackUpdateService : IUpdateService, IDisposable
         catch (Exception ex)
 #pragma warning restore CA1031
         {
-            _logger.Warning(ex, "Update check failed");
+            _logger.Warn(ex, "Update check failed");
             return OperationResult<UpdateCheckResult>.Failure(
                 $"Update check failed: {ex.Message}",
                 ErrorCategory.ServiceUnavailable,
@@ -68,12 +68,12 @@ public sealed class VelopackUpdateService : IUpdateService, IDisposable
                 .ConfigureAwait(false);
 
             var version = _pendingUpdate.TargetFullRelease.Version.ToString();
-            _logger.Information("Update {Version} downloaded", version);
+            _logger.Info("Update {Version} downloaded", version);
 
             if (_verifier is not null)
             {
                 // Fail-closed: an unresolved package path is a rejection, not a skip.
-                _logger.Information("Verifying update integrity for {Version}", version);
+                _logger.Info("Verifying update integrity for {Version}", version);
                 var packagePath = ResolveUpdatePackagePath();
                 var verification = await _verifier.VerifyPackageAsync(version, packagePath, cancellationToken)
                     .ConfigureAwait(false);
@@ -87,7 +87,7 @@ public sealed class VelopackUpdateService : IUpdateService, IDisposable
                         ErrorCategory.AccessDenied);
                 }
 
-                _logger.Information("Update {Version} integrity verified", version);
+                _logger.Info("Update {Version} integrity verified", version);
             }
 
             return OperationResult<bool>.Success(true);
@@ -108,11 +108,11 @@ public sealed class VelopackUpdateService : IUpdateService, IDisposable
     {
         if (_pendingUpdate is null)
         {
-            _logger.Warning("ApplyUpdateAndRestart called with no pending update");
+            _logger.Warn("ApplyUpdateAndRestart called with no pending update");
             return;
         }
 
-        _logger.Information("Applying update and restarting");
+        _logger.Info("Applying update and restarting");
         _manager.ApplyUpdatesAndRestart(_pendingUpdate.TargetFullRelease);
     }
 

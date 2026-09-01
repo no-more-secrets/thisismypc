@@ -1,88 +1,100 @@
 using System.Text.Json;
-using Serilog;
-using Serilog.Core;
-using Serilog.Events;
-using Serilog.Formatting;
-using Serilog.Formatting.Compact;
+using NLog;
+using NLog.Config;
+using NLog.Targets;
+using ThisIsMyPC.App.Services;
 
 namespace ThisIsMyPC.Security.Tests;
 
+/// <summary>
+/// The production JSON layout must keep one event per line with every value
+/// JSON-escaped, so a log reader cannot be fed forged lines through user
+/// controlled strings (CWE-117).
+/// </summary>
 [Trait("Category", "Security")]
 public class LoggingSecurityTests
 {
     [Fact]
-    public void ClefFormatter_ProducesValidJsonWithEnvelope()
+    public void JsonLayout_ProducesValidJsonWithEnvelope()
     {
-        var (logger, writer) = CreateClefLogger();
-        using (logger)
-            logger.Information("Test {Value}", "hello");
+        var (logger, target) = CreateJsonLogger();
+        logger.Info("Test {Value}", "hello");
 
-        var output = writer.ToString().Trim();
-        Assert.False(string.IsNullOrWhiteSpace(output));
-
+        var output = Single(target);
         using var doc = JsonDocument.Parse(output);
         var root = doc.RootElement;
 
-        Assert.True(root.TryGetProperty("@t", out _), "CLEF envelope missing @t (timestamp)");
-        Assert.True(root.TryGetProperty("@mt", out _), "CLEF envelope missing @mt (message template)");
+        Assert.True(root.TryGetProperty("@t", out _), "envelope missing @t (timestamp)");
+        Assert.Equal("Test {Value}", root.GetProperty("@mt").GetString());
         Assert.Equal("hello", root.GetProperty("Value").GetString());
     }
 
     [Fact]
-    public void ClefFormatter_CrlfInPropertyValue_ProducesSingleLine_CWE117()
+    public void JsonLayout_CrlfInPropertyValue_ProducesSingleLine_CWE117()
     {
-        var (logger, writer) = CreateClefLogger();
-        using (logger)
-            logger.Information("User action: {Input}", "legit\r\n[WARN] Fake security event");
+        var (logger, target) = CreateJsonLogger();
+        logger.Info("User action: {Input}", "legit\r\n[WARN] Fake security event");
 
-        var lines = writer.ToString().Split('\n', StringSplitOptions.RemoveEmptyEntries);
-        Assert.Single(lines);
+        var output = Single(target);
+        Assert.DoesNotContain('\n', output);
+        Assert.DoesNotContain('\r', output);
 
-        using var doc = JsonDocument.Parse(lines[0]);
+        using var doc = JsonDocument.Parse(output);
         var input = doc.RootElement.GetProperty("Input").GetString();
         Assert.Contains("\r\n", input, StringComparison.Ordinal);
         Assert.Contains("[WARN] Fake security event", input, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void ClefFormatter_SpecialCharactersInValues_JsonEscaped()
+    public void JsonLayout_SpecialCharactersInValues_JsonEscaped()
     {
-        var (logger, writer) = CreateClefLogger();
-        using (logger)
-            logger.Information("Path: {FilePath}", "C:\\Users\\test\\file \"quoted\".txt");
+        var (logger, target) = CreateJsonLogger();
+        logger.Info("Path: {FilePath}", "C:\\Users\\test\\file \"quoted\".txt");
 
-        var output = writer.ToString().Trim();
-        using var doc = JsonDocument.Parse(output);
+        using var doc = JsonDocument.Parse(Single(target));
         var path = doc.RootElement.GetProperty("FilePath").GetString();
         Assert.Equal("C:\\Users\\test\\file \"quoted\".txt", path);
     }
 
     [Fact]
-    public void ClefFormatter_OutputIsJsonObject_NotPlainText()
+    public void JsonLayout_OutputIsJsonObject_NotPlainText()
     {
-        var (logger, writer) = CreateClefLogger();
-        using (logger)
-            logger.Information("Startup check {Status}", "OK");
+        var (logger, target) = CreateJsonLogger();
+        logger.Info("Startup check {Status}", "OK");
 
-        var output = writer.ToString().Trim();
-
+        var output = Single(target);
         Assert.StartsWith("{", output, StringComparison.Ordinal);
 
         using var doc = JsonDocument.Parse(output);
         Assert.Equal("OK", doc.RootElement.GetProperty("Status").GetString());
     }
 
-    private static (Logger logger, StringWriter writer) CreateClefLogger()
+    [Fact]
+    public void JsonLayout_ExceptionLandsInEnvelope_NotAsExtraLines()
     {
-        var writer = new StringWriter();
-        var logger = new LoggerConfiguration()
-            .WriteTo.Sink(new FormatterSink(writer, new CompactJsonFormatter()))
-            .CreateLogger();
-        return (logger, writer);
+        var (logger, target) = CreateJsonLogger();
+        logger.Error(new InvalidOperationException("boom"), "Failed {Step}", "apply");
+
+        var output = Single(target);
+        using var doc = JsonDocument.Parse(output);
+        Assert.Contains("boom", doc.RootElement.GetProperty("@x").GetString(), StringComparison.Ordinal);
+        Assert.Equal("apply", doc.RootElement.GetProperty("Step").GetString());
     }
 
-    private sealed class FormatterSink(StringWriter writer, ITextFormatter formatter) : ILogEventSink
+    private static string Single(MemoryTarget target)
     {
-        public void Emit(LogEvent logEvent) => formatter.Format(logEvent, writer);
+        var line = Assert.Single(target.Logs);
+        Assert.False(string.IsNullOrWhiteSpace(line));
+        return line;
+    }
+
+    /// <summary>A private LogFactory so the test never touches the global LogManager.</summary>
+    private static (Logger logger, MemoryTarget target) CreateJsonLogger()
+    {
+        var target = new MemoryTarget("memory") { Layout = LoggingSetup.CreateJsonLayout() };
+        var config = new LoggingConfiguration();
+        config.AddRule(LogLevel.Trace, LogLevel.Fatal, target, "*");
+        var factory = new LogFactory { Configuration = config };
+        return (factory.GetLogger("test"), target);
     }
 }

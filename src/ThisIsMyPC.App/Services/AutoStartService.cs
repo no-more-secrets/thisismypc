@@ -11,6 +11,8 @@ namespace ThisIsMyPC.App.Services;
 /// </summary>
 public sealed class AutoStartService : IDisposable
 {
+    private static readonly NLog.Logger Log = NLog.LogManager.GetLogger("ThisIsMyPC.App.Services.AutoStartService");
+
     public const string RunKeyPath = @"HKCU\Software\Microsoft\Windows\CurrentVersion\Run";
     public const string RunValueName = "ThisIsMyPC";
 
@@ -46,12 +48,12 @@ public sealed class AutoStartService : IDisposable
         {
             if (_launchCommand.StartsWith("\"\"", StringComparison.Ordinal))
             {
-                Serilog.Log.Warning("Auto-start: executable path unknown; not writing a Run entry");
+                Log.Warn("Auto-start: executable path unknown; not writing a Run entry");
                 return;
             }
             var result = _registry.WriteString(RunKeyPath, RunValueName, _launchCommand);
             if (!result.IsSuccess)
-                Serilog.Log.Warning("Auto-start entry write failed: {Error}", result.ErrorMessage);
+                Log.Warn("Auto-start entry write failed: {Error}", result.ErrorMessage);
         }
         else
         {
@@ -60,7 +62,7 @@ public sealed class AutoStartService : IDisposable
             {
                 var result = _registry.DeleteValue(RunKeyPath, RunValueName);
                 if (!result.IsSuccess)
-                    Serilog.Log.Warning("Auto-start entry removal failed: {Error}", result.ErrorMessage);
+                    Log.Warn("Auto-start entry removal failed: {Error}", result.ErrorMessage);
             }
         }
     }

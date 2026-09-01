@@ -1,5 +1,5 @@
 ﻿using Microsoft.Win32;
-using Serilog;
+using NLog;
 using WinRegistry = Microsoft.Win32.Registry;
 using ThisIsMyPC.Core.Services;
 using static ThisIsMyPC.Interop.Win32.Restore.NativeRestore;
@@ -27,7 +27,7 @@ public sealed class RestorePointService : IRestorePointService
 
     public RestorePointService(ILogger? logger = null)
     {
-        _logger = logger ?? Log.Logger;
+        _logger = logger ?? LogManager.GetLogger("ThisIsMyPC.Interop.Win32.Restore.RestorePointService");
     }
 
     public Task<RestorePointResult> CreateRestorePointAsync(string description)
@@ -68,7 +68,7 @@ public sealed class RestorePointService : IRestorePointService
             {
                 if (status.nStatus == ERROR_SERVICE_DISABLED)
                 {
-                    _logger.Warning("Restore point creation refused: System Restore is disabled");
+                    _logger.Warn("Restore point creation refused: System Restore is disabled");
                     return new RestorePointResult
                     {
                         Outcome = RestorePointOutcome.SystemRestoreDisabled,
@@ -76,7 +76,7 @@ public sealed class RestorePointService : IRestorePointService
                     };
                 }
 
-                _logger.Warning("SRSetRestorePoint failed with status {Status}", status.nStatus);
+                _logger.Warn("SRSetRestorePoint failed with status {Status}", status.nStatus);
                 return new RestorePointResult
                 {
                     Outcome = RestorePointOutcome.Failed,
@@ -87,7 +87,7 @@ public sealed class RestorePointService : IRestorePointService
             var sequenceNumber = status.llSequenceNumber;
             EndSystemChange(sequenceNumber);
 
-            _logger.Information(
+            _logger.Info(
                 "Restore point {SequenceNumber} created: {Description}", sequenceNumber, description);
             return new RestorePointResult
             {
@@ -137,7 +137,7 @@ public sealed class RestorePointService : IRestorePointService
 
         STATEMGRSTATUS status;
         if (!SRSetRestorePointW(&end, &status) || status.nStatus != ERROR_SUCCESS)
-            _logger.Warning("END_SYSTEM_CHANGE for restore point {SequenceNumber} failed with status {Status}",
+            _logger.Warn("END_SYSTEM_CHANGE for restore point {SequenceNumber} failed with status {Status}",
                 sequenceNumber, status.nStatus);
     }
 
@@ -186,7 +186,7 @@ public sealed class RestorePointService : IRestorePointService
 #pragma warning disable CA1031 // override is best-effort; creation must proceed regardless
             catch (Exception ex)
             {
-                _logger.Warning(ex, "Could not override restore point creation frequency; a recent restore point may be reused");
+                _logger.Warn(ex, "Could not override restore point creation frequency; a recent restore point may be reused");
             }
 #pragma warning restore CA1031
         }
@@ -210,7 +210,7 @@ public sealed class RestorePointService : IRestorePointService
 #pragma warning disable CA1031 // Dispose must never throw into the apply command's Task
             catch (Exception ex)
             {
-                _logger.Warning(ex, "Could not restore SystemRestorePointCreationFrequency after restore point creation");
+                _logger.Warn(ex, "Could not restore SystemRestorePointCreationFrequency after restore point creation");
             }
 #pragma warning restore CA1031
         }
