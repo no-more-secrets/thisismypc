@@ -1,11 +1,11 @@
 # ThisIsMyPC documentation
 
-Most of what is in this folder was written by AI models (Claude and Gemini)
-during development and then checked against the code. Treat it as design
-rationale and reference, not as a spec: where a document and the code
-disagree, the code wins. The operating rules for working on the repo are in
-the root `CLAUDE.md`; the master plan and status is
-`planning/refinement-backlog.md`.
+This folder was written by AI models (Claude Code during development, Gemini
+for the deep research) and checked against the code. It is design rationale
+and reference, not a spec: where a document and the code disagree, the code
+wins. If an agent is working on the repo, it needs the root `CLAUDE.md`
+(operating rules, build and test commands, UI verification loop) before
+anything here; `planning/refinement-backlog.md` is the plan and status.
 
 ## Development
 
