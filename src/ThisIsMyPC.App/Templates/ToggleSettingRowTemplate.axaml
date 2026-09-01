@@ -1,29 +1,18 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    x:CompileBindings="False">
+                    xmlns:vm="using:ThisIsMyPC.App.ViewModels">
 
-    <!-- Reusable toggle setting row template for module controls.
-         Expected DataContext properties (required):
-           - string Label: Setting name
-           - string Description: What the setting does
-           - bool IsEnabled: Current toggle state
-         Optional properties (used by context menu handlers, hidden when absent):
-           - bool IsPendingEnable / IsPendingDisable: Pending state visual indicators
-           - string WarningText: Warning for critical/system handlers
-           - string DisableMethodText: Disable method indicator
-           - bool CanMigrate: Shows "Migrate to Blocked List" button
-           - ICommand MigrateCommand: Migration action
-           - bool IsInactive / string InactiveReason: Dimmed with explanation
-         Note: Compiled bindings are disabled here because this template is generic.
-         FallbackValue is set on optional bindings to suppress binding errors. -->
-
-    <DataTemplate x:Key="ToggleSettingRowTemplate">
+    <!-- Reusable toggle setting row for module controls. Typed against
+         IToggleSettingRow so bindings compile (NativeAOT trimming can silently
+         break reflection bindings); rows that do not use the optional members
+         return constants that hide those parts. -->
+    <DataTemplate x:Key="ToggleSettingRowTemplate" x:DataType="vm:IToggleSettingRow">
         <Border Padding="14,6"
                 Margin="0,2"
                 CornerRadius="6"
                 Classes="card"
-                IsVisible="{Binding IsSearchVisible, FallbackValue=True}"
-                Classes.inactive="{Binding IsInactive, FallbackValue=False}"
+                IsVisible="{Binding IsSearchVisible}"
+                Classes.inactive="{Binding IsInactive}"
                 Classes.pending-enable="{Binding IsPendingEnable}"
                 Classes.pending-disable="{Binding IsPendingDisable}">
             <DockPanel>
@@ -31,7 +20,7 @@
                      shows state, and MinHeight 0 lets the row stay short -->
                 <ToggleSwitch DockPanel.Dock="Right"
                               IsChecked="{Binding IsEnabled}"
-                              IsEnabled="{Binding IsToggleEnabled, FallbackValue=True}"
+                              IsEnabled="{Binding IsToggleEnabled}"
                               OnContent="{x:Null}" OffContent="{x:Null}"
                               MinHeight="0"
                               VerticalAlignment="Center"
@@ -53,12 +42,12 @@
                     </StackPanel>
 
                     <!-- Inactive reason (shown instead of warning for inactive entries) -->
-                    <TextBlock Text="{Binding InactiveReason, FallbackValue=''}"
+                    <TextBlock Text="{Binding InactiveReason}"
                                FontSize="12"
                                Foreground="{DynamicResource TextTertiaryBrush}"
                                FontStyle="Italic"
                                TextWrapping="Wrap"
-                               IsVisible="{Binding InactiveReason, FallbackValue={x:False}, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                               IsVisible="{Binding InactiveReason, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
                     <!-- Warning text (Critical/System handlers; hidden when inactive) -->
                     <TextBlock Text="{Binding WarningText}"
@@ -68,13 +57,13 @@
                                IsVisible="{Binding WarningText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
                     <!-- Disable method info + migrate action (context menu handlers only) -->
-                    <TextBlock Text="{Binding DisableMethodText, FallbackValue=''}"
+                    <TextBlock Text="{Binding DisableMethodText}"
                                FontSize="11"
                                Foreground="{DynamicResource WarningBrush}"
-                               IsVisible="{Binding DisableMethodText, FallbackValue={x:False}, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                               IsVisible="{Binding DisableMethodText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                     <Button Content="Migrate to Blocked List"
-                            Command="{Binding MigrateCommand, FallbackValue={x:Null}}"
-                            IsVisible="{Binding CanMigrate, FallbackValue=False}"
+                            Command="{Binding MigrateCommand}"
+                            IsVisible="{Binding CanMigrate}"
                             FontSize="11"
                             Padding="6,2"
                             Margin="0,2,0,0"

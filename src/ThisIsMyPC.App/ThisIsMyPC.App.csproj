@@ -6,6 +6,9 @@
     <!-- CA1515: Avalonia XAML requires public types for views/viewmodels -->
     <!-- CA1724: App class name conflicts with ThisIsMyPC.App namespace (unavoidable convention) -->
     <NoWarn>CA1515;CA1724</NoWarn>
+    <!-- NativeAOT probe/publish: opt in with -p:AotPublish=true so normal
+         builds and the netstandard2.0 analyzer project stay untouched -->
+    <PublishAot Condition="'$(AotPublish)' == 'true'">true</PublishAot>
   </PropertyGroup>
 
   <ItemGroup>

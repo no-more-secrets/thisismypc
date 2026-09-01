@@ -1,10 +1,11 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:vm="using:ThisIsMyPC.App.ViewModels"
-                    x:CompileBindings="False">
+                    xmlns:vm="using:ThisIsMyPC.App.ViewModels">
 
-    <!-- Row template for Multi tab: shows scope badges indicating which surfaces the handler affects. -->
-    <DataTemplate x:Key="MultiScopeRowTemplate">
+    <!-- Row template for Multi tab: shows scope badges indicating which surfaces
+         the handler affects. Typed for compiled bindings; reflection bindings
+         are the one thing NativeAOT trimming can silently break. -->
+    <DataTemplate x:Key="MultiScopeRowTemplate" x:DataType="vm:ContextMenuHandlerViewModel">
         <Border Padding="16,12"
                 Margin="0,2"
                 CornerRadius="6"

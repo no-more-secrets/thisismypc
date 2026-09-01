@@ -9,8 +9,11 @@ using ThisIsMyPC.Modules.Shell.Models;
 
 namespace ThisIsMyPC.App.ViewModels;
 
-public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDisposable
+public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDisposable, IToggleSettingRow
 {
+    // The generated MigrateCommand is IRelayCommand; the row contract wants ICommand.
+    System.Windows.Input.ICommand? IToggleSettingRow.MigrateCommand => MigrateCommand;
+
     private readonly ContextMenuHandler _handler;
     private readonly IPendingChangesService _pendingChangesService;
     private readonly Func<bool>? _readRegistryState;

@@ -8,8 +8,17 @@ using ThisIsMyPC.Modules.Shell.Models;
 
 namespace ThisIsMyPC.App.ViewModels;
 
-public sealed partial class ShellSettingViewModel : ViewModelBase, IDisposable
+public sealed partial class ShellSettingViewModel : ViewModelBase, IDisposable, IToggleSettingRow
 {
+    // IToggleSettingRow members this row type never uses (template hides them).
+    public bool IsToggleEnabled => true;
+    public bool IsInactive => false;
+    public string? InactiveReason => null;
+    public string? WarningText => null;
+    public string? DisableMethodText => null;
+    public bool CanMigrate => false;
+    public System.Windows.Input.ICommand? MigrateCommand => null;
+
     private readonly IPendingChangesService _pendingChangesService;
     private readonly ExplorerPreference? _preference;
     private readonly Func<bool, ChangeDescriptor>? _changeFactory;

@@ -12,7 +12,13 @@ param(
 
     # Shown as the MSI publisher and the Program Files vendor folder.
     # PLACEHOLDER until Sam finalizes the LLC name for the publisher line.
-    [string]$Authors = 'ThisIsMyPC'
+    [string]$Authors = 'ThisIsMyPC',
+
+    # NativeAOT publish for the App (probe-proven 2026-08-31, zero trim
+    # warnings; needs the VS installer dir on PATH for the native link step).
+    # Default off until a full manual pass on an AOT build; the Service stays
+    # CoreCLR either way.
+    [switch]$Aot
 )
 
 $ErrorActionPreference = 'Stop'
@@ -28,10 +34,16 @@ if (Test-Path $staging) { Remove-Item $staging -Recurse -Force }
 New-Item -ItemType Directory -Force $staging | Out-Null
 New-Item -ItemType Directory -Force $output | Out-Null
 
-Write-Host "Publishing App ($Version, win-x64, self-contained)..."
+$aotArgs = @()
+if ($Aot) {
+    $aotArgs = @('-p:AotPublish=true')
+    $env:PATH = "$env:PATH;${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer"
+}
+
+Write-Host "Publishing App ($Version, win-x64, self-contained$(if ($Aot) { ', NativeAOT' }))..."
 dotnet publish (Join-Path $repoRoot 'src\ThisIsMyPC.App\ThisIsMyPC.App.csproj') `
     --configuration Release --runtime win-x64 --self-contained true `
-    -p:Version=$Version --output $staging
+    -p:Version=$Version @aotArgs --output $staging
 if ($LASTEXITCODE -ne 0) { throw 'App publish failed' }
 
 Write-Host 'Publishing Session 0 Service into the same directory...'
