@@ -1,8 +1,8 @@
 # CLAUDE.md
 
 Operating guidance for Claude Code in this repo. **How to DO things only.** Detailed plans
-and status live in `docs/planning/` (`refinement-backlog.md` is the master list); BMAD-era
-rationale in `_bmad-output/planning-artifacts/`. Never append history here; replace stale
+and status live in `docs/planning/` (`refinement-backlog.md` is the master list); design
+rationale in `docs/` (index: `docs/README.md`). Never append history here; replace stale
 text.
 
 **Em dashes are banned everywhere.** This file, code comments, docs, commit messages,
@@ -40,7 +40,8 @@ backlog).
    network/firewall, profiles, WU remainder) and install-engine leftovers
    (OneDrive/Edge removal, OEM tools, progress/cancel).
 
-BMAD is closed; never run the `_bmad/` workflow. ⛔ Never shell out to opaque binaries
+The BMAD planning framework that drove the first chapter was removed from the repo
+on 2026-09-01; do not reinstall it. ⛔ Never shell out to opaque binaries
 (O&O ShutUp etc.); port their registry/API recipes into set definitions or modules, or
 the before-state/undo guarantees break.
 
@@ -144,8 +145,6 @@ in the tab min-height). Any page off those numbers is the bug, even if it
 looks close.
 
 ## Architecture must-rules (violations get caught in review)
-
-Full rules: `_bmad-output/planning-artifacts/architecture.md` (esp. the "AI agent MUST" list).
 
 - **Core is pure**: data types, interfaces, services logic. No Win32/COM/WMI calls
   (those live in `Interop.*` projects). Production `EnforcementExecutor` goes in

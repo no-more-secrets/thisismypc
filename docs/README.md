@@ -35,6 +35,7 @@ anything here; `planning/refinement-backlog.md` is the plan and status.
 | [research/context-menu-scanner-rationale.md](research/context-menu-scanner-rationale.md) | Why the context menu scanner enumerates the surfaces it does, how handlers are classified, what the background-surface probe can and cannot detect. |
 | [research/startup-scanner-rationale.md](research/startup-scanner-rationale.md) | Which autostart categories the Startup module leaves alone, and why. |
 | [research/sku-restriction-audit.md](research/sku-restriction-audit.md) | Which policies apply on Home, Pro, Enterprise, and Education. Referenced from the change factories. |
+| [research/ExplorerPatcher-STUDY.md](research/ExplorerPatcher-STUDY.md) | Study of ExplorerPatcher (GPLv2): its hooks, registry patterns, and what this project ported or deliberately did not. Conclusion: integrate the recipes, never the hooking. |
 
 ## Deep research
 
@@ -50,5 +51,8 @@ enforcement layer, the Session 0 service, and the hardening work; the code and
 
 Raw exports from the developer's machine (Autoruns, ShellExView, registry
 audits) were used for the research and are kept outside the repo. The BMAD
-planning artifacts that drove the first development chapter live in
-`_bmad-output/` at the repo root and are history, not current guidance.
+planning framework and its artifacts (PRD, architecture document, epics,
+story files) drove the first development chapter and were removed before
+publication; the decisions they produced are encoded in the code, in
+`CLAUDE.md`, and in `planning/refinement-backlog.md`. Where a research doc
+here still cites an "Epic" or "Story" number, it refers to that retired plan.
