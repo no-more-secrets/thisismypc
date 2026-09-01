@@ -132,6 +132,12 @@ prep here.
   properties at the root), 10 MB cap, 7 files kept, Interop loggers Warn+ in
   Release, console target for the Debug log window. Every shipped package is
   now MIT or BSD; xunit is Apache-2.0 but test-only, never distributed.
+- **Package advisories cleared 2026-09-01**: Microsoft.Data.Sqlite 10.0.3
+  pulled SQLitePCLRaw 2.1.11 (GHSA-2m69-gcr7-jv3q); bumped to 10.0.11, which
+  resolves 2.1.12. Avalonia 11.3.12 pulls Tmds.DBus.Protocol 0.21.2
+  (GHSA-xrw6-gwf8-vvr9, Linux D-Bus only but restored regardless); pinned to
+  0.21.3 via CentralPackageTransitivePinningEnabled. `dotnet list package
+  --vulnerable --include-transitive` is clean; rerun it before each release.
 - **Public home settled 2026-09-01**: `github.com/No-More-Secrets/thisismypc`
   (empty public repo under the free org). `AppConstants.UpdateUrl` points there.
   Development continues on the private samboland/thisismypc remote; the public

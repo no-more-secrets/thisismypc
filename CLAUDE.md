@@ -82,6 +82,9 @@ Vendor-specific notes go below the marker in the twin, never above it.
 
 ## Build & test
 
+New clone: `.\Setup.ps1` once (prerequisite checks, git hooks, guide parity,
+role, build, CI-safe tests). Then:
+
 ```
 dotnet build --configuration Release
 dotnet test --filter "Category!=Integration&Category!=Diagnostic"   # what CI runs

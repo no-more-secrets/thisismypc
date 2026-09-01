@@ -1,6 +1,8 @@
 <Project>
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <!-- Lets a PackageVersion below override a vulnerable transitive dependency. -->
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
   </PropertyGroup>
 
   <ItemGroup Label="Avalonia">
@@ -10,6 +12,8 @@
     <PackageVersion Include="Avalonia.Diagnostics" Version="11.3.12" />
     <PackageVersion Include="Avalonia.Headless.XUnit" Version="11.3.12" />
     <PackageVersion Include="Avalonia.Skia" Version="11.3.12" />
+    <!-- Transitive of Avalonia.Desktop (FreeDesktop backend); 0.21.2 carries GHSA-xrw6-gwf8-vvr9. Pinned to the patched 0.21.x. -->
+    <PackageVersion Include="Tmds.DBus.Protocol" Version="0.21.3" />
   </ItemGroup>
 
   <ItemGroup Label="MVVM">
@@ -23,7 +27,7 @@
   </ItemGroup>
 
   <ItemGroup Label="Data">
-    <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.3" />
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.11" />
   </ItemGroup>
 
   <ItemGroup Label="Interop">

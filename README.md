@@ -110,13 +110,15 @@ it opens the repo; that file is the authority if the two ever differ.
 ```
 gh repo fork No-More-Secrets/thisismypc --clone    # contributor
 git clone https://github.com/No-More-Secrets/thisismypc.git   # read-only
-tools\install-git-hooks.ps1                        # once per clone
+.\Setup.ps1                                        # once per clone
 ```
 
-The hook install points git at `tools/git-hooks`. Its pre-commit hook keeps
-`AGENTS.md` and `GEMINI.md` generated from `CLAUDE.md`, the master copy of
-the agent rules; CI rejects a stale twin, so skipping the hook only moves the
-failure later.
+`Setup.ps1` checks the prerequisites, installs the git hooks, verifies the
+agent guide twins, reports whether this clone is an owner or contributor
+session, then builds and runs the CI-safe tests. `-SkipBuild` stops after
+the checks. The hooks point git at `tools/git-hooks`; the pre-commit hook
+keeps `AGENTS.md` and `GEMINI.md` generated from `CLAUDE.md`, and CI rejects
+a stale twin, so skipping the hook only moves the failure later.
 
 ### Build and test
 
