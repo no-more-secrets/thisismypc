@@ -118,12 +118,10 @@ prep here.
 
 - **Personal machine audit (TWEAKS.md)** lives outside the repo and is
   gitignored so it cannot come back.
-- **History scrubbed 2026-09-01** with git filter-repo in a local mirror: one
-  author identity, machine dumps and TWEAKS.md purged from every commit,
-  hostname and user paths text-replaced, BMAD framework trees dropped. Verified
-  clean (build + 1,336 CI tests). The mirror waits for Sam's explicit
-  verification before anything reaches the public remote; commits made after
-  the rewrite must be replayed through the same recipe first.
+- **History rewritten before publication (2026-09-01)**: one author
+  identity, machine dumps and the personal audit purged from every commit,
+  hostname and user paths replaced, retired framework trees dropped. Verified
+  by a clean build and the full CI suite before the first push.
 - **Serilog replaced by NLog 6.2 (BSD-3-Clause) 2026-09-01**: the nuspec
   audit found Serilog and its sinks are Apache-2.0, which FSF treats as
   incompatible with GPLv2, and the project is v2-only. `LoggingSetup`
@@ -138,11 +136,8 @@ prep here.
   (GHSA-xrw6-gwf8-vvr9, Linux D-Bus only but restored regardless); pinned to
   0.21.3 via CentralPackageTransitivePinningEnabled. `dotnet list package
   --vulnerable --include-transitive` is clean; rerun it before each release.
-- **PUBLISHED 2026-09-01**: `github.com/No-More-Secrets/thisismypc` carries
-  the scrubbed history and is now `origin`. The former private repo
-  samboland/thisismypc is frozen as an archive (remote `private-archive`); its
-  unscrubbed history is also backed up locally. `AppConstants.UpdateUrl`
-  points at the public repo.
+- **PUBLISHED 2026-09-01** at `github.com/No-More-Secrets/thisismypc`;
+  `AppConstants.UpdateUrl` points there.
 
 ## Binary hardening: DONE 2026-08-31
 

@@ -29,13 +29,10 @@ Full detail, ordering rationale, and per-module deferred lists:
 Feature work is complete (all modules plus the UI/UX chapter; history in the
 backlog).
 
-1. **Release prep (current)**. Remaining hard blockers, all Sam-gated or
-   publication-day: GPG release-key ceremony (docs/release/update-signing.md),
-   git-history scrub before the repo goes public (backlog: publication
-   hygiene), UpdateUrl org/repo name (docs/release/packaging.md; publisher
-   is NMS, short for No More Secrets, LLC, settled 2026-09-01). Process: OV cert delivery
-   (purchased 2026-09-01, token due about 2026-09-08), Defender false-positive submission, VirusTotal CI canary, winget
-   distribution.
+1. **Release prep (current)**. Remaining hard blocker, Sam-gated: GPG
+   release-key ceremony (docs/release/update-signing.md). Process: OV cert
+   delivery (purchased 2026-09-01, token due about 2026-09-08), Defender
+   false-positive submission, VirusTotal CI canary, winget distribution.
 2. **Post-release menu**: retired BMAD epics (ASUS/ATKACPI, OpenRGB, drivers,
    network/firewall, profiles, WU remainder) and install-engine leftovers
    (OneDrive/Edge removal, OEM tools, progress/cancel).
@@ -177,5 +174,5 @@ looks close.
   scanning). `Modules.Shell` is the reference implementation for custom-view modules;
   `Modules.Annoyances` is the reference card-renderer consumer.
 - **Session 0 service** (`ThisIsMyPC.Service` + `ThisIsMyPC.Ipc.Contracts`): GPLv2 in
-  this repo (docs/why-gplv2.md; there is no private repo). IPC is the hardened named
+  this repo (docs/why-gplv2.md; one repo holds everything). IPC is the hardened named
   pipe from 28-1; new message types extend the envelope, never change it.
