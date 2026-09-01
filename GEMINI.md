@@ -1,4 +1,6 @@
-# CLAUDE.md
+<!-- GENERATED from CLAUDE.md by tools/sync-agent-guides.ps1. Do not edit above the marker; edit CLAUDE.md and rerun the script. -->
+
+# GEMINI.md
 
 Operating guidance for Claude Code in this repo. **How to DO things only.** Detailed plans
 and status live in `docs/planning/` (`refinement-backlog.md` is the master list); design
@@ -174,3 +176,13 @@ looks close.
 - **Session 0 service** (`ThisIsMyPC.Service` + `ThisIsMyPC.Ipc.Contracts`): GPLv2 in
   this repo (docs/why-gplv2.md; there is no private repo). IPC is the hardened named
   pipe from 28-1; new message types extend the envelope, never change it.
+
+<!-- vendor-specific: everything below this line is kept by tools/sync-agent-guides.ps1; everything above is generated from CLAUDE.md -->
+
+## Antigravity notes
+
+- Where the master says `/code-review`, run a fresh-context review with a new
+  session or a review agent; the bar is the same: findings fixed before commit.
+- Where the master says to read screenshots as images, open the PNGs under
+  `artifacts/ui-shots/` with your image input; never verify UI from the XAML.
+- The `gh` role check in "How work runs here" applies unchanged.

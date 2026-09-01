@@ -16,6 +16,10 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      - name: Agent guide parity
+        run: pwsh tools/sync-agent-guides.ps1 -Check
+        # AGENTS.md and GEMINI.md are generated from CLAUDE.md; a stale twin fails here.
+
       - name: Restore
         run: dotnet restore
 

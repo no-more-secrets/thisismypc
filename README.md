@@ -6,9 +6,11 @@ Autoruns, ShellExView, O&O ShutUp10, winutil, and UniGetUI, with a state capture
 telemetry and no account, and it covers an entire Windows install.
 
 This repository is developed by AI coding agents (Claude Code) under the human owner (Sam Boland). This file and everything under `docs/` are AI-written and checked
-against the code. If you are reading this through a non-Claude agent, the
-operating rules it needs are in [CLAUDE.md](CLAUDE.md); the doc index with
-what each file is for is [docs/README.md](docs/README.md).
+against the code. The operating rules an agent needs are in
+[CLAUDE.md](CLAUDE.md), the master copy; Codex reads the same rules from
+[AGENTS.md](AGENTS.md) and Antigravity from [GEMINI.md](GEMINI.md), both
+generated from the master with a vendor appendix. The doc index with what
+each file is for is [docs/README.md](docs/README.md).
 
 ## What it does
 
