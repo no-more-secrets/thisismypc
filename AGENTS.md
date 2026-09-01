@@ -75,9 +75,12 @@ contributor session raises them in the issue.
 
 **This file is the master copy.** `AGENTS.md` (Codex) and `GEMINI.md`
 (Antigravity) are generated twins: the same body, plus a vendor-specific
-appendix below a marker line. Edit only this file, then run
-`tools/sync-agent-guides.ps1`; CI fails on a stale twin. Vendor-specific notes
-go below the marker in the twin, never above it.
+appendix below a marker line. Edit only this file. The pre-commit hook in
+`tools/git-hooks` regenerates the twins on any commit that touches one of the
+three files; enable it once per clone with `tools/install-git-hooks.ps1`
+(it sets `core.hooksPath`). Without the hook, run
+`tools/sync-agent-guides.ps1` by hand; CI fails on a stale twin either way.
+Vendor-specific notes go below the marker in the twin, never above it.
 
 ## Build & test
 

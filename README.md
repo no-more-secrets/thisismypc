@@ -110,7 +110,13 @@ it opens the repo; that file is the authority if the two ever differ.
 ```
 gh repo fork No-More-Secrets/thisismypc --clone    # contributor
 git clone https://github.com/No-More-Secrets/thisismypc.git   # read-only
+tools\install-git-hooks.ps1                        # once per clone
 ```
+
+The hook install points git at `tools/git-hooks`. Its pre-commit hook keeps
+`AGENTS.md` and `GEMINI.md` generated from `CLAUDE.md`, the master copy of
+the agent rules; CI rejects a stale twin, so skipping the hook only moves the
+failure later.
 
 ### Build and test
 

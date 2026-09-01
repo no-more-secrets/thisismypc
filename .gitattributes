@@ -1,1 +1,2 @@
 * text=auto eol=crlf
+tools/git-hooks/* text eol=lf
