@@ -29,6 +29,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IPendingChangesService _pendingChangesService;
     private readonly IPendingActionsService? _pendingActionsService;
     private readonly Core.Packages.IWingetService? _wingetService;
+    private readonly Services.AutorunEnrichment? _autorunEnrichment;
     private readonly IChangeHistoryService _changeHistoryService;
     private readonly IRegistryService _registryService;
     private readonly IPowerService? _powerService;
@@ -322,9 +323,11 @@ public partial class MainWindowViewModel : ViewModelBase
         Services.OwnerModeService? ownerModeService = null,
         Ipc.Contracts.IIpcClient? ipcClient = null,
         IPendingActionsService? pendingActionsService = null,
-        Core.Packages.IWingetService? wingetService = null)
+        Core.Packages.IWingetService? wingetService = null,
+        Services.AutorunEnrichment? autorunEnrichment = null)
     {
         _wingetService = wingetService;
+        _autorunEnrichment = autorunEnrichment;
         _pendingActionsService = pendingActionsService;
         _ownerModeService = ownerModeService;
         _ipcClient = ipcClient;
@@ -534,7 +537,7 @@ public partial class MainWindowViewModel : ViewModelBase
                     {
                         ContentTitle = current.Module.Info.Name;
                         ContentDescription = current.Module.Info.Description;
-                        CurrentContent = new StartupViewModel(startupData, _pendingChangesService);
+                        CurrentContent = new StartupViewModel(startupData, _pendingChangesService, _autorunEnrichment);
                     }
                     else
                     {

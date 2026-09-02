@@ -332,6 +332,10 @@ sandbox contention with a parallel test writing the same HKCU sandbox area.
 Predates 2026-08-31. Fix: unique per-test sandbox key or a collection fixture
 serializing the sandbox users.
 
+`ChangeHistoryServiceTests.RevertChangeAsync_SwapsValuesAndCallsRevertFunc`
+failed once in the full CI-safe run on 2026-09-02 and passed alone straight
+after; not touched by that day's changes. Watch for a repeat.
+
 ## Autoruns page: SHIPPED 2026-09-02 (Startup & Services is now this one page)
 
 Sam's read of Autoruns: every location is a key whose values or subkeys are
@@ -349,7 +353,13 @@ fakes did not change); `IStartupFolderService` gained `EnumerateDisabled`
 and `Move`. The page is laid out like Autoruns: a tab per category (the strip
 wraps to two rows), "Hide Microsoft entries" above it, and a search box
 that swaps the tabs for one list across every category while it has text.
-Row lists are ListBoxes, so only the visible rows are built. Re-registered
+Row lists are ListBoxes, so only the visible rows are built. Rows
+look like Autoruns' columns (icon, name, description, "(Verified)" signer,
+path, file date, location headers with the key's write time, yellow for a
+missing file, red for no verified signer); icons and Authenticode results
+(embedded or catalog) load in the background; "Hide Windows entries" is on
+by default like Autoruns, which is why Autoruns' Explorer, tasks, and
+services tabs look shorter. Re-registered
 copies (a live item beside its parked twin, which Autoruns lists twice and
 refuses to touch) collapse into one flagged row; switching it off purges
 the copy with its snapshot in the descriptor, so undo restores it. The old Startup, Scheduled Tasks, and Services tabs were

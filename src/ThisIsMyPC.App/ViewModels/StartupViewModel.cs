@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using ThisIsMyPC.App.Services;
 using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Modules.Startup.Models;
 
@@ -6,35 +7,48 @@ namespace ThisIsMyPC.App.ViewModels;
 
 /// <summary>
 /// Startup &amp; Services: the Autoruns inventory as Autoruns lays it out, one
-/// tab per category. Typing in the filter box replaces the tabs with one
-/// list across every category, grouped under category headers; clearing it
-/// brings the tabs back. "Hide Microsoft entries" applies to both.
+/// tab per category, rows grouped under their location with the key's or
+/// folder's write time. Typing in the filter box replaces the tabs with one
+/// list across every category. "Hide Windows entries" (on, as in Autoruns)
+/// and "Hide Microsoft entries" apply to both. Icons and signers load in the
+/// background after the page is up; the Windows filter is re-applied once
+/// they are known.
 /// </summary>
 public sealed partial class StartupViewModel : ObservableObject, IDisposable
 {
     private readonly List<AutorunItemViewModel> _allAutoruns = [];
+    private readonly CancellationTokenSource _enrichment = new();
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsSearching))]
     private string _autorunFilterText = string.Empty;
 
     [ObservableProperty]
+    private bool _hideWindowsEntries = true;
+
+    [ObservableProperty]
     private bool _hideMicrosoftAutoruns;
 
-    /// <summary>Header rows (AutorunSearchHeader) and item rows, in category order, while searching.</summary>
+    /// <summary>Header rows (category, location) and item rows, in category order, while searching.</summary>
     [ObservableProperty]
     private IReadOnlyList<object> _searchResults = [];
 
     [ObservableProperty]
     private string _searchSummary = string.Empty;
 
-    public StartupViewModel(StartupScanData scanData, IPendingChangesService pendingChangesService)
+    [ObservableProperty]
+    private bool _isCheckingSignatures;
+
+    public StartupViewModel(StartupScanData scanData, IPendingChangesService pendingChangesService, AutorunEnrichment? enrichment = null)
     {
         ArgumentNullException.ThrowIfNull(scanData);
         _allAutoruns.AddRange(scanData.Autoruns.Select(a => new AutorunItemViewModel(a, pendingChangesService)));
         AutorunsScanError = scanData.AutorunsScanError ?? scanData.ScheduledTasksScanError ?? scanData.ServicesScanError;
         Tabs = [.. Enum.GetValues<AutorunCategory>().Select(c => new AutorunTabViewModel(c))];
         RebuildTabs();
+
+        if (enrichment is not null && (enrichment.HasIcons || enrichment.HasSignatures))
+            _ = EnrichAllAsync(enrichment);
     }
 
     public string? AutorunsScanError { get; }
@@ -46,6 +60,12 @@ public sealed partial class StartupViewModel : ObservableObject, IDisposable
 
     partial void OnAutorunFilterTextChanged(string value) => RebuildSearch();
 
+    partial void OnHideWindowsEntriesChanged(bool value)
+    {
+        RebuildTabs();
+        RebuildSearch();
+    }
+
     partial void OnHideMicrosoftAutorunsChanged(bool value)
     {
         RebuildTabs();
@@ -55,15 +75,28 @@ public sealed partial class StartupViewModel : ObservableObject, IDisposable
     private IEnumerable<AutorunItemViewModel> Visible(AutorunCategory category)
         => _allAutoruns
             .Where(a => a.Entry.Category == category)
-            .Where(a => !HideMicrosoftAutoruns || !a.IsMicrosoft)
-            .OrderBy(a => a.Name, StringComparer.OrdinalIgnoreCase);
+            .Where(a => !HideWindowsEntries || !a.IsWindowsEntry)
+            .Where(a => !HideMicrosoftAutoruns || !a.IsMicrosoft);
+
+    /// <summary>Rows grouped under their location, locations in first-seen (catalog) order, rows by name.</summary>
+    private static List<object> WithLocationHeaders(IEnumerable<AutorunItemViewModel> rows)
+    {
+        var result = new List<object>();
+        foreach (var group in rows.GroupBy(r => r.Entry.Location, StringComparer.OrdinalIgnoreCase))
+        {
+            result.Add(new AutorunLocationHeader(group.Key, group.First().Entry.LocationTimestamp));
+            result.AddRange(group.OrderBy(r => r.Name, StringComparer.OrdinalIgnoreCase));
+        }
+        return result;
+    }
 
     private void RebuildTabs()
     {
         foreach (var tab in Tabs)
         {
             var total = _allAutoruns.Count(a => a.Entry.Category == tab.Category);
-            tab.Replace(Visible(tab.Category).ToList(), total);
+            var visible = Visible(tab.Category).ToList();
+            tab.Replace(WithLocationHeaders(visible), visible.Count, total);
         }
     }
 
@@ -85,7 +118,7 @@ public sealed partial class StartupViewModel : ObservableObject, IDisposable
             if (hits.Count == 0)
                 continue;
             rows.Add(new AutorunSearchHeader($"{AutorunEntry.CategoryName(category)} ({hits.Count})"));
-            rows.AddRange(hits);
+            rows.AddRange(WithLocationHeaders(hits));
             matches += hits.Count;
         }
         SearchResults = rows;
@@ -97,8 +130,39 @@ public sealed partial class StartupViewModel : ObservableObject, IDisposable
         };
     }
 
+    /// <summary>Icons and signers for every row, then one rebuild so the Windows filter sees the signers.</summary>
+    private async Task EnrichAllAsync(AutorunEnrichment enrichment)
+    {
+        IsCheckingSignatures = enrichment.HasSignatures;
+        try
+        {
+            var token = _enrichment.Token;
+            foreach (var row in _allAutoruns)
+            {
+                if (token.IsCancellationRequested)
+                    return;
+                try
+                {
+                    await row.EnrichAsync(enrichment, token).ConfigureAwait(true);
+                }
+                catch (OperationCanceledException)
+                {
+                    return;
+                }
+            }
+            RebuildTabs();
+            RebuildSearch();
+        }
+        finally
+        {
+            IsCheckingSignatures = false;
+        }
+    }
+
     public void Dispose()
     {
+        _enrichment.Cancel();
+        _enrichment.Dispose();
         foreach (var item in _allAutoruns)
             item.Dispose();
     }

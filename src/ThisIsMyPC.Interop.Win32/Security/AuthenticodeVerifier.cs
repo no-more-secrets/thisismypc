@@ -79,7 +79,8 @@ public static partial class AuthenticodeVerifier
     private const uint WTD_STATEACTION_CLOSE = 2;
     private const uint WTD_CACHE_ONLY_URL_RETRIEVAL = 0x00001000;
 
-    private static unsafe int WinVerifyTrustFile(string filePath)
+    /// <summary>Raw WinVerifyTrust result for an embedded signature: 0 verified, TRUST_E_NOSIGNATURE for none, other codes for a bad chain.</summary>
+    internal static unsafe int WinVerifyTrustFile(string filePath)
     {
         fixed (char* pathPtr = filePath)
         {

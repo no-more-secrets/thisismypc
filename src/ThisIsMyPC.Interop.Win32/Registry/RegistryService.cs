@@ -5,7 +5,7 @@ using ThisIsMyPC.Core.Services;
 
 namespace ThisIsMyPC.Interop.Win32.Registry;
 
-public sealed class RegistryService : IRegistryService
+public sealed partial class RegistryService : IRegistryService
 {
     public OperationResult<int> ReadDWord(string keyPath, string valueName) =>
         Execute(() => ReadValueCore(keyPath, valueName, raw =>
@@ -185,6 +185,30 @@ public sealed class RegistryService : IRegistryService
                 _ => WriteValueCore(keyPath, valueName, value.Data, RegistryValueKind.String),
             };
         }, keyPath);
+
+    /// <summary>RegQueryInfoKeyW's last-write FILETIME, as local time; null when the key is absent or unreadable.</summary>
+    public DateTime? GetLastWriteTime(string keyPath)
+    {
+        try
+        {
+            var (root, subKeyPath) = ParseKeyPath(keyPath);
+            using var key = root.OpenSubKey(subKeyPath, writable: false);
+            if (key is null)
+                return null;
+            var status = RegQueryInfoKeyW(key.Handle.DangerousGetHandle(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, out var fileTime);
+            return status == 0 ? DateTime.FromFileTime(fileTime) : null;
+        }
+        catch (Exception ex) when (ex is ArgumentException or SecurityException or UnauthorizedAccessException or IOException)
+        {
+            return null;
+        }
+    }
+
+    [System.Runtime.InteropServices.LibraryImport("advapi32.dll")]
+    [System.Runtime.InteropServices.DefaultDllImportSearchPaths(System.Runtime.InteropServices.DllImportSearchPath.System32)]
+    private static partial int RegQueryInfoKeyW(nint hKey, nint lpClass, nint lpcchClass, nint lpReserved, nint lpcSubKeys,
+        nint lpcbMaxSubKeyLen, nint lpcbMaxClassLen, nint lpcValues, nint lpcbMaxValueNameLen, nint lpcbMaxValueLen,
+        nint lpcbSecurityDescriptor, out long lpftLastWriteTime);
 
     public OperationResult<bool> CreateKey(string keyPath) =>
         Execute<bool>(() =>

@@ -1,5 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using ThisIsMyPC.App.Services;
+using ThisIsMyPC.App.UiTests.Fakes;
 using ThisIsMyPC.App.ViewModels;
 using ThisIsMyPC.App.Views;
 using ThisIsMyPC.Core.Services;
@@ -11,13 +13,17 @@ namespace ThisIsMyPC.App.UiTests;
 
 /// <summary>
 /// The Startup &amp; Services page (the Autoruns inventory) with fake scan data:
-/// a tab per category, a switch that stages a change, the Microsoft filter,
-/// and the search mode that replaces the tabs with one list.
+/// a tab per category with location headers, icons and signers arriving after
+/// load, Autoruns' row colors, a switch that stages a change, the Windows and
+/// Microsoft filters, and the search mode that replaces the tabs with one list.
 /// </summary>
 public class AutorunsTabShotTests
 {
+    private static readonly DateTime Stamp = new(2026, 8, 3, 16, 46, 16);
+
     private static AutorunEntry Entry(AutorunCategory category, AutorunItemKind kind, string name, string location, string data,
-        string? image = null, string? description = null, string? publisher = null, bool enabled = true, string? note = null) => new()
+        string? image = null, string? description = null, string? publisher = null, bool enabled = true, string? note = null,
+        bool exists = true) => new()
     {
         Category = category,
         Kind = kind,
@@ -29,6 +35,9 @@ public class AutorunsTabShotTests
         Publisher = publisher,
         IsEnabled = enabled,
         Note = note,
+        FileExists = exists,
+        Timestamp = exists && image is not null ? Stamp : null,
+        LocationTimestamp = Stamp.AddDays(30),
     };
 
     private static StartupScanData ScanData() => new([], [])
@@ -40,6 +49,12 @@ public class AutorunsTabShotTests
             Entry(AutorunCategory.Logon, AutorunItemKind.RegistryValue, "SecurityHealth", StartupScanner.MachineRunKey,
                 @"%windir%\system32\SecurityHealthSystray.exe", @"C:\Windows\system32\SecurityHealthSystray.exe",
                 "Windows Security notification icon", "Microsoft Corporation", note: "Off in Task Manager"),
+            Entry(AutorunCategory.Logon, AutorunItemKind.RegistryValue, "Twinkle Tray", StartupScanner.UserRunKey,
+                @"C:\Users\me\AppData\Local\Programs\twinkle-tray\Twinkle Tray.exe", @"C:\Users\me\AppData\Local\Programs\twinkle-tray\Twinkle Tray.exe",
+                "Twinkle Tray", "Xander Frangos"),
+            Entry(AutorunCategory.Logon, AutorunItemKind.RegistryValue, "com.squirrel.splice.Splice", StartupScanner.UserRunKey,
+                @"C:\Users\me\AppData\Local\splice\app-4.2.77773\Splice.exe", @"C:\Users\me\AppData\Local\splice\app-4.2.77773\Splice.exe",
+                exists: false),
             Entry(AutorunCategory.Logon, AutorunItemKind.StartupFile, "Old Tool.lnk",
                 @"C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup", @"C:\ProgramData\...\AutorunsDisabled\Old Tool.lnk",
                 @"C:\Tools\old.exe", "Old Tool", "Acme Inc.", enabled: false),
@@ -61,7 +76,8 @@ public class AutorunsTabShotTests
     private static (StartupViewModel ViewModel, PendingChangesService Queue) Build()
     {
         var queue = new PendingChangesService();
-        return (new StartupViewModel(ScanData(), queue), queue);
+        var enrichment = new AutorunEnrichment(new UiFakeFileIconService(), new UiFakeAuthenticodeService());
+        return (new StartupViewModel(ScanData(), queue, enrichment), queue);
     }
 
     private static void ClickTab(UiSession session, string name)
@@ -70,20 +86,32 @@ public class AutorunsTabShotTests
     private static ToggleSwitch Switch(UiSession session, string name)
         => session.Find<ToggleSwitch>(t => t.DataContext is AutorunItemViewModel { Name: var n } && n == name);
 
+    private static Task WaitForSignersAsync(UiSession session, StartupViewModel viewModel)
+        => session.WaitForAsync(() => !viewModel.IsCheckingSignatures, what: "icons and signers to load");
+
     [AvaloniaFact]
-    public void LogonTab_OpensFirstAndStagesATogglePendingChange()
+    public async Task LogonTab_ShowsLocationsIconsSignersAndColorsAndStagesAToggle()
     {
         var (viewModel, queue) = Build();
         using var session = UiSession.ForView(new StartupView(), viewModel, "autoruns-tab");
+        await WaitForSignersAsync(session, viewModel);
 
         session.Screenshot("logon");
-        Assert.False(session.IsTextVisible("Everything"));
-        Assert.True(session.IsTextVisible("Logon (4)"));
-        Assert.True(session.IsTextVisible("Explorer (1)"));
-        Assert.True(session.IsTextVisible("Off in Task Manager"));
+        // Hide Windows entries is on by default, as in Autoruns: SecurityHealth is Windows.
+        Assert.True(session.IsTextVisible("Logon (5 of 6)"));
+        Assert.False(session.IsTextVisible("SecurityHealth"));
+        Assert.True(session.IsTextVisible(StartupScanner.MachineRunKey));
+        Assert.True(session.IsTextVisible(StartupScanner.UserRunKey));
+        Assert.True(session.IsTextVisible("(Verified) Acme Inc."));
+        Assert.True(session.IsTextVisible("(Not verified) Xander Frangos"));
+        Assert.True(session.IsTextVisible(@"File not found: C:\Users\me\AppData\Local\splice\app-4.2.77773\Splice.exe"));
         Assert.True(session.IsTextVisible("Re-registered itself after being switched off"));
-        Assert.True(session.IsTextVisible("Old Tool.lnk"));
-        Assert.False(session.IsTextVisible("acmefilt"));
+        Assert.True(session.IsTextVisible(AutorunItemViewModel.FormatTimestamp(Stamp)));
+
+        var acmeRow = viewModel.Tabs[0].Items.OfType<AutorunItemViewModel>().First(r => r.Name == "Acme Updater");
+        Assert.NotNull(acmeRow.Icon);
+        Assert.True(viewModel.Tabs[0].Items.OfType<AutorunItemViewModel>().First(r => r.Name == "Twinkle Tray").IsUnverified);
+        Assert.True(viewModel.Tabs[0].Items.OfType<AutorunItemViewModel>().First(r => r.Name == "com.squirrel.splice.Splice").IsMissing);
 
         var acme = Switch(session, "Acme Updater");
         session.Click(acme);
@@ -97,22 +125,33 @@ public class AutorunsTabShotTests
         Assert.StartsWith(AutorunChangeFactory.SettingIdPrefix, change.SettingId, StringComparison.Ordinal);
         Assert.True(session.IsTextVisible("Pending"));
 
-        // Switching back on drops the staged group instead of stacking a second one.
         session.Click(acme);
         Assert.Empty(queue.PendingGroups);
     }
 
     [AvaloniaFact]
-    public void CategoryTabs_AndTheMicrosoftFilter()
+    public async Task WindowsAndMicrosoftFilters_AndCategoryTabs()
     {
         var (viewModel, _) = Build();
         using var session = UiSession.ForView(new StartupView(), viewModel, "autoruns-tab");
+        await WaitForSignersAsync(session, viewModel);
+
+        Assert.True(session.IsTextVisible("Services (0 of 1)"));
+        session.ClickText("Hide Windows entries");
+        Assert.False(viewModel.HideWindowsEntries);
+        Assert.True(session.IsTextVisible("Logon (6)"));
+        Assert.True(session.IsTextVisible("SecurityHealth"));
+        Assert.True(session.IsTextVisible("Off in Task Manager"));
+
+        ClickTab(session, "Services");
+        session.Screenshot("services-tab-windows-shown");
+        Assert.True(session.IsTextVisible("Spooler"));
+        Assert.True(session.IsTextVisible("(Verified) Microsoft Windows"));
 
         ClickTab(session, "Drivers");
         session.Screenshot("drivers-tab");
         Assert.True(session.IsTextVisible("acmefilt"));
         Assert.True(session.IsTextVisible("Boot start"));
-        Assert.False(session.IsTextVisible("Acme Updater"));
 
         ClickTab(session, "Font Drivers");
         Assert.True(session.IsTextVisible("Nothing in this category"));
@@ -121,16 +160,16 @@ public class AutorunsTabShotTests
         session.ClickText("Hide Microsoft entries");
         session.Screenshot("logon-tab-hide-microsoft");
         Assert.True(viewModel.HideMicrosoftAutoruns);
-        Assert.True(session.IsTextVisible("Logon (3 of 4)"));
-        Assert.True(session.IsTextVisible("Services (0 of 1)"));
+        Assert.True(session.IsTextVisible("Logon (5 of 6)"));
         Assert.False(session.IsTextVisible("SecurityHealth"));
     }
 
     [AvaloniaFact]
-    public void Search_ReplacesTheTabsWithOneListAcrossEveryCategory()
+    public async Task Search_ReplacesTheTabsWithOneListAcrossEveryCategory()
     {
         var (viewModel, _) = Build();
         using var session = UiSession.ForView(new StartupView(), viewModel, "autoruns-tab");
+        await WaitForSignersAsync(session, viewModel);
 
         var box = session.Find<TextBox>(t => t.Classes.Contains("filter"));
         session.Type(box, "acme");
@@ -145,7 +184,6 @@ public class AutorunsTabShotTests
         Assert.True(session.IsTextVisible("acmefilt"));
         Assert.False(session.IsTextVisible("7-Zip"));
 
-        // A switch in the search list stages the same way.
         session.Click(Switch(session, "acmefilt"));
         Assert.True(session.IsTextVisible("Pending"));
 
@@ -155,7 +193,6 @@ public class AutorunsTabShotTests
 
         viewModel.AutorunFilterText = string.Empty;
         session.Pump();
-        session.Screenshot("search-cleared");
         Assert.False(viewModel.IsSearching);
         Assert.True(session.IsTextVisible("Explorer (1)"));
     }

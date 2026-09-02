@@ -56,6 +56,9 @@ public interface IRegistryService
         };
     }
 
+    /// <summary>When the key was last written (local time); null when unknown or unsupported (the default).</summary>
+    DateTime? GetLastWriteTime(string keyPath) => null;
+
     /// <summary>Creates an empty key (no-op when present). The default writes and removes a marker value.</summary>
     OperationResult<bool> CreateKey(string keyPath)
     {

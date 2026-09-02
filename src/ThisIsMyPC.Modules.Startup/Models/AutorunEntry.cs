@@ -60,6 +60,15 @@ public sealed record AutorunEntry
     public string? Publisher { get; init; }
     public required bool IsEnabled { get; init; }
 
+    /// <summary>False when <see cref="ImagePath"/> names a file that is not there (Autoruns' yellow rows).</summary>
+    public bool FileExists { get; init; } = true;
+
+    /// <summary>The image file's last write time, local.</summary>
+    public DateTime? Timestamp { get; init; }
+
+    /// <summary>When the location (registry key or folder) was last written, local; the group header's date.</summary>
+    public DateTime? LocationTimestamp { get; init; }
+
     /// <summary>Extra state worth a glance: "Off in Task Manager", "Boot start", and the like.</summary>
     public string? Note { get; init; }
 

@@ -78,7 +78,58 @@ public sealed class AutorunsScanner
         }
 
         ScanServices(entries, services);
-        return CollapseReRegistered(entries);
+        return AddFileFacts(CollapseReRegistered(entries));
+    }
+
+    /// <summary>Whether the image file is there, when it was last written, and when its location key or folder was.</summary>
+    private List<AutorunEntry> AddFileFacts(List<AutorunEntry> entries)
+    {
+        var locationTimes = new Dictionary<string, DateTime?>(StringComparer.OrdinalIgnoreCase);
+        for (var i = 0; i < entries.Count; i++)
+        {
+            var entry = entries[i];
+            var exists = true;
+            DateTime? timestamp = null;
+            if (entry.ImagePath is { } image)
+            {
+                try
+                {
+                    exists = File.Exists(image);
+                    if (exists)
+                        timestamp = File.GetLastWriteTime(image);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
+                {
+                    exists = false;
+                }
+            }
+
+            if (!locationTimes.TryGetValue(entry.Location, out var locationTime))
+            {
+                locationTime = LocationTime(entry.Kind, entry.Location);
+                locationTimes[entry.Location] = locationTime;
+            }
+
+            entries[i] = entry with { FileExists = exists, Timestamp = timestamp, LocationTimestamp = locationTime };
+        }
+        return entries;
+    }
+
+    private DateTime? LocationTime(AutorunItemKind kind, string location)
+    {
+        try
+        {
+            return kind switch
+            {
+                AutorunItemKind.StartupFile => Directory.Exists(location) ? Directory.GetLastWriteTime(location) : null,
+                AutorunItemKind.ScheduledTask => null,
+                _ => _registry.GetLastWriteTime(location),
+            };
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            return null;
+        }
     }
 
     /// <summary>

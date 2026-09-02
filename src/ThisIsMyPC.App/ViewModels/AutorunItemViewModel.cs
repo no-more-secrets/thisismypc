@@ -1,7 +1,11 @@
-using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Globalization;
+using Avalonia;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
+using ThisIsMyPC.App.Services;
 using ThisIsMyPC.Core.Changes;
 using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Modules.Startup.Changes;
@@ -12,10 +16,16 @@ namespace ThisIsMyPC.App.ViewModels;
 /// <summary>A category header row inside the search results list.</summary>
 public sealed record AutorunSearchHeader(string Text);
 
+/// <summary>A location header row: the registry key or folder, and when it was last written, the way Autoruns heads each group.</summary>
+public sealed record AutorunLocationHeader(string Location, DateTime? Timestamp)
+{
+    public string TimestampText => AutorunItemViewModel.FormatTimestamp(Timestamp);
+}
+
 /// <summary>
-/// One tab of the page, the way Autoruns has one per category. Items is
-/// swapped whole when the Microsoft filter changes, so the virtualized list
-/// sees one reset instead of one event per row.
+/// One tab of the page, the way Autoruns has one per category. Items holds
+/// location headers and rows, swapped whole when a filter changes so the
+/// virtualized list sees one reset instead of one event per row.
 /// </summary>
 public sealed partial class AutorunTabViewModel : ObservableObject
 {
@@ -30,7 +40,7 @@ public sealed partial class AutorunTabViewModel : ObservableObject
     public string Name { get; }
 
     [ObservableProperty]
-    private IReadOnlyList<AutorunItemViewModel> _items = [];
+    private IReadOnlyList<object> _items = [];
 
     [ObservableProperty]
     private string _header;
@@ -38,11 +48,11 @@ public sealed partial class AutorunTabViewModel : ObservableObject
     [ObservableProperty]
     private bool _hasItems;
 
-    public void Replace(IReadOnlyList<AutorunItemViewModel> items, int total)
+    public void Replace(IReadOnlyList<object> items, int shown, int total)
     {
         Items = items;
-        Header = CountLabel(Name, items.Count, total);
-        HasItems = items.Count > 0;
+        Header = CountLabel(Name, shown, total);
+        HasItems = shown > 0;
     }
 
     public static string CountLabel(string name, int shown, int total)
@@ -52,11 +62,13 @@ public sealed partial class AutorunTabViewModel : ObservableObject
 /// <summary>
 /// One Autoruns row. The switch stages an enable or disable through the
 /// pending pipeline; the baseline is the scan-time state, and the row follows
-/// the queue the way the Startup rows do (apply keeps the switch, discard
-/// snaps it back).
+/// the queue (apply keeps the switch, discard snaps it back). Icon and signer
+/// arrive later from <see cref="AutorunEnrichment"/>.
 /// </summary>
 public sealed partial class AutorunItemViewModel : ObservableObject, IDisposable
 {
+    private static readonly string WindowsDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
+
     private readonly IPendingChangesService _pendingChangesService;
     private bool _liveIsEnabled;
     private string? _stagedGroupId;
@@ -70,6 +82,13 @@ public sealed partial class AutorunItemViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private bool _hasPendingChange;
+
+    [ObservableProperty]
+    private Bitmap? _icon;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PublisherText), nameof(IsUnverified), nameof(IsWindowsEntry))]
+    private SignatureInfo? _signature;
 
     public AutorunItemViewModel(AutorunEntry entry, IPendingChangesService pendingChangesService)
     {
@@ -108,18 +127,36 @@ public sealed partial class AutorunItemViewModel : ObservableObject, IDisposable
     public string CategoryName => AutorunEntry.CategoryName(Entry.Category);
     public string DescriptionText => Entry.Description ?? string.Empty;
     public bool HasDescription => !string.IsNullOrEmpty(Entry.Description);
-    public string PublisherText => Entry.Publisher ?? "Unknown publisher";
-    public string ImagePathText => Entry.ImagePath ?? Entry.Data;
-
-    /// <summary>A task's data is its own path; showing it twice says nothing.</summary>
-    public bool HasImagePath => !string.Equals(ImagePathText, LocationText, StringComparison.OrdinalIgnoreCase);
     public string NoteText => Entry.Note ?? string.Empty;
     public bool HasNote => !string.IsNullOrEmpty(Entry.Note);
     public bool HasPlainNote => HasNote && !Entry.IsReRegistered;
-
-    /// <summary>The program put itself back after the user switched it off; the note shows in the warning color.</summary>
     public bool IsReRegistered => Entry.IsReRegistered;
     public string StateText => IsEnabled ? "Enabled" : "Disabled";
+    public bool CanToggle => Entry.CanToggle;
+
+    /// <summary>Autoruns' yellow row: the image file is not there.</summary>
+    public bool IsMissing => !Entry.FileExists;
+
+    /// <summary>Autoruns' red row: the file is there but nothing verified signs it (checked, and unsigned or a bad chain).</summary>
+    public bool IsUnverified => Entry.FileExists && Signature is { State: SignatureState.Unsigned or SignatureState.NotVerified };
+
+    /// <summary>"(Verified) Adobe Inc." once checked; the version-resource company until then.</summary>
+    public string PublisherText => Signature switch
+    {
+        { State: SignatureState.Verified, Signer: { } signer } => $"(Verified) {signer}",
+        { State: SignatureState.NotVerified } s => $"(Not verified) {s.Signer ?? Entry.Publisher ?? "Unknown publisher"}",
+        _ => Entry.Publisher ?? "Unknown publisher",
+    };
+
+    public string ImagePathText => IsMissing && Entry.ImagePath is { } missing
+        ? $"File not found: {missing}"
+        : Entry.ImagePath ?? Entry.Data;
+
+    /// <summary>A task's data is its own path; showing it twice says nothing.</summary>
+    public bool HasImagePath => !string.Equals(ImagePathText, LocationText, StringComparison.OrdinalIgnoreCase);
+
+    public string TimestampText => FormatTimestamp(Entry.Timestamp);
+    public bool HasTimestamp => Entry.Timestamp is not null;
 
     /// <summary>Where the item is registered: key and value, folder and file, task path, or service key.</summary>
     public string LocationText => Entry.Kind switch
@@ -128,9 +165,12 @@ public sealed partial class AutorunItemViewModel : ObservableObject, IDisposable
         _ => $@"{Entry.Location}\{Entry.Name}",
     };
 
-    public bool CanToggle => Entry.CanToggle;
+    public bool IsMicrosoft => Entry.Publisher?.Contains("Microsoft", StringComparison.OrdinalIgnoreCase) == true
+        || Signature?.Signer?.Contains("Microsoft", StringComparison.OrdinalIgnoreCase) == true;
 
-    public bool IsMicrosoft => Entry.Publisher?.Contains("Microsoft", StringComparison.OrdinalIgnoreCase) == true;
+    /// <summary>Part of Windows itself: signed by "Microsoft Windows", or Microsoft's and living under the Windows folder.</summary>
+    public bool IsWindowsEntry => Signature is { State: SignatureState.Verified, Signer: { } signer } && signer.Contains("Microsoft Windows", StringComparison.OrdinalIgnoreCase)
+        || (Signature is null && IsMicrosoft && Entry.ImagePath is { } image && image.StartsWith(WindowsDirectory, StringComparison.OrdinalIgnoreCase));
 
     /// <summary>Text the filter box matches against.</summary>
     public bool Matches(string filter)
@@ -139,6 +179,44 @@ public sealed partial class AutorunItemViewModel : ObservableObject, IDisposable
         || PublisherText.Contains(filter, StringComparison.OrdinalIgnoreCase)
         || ImagePathText.Contains(filter, StringComparison.OrdinalIgnoreCase)
         || LocationText.Contains(filter, StringComparison.OrdinalIgnoreCase);
+
+    public static string FormatTimestamp(DateTime? time)
+        => time is { } t ? t.ToString("ddd MMM d HH:mm:ss yyyy", CultureInfo.CurrentCulture) : string.Empty;
+
+    /// <summary>Fetches icon and signer in the background and lands them on the UI thread.</summary>
+    public async Task EnrichAsync(AutorunEnrichment enrichment, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(enrichment);
+        var path = Entry.ImagePath ?? (Entry.Kind == AutorunItemKind.StartupFile ? Entry.Data : null);
+        if (path is null)
+            return;
+
+        var iconTask = enrichment.GetIconAsync(path);
+        var signatureTask = Entry.FileExists ? enrichment.GetSignatureAsync(path) : Task.FromResult<SignatureInfo?>(null);
+        var icon = await iconTask.ConfigureAwait(false);
+        var signature = await signatureTask.ConfigureAwait(false);
+        if (cancellationToken.IsCancellationRequested || _disposed)
+            return;
+
+        var bitmap = icon is null ? null : ToBitmap(icon);
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            if (_disposed)
+                return;
+            Icon = bitmap;
+            Signature = signature;
+        });
+    }
+
+    private static Bitmap ToBitmap(FileIcon icon)
+    {
+        var bitmap = new WriteableBitmap(new PixelSize(icon.Width, icon.Height), new Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Unpremul);
+        using var buffer = bitmap.Lock();
+        var stride = icon.Width * 4;
+        for (var y = 0; y < icon.Height; y++)
+            System.Runtime.InteropServices.Marshal.Copy(icon.Bgra, y * stride, buffer.Address + y * buffer.RowBytes, stride);
+        return bitmap;
+    }
 
     partial void OnIsEnabledChanged(bool value)
     {
