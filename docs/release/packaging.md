@@ -43,6 +43,15 @@ The app corresponds to the PC, not a user profile (CLAUDE.md). Packaging follows
   property changes that, so `tools/set-version-language.ps1` rewrites the block
   in the packed exe before signing. "Type: Application" is Explorer's label for
   every .exe and cannot be changed.
+- **Exploit mitigations are a release gate.** `tools/check-binary-hardening.ps1`
+  reads the PE headers of the files about to ship and build-release.ps1 fails
+  if App, Service, or the installer lacks any of: ASLR with high-entropy VA,
+  DEP, Control Flow Guard (GUARD_CF plus the CF function table), the /GS
+  stack cookie, and table-based x64 unwinding. It also reports CET shadow
+  stack compatibility (all three first-party exes have it) and the bundled
+  native libraries: Skia and HarfBuzz ship without CFG and CET, which is
+  upstream's build and noted here rather than hidden. Stack guard pages are
+  not a file property; Windows places one below every thread stack.
 - **Nothing trusted goes through %TEMP%.** The installer hardens
   `%ProgramData%\ThisIsMyPC` (Administrators/SYSTEM, the app's own
   `DataDirectoryGuard`) before it writes the unpacked MSI or the two native

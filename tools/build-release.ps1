@@ -142,6 +142,15 @@ Copy-Item $installerExe $installerAsset -Force
 # English (United States). Must precede signing: it rewrites the file.
 & (Join-Path $PSScriptRoot 'set-version-language.ps1') -Path $installerAsset
 
+# Gate: every first-party binary carries ASLR, high-entropy VA, DEP, CFG,
+# the /GS cookie, and table-based unwinding, read from the PE headers of the
+# files about to ship (tools/check-binary-hardening.ps1 exits 1 otherwise).
+Write-Host 'Checking exploit mitigations on the shipped binaries...'
+& (Join-Path $PSScriptRoot 'check-binary-hardening.ps1') `
+    (Join-Path $staging 'ThisIsMyPC.App.exe') (Join-Path $staging 'ThisIsMyPC.Service.exe') $installerAsset `
+    -Require 'ThisIsMyPC.App.exe', 'ThisIsMyPC.Service.exe', (Split-Path $installerAsset -Leaf)
+if ($LASTEXITCODE -ne 0) { throw 'A shipped binary is missing an exploit mitigation; see the table above.' }
+
 if ($SignThumbprint) {
     # vpk signed its own outputs during pack; the installer is built after, so
     # sign it the same way.
