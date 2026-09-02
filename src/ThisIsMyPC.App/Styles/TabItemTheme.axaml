@@ -1,50 +1,54 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- Tab header on the app palette: 14px secondary text, primary on hover
-         and when selected, a 2px accent line under the selected header. The
-         band is 30px with the text at its top (the edge-geometry contract:
-         a strip starts where any other first element does) and 24px between
-         headers. Top placement only; the app has no side or bottom strips. -->
+    <!-- Tab header as a bordered chip: Surface fill and the shared outline,
+         13px secondary text; hover lifts to the control hover wash and
+         primary text; the selected chip carries the sidebar's active tint
+         with the accent outline. Chips wrap with an 8px gap both ways, so a
+         strip of a dozen headers (Startup & Services) reads as a tidy grid
+         instead of loose underlined words. The band stays 30px so the strip
+         starts where any first element does (edge-geometry contract). -->
     <ControlTheme x:Key="{x:Type TabItem}" TargetType="TabItem">
-        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontSize" Value="13" />
         <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
-        <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Padding" Value="0" />
-        <Setter Property="Margin" Value="0,0,24,0" />
-        <Setter Property="MinHeight" Value="30" />
-        <Setter Property="VerticalContentAlignment" Value="Top" />
+        <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource OutlineBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Padding" Value="10,0" />
+        <Setter Property="Margin" Value="0,0,8,8" />
+        <Setter Property="MinHeight" Value="28" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Template">
             <ControlTemplate>
                 <Border Name="PART_LayoutRoot"
                         Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}"
                         Padding="{TemplateBinding Padding}">
-                    <Panel>
-                        <ContentPresenter Name="PART_ContentPresenter"
-                                          Content="{TemplateBinding Header}"
-                                          ContentTemplate="{TemplateBinding HeaderTemplate}"
-                                          HorizontalAlignment="Left"
-                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
-                        <Border Name="PART_SelectedPipe"
-                                Height="2"
-                                CornerRadius="1"
-                                Background="{DynamicResource AccentBrush}"
-                                VerticalAlignment="Bottom"
-                                IsVisible="False" />
-                    </Panel>
+                    <ContentPresenter Name="PART_ContentPresenter"
+                                      Content="{TemplateBinding Header}"
+                                      ContentTemplate="{TemplateBinding HeaderTemplate}"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
                 </Border>
             </ControlTemplate>
         </Setter>
 
         <Style Selector="^:pointerover">
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+            <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource OutlineStrongBrush}" />
         </Style>
         <Style Selector="^:selected">
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+            <Setter Property="Background" Value="{DynamicResource SidebarItemActiveBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentOutlineBrush}" />
         </Style>
-        <Style Selector="^:selected /template/ Border#PART_SelectedPipe">
-            <Setter Property="IsVisible" Value="True" />
+        <Style Selector="^:selected:pointerover">
+            <Setter Property="Background" Value="{DynamicResource SidebarItemActiveBrush}" />
         </Style>
         <Style Selector="^:disabled">
             <Setter Property="Foreground" Value="{DynamicResource TextDisabledBrush}" />

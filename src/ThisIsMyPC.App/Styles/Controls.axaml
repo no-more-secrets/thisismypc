@@ -208,27 +208,32 @@
         <Setter Property="Background" Value="{DynamicResource RowHoverBrush}" />
     </Style>
 
-    <!-- Apply bar: Apply button -->
-    <Style Selector="Button.apply-bar-apply">
+    <!-- Accent-filled buttons (Apply, Create, Migrate): the accent fill with
+         the AccentOutline rim every other accent-filled control wears.
+         "accent" and "apply-bar-apply" are the same look. -->
+    <Style Selector="Button.apply-bar-apply, Button.accent">
         <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
         <Setter Property="Foreground" Value="White" />
-        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentOutlineBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
         <Setter Property="Padding" Value="16,8" />
         <Setter Property="CornerRadius" Value="4" />
         <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
 
-    <Style Selector="Button.apply-bar-apply:disabled">
+    <Style Selector="Button.apply-bar-apply:disabled, Button.accent:disabled">
         <Setter Property="Opacity" Value="0.4" />
     </Style>
 
-    <Style Selector="Button.apply-bar-apply:pointerover /template/ ContentPresenter">
+    <Style Selector="Button.apply-bar-apply:pointerover /template/ ContentPresenter, Button.accent:pointerover /template/ ContentPresenter">
         <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentOutlineBrush}" />
         <Setter Property="Foreground" Value="White" />
     </Style>
 
-    <Style Selector="Button.apply-bar-apply:pressed /template/ ContentPresenter">
+    <Style Selector="Button.apply-bar-apply:pressed /template/ ContentPresenter, Button.accent:pressed /template/ ContentPresenter">
         <Setter Property="Background" Value="{DynamicResource AccentPressedBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentOutlineBrush}" />
         <Setter Property="Foreground" Value="White" />
     </Style>
 

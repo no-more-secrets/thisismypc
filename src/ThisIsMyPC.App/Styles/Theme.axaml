@@ -421,4 +421,9 @@
     <!-- Fluent paints the on-state pill with zero stroke thickness, which
          swallows ToggleSwitchStrokeOn; 1px matches every other outline -->
     <Thickness x:Key="ToggleSwitchOnStrokeThickness">1</Thickness>
+    <!-- Fluent pads the 20px switch track with a 6px row above and below,
+         which made every toggle card 46px; the card's own padding is the
+         spacing, so the switch is its track and nothing else. -->
+    <GridLength x:Key="ToggleSwitchPreContentMargin">0</GridLength>
+    <GridLength x:Key="ToggleSwitchPostContentMargin">0</GridLength>
 </ResourceDictionary>

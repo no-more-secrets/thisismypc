@@ -253,8 +253,10 @@
                                 <StackPanel Orientation="Horizontal" Spacing="6">
                                     <TextBlock Text="Apply" VerticalAlignment="Center" />
                                     <Border Background="{DynamicResource OverlayBrush}"
+                                            BorderBrush="{DynamicResource AccentOutlineBrush}"
+                                            BorderThickness="1"
                                             CornerRadius="10"
-                                            Padding="7,2"
+                                            Padding="7,1"
                                             IsVisible="{Binding HasPendingChanges}">
                                         <TextBlock Text="{Binding TotalPendingCount}"
                                                    FontSize="12"

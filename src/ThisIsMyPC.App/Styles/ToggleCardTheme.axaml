@@ -9,7 +9,7 @@
          the 2px stack spacing, so a consumer hides its panel when every
          line in it is hidden. -->
     <ControlTheme x:Key="{x:Type controls:ToggleCard}" TargetType="controls:ToggleCard">
-        <Setter Property="Padding" Value="14,6" />
+        <Setter Property="Padding" Value="14,5" />
         <Setter Property="Margin" Value="0,2" />
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         <Setter Property="Template">
@@ -31,7 +31,7 @@
                                       MinHeight="0" MinWidth="0"
                                       VerticalAlignment="Center"
                                       Margin="16,0,0,0" />
-                        <StackPanel Spacing="2">
+                        <StackPanel Spacing="2" VerticalAlignment="Center">
                             <!-- Star column so a long title trims instead of
                                  running under the switch; left-aligned so the
                                  (i) sits right after a short title. -->

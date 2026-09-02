@@ -8,62 +8,52 @@
              x:Class="ThisIsMyPC.App.Views.ShellView"
              x:DataType="vm:ShellViewModel">
 
-    <ScrollViewer HorizontalScrollBarVisibility="Disabled"
-                  VerticalScrollBarVisibility="Auto">
-        <StackPanel Spacing="16" Margin="0,0,16,24">
+    <!-- Search above, one tab per area below. The search filters the cards
+         of every tab; a tab with no match reads as empty. -->
+    <Grid RowDefinitions="Auto,*" Margin="0,4,0,0">
+        <TextBox Grid.Row="0"
+                 Text="{Binding SearchText}"
+                 Watermark="Search settings"
+                 Margin="0,0,16,0" />
 
-            <TextBox Text="{Binding SearchText}"
-                     Watermark="Search settings"
-                     Margin="0,4,0,0" />
-
-            <!-- Explorer Preferences Section -->
-            <StackPanel Spacing="8">
-                <TextBlock Text="Explorer Preferences"
-                           FontSize="16"
-                           FontWeight="SemiBold"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
-                <TextBlock Text="Control how Windows Explorer displays files and folders"
-                           FontSize="13"
-                           Foreground="{DynamicResource TextSecondaryBrush}"
-                           Margin="0,0,0,4" />
-                <ItemsControl ItemsSource="{Binding ExplorerSettings}"
-                              ItemTemplate="{StaticResource ToggleSettingRowTemplate}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <controls:ResponsiveColumnsPanel />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                </ItemsControl>
-            </StackPanel>
-
-            <!-- Taskbar Section -->
-            <StackPanel Spacing="8">
-                <TextBlock Text="Taskbar"
-                           FontSize="16"
-                           FontWeight="SemiBold"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
-                <TextBlock Text="Customize taskbar alignment, widgets, and context menu style"
-                           FontSize="13"
-                           Foreground="{DynamicResource TextSecondaryBrush}"
-                           Margin="0,0,0,4" />
-                <ItemsControl ItemsSource="{Binding TaskbarSettings}"
-                              ItemTemplate="{StaticResource ToggleSettingRowTemplate}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <controls:ResponsiveColumnsPanel />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                </ItemsControl>
-                <ItemsControl ItemsSource="{Binding TaskbarChoiceSettings}"
-                              ItemTemplate="{StaticResource ChoiceSettingRowTemplate}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <controls:ResponsiveColumnsPanel />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                </ItemsControl>
-            </StackPanel>
-
-        </StackPanel>
-    </ScrollViewer>
+        <TabControl Grid.Row="1" Margin="0,8,0,0">
+            <TabItem Header="Explorer">
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding ExplorerSettings}"
+                                  ItemTemplate="{StaticResource ToggleSettingRowTemplate}"
+                                  Margin="0,8,16,24">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <controls:ResponsiveColumnsPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+                </ScrollViewer>
+            </TabItem>
+            <TabItem Header="Taskbar">
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="4" Margin="0,8,16,24">
+                        <ItemsControl ItemsSource="{Binding TaskbarSettings}"
+                                      ItemTemplate="{StaticResource ToggleSettingRowTemplate}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <controls:ResponsiveColumnsPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                        <ItemsControl ItemsSource="{Binding TaskbarChoiceSettings}"
+                                      ItemTemplate="{StaticResource ChoiceSettingRowTemplate}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <controls:ResponsiveColumnsPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+    </Grid>
 </UserControl>

@@ -58,7 +58,7 @@
         </DataTemplate>
     </UserControl.Resources>
 
-    <TabControl>
+    <TabControl Margin="0,4,0,0">
 
         <!-- PATH Tab -->
         <TabItem Header="PATH">

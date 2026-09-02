@@ -442,8 +442,17 @@ button hover and press, no reserved 32px row) and `Styles/TabItemTheme.axaml`
 (14px secondary text, primary on hover and selection, 2px accent line,
 30px band with the text at its top); Startup rows are 23px. The filter
 row is a 2x2 grid of show boxes beside the search box (Paths, Locations,
-Windows, Microsoft); Windows and Microsoft entries are both hidden until
-ticked (Sam flipped the Microsoft default on purpose). Later that
+Windows, Microsoft); Windows and Microsoft entries are two disjoint groups,
+each hidden until its box is ticked (Sam flipped the Microsoft default on
+purpose); tab headers show the count shown, not X of Y. Later (Sam): accent
+buttons (Apply, Create, Migrate) and the pending-count badge wear the
+AccentOutline rim like every other accent-filled control; Fluent's 6px rows
+above and below the switch track are gone, so a toggle card is 33px with
+title and switch both centred; the Explorer page is two tabs (Explorer,
+Taskbar) under its search box and fits one screen; the tab strip is
+bordered chips (Surface fill, shared outline, sidebar tint plus accent
+outline when selected, 8px gaps both ways) that stack cleanly in the
+two-row Startup & Services strip. Later that
 day (Sam: adding plans did nothing): a row of the Add plan dropdown closed
 the menu before its command ran, and closing detached the menu content and
 its bindings, so nothing was staged; the close is now posted after the
