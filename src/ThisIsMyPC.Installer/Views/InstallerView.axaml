@@ -40,17 +40,25 @@
             <Setter Property="FontSize" Value="14" />
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
         </Style>
+        <!-- Same recipe as the app's Apply button (Controls.axaml
+             apply-bar-apply): accent fill, no rim, and hover/press change the
+             whole fill. A rim would pick up Fluent's grey hover border. -->
         <Style Selector="Button.primary">
             <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource AccentOutlineBrush}" />
-            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="BorderThickness" Value="0" />
             <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="Button.primary:disabled">
+            <Setter Property="Opacity" Value="0.4" />
         </Style>
         <Style Selector="Button.primary:pointerover /template/ ContentPresenter">
             <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}" />
+            <Setter Property="Foreground" Value="White" />
         </Style>
         <Style Selector="Button.primary:pressed /template/ ContentPresenter">
             <Setter Property="Background" Value="{DynamicResource AccentPressedBrush}" />
+            <Setter Property="Foreground" Value="White" />
         </Style>
         <Style Selector="Button.footer">
             <Setter Property="MinWidth" Value="96" />

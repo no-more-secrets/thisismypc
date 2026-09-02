@@ -51,6 +51,13 @@ public class InstallerShotTests
         Assert.False(session.IsTextVisible("Back"));
         Assert.False(session.IsTextVisible("Uninstall"));
 
+        // Hover states: the accent button changes its whole fill, the plain
+        // button its fill and rim together. Inspect the PNGs.
+        session.HoverText("Next");
+        session.Screenshot("welcome-hover-next");
+        session.HoverText("Cancel");
+        session.Screenshot("welcome-hover-cancel");
+
         session.ClickText("Next");
         session.Screenshot("license");
         // The license lives in a TextBox, which renders as one text run, so
