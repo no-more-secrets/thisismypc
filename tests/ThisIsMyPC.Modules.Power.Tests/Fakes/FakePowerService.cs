@@ -20,6 +20,13 @@ public sealed class FakePowerService : IPowerService
 
     public PowerPlanInfo? GetPlan(Guid guid) => _plans.FirstOrDefault(p => p.PlanGuid == guid);
 
+    /// <summary>Makes a plan active without a SetActivePlan call, the way applied policy does.</summary>
+    public void MarkActive(Guid guid)
+    {
+        for (var i = 0; i < _plans.Count; i++)
+            _plans[i] = _plans[i] with { IsActive = _plans[i].PlanGuid == guid };
+    }
+
     public void InjectFailure(string operation, ErrorCategory category = ErrorCategory.AccessDenied)
         => _failures[operation] = category;
 

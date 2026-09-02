@@ -336,15 +336,16 @@ public sealed class PowerModule : IActionModule
 
     /// <summary>
     /// Switches the active plan. While the Group Policy value that pins the
-    /// active plan exists, Windows refuses every switch with error 1260,
-    /// whatever the value says, and the power service keeps that verdict
-    /// cached after the value is gone until policy is re-read (verified
-    /// 2026-09-02: a lifted pin still refused). So the pin is lifted, machine
-    /// policy is refreshed, the switch is retried for a few seconds while
-    /// Windows still says "policy", and the pin is put back naming the new
-    /// plan; the policy keeps agreeing with what is active. A failed
-    /// activation puts the old pin back. Undo hands the module the swapped
-    /// descriptor, so the same dance runs in reverse.
+    /// active plan exists, Windows refuses every direct switch with error
+    /// 1260, and the power service keeps that verdict until policy is
+    /// re-read (verified 2026-09-02 on a pin left behind by winutil: moving
+    /// it, lifting it, and a three-second wait all still refused). So the pin
+    /// is moved to the target, machine policy is refreshed, and the module
+    /// waits for Windows to apply the pinned plan itself or to accept the
+    /// direct switch; the policy keeps agreeing with what is active. When
+    /// nothing has happened after the wait the old pin goes back and the
+    /// failure says how long it waited and what stayed active. Undo hands
+    /// the module the swapped descriptor, so the same steps run in reverse.
     /// </summary>
     private async Task<OperationResult<bool>> ApplyActivePlanChangeAsync(ChangeDescriptor change)
     {
@@ -357,36 +358,49 @@ public sealed class PowerModule : IActionModule
         const string key = PowerPlanChangeFactory.ActivePlanPolicyKeyPath;
         const string name = PowerPlanChangeFactory.ActivePlanPolicyValueName;
         var pinned = _registryService.ReadString(key, name);
-        var hadPin = pinned.IsSuccess && !string.IsNullOrWhiteSpace(pinned.Value);
-        if (hadPin)
+        if (!pinned.IsSuccess || string.IsNullOrWhiteSpace(pinned.Value))
+            return _powerService.SetActivePlan(planGuid);
+
+        var moved = _registryService.WriteString(key, name, planGuid.ToString("D"));
+        if (!moved.IsSuccess)
         {
-            var lifted = _registryService.DeleteValue(key, name);
-            if (!lifted.IsSuccess)
-            {
-                return OperationResult<bool>.Failure(
-                    $"A Group Policy pins the active power plan and could not be lifted: {lifted.ErrorMessage}",
-                    lifted.ErrorCategory ?? ErrorCategory.AccessDenied, lifted.Exception);
-            }
-            _policyRefresh?.RefreshMachinePolicy();
+            return OperationResult<bool>.Failure(
+                $"A Group Policy pins the active power plan and could not be moved: {moved.ErrorMessage}",
+                moved.ErrorCategory ?? ErrorCategory.AccessDenied, moved.Exception);
         }
 
+        var refresh = _policyRefresh?.RefreshMachinePolicy();
+        var clock = System.Diagnostics.Stopwatch.StartNew();
         var activated = _powerService.SetActivePlan(planGuid);
-        // Policy re-application is asynchronous; give the power service a few seconds to drop the pin.
-        for (var attempt = 0; hadPin && !activated.IsSuccess && activated.ErrorCategory == ErrorCategory.AccessDenied && attempt < 12; attempt++)
+        while (!activated.IsSuccess && activated.ErrorCategory == ErrorCategory.AccessDenied && clock.Elapsed < PolicyApplyWait)
         {
-            await Task.Delay(250).ConfigureAwait(false);
+            if (IsActive(planGuid))
+            {
+                activated = OperationResult<bool>.Success(true);
+                break;
+            }
+            await Task.Delay(500).ConfigureAwait(false);
             activated = _powerService.SetActivePlan(planGuid);
         }
-        if (!hadPin)
-            return activated;
+        if (activated.IsSuccess || IsActive(planGuid))
+            return OperationResult<bool>.Success(true);
 
-        var repinned = _registryService.WriteString(key, name, activated.IsSuccess ? planGuid.ToString("D") : pinned.Value!);
-        if (!activated.IsSuccess)
-            return activated;
-        return repinned.IsSuccess
-            ? OperationResult<bool>.Success(true)
-            : OperationResult<bool>.Failure(
-                $"The plan is active, but the Group Policy pin could not be put back on it: {repinned.ErrorMessage}",
-                repinned.ErrorCategory ?? ErrorCategory.AccessDenied, repinned.Exception);
+        _ = _registryService.WriteString(key, name, pinned.Value);
+        var refreshText = refresh is null ? "no policy refresh available"
+            : refresh.IsSuccess ? "policy refresh accepted" : $"policy refresh failed: {refresh.ErrorMessage}";
+        var activeName = _powerService.EnumeratePlans() is { IsSuccess: true, Value: { } plans }
+            ? plans.FirstOrDefault(p => p.IsActive)?.Name ?? "unknown"
+            : "unknown";
+        return OperationResult<bool>.Failure(
+            $"{activated.ErrorMessage} The pin was moved to the new plan and {refreshText}, but after {clock.Elapsed.TotalSeconds:0} seconds "
+            + $"Windows still refused and '{activeName}' stayed active; the pin was put back. Signing out and back in applies a pinned plan.",
+            activated.ErrorCategory ?? ErrorCategory.AccessDenied, activated.Exception);
     }
+
+    /// <summary>How long a pinned switch waits for Windows to re-read policy; machine policy processing takes seconds.</summary>
+    private static readonly TimeSpan PolicyApplyWait = TimeSpan.FromSeconds(15);
+
+    private bool IsActive(Guid planGuid) =>
+        _powerService.EnumeratePlans() is { IsSuccess: true, Value: { } plans }
+        && plans.Any(p => p.PlanGuid == planGuid && p.IsActive);
 }
