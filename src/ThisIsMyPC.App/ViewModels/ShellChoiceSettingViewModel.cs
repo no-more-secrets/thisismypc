@@ -18,6 +18,8 @@ public sealed record ShellChoiceOption(int Value, string DisplayName);
 /// </summary>
 public sealed partial class ShellChoiceSettingViewModel : ViewModelBase, IDisposable
 {
+    private static readonly NLog.Logger Log = NLog.LogManager.GetLogger("ThisIsMyPC.App.ViewModels.ShellChoiceSettingViewModel");
+
     private readonly IPendingChangesService _pendingChangesService;
     private readonly Func<int, ChangeDescriptor> _changeFactory;
     private readonly Func<int> _readRegistryValue;
@@ -138,7 +140,7 @@ public sealed partial class ShellChoiceSettingViewModel : ViewModelBase, IDispos
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Choice staging failed for {Label}: {ex.Message}");
+            Log.Error(ex, "Choice staging failed for {Setting}", Label);
         }
     }
 

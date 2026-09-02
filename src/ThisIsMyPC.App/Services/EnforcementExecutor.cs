@@ -22,6 +22,7 @@ namespace ThisIsMyPC.App.Services;
 /// </summary>
 public sealed class EnforcementExecutor : IEnforcementExecutor
 {
+    private static readonly NLog.Logger Log = NLog.LogManager.GetLogger("ThisIsMyPC.App.Services.EnforcementExecutor");
     private static readonly TimeSpan ServiceStopTimeout = TimeSpan.FromSeconds(30);
 
     private readonly IServiceControlService _serviceControl;
@@ -369,16 +370,14 @@ public sealed class EnforcementExecutor : IEnforcementExecutor
             // Rollback is best-effort and must not throw; cancellation no longer applies.
             var restored = _serviceControl.SetStartType(name, before.StartType);
             if (!restored.IsSuccess)
-                System.Diagnostics.Debug.WriteLine(
-                    $"Enforcement rollback: failed to restore start type of '{name}': {restored.ErrorMessage}");
+                Log.Warn("Enforcement rollback: failed to restore start type of {Service}: {Error}", name, restored.ErrorMessage);
             if (before.State == ServiceState.Running)
             {
                 var restarted = await _serviceControl.StartAsync(name, ServiceStopTimeout, CancellationToken.None)
                     .ConfigureAwait(false);
                 if (!restarted.IsSuccess)
                 {
-                    System.Diagnostics.Debug.WriteLine(
-                        $"Enforcement rollback: failed to restart '{name}': {restarted.ErrorMessage}");
+                    Log.Warn("Enforcement rollback: failed to restart {Service}: {Error}", name, restarted.ErrorMessage);
                     restored = restarted;
                 }
             }
@@ -422,8 +421,7 @@ public sealed class EnforcementExecutor : IEnforcementExecutor
             var restored = _scheduledTasks!.SetEnabled(path, true);
             if (!restored.IsSuccess)
             {
-                System.Diagnostics.Debug.WriteLine(
-                    $"Enforcement rollback: failed to re-enable task '{path}': {restored.ErrorMessage}");
+                Log.Warn("Enforcement rollback: failed to re-enable task {Task}: {Error}", path, restored.ErrorMessage);
                 continue;
             }
 

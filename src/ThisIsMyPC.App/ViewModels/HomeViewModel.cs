@@ -49,6 +49,8 @@ public sealed class RecentActivityItemViewModel
 /// </summary>
 public sealed partial class HomeViewModel : ViewModelBase
 {
+    private static readonly NLog.Logger Log = NLog.LogManager.GetLogger("ThisIsMyPC.App.ViewModels.HomeViewModel");
+
     private const int RecentActivityLimit = 5;
 
     private readonly IChangeHistoryService _historyService;
@@ -114,7 +116,7 @@ public sealed partial class HomeViewModel : ViewModelBase
         catch (Exception ex)
         {
             // The dashboard never blocks or breaks on history problems.
-            System.Diagnostics.Debug.WriteLine($"Home recent activity load failed: {ex.Message}");
+            Log.Warn(ex, "Home recent activity load failed");
         }
         finally
         {

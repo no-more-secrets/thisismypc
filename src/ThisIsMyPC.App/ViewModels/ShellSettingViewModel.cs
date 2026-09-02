@@ -10,6 +10,8 @@ namespace ThisIsMyPC.App.ViewModels;
 
 public sealed partial class ShellSettingViewModel : ViewModelBase, IDisposable, IToggleSettingRow
 {
+    private static readonly NLog.Logger Log = NLog.LogManager.GetLogger("ThisIsMyPC.App.ViewModels.ShellSettingViewModel");
+
     // IToggleSettingRow members this row type never uses (template hides them).
     public bool IsToggleEnabled => true;
     public bool IsInactive => false;
@@ -258,7 +260,7 @@ public sealed partial class ShellSettingViewModel : ViewModelBase, IDisposable, 
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Toggle staging failed for {Label}: {ex.Message}");
+            Log.Error(ex, "Toggle staging failed for {Setting}", Label);
         }
     }
 

@@ -89,6 +89,13 @@ dotnet test --filter "Category!=Integration&Category!=Diagnostic"   # what CI ru
 - If `dotnet` builds fail with MSB4242 (workload manifest mismatch; has happened after a
   half-finished VS servicing update): `$env:MSBuildEnableWorkloadResolver = "false"` per
   shell unblocks; this solution uses no workloads. A completed VS update fixes it properly.
+- Errors come from the log, never from a screenshot. A Debug run opens a
+  console window ("ThisIsMyPC logs (Debug)") and mirrors it into the Visual
+  Studio Output window; both carry every status-bar line, every module
+  apply/revert/action result with its category, message, exception, and
+  elapsed time, and every refused powrprof call with its Win32 code. Release
+  writes the same records as JSON to `%ProgramData%\ThisIsMyPC\logs`.
+  Anything the user sees as an error is copyable from there.
 - New dependencies: version goes in `Directory.Packages.props`, versionless
   `PackageReference` in the csproj.
 - Tests: one project per module mirroring `src/`; fakes in

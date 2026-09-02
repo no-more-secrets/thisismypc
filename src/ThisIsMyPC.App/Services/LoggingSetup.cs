@@ -38,10 +38,15 @@ public static class LoggingSetup
         return layout;
     }
 
+    /// <summary>One event per line, readable by a person: level, logger, message, then the exception.</summary>
+    private const string ReadableLayout =
+        "[${time} ${level:uppercase=true:padding=-5}] ${logger}${newline}    ${message}${newline}${exception:format=toString}";
+
     /// <summary>
     /// Installs the configuration: a daily JSON file under
-    /// <c>{dataDir}\logs</c> (10 MB size cap, 7 files kept) and, when asked,
-    /// a console target for the Debug log window. Returns the app logger.
+    /// <c>{dataDir}\logs</c> (10 MB size cap, 7 files kept), a console target
+    /// for the Debug log window when asked, and in verbose mode the attached
+    /// debugger (the Visual Studio Output window). Returns the app logger.
     /// Production passes no factory and configures the global LogManager;
     /// tests pass their own LogFactory so parallel test classes that log
     /// through the global manager cannot write into a test's file.
@@ -76,11 +81,17 @@ public static class LoggingSetup
 
             if (console)
             {
-                var target = new ConsoleTarget("console")
-                {
-                    Layout = "[${time} ${level:uppercase=true:padding=-5}] ${logger}${newline}    ${message}${newline}${exception:format=toString}",
-                };
+                var target = new ConsoleTarget("console") { Layout = ReadableLayout };
                 builder.ForLogger().FilterMinLevel(minimum).WriteTo(target);
+            }
+
+            // Debug runs under Visual Studio read the Output window, not a
+            // second console; give it every line so an error can be copied
+            // from there instead of screenshotted.
+            if (verbose)
+            {
+                var debugger = new DebuggerLogTarget { Name = "debugger", Layout = ReadableLayout };
+                builder.ForLogger().FilterMinLevel(minimum).WriteTo(debugger);
             }
         });
 

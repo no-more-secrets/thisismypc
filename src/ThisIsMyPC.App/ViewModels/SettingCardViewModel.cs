@@ -17,6 +17,8 @@ namespace ThisIsMyPC.App.ViewModels;
 /// </summary>
 public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
 {
+    private static readonly NLog.Logger Log = NLog.LogManager.GetLogger("ThisIsMyPC.App.ViewModels.SettingCardViewModel");
+
     private readonly IPendingChangesService _pendingChangesService;
     private readonly SettingCardSource _source;
     private readonly ICapabilityDetector? _capabilityDetector;
@@ -256,7 +258,7 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Toggle staging failed for {DisplayName}: {ex.Message}");
+            Log.Error(ex, "Toggle staging failed for {Setting}", DisplayName);
         }
     }
 

@@ -143,7 +143,13 @@ prep here.
   (App/Services) builds the NLog config in code: daily JSON file under
   `%ProgramData%\ThisIsMyPC\logs` in the old CLEF shape (@t, @mt, @l, @x,
   properties at the root), 10 MB cap, 7 files kept, Interop loggers Warn+ in
-  Release, console target for the Debug log window. Every shipped package is
+  Release, console target for the Debug log window; since 2026-09-02 the
+  Debug run also mirrors into the attached debugger (VS Output window), and
+  the main window logs every status line, every module apply/revert/action
+  result (category, message, exception, elapsed time), the apply batch
+  summary, toasts, and unhandled exceptions; `PowerService` logs every
+  refused powrprof call with its Win32 code, so an error is copied from the
+  log instead of screenshotted. Every shipped package is
   now MIT or BSD; xunit is Apache-2.0 but test-only, never distributed.
 - **Package advisories cleared 2026-09-01**: Microsoft.Data.Sqlite 10.0.3
   pulled SQLitePCLRaw 2.1.11 (GHSA-2m69-gcr7-jv3q); bumped to 10.0.11, which
@@ -167,7 +173,9 @@ prep here.
   local build. Outer-only Authenticode keeps that comparison possible; the
   offline GPG manifest authenticates the inner MSI and update packages. The
   generated Claude, Codex, and Antigravity guides carry the complete clean-clone
-  reproduction procedure so any agent can execute it consistently.
+  reproduction procedure so any agent can execute it consistently. The public
+  README explains the trust model and gives users the direct verification
+  commands.
 - **PUBLISHED 2026-09-01** at `github.com/No-More-Secrets/thisismypc`;
   `AppConstants.UpdateUrl` points there.
 

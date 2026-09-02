@@ -25,6 +25,8 @@ public enum StatusSeverity
 
 public partial class MainWindowViewModel : ViewModelBase
 {
+    private static readonly NLog.Logger Log = NLog.LogManager.GetLogger("ThisIsMyPC.App.ViewModels.MainWindowViewModel");
+
     private readonly NavigationService _navigationService;
     private readonly IPendingChangesService _pendingChangesService;
     private readonly IPendingActionsService? _pendingActionsService;
@@ -201,6 +203,7 @@ public partial class MainWindowViewModel : ViewModelBase
         var severity = notification.Type == Core.Notifications.NotificationType.Monitoring
             ? ToastSeverity.Warning
             : ToastSeverity.Info;
+        Log.Info("Toast ({Type}): {Title}: {Message}", notification.Type, notification.Title, notification.Message);
 
         if (Dispatcher.UIThread.CheckAccess())
             ToastStack.Show(notification.Title, notification.Message, severity);
@@ -652,6 +655,7 @@ public partial class MainWindowViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
+            Log.Error(ex, "Module load failed");
             await Dispatcher.UIThread.InvokeAsync(() =>
                 SetStatus($"Failed to load module: {ex.Message}", StatusSeverity.Error));
         }
@@ -959,7 +963,7 @@ public partial class MainWindowViewModel : ViewModelBase
 #pragma warning disable CA1031 // AC: check failures are silently ignored; offline-safe
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Update check failed: {ex.Message}");
+            Log.Warn(ex, "Update check failed");
         }
 #pragma warning restore CA1031
     }
@@ -1251,10 +1255,25 @@ public partial class MainWindowViewModel : ViewModelBase
     public bool IsStatusWarning => StatusSeverity == StatusSeverity.Warning;
     public bool IsStatusError => StatusSeverity == StatusSeverity.Error;
 
+    /// <summary>Every status line is also a log line, so an error on screen can be copied from the log.</summary>
     private void SetStatus(string message, StatusSeverity severity)
     {
         StatusMessage = message;
         StatusSeverity = severity;
+        if (string.IsNullOrEmpty(message))
+            return;
+        switch (severity)
+        {
+            case StatusSeverity.Error:
+                Log.Error("Status: {Message}", message);
+                break;
+            case StatusSeverity.Warning:
+                Log.Warn("Status: {Message}", message);
+                break;
+            default:
+                Log.Info("Status: {Message}", message);
+                break;
+        }
     }
 
     [RelayCommand]
@@ -1294,9 +1313,43 @@ public partial class MainWindowViewModel : ViewModelBase
                 SetStatus("Applying without a restore point", StatusSeverity.Warning);
             }
 
+            Log.Info("Apply: {Groups} group(s), {Changes} change(s), {Actions} action(s)",
+                _pendingChangesService.PendingGroups.Count,
+                _pendingChangesService.PendingGroups.Sum(g => g.Changes.Count),
+                _pendingActionsService?.PendingCount ?? 0);
+
+            Log.Info("Apply: {Groups} group(s), {Changes} change(s), {Actions} action(s)",
+                _pendingChangesService.PendingGroups.Count,
+                _pendingChangesService.PendingGroups.Sum(g => g.Changes.Count),
+                _pendingActionsService?.PendingCount ?? 0);
+
             var result = await _pendingChangesService.ApplyAllAsync(
                 ApplyChangeToModule,
                 RevertChangeOnModule).ConfigureAwait(true);
+
+            if (result.IsSuccess)
+            {
+                Log.Info("Apply: {Count} change(s) applied; restarts needed: {Restarts}",
+                    result.Applied.Count, string.Join(", ", result.RequiredRestarts));
+            }
+            else
+            {
+                Log.Error("Apply stopped at {Module}/{Setting} ({Location}) [{Category}]: {Error}; {Applied} applied before it, {RolledBack} rolled back",
+                    result.Failed?.ModuleId, result.Failed?.SettingId, result.Failed?.SystemLocation,
+                    result.ErrorCategory, result.ErrorMessage, result.Applied.Count, result.RolledBack.Count);
+            }
+
+            if (result.IsSuccess)
+            {
+                Log.Info("Apply: {Count} change(s) applied; restarts needed: {Restarts}",
+                    result.Applied.Count, string.Join(", ", result.RequiredRestarts));
+            }
+            else
+            {
+                Log.Error("Apply stopped at {Module}/{Setting} ({Location}) [{Category}]: {Error}; {Applied} applied before it, {RolledBack} rolled back",
+                    result.Failed?.ModuleId, result.Failed?.SettingId, result.Failed?.SystemLocation,
+                    result.ErrorCategory, result.ErrorMessage, result.Applied.Count, result.RolledBack.Count);
+            }
 
             if (result.IsSuccess)
             {
@@ -1440,47 +1493,63 @@ public partial class MainWindowViewModel : ViewModelBase
         return module;
     }
 
-    private async Task<OperationResult<bool>> ApplyChangeToModule(ChangeDescriptor change)
-    {
-        var module = ResolveModule(change.ModuleId);
-
-        if (module is null)
+    private Task<OperationResult<bool>> ApplyChangeToModule(ChangeDescriptor change) =>
+        Logged("Apply", change.ModuleId, change.SettingId, DescribeChange(change), () =>
         {
-            return OperationResult<bool>.Failure(
-                $"Module '{change.ModuleId}' not found",
-                ErrorCategory.NotFound);
+            var module = ResolveModule(change.ModuleId);
+            return module is null
+                ? Task.FromResult(OperationResult<bool>.Failure($"Module '{change.ModuleId}' not found", ErrorCategory.NotFound))
+                : module.ApplyChangeAsync(change);
+        });
+
+    private Task<OperationResult<bool>> RevertChangeOnModule(ChangeDescriptor change) =>
+        Logged("Revert", change.ModuleId, change.SettingId, DescribeChange(change), () =>
+        {
+            var module = ResolveModule(change.ModuleId);
+            return module is null
+                ? Task.FromResult(OperationResult<bool>.Failure($"Module '{change.ModuleId}' not found for revert", ErrorCategory.NotFound))
+                : module.RevertChangeAsync(change);
+        });
+
+    private static string DescribeChange(ChangeDescriptor change) =>
+        $"{change.DisplayName}: '{change.BeforeDisplay}' to '{change.AfterDisplay}' at {change.SystemLocation}";
+
+    /// <summary>
+    /// Runs one module call and logs both ends of it: what was asked, then
+    /// the result with its category, message, exception, and elapsed time.
+    /// The log therefore holds the full text of every error the status bar
+    /// shows, plus the ones the bar had no room for.
+    /// </summary>
+    private static async Task<OperationResult<bool>> Logged(
+        string verb, string moduleId, string id, string detail, Func<Task<OperationResult<bool>>> run)
+    {
+        Log.Debug("{Verb} {Module}/{Id}: {Detail}", verb, moduleId, id, detail);
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        OperationResult<bool> result;
+        try
+        {
+            result = await run().ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "{Verb} {Module}/{Id} threw after {Ms} ms", verb, moduleId, id, clock.ElapsedMilliseconds);
+            throw;
         }
 
-        return await module.ApplyChangeAsync(change).ConfigureAwait(false);
+        if (result.IsSuccess)
+            Log.Info("{Verb} {Module}/{Id} ok in {Ms} ms", verb, moduleId, id, clock.ElapsedMilliseconds);
+        else
+            Log.Error(result.Exception, "{Verb} {Module}/{Id} failed after {Ms} ms [{Category}]: {Error}",
+                verb, moduleId, id, clock.ElapsedMilliseconds, result.ErrorCategory, result.ErrorMessage);
+        return result;
     }
 
-    private async Task<OperationResult<bool>> RevertChangeOnModule(ChangeDescriptor change)
-    {
-        var module = ResolveModule(change.ModuleId);
-
-        if (module is null)
-        {
-            return OperationResult<bool>.Failure(
-                $"Module '{change.ModuleId}' not found for revert",
-                ErrorCategory.NotFound);
-        }
-
-        return await module.RevertChangeAsync(change).ConfigureAwait(false);
-    }
-
-    private async Task<OperationResult<bool>> ExecuteActionOnModule(Core.Actions.ActionDescriptor action)
-    {
-        var module = ResolveModule(action.ModuleId);
-
-        if (module is not Core.Modules.IActionModule actionModule)
-        {
-            return OperationResult<bool>.Failure(
-                $"Module '{action.ModuleId}' not found or cannot execute actions",
-                ErrorCategory.NotFound);
-        }
-
-        return await actionModule.ExecuteActionAsync(action).ConfigureAwait(false);
-    }
+    private Task<OperationResult<bool>> ExecuteActionOnModule(Core.Actions.ActionDescriptor action) =>
+        Logged("Action", action.ModuleId, action.ActionId, $"{action.DisplayName}: {action.Detail}", () =>
+            ResolveModule(action.ModuleId) is Core.Modules.IActionModule actionModule
+                ? actionModule.ExecuteActionAsync(action)
+                : Task.FromResult(OperationResult<bool>.Failure(
+                    $"Module '{action.ModuleId}' not found or cannot execute actions", ErrorCategory.NotFound)));
 
     private static string FormatApplyError(MutationResult result)
     {

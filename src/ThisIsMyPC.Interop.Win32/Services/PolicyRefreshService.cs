@@ -7,6 +7,7 @@ namespace ThisIsMyPC.Interop.Win32.Services;
 /// <summary>userenv RefreshPolicyEx: the same trigger as "gpupdate /force" for the machine half.</summary>
 public sealed partial class PolicyRefreshService : IPolicyRefreshService
 {
+    private static readonly NLog.Logger Log = NLog.LogManager.GetLogger("ThisIsMyPC.Interop.Win32.Services.PolicyRefreshService");
     private const uint RP_FORCE = 1;
 
     public OperationResult<bool> RefreshMachinePolicy()
@@ -14,8 +15,12 @@ public sealed partial class PolicyRefreshService : IPolicyRefreshService
         try
         {
             if (RefreshPolicyEx(true, RP_FORCE))
+            {
+                Log.Info("RefreshPolicyEx(machine, RP_FORCE) accepted");
                 return OperationResult<bool>.Success(true);
+            }
             var error = Marshal.GetLastWin32Error();
+            Log.Warn("RefreshPolicyEx(machine, RP_FORCE) refused: Win32 error {Code}", error);
             return OperationResult<bool>.Failure($"Windows refused to refresh machine policy: Win32 error {error}.", ErrorCategory.ServiceUnavailable);
         }
         catch (Exception ex)

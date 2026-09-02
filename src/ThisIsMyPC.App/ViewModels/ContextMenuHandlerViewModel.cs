@@ -11,6 +11,8 @@ namespace ThisIsMyPC.App.ViewModels;
 
 public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDisposable, IToggleSettingRow
 {
+    private static readonly NLog.Logger Log = NLog.LogManager.GetLogger("ThisIsMyPC.App.ViewModels.ContextMenuHandlerViewModel");
+
     // The generated MigrateCommand is IRelayCommand; the row contract wants ICommand.
     System.Windows.Input.ICommand? IToggleSettingRow.MigrateCommand => MigrateCommand;
 
@@ -398,7 +400,7 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Toggle staging failed for {Label}: {ex.Message}");
+            Log.Error(ex, "Toggle staging failed for {Handler}", Label);
         }
     }
 

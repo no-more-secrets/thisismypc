@@ -43,6 +43,20 @@ sealed class Program
 #endif
 
 #pragma warning disable CA1031 // Top-level crash handler must catch all exceptions
+        // Faults on thread-pool threads and forgotten tasks never reach the
+        // catch below; log them so the last line before a crash names it.
+        AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+            log.Fatal(e.ExceptionObject as Exception, "Unhandled exception (terminating: {Terminating})", e.IsTerminating);
+        TaskScheduler.UnobservedTaskException += (_, e) =>
+            log.Error(e.Exception, "Unobserved task exception");
+
+        // Faults on thread-pool threads and forgotten tasks never reach the
+        // catch below; log them so the last line before a crash names it.
+        AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+            log.Fatal(e.ExceptionObject as Exception, "Unhandled exception (terminating: {Terminating})", e.IsTerminating);
+        TaskScheduler.UnobservedTaskException += (_, e) =>
+            log.Error(e.Exception, "Unobserved task exception");
+
         try
         {
             log.Info("ThisIsMyPC starting");

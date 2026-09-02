@@ -8,6 +8,8 @@ namespace ThisIsMyPC.Interop.Win32.Power;
 
 public sealed class PowerService : IPowerService
 {
+    private static readonly NLog.Logger Log = NLog.LogManager.GetLogger("ThisIsMyPC.Interop.Win32.Power.PowerService");
+
     public OperationResult<IReadOnlyList<PowerPlanInfo>> EnumeratePlans()
     {
         try
@@ -46,6 +48,7 @@ public sealed class PowerService : IPowerService
         }
         catch (Exception ex)
         {
+            Log.Error(ex, "powrprof call threw");
             return OperationResult<IReadOnlyList<PowerPlanInfo>>.Failure(
                 $"Unexpected error enumerating power plans: {ex.Message}", ErrorCategory.ServiceUnavailable, ex);
         }
@@ -56,12 +59,16 @@ public sealed class PowerService : IPowerService
         try
         {
             var result = PowerSetActiveScheme(0, in planGuid);
-            return result == ERROR_SUCCESS
-                ? OperationResult<bool>.Success(true)
-                : MapError<bool>(result, $"activate power plan {planGuid:D}");
+            if (result == ERROR_SUCCESS)
+            {
+                Log.Debug("PowerSetActiveScheme({Plan}) accepted", planGuid);
+                return OperationResult<bool>.Success(true);
+            }
+            return MapError<bool>(result, $"activate power plan {planGuid:D}");
         }
         catch (Exception ex)
         {
+            Log.Error(ex, "powrprof call threw");
             return OperationResult<bool>.Failure(
                 $"Unexpected error activating power plan {planGuid:D}: {ex.Message}", ErrorCategory.ServiceUnavailable, ex);
         }
@@ -106,6 +113,7 @@ public sealed class PowerService : IPowerService
         }
         catch (Exception ex)
         {
+            Log.Error(ex, "powrprof call threw");
             return OperationResult<IReadOnlyList<PowerSettingInfo>>.Failure(
                 $"Unexpected error enumerating settings of plan {planGuid:D}: {ex.Message}", ErrorCategory.ServiceUnavailable, ex);
         }
@@ -195,6 +203,7 @@ public sealed class PowerService : IPowerService
         }
         catch (Exception ex)
         {
+            Log.Error(ex, "powrprof call threw");
             return OperationResult<bool>.Failure(
                 $"Unexpected error writing setting {settingGuid:D}: {ex.Message}", ErrorCategory.ServiceUnavailable, ex);
         }
@@ -226,6 +235,7 @@ public sealed class PowerService : IPowerService
         }
         catch (Exception ex)
         {
+            Log.Error(ex, "powrprof call threw");
             return OperationResult<bool>.Failure(
                 $"Unexpected error toggling hibernation: {ex.Message}", ErrorCategory.ServiceUnavailable, ex);
         }
@@ -249,6 +259,7 @@ public sealed class PowerService : IPowerService
         }
         catch (Exception ex)
         {
+            Log.Error(ex, "powrprof call threw");
             return OperationResult<Guid>.Failure(
                 $"Unexpected error duplicating power plan {sourceSchemeGuid:D}: {ex.Message}",
                 ErrorCategory.ServiceUnavailable, ex);
@@ -268,6 +279,7 @@ public sealed class PowerService : IPowerService
         }
         catch (Exception ex)
         {
+            Log.Error(ex, "powrprof call threw");
             return OperationResult<Guid>.Failure(
                 $"Unexpected error recreating power plan {destinationSchemeGuid:D}: {ex.Message}",
                 ErrorCategory.ServiceUnavailable, ex);
@@ -285,6 +297,7 @@ public sealed class PowerService : IPowerService
         }
         catch (Exception ex)
         {
+            Log.Error(ex, "powrprof call threw");
             return OperationResult<bool>.Failure(
                 $"Unexpected error restoring power plan {schemeGuid:D}: {ex.Message}",
                 ErrorCategory.ServiceUnavailable, ex);
@@ -302,6 +315,7 @@ public sealed class PowerService : IPowerService
         }
         catch (Exception ex)
         {
+            Log.Error(ex, "powrprof call threw");
             return OperationResult<bool>.Failure(
                 $"Unexpected error deleting power plan {schemeGuid:D}: {ex.Message}",
                 ErrorCategory.ServiceUnavailable, ex);
@@ -325,6 +339,7 @@ public sealed class PowerService : IPowerService
         }
         catch (Exception ex)
         {
+            Log.Error(ex, "powrprof call threw");
             return OperationResult<bool>.Failure(
                 $"Unexpected error writing text of power plan {schemeGuid:D}: {ex.Message}",
                 ErrorCategory.ServiceUnavailable, ex);
@@ -365,6 +380,7 @@ public sealed class PowerService : IPowerService
 
     private static OperationResult<T> MapError<T>(uint win32Error, string verb)
     {
+        Log.Warn("powrprof refused to {Verb}: Win32 error {Code}", verb, win32Error);
         (string message, ErrorCategory category) = win32Error switch
         {
             ERROR_FILE_NOT_FOUND => (
