@@ -83,7 +83,7 @@ public partial class EnvironmentViewModel : ViewModelBase
         var item = new EnvironmentVariableItemViewModel("User", _pendingChangesService,
             name => !UserVariables.Any(v => !v.IsNew && v.Name.Equals(name, StringComparison.OrdinalIgnoreCase)));
         item.RequestRemoval += OnItemRequestRemoval;
-        UserVariables.Add(item);
+        UserVariables.Insert(0, item);
         OnPropertyChanged(nameof(UserTabHeader));
     }
 
@@ -93,7 +93,7 @@ public partial class EnvironmentViewModel : ViewModelBase
         var item = new EnvironmentVariableItemViewModel("System", _pendingChangesService,
             name => !SystemVariables.Any(v => !v.IsNew && v.Name.Equals(name, StringComparison.OrdinalIgnoreCase)));
         item.RequestRemoval += OnItemRequestRemoval;
-        SystemVariables.Add(item);
+        SystemVariables.Insert(0, item);
         OnPropertyChanged(nameof(SystemTabHeader));
     }
 

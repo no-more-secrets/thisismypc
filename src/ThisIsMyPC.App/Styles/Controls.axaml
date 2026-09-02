@@ -45,6 +45,8 @@
     <Style Selector="TabItem">
         <Setter Property="Padding" Value="0" />
         <Setter Property="Margin" Value="0,0,24,0" />
+        <Setter Property="MinHeight" Value="30" />
+        <Setter Property="VerticalContentAlignment" Value="Top" />
         <Setter Property="Cursor" Value="Hand" />
     </Style>
 

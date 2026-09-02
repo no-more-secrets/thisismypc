@@ -146,6 +146,14 @@ public sealed class UiSession : IDisposable
     public T? TryFind<T>(Func<T, bool> predicate) where T : Visual =>
         Window.GetVisualDescendants().OfType<T>().FirstOrDefault(v => v.IsEffectivelyVisible && predicate(v));
 
+    public IEnumerable<T> FindAll<T>(Func<T, bool> predicate) where T : Visual =>
+        Window.GetVisualDescendants().OfType<T>().Where(v => v.IsEffectivelyVisible && predicate(v));
+
+    /// <summary>The control's top edge in window pixels, for ordering assertions across parents.</summary>
+    public double TopOf(Visual target) =>
+        (target.TranslatePoint(new Point(0, 0), Window)
+            ?? throw new InvalidOperationException("Control is not connected to the window's visual tree.")).Y;
+
     public T Find<T>(Func<T, bool> predicate) where T : Visual =>
         TryFind(predicate) ?? throw new InvalidOperationException(
             $"No visible {typeof(T).Name} matched. Visible text on screen: {DescribeVisibleText()}");

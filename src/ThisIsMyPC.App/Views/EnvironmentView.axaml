@@ -58,7 +58,7 @@
         </DataTemplate>
     </UserControl.Resources>
 
-    <TabControl Margin="0,4,0,0">
+    <TabControl>
 
         <!-- PATH Tab -->
         <TabItem>
@@ -117,7 +117,7 @@
             <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Auto">
                 <StackPanel Spacing="8" Margin="0,8,16,24">
-                    <DockPanel Margin="12,0">
+                    <DockPanel Margin="0,0,0,4">
                         <TextBlock Text="Per-user variables (excluding PATH)"
                                    FontSize="12"
                                    Foreground="{DynamicResource TextSecondaryBrush}"
@@ -129,8 +129,7 @@
                                 FontSize="12" />
                     </DockPanel>
                     <TextBox Text="{Binding VariableSearchText}"
-                             Watermark="Search variables"
-                             Margin="12,0" />
+                             Watermark="Search variables" />
                     <TextBlock Text="{Binding UserScanError, StringFormat='Failed to read user variables: {0}'}"
                                IsVisible="{Binding UserScanError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                Foreground="{DynamicResource WarningBrush}"
@@ -149,7 +148,7 @@
             <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Auto">
                 <StackPanel Spacing="8" Margin="0,8,16,24">
-                    <DockPanel Margin="12,0">
+                    <DockPanel Margin="0,0,0,4">
                         <TextBlock Text="System-wide variables (excluding PATH)"
                                    FontSize="12"
                                    Foreground="{DynamicResource TextSecondaryBrush}"
@@ -161,8 +160,7 @@
                                 FontSize="12" />
                     </DockPanel>
                     <TextBox Text="{Binding VariableSearchText}"
-                             Watermark="Search variables"
-                             Margin="12,0" />
+                             Watermark="Search variables" />
                     <TextBlock Text="{Binding SystemScanError, StringFormat='Failed to read system variables: {0}'}"
                                IsVisible="{Binding SystemScanError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                Foreground="{DynamicResource WarningBrush}"

@@ -155,9 +155,10 @@ from XAML: screenshot the pages (walkthrough or `EdgeGeometryShotTests`), then
 run `tools/measure-edge-geometry.ps1` over the PNGs. Every page must read
 ContentL 25 and LaneFrom 10; ContentR 23 except width-capped pages (Home,
 Settings, Display, Gallery cap content width, so their ContentR is large);
-ContentT 17 give or take 4, except tab pages (~35: Fluent centers header text
-in the tab min-height). Any page off those numbers is the bug, even if it
-looks close.
+ContentT 17 give or take 4, tab pages included (`Controls.axaml` gives
+TabItem a 30px band with the header text at its top, so a tab strip starts
+where any other first element does). Any page off those numbers is the bug,
+even if it looks close.
 
 ## Architecture must-rules (violations get caught in review)
 

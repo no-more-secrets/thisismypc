@@ -7,6 +7,22 @@
              x:Class="ThisIsMyPC.App.Views.PathEditorView"
              x:DataType="vm:PathEditorViewModel">
 
+    <UserControl.Styles>
+        <Style Selector="TextBox.inline">
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="CornerRadius" Value="0" />
+        </Style>
+        <Style Selector="TextBox.inline:pointerover /template/ Border#PART_BorderElement">
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="TextBox.inline:focus /template/ Border#PART_BorderElement">
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+    </UserControl.Styles>
+
     <Grid>
         <StackPanel Spacing="4">
             <TextBlock Text="{Binding CharacterCountText}"
@@ -28,7 +44,7 @@
                                         Background="{DynamicResource OverlayBrush}"
                                         Cursor="SizeAll"
                                         Padding="6,0,10,0"
-                                        CornerRadius="4,0,0,4"
+                                        CornerRadius="3,0,0,3"
                                         VerticalAlignment="Stretch">
                                     <StackPanel Orientation="Horizontal" Spacing="6"
                                                 VerticalAlignment="Center">
@@ -44,20 +60,24 @@
                                     </StackPanel>
                                 </Border>
 
-                                <!-- Path text -->
+                                <!-- Path text: borderless, the card is the outline.
+                                     Inline styles keep Fluent's hover and focus
+                                     borders off too. -->
                                 <TextBox Grid.Column="1"
                                          Text="{Binding Path}"
                                          FontSize="12"
                                          VerticalContentAlignment="Center"
-                                         Padding="6,4"
-                                         Margin="2,0" />
+                                         Padding="8,4"
+                                         Margin="0"
+                                         Classes="inline" />
 
                                 <!-- Remove button -->
                                 <Button Grid.Column="2"
                                         Command="{Binding $parent[ItemsControl].((vm:PathEditorViewModel)DataContext).RemoveEntryCommand}"
                                         CommandParameter="{Binding}"
                                         Background="{DynamicResource OverlayBrush}"
-                                        CornerRadius="0,4,4,0"
+                                        BorderThickness="0"
+                                        CornerRadius="0,3,3,0"
                                         Padding="10,0"
                                         VerticalAlignment="Stretch"
                                         VerticalContentAlignment="Center"
