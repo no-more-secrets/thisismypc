@@ -25,6 +25,58 @@ public interface IStartupFolderService
     OperationResult<IReadOnlyList<StartupFolderItem>> EnumerateDisabled(StartupFolderScope scope)
         => OperationResult<IReadOnlyList<StartupFolderItem>>.Success([]);
 
+    /// <summary>Reads a startup file whole for a snapshot; fails when it is larger than <paramref name="maxBytes"/>.</summary>
+    OperationResult<byte[]> ReadAllBytes(string path, int maxBytes)
+    {
+        try
+        {
+            var info = new FileInfo(path);
+            if (!info.Exists)
+                return OperationResult<byte[]>.Failure($"File not found: {path}", ErrorCategory.NotFound);
+            if (info.Length > maxBytes)
+                return OperationResult<byte[]>.Failure($"{path} is too large to snapshot.", ErrorCategory.ServiceUnavailable);
+            return OperationResult<byte[]>.Success(File.ReadAllBytes(path));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return OperationResult<byte[]>.Failure($"Could not read {path}: {ex.Message}", ErrorCategory.AccessDenied, ex);
+        }
+    }
+
+    /// <summary>Deletes one startup file (a copy that re-registered itself beside a parked twin). Missing is success.</summary>
+    OperationResult<bool> Delete(string path)
+    {
+        try
+        {
+            if (File.Exists(path))
+                File.Delete(path);
+            return OperationResult<bool>.Success(true);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return OperationResult<bool>.Failure($"Could not delete {path}: {ex.Message}", ErrorCategory.AccessDenied, ex);
+        }
+    }
+
+    /// <summary>Writes a startup file back from its snapshot (undo of a purge). Never overwrites.</summary>
+    OperationResult<bool> Restore(string path, byte[] contents)
+    {
+        try
+        {
+            if (File.Exists(path))
+                return OperationResult<bool>.Success(true);
+            var directory = Path.GetDirectoryName(path);
+            if (!string.IsNullOrEmpty(directory))
+                Directory.CreateDirectory(directory);
+            File.WriteAllBytes(path, contents);
+            return OperationResult<bool>.Success(true);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return OperationResult<bool>.Failure($"Could not restore {path}: {ex.Message}", ErrorCategory.AccessDenied, ex);
+        }
+    }
+
     /// <summary>
     /// Moves one startup file, creating the destination folder. Default: the
     /// file system. Idempotent (source gone, destination present is success)

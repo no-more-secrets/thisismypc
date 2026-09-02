@@ -27,16 +27,25 @@ public static class AutorunChangeFactory
         return entry.IsEnabled || entry.Kind is AutorunItemKind.ScheduledTask or AutorunItemKind.Service ? id : id + ParkedSuffix;
     }
 
+    /// <summary>Separates the state word from the snapshot JSON of a re-registered live copy.</summary>
+    public const char SnapshotSeparator = ';';
+
     public static ChangeDescriptor CreateToggle(AutorunEntry entry, bool enable)
     {
         ArgumentNullException.ThrowIfNull(entry);
+        var before = entry.IsEnabled ? EnabledValue : DisabledValue;
+        // A re-registered copy carries its snapshot, so disabling purges it and undo restores it.
+        if (entry.IsEnabled && entry.LiveSnapshot is not null)
+            before += SnapshotSeparator + entry.LiveSnapshot;
         return new ChangeDescriptor
         {
             ModuleId = ModuleId,
             SettingId = GetSettingId(entry),
-            DisplayName = $"{AutorunEntry.CategoryName(entry.Category)}: {entry.Name}",
+            DisplayName = entry.IsReRegistered
+                ? $"{AutorunEntry.CategoryName(entry.Category)}: {entry.Name} (re-registered copy)"
+                : $"{AutorunEntry.CategoryName(entry.Category)}: {entry.Name}",
             SystemLocation = AutorunTarget.For(entry).Encode(),
-            BeforeValue = entry.IsEnabled ? EnabledValue : DisabledValue,
+            BeforeValue = before,
             AfterValue = enable ? EnabledValue : DisabledValue,
             BeforeDisplay = entry.IsEnabled ? EnabledValue : DisabledValue,
             AfterDisplay = enable ? EnabledValue : DisabledValue,
@@ -44,6 +53,23 @@ public static class AutorunChangeFactory
             Category = enable ? ChangeCategory.Enable : ChangeCategory.Disable,
             RestartRequirement = RestartFor(entry.Category),
         };
+    }
+
+    /// <summary>Reads "Enabled", "Disabled", or "Enabled;{snapshot}"; null when the word is neither.</summary>
+    public static bool? ParseState(string? value, out AutorunSnapshot? snapshot)
+    {
+        snapshot = null;
+        if (string.IsNullOrEmpty(value))
+            return null;
+        var cut = value.IndexOf(SnapshotSeparator, StringComparison.Ordinal);
+        var word = cut < 0 ? value : value[..cut];
+        if (cut >= 0)
+            snapshot = AutorunSnapshot.Deserialize(value[(cut + 1)..]);
+        if (string.Equals(word, EnabledValue, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (string.Equals(word, DisabledValue, StringComparison.OrdinalIgnoreCase))
+            return false;
+        return null;
     }
 
     /// <summary>When the change takes effect. Explorer reloads its handlers on restart; system-level hooks need a reboot.</summary>

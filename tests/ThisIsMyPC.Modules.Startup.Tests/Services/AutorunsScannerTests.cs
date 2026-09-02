@@ -255,6 +255,36 @@ public class AutorunsScannerTests
         Assert.Equal("Real", only.Name);
     }
 
+    [Fact]
+    public void ReRegistered_LiveItemBesideItsParkedTwinBecomesOneFlaggedRowWithASnapshot()
+    {
+        _registry.SetString(StartupScanner.MachineRunKey, "Acme", @"C:\Acme\new.exe");
+        _registry.SetString($@"{StartupScanner.MachineRunKey}\AutorunsDisabled", "Acme", @"C:\Acme\old.exe");
+        _registry.SetString(StartupScanner.MachineRunKey, "Honest", @"C:\honest.exe");
+        _registry.SetString($@"{StartupScanner.MachineRunKey}\AutorunsDisabled", "Parked", @"C:\parked.exe");
+        const string folder = @"C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup";
+        _folders.AddItem(StartupFolderScope.AllUsers, $@"{folder}\Tool.lnk", @"C:\Tool\tool.exe");
+        _folders.AddDisabledItem(StartupFolderScope.AllUsers, $@"{folder}\AutorunsDisabled\Tool.lnk", @"C:\Tool\tool.exe");
+
+        var logon = Scan().Where(e => e.Category == AutorunCategory.Logon).ToList();
+
+        var acme = Assert.Single(logon, e => e.Name == "Acme");
+        Assert.True(acme.IsEnabled);
+        Assert.True(acme.IsReRegistered);
+        Assert.True(acme.CanToggle);
+        Assert.Equal("Re-registered itself after being switched off", acme.Note);
+        var snapshot = AutorunSnapshot.Deserialize(acme.LiveSnapshot);
+        Assert.NotNull(snapshot);
+        Assert.Equal(@"C:\Acme\new.exe", Assert.Single(snapshot.Values).Value.Data);
+
+        var tool = Assert.Single(logon, e => e.Name == "Tool.lnk");
+        Assert.True(tool.IsReRegistered);
+        Assert.NotNull(AutorunSnapshot.Deserialize(tool.LiveSnapshot)?.FileBase64);
+
+        Assert.Single(logon, e => e.Name == "Honest" && e.IsEnabled && !e.IsReRegistered);
+        Assert.Single(logon, e => e.Name == "Parked" && !e.IsEnabled && !e.IsReRegistered);
+    }
+
     private void AddService(string name, int type, int start, string image)
     {
         var key = $@"{AutorunLocations.ServicesKey}\{name}";

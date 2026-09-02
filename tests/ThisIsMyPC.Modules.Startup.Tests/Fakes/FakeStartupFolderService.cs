@@ -44,6 +44,39 @@ public sealed class FakeStartupFolderService : IStartupFolderService
     public OperationResult<IReadOnlyList<StartupFolderItem>> EnumerateDisabled(StartupFolderScope scope)
         => OperationResult<IReadOnlyList<StartupFolderItem>>.Success(_disabled[scope]);
 
+    /// <summary>Every fake file reads as its own path in UTF-8, so a snapshot round trip is checkable.</summary>
+    public OperationResult<byte[]> ReadAllBytes(string path, int maxBytes)
+        => Find(path) is null
+            ? OperationResult<byte[]>.Failure($"File not found: {path}", ErrorCategory.NotFound)
+            : OperationResult<byte[]>.Success(System.Text.Encoding.UTF8.GetBytes(path));
+
+    public List<string> Deleted { get; } = [];
+    public List<(string Path, byte[] Contents)> Restored { get; } = [];
+
+    public OperationResult<bool> Delete(string path)
+    {
+        Deleted.Add(path);
+        foreach (var list in _items.Values.Concat(_disabled.Values))
+            list.RemoveAll(i => string.Equals(i.FilePath, path, StringComparison.OrdinalIgnoreCase));
+        return OperationResult<bool>.Success(true);
+    }
+
+    public OperationResult<bool> Restore(string path, byte[] contents)
+    {
+        Restored.Add((path, contents));
+        if (Find(path) is null)
+        {
+            var scope = path.Contains("ProgramData", StringComparison.OrdinalIgnoreCase) ? StartupFolderScope.AllUsers : StartupFolderScope.CurrentUser;
+            (path.Contains(IStartupFolderService.DisabledSubfolder, StringComparison.OrdinalIgnoreCase) ? _disabled : _items)[scope]
+                .Add(new StartupFolderItem(path, null));
+        }
+        return OperationResult<bool>.Success(true);
+    }
+
+    private StartupFolderItem? Find(string path)
+        => _items.Values.Concat(_disabled.Values).SelectMany(l => l)
+            .FirstOrDefault(i => string.Equals(i.FilePath, path, StringComparison.OrdinalIgnoreCase));
+
     /// <summary>Moves between a scope's folder and its AutorunsDisabled subfolder, by path match.</summary>
     public OperationResult<bool> Move(string fromPath, string toPath)
     {

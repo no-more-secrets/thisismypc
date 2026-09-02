@@ -7,8 +7,46 @@
              x:Class="ThisIsMyPC.App.Views.StartupView"
              x:DataType="vm:StartupViewModel">
 
-    <UserControl.Resources>
-        <DataTemplate x:Key="AutorunRowTemplate" x:DataType="vm:AutorunItemViewModel">
+    <UserControl.Styles>
+        <!-- Row lists are ListBoxes for virtualization (hundreds of rows per
+             category); selection is meaningless here, so its chrome is off. -->
+        <Style Selector="ListBox.rows">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Padding" Value="0,0,0,24" />
+            <Setter Property="SelectionMode" Value="Toggle" />
+        </Style>
+        <Style Selector="ListBox.rows > ListBoxItem">
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0,0,16,0" />
+            <Setter Property="Focusable" Value="False" />
+        </Style>
+        <Style Selector="ListBox.rows > ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="ListBox.rows > ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="ListBox.rows > ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="TextBox.filter">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="MinHeight" Value="38" />
+            <Setter Property="Padding" Value="12,8" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+    </UserControl.Styles>
+
+    <UserControl.DataTemplates>
+        <DataTemplate x:DataType="vm:AutorunSearchHeader">
+            <TextBlock Text="{Binding Text}"
+                       FontSize="16"
+                       FontWeight="SemiBold"
+                       Margin="0,10,0,4"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+        </DataTemplate>
+
+        <DataTemplate x:DataType="vm:AutorunItemViewModel">
             <Border Padding="12,8" Margin="0,2" CornerRadius="4"
                     Classes="card">
                 <Grid ColumnDefinitions="2*,*,Auto,Auto" RowDefinitions="Auto,Auto,Auto">
@@ -41,9 +79,15 @@
                                    Foreground="{DynamicResource WarningBrush}"
                                    VerticalAlignment="Center" />
                         <TextBlock Text="{Binding NoteText}"
-                                   IsVisible="{Binding HasNote}"
+                                   IsVisible="{Binding HasPlainNote}"
                                    FontSize="11"
                                    Foreground="{DynamicResource TextTertiaryBrush}"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding NoteText}"
+                                   IsVisible="{Binding IsReRegistered}"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource WarningBrush}"
                                    VerticalAlignment="Center" />
                         <TextBlock Text="{Binding StateText}"
                                    FontSize="12"
@@ -74,24 +118,12 @@
                 </Grid>
             </Border>
         </DataTemplate>
+    </UserControl.DataTemplates>
 
-        <DataTemplate x:Key="AutorunGroupTemplate" x:DataType="vm:AutorunGroupViewModel">
-            <StackPanel Spacing="6" Margin="0,0,0,14">
-                <TextBlock Text="{Binding Header}"
-                           IsVisible="{Binding ShowHeader}"
-                           FontSize="16"
-                           FontWeight="SemiBold"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
-                <ItemsControl ItemsSource="{Binding Items}"
-                              ItemTemplate="{StaticResource AutorunRowTemplate}" />
-            </StackPanel>
-        </DataTemplate>
-    </UserControl.Resources>
-
-    <!-- Autoruns' layout: one tab per category plus Everything, the filter
-         row shared above the strip. Fixed chrome above the tabs keeps the
-         16px right margin so it shares the content edge; the strip itself
-         wraps because fourteen headers do not fit one row. -->
+    <!-- Autoruns' layout: one tab per category, the filter row above the
+         strip. Typing swaps the strip for one list across every category.
+         Fixed chrome keeps the 16px right margin so it shares the content
+         edge; the strip wraps because thirteen headers do not fit one row. -->
     <Grid RowDefinitions="Auto,Auto,*" Margin="0,12,0,0">
         <TextBlock Grid.Row="0"
                    Text="{Binding AutorunsScanError, StringFormat='Part of the scan failed: {0}'}"
@@ -103,15 +135,16 @@
             <CheckBox DockPanel.Dock="Right"
                       IsChecked="{Binding HideMicrosoftAutoruns}"
                       Content="Hide Microsoft entries"
-                      FontSize="12"
+                      FontSize="13"
                       Margin="12,0,0,0"
                       VerticalAlignment="Center" />
-            <TextBox Text="{Binding AutorunFilterText}"
-                     Watermark="Filter by name, description, publisher, file, or location"
-                     FontSize="12" />
+            <TextBox Classes="filter"
+                     Text="{Binding AutorunFilterText}"
+                     Watermark="Search every category by name, description, publisher, file, or location" />
         </DockPanel>
 
-        <TabControl Grid.Row="2" ItemsSource="{Binding Tabs}" Margin="0,8,0,0">
+        <TabControl Grid.Row="2" ItemsSource="{Binding Tabs}" Margin="0,8,0,0"
+                    IsVisible="{Binding !IsSearching}">
             <TabControl.ItemsPanel>
                 <ItemsPanelTemplate>
                     <WrapPanel />
@@ -124,19 +157,23 @@
             </TabControl.ItemTemplate>
             <TabControl.ContentTemplate>
                 <DataTemplate x:DataType="vm:AutorunTabViewModel">
-                    <ScrollViewer HorizontalScrollBarVisibility="Disabled"
-                                  VerticalScrollBarVisibility="Auto">
-                        <StackPanel Spacing="6" Margin="0,8,16,24">
-                            <ItemsControl ItemsSource="{Binding Groups}"
-                                          ItemTemplate="{StaticResource AutorunGroupTemplate}" />
-                            <TextBlock Text="Nothing here matches the current filter"
-                                       FontSize="12" FontStyle="Italic"
-                                       Foreground="{DynamicResource TextTertiaryBrush}"
-                                       IsVisible="{Binding !HasItems}" />
-                        </StackPanel>
-                    </ScrollViewer>
+                    <Panel Margin="0,8,0,0">
+                        <ListBox Classes="rows" ItemsSource="{Binding Items}" />
+                        <TextBlock Text="Nothing in this category"
+                                   FontSize="12" FontStyle="Italic"
+                                   Foreground="{DynamicResource TextTertiaryBrush}"
+                                   VerticalAlignment="Top"
+                                   IsVisible="{Binding !HasItems}" />
+                    </Panel>
                 </DataTemplate>
             </TabControl.ContentTemplate>
         </TabControl>
+
+        <Grid Grid.Row="2" RowDefinitions="Auto,*" Margin="0,12,0,0" IsVisible="{Binding IsSearching}">
+            <TextBlock Grid.Row="0" Text="{Binding SearchSummary}"
+                       FontSize="12"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+            <ListBox Grid.Row="1" Classes="rows" ItemsSource="{Binding SearchResults}" />
+        </Grid>
     </Grid>
 </UserControl>

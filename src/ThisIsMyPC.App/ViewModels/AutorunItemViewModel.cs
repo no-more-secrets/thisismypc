@@ -9,43 +9,28 @@ using ThisIsMyPC.Modules.Startup.Models;
 
 namespace ThisIsMyPC.App.ViewModels;
 
-/// <summary>One Autoruns category's visible rows. On the Everything tab the header names the category; on a category tab it is hidden.</summary>
-public sealed class AutorunGroupViewModel
-{
-    public AutorunGroupViewModel(AutorunCategory category, IReadOnlyList<AutorunItemViewModel> items, int total, bool showHeader)
-    {
-        Category = category;
-        Items = items;
-        ShowHeader = showHeader;
-        Header = CountLabel(AutorunEntry.CategoryName(category), items.Count, total);
-    }
-
-    public AutorunCategory Category { get; }
-    public string Header { get; }
-    public bool ShowHeader { get; }
-    public IReadOnlyList<AutorunItemViewModel> Items { get; }
-
-    public static string CountLabel(string name, int shown, int total)
-        => shown == total ? $"{name} ({total})" : $"{name} ({shown} of {total})";
-}
+/// <summary>A category header row inside the search results list.</summary>
+public sealed record AutorunSearchHeader(string Text);
 
 /// <summary>
-/// One tab of the page, the way Autoruns has one per category plus
-/// Everything. Category is null for Everything, which shows every group
-/// with its header. Groups are rebuilt whenever the shared filters change.
+/// One tab of the page, the way Autoruns has one per category. Items is
+/// swapped whole when the Microsoft filter changes, so the virtualized list
+/// sees one reset instead of one event per row.
 /// </summary>
 public sealed partial class AutorunTabViewModel : ObservableObject
 {
-    public AutorunTabViewModel(AutorunCategory? category)
+    public AutorunTabViewModel(AutorunCategory category)
     {
         Category = category;
-        Name = category is null ? "Everything" : AutorunEntry.CategoryName(category.Value);
-        Header = Name;
+        Name = AutorunEntry.CategoryName(category);
+        _header = Name;
     }
 
-    public AutorunCategory? Category { get; }
+    public AutorunCategory Category { get; }
     public string Name { get; }
-    public ObservableCollection<AutorunGroupViewModel> Groups { get; } = [];
+
+    [ObservableProperty]
+    private IReadOnlyList<AutorunItemViewModel> _items = [];
 
     [ObservableProperty]
     private string _header;
@@ -53,14 +38,15 @@ public sealed partial class AutorunTabViewModel : ObservableObject
     [ObservableProperty]
     private bool _hasItems;
 
-    public void Replace(IReadOnlyList<AutorunGroupViewModel> groups, int shown, int total)
+    public void Replace(IReadOnlyList<AutorunItemViewModel> items, int total)
     {
-        Groups.Clear();
-        foreach (var group in groups)
-            Groups.Add(group);
-        Header = AutorunGroupViewModel.CountLabel(Name, shown, total);
-        HasItems = groups.Count > 0;
+        Items = items;
+        Header = CountLabel(Name, items.Count, total);
+        HasItems = items.Count > 0;
     }
+
+    public static string CountLabel(string name, int shown, int total)
+        => shown == total ? $"{name} ({total})" : $"{name} ({shown} of {total})";
 }
 
 /// <summary>
@@ -129,6 +115,10 @@ public sealed partial class AutorunItemViewModel : ObservableObject, IDisposable
     public bool HasImagePath => !string.Equals(ImagePathText, LocationText, StringComparison.OrdinalIgnoreCase);
     public string NoteText => Entry.Note ?? string.Empty;
     public bool HasNote => !string.IsNullOrEmpty(Entry.Note);
+    public bool HasPlainNote => HasNote && !Entry.IsReRegistered;
+
+    /// <summary>The program put itself back after the user switched it off; the note shows in the warning color.</summary>
+    public bool IsReRegistered => Entry.IsReRegistered;
     public string StateText => IsEnabled ? "Enabled" : "Disabled";
 
     /// <summary>Where the item is registered: key and value, folder and file, task path, or service key.</summary>

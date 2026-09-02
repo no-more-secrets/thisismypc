@@ -78,8 +78,52 @@ public sealed class AutorunsScanner
         }
 
         ScanServices(entries, services);
-        return entries;
+        return CollapseReRegistered(entries);
     }
+
+    /// <summary>
+    /// A live item beside its parked twin means the program re-registered
+    /// itself after the user switched it off (Autoruns lists both and refuses
+    /// to touch either). The pair becomes one live row that carries a
+    /// snapshot of the live copy, so switching it off purges the copy and
+    /// undo puts it back; the parked twin stays as the user's choice.
+    /// </summary>
+    private List<AutorunEntry> CollapseReRegistered(List<AutorunEntry> entries)
+    {
+        var parked = entries
+            .Where(e => !e.IsEnabled && e.Kind is AutorunItemKind.RegistryValue or AutorunItemKind.RegistryKey or AutorunItemKind.StartupFile)
+            .Select(e => $"{e.Kind}|{e.Location}|{e.Name}")
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        if (parked.Count == 0)
+            return entries;
+
+        var result = new List<AutorunEntry>(entries.Count);
+        foreach (var entry in entries)
+        {
+            var key = $"{entry.Kind}|{entry.Location}|{entry.Name}";
+            if (!entry.IsEnabled || !parked.Contains(key))
+            {
+                result.Add(entry);
+                continue;
+            }
+
+            var snapshot = AutorunSnapshot.Capture(_registry, _folders, entry.Kind, entry.Location, entry.Name);
+            result.Add(entry with
+            {
+                Note = "Re-registered itself after being switched off",
+                LiveSnapshot = snapshot?.Serialize(),
+                // Without a snapshot the copy cannot be purged undoably; the switch stays off-limits.
+                CanToggle = snapshot is not null,
+            });
+        }
+        // The parked twins drop out: their row is the flagged live one.
+        return result.Where(e => e.IsEnabled || !parked.Contains($"{e.Kind}|{e.Location}|{e.Name}") || !HasLiveTwin(entries, e)).ToList();
+    }
+
+    private static bool HasLiveTwin(List<AutorunEntry> entries, AutorunEntry parkedEntry)
+        => entries.Any(e => e.IsEnabled && e.Kind == parkedEntry.Kind
+            && string.Equals(e.Location, parkedEntry.Location, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(e.Name, parkedEntry.Name, StringComparison.OrdinalIgnoreCase));
 
     // ---- Registry values ----
 

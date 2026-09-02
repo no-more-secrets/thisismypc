@@ -1,6 +1,6 @@
 # Startup Scanner Rationale
 
-Design rationale for `ThisIsMyPC.Modules.Startup`. This is AI-written, condensed from an analysis of an Autoruns export from one personal machine (the export is not in the repo) and from Sam's read of how Autoruns stores state. Since 2026-09-02 the module's page is laid out like Autoruns itself: one tab per category plus Everything, a filter box and a "Hide Microsoft entries" box shared by every tab, and items disabled the way Autoruns disables them, so the two tools read each other's state. The earlier Startup, Scheduled Tasks, and Services tabs were removed the same day; their scanners and change factories stay in the module because sets (Clean Boot), the monitoring section on Home, and the set inspector still apply changes through them.
+Design rationale for `ThisIsMyPC.Modules.Startup`. This is AI-written, condensed from an analysis of an Autoruns export from one personal machine (the export is not in the repo) and from Sam's read of how Autoruns stores state. Since 2026-09-02 the module's page is laid out like Autoruns itself: one tab per category, a "Hide Microsoft entries" box, and a search box that replaces the tabs with one list across every category while it has text. Items are disabled the way Autoruns disables them, so the two tools read each other's state. Row lists are virtualized (a category can hold hundreds of rows). The earlier Startup, Scheduled Tasks, and Services tabs were removed the same day; their scanners and change factories stay in the module because sets (Clean Boot), the monitoring section on Home, and the set inspector still apply changes through them.
 
 ## The page
 
@@ -27,6 +27,7 @@ Rules the toggler keeps:
 - Idempotent: an item already at its destination is success.
 - Never overwrites: when the source and the destination both exist (a twin parked earlier by Autoruns, then the installer recreated the live item), the move fails before touching anything and names the copy to remove. Registry values, keys, and Startup files all follow this rule.
 - A service or driver that is already `Start` = 4 without an `AutorunsDisabled` value was disabled by something else; both directions refuse rather than record a change with no reverse.
+- Re-registered copies (Sam's rule, 2026-09-02): a live item beside its parked twin, in a key or a Startup folder, means the program put itself back after the user switched it off. Autoruns lists both and refuses to touch either. The scanner collapses the pair into one live row flagged "Re-registered itself after being switched off" and snapshots the live copy (`AutorunSnapshot`: the value, the whole subkey tree, or the file's bytes up to 1 MB) into the descriptor's BeforeValue after the state word. Switching the row off purges the live copy and leaves the parked twin as the record of the user's choice; undo writes the copy back from the snapshot. A copy that cannot be snapshotted (a large file) keeps its switch greyed.
 
 What the scanner reads:
 

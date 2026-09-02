@@ -88,6 +88,38 @@ public class AutorunChangeFactoryTests
     }
 
     [Fact]
+    public void ParseState_ReadsTheWordAndAnOptionalSnapshot()
+    {
+        Assert.True(AutorunChangeFactory.ParseState("Enabled", out var none));
+        Assert.Null(none);
+        Assert.False(AutorunChangeFactory.ParseState("disabled", out _));
+        Assert.Null(AutorunChangeFactory.ParseState("Maybe", out _));
+        Assert.Null(AutorunChangeFactory.ParseState(null, out _));
+
+        var snapshot = new AutorunSnapshot
+        {
+            Kind = AutorunItemKind.RegistryValue,
+            Values = [new("", "Acme", Core.Services.RegistryValueData.FromString(@"C:\Acme\new.exe"))],
+        };
+        Assert.True(AutorunChangeFactory.ParseState("Enabled;" + snapshot.Serialize(), out var parsed));
+        Assert.NotNull(parsed);
+        Assert.Equal(@"C:\Acme\new.exe", Assert.Single(parsed.Values).Value.Data);
+    }
+
+    [Fact]
+    public void ReRegisteredEntry_CarriesItsSnapshotInBeforeValueAndSaysSoInTheName()
+    {
+        var snapshot = new AutorunSnapshot { Kind = AutorunItemKind.RegistryKey, Values = [] };
+        var entry = Entry() with { LiveSnapshot = snapshot.Serialize() };
+
+        var change = AutorunChangeFactory.CreateToggle(entry, enable: false);
+
+        Assert.Equal("Enabled;" + snapshot.Serialize(), change.BeforeValue);
+        Assert.Equal("Disabled", change.AfterValue);
+        Assert.Equal("Explorer: Foo Handler (re-registered copy)", change.DisplayName);
+    }
+
+    [Fact]
     public void ParkedRows_GetTheirOwnSettingId()
     {
         var live = Entry(enabled: true);

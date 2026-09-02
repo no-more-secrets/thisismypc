@@ -73,9 +73,10 @@ Two themes required, dark and light, equal citizens. Dark is the default.
    (AC/DC columns), and a "System power" toggle section (hibernation,
    Ultimate Performance).
 6. **Startup & Services**: laid out like Autoruns, one tab per category
-   (Logon, Explorer, Services, Drivers, Scheduled Tasks, and the rest) plus
-   Everything, with a filter box and a "Hide Microsoft entries" box shared
-   above the tabs and a per-row switch that stages the change.
+   (Logon, Explorer, Services, Drivers, Scheduled Tasks, and the rest), a
+   "Hide Microsoft entries" box, a search box that replaces the tabs with one
+   list across every category while it has text, and a per-row switch that
+   stages the change.
 7. **Windows Annoyances**: ~30 setting cards in groups. The reference
    card-based module.
 8. **Windows Update**: 8 setting cards.

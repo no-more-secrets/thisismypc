@@ -70,6 +70,16 @@ public sealed record AutorunEntry
     /// </summary>
     public bool CanToggle { get; init; } = true;
 
+    /// <summary>
+    /// Set when this live item sits beside its parked twin: the program
+    /// re-registered itself after the user switched it off. Holds the live
+    /// copy (AutorunSnapshot JSON) so switching it off can purge the copy and
+    /// undo can put it back. The parked twin is not listed separately.
+    /// </summary>
+    public string? LiveSnapshot { get; init; }
+
+    public bool IsReRegistered => LiveSnapshot is not null;
+
     public static string CategoryName(AutorunCategory category) => category switch
     {
         AutorunCategory.Logon => "Logon",

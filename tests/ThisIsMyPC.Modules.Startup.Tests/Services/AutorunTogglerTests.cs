@@ -233,6 +233,87 @@ public class AutorunTogglerTests
     }
 
     [Fact]
+    public void ReRegisteredValue_DisablePurgesTheLiveCopyAndEnableRestoresItFromTheSnapshot()
+    {
+        var parkedKey = $@"{StartupScanner.MachineRunKey}\AutorunsDisabled";
+        _registry.SetString(StartupScanner.MachineRunKey, "Acme", @"C:\Acme\new.exe");
+        _registry.SetString(parkedKey, "Acme", @"C:\Acme\old.exe");
+        var target = new AutorunTarget(AutorunItemKind.RegistryValue, StartupScanner.MachineRunKey, "Acme");
+        var snapshot = AutorunSnapshot.Capture(_registry, _folders, target.Kind, target.Location, target.Name);
+        Assert.NotNull(snapshot);
+
+        Assert.True(CreateToggler().Apply(target, enable: false, snapshot).IsSuccess);
+        Assert.False(_registry.ValueExists(StartupScanner.MachineRunKey, "Acme").Value);
+        Assert.Equal(@"C:\Acme\old.exe", _registry.ReadString(parkedKey, "Acme").Value);
+
+        Assert.True(CreateToggler().Apply(target, enable: true, snapshot).IsSuccess);
+        Assert.Equal(@"C:\Acme\new.exe", _registry.ReadString(StartupScanner.MachineRunKey, "Acme").Value);
+        Assert.Equal(@"C:\Acme\old.exe", _registry.ReadString(parkedKey, "Acme").Value);
+    }
+
+    [Fact]
+    public void ReRegisteredKey_PurgeAndRestoreKeepTheWholeTree()
+    {
+        var parent = AutorunLocations.BackgroundContextMenuHandlersKey;
+        _registry.SetString($@"{parent}\Foo", "", "{NEW}");
+        _registry.SetDWord($@"{parent}\Foo\Nested", "Flag", 5);
+        _registry.SetString($@"{parent}\AutorunsDisabled\Foo", "", "{OLD}");
+        var target = new AutorunTarget(AutorunItemKind.RegistryKey, parent, "Foo");
+        var snapshot = AutorunSnapshot.Capture(_registry, _folders, target.Kind, target.Location, target.Name);
+
+        Assert.True(CreateToggler().Apply(target, enable: false, snapshot).IsSuccess);
+        Assert.False(_registry.KeyExists($@"{parent}\Foo").Value);
+        Assert.Equal("{OLD}", _registry.ReadString($@"{parent}\AutorunsDisabled\Foo", "").Value);
+
+        Assert.True(CreateToggler().Apply(target, enable: true, snapshot).IsSuccess);
+        Assert.Equal("{NEW}", _registry.ReadString($@"{parent}\Foo", "").Value);
+        Assert.Equal(5, _registry.ReadDWord($@"{parent}\Foo\Nested", "Flag").Value);
+    }
+
+    [Fact]
+    public void ReRegisteredFile_PurgeDeletesAndRestoreWritesTheBytesBack()
+    {
+        const string folder = @"C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup";
+        _folders.AddItem(StartupFolderScope.AllUsers, $@"{folder}\Tool.lnk", @"C:\Tool\tool.exe");
+        _folders.AddDisabledItem(StartupFolderScope.AllUsers, $@"{folder}\AutorunsDisabled\Tool.lnk", @"C:\Tool\tool.exe");
+        var target = new AutorunTarget(AutorunItemKind.StartupFile, folder, "Tool.lnk");
+        var snapshot = AutorunSnapshot.Capture(_registry, _folders, target.Kind, target.Location, target.Name);
+        Assert.NotNull(snapshot?.FileBase64);
+
+        Assert.True(CreateToggler().Apply(target, enable: false, snapshot).IsSuccess);
+        Assert.Equal($@"{folder}\Tool.lnk", Assert.Single(_folders.Deleted));
+        Assert.Empty(_folders.Enumerate(StartupFolderScope.AllUsers).Value!);
+        Assert.Single(_folders.EnumerateDisabled(StartupFolderScope.AllUsers).Value!);
+
+        Assert.True(CreateToggler().Apply(target, enable: true, snapshot).IsSuccess);
+        var restored = Assert.Single(_folders.Restored);
+        Assert.Equal($@"{folder}\Tool.lnk", restored.Path);
+        Assert.Equal(Convert.FromBase64String(snapshot.FileBase64!), restored.Contents);
+    }
+
+    [Fact]
+    public async Task Module_PurgesAReRegisteredCopyThroughTheDescriptorAndUndoRestoresIt()
+    {
+        var parkedKey = $@"{StartupScanner.UserRunKey}\AutorunsDisabled";
+        _registry.SetString(StartupScanner.UserRunKey, "Acme", @"C:\Acme\new.exe");
+        _registry.SetString(parkedKey, "Acme", @"C:\Acme\old.exe");
+        var entry = new AutorunsScanner(_registry, _folders, _ => new StartupFileMetadata(null, null), @"C:\Windows")
+            .Scan([], []).Single(e => e.Name == "Acme");
+        Assert.True(entry.IsReRegistered);
+        var change = AutorunChangeFactory.CreateToggle(entry, enable: false);
+        Assert.StartsWith("Enabled;", change.BeforeValue, StringComparison.Ordinal);
+        var module = CreateModule();
+
+        Assert.True((await module.ApplyChangeAsync(change)).IsSuccess);
+        Assert.False(_registry.ValueExists(StartupScanner.UserRunKey, "Acme").Value);
+        Assert.Equal(@"C:\Acme\old.exe", _registry.ReadString(parkedKey, "Acme").Value);
+
+        var reverted = await module.RevertChangeAsync(change with { BeforeValue = change.AfterValue!, AfterValue = change.BeforeValue });
+        Assert.True(reverted.IsSuccess);
+        Assert.Equal(@"C:\Acme\new.exe", _registry.ReadString(StartupScanner.UserRunKey, "Acme").Value);
+    }
+
+    [Fact]
     public async Task Module_AppliesAndRevertsAnAutorunDescriptor()
     {
         _registry.SetString(StartupScanner.UserRunKey, "Acme", @"C:\Acme\acme.exe");

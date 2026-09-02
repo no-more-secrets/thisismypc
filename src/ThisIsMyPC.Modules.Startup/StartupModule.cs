@@ -31,7 +31,7 @@ public sealed class StartupModule : IModule
     public ModuleInfo Info { get; } = new(
         Name: "Startup & Services",
         Icon: "startup",
-        Description: "Everything that starts on its own, in Autoruns' categories, with Autoruns-compatible on and off",
+        Description: "Everything that starts on its own; compatible with Autoruns",
         RequiredCapabilities: [SystemCapability.Registry, SystemCapability.Com],
         Group: ModuleGroup.Core,
         LoadOrder: 4);
@@ -103,12 +103,15 @@ public sealed class StartupModule : IModule
 
     private OperationResult<bool> ApplyAutorunChange(ChangeDescriptor change)
     {
-        var enable = string.Equals(change.AfterValue, Changes.AutorunChangeFactory.EnabledValue, StringComparison.OrdinalIgnoreCase);
-        if (!enable && !string.Equals(change.AfterValue, Changes.AutorunChangeFactory.DisabledValue, StringComparison.OrdinalIgnoreCase))
+        // The snapshot of a re-registered copy rides in whichever side says
+        // Enabled: BeforeValue on apply, AfterValue on undo (sides swapped).
+        var enable = Changes.AutorunChangeFactory.ParseState(change.AfterValue, out var afterSnapshot);
+        if (enable is null)
         {
             return OperationResult<bool>.Failure(
                 $"Invalid autorun state '{change.AfterValue}' for {change.DisplayName}", ErrorCategory.NotFound);
         }
+        Changes.AutorunChangeFactory.ParseState(change.BeforeValue, out var beforeSnapshot);
 
         var target = AutorunTarget.TryParse(change.SystemLocation);
         if (target is null)
@@ -117,7 +120,8 @@ public sealed class StartupModule : IModule
                 $"Invalid autorun location: {change.SystemLocation}", ErrorCategory.NotFound);
         }
 
-        return new AutorunToggler(_registryService, _startupFolderService, _scheduledTaskService).Apply(target, enable);
+        return new AutorunToggler(_registryService, _startupFolderService, _scheduledTaskService)
+            .Apply(target, enable.Value, afterSnapshot ?? beforeSnapshot);
     }
 
     public Task<OperationResult<bool>> RevertChangeAsync(ChangeDescriptor change)
