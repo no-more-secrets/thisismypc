@@ -123,5 +123,5 @@ output directory first; vpk refuses to pack over an existing release.
   whole runtime along (232 DLLs), which cancels the App saving. The installer
   is always NativeAOT. Default stays CoreCLR until one full manual pass on an
   AOT build (every module page plus an apply, Owner Mode enable for the
-  service); the 0.1.0 test build handed to Sam on 2026-09-01 is that AOT
-  build, so the pass is underway.
+  service). The install half is done: Sam installed AOT 0.1.0 and updated
+  it to AOT 0.1.1 on 2026-09-02, both clean. The in-app half is open.

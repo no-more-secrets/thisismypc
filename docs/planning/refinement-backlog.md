@@ -107,9 +107,11 @@ The app corresponds to the PC, not a profile. Implemented:
   accept, Options (folder, Desktop shortcut, start with Windows, update
   checks), Installing, Done. Trusted files go under the hardened ProgramData
   folder, never %TEMP%. First end-to-end unsigned build ran the same day.
-  Open: one real elevated run by a person (Sam) on this machine, on the
-  `-Aot` build (App and Service both native since 2026-09-01; flip the
-  script default to AOT once that pass is clean).
+  Sam ran the AOT 0.1.0 and 0.1.1 builds on 2026-09-02: fresh install and
+  update in place both clean, install time noted as fast. The Welcome page
+  gained an Uninstall checkbox the same day (ticked: Welcome and Remove tabs
+  only). Open: the in-app half of the AOT pass (every module page, one
+  apply, Owner Mode enable), then flip the script default to AOT.
 - Publisher settled 2026-09-01: NMS, short for No More Secrets, LLC (build
   script, assembly metadata, packaging.md); cert subject is the full name. Open at release: Authenticode signing on release
   day; UpdateUrl org must match the publishing repo.
