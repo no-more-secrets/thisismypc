@@ -50,11 +50,11 @@ if (Test-Path $output) { Remove-Item $output -Recurse -Force }
 New-Item -ItemType Directory -Force $staging | Out-Null
 New-Item -ItemType Directory -Force $output | Out-Null
 
+# The native link step (installer always, app with -Aot) finds the C++
+# toolchain through vswhere in the VS installer directory.
+$env:PATH = "$env:PATH;${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer"
 $aotArgs = @()
-if ($Aot) {
-    $aotArgs = @('-p:AotPublish=true')
-    $env:PATH = "$env:PATH;${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer"
-}
+if ($Aot) { $aotArgs = @('-p:AotPublish=true') }
 
 Write-Host "Publishing App ($Version, win-x64, self-contained$(if ($Aot) { ', NativeAOT' }))..."
 dotnet publish (Join-Path $repoRoot 'src\ThisIsMyPC.App\ThisIsMyPC.App.csproj') `
@@ -110,6 +110,38 @@ if (Test-Path $assetsJson) {
     $assets = Get-Content $assetsJson -Raw | ConvertFrom-Json
     $kept = @($assets | Where-Object { $_.Type -ne 'Installer' })
     ConvertTo-Json $kept -Compress | Set-Content $assetsJson -Encoding utf8
+}
+
+# The download users get: our own elevated installer (src/ThisIsMyPC.Installer)
+# with the MSI embedded. It elevates before Windows Installer starts, so the
+# UAC prompt is a normal modal instead of a taskbar flash, and it offers the
+# options the Velopack wizard cannot (folder, shortcuts, start with Windows,
+# update checks). NativeAOT always: one small native exe around the MSI.
+Write-Host 'Publishing the installer (ThisIsMyPC-Install.exe) around the MSI...'
+$installerStaging = Join-Path $repoRoot "artifacts\release-staging\$Version-installer"
+if (Test-Path $installerStaging) { Remove-Item $installerStaging -Recurse -Force }
+$msiPath = Join-Path $output 'ThisIsMyPC-win.msi'
+if (-not (Test-Path $msiPath)) { throw 'ThisIsMyPC-win.msi missing from the vpk output' }
+dotnet publish (Join-Path $repoRoot 'src\ThisIsMyPC.Installer\ThisIsMyPC.Installer.csproj') `
+    --configuration Release --runtime win-x64 --self-contained true `
+    -p:Version=$Version -p:AotPublish=true "-p:EmbeddedMsiPath=$msiPath" --output $installerStaging
+if ($LASTEXITCODE -ne 0) { throw 'Installer publish failed' }
+$installerExe = Join-Path $installerStaging 'ThisIsMyPC-Install.exe'
+if (-not (Test-Path $installerExe)) { throw 'ThisIsMyPC-Install.exe missing from the installer publish output' }
+Copy-Item $installerExe $output -Force
+
+if ($SignThumbprint) {
+    # vpk signed its own outputs during pack; the installer is built after, so
+    # sign it the same way.
+    $signtool = Get-Command signtool.exe -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source
+    if (-not $signtool) {
+        $signtool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\signtool.exe" -ErrorAction SilentlyContinue |
+            Sort-Object FullName -Descending | Select-Object -First 1 -ExpandProperty FullName
+    }
+    if (-not $signtool) { throw 'signtool.exe not found (Windows SDK). Needed to sign ThisIsMyPC-Install.exe.' }
+    Write-Host 'Signing ThisIsMyPC-Install.exe...'
+    & $signtool sign /fd sha256 /tr $TimestampUrl /td sha256 /sha1 $SignThumbprint (Join-Path $output 'ThisIsMyPC-Install.exe')
+    if ($LASTEXITCODE -ne 0) { throw 'signtool failed on ThisIsMyPC-Install.exe' }
 }
 
 if ($SignThumbprint) {

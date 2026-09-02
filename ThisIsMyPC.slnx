@@ -2,6 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/ThisIsMyPC.App/ThisIsMyPC.App.csproj" />
     <Project Path="src/ThisIsMyPC.Core/ThisIsMyPC.Core.csproj" />
+    <Project Path="src/ThisIsMyPC.Installer/ThisIsMyPC.Installer.csproj" />
     <Project Path="src/ThisIsMyPC.Interop.Com/ThisIsMyPC.Interop.Com.csproj" />
     <Project Path="src/ThisIsMyPC.Interop.Win32/ThisIsMyPC.Interop.Win32.csproj" />
     <Project Path="src/ThisIsMyPC.Interop.Wmi/ThisIsMyPC.Interop.Wmi.csproj" />
@@ -22,6 +23,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/ThisIsMyPC.Analyzers.Tests/ThisIsMyPC.Analyzers.Tests.csproj" />
     <Project Path="tests/ThisIsMyPC.Core.Tests/ThisIsMyPC.Core.Tests.csproj" />
+    <Project Path="tests/ThisIsMyPC.Installer.Tests/ThisIsMyPC.Installer.Tests.csproj" />
     <Project Path="tests/ThisIsMyPC.Integration.Tests/ThisIsMyPC.Integration.Tests.csproj" />
     <Project Path="tests/ThisIsMyPC.Ipc.Tests/ThisIsMyPC.Ipc.Tests.csproj" />
     <Project Path="tests/ThisIsMyPC.Modules.Annoyances.Tests/ThisIsMyPC.Modules.Annoyances.Tests.csproj" />

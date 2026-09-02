@@ -86,11 +86,17 @@ the service talk over a hardened named pipe whose message envelope is in
 
 ## Install
 
-1. Download `ThisIsMyPC-win.msi` from the
+1. Download `ThisIsMyPC-Install.exe` from the
    [Releases page](https://github.com/No-More-Secrets/thisismypc/releases).
-2. Double-click it. Windows asks for permission to install; click Yes.
-3. Open ThisIsMyPC from the Start menu. It asks for permission every time it
+2. Double-click it. Windows asks for permission; click Yes.
+3. Read the license, choose the folder and the options you want, click
+   Install.
+4. Open ThisIsMyPC from the Start menu. It asks for permission every time it
    starts, because everything it does needs administrator rights.
+
+The same page also carries `ThisIsMyPC-win.msi`, the plain Windows Installer
+package inside the exe, for winget and for administrators who deploy with
+their own tools.
 
 Updates arrive inside the app. Each one is checked against a signed manifest
 before it is applied, and an update that fails the check is refused

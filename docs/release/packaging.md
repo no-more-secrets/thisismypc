@@ -10,6 +10,30 @@ The app corresponds to the PC, not a user profile (CLAUDE.md). Packaging follows
   Setup.exe, no portable zip. vpk always emits the Setup.exe; the release
   script deletes it after pack (the MSI is a complete install by itself,
   checked with `msiexec /a` extraction on 2026-09-01).
+- **The download is `ThisIsMyPC-Install.exe`** (`src/ThisIsMyPC.Installer`,
+  Avalonia, NativeAOT, the MSI embedded as a resource). Two reasons it exists.
+  A bare per-machine MSI gets its UAC consent requested by the Installer
+  service, not by the wizard window, so Windows parks the prompt in the
+  taskbar and the dialog that follows can land off screen (seen 2026-09-01
+  on a 4K display). The launcher carries `requireAdministrator`, so UAC is a
+  normal modal before anything runs and msiexec then runs elevated with no
+  desktop switch. And the Velopack wizard has no options; the launcher has
+  pages: Welcome, License (GPLv2 with an accept step), Options (install
+  folder with a Program Files warning, Desktop shortcut, start with Windows,
+  automatic update checks), Installing, Done (launch when finished). It runs
+  the MSI quietly (`/qn`, `VELOPACK_INSTALLDIR`, verbose log under
+  `%ProgramData%\ThisIsMyPC\logs`), removes the Public Desktop shortcut when
+  unticked, and writes the behavior choices through the app's own
+  `SettingsService`; the app's `AutoStartService.Reconcile()` turns the
+  setting into the Run entry at first start.
+- **Nothing trusted goes through %TEMP%.** The installer hardens
+  `%ProgramData%\ThisIsMyPC` (Administrators/SYSTEM, the app's own
+  `DataDirectoryGuard`) before it writes the unpacked MSI or the two native
+  libraries NativeAOT cannot fold in (libSkiaSharp, libHarfBuzzSharp; the
+  csproj embeds them, `NativeBootstrap` unpacks and loads them by absolute
+  path). A same-user non-elevated process can write to %TEMP% and would get
+  our elevation by swapping a file there. If the DACL cannot be set, the
+  installer stops with a message box before loading anything.
 - **Mutable state in `%ProgramData%\ThisIsMyPC`** (settings, history.db, sets,
   monitoring state, drift baseline): one database for the machine. The app
   creates and DACL-hardens the folder at startup (Administrators/SYSTEM only);

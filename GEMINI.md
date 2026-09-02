@@ -182,6 +182,11 @@ looks close.
 - **Session 0 service** (`ThisIsMyPC.Service` + `ThisIsMyPC.Ipc.Contracts`): GPLv2 in
   this repo (docs/why-gplv2.md; one repo holds everything). IPC is the hardened named
   pipe from 28-1; new message types extend the envelope, never change it.
+- **Installer** (`ThisIsMyPC.Installer`, docs/release/packaging.md): elevated Avalonia
+  launcher around the Velopack MSI; references Core and Interop.Win32 only, links the
+  App's Theme.axaml and fonts. Pages are sight-harness tested (`InstallerShotTests`).
+  Anything it writes and then trusts goes under the hardened ProgramData folder,
+  never %TEMP%.
 
 <!-- vendor-specific: everything below this line is kept by tools/sync-agent-guides.ps1; everything above is generated from CLAUDE.md -->
 

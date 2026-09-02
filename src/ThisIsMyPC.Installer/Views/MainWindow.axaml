@@ -1,0 +1,14 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:ThisIsMyPC.Installer.ViewModels"
+        xmlns:views="using:ThisIsMyPC.Installer.Views"
+        x:Class="ThisIsMyPC.Installer.Views.MainWindow"
+        x:DataType="vm:InstallerViewModel"
+        Title="Install ThisIsMyPC"
+        Width="720" Height="600"
+        CanResize="False"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource BaseBrush}"
+        FontFamily="{StaticResource BodyFont}">
+    <views:InstallerView />
+</Window>

@@ -99,6 +99,15 @@ The app corresponds to the PC, not a profile. Implemented:
   packs the Velopack per-machine MSI (`--msi --instLocation PerMachine`, WiX 5,
   Program Files, elevation required). Per-user Setup.exe and portable zip are
   not shipped.
+- **Installer shipped 2026-09-01** (`src/ThisIsMyPC.Installer`): the download is
+  `ThisIsMyPC-Install.exe`, an elevated NativeAOT Avalonia launcher with the MSI
+  inside. Reason: a bare per-machine MSI gets its UAC prompt parked in the
+  taskbar and its follow-up dialog can land off screen (Sam, 4K display), and
+  the Velopack wizard has no options. Pages: Welcome, GPLv2 license with
+  accept, Options (folder, Desktop shortcut, start with Windows, update
+  checks), Installing, Done. Trusted files go under the hardened ProgramData
+  folder, never %TEMP%. First end-to-end unsigned build ran the same day.
+  Open: one real elevated run by a person (Sam) on this machine.
 - Publisher settled 2026-09-01: NMS, short for No More Secrets, LLC (build
   script, assembly metadata, packaging.md); cert subject is the full name. Open at release: Authenticode signing on release
   day; UpdateUrl org must match the publishing repo.

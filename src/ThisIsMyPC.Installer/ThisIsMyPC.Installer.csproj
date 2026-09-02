@@ -1,0 +1,71 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <!-- The download is one file with a plain name; the assembly name is that name. -->
+    <AssemblyName>ThisIsMyPC-Install</AssemblyName>
+    <RootNamespace>ThisIsMyPC.Installer</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <!-- LibraryImport (the pre-Avalonia message box in NativeBootstrap) -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- CA1515: Avalonia XAML requires public types for views/viewmodels -->
+    <NoWarn>CA1515</NoWarn>
+    <!-- The release script always publishes the installer NativeAOT (one small
+         native exe around the MSI); dev builds stay CoreCLR unless asked. -->
+    <PublishAot Condition="'$(AotPublish)' == 'true'">true</PublishAot>
+    <ControlFlowGuard Condition="'$(AotPublish)' == 'true'">Guard</ControlFlowGuard>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Palette and type are the App's own files, linked, so the installer
+         cannot drift from the app it installs. -->
+    <AvaloniaResource Include="..\ThisIsMyPC.App\Styles\Theme.axaml" Link="Styles\Theme.axaml" />
+    <AvaloniaResource Include="..\ThisIsMyPC.App\Assets\Fonts\IBMPlexSans-Regular.ttf" Link="Assets\Fonts\IBMPlexSans-Regular.ttf" />
+    <AvaloniaResource Include="..\ThisIsMyPC.App\Assets\Fonts\IBMPlexSans-SemiBold.ttf" Link="Assets\Fonts\IBMPlexSans-SemiBold.ttf" />
+    <AvaloniaResource Include="..\ThisIsMyPC.App\Assets\Fonts\IBMPlexSans-Bold.ttf" Link="Assets\Fonts\IBMPlexSans-Bold.ttf" />
+    <AvaloniaResource Include="..\ThisIsMyPC.App\Assets\Fonts\IBMPlexMono-Regular.ttf" Link="Assets\Fonts\IBMPlexMono-Regular.ttf" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The license page shows the repo LICENSE verbatim. -->
+    <EmbeddedResource Include="..\..\LICENSE" LogicalName="LICENSE" />
+    <!-- build-release.ps1 passes the packed MSI; a build without it runs the
+         UI but refuses to install (EmbeddedPackage.IsPresent == false). -->
+    <EmbeddedResource Include="$(EmbeddedMsiPath)" LogicalName="ThisIsMyPC-win.msi" Condition="'$(EmbeddedMsiPath)' != ''" />
+  </ItemGroup>
+
+  <!-- Release publish only (the script sets EmbeddedMsiPath): the two native
+       libraries NativeAOT cannot fold into the exe ride inside it as
+       resources; NativeBootstrap unpacks and loads them. Dev builds keep the
+       DLLs beside the exe. -->
+  <!-- BeforeTargets on AssignTargetPaths, the first consumer of EmbeddedResource:
+       a later hook (PrepareResourceNames) runs after that target's own
+       dependencies have already split the resource list. -->
+  <Target Name="EmbedNativeLibraries" BeforeTargets="AssignTargetPaths" DependsOnTargets="ResolvePackageAssets"
+          Condition="'$(EmbeddedMsiPath)' != ''">
+    <ItemGroup>
+      <_InstallerNativeLibrary Include="@(NativeCopyLocalItems)"
+          Condition="'%(Filename)' == 'libSkiaSharp' Or '%(Filename)' == 'libHarfBuzzSharp'" />
+      <EmbeddedResource Include="@(_InstallerNativeLibrary)" LogicalName="native/%(Filename)%(Extension)" />
+    </ItemGroup>
+    <Error Condition="@(_InstallerNativeLibrary->Count()) != 2"
+           Text="Expected libSkiaSharp.dll and libHarfBuzzSharp.dll among the native package assets; found @(_InstallerNativeLibrary->Count())." />
+  </Target>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ThisIsMyPC.Core\ThisIsMyPC.Core.csproj" />
+    <ProjectReference Include="..\ThisIsMyPC.Interop.Win32\ThisIsMyPC.Interop.Win32.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="ThisIsMyPC.App.UiTests" />
+    <InternalsVisibleTo Include="ThisIsMyPC.Installer.Tests" />
+  </ItemGroup>
+</Project>

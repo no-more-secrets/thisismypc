@@ -1,21 +1,21 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IsPackable>false</IsPackable>
-    <NoWarn>CA1707;CA1062;CA1307;CA1515;CA2007</NoWarn>
+    <NoWarn>CA1707;CA1062;CA1307</NoWarn>
   </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
-    <PackageReference Include="Avalonia.Headless.XUnit" />
-    <PackageReference Include="Avalonia.Skia" />
   </ItemGroup>
+
   <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
+
   <ItemGroup>
-    <ProjectReference Include="..\..\src\ThisIsMyPC.App\ThisIsMyPC.App.csproj" />
     <ProjectReference Include="..\..\src\ThisIsMyPC.Installer\ThisIsMyPC.Installer.csproj" />
   </ItemGroup>
 </Project>

@@ -17,4 +17,11 @@ public static class AppConstants
         "ThisIsMyPC");
 
     public const string UpdateUrl = "https://github.com/No-More-Secrets/thisismypc/releases";
+
+    /// <summary>
+    /// Short publisher name (No More Secrets, LLC): the MSI publisher line and
+    /// the vendor folder under Program Files. Directory.Build.props (Company)
+    /// and build-release.ps1 (-Authors) carry the same value for the build.
+    /// </summary>
+    public const string PublisherShortName = "NMS";
 }
