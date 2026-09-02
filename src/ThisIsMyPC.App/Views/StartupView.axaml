@@ -83,8 +83,7 @@
                                   IsChecked="{Binding IsEnabled}"
                                   IsEnabled="{Binding CanToggle}"
                                   ToolTip.Tip="{Binding StateText}"
-                                  MinHeight="0" Height="24" MinWidth="0" Padding="0"
-                                  Margin="0,0,8,0" VerticalAlignment="Center" />
+                                  Margin="0,0,8,0" />
                         <Image Grid.Column="1" Source="{Binding Icon}"
                                Width="16" Height="16" Margin="0,0,8,0"
                                IsVisible="{Binding Icon, Converter={x:Static ObjectConverters.IsNotNull}}"
@@ -179,27 +178,19 @@
             <CheckBox DockPanel.Dock="Right"
                       IsChecked="{Binding ShowLocations}"
                       Content="Show locations"
-                      FontSize="13"
-                      Margin="12,0,0,0"
-                      VerticalAlignment="Center" />
+                      Margin="12,0,0,0" />
             <CheckBox DockPanel.Dock="Right"
                       IsChecked="{Binding ShowPaths}"
                       Content="Show paths"
-                      FontSize="13"
-                      Margin="12,0,0,0"
-                      VerticalAlignment="Center" />
+                      Margin="12,0,0,0" />
             <CheckBox DockPanel.Dock="Right"
                       IsChecked="{Binding HideMicrosoftAutoruns}"
                       Content="Hide Microsoft entries"
-                      FontSize="13"
-                      Margin="12,0,0,0"
-                      VerticalAlignment="Center" />
+                      Margin="12,0,0,0" />
             <CheckBox DockPanel.Dock="Right"
                       IsChecked="{Binding HideWindowsEntries}"
                       Content="Hide Windows entries"
-                      FontSize="13"
-                      Margin="12,0,0,0"
-                      VerticalAlignment="Center" />
+                      Margin="12,0,0,0" />
             <TextBox Classes="filter"
                      Text="{Binding AutorunFilterText}"
                      Watermark="Search by name, description, publisher, file, or location" />

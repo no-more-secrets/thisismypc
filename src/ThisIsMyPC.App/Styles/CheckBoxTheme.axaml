@@ -1,0 +1,89 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- CheckBox on the app palette: an 18px box with the shared outline and
+         Overlay fill, accent fill with a white check when on, the button
+         hover and press family, hand cursor. No reserved 32px row (stock
+         Fluent), so a bare box fits a dense list row and centers in it; a
+         label, when there is one, sits 8px to the right at 13px. -->
+    <ControlTheme x:Key="{x:Type CheckBox}" TargetType="CheckBox">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Padding" Value="8,0,0,0" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Grid ColumnDefinitions="Auto,*" Background="Transparent">
+                    <Border Name="PART_Box"
+                            Width="18" Height="18"
+                            CornerRadius="4"
+                            BorderThickness="1"
+                            BorderBrush="{DynamicResource OutlineStrongBrush}"
+                            Background="{DynamicResource OverlayBrush}"
+                            VerticalAlignment="Center">
+                        <Panel>
+                            <Path Name="PART_Check"
+                                  Data="M 3.5,8.5 L 7,12 L 13,5.5"
+                                  Stroke="#FFFFFF"
+                                  StrokeThickness="2"
+                                  StrokeLineCap="Round"
+                                  StrokeJoin="Round"
+                                  IsVisible="False" />
+                            <Border Name="PART_Dash"
+                                    Width="8" Height="2"
+                                    CornerRadius="1"
+                                    Background="#FFFFFF"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    IsVisible="False" />
+                        </Panel>
+                    </Border>
+                    <ContentPresenter Name="PART_ContentPresenter"
+                                      Grid.Column="1"
+                                      Content="{TemplateBinding Content}"
+                                      ContentTemplate="{TemplateBinding ContentTemplate}"
+                                      Margin="{TemplateBinding Padding}"
+                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                      IsVisible="{TemplateBinding Content, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                </Grid>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^:pointerover /template/ Border#PART_Box">
+            <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentOutlineBrush}" />
+        </Style>
+        <Style Selector="^:pressed /template/ Border#PART_Box">
+            <Setter Property="Background" Value="{DynamicResource ControlPressedBrush}" />
+        </Style>
+        <Style Selector="^:checked /template/ Border#PART_Box">
+            <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentOutlineBrush}" />
+        </Style>
+        <Style Selector="^:checked:pointerover /template/ Border#PART_Box">
+            <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}" />
+        </Style>
+        <Style Selector="^:checked:pressed /template/ Border#PART_Box">
+            <Setter Property="Background" Value="{DynamicResource AccentPressedBrush}" />
+        </Style>
+        <Style Selector="^:checked /template/ Path#PART_Check">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+        <Style Selector="^:indeterminate /template/ Border#PART_Box">
+            <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentOutlineBrush}" />
+        </Style>
+        <Style Selector="^:indeterminate /template/ Border#PART_Dash">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+        <Style Selector="^:disabled">
+            <Setter Property="Opacity" Value="0.5" />
+            <Setter Property="Cursor" Value="Arrow" />
+        </Style>
+    </ControlTheme>
+</ResourceDictionary>

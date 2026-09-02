@@ -428,7 +428,14 @@ content slot hides when every line is hidden; the dense row and pending
 tints live in Controls.axaml only; the test app's include regex takes any
 attribute order and fails loudly off a checkout; Show locations binds the
 headers' visibility instead of rebuilding every tab; the power fake is one
-shared class; the plan sort ranks by key once per plan. Later that
+shared class; the plan sort ranks by key once per plan. Then (Sam: the
+check boxes were cut off and off-centre in the dense rows, and check boxes
+and the tab strip were never polished like the other controls): both have
+their own control themes on the palette now, `Styles/CheckBoxTheme.axaml`
+(18px box, shared outline, Overlay fill, accent fill with a white check,
+button hover and press, no reserved 32px row) and `Styles/TabItemTheme.axaml`
+(14px secondary text, primary on hover and selection, 2px accent line,
+30px band with the text at its top); Startup rows are 23px. Later that
 day (Sam: adding plans did nothing): a row of the Add plan dropdown closed
 the menu before its command ran, and closing detached the menu content and
 its bindings, so nothing was staged; the close is now posted after the
