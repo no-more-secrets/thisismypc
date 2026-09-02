@@ -37,7 +37,11 @@ public class InstallerShotTests
     private const string License = "                    GNU GENERAL PUBLIC LICENSE\n                       Version 2, June 1991\n\n Copyright (C) 1989, 1991 Free Software Foundation, Inc.\n\n                            Preamble\n\n  The licenses for most software are designed to take away your\nfreedom to share and change it.";
 
     private static UiSession Open(InstallerViewModel viewModel)
-        => UiSession.ForView(new InstallerView(), viewModel, "installer", width: 720, height: 600);
+        => UiSession.ForView(new InstallerView(), viewModel, "installer", width: 720, height: 640);
+
+    /// <summary>The tab strip repeats some button words (Install, Remove); this clicks the footer button.</summary>
+    private static void ClickButton(UiSession session, string text)
+        => session.Click(session.Find<Avalonia.Controls.Button>(b => b.Content as string == text));
 
     [AvaloniaFact]
     public async Task Walkthrough_EveryPageRendersAndChoicesReachTheEngine()
@@ -47,18 +51,18 @@ public class InstallerShotTests
         using var session = Open(viewModel);
 
         session.Screenshot("welcome");
-        Assert.True(session.IsTextVisible("Next"));
-        Assert.False(session.IsTextVisible("Back"));
+        Assert.True(session.IsTextVisible("Next >"));
+        Assert.False(session.IsTextVisible("< Back"));
         Assert.False(session.IsTextVisible("Uninstall"));
 
         // Hover states: the accent button changes its whole fill, the plain
         // button its fill and rim together. Inspect the PNGs.
-        session.HoverText("Next");
+        session.HoverText("Next >");
         session.Screenshot("welcome-hover-next");
         session.HoverText("Cancel");
         session.Screenshot("welcome-hover-cancel");
 
-        session.ClickText("Next");
+        session.ClickText("Next >");
         session.Screenshot("license");
         // The license lives in a TextBox, which renders as one text run, so
         // look for the checkbox label and the page caption instead.
@@ -68,7 +72,7 @@ public class InstallerShotTests
 
         session.ClickText("I accept the terms of the GNU General Public License, version 2");
         Assert.True(viewModel.LicenseAccepted);
-        session.ClickText("Next");
+        session.ClickText("Next >");
         session.Screenshot("options");
         Assert.True(session.IsTextVisible("Install folder"));
         Assert.True(session.IsTextVisible("Install"));
@@ -78,7 +82,17 @@ public class InstallerShotTests
         session.ClickText("Start with Windows, in the tray");
         Assert.True(viewModel.StartWithWindows);
 
+        // The tab strip walks back without the Back button, and forward only
+        // as far as the buttons would allow.
+        session.ClickText("Welcome");
+        Assert.Equal(InstallStep.Welcome, viewModel.Step);
+        session.Screenshot("tab-back-to-welcome");
+        session.ClickText("Options");
+        Assert.Equal(InstallStep.Options, viewModel.Step);
         session.ClickText("Install");
+        Assert.Equal(InstallStep.Options, viewModel.Step);
+
+        ClickButton(session, "Install");
         await session.WaitForAsync(() => viewModel.Step == InstallStep.Done, what: "install to finish");
         session.Screenshot("done");
         Assert.True(session.IsTextVisible("Finish"));
@@ -125,14 +139,14 @@ public class InstallerShotTests
         session.ClickText("Uninstall");
         session.Screenshot("confirm-uninstall");
         Assert.True(session.IsTextVisible("Remove"));
-        Assert.True(session.IsTextVisible("Back"));
+        Assert.True(session.IsTextVisible("< Back"));
         Assert.Null(engine.Uninstalled);
 
-        session.ClickText("Remove");
+        ClickButton(session, "Remove");
         await session.WaitForAsync(() => viewModel.Step == InstallStep.Done, what: "uninstall to finish");
         session.Screenshot("removed");
         Assert.Same(installed, engine.Uninstalled);
-        Assert.True(session.IsTextVisible("Removed"));
+        Assert.True(session.IsTextVisible("ThisIsMyPC was removed. Your settings and change history are still in the ProgramData folder in case you install it again."));
         Assert.True(session.IsTextVisible("Close"));
         Assert.False(session.IsTextVisible("Finish"));
     }
@@ -175,11 +189,11 @@ public class InstallerShotTests
         viewModel.Step = InstallStep.Options;
         using var session = Open(viewModel);
 
-        session.ClickText("Install");
+        ClickButton(session, "Install");
         await session.WaitForAsync(() => viewModel.Step == InstallStep.Done, what: "install to finish");
         session.Screenshot("done-failed");
         Assert.True(session.IsTextVisible("Close"));
-        Assert.True(session.IsTextVisible("Not installed"));
+        Assert.True(session.IsTextVisible(engine.Outcome.Error!));
         Assert.False(session.IsTextVisible("Finish"));
     }
 }

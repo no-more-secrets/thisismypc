@@ -60,23 +60,24 @@ public sealed partial class InstallerViewModel : ObservableObject
     public static string AppVersion { get; } = ReadVersion();
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsInstalled), nameof(InstalledSummary), nameof(CanChooseFolder))]
+    [NotifyPropertyChangedFor(nameof(IsInstalled), nameof(InstalledSummary), nameof(CanChooseFolder), nameof(ShowRemoveTab))]
     [NotifyCanExecuteChangedFor(nameof(UninstallCommand))]
     private InstalledApp? _installed;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(InstallBlockedByNewer), nameof(CanGoPrimary), nameof(PrimaryButtonText), nameof(InstalledSummary))]
+    [NotifyPropertyChangedFor(nameof(InstallBlockedByNewer), nameof(CanGoPrimary), nameof(PrimaryButtonText), nameof(InstalledSummary), nameof(CanOpenLicense), nameof(CanOpenOptions))]
     [NotifyCanExecuteChangedFor(nameof(PrimaryCommand))]
     private InstalledVersionRelation _versionRelation;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsWelcome), nameof(IsLicense), nameof(IsOptions), nameof(IsInstalling), nameof(IsConfirmUninstall), nameof(IsUninstalling), nameof(IsDone))]
     [NotifyPropertyChangedFor(nameof(PrimaryButtonText), nameof(CanGoBack), nameof(CanGoPrimary), nameof(CanCancel), nameof(StepCaption), nameof(IsBusy))]
+    [NotifyPropertyChangedFor(nameof(TabIndex), nameof(IsFinished), nameof(CanOpenWelcome), nameof(CanOpenLicense), nameof(CanOpenOptions), nameof(IsInInstallTab), nameof(IsInRemoveTab), nameof(ShowRemoveTab))]
     [NotifyCanExecuteChangedFor(nameof(PrimaryCommand), nameof(BackCommand), nameof(CancelCommand), nameof(UninstallCommand))]
     private InstallStep _step = InstallStep.Welcome;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(CanGoPrimary))]
+    [NotifyPropertyChangedFor(nameof(CanGoPrimary), nameof(CanOpenOptions))]
     [NotifyCanExecuteChangedFor(nameof(PrimaryCommand))]
     private bool _licenseAccepted;
 
@@ -112,7 +113,7 @@ public sealed partial class InstallerViewModel : ObservableObject
     private string? _errorText;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(PrimaryButtonText), nameof(StepCaption), nameof(DoneInstalled))]
+    [NotifyPropertyChangedFor(nameof(PrimaryButtonText), nameof(StepCaption), nameof(DoneInstalled), nameof(TabIndex), nameof(IsInInstallTab), nameof(IsInRemoveTab), nameof(ShowRemoveTab))]
     private bool _removed;
 
     [ObservableProperty]
@@ -133,6 +134,63 @@ public sealed partial class InstallerViewModel : ObservableObject
 
     public bool IsInstalled => Installed is not null;
     public bool InstallBlockedByNewer => VersionRelation == InstalledVersionRelation.Newer;
+
+    /// <summary>Install or removal ran; the tab strip freezes on the result.</summary>
+    public bool IsFinished => Step == InstallStep.Done;
+
+    // ---- Tab strip: Welcome, License, Options, Install, Remove ----
+
+    public const int WelcomeTab = 0;
+    public const int LicenseTab = 1;
+    public const int OptionsTab = 2;
+    public const int InstallTab = 3;
+    public const int RemoveTab = 4;
+
+    public bool IsInInstallTab => Step is InstallStep.Installing || (Step == InstallStep.Done && !Removed);
+    public bool IsInRemoveTab => Step is InstallStep.ConfirmUninstall or InstallStep.Uninstalling || (Step == InstallStep.Done && Removed);
+    public bool ShowRemoveTab => IsInstalled || IsInRemoveTab;
+
+    public bool CanOpenWelcome => !IsBusy && !IsFinished;
+    public bool CanOpenLicense => !IsBusy && !IsFinished && !InstallBlockedByNewer;
+    public bool CanOpenOptions => CanOpenLicense && LicenseAccepted;
+
+    /// <summary>
+    /// Selected tab, two-way. Reading follows the step; writing from a tab
+    /// click moves to that page. Install and Remove tabs are reached by the
+    /// buttons, never by clicking the tab, so writes to them are ignored.
+    /// </summary>
+    public int TabIndex
+    {
+        get => Step switch
+        {
+            InstallStep.Welcome => WelcomeTab,
+            InstallStep.License => LicenseTab,
+            InstallStep.Options => OptionsTab,
+            InstallStep.ConfirmUninstall or InstallStep.Uninstalling => RemoveTab,
+            InstallStep.Done => Removed ? RemoveTab : InstallTab,
+            _ => InstallTab,
+        };
+        set
+        {
+            if (value == TabIndex)
+                return;
+            switch (value)
+            {
+                case WelcomeTab when CanOpenWelcome:
+                    Step = InstallStep.Welcome;
+                    break;
+                case LicenseTab when CanOpenLicense:
+                    Step = InstallStep.License;
+                    break;
+                case OptionsTab when CanOpenOptions:
+                    Step = InstallStep.Options;
+                    break;
+                default:
+                    OnPropertyChanged(nameof(TabIndex));
+                    break;
+            }
+        }
+    }
 
     /// <summary>Updates stay in the folder the app already occupies.</summary>
     public bool CanChooseFolder => !IsInstalled;
@@ -170,8 +228,8 @@ public sealed partial class InstallerViewModel : ObservableObject
 
     public string PrimaryButtonText => Step switch
     {
-        InstallStep.Welcome => "Next",
-        InstallStep.License => "Next",
+        InstallStep.Welcome => "Next >",
+        InstallStep.License => "Next >",
         InstallStep.Options => VersionRelation switch
         {
             InstalledVersionRelation.Same => "Reinstall",
@@ -182,7 +240,7 @@ public sealed partial class InstallerViewModel : ObservableObject
         InstallStep.ConfirmUninstall => "Remove",
         InstallStep.Uninstalling => "Removing...",
         InstallStep.Done => Failed || Removed ? "Close" : "Finish",
-        _ => "Next",
+        _ => "Next >",
     };
 
     public bool CanGoBack => Step is InstallStep.License or InstallStep.Options or InstallStep.ConfirmUninstall;

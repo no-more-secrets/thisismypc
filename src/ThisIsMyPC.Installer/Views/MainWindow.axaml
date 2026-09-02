@@ -5,7 +5,7 @@
         x:Class="ThisIsMyPC.Installer.Views.MainWindow"
         x:DataType="vm:InstallerViewModel"
         Title="Install ThisIsMyPC"
-        Width="720" Height="600"
+        Width="720" Height="640"
         CanResize="False"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource BaseBrush}"

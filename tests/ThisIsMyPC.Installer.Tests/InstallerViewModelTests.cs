@@ -48,7 +48,7 @@ public class InstallerViewModelTests
 
         Assert.Equal(InstallStep.Welcome, vm.Step);
         Assert.False(vm.IsInstalled);
-        Assert.Equal("Next", vm.PrimaryButtonText);
+        Assert.Equal("Next >", vm.PrimaryButtonText);
         await vm.PrimaryCommand.ExecuteAsync(null);
 
         Assert.Equal(InstallStep.License, vm.Step);
@@ -264,6 +264,64 @@ public class InstallerViewModelTests
 
         vm.Step = InstallStep.ConfirmUninstall;
         vm.BackCommand.Execute(null);
+        Assert.Equal(InstallStep.Welcome, vm.Step);
+    }
+
+    [Fact]
+    public void Tabs_FollowTheStepAndOnlyOpenWhereTheButtonsWouldGo()
+    {
+        var vm = Fresh(new FakeEngine());
+        Assert.Equal(InstallerViewModel.WelcomeTab, vm.TabIndex);
+        Assert.True(vm.CanOpenLicense);
+        Assert.False(vm.CanOpenOptions);
+
+        vm.TabIndex = InstallerViewModel.OptionsTab;
+        Assert.Equal(InstallStep.Welcome, vm.Step);
+
+        vm.TabIndex = InstallerViewModel.LicenseTab;
+        Assert.Equal(InstallStep.License, vm.Step);
+        vm.LicenseAccepted = true;
+        Assert.True(vm.CanOpenOptions);
+        vm.TabIndex = InstallerViewModel.OptionsTab;
+        Assert.Equal(InstallStep.Options, vm.Step);
+
+        vm.TabIndex = InstallerViewModel.InstallTab;
+        Assert.Equal(InstallStep.Options, vm.Step);
+        vm.TabIndex = InstallerViewModel.WelcomeTab;
+        Assert.Equal(InstallStep.Welcome, vm.Step);
+    }
+
+    [Fact]
+    public async Task Tabs_FreezeOnceTheResultIsIn()
+    {
+        var vm = Fresh(new FakeEngine());
+        vm.LicenseAccepted = true;
+        vm.Step = InstallStep.Options;
+        await vm.PrimaryCommand.ExecuteAsync(null);
+
+        Assert.Equal(InstallerViewModel.InstallTab, vm.TabIndex);
+        Assert.True(vm.IsInInstallTab);
+        Assert.False(vm.CanOpenWelcome);
+        Assert.False(vm.CanOpenOptions);
+        vm.TabIndex = InstallerViewModel.WelcomeTab;
+        Assert.Equal(InstallStep.Done, vm.Step);
+    }
+
+    [Fact]
+    public void Tabs_RemoveTabShowsWhenInstalledAndHoldsTheRemoveFlow()
+    {
+        Assert.False(Fresh(new FakeEngine()).ShowRemoveTab);
+
+        var installed = new InstalledApp("0.0.9", @"D:\Apps\ThisIsMyPC", "x");
+        var vm = Fresh(new FakeEngine(), installed);
+        Assert.True(vm.ShowRemoveTab);
+        Assert.False(vm.IsInRemoveTab);
+
+        vm.UninstallCommand.Execute(null);
+        Assert.Equal(InstallerViewModel.RemoveTab, vm.TabIndex);
+        Assert.True(vm.IsInRemoveTab);
+        Assert.True(vm.CanOpenWelcome);
+        vm.TabIndex = InstallerViewModel.WelcomeTab;
         Assert.Equal(InstallStep.Welcome, vm.Step);
     }
 
