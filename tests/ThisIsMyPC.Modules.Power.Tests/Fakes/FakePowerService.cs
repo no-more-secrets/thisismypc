@@ -23,6 +23,11 @@ public sealed class FakePowerService : IPowerService
     public void InjectFailure(string operation, ErrorCategory category = ErrorCategory.AccessDenied)
         => _failures[operation] = category;
 
+    public void ClearFailure(string operation) => _failures.Remove(operation);
+
+    /// <summary>Runs after every recorded call; a test can change the fake's answers mid-flight.</summary>
+    public Action<string>? OnCall { get; set; }
+
     public OperationResult<IReadOnlyList<PowerPlanInfo>> EnumeratePlans()
     {
         Calls.Add("EnumeratePlans");
@@ -136,6 +141,7 @@ public sealed class FakePowerService : IPowerService
     public OperationResult<bool> SetActivePlan(Guid planGuid)
     {
         Calls.Add($"SetActivePlan:{planGuid:D}");
+        OnCall?.Invoke(Calls[^1]);
         if (_failures.TryGetValue("SetActivePlan", out var fail))
             return OperationResult<bool>.Failure("Injected SetActivePlan failure.", fail);
         var index = _plans.FindIndex(p => p.PlanGuid == planGuid);

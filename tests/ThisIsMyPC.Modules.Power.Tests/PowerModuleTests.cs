@@ -14,7 +14,9 @@ public sealed class PowerModuleTests
     private readonly FakePowerService _power = new();
     private readonly FakeRegistryService _registry = new();
 
-    private PowerModule Module => new(_power, _registry);
+    private readonly FakePolicyRefreshService _policy = new();
+
+    private PowerModule Module => new(_power, _registry, _policy);
 
     private static ChangeDescriptor ActivePlanChange(string beforeGuid, string afterGuid) =>
         PowerPlanChangeFactory.CreateActivePlanChange(
@@ -35,17 +37,42 @@ public sealed class PowerModuleTests
         Assert.Equal(HighPerformanceGuid.ToString("D"),
             _registry.ReadString(PowerPlanChangeFactory.ActivePlanPolicyKeyPath, PowerPlanChangeFactory.ActivePlanPolicyValueName).Value);
         Assert.Contains($"SetActivePlan:{HighPerformanceGuid:D}", _power.Calls);
-        // Lifted before the switch, put back after it: the pin's presence alone blocks the API.
+        // Lifted before the switch, policy re-read, put back after it: the pin's presence alone blocks the API.
         var pin = PowerPlanChangeFactory.ActivePlanPolicyKeyPath + "\\" + PowerPlanChangeFactory.ActivePlanPolicyValueName;
         var lift = _registry.Calls.IndexOf("DeleteValue:" + pin);
         var repin = _registry.Calls.IndexOf("WriteString:" + pin + "=" + HighPerformanceGuid.ToString("D"));
         Assert.True(lift >= 0 && repin > lift, string.Join(" | ", _registry.Calls));
+        Assert.Equal(1, _policy.Refreshes);
 
         // Undo hands back the swapped descriptor: the pin follows the plan back.
         var undone = await Module.RevertChangeAsync(
             ActivePlanChange(HighPerformanceGuid.ToString("D"), BalancedGuid.ToString("D")));
         Assert.True(undone.IsSuccess, undone.ErrorMessage);
         Assert.Equal(BalancedGuid.ToString("D"),
+            _registry.ReadString(PowerPlanChangeFactory.ActivePlanPolicyKeyPath, PowerPlanChangeFactory.ActivePlanPolicyValueName).Value);
+    }
+
+    [Fact]
+    public async Task Apply_ActivePlanChange_RetriesWhileThePowerServiceStillSaysPolicy()
+    {
+        _power.AddPlan(BalancedGuid, "Balanced", isActive: true);
+        _power.AddPlan(HighPerformanceGuid, "High performance");
+        _registry.WriteString(PowerPlanChangeFactory.ActivePlanPolicyKeyPath, PowerPlanChangeFactory.ActivePlanPolicyValueName, BalancedGuid.ToString("D"));
+        // The service keeps refusing until its second look after the refresh.
+        _power.InjectFailure("SetActivePlan", ErrorCategory.AccessDenied);
+        var refusals = 0;
+        _power.OnCall = call =>
+        {
+            if (call.StartsWith("SetActivePlan:", StringComparison.Ordinal) && ++refusals == 2)
+                _power.ClearFailure("SetActivePlan");
+        };
+
+        var result = await Module.ApplyChangeAsync(
+            ActivePlanChange(BalancedGuid.ToString("D"), HighPerformanceGuid.ToString("D")));
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.Equal(2, _power.Calls.Count(c => c.StartsWith("SetActivePlan:", StringComparison.Ordinal)));
+        Assert.Equal(HighPerformanceGuid.ToString("D"),
             _registry.ReadString(PowerPlanChangeFactory.ActivePlanPolicyKeyPath, PowerPlanChangeFactory.ActivePlanPolicyValueName).Value);
     }
 
@@ -75,6 +102,7 @@ public sealed class PowerModuleTests
         Assert.True(result.IsSuccess, result.ErrorMessage);
         Assert.False(_registry.ReadString(PowerPlanChangeFactory.ActivePlanPolicyKeyPath, PowerPlanChangeFactory.ActivePlanPolicyValueName).IsSuccess);
         Assert.DoesNotContain(_registry.Calls, c => c.StartsWith("WriteString:", StringComparison.Ordinal) || c.StartsWith("DeleteValue:", StringComparison.Ordinal));
+        Assert.Equal(0, _policy.Refreshes);
     }
 
     [Fact]

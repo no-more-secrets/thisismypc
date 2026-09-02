@@ -228,13 +228,6 @@
         <Setter Property="Foreground" Value="White" />
     </Style>
 
-    <!-- Every apply-bar button is the same height, whether it carries the
-         count badge or not -->
-    <Style Selector="Button.apply-bar-apply, Button.apply-bar-discard">
-        <Setter Property="Height" Value="36" />
-        <Setter Property="VerticalContentAlignment" Value="Center" />
-    </Style>
-
     <!-- Apply bar: Discard button -->
     <Style Selector="Button.apply-bar-discard">
         <Setter Property="Background" Value="{DynamicResource OverlayBrush}" />
@@ -256,6 +249,15 @@
 
     <Style Selector="Button.apply-bar-discard:pressed /template/ ContentPresenter">
         <Setter Property="Background" Value="{DynamicResource ControlPressedBrush}" />
+    </Style>
+
+    <!-- Every apply-bar button is one height, badge or not, and pads only
+         sideways: the content gets the full 36px, so no font size clips a
+         descender. Declared after both button styles so it wins. -->
+    <Style Selector="Button.apply-bar-apply, Button.apply-bar-discard">
+        <Setter Property="Height" Value="36" />
+        <Setter Property="Padding" Value="16,0" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
 
     <!-- Rows of a dropdown flyout: full width, text at the left, hover wash only. -->

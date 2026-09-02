@@ -54,9 +54,11 @@ public sealed class PowerModule : IActionModule
     }
     private readonly IPowerService _powerService;
     private readonly IRegistryService _registryService;
+    private readonly IPolicyRefreshService? _policyRefresh;
 
-    public PowerModule(IPowerService powerService, IRegistryService registryService)
+    public PowerModule(IPowerService powerService, IRegistryService registryService, IPolicyRefreshService? policyRefresh = null)
     {
+        _policyRefresh = policyRefresh;
         _powerService = powerService;
         _registryService = registryService;
     }
@@ -104,12 +106,13 @@ public sealed class PowerModule : IActionModule
         });
     }
 
-    public Task<OperationResult<bool>> ApplyChangeAsync(ChangeDescriptor change)
+    public async Task<OperationResult<bool>> ApplyChangeAsync(ChangeDescriptor change)
     {
-        return Task.FromResult(change.ValueType switch
+        if (change.ValueType == ChangeValueType.PowerPlan_Setting && change.SettingId == PowerPlanChangeFactory.ActivePlanSettingId)
+            return await ApplyActivePlanChangeAsync(change).ConfigureAwait(false);
+
+        return change.ValueType switch
         {
-            ChangeValueType.PowerPlan_Setting when change.SettingId == PowerPlanChangeFactory.ActivePlanSettingId
-                => ApplyActivePlanChange(change),
             ChangeValueType.PowerPlan_Setting when change.SettingId == PowerPlanChangeFactory.HibernateSettingId
                 => _powerService.SetHibernateEnabled(change.AfterValue == "1"),
             ChangeValueType.PowerPlan_Setting when change.SettingId == PowerPlanChangeFactory.UltimatePerformanceSettingId
@@ -126,7 +129,7 @@ public sealed class PowerModule : IActionModule
             ChangeValueType.Registry_DWord => ApplyRegistryDWordChange(change),
             _ => OperationResult<bool>.Failure(
                 $"Unsupported change: {change.ValueType}/{change.SettingId}", ErrorCategory.ServiceUnavailable),
-        });
+        };
     }
 
     public Task<OperationResult<bool>> RevertChangeAsync(ChangeDescriptor change)
@@ -334,13 +337,16 @@ public sealed class PowerModule : IActionModule
     /// <summary>
     /// Switches the active plan. While the Group Policy value that pins the
     /// active plan exists, Windows refuses every switch with error 1260,
-    /// whatever the value says (verified 2026-09-02: a pin moved to the target
-    /// still refused). So the pin is lifted, the plan activated, and the pin
-    /// put back naming the new plan; the policy keeps agreeing with what is
-    /// active. A failed activation puts the old pin back. Undo hands the
-    /// module the swapped descriptor, so the same dance runs in reverse.
+    /// whatever the value says, and the power service keeps that verdict
+    /// cached after the value is gone until policy is re-read (verified
+    /// 2026-09-02: a lifted pin still refused). So the pin is lifted, machine
+    /// policy is refreshed, the switch is retried for a few seconds while
+    /// Windows still says "policy", and the pin is put back naming the new
+    /// plan; the policy keeps agreeing with what is active. A failed
+    /// activation puts the old pin back. Undo hands the module the swapped
+    /// descriptor, so the same dance runs in reverse.
     /// </summary>
-    private OperationResult<bool> ApplyActivePlanChange(ChangeDescriptor change)
+    private async Task<OperationResult<bool>> ApplyActivePlanChangeAsync(ChangeDescriptor change)
     {
         if (!Guid.TryParse(change.AfterValue, out var planGuid))
         {
@@ -361,9 +367,16 @@ public sealed class PowerModule : IActionModule
                     $"A Group Policy pins the active power plan and could not be lifted: {lifted.ErrorMessage}",
                     lifted.ErrorCategory ?? ErrorCategory.AccessDenied, lifted.Exception);
             }
+            _policyRefresh?.RefreshMachinePolicy();
         }
 
         var activated = _powerService.SetActivePlan(planGuid);
+        // Policy re-application is asynchronous; give the power service a few seconds to drop the pin.
+        for (var attempt = 0; hadPin && !activated.IsSuccess && activated.ErrorCategory == ErrorCategory.AccessDenied && attempt < 12; attempt++)
+        {
+            await Task.Delay(250).ConfigureAwait(false);
+            activated = _powerService.SetActivePlan(planGuid);
+        }
         if (!hadPin)
             return activated;
 

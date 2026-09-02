@@ -51,16 +51,6 @@
                                Classes.status-error="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).IsStatusError}"
                                IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
-                    <!-- Save as Set (8.5): shared confirmation + inline metadata form -->
-                    <views:SaveSetFormView DataContext="{Binding SaveSetForm}" />
-
-                    <Button Classes="apply-bar-discard"
-                            Content="Save as Preset"
-                            HorizontalAlignment="Right"
-                            Command="{Binding SaveSetForm.OpenCommand}"
-                            IsVisible="{Binding !SaveSetForm.IsOpen}"
-                            IsEnabled="{Binding !!ReviewGroups.Count}" />
-
                     <DockPanel>
                         <Button DockPanel.Dock="Left"
                                 Classes="apply-bar-discard"

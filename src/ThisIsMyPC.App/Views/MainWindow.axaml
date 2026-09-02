@@ -252,14 +252,22 @@
                                     IsEnabled="{Binding CanModifyPending}">
                                 <StackPanel Orientation="Horizontal" Spacing="6">
                                     <TextBlock Text="Apply" VerticalAlignment="Center" />
+                                    <!-- A 20px pill centred on the label; the digit sits
+                                         1px above true centre because its glyph has no
+                                         descender and would read low otherwise -->
                                     <Border Background="{DynamicResource OverlayBrush}"
                                             BorderBrush="{DynamicResource AccentOutlineBrush}"
                                             BorderThickness="1"
                                             CornerRadius="10"
-                                            Padding="7,1"
+                                            Height="20" MinWidth="20"
+                                            Padding="6,0"
+                                            VerticalAlignment="Center"
                                             IsVisible="{Binding HasPendingChanges}">
                                         <TextBlock Text="{Binding TotalPendingCount}"
                                                    FontSize="12"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"
+                                                   Margin="0,0,0,1"
                                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                                     </Border>
                                 </StackPanel>
