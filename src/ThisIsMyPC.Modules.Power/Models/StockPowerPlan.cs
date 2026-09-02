@@ -12,8 +12,8 @@ public sealed record StockPowerPlan(Guid PlanGuid, string Name)
     public static readonly StockPowerPlan HighPerformance = new(new Guid("8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c"), "High performance");
     public static readonly StockPowerPlan PowerSaver = new(new Guid("a1841308-3541-4fab-bc81-f71556f20b4a"), "Power saver");
 
-    /// <summary>In Control Panel order.</summary>
-    public static IReadOnlyList<StockPowerPlan> All { get; } = [Balanced, HighPerformance, PowerSaver];
+    /// <summary>In Control Panel order: the preferred pair, then the additional plan.</summary>
+    public static IReadOnlyList<StockPowerPlan> All { get; } = [Balanced, PowerSaver, HighPerformance];
 
     public static StockPowerPlan? FindByGuid(Guid guid) => All.FirstOrDefault(p => p.PlanGuid == guid);
 }

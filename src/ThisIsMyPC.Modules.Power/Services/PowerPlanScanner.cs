@@ -47,14 +47,13 @@ public sealed class PowerPlanScanner
             return [];
         }
 
-        return enumerated.Value
+        return PowerPlanOrder.Sort(enumerated.Value
             .Select(info => new PowerPlan
             {
                 PlanGuid = info.PlanGuid,
                 Name = info.Name,
                 Description = info.Description,
                 IsActive = info.IsActive,
-            })
-            .ToList();
+            }));
     }
 }

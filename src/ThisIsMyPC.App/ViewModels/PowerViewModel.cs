@@ -258,7 +258,9 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
                 && plan.Description != PowerPlanChangeFactory.UltimatePerformanceMarker
                 && StockPowerPlan.FindByGuid(plan.PlanGuid) is null)
                 continue;
-            Plans.Add(new PowerPlanItemViewModel(plan, _pendingActionsService));
+            // Into its place in the list order, not the bottom
+            var at = Plans.TakeWhile(p => Modules.Power.Services.PowerPlanOrder.Compare(p.Plan, plan) <= 0).Count();
+            Plans.Insert(at, new PowerPlanItemViewModel(plan, _pendingActionsService));
         }
         OnPropertyChanged(nameof(HasNoPlans));
         OnPropertyChanged(nameof(NewPlanNameError));

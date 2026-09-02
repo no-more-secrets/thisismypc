@@ -400,7 +400,10 @@ attempt and fails with "no power plan with that GUID is registered", it only
 reads plans that still exist), Ultimate Performance as the marked copy it
 always was (its hidden source is e9a42b02-d5df-448d-aa00-03f14749eb61; the
 code carried a GUID that exists nowhere until 2026-09-02); both are
-reversible creates. Later that
+reversible creates. The plan list has an order (Sam asked; Windows
+enumerates by GUID): active plan, then Balanced, Power saver, High
+performance, then Ultimate Performance, then custom plans by name
+(`PowerPlanOrder`); a plan added by Apply slots into that order. Later that
 day (Sam: adding plans did nothing): a row of the Add plan dropdown closed
 the menu before its command ran, and closing detached the menu content and
 its bindings, so nothing was staged; the close is now posted after the

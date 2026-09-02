@@ -36,6 +36,25 @@ public sealed class PowerPlanScannerTests
     }
 
     [Fact]
+    public void Scan_OrdersActiveThenStockThenUltimateThenCustomByName()
+    {
+        // Registered in GUID order, the way Windows enumerates them
+        _power.AddPlan(Balanced, "Balanced");
+        _power.AddPlan(HighPerformance, "High performance");
+        _power.AddPlan(new Guid("a1841308-3541-4fab-bc81-f71556f20b4a"), "Power saver");
+        _power.AddPlan(new Guid("ceedc97a-f768-4c61-9167-99838f5ebace"), "ChrisTitus - Ultimate Power Plan", isActive: true);
+        _power.AddPlan(new Guid("d0000000-0000-0000-0000-000000000001"), "Ultimate Performance", ThisIsMyPC.Modules.Power.Changes.PowerPlanChangeFactory.UltimatePerformanceMarker);
+        _power.AddPlan(new Guid("00000000-0000-0000-0000-000000000009"), "Zeta");
+        _power.AddPlan(new Guid("f0000000-0000-0000-0000-000000000002"), "alpha");
+
+        var plans = new PowerPlanScanner(_power).Scan();
+
+        Assert.Equal(
+            ["ChrisTitus - Ultimate Power Plan", "Balanced", "Power saver", "High performance", "Ultimate Performance", "alpha", "Zeta"],
+            plans.Select(p => p.Name));
+    }
+
+    [Fact]
     public void Scan_FlagsNormallyHiddenPlans()
     {
         _power.AddPlan(UltimatePerformance, "Ultimate Performance");
