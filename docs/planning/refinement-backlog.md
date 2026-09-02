@@ -332,6 +332,29 @@ sandbox contention with a parallel test writing the same HKCU sandbox area.
 Predates 2026-08-31. Fix: unique per-test sandbox key or a collection fixture
 serializing the sandbox users.
 
+## Autoruns tab: SHIPPED 2026-09-02 (Startup & Services, fourth tab)
+
+Sam's read of Autoruns: every location is a key whose values or subkeys are
+the items, and "disable" parks the item in an `AutorunsDisabled` sibling.
+The module now does the same (docs/research/startup-scanner-rationale.md has
+the location table). `AutorunsScanner` lists Logon, Explorer, Internet
+Explorer, Scheduled Tasks, Services, Drivers, Font Drivers, 32-Bit Drivers,
+Known DLLs, Winlogon, Winsock Providers, Print Monitors, and Office;
+`AutorunToggler` moves values, keys, and Startup files, flips tasks, and
+swaps a service or driver `Start` with an `AutorunsDisabled` DWORD; every
+toggle is a pending change (`ChangeValueType.Autorun_State`) with undo as the
+reverse move. `IRegistryService` gained typed `ReadValue`/`WriteValue` and
+`CreateKey` (default implementations, so the fakes did not change);
+`IStartupFolderService` gained `EnumerateDisabled` and `Move`. The tab has a
+filter box, a category picker, and "Hide Microsoft entries".
+
+Open: a real elevated pass on this machine (disable a Run entry and a
+context-menu handler, apply, confirm in Autoruns, undo). The Startup tab still
+toggles through `StartupApproved` and does not read `AutorunsDisabled`; an
+item parked by the Autoruns tab leaves the Startup tab until it is moved back.
+Set entries (`autorun:` setting ids) are not resolved by
+`StartupSetEntryInspector` yet.
+
 ## Deliberately NOT in this pass (new-module territory)
 
 - Telemetry level / DiagTrack / error reporting → the planned Privacy & Telemetry

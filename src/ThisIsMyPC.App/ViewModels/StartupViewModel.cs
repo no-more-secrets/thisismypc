@@ -47,6 +47,22 @@ public sealed partial class StartupViewModel : ObservableObject, IDisposable
     public static IReadOnlyList<string> ClassificationFilterOptions { get; } =
         ["All", "Telemetry", "OEM", "Compatibility Diagnostics", "Maintenance", "User-Created", "Unknown"];
 
+    // ---- Autoruns tab ----
+
+    private readonly List<AutorunItemViewModel> _allAutoruns = [];
+
+    [ObservableProperty]
+    private string _autorunFilterText = string.Empty;
+
+    [ObservableProperty]
+    private string _autorunCategoryFilter = "All";
+
+    [ObservableProperty]
+    private bool _hideMicrosoftAutoruns;
+
+    public static IReadOnlyList<string> AutorunCategoryFilterOptions { get; } =
+        ["All", .. Enum.GetValues<AutorunCategory>().Select(AutorunEntry.CategoryName)];
+
     public StartupViewModel(
         StartupScanData scanData,
         IPendingChangesService pendingChangesService,
@@ -83,6 +99,44 @@ public sealed partial class StartupViewModel : ObservableObject, IDisposable
         ScheduledTasksScanError = scanData.ScheduledTasksScanError;
         ScheduledTaskItems = [];
         RebuildTasks();
+
+        _allAutoruns.AddRange(scanData.Autoruns.Select(a => new AutorunItemViewModel(a, pendingChangesService)));
+        AutorunsScanError = scanData.AutorunsScanError;
+        AutorunGroups = [];
+        RebuildAutoruns();
+    }
+
+    public string? AutorunsScanError { get; }
+    public ObservableCollection<AutorunGroupViewModel> AutorunGroups { get; }
+    public string AutorunsHeader => $"Autoruns ({AutorunGroups.Sum(g => g.Items.Count)} of {_allAutoruns.Count})";
+    public bool HasVisibleAutoruns => AutorunGroups.Count > 0;
+
+    partial void OnAutorunFilterTextChanged(string value) => RebuildAutoruns();
+    partial void OnAutorunCategoryFilterChanged(string value) => RebuildAutoruns();
+    partial void OnHideMicrosoftAutorunsChanged(bool value) => RebuildAutoruns();
+
+    /// <summary>Groups in Autoruns' tab order; a category with nothing visible is left out.</summary>
+    private void RebuildAutoruns()
+    {
+        var filter = AutorunFilterText.Trim();
+        AutorunGroups.Clear();
+        foreach (var category in Enum.GetValues<AutorunCategory>())
+        {
+            var name = AutorunEntry.CategoryName(category);
+            if (AutorunCategoryFilter != "All" && AutorunCategoryFilter != name)
+                continue;
+
+            var all = _allAutoruns.Where(a => a.Entry.Category == category).ToList();
+            var visible = all
+                .Where(a => !HideMicrosoftAutoruns || !a.IsMicrosoft)
+                .Where(a => filter.Length == 0 || a.Matches(filter))
+                .OrderBy(a => a.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            if (visible.Count > 0)
+                AutorunGroups.Add(new AutorunGroupViewModel(category, visible, all.Count));
+        }
+        OnPropertyChanged(nameof(AutorunsHeader));
+        OnPropertyChanged(nameof(HasVisibleAutoruns));
     }
 
     public string? ServicesScanError { get; }
@@ -237,6 +291,8 @@ public sealed partial class StartupViewModel : ObservableObject, IDisposable
         foreach (var item in _allServices)
             item.Dispose();
         foreach (var item in _allTasks)
+            item.Dispose();
+        foreach (var item in _allAutoruns)
             item.Dispose();
     }
 }

@@ -146,6 +146,54 @@ public sealed class RegistryService : IRegistryService
             });
         }, keyPath);
 
+    public OperationResult<RegistryValueData> ReadValue(string keyPath, string valueName) =>
+        Execute<RegistryValueData>(() =>
+        {
+            var (root, subKeyPath) = ParseKeyPath(keyPath);
+            using var key = root.OpenSubKey(subKeyPath, writable: false);
+            if (key is null)
+                return OperationResult<RegistryValueData>.Failure($"Key not found: {keyPath}", ErrorCategory.NotFound);
+
+            var raw = key.GetValue(valueName, defaultValue: null, RegistryValueOptions.DoNotExpandEnvironmentNames);
+            if (raw is null)
+                return OperationResult<RegistryValueData>.Failure($"Value not found: {keyPath}\\{valueName}", ErrorCategory.NotFound);
+
+            var data = key.GetValueKind(valueName) switch
+            {
+                RegistryValueKind.DWord => RegistryValueData.FromDWord((int)raw),
+                RegistryValueKind.QWord => RegistryValueData.FromQWord((long)raw),
+                RegistryValueKind.MultiString => RegistryValueData.FromMultiString((string[])raw),
+                RegistryValueKind.ExpandString => RegistryValueData.FromExpandString((string)raw),
+                RegistryValueKind.String => RegistryValueData.FromString((string)raw),
+                // Binary, None, and unknown kinds all read as bytes.
+                _ => RegistryValueData.FromBinary(raw as byte[] ?? []),
+            };
+            return OperationResult<RegistryValueData>.Success(data);
+        }, keyPath);
+
+    public OperationResult<bool> WriteValue(string keyPath, string valueName, RegistryValueData value) =>
+        Execute<bool>(() =>
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            return value.Kind switch
+            {
+                RegistryValueDataKind.DWord => WriteValueCore(keyPath, valueName, value.AsDWord(), RegistryValueKind.DWord),
+                RegistryValueDataKind.QWord => WriteValueCore(keyPath, valueName, value.AsQWord(), RegistryValueKind.QWord),
+                RegistryValueDataKind.MultiString => WriteValueCore(keyPath, valueName, value.AsMultiString(), RegistryValueKind.MultiString),
+                RegistryValueDataKind.ExpandString => WriteValueCore(keyPath, valueName, value.Data, RegistryValueKind.ExpandString),
+                RegistryValueDataKind.Binary => WriteValueCore(keyPath, valueName, value.AsBinary(), RegistryValueKind.Binary),
+                _ => WriteValueCore(keyPath, valueName, value.Data, RegistryValueKind.String),
+            };
+        }, keyPath);
+
+    public OperationResult<bool> CreateKey(string keyPath) =>
+        Execute<bool>(() =>
+        {
+            var (root, subKeyPath) = ParseKeyPath(keyPath);
+            using var key = root.CreateSubKey(subKeyPath, writable: true);
+            return OperationResult<bool>.Success(true);
+        }, keyPath);
+
     private static OperationResult<T> ReadValueCore<T>(string keyPath, string valueName, Func<object, T> convert, bool doNotExpand = false)
     {
         var (root, subKeyPath) = ParseKeyPath(keyPath);

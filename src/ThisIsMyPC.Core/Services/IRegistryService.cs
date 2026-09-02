@@ -21,4 +21,50 @@ public interface IRegistryService
     OperationResult<IReadOnlyList<string>> EnumerateSubKeys(string keyPath);
     OperationResult<IReadOnlyList<string>> EnumerateValues(string keyPath);
     OperationResult<string> ReadValueBeforeWrite(string keyPath, string valueName);
+
+    /// <summary>
+    /// Reads a value of any type with its type, for moving it elsewhere intact.
+    /// The default probes the typed readers in turn (test fakes store typed
+    /// objects, so that is exact for them); the Win32 service overrides it
+    /// with one typed read.
+    /// </summary>
+    OperationResult<RegistryValueData> ReadValue(string keyPath, string valueName)
+    {
+        if (ReadBinary(keyPath, valueName) is { IsSuccess: true, Value: { } bytes })
+            return OperationResult<RegistryValueData>.Success(RegistryValueData.FromBinary(bytes));
+        if (ReadDWord(keyPath, valueName) is { IsSuccess: true, Value: var number })
+            return OperationResult<RegistryValueData>.Success(RegistryValueData.FromDWord(number));
+        if (ReadMultiString(keyPath, valueName) is { IsSuccess: true, Value: { } lines })
+            return OperationResult<RegistryValueData>.Success(RegistryValueData.FromMultiString(lines));
+        if (ReadString(keyPath, valueName) is { IsSuccess: true, Value: { } text })
+            return OperationResult<RegistryValueData>.Success(RegistryValueData.FromString(text));
+        return OperationResult<RegistryValueData>.Failure($"Value not found: {keyPath}\\{valueName}", ErrorCategory.NotFound);
+    }
+
+    /// <summary>Writes a value with the type it was read with.</summary>
+    OperationResult<bool> WriteValue(string keyPath, string valueName, RegistryValueData value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        return value.Kind switch
+        {
+            RegistryValueDataKind.Binary => WriteBinary(keyPath, valueName, value.AsBinary()),
+            RegistryValueDataKind.DWord => WriteDWord(keyPath, valueName, value.AsDWord()),
+            RegistryValueDataKind.QWord => WriteBinary(keyPath, valueName, BitConverter.GetBytes(value.AsQWord())),
+            RegistryValueDataKind.MultiString => WriteMultiString(keyPath, valueName, value.AsMultiString()),
+            RegistryValueDataKind.ExpandString => WriteExpandString(keyPath, valueName, value.Data),
+            _ => WriteString(keyPath, valueName, value.Data),
+        };
+    }
+
+    /// <summary>Creates an empty key (no-op when present). The default writes and removes a marker value.</summary>
+    OperationResult<bool> CreateKey(string keyPath)
+    {
+        if (KeyExists(keyPath) is { IsSuccess: true, Value: true })
+            return OperationResult<bool>.Success(true);
+        const string marker = "__thisismypc_create";
+        var write = WriteString(keyPath, marker, string.Empty);
+        if (!write.IsSuccess)
+            return write;
+        return DeleteValue(keyPath, marker);
+    }
 }

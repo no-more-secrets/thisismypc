@@ -14,5 +14,14 @@ public enum ChangeValueType
     Environment_Variable,
     File_Content,
     Shell_CustomVerb,
-    Registry_KeyTree
+    Registry_KeyTree,
+
+    /// <summary>
+    /// Autoruns-style enable/disable of one autostart item: registry values and
+    /// keys move into an AutorunsDisabled sibling, startup files into an
+    /// AutorunsDisabled subfolder, services and drivers swap Start with an
+    /// AutorunsDisabled value, tasks flip Enabled. Before/After are "Enabled"
+    /// or "Disabled"; SystemLocation names the item (see AutorunTarget).
+    /// </summary>
+    Autorun_State
 }

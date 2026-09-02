@@ -185,7 +185,7 @@ public sealed class StartupScanner
         return metadata;
     }
 
-    private static StartupFileMetadata ReadFileMetadata(string executablePath)
+    internal static StartupFileMetadata ReadFileMetadata(string executablePath)
     {
         try
         {

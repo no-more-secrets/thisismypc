@@ -57,12 +57,27 @@ public sealed class StartupModule : IModule
                 var serviceScanner = new ServiceScanner(_serviceControlService);
                 var startupData = startupScanner.Scan();
                 var services = serviceScanner.Scan();
+
+                // The Autoruns view: same tasks and services, plus every other location.
+                IReadOnlyList<Models.AutorunEntry> autoruns = [];
+                string? autorunsError = null;
+                try
+                {
+                    autoruns = new AutorunsScanner(_registryService, _startupFolderService).Scan(scheduledTasks, services);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+                {
+                    autorunsError = ex.Message;
+                }
+
                 return OperationResult<object>.Success(startupData with
                 {
                     Services = services,
                     ServicesScanError = serviceScanner.LastScanError,
                     ScheduledTasks = scheduledTasks,
                     ScheduledTasksScanError = taskScanner.LastScanError,
+                    Autoruns = autoruns,
+                    AutorunsScanError = autorunsError,
                 });
             }
             catch (Exception ex)
@@ -80,9 +95,29 @@ public sealed class StartupModule : IModule
             ChangeValueType.Registry_Binary => ApplyBinaryChange(change),
             ChangeValueType.Service_StartType => ApplyServiceStartTypeChange(change),
             ChangeValueType.ScheduledTask_State => ApplyScheduledTaskChange(change),
+            ChangeValueType.Autorun_State => ApplyAutorunChange(change),
             _ => OperationResult<bool>.Failure(
                 $"Unsupported value type: {change.ValueType}", ErrorCategory.ServiceUnavailable),
         });
+    }
+
+    private OperationResult<bool> ApplyAutorunChange(ChangeDescriptor change)
+    {
+        var enable = string.Equals(change.AfterValue, Changes.AutorunChangeFactory.EnabledValue, StringComparison.OrdinalIgnoreCase);
+        if (!enable && !string.Equals(change.AfterValue, Changes.AutorunChangeFactory.DisabledValue, StringComparison.OrdinalIgnoreCase))
+        {
+            return OperationResult<bool>.Failure(
+                $"Invalid autorun state '{change.AfterValue}' for {change.DisplayName}", ErrorCategory.NotFound);
+        }
+
+        var target = AutorunTarget.TryParse(change.SystemLocation);
+        if (target is null)
+        {
+            return OperationResult<bool>.Failure(
+                $"Invalid autorun location: {change.SystemLocation}", ErrorCategory.NotFound);
+        }
+
+        return new AutorunToggler(_registryService, _startupFolderService, _scheduledTaskService).Apply(target, enable);
     }
 
     public Task<OperationResult<bool>> RevertChangeAsync(ChangeDescriptor change)

@@ -24,13 +24,25 @@ public sealed partial class StartupFolderService : IStartupFolderService
     private static readonly Guid IID_IPersistFile = new("0000010b-0000-0000-C000-000000000046");
 
     public OperationResult<IReadOnlyList<StartupFolderItem>> Enumerate(StartupFolderScope scope)
+        => EnumerateFolder(GetFolder(scope), scope);
+
+    /// <summary>The AutorunsDisabled subfolder, where Autoruns (and this app) park disabled files.</summary>
+    public OperationResult<IReadOnlyList<StartupFolderItem>> EnumerateDisabled(StartupFolderScope scope)
+    {
+        var folder = GetFolder(scope);
+        return string.IsNullOrEmpty(folder)
+            ? OperationResult<IReadOnlyList<StartupFolderItem>>.Success([])
+            : EnumerateFolder(Path.Combine(folder, IStartupFolderService.DisabledSubfolder), scope);
+    }
+
+    private static string GetFolder(StartupFolderScope scope) => scope == StartupFolderScope.CurrentUser
+        ? Environment.GetFolderPath(Environment.SpecialFolder.Startup)
+        : Environment.GetFolderPath(Environment.SpecialFolder.CommonStartup);
+
+    private static OperationResult<IReadOnlyList<StartupFolderItem>> EnumerateFolder(string folder, StartupFolderScope scope)
     {
         try
         {
-            var folder = scope == StartupFolderScope.CurrentUser
-                ? Environment.GetFolderPath(Environment.SpecialFolder.Startup)
-                : Environment.GetFolderPath(Environment.SpecialFolder.CommonStartup);
-
             if (string.IsNullOrEmpty(folder) || !Directory.Exists(folder))
                 return OperationResult<IReadOnlyList<StartupFolderItem>>.Success(Array.Empty<StartupFolderItem>());
 

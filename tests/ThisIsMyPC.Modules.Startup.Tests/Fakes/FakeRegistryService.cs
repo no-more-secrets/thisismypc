@@ -120,6 +120,15 @@ public sealed class FakeRegistryService : IRegistryService
     public OperationResult<bool> DeleteKey(string keyPath, bool recursive = false)
     {
         _keys.Remove(keyPath);
+        var prefix = keyPath + "\\";
+        foreach (var value in _values.Keys.Where(k => k.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)).ToList())
+        {
+            // Values directly under the key always go; deeper ones only on a recursive delete.
+            if (recursive || !value[prefix.Length..].Contains('\\'))
+                _values.Remove(value);
+        }
+        if (recursive)
+            _keys.RemoveWhere(k => k.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
         return OperationResult<bool>.Success(true);
     }
 
