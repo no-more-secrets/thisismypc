@@ -34,6 +34,9 @@ public static class AutorunLocations
     public const string ServicesKey = @"HKLM\SYSTEM\CurrentControlSet\Services";
     public const string BackgroundContextMenuHandlersKey = @"HKLM\SOFTWARE\Classes\Directory\Background\ShellEx\ContextMenuHandlers";
     public const string ShellIconOverlayKey = @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\ShellIconOverlayIdentifiers";
+
+    /// <summary>Windows' own off switch for shell extensions (CLSID value names); the Context Menus page writes it.</summary>
+    public const string BlockedShellExtensionsKey = @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Shell Extensions\Blocked";
     public const string BrowserHelperObjectsKey = @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Browser Helper Objects";
     public const string BrowserHelperObjects32Key = @"HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Explorer\Browser Helper Objects";
     public const string FontDriversKey = @"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Font Drivers";

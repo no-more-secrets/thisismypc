@@ -86,6 +86,9 @@ public sealed partial class AutorunItemViewModel : ObservableObject, IDisposable
     public bool HasDescription => !string.IsNullOrEmpty(Entry.Description);
     public string PublisherText => Entry.Publisher ?? "Unknown publisher";
     public string ImagePathText => Entry.ImagePath ?? Entry.Data;
+
+    /// <summary>A task's data is its own path; showing it twice says nothing.</summary>
+    public bool HasImagePath => !string.Equals(ImagePathText, LocationText, StringComparison.OrdinalIgnoreCase);
     public string NoteText => Entry.Note ?? string.Empty;
     public bool HasNote => !string.IsNullOrEmpty(Entry.Note);
     public string StateText => IsEnabled ? "Enabled" : "Disabled";
@@ -93,9 +96,11 @@ public sealed partial class AutorunItemViewModel : ObservableObject, IDisposable
     /// <summary>Where the item is registered: key and value, folder and file, task path, or service key.</summary>
     public string LocationText => Entry.Kind switch
     {
-        AutorunItemKind.ScheduledTask or AutorunItemKind.Service => Entry.Location,
+        AutorunItemKind.ScheduledTask => Entry.Location,
         _ => $@"{Entry.Location}\{Entry.Name}",
     };
+
+    public bool CanToggle => Entry.CanToggle;
 
     public bool IsMicrosoft => Entry.Publisher?.Contains("Microsoft", StringComparison.OrdinalIgnoreCase) == true;
 

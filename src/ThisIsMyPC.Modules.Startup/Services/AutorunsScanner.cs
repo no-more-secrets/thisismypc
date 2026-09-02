@@ -167,6 +167,11 @@ public sealed class AutorunsScanner
                 ? (location.DataValueName is null ? null : ReadText(itemKey, string.Empty))
                 : ReadText(itemKey, location.DescriptionValueName);
 
+            // Shell handlers the Context Menus page switched off: a dash before
+            // the CLSID in (Default), or the CLSID on the Blocked list. That page
+            // owns their state; here they show as off with the switch greyed.
+            var shellOff = location.Category == AutorunCategory.Explorer && enabled && IsShellDisabled(name, ref data);
+
             var image = ResolveSubKeyImage(location, name, data);
             var metadata = GetMetadata(image);
             entries.Add(new AutorunEntry
@@ -179,9 +184,24 @@ public sealed class AutorunsScanner
                 ImagePath = image,
                 Description = FirstNonEmpty(description, ClsidDescription(name, data, location.Is32Bit), metadata?.Description),
                 Publisher = metadata?.Publisher,
-                IsEnabled = enabled,
+                IsEnabled = enabled && !shellOff,
+                Note = shellOff ? "Off in Context Menus" : null,
+                CanToggle = !shellOff,
             });
         }
+    }
+
+    /// <summary>ShellExView's dash convention ("-{CLSID}") and Windows' own Blocked list, both used by the Context Menus page.</summary>
+    private bool IsShellDisabled(string keyName, ref string data)
+    {
+        if (data.Length > 1 && data[0] == '-' && IsClsid(data[1..]))
+        {
+            data = data[1..];
+            return true;
+        }
+        var clsid = IsClsid(data) ? data : keyName;
+        return IsClsid(clsid)
+            && _registry.ValueExists(AutorunLocations.BlockedShellExtensionsKey, clsid) is { IsSuccess: true, Value: true };
     }
 
     private string? ResolveSubKeyImage(AutorunLocation location, string keyName, string data)
@@ -334,7 +354,7 @@ public sealed class AutorunsScanner
                 Category = isDriver ? AutorunCategory.Drivers : AutorunCategory.Services,
                 Kind = AutorunItemKind.Service,
                 Name = name,
-                Location = key,
+                Location = AutorunLocations.ServicesKey,
                 Data = string.IsNullOrWhiteSpace(imagePath) ? name : imagePath,
                 ImagePath = image,
                 Description = FirstNonEmpty(displayName == name ? null : displayName, description, metadata?.Description),
@@ -381,13 +401,15 @@ public sealed class AutorunsScanner
 
     // ---- Helpers ----
 
+    /// <summary>String-typed values only; a DWORD or binary value under a text-only location is not an item.</summary>
     private string? ReadText(string keyPath, string valueName)
     {
-        var expand = _registry.ReadExpandString(keyPath, valueName);
-        if (expand.IsSuccess && expand.Value is not null)
-            return expand.Value;
-        var plain = _registry.ReadString(keyPath, valueName);
-        return plain.IsSuccess ? plain.Value : null;
+        var read = _registry.ReadValue(keyPath, valueName);
+        if (!read.IsSuccess || read.Value is null)
+            return null;
+        return read.Value.Kind is RegistryValueDataKind.String or RegistryValueDataKind.ExpandString
+            ? read.Value.Data
+            : null;
     }
 
     private string ResolveDll(string data, bool is32Bit)

@@ -25,16 +25,27 @@ public interface IStartupFolderService
     OperationResult<IReadOnlyList<StartupFolderItem>> EnumerateDisabled(StartupFolderScope scope)
         => OperationResult<IReadOnlyList<StartupFolderItem>>.Success([]);
 
-    /// <summary>Moves one startup file, creating the destination folder. Default: the file system.</summary>
+    /// <summary>
+    /// Moves one startup file, creating the destination folder. Default: the
+    /// file system. Idempotent (source gone, destination present is success)
+    /// and never overwrites: both present is a failure before anything moves.
+    /// </summary>
     OperationResult<bool> Move(string fromPath, string toPath)
     {
         try
         {
+            var atDestination = File.Exists(toPath);
             if (!File.Exists(fromPath))
             {
-                return File.Exists(toPath)
+                return atDestination
                     ? OperationResult<bool>.Success(true)
                     : OperationResult<bool>.Failure($"File not found: {fromPath}", ErrorCategory.NotFound);
+            }
+            if (atDestination)
+            {
+                return OperationResult<bool>.Failure(
+                    $"{toPath} already exists, so the move would overwrite it. Remove or rename that copy first.",
+                    ErrorCategory.ServiceUnavailable);
             }
             var directory = Path.GetDirectoryName(toPath);
             if (!string.IsNullOrEmpty(directory))

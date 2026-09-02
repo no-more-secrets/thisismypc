@@ -3,7 +3,6 @@ using Avalonia.Headless.XUnit;
 using ThisIsMyPC.App.ViewModels;
 using ThisIsMyPC.App.Views;
 using ThisIsMyPC.Core.Services;
-using ThisIsMyPC.Interop.Win32.Registry;
 using ThisIsMyPC.Modules.Startup.Changes;
 using ThisIsMyPC.Modules.Startup.Models;
 using ThisIsMyPC.Modules.Startup.Services;
@@ -11,7 +10,7 @@ using ThisIsMyPC.Modules.Startup.Services;
 namespace ThisIsMyPC.App.UiTests;
 
 /// <summary>
-/// The Autoruns tab of Startup &amp; Services with fake scan data: groups in
+/// The Startup &amp; Services page (the Autoruns inventory) with fake scan data: groups in
 /// Autoruns' order, a switch that stages a change, and the filters.
 /// </summary>
 public class AutorunsTabShotTests
@@ -57,7 +56,7 @@ public class AutorunsTabShotTests
     private static (StartupViewModel ViewModel, PendingChangesService Queue) Build()
     {
         var queue = new PendingChangesService();
-        return (new StartupViewModel(ScanData(), queue, new RegistryService()), queue);
+        return (new StartupViewModel(ScanData(), queue), queue);
     }
 
     [AvaloniaFact]
@@ -66,7 +65,6 @@ public class AutorunsTabShotTests
         var (viewModel, queue) = Build();
         using var session = UiSession.ForView(new StartupView(), viewModel, "autoruns-tab");
 
-        session.ClickText("Autoruns");
         session.Screenshot("autoruns");
         Assert.True(session.IsTextVisible("Autoruns (7 of 7)"));
         Assert.True(session.IsTextVisible("Logon (3)"));
@@ -96,7 +94,6 @@ public class AutorunsTabShotTests
     {
         var (viewModel, _) = Build();
         using var session = UiSession.ForView(new StartupView(), viewModel, "autoruns-tab");
-        session.ClickText("Autoruns");
 
         session.ClickText("Hide Microsoft entries");
         session.Screenshot("autoruns-hide-microsoft");

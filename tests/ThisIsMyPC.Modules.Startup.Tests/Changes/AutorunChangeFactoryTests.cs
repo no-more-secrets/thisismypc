@@ -72,7 +72,32 @@ public class AutorunChangeFactoryTests
         Assert.Equal(@"\Acme\Updater", task.EnabledPath);
         Assert.Null(task.DisabledPath);
 
-        var service = new AutorunTarget(AutorunItemKind.Service, $@"{AutorunLocations.ServicesKey}\Spooler", "Spooler");
+        var service = new AutorunTarget(AutorunItemKind.Service, AutorunLocations.ServicesKey, "Spooler");
         Assert.Equal($@"{AutorunLocations.ServicesKey}\Spooler", service.EnabledPath);
+        Assert.Null(service.DisabledPath);
+    }
+
+    [Fact]
+    public void Names_WithThePipeCharacterRoundTrip()
+    {
+        var target = AutorunTarget.TryParse(new AutorunTarget(AutorunItemKind.RegistryKey, AutorunLocations.PrintMonitorsKey, "A|B|C").Encode());
+
+        Assert.NotNull(target);
+        Assert.Equal(AutorunLocations.PrintMonitorsKey, target.Location);
+        Assert.Equal("A|B|C", target.Name);
+    }
+
+    [Fact]
+    public void ParkedRows_GetTheirOwnSettingId()
+    {
+        var live = Entry(enabled: true);
+        var parked = Entry(enabled: false);
+
+        Assert.NotEqual(AutorunChangeFactory.GetSettingId(live), AutorunChangeFactory.GetSettingId(parked));
+        Assert.EndsWith(AutorunChangeFactory.ParkedSuffix, AutorunChangeFactory.GetSettingId(parked), StringComparison.Ordinal);
+
+        // Tasks and services flip in place, so their id never changes with state.
+        var task = Entry(AutorunCategory.ScheduledTasks, AutorunItemKind.ScheduledTask, enabled: false);
+        Assert.DoesNotContain(AutorunChangeFactory.ParkedSuffix, AutorunChangeFactory.GetSettingId(task), StringComparison.Ordinal);
     }
 }

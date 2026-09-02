@@ -1,18 +1,10 @@
 # Startup Scanner Rationale
 
-Design rationale for the scope of `ThisIsMyPC.Modules.Startup`. This is AI-written, condensed from an analysis of an Autoruns export from one personal machine (the export is not in the repo) and from Sam's read of how Autoruns stores state. The module has two views of the same machine: the curated Startup, Scheduled Tasks, and Services tabs, and since 2026-09-02 an Autoruns tab that lists every autostart location the way Sysinternals Autoruns does and disables items the way Autoruns does, so the two tools read each other's state.
+Design rationale for `ThisIsMyPC.Modules.Startup`. This is AI-written, condensed from an analysis of an Autoruns export from one personal machine (the export is not in the repo) and from Sam's read of how Autoruns stores state. Since 2026-09-02 the module's page is one Autoruns-style inventory: every autostart location Sysinternals Autoruns lists, grouped by its categories, with items disabled the way Autoruns disables them, so the two tools read each other's state. The earlier Startup, Scheduled Tasks, and Services tabs were removed the same day; their scanners and change factories stay in the module because sets (Clean Boot), the monitoring section on Home, and the set inspector still apply changes through them.
 
-## The curated tabs
+## The page
 
-| Tab | Scanner | Source | Toggle mechanism |
-|---|---|---|---|
-| Startup | `StartupScanner` | `Run` keys under HKLM, HKLM `WOW6432Node`, and HKCU; the user and common Startup folders through `IStartupFolderService`; enabled state from `Explorer\StartupApproved\{Run,Run32,StartupFolder}` | `StartupApproved` 12-byte blob (even first byte enabled, odd disabled), the same mechanism Task Manager and Settings use; the Run value or `.lnk` file never moves |
-| Services | `ServiceScanner` | Service Control Manager through `IServiceControlService` | Start type through the SCM |
-| Scheduled Tasks | `ScheduledTaskScanner` | Task Scheduler | Enabled flag through the scheduler |
-
-## The Autoruns tab
-
-`AutorunsScanner` reads the locations in `AutorunLocations` plus both Startup folders, every scheduled task, and the Services key. `AutorunToggler` applies the change; `AutorunChangeFactory` builds the descriptor (`ChangeValueType.Autorun_State`, Before/After "Enabled" or "Disabled", the item named by `AutorunTarget` as `kind|location|name` in SystemLocation). Every toggle goes through the pending-changes queue like any other change, and undo is the opposite move.
+`AutorunsScanner` reads the locations in `AutorunLocations` plus both Startup folders, every scheduled task, and the Services key. `AutorunToggler` applies the change; `AutorunChangeFactory` builds the descriptor (`ChangeValueType.Autorun_State`, Before/After "Enabled" or "Disabled", the item named by `AutorunTarget` as `kind|location|name` in SystemLocation, where location is always a fixed catalog key, a folder, or a task path and name is the remainder, so a value or subkey name may contain `|`). Every toggle goes through the pending-changes queue like any other change, and undo is the opposite move. A row that sits in `AutorunsDisabled` gets a `|parked` suffix on its setting id, so a parked twin never shares an identity with the live item.
 
 | Autoruns tab | Locations | Item kind | Disable = |
 |---|---|---|---|
@@ -30,10 +22,23 @@ Design rationale for the scope of `ThisIsMyPC.Modules.Startup`. This is AI-writt
 | Print Monitors | `Control\Print\Monitors` (`Driver`) | keys | move under `AutorunsDisabled` |
 | Office | `Microsoft\Office\{Outlook,Excel,PowerPoint,Word}\Addins` (64-bit and `WOW6432Node`; `FriendlyName`) | keys | move under `AutorunsDisabled` |
 
-Disabled items are read back from the same places, so an item Autoruns disabled shows as Disabled here and the reverse. Per-user service instances (`Type` with 0x80) are skipped; the template is the item. Services and drivers with a manual start are not listed, as in Autoruns, unless an `AutorunsDisabled` value marks them as parked. Image paths come from the command line, the CLSID's `InprocServer32` (64-bit or `WOW6432Node` class table), a bare DLL name resolved against System32 or SysWOW64, the Winsock `LibraryPath`, an Office ProgID's CLSID, or the service `ImagePath` (`svchost` hosts show their `Parameters\ServiceDll`). Publisher and description come from the file's version resource, with the CLSID or add-in friendly name taking precedence.
+Rules the toggler keeps:
 
-Run-key and Startup-folder items that Task Manager switched off carry the note "Off in Task Manager"; the Autoruns tab does not rewrite `StartupApproved`, and the Startup tab does not read `AutorunsDisabled`. An item moved by the Autoruns tab leaves the Startup tab until it is moved back. Restart requirements follow the category: Explorer handlers ask for an Explorer restart; services, drivers, font drivers, Drivers32, Known DLLs, credential providers, Winsock, and print monitors ask for a reboot.
+- Idempotent: an item already at its destination is success.
+- Never overwrites: when the source and the destination both exist (a twin parked earlier by Autoruns, then the installer recreated the live item), the move fails before touching anything and names the copy to remove. Registry values, keys, and Startup files all follow this rule.
+- A service or driver that is already `Start` = 4 without an `AutorunsDisabled` value was disabled by something else; both directions refuse rather than record a change with no reverse.
 
-## Why the curated tabs stay curated
+What the scanner reads:
 
-Every category that only the Autoruns tab shows is security infrastructure, boot-critical, or almost entirely Microsoft-owned: drivers can make the system unbootable, credential providers can lock every user out, Known DLLs hardens against search-order hijack, Winsock is the network stack. The Autoruns tab lists them because Sam wanted the complete inventory with Autoruns-compatible toggles; the "Hide Microsoft entries" box is the same escape hatch Autoruns offers. Categories Autoruns has that neither view lists: Boot Execute (`autocheck autochk *`), LSA providers, network providers, Codecs beyond `Drivers32`, Group Policy and PLAP Winlogon extensions, IE toolbars and URL search hooks, Hijacks. They are either boot-time plumbing or malware checks rather than settings.
+- Disabled items come from the same parking places, so an item Autoruns disabled shows as Disabled here and the reverse.
+- Only string-typed values are items; a DWORD or binary value under a text-only location is skipped.
+- Per-user service instances (`Type` with 0x80) are skipped; the template is the item. Services and drivers with a manual start are not listed, as in Autoruns, unless an `AutorunsDisabled` value marks them as parked.
+- Image paths come from the command line, the CLSID's `InprocServer32` (64-bit or `WOW6432Node` class table), a bare DLL name resolved against System32 or SysWOW64, the Winsock `LibraryPath`, an Office ProgID's CLSID, or the service `ImagePath` (`svchost` hosts show their `Parameters\ServiceDll`). Publisher and description come from the file's version resource, with the CLSID or add-in friendly name taking precedence.
+- Run-key and Startup-folder items that Task Manager switched off carry the note "Off in Task Manager"; the page does not rewrite `StartupApproved`.
+- Shell handlers the Context Menus page switched off (a dash before the CLSID in `(Default)`, or the CLSID on `Shell Extensions\Blocked`) show as off with the note "Off in Context Menus" and a greyed switch. That page owns their state; two mechanisms on one key would fight.
+
+Restart requirements follow the category: Explorer handlers ask for an Explorer restart; services, drivers, font drivers, Drivers32, Known DLLs, credential providers, Winsock, and print monitors ask for a reboot.
+
+## Why the list is this long
+
+Every category beyond Logon and Scheduled Tasks is security infrastructure, boot-critical, or almost entirely Microsoft-owned: drivers can make the system unbootable, credential providers can lock every user out, Known DLLs hardens against search-order hijack, Winsock is the network stack. They are listed because Sam wanted the complete inventory with Autoruns-compatible toggles; the "Hide Microsoft entries" box is the same escape hatch Autoruns offers. Categories Autoruns has that this page does not: Boot Execute (`autocheck autochk *`), LSA providers, network providers, Codecs beyond `Drivers32`, Group Policy and PLAP Winlogon extensions, IE toolbars and URL search hooks, Hijacks. They are either boot-time plumbing or malware checks rather than settings.

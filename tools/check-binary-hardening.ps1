@@ -12,8 +12,10 @@
 # Stack guard pages are not a file property: Windows places one below every
 # thread stack regardless. Exit code 1 when any first-party file misses a
 # required mitigation.
+[CmdletBinding(PositionalBinding = $false)]
 param(
-    [Parameter(Mandatory = $true, ValueFromRemainingArguments = $true)]
+    # Files, or folders whose .exe and .dll files are read.
+    [Parameter(Mandatory = $true, Position = 0, ValueFromRemainingArguments = $true)]
     [string[]]$Path,
 
     # Names (no path) held to the full set; everything else is reported only.
@@ -21,6 +23,25 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+
+# True for a file that starts with an MZ header and a PE signature at e_lfanew.
+function Test-Pe([string]$file) {
+    $stream = [System.IO.File]::OpenRead($file)
+    try {
+        if ($stream.Length -lt 0x40) { return $false }
+        $head = New-Object byte[] 0x40
+        [void]$stream.Read($head, 0, 0x40)
+        if ($head[0] -ne 0x4D -or $head[1] -ne 0x5A) { return $false }
+        $peOffset = [BitConverter]::ToInt32($head, 0x3C)
+        if ($peOffset -lt 0x40 -or $peOffset + 4 -gt $stream.Length) { return $false }
+        $stream.Position = $peOffset
+        $sig = New-Object byte[] 4
+        [void]$stream.Read($sig, 0, 4)
+        return ([BitConverter]::ToUInt32($sig, 0) -eq 0x00004550)
+    } finally {
+        $stream.Dispose()
+    }
+}
 
 function Read-Pe([string]$file) {
     $b = [System.IO.File]::ReadAllBytes($file)
@@ -107,8 +128,17 @@ function Read-Pe([string]$file) {
 }
 
 $rows = foreach ($p in $Path) {
-    foreach ($f in (Get-ChildItem $p -File)) { Read-Pe $f.FullName }
+    $files = if (Test-Path $p -PathType Container) {
+        Get-ChildItem -Path $p -File | Where-Object { $_.Extension -in '.exe', '.dll' }
+    } else {
+        Get-Item $p
+    }
+    foreach ($f in $files) {
+        if (Test-Pe $f.FullName) { Read-Pe $f.FullName }
+        else { Write-Host "skip $($f.Name): not a PE image" }
+    }
 }
+if (-not $rows) { Write-Host 'No PE images found.'; exit 1 }
 $rows | Format-Table -AutoSize | Out-String -Width 200 | Write-Host
 
 $failed = @()

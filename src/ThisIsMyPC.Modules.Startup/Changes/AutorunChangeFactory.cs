@@ -17,7 +17,15 @@ public static class AutorunChangeFactory
     public const string EnabledValue = "Enabled";
     public const string DisabledValue = "Disabled";
 
-    public static string GetSettingId(AutorunEntry entry) => SettingIdPrefix + AutorunTarget.For(entry).Encode();
+    /// <summary>Suffix on the id of a row that sits in AutorunsDisabled, so a parked twin never shares an identity with the live item.</summary>
+    public const string ParkedSuffix = "|parked";
+
+    public static string GetSettingId(AutorunEntry entry)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+        var id = SettingIdPrefix + AutorunTarget.For(entry).Encode();
+        return entry.IsEnabled || entry.Kind is AutorunItemKind.ScheduledTask or AutorunItemKind.Service ? id : id + ParkedSuffix;
+    }
 
     public static ChangeDescriptor CreateToggle(AutorunEntry entry, bool enable)
     {

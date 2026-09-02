@@ -72,9 +72,10 @@ Two themes required, dark and light, equal citizens. Dark is the default.
 5. **Power Plans**: plan cards (one active), a dense grid of per-plan settings
    (AC/DC columns), and a "System power" toggle section (hibernation,
    Ultimate Performance).
-6. **Startup & Services**: large tables of startup entries, services, and
-   scheduled tasks with classification labels (safe to disable, caution,
-   critical), search, and per-row toggles.
+6. **Startup & Services**: one Autoruns-style inventory, grouped by Autoruns
+   category (Logon, Explorer, Services, Drivers, Scheduled Tasks, and the
+   rest), with a filter box, a category picker, a "Hide Microsoft entries"
+   box, and a per-row switch that stages the change.
 7. **Windows Annoyances**: ~30 setting cards in groups. The reference
    card-based module.
 8. **Windows Update**: 8 setting cards.

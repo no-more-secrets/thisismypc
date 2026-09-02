@@ -22,7 +22,7 @@ Ten modules currently, each one is a page in the .exe app:
 | Core | Context Menus | Every registered right-click handler: COM extensions, static verbs, drag-drop handlers, modern packaged handlers. Shows source file, publisher, and classification; toggles across all registration surfaces |
 | Core | Environment | System and user environment variables, with a PATH editor |
 | Core | Power Plans | Discover, switch, and adjust power plans |
-| Core | Startup & Services | Startup entries, Windows services, scheduled tasks |
+| Core | Startup & Services | Every autostart location in Autoruns' categories, switched off the way Autoruns does it |
 | System | Windows Annoyances | Nag screens, suggestions, ads, and upsell prompts |
 | System | Windows Update | Update installs, forced restarts, driver overwrites, feature upgrades |
 | System | Privacy & Telemetry | Diagnostic data, error reporting, tracking, personalization |

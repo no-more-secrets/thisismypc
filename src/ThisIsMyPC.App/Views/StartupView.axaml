@@ -8,233 +8,6 @@
              x:DataType="vm:StartupViewModel">
 
     <UserControl.Resources>
-        <DataTemplate x:Key="StartupEntryRowTemplate" x:DataType="vm:StartupEntryItemViewModel">
-            <Border Padding="12,8" Margin="0,2" CornerRadius="4"
-                    Classes="card">
-                <Grid ColumnDefinitions="2*,*,Auto,Auto" RowDefinitions="Auto,Auto">
-                    <StackPanel Grid.Column="0" Grid.Row="0" Orientation="Horizontal" Spacing="8">
-                        <TextBlock Text="{Binding Name}"
-                                   FontWeight="SemiBold"
-                                   Foreground="{DynamicResource TextPrimaryBrush}"
-                                   VerticalAlignment="Center" />
-                        <TextBlock Text="{Binding DescriptionText}"
-                                   IsVisible="{Binding HasDescription}"
-                                   FontSize="12"
-                                   Foreground="{DynamicResource TextSecondaryBrush}"
-                                   TextTrimming="CharacterEllipsis"
-                                   VerticalAlignment="Center" />
-                    </StackPanel>
-                    <TextBlock Grid.Column="1" Grid.Row="0"
-                               Text="{Binding PublisherText}"
-                               FontSize="12"
-                               Foreground="{DynamicResource TextSecondaryBrush}"
-                               TextTrimming="CharacterEllipsis"
-                               Margin="8,0"
-                               VerticalAlignment="Center" />
-                    <StackPanel Grid.Column="2" Grid.Row="0" Orientation="Horizontal" Spacing="8"
-                                Margin="0,0,8,0" VerticalAlignment="Center">
-                        <TextBlock Text="Pending"
-                                   IsVisible="{Binding HasPendingChange}"
-                                   FontSize="11"
-                                   FontWeight="SemiBold"
-                                   Foreground="{DynamicResource WarningBrush}"
-                                   VerticalAlignment="Center" />
-                        <TextBlock Text="{Binding StateText}"
-                                   FontSize="12"
-                                   Foreground="{DynamicResource TextSecondaryBrush}"
-                                   VerticalAlignment="Center" />
-                    </StackPanel>
-                    <ToggleSwitch Grid.Column="3" Grid.Row="0"
-                                  IsChecked="{Binding IsEnabled}"
-                                  IsEnabled="{Binding CanToggle}"
-                                  OffContent=""
-                                  OnContent=""
-                                  MinWidth="0"
-                                  VerticalAlignment="Center" />
-
-                    <!-- Simplified view: executable location + source label -->
-                    <StackPanel Grid.Column="0" Grid.ColumnSpan="4" Grid.Row="1"
-                                Orientation="Horizontal" Spacing="8" Margin="0,4,0,0"
-                                IsVisible="{Binding !IsRegistryViewMode}">
-                        <TextBlock Text="{Binding SourceLabel}"
-                                   FontSize="11"
-                                   Foreground="{DynamicResource TextTertiaryBrush}" />
-                        <TextBlock Text="{Binding FileLocationText}"
-                                   FontSize="11"
-                                   FontFamily="{StaticResource MonoFont}"
-                                   Foreground="{DynamicResource TextTertiaryBrush}"
-                                   TextTrimming="CharacterEllipsis" />
-                    </StackPanel>
-
-                    <!-- Registry view: exact source path -->
-                    <StackPanel Grid.Column="0" Grid.ColumnSpan="4" Grid.Row="1"
-                                Spacing="2" Margin="0,4,0,0"
-                                IsVisible="{Binding IsRegistryViewMode}">
-                        <TextBlock Text="{Binding RegistryLocationText}"
-                                   FontSize="11"
-                                   FontFamily="{StaticResource MonoFont}"
-                                   Foreground="{DynamicResource TextTertiaryBrush}"
-                                   TextTrimming="CharacterEllipsis" />
-                        <TextBlock Text="{Binding FileLocationText}"
-                                   FontSize="11"
-                                   FontFamily="{StaticResource MonoFont}"
-                                   Foreground="{DynamicResource TextTertiaryBrush}"
-                                   TextTrimming="CharacterEllipsis" />
-                    </StackPanel>
-                </Grid>
-            </Border>
-        </DataTemplate>
-
-        <DataTemplate x:Key="ScheduledTaskRowTemplate" x:DataType="vm:ScheduledTaskItemViewModel">
-            <Border Padding="12,8" Margin="0,2" CornerRadius="4"
-                    Classes="card">
-                <Grid ColumnDefinitions="2*,Auto,Auto,Auto" RowDefinitions="Auto,Auto,Auto">
-                    <StackPanel Grid.Column="0" Grid.Row="0" Spacing="2" Margin="0,0,8,0">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <TextBlock Text="{Binding Name}"
-                                       FontWeight="SemiBold"
-                                       Foreground="{DynamicResource TextPrimaryBrush}"
-                                       TextTrimming="CharacterEllipsis"
-                                       VerticalAlignment="Center" />
-                            <Border IsVisible="{Binding IsCompanionTask}"
-                                    Background="{DynamicResource WarningBrush}"
-                                    CornerRadius="3" Padding="5,1"
-                                    VerticalAlignment="Center"
-                                    ToolTip.Tip="{Binding CompanionDescription}">
-                                <TextBlock Text="Enforcement companion"
-                                           FontSize="11" FontWeight="SemiBold" />
-                            </Border>
-                            <TextBlock Text="Pending"
-                                       IsVisible="{Binding HasPendingChange}"
-                                       FontSize="11"
-                                       FontWeight="SemiBold"
-                                       Foreground="{DynamicResource WarningBrush}"
-                                       VerticalAlignment="Center" />
-                        </StackPanel>
-                        <TextBlock Text="{Binding DescriptionText}"
-                                   IsVisible="{Binding HasDescription}"
-                                   FontSize="11"
-                                   Foreground="{DynamicResource TextSecondaryBrush}"
-                                   TextTrimming="CharacterEllipsis"
-                                   MaxLines="1" />
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <TextBlock Text="{Binding PublisherText}"
-                                       FontSize="11"
-                                       Foreground="{DynamicResource TextTertiaryBrush}" />
-                            <TextBlock Text="{Binding TriggersText}"
-                                       FontSize="11"
-                                       Foreground="{DynamicResource TextTertiaryBrush}" />
-                            <TextBlock Text="{Binding LastRunText, StringFormat='Last run: {0}'}"
-                                       FontSize="11"
-                                       Foreground="{DynamicResource TextTertiaryBrush}" />
-                            <TextBlock Text="{Binding LastResultText}"
-                                       FontSize="11"
-                                       FontFamily="{StaticResource MonoFont}"
-                                       Foreground="{DynamicResource TextTertiaryBrush}" />
-                        </StackPanel>
-                        <TextBlock Text="{Binding Path}"
-                                   FontSize="11"
-                                   FontFamily="{StaticResource MonoFont}"
-                                   Foreground="{DynamicResource TextTertiaryBrush}"
-                                   TextTrimming="CharacterEllipsis" />
-                    </StackPanel>
-
-                    <ComboBox Grid.Column="1" Grid.Row="0"
-                              ItemsSource="{Binding ClassificationOptions}"
-                              SelectedItem="{Binding SelectedClassification}"
-                              FontSize="12"
-                              MinWidth="170"
-                              Margin="0,0,12,0"
-                              VerticalAlignment="Center" />
-
-                    <TextBlock Grid.Column="2" Grid.Row="0"
-                               Text="{Binding StateText}"
-                               FontSize="12"
-                               FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextSecondaryBrush}"
-                               Margin="0,0,12,0"
-                               VerticalAlignment="Center" />
-
-                    <ToggleSwitch Grid.Column="3" Grid.Row="0"
-                                  IsChecked="{Binding IsEnabled}"
-                                  OffContent=""
-                                  OnContent=""
-                                  MinWidth="0"
-                                  VerticalAlignment="Center" />
-                </Grid>
-            </Border>
-        </DataTemplate>
-
-        <DataTemplate x:Key="ServiceRowTemplate" x:DataType="vm:ServiceItemViewModel">
-            <Border Padding="12,8" Margin="0,2" CornerRadius="4"
-                    Classes="card">
-                <Grid ColumnDefinitions="2*,Auto,Auto,Auto" RowDefinitions="Auto,Auto,Auto">
-                    <StackPanel Grid.Column="0" Grid.Row="0" Spacing="2" Margin="0,0,8,0">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <TextBlock Text="{Binding DisplayName}"
-                                       FontWeight="SemiBold"
-                                       Foreground="{DynamicResource TextPrimaryBrush}"
-                                       TextTrimming="CharacterEllipsis"
-                                       VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding ServiceName}"
-                                       FontSize="11"
-                                       FontFamily="{StaticResource MonoFont}"
-                                       Foreground="{DynamicResource TextTertiaryBrush}"
-                                       VerticalAlignment="Center" />
-                            <TextBlock Text="Pending"
-                                       IsVisible="{Binding HasPendingChange}"
-                                       FontSize="11"
-                                       FontWeight="SemiBold"
-                                       Foreground="{DynamicResource WarningBrush}"
-                                       VerticalAlignment="Center" />
-                        </StackPanel>
-                        <TextBlock Text="{Binding PerUserLabel}"
-                                   IsVisible="{Binding IsPerUserInstance}"
-                                   FontSize="11" FontStyle="Italic"
-                                   Foreground="{DynamicResource TextTertiaryBrush}" />
-                        <TextBlock Text="{Binding DescriptionText}"
-                                   FontSize="11"
-                                   Foreground="{DynamicResource TextSecondaryBrush}"
-                                   TextTrimming="CharacterEllipsis"
-                                   MaxLines="1" />
-                    </StackPanel>
-
-                    <TextBlock Grid.Column="1" Grid.Row="0"
-                               Text="{Binding StateText}"
-                               FontSize="12"
-                               FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextSecondaryBrush}"
-                               Margin="0,0,12,0"
-                               MinWidth="70"
-                               VerticalAlignment="Center" />
-
-                    <ComboBox Grid.Column="2" Grid.Row="0"
-                              ItemsSource="{Binding StartTypeOptions}"
-                              SelectedItem="{Binding SelectedStartTypeOption}"
-                              IsEnabled="{Binding CanChangeStartType}"
-                              FontSize="12"
-                              MinWidth="150"
-                              Margin="0,0,12,0"
-                              VerticalAlignment="Center" />
-
-                    <StackPanel Grid.Column="3" Grid.Row="0" Orientation="Horizontal" Spacing="4"
-                                IsEnabled="{Binding !IsBusy}"
-                                VerticalAlignment="Center">
-                        <Button Content="Start" Command="{Binding StartCommand}" Padding="8,4" FontSize="12" />
-                        <Button Content="Stop" Command="{Binding StopCommand}" Padding="8,4" FontSize="12" />
-                        <Button Content="Restart" Command="{Binding RestartCommand}" Padding="8,4" FontSize="12" />
-                    </StackPanel>
-
-                    <TextBlock Grid.Column="0" Grid.ColumnSpan="4" Grid.Row="2"
-                               Text="{Binding ActionError}"
-                               IsVisible="{Binding ActionError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                               FontSize="11"
-                               Foreground="{DynamicResource DangerBrush}"
-                               TextWrapping="Wrap"
-                               Margin="0,4,0,0" />
-                </Grid>
-            </Border>
-        </DataTemplate>
         <DataTemplate x:Key="AutorunRowTemplate" x:DataType="vm:AutorunItemViewModel">
             <Border Padding="12,8" Margin="0,2" CornerRadius="4"
                     Classes="card">
@@ -279,6 +52,7 @@
                     </StackPanel>
                     <ToggleSwitch Grid.Column="3" Grid.Row="0"
                                   IsChecked="{Binding IsEnabled}"
+                                  IsEnabled="{Binding CanToggle}"
                                   OffContent=""
                                   OnContent=""
                                   MinWidth="0"
@@ -286,6 +60,7 @@
 
                     <TextBlock Grid.Column="0" Grid.ColumnSpan="4" Grid.Row="1" Margin="0,4,0,0"
                                Text="{Binding ImagePathText}"
+                               IsVisible="{Binding HasImagePath}"
                                FontSize="11"
                                FontFamily="{StaticResource MonoFont}"
                                Foreground="{DynamicResource TextTertiaryBrush}"
@@ -312,226 +87,49 @@
         </DataTemplate>
     </UserControl.Resources>
 
-    <TabControl Margin="0,12,0,0">
-        <!-- Startup tab: everything that runs at sign-in -->
-        <TabItem>
-            <TabItem.Header>
-                <TextBlock Text="Startup" FontSize="14" />
-            </TabItem.Header>
-            <ScrollViewer HorizontalScrollBarVisibility="Disabled"
-                          VerticalScrollBarVisibility="Auto">
-                <StackPanel Spacing="20" Margin="0,8,16,24">
-
-                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
-                        <TextBlock Text="Registry Info"
-                                   FontSize="13"
-                                   Foreground="{DynamicResource TextSecondaryBrush}"
-                                   VerticalAlignment="Center" />
-                        <ToggleSwitch IsChecked="{Binding IsRegistryViewMode}"
-                                      OffContent=""
-                                      OnContent=""
-                                      VerticalAlignment="Center" />
-                    </StackPanel>
-
-                    <!-- Registry entries -->
-                    <StackPanel Spacing="6">
-                <TextBlock Text="{Binding RegistryHeader}"
-                           FontSize="16"
-                           FontWeight="SemiBold"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
-                <TextBlock Text="Programs launched from registry Run keys at sign-in"
-                           FontSize="12"
-                           Foreground="{DynamicResource TextSecondaryBrush}" />
-                <ItemsControl ItemsSource="{Binding RegistryEntries}"
-                              ItemTemplate="{StaticResource StartupEntryRowTemplate}" />
-                <TextBlock Text="No registry startup entries found"
-                           FontSize="12" FontStyle="Italic"
-                           Foreground="{DynamicResource TextTertiaryBrush}"
-                           IsVisible="{Binding !HasRegistryEntries}" />
-            </StackPanel>
-
-            <!-- Startup folder entries -->
-            <StackPanel Spacing="6">
-                <TextBlock Text="{Binding FolderHeader}"
-                           FontSize="16"
-                           FontWeight="SemiBold"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
-                <TextBlock Text="Shortcuts and programs in the user and common Startup folders"
-                           FontSize="12"
-                           Foreground="{DynamicResource TextSecondaryBrush}" />
-                <ItemsControl ItemsSource="{Binding FolderEntries}"
-                              ItemTemplate="{StaticResource StartupEntryRowTemplate}" />
-                <TextBlock Text="No startup folder entries found"
-                           FontSize="12" FontStyle="Italic"
-                           Foreground="{DynamicResource TextTertiaryBrush}"
-                           IsVisible="{Binding !HasFolderEntries}" />
-            </StackPanel>
-
-            <!-- Scheduled task entries -->
-            <StackPanel Spacing="6">
-                <TextBlock Text="{Binding TaskHeader}"
-                           FontSize="16"
-                           FontWeight="SemiBold"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
-                <TextBlock Text="Tasks that run at sign-in or startup (full task auditing arrives with the Scheduled Tasks section)"
-                           FontSize="12"
-                           Foreground="{DynamicResource TextSecondaryBrush}" />
-                <ItemsControl ItemsSource="{Binding TaskEntries}"
-                              ItemTemplate="{StaticResource StartupEntryRowTemplate}" />
-                <TextBlock Text="No startup-related scheduled tasks found"
-                           FontSize="12" FontStyle="Italic"
-                           Foreground="{DynamicResource TextTertiaryBrush}"
-                           IsVisible="{Binding !HasTaskEntries}" />
-            </StackPanel>
-
-                </StackPanel>
-            </ScrollViewer>
-        </TabItem>
-
-        <!-- Scheduled Tasks tab -->
-        <TabItem>
-            <TabItem.Header>
-                <TextBlock Text="Scheduled Tasks" FontSize="14" />
-            </TabItem.Header>
-            <ScrollViewer HorizontalScrollBarVisibility="Disabled"
-                          VerticalScrollBarVisibility="Auto">
-            <StackPanel Spacing="6" Margin="0,8,16,24">
-                <TextBlock Text="{Binding ScheduledTasksSectionHeader}"
-                           FontSize="16"
-                           FontWeight="SemiBold"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
-                <TextBlock Text="Every scheduled task on the system, auto-classified. Override the classification or disable tasks (staged)."
-                           FontSize="12"
-                           Foreground="{DynamicResource TextSecondaryBrush}" />
-                <TextBlock Text="{Binding ScheduledTasksScanError, StringFormat='Task scan failed: {0}'}"
-                           IsVisible="{Binding ScheduledTasksScanError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                           Foreground="{DynamicResource WarningBrush}"
-                           FontSize="12" />
-                <DockPanel>
-                    <ComboBox DockPanel.Dock="Right"
-                              ItemsSource="{Binding ClassificationFilterOptions}"
-                              SelectedItem="{Binding TaskClassificationFilter}"
-                              FontSize="12"
-                              MinWidth="170"
-                              Margin="8,0,0,0"
-                              VerticalAlignment="Center" />
-                    <TextBox Text="{Binding TaskFilterText}"
-                             Watermark="Filter tasks by name, path, or publisher"
-                             FontSize="12" />
-                </DockPanel>
-                <StackPanel Orientation="Horizontal" Spacing="4" Margin="12,4,0,0">
-                    <TextBlock Text="Sort:" FontSize="12"
-                               Foreground="{DynamicResource TextSecondaryBrush}"
-                               VerticalAlignment="Center" />
-                    <Button Content="Name" Command="{Binding SortTasksCommand}" CommandParameter="Name"
-                            Padding="8,2" FontSize="12" />
-                    <Button Content="Classification" Command="{Binding SortTasksCommand}" CommandParameter="Classification"
-                            Padding="8,2" FontSize="12" />
-                    <Button Content="Status" Command="{Binding SortTasksCommand}" CommandParameter="Status"
-                            Padding="8,2" FontSize="12" />
-                    <Button Content="Last Run" Command="{Binding SortTasksCommand}" CommandParameter="LastRun"
-                            Padding="8,2" FontSize="12" />
-                </StackPanel>
-                <ItemsControl ItemsSource="{Binding ScheduledTaskItems}"
-                              ItemTemplate="{StaticResource ScheduledTaskRowTemplate}" />
-                <TextBlock Text="No tasks match the current filter"
-                           FontSize="12" FontStyle="Italic"
-                           Foreground="{DynamicResource TextTertiaryBrush}"
-                           IsVisible="{Binding !HasVisibleTasks}" />
-            </StackPanel>
-            </ScrollViewer>
-        </TabItem>
-
-        <!-- Services tab -->
-        <TabItem>
-            <TabItem.Header>
-                <TextBlock Text="Services" FontSize="14" />
-            </TabItem.Header>
-            <ScrollViewer HorizontalScrollBarVisibility="Disabled"
-                          VerticalScrollBarVisibility="Auto">
-            <StackPanel Spacing="6" Margin="0,8,16,24">
-                <TextBlock Text="{Binding ServicesHeader}"
-                           FontSize="16"
-                           FontWeight="SemiBold"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
-                <TextBlock Text="Windows services. Change startup type (staged), or start, stop, and restart immediately."
-                           FontSize="12"
-                           Foreground="{DynamicResource TextSecondaryBrush}" />
-                <TextBlock Text="{Binding ServicesScanError, StringFormat='Service scan failed: {0}'}"
-                           IsVisible="{Binding ServicesScanError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                           Foreground="{DynamicResource WarningBrush}"
-                           FontSize="12" />
-                <TextBox Text="{Binding ServiceFilterText}"
-                         Watermark="Filter services by name or description"
+    <!-- Every autostart location, in Autoruns' categories. No tab strip:
+         this is the whole module page, so content starts 12px below the
+         host padding like every other card page. -->
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="6" Margin="0,12,16,24">
+            <TextBlock Text="{Binding AutorunsHeader}"
+                       FontSize="16"
+                       FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+            <TextBlock Text="Everything that starts on its own, grouped the way Sysinternals Autoruns groups it. Switching an item off parks it where Autoruns would (an AutorunsDisabled key, folder, or value), so the two tools agree."
+                       FontSize="12"
+                       TextWrapping="Wrap"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+            <TextBlock Text="{Binding AutorunsScanError, StringFormat='Part of the scan failed: {0}'}"
+                       IsVisible="{Binding AutorunsScanError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                       Foreground="{DynamicResource WarningBrush}"
+                       FontSize="12" />
+            <DockPanel>
+                <ComboBox DockPanel.Dock="Right"
+                          ItemsSource="{Binding AutorunCategoryFilterOptions}"
+                          SelectedItem="{Binding AutorunCategoryFilter}"
+                          FontSize="12"
+                          MinWidth="170"
+                          Margin="8,0,0,0"
+                          VerticalAlignment="Center" />
+                <CheckBox DockPanel.Dock="Right"
+                          IsChecked="{Binding HideMicrosoftAutoruns}"
+                          Content="Hide Microsoft entries"
+                          FontSize="12"
+                          Margin="12,0,0,0"
+                          VerticalAlignment="Center" />
+                <TextBox Text="{Binding AutorunFilterText}"
+                         Watermark="Filter by name, description, publisher, file, or location"
                          FontSize="12" />
-                <StackPanel Orientation="Horizontal" Spacing="4" Margin="12,4,0,0">
-                    <TextBlock Text="Sort:" FontSize="12"
-                               Foreground="{DynamicResource TextSecondaryBrush}"
-                               VerticalAlignment="Center" />
-                    <Button Content="Name" Command="{Binding SortServicesCommand}" CommandParameter="Name"
-                            Padding="8,2" FontSize="12" />
-                    <Button Content="Status" Command="{Binding SortServicesCommand}" CommandParameter="Status"
-                            Padding="8,2" FontSize="12" />
-                    <Button Content="Startup Type" Command="{Binding SortServicesCommand}" CommandParameter="StartType"
-                            Padding="8,2" FontSize="12" />
-                </StackPanel>
-                <ItemsControl ItemsSource="{Binding Services}"
-                              ItemTemplate="{StaticResource ServiceRowTemplate}" />
-                <TextBlock Text="No services match the current filter"
-                           FontSize="12" FontStyle="Italic"
-                           Foreground="{DynamicResource TextTertiaryBrush}"
-                           IsVisible="{Binding !HasVisibleServices}" />
-            </StackPanel>
-            </ScrollViewer>
-        </TabItem>
-
-        <!-- Autoruns tab: every autostart location, in Autoruns' categories -->
-        <TabItem>
-            <TabItem.Header>
-                <TextBlock Text="Autoruns" FontSize="14" />
-            </TabItem.Header>
-            <ScrollViewer HorizontalScrollBarVisibility="Disabled"
-                          VerticalScrollBarVisibility="Auto">
-            <StackPanel Spacing="6" Margin="0,8,16,24">
-                <TextBlock Text="{Binding AutorunsHeader}"
-                           FontSize="16"
-                           FontWeight="SemiBold"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
-                <TextBlock Text="Everything that starts on its own, grouped the way Sysinternals Autoruns groups it. Switching an item off parks it where Autoruns would (an AutorunsDisabled key, folder, or value), so the two tools agree."
-                           FontSize="12"
-                           TextWrapping="Wrap"
-                           Foreground="{DynamicResource TextSecondaryBrush}" />
-                <TextBlock Text="{Binding AutorunsScanError, StringFormat='Autoruns scan failed: {0}'}"
-                           IsVisible="{Binding AutorunsScanError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                           Foreground="{DynamicResource WarningBrush}"
-                           FontSize="12" />
-                <DockPanel>
-                    <ComboBox DockPanel.Dock="Right"
-                              ItemsSource="{Binding AutorunCategoryFilterOptions}"
-                              SelectedItem="{Binding AutorunCategoryFilter}"
-                              FontSize="12"
-                              MinWidth="170"
-                              Margin="8,0,0,0"
-                              VerticalAlignment="Center" />
-                    <CheckBox DockPanel.Dock="Right"
-                              IsChecked="{Binding HideMicrosoftAutoruns}"
-                              Content="Hide Microsoft entries"
-                              FontSize="12"
-                              Margin="12,0,0,0"
-                              VerticalAlignment="Center" />
-                    <TextBox Text="{Binding AutorunFilterText}"
-                             Watermark="Filter by name, description, publisher, file, or location"
-                             FontSize="12" />
-                </DockPanel>
-                <ItemsControl ItemsSource="{Binding AutorunGroups}"
-                              ItemTemplate="{StaticResource AutorunGroupTemplate}"
-                              Margin="0,8,0,0" />
-                <TextBlock Text="No autostart items match the current filter"
-                           FontSize="12" FontStyle="Italic"
-                           Foreground="{DynamicResource TextTertiaryBrush}"
-                           IsVisible="{Binding !HasVisibleAutoruns}" />
-            </StackPanel>
-            </ScrollViewer>
-        </TabItem>
-    </TabControl>
+            </DockPanel>
+            <ItemsControl ItemsSource="{Binding AutorunGroups}"
+                          ItemTemplate="{StaticResource AutorunGroupTemplate}"
+                          Margin="0,8,0,0" />
+            <TextBlock Text="No autostart items match the current filter"
+                       FontSize="12" FontStyle="Italic"
+                       Foreground="{DynamicResource TextTertiaryBrush}"
+                       IsVisible="{Binding !HasVisibleAutoruns}" />
+        </StackPanel>
+    </ScrollViewer>
 </UserControl>

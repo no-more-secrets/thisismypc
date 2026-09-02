@@ -63,6 +63,13 @@ public sealed record AutorunEntry
     /// <summary>Extra state worth a glance: "Off in Task Manager", "Boot start", and the like.</summary>
     public string? Note { get; init; }
 
+    /// <summary>
+    /// False for items another page of this app owns the state of (a shell
+    /// handler switched off on the Context Menus page); the Autoruns switch is
+    /// greyed so the two mechanisms never fight over one key.
+    /// </summary>
+    public bool CanToggle { get; init; } = true;
+
     public static string CategoryName(AutorunCategory category) => category switch
     {
         AutorunCategory.Logon => "Logon",

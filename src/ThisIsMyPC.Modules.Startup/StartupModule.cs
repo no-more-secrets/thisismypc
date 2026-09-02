@@ -31,7 +31,7 @@ public sealed class StartupModule : IModule
     public ModuleInfo Info { get; } = new(
         Name: "Startup & Services",
         Icon: "startup",
-        Description: "Manage startup entries, Windows services, and scheduled tasks",
+        Description: "Everything that starts on its own, in Autoruns' categories, with Autoruns-compatible on and off",
         RequiredCapabilities: [SystemCapability.Registry, SystemCapability.Com],
         Group: ModuleGroup.Core,
         LoadOrder: 4);

@@ -152,7 +152,7 @@ public class AutorunsScannerTests
         var spooler = Assert.Single(entries, e => e.Name == "Spooler");
         Assert.Equal(AutorunCategory.Services, spooler.Category);
         Assert.Equal(AutorunItemKind.Service, spooler.Kind);
-        Assert.Equal($@"{services}\Spooler", spooler.Location);
+        Assert.Equal(services, spooler.Location);
         Assert.Equal("Print Spooler", spooler.Description);
         Assert.Equal("Automatic", spooler.Note);
         Assert.True(spooler.IsEnabled);
@@ -210,6 +210,49 @@ public class AutorunsScannerTests
         Assert.Equal(@"\Acme\Updater", entry.Location);
         Assert.Equal("Acme", entry.Publisher);
         Assert.False(entry.IsEnabled);
+    }
+
+    [Fact]
+    public void ShellHandlers_SwitchedOffOnTheContextMenusPageShowOffAndLocked()
+    {
+        const string dashed = "{11111111-1111-1111-1111-111111111111}";
+        const string blocked = "{22222222-2222-2222-2222-222222222222}";
+        const string live = "{33333333-3333-3333-3333-333333333333}";
+        _registry.SetString($@"{AutorunLocations.BackgroundContextMenuHandlersKey}\Dashed", "", "-" + dashed);
+        _registry.SetString($@"{AutorunLocations.BackgroundContextMenuHandlersKey}\Blocked", "", blocked);
+        _registry.SetString(AutorunLocations.BlockedShellExtensionsKey, blocked, "");
+        _registry.SetString($@"{AutorunLocations.BackgroundContextMenuHandlersKey}\Live", "", live);
+        _registry.SetString($@"HKLM\SOFTWARE\Classes\CLSID\{dashed}\InprocServer32", "", @"C:\Dashed\d.dll");
+
+        var explorer = Scan().Where(e => e.Category == AutorunCategory.Explorer).ToList();
+
+        var dashedRow = Assert.Single(explorer, e => e.Name == "Dashed");
+        Assert.False(dashedRow.IsEnabled);
+        Assert.False(dashedRow.CanToggle);
+        Assert.Equal("Off in Context Menus", dashedRow.Note);
+        Assert.Equal(dashed, dashedRow.Data);
+        Assert.Equal(@"C:\Dashed\d.dll", dashedRow.ImagePath);
+
+        var blockedRow = Assert.Single(explorer, e => e.Name == "Blocked");
+        Assert.False(blockedRow.IsEnabled);
+        Assert.False(blockedRow.CanToggle);
+
+        var liveRow = Assert.Single(explorer, e => e.Name == "Live");
+        Assert.True(liveRow.IsEnabled);
+        Assert.True(liveRow.CanToggle);
+    }
+
+    [Fact]
+    public void Values_ThatAreNotTextAreNotItems()
+    {
+        _registry.SetBinary(StartupScanner.MachineRunKey, "Blob", [1, 2, 3]);
+        _registry.SetDWord(StartupScanner.MachineRunKey, "Flag", 1);
+        _registry.SetString(StartupScanner.MachineRunKey, "Real", @"C:\real.exe");
+
+        var logon = Scan().Where(e => e.Location == StartupScanner.MachineRunKey).ToList();
+
+        var only = Assert.Single(logon);
+        Assert.Equal("Real", only.Name);
     }
 
     private void AddService(string name, int type, int start, string image)

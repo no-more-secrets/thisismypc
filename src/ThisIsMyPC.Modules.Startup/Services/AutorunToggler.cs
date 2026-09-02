@@ -9,9 +9,14 @@ namespace ThisIsMyPC.Modules.Startup.Services;
 /// tools read each other's state: registry values and keys move into an
 /// AutorunsDisabled sibling, startup files into an AutorunsDisabled
 /// subfolder, services and drivers get Start=4 with the old Start kept in an
-/// AutorunsDisabled value, and tasks flip through the scheduler. Every
-/// operation is idempotent: an item already where it should be is success.
+/// AutorunsDisabled value, and tasks flip through the scheduler.
 /// </summary>
+/// <remarks>
+/// Every move is idempotent (an item already at its destination is success)
+/// and never overwrites: when both the source and the destination exist, the
+/// call fails before touching anything, because the pending pipeline's undo
+/// is the reverse move and could not bring an overwritten twin back.
+/// </remarks>
 public sealed class AutorunToggler
 {
     public const string ServiceStartValue = "Start";
@@ -42,17 +47,24 @@ public sealed class AutorunToggler
         };
     }
 
+    private static string TwinMessage(string destination)
+        => $"{destination} already exists, so the move would overwrite it. Remove or rename that copy first.";
+
     private OperationResult<bool> MoveValue(AutorunTarget target, bool enable)
     {
         var fromKey = enable ? target.DisabledContainer : target.Location;
         var toKey = enable ? target.Location : target.DisabledContainer;
 
-        if (_registry.ValueExists(fromKey, target.Name) is not { IsSuccess: true, Value: true })
+        var atSource = _registry.ValueExists(fromKey, target.Name) is { IsSuccess: true, Value: true };
+        var atDestination = _registry.ValueExists(toKey, target.Name) is { IsSuccess: true, Value: true };
+        if (!atSource)
         {
-            return _registry.ValueExists(toKey, target.Name) is { IsSuccess: true, Value: true }
+            return atDestination
                 ? OperationResult<bool>.Success(true)
                 : OperationResult<bool>.Failure($@"{fromKey}\{target.Name} is no longer there.", ErrorCategory.NotFound);
         }
+        if (atDestination)
+            return OperationResult<bool>.Failure(TwinMessage($@"{toKey}\{target.Name}"), ErrorCategory.ServiceUnavailable);
 
         var read = _registry.ReadValue(fromKey, target.Name);
         if (!read.IsSuccess || read.Value is null)
@@ -70,12 +82,16 @@ public sealed class AutorunToggler
         var from = enable ? target.DisabledPath! : target.EnabledPath;
         var to = enable ? target.EnabledPath : target.DisabledPath!;
 
-        if (_registry.KeyExists(from) is not { IsSuccess: true, Value: true })
+        var atSource = _registry.KeyExists(from) is { IsSuccess: true, Value: true };
+        var atDestination = _registry.KeyExists(to) is { IsSuccess: true, Value: true };
+        if (!atSource)
         {
-            return _registry.KeyExists(to) is { IsSuccess: true, Value: true }
+            return atDestination
                 ? OperationResult<bool>.Success(true)
                 : OperationResult<bool>.Failure($"{from} is no longer there.", ErrorCategory.NotFound);
         }
+        if (atDestination)
+            return OperationResult<bool>.Failure(TwinMessage(to), ErrorCategory.ServiceUnavailable);
 
         var copy = CopyTree(from, to);
         if (!copy.IsSuccess)
@@ -124,12 +140,27 @@ public sealed class AutorunToggler
         return _folders.Move(from, to);
     }
 
+    /// <summary>
+    /// The service key is Location\Name. Disable parks the current Start in the
+    /// AutorunsDisabled value first, so enable can put it back; a service that is
+    /// already Start=4 without that value was disabled by something else, and
+    /// both directions refuse rather than record a change with no reverse.
+    /// </summary>
     private OperationResult<bool> SetServiceStart(AutorunTarget target, bool enable)
     {
-        var key = target.Location;
+        var key = target.EnabledPath;
         var start = _registry.ReadDWord(key, ServiceStartValue);
         if (!start.IsSuccess)
             return OperationResult<bool>.Failure($"{target.Name} has no Start value; it is not a service or driver.", ErrorCategory.NotFound);
+
+        var saved = _registry.ReadDWord(key, AutorunTarget.DisabledName);
+        var outsideDisable = start.Value == ServiceStartDisabled && !saved.IsSuccess;
+        if (outsideDisable)
+        {
+            return OperationResult<bool>.Failure(
+                $"{target.Name} is already disabled by something other than Autoruns or this app, so its old start type is unknown. Set it in Windows Services.",
+                ErrorCategory.NotFound);
+        }
 
         if (!enable)
         {
@@ -141,13 +172,8 @@ public sealed class AutorunToggler
             return _registry.WriteDWord(key, ServiceStartValue, ServiceStartDisabled);
         }
 
-        var saved = _registry.ReadDWord(key, AutorunTarget.DisabledName);
         if (!saved.IsSuccess)
-        {
-            return start.Value != ServiceStartDisabled
-                ? OperationResult<bool>.Success(true)
-                : OperationResult<bool>.Failure($"{target.Name} was not disabled by Autoruns or this app, so its old start type is unknown. Set it in the Services tab.", ErrorCategory.NotFound);
-        }
+            return OperationResult<bool>.Success(true); // not disabled at all
 
         var restore = _registry.WriteDWord(key, ServiceStartValue, saved.Value);
         if (!restore.IsSuccess)

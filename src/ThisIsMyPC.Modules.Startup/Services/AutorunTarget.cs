@@ -4,9 +4,11 @@ namespace ThisIsMyPC.Modules.Startup.Services;
 
 /// <summary>
 /// Names one autostart item to the toggler, and round-trips through a
-/// ChangeDescriptor's SystemLocation as "kind|location|name". '|' cannot
-/// appear in a registry key name, a file name, or a task path, so the split
-/// is unambiguous.
+/// ChangeDescriptor's SystemLocation as "kind|location|name". Location is
+/// always one of the fixed catalog keys, a Startup folder path, or a task
+/// path, none of which can hold '|' (file and task names forbid it; the
+/// catalog keys are constants). Name is the remainder after the second
+/// separator, so a value, subkey, or service name may contain '|'.
 /// </summary>
 public sealed record AutorunTarget(AutorunItemKind Kind, string Location, string Name)
 {
@@ -24,7 +26,7 @@ public sealed record AutorunTarget(AutorunItemKind Kind, string Location, string
     {
         if (string.IsNullOrEmpty(encoded))
             return null;
-        var parts = encoded.Split('|');
+        var parts = encoded.Split('|', 3);
         if (parts.Length != 3 || !Enum.TryParse<AutorunItemKind>(parts[0], out var kind) || !Enum.IsDefined(kind))
             return null;
         if (parts[1].Length == 0 || parts[2].Length == 0)
@@ -32,10 +34,10 @@ public sealed record AutorunTarget(AutorunItemKind Kind, string Location, string
         return new AutorunTarget(kind, parts[1], parts[2]);
     }
 
-    /// <summary>Where the item sits when enabled: the key, folder, task, or service key path plus the name where that applies.</summary>
+    /// <summary>Where the item sits when enabled: the value's key and name, the subkey, the file, the task path, or the service key.</summary>
     public string EnabledPath => Kind switch
     {
-        AutorunItemKind.ScheduledTask or AutorunItemKind.Service => Location,
+        AutorunItemKind.ScheduledTask => Location,
         _ => $@"{Location}\{Name}",
     };
 

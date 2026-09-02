@@ -105,7 +105,7 @@ public class AutorunTogglerTests
     {
         var key = $@"{AutorunLocations.ServicesKey}\Spooler";
         _registry.SetDWord(key, "Start", 2);
-        var target = new AutorunTarget(AutorunItemKind.Service, key, "Spooler");
+        var target = new AutorunTarget(AutorunItemKind.Service, AutorunLocations.ServicesKey, "Spooler");
 
         Assert.True(CreateToggler().Apply(target, enable: false).IsSuccess);
         Assert.Equal(4, _registry.ReadDWord(key, "Start").Value);
@@ -121,12 +121,12 @@ public class AutorunTogglerTests
     {
         var key = $@"{AutorunLocations.ServicesKey}\Spooler";
         _registry.SetDWord(key, "Start", 4);
-        var target = new AutorunTarget(AutorunItemKind.Service, key, "Spooler");
+        var target = new AutorunTarget(AutorunItemKind.Service, AutorunLocations.ServicesKey, "Spooler");
 
         var result = CreateToggler().Apply(target, enable: true);
 
         Assert.False(result.IsSuccess);
-        Assert.Contains("Services tab", result.ErrorMessage, StringComparison.Ordinal);
+        Assert.Contains("Windows Services", result.ErrorMessage, StringComparison.Ordinal);
         Assert.Equal(4, _registry.ReadDWord(key, "Start").Value);
     }
 
@@ -139,6 +139,97 @@ public class AutorunTogglerTests
         Assert.True(CreateToggler().Apply(target, enable: false).IsSuccess);
 
         Assert.False(_tasks.GetTask(@"\Acme\Updater")!.IsEnabled);
+    }
+
+    [Fact]
+    public void RegistryValue_RefusesToOverwriteAParkedTwin()
+    {
+        _registry.SetString(StartupScanner.MachineRunKey, "Acme", @"C:\Acme\new.exe");
+        _registry.SetString($@"{StartupScanner.MachineRunKey}\AutorunsDisabled", "Acme", @"C:\Acme\old.exe");
+        var target = new AutorunTarget(AutorunItemKind.RegistryValue, StartupScanner.MachineRunKey, "Acme");
+
+        var result = CreateToggler().Apply(target, enable: false);
+
+        Assert.False(result.IsSuccess);
+        Assert.Contains("already exists", result.ErrorMessage, StringComparison.Ordinal);
+        Assert.Equal(@"C:\Acme\new.exe", _registry.ReadString(StartupScanner.MachineRunKey, "Acme").Value);
+        Assert.Equal(@"C:\Acme\old.exe", _registry.ReadString($@"{StartupScanner.MachineRunKey}\AutorunsDisabled", "Acme").Value);
+    }
+
+    [Fact]
+    public void RegistryKey_RefusesToMergeIntoAParkedTwin()
+    {
+        var parent = AutorunLocations.BackgroundContextMenuHandlersKey;
+        _registry.SetString($@"{parent}\Foo", "", "{NEW}");
+        _registry.SetString($@"{parent}\AutorunsDisabled\Foo", "", "{OLD}");
+        var target = new AutorunTarget(AutorunItemKind.RegistryKey, parent, "Foo");
+
+        var result = CreateToggler().Apply(target, enable: true);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("{NEW}", _registry.ReadString($@"{parent}\Foo", "").Value);
+        Assert.Equal("{OLD}", _registry.ReadString($@"{parent}\AutorunsDisabled\Foo", "").Value);
+    }
+
+    [Fact]
+    public void RegistryValue_NameMayContainThePipeCharacter()
+    {
+        _registry.SetString(StartupScanner.MachineRunKey, "Acme|Tray", @"C:\Acme\tray.exe");
+        var target = AutorunTarget.TryParse(new AutorunTarget(AutorunItemKind.RegistryValue, StartupScanner.MachineRunKey, "Acme|Tray").Encode());
+
+        Assert.NotNull(target);
+        Assert.Equal("Acme|Tray", target.Name);
+        Assert.True(CreateToggler().Apply(target, enable: false).IsSuccess);
+        Assert.Equal(@"C:\Acme\tray.exe", _registry.ReadString($@"{StartupScanner.MachineRunKey}\AutorunsDisabled", "Acme|Tray").Value);
+    }
+
+    [Fact]
+    public void Service_AlreadyDisabledOutsideThisAppRefusesBothWays()
+    {
+        var key = $@"{AutorunLocations.ServicesKey}\Spooler";
+        _registry.SetDWord(key, "Start", 4);
+        var target = new AutorunTarget(AutorunItemKind.Service, AutorunLocations.ServicesKey, "Spooler");
+
+        var disable = CreateToggler().Apply(target, enable: false);
+        var enable = CreateToggler().Apply(target, enable: true);
+
+        Assert.False(disable.IsSuccess);
+        Assert.False(enable.IsSuccess);
+        Assert.False(_registry.ValueExists(key, "AutorunsDisabled").Value);
+        Assert.Equal(4, _registry.ReadDWord(key, "Start").Value);
+    }
+
+    [Fact]
+    public void StartupFile_DefaultMoveRefusesToOverwrite()
+    {
+        var folder = Path.Combine(Path.GetTempPath(), $"tipc-startup-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(Path.Combine(folder, "AutorunsDisabled"));
+        File.WriteAllText(Path.Combine(folder, "Tool.lnk"), "new");
+        File.WriteAllText(Path.Combine(folder, "AutorunsDisabled", "Tool.lnk"), "old");
+        try
+        {
+            IStartupFolderService real = new RealFolderMoves();
+            var result = real.Move(Path.Combine(folder, "Tool.lnk"), Path.Combine(folder, "AutorunsDisabled", "Tool.lnk"));
+
+            Assert.False(result.IsSuccess);
+            Assert.Equal("new", File.ReadAllText(Path.Combine(folder, "Tool.lnk")));
+            Assert.Equal("old", File.ReadAllText(Path.Combine(folder, "AutorunsDisabled", "Tool.lnk")));
+
+            // Source gone and destination present is the idempotent success.
+            File.Delete(Path.Combine(folder, "Tool.lnk"));
+            Assert.True(real.Move(Path.Combine(folder, "Tool.lnk"), Path.Combine(folder, "AutorunsDisabled", "Tool.lnk")).IsSuccess);
+        }
+        finally
+        {
+            Directory.Delete(folder, recursive: true);
+        }
+    }
+
+    /// <summary>Uses the interface's default Move (the file system) with no enumeration.</summary>
+    private sealed class RealFolderMoves : IStartupFolderService
+    {
+        public OperationResult<IReadOnlyList<StartupFolderItem>> Enumerate(StartupFolderScope scope)
+            => OperationResult<IReadOnlyList<StartupFolderItem>>.Success([]);
     }
 
     [Fact]

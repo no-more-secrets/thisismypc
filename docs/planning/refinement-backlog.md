@@ -332,28 +332,42 @@ sandbox contention with a parallel test writing the same HKCU sandbox area.
 Predates 2026-08-31. Fix: unique per-test sandbox key or a collection fixture
 serializing the sandbox users.
 
-## Autoruns tab: SHIPPED 2026-09-02 (Startup & Services, fourth tab)
+## Autoruns page: SHIPPED 2026-09-02 (Startup & Services is now this one page)
 
 Sam's read of Autoruns: every location is a key whose values or subkeys are
 the items, and "disable" parks the item in an `AutorunsDisabled` sibling.
 The module now does the same (docs/research/startup-scanner-rationale.md has
-the location table). `AutorunsScanner` lists Logon, Explorer, Internet
-Explorer, Scheduled Tasks, Services, Drivers, Font Drivers, 32-Bit Drivers,
-Known DLLs, Winlogon, Winsock Providers, Print Monitors, and Office;
-`AutorunToggler` moves values, keys, and Startup files, flips tasks, and
-swaps a service or driver `Start` with an `AutorunsDisabled` DWORD; every
-toggle is a pending change (`ChangeValueType.Autorun_State`) with undo as the
-reverse move. `IRegistryService` gained typed `ReadValue`/`WriteValue` and
-`CreateKey` (default implementations, so the fakes did not change);
-`IStartupFolderService` gained `EnumerateDisabled` and `Move`. The tab has a
-filter box, a category picker, and "Hide Microsoft entries".
+the location table and the toggler's rules). `AutorunsScanner` lists Logon,
+Explorer, Internet Explorer, Scheduled Tasks, Services, Drivers, Font
+Drivers, 32-Bit Drivers, Known DLLs, Winlogon, Winsock Providers, Print
+Monitors, and Office; `AutorunToggler` moves values, keys, and Startup files,
+flips tasks, and swaps a service or driver `Start` with an `AutorunsDisabled`
+DWORD; every toggle is a pending change (`ChangeValueType.Autorun_State`)
+with undo as the reverse move. `IRegistryService` gained typed
+`ReadValue`/`WriteValue` and `CreateKey` (default implementations, so the
+fakes did not change); `IStartupFolderService` gained `EnumerateDisabled`
+and `Move`. The page has a filter box, a category picker, and "Hide
+Microsoft entries". The old Startup, Scheduled Tasks, and Services tabs were
+deleted the same day (Sam: never liked them); their scanners, change
+factories, and the set inspector stay because Clean Boot sets and the Home
+monitoring section apply through them.
+
+Fresh-context review fixes, same day: moves refuse to overwrite a parked
+twin; a service already `Start`=4 without the marker refuses both ways
+instead of recording a change with no reverse; parked rows carry a `|parked`
+setting-id suffix; `|` in a value or key name round-trips; shell handlers the
+Context Menus page switched off (dash CLSID, Blocked list) show off with a
+greyed switch; non-string values are not items;
+`tools/check-binary-hardening.ps1` is now tracked, binds `-Path`
+positionally, and skips non-PE files in folder mode.
 
 Open: a real elevated pass on this machine (disable a Run entry and a
-context-menu handler, apply, confirm in Autoruns, undo). The Startup tab still
-toggles through `StartupApproved` and does not read `AutorunsDisabled`; an
-item parked by the Autoruns tab leaves the Startup tab until it is moved back.
-Set entries (`autorun:` setting ids) are not resolved by
-`StartupSetEntryInspector` yet.
+context-menu handler, apply, confirm in Autoruns, undo). Set entries
+(`autorun:` setting ids) are not resolved by `StartupSetEntryInspector`; the
+Home monitoring section still stages through the old `startup-entry:`,
+`service-starttype:`, and `scheduled-task:` ids, which no page shows any
+more. `TaskClassificationOverrideStore` and `ScheduledTaskClassifier` have
+no UI now; delete or resurface.
 
 ## Deliberately NOT in this pass (new-module territory)
 
