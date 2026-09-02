@@ -1,76 +1,48 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:vm="using:ThisIsMyPC.App.ViewModels">
+                    xmlns:vm="using:ThisIsMyPC.App.ViewModels"
+                    xmlns:controls="using:ThisIsMyPC.App.Controls">
 
-    <!-- Reusable toggle setting row for module controls. Typed against
-         IToggleSettingRow so bindings compile (NativeAOT trimming can silently
-         break reflection bindings); rows that do not use the optional members
-         return constants that hide those parts. -->
+    <!-- Reusable toggle setting row for module controls: a ToggleCard whose
+         content slot carries the optional inactive reason, warning, disable
+         method, and migrate button. Typed against IToggleSettingRow so
+         bindings compile (NativeAOT trimming can silently break reflection
+         bindings); rows that do not use the optional members return
+         constants that hide those parts. -->
     <DataTemplate x:Key="ToggleSettingRowTemplate" x:DataType="vm:IToggleSettingRow">
-        <Border Padding="14,6"
-                Margin="0,2"
-                CornerRadius="6"
-                Classes="card"
-                IsVisible="{Binding IsSearchVisible}"
-                Classes.inactive="{Binding IsInactive}"
-                Classes.pending-enable="{Binding IsPendingEnable}"
-                Classes.pending-disable="{Binding IsPendingDisable}">
-            <DockPanel>
-                <!-- Toggle switch on the right; no On/Off labels, the pill
-                     shows state, and MinHeight 0 lets the row stay short -->
-                <ToggleSwitch DockPanel.Dock="Right"
-                              IsChecked="{Binding IsEnabled}"
-                              IsEnabled="{Binding IsToggleEnabled}"
-                              OnContent="{x:Null}" OffContent="{x:Null}"
-                              MinHeight="0"
-                              VerticalAlignment="Center"
-                              Margin="16,0,0,0" />
-
-                <!-- Setting info on the left -->
-                <StackPanel Spacing="2">
-                    <!-- Label + info icon carrying the full description -->
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                        <TextBlock Text="{Binding Label}"
-                                   FontWeight="SemiBold"
-                                   FontSize="14"
-                                   Foreground="{DynamicResource TextPrimaryBrush}" />
-                        <Border Classes="info-icon"
-                                ToolTip.Tip="{Binding Description}"
-                                IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                            <TextBlock Classes="info-icon-glyph" />
-                        </Border>
-                    </StackPanel>
-
-                    <!-- Inactive reason (shown instead of warning for inactive entries) -->
-                    <TextBlock Text="{Binding InactiveReason}"
-                               FontSize="12"
-                               Foreground="{DynamicResource TextTertiaryBrush}"
-                               FontStyle="Italic"
-                               TextWrapping="Wrap"
-                               IsVisible="{Binding InactiveReason, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-
-                    <!-- Warning text (Critical/System handlers; hidden when inactive) -->
-                    <TextBlock Text="{Binding WarningText}"
-                               FontSize="12"
-                               Foreground="{DynamicResource DangerBrush}"
-                               TextWrapping="Wrap"
-                               IsVisible="{Binding WarningText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-
-                    <!-- Disable method info + migrate action (context menu handlers only) -->
-                    <TextBlock Text="{Binding DisableMethodText}"
-                               FontSize="11"
-                               Foreground="{DynamicResource WarningBrush}"
-                               IsVisible="{Binding DisableMethodText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-                    <Button Content="Migrate to Blocked List"
-                            Command="{Binding MigrateCommand}"
-                            IsVisible="{Binding CanMigrate}"
-                            FontSize="11"
-                            Padding="6,2"
-                            Margin="0,2,0,0"
-                            Classes="accent" />
-                </StackPanel>
-            </DockPanel>
-        </Border>
+        <controls:ToggleCard Title="{Binding Label}"
+                             Description="{Binding Description}"
+                             IsOn="{Binding IsEnabled}"
+                             IsSwitchEnabled="{Binding IsToggleEnabled}"
+                             IsVisible="{Binding IsSearchVisible}"
+                             Classes.inactive="{Binding IsInactive}"
+                             Classes.pending-enable="{Binding IsPendingEnable}"
+                             Classes.pending-disable="{Binding IsPendingDisable}">
+            <StackPanel Spacing="2">
+                <TextBlock Text="{Binding InactiveReason}"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextTertiaryBrush}"
+                           FontStyle="Italic"
+                           TextWrapping="Wrap"
+                           IsVisible="{Binding InactiveReason, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                <TextBlock Text="{Binding WarningText}"
+                           FontSize="12"
+                           Foreground="{DynamicResource DangerBrush}"
+                           TextWrapping="Wrap"
+                           IsVisible="{Binding WarningText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                <TextBlock Text="{Binding DisableMethodText}"
+                           FontSize="11"
+                           Foreground="{DynamicResource WarningBrush}"
+                           IsVisible="{Binding DisableMethodText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                <Button Content="Migrate to Blocked List"
+                        Command="{Binding MigrateCommand}"
+                        IsVisible="{Binding CanMigrate}"
+                        FontSize="11"
+                        Padding="6,2"
+                        Margin="0,2,0,0"
+                        Classes="accent" />
+            </StackPanel>
+        </controls:ToggleCard>
     </DataTemplate>
 
 </ResourceDictionary>

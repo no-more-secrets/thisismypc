@@ -1,92 +1,64 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:vm="using:ThisIsMyPC.App.ViewModels">
+                    xmlns:vm="using:ThisIsMyPC.App.ViewModels"
+                    xmlns:controls="using:ThisIsMyPC.App.Controls">
 
-    <!-- Row template for Multi tab: shows scope badges indicating which surfaces
-         the handler affects. Typed for compiled bindings; reflection bindings
-         are the one thing NativeAOT trimming can silently break. -->
+    <!-- Row template for the Multi tab: a ToggleCard whose content shows the
+         scope badges (which surfaces the handler touches) and the handler's
+         notes. Typed for compiled bindings; reflection bindings are the one
+         thing NativeAOT trimming can silently break. -->
     <DataTemplate x:Key="MultiScopeRowTemplate" x:DataType="vm:ContextMenuHandlerViewModel">
-        <Border Padding="16,12"
-                Margin="0,2"
-                CornerRadius="6"
-                Classes="card"
-                IsVisible="{Binding IsSearchVisible, FallbackValue=True}"
-                Classes.pending-enable="{Binding IsPendingEnable}"
-                Classes.inactive="{Binding IsInactive, FallbackValue=False}"
-                Classes.pending-disable="{Binding IsPendingDisable}">
-            <DockPanel>
-                <!-- Toggle switch on the right -->
-                <ToggleSwitch DockPanel.Dock="Right"
-                              IsChecked="{Binding IsEnabled}"
-                              IsEnabled="{Binding IsToggleEnabled}"
-                              VerticalAlignment="Top"
-                              Margin="16,0,0,0" />
-
-                <!-- Setting info on the left -->
-                <StackPanel Spacing="4">
-                    <!-- Label -->
-                    <TextBlock Text="{Binding Label}"
-                               FontWeight="SemiBold"
-                               FontSize="14"
-                               Foreground="{DynamicResource TextPrimaryBrush}" />
-
-                    <!-- Scope badges row -->
-                    <ItemsControl ItemsSource="{Binding ScopeBadges}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel Orientation="Horizontal" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="vm:ScopeBadge">
-                                <Border Padding="8,3"
-                                        Margin="0,0,6,0"
-                                        CornerRadius="4"
-                                        Classes="scope-badge"
-                                        Classes.file="{Binding IsFile}"
-                                        Classes.folder="{Binding IsFolder}"
-                                        Classes.background="{Binding IsBackground}"
-                                        Classes.desktop="{Binding IsDesktop}"
-                                        Classes.misc="{Binding IsMisc}">
-                                    <TextBlock Text="{Binding Label}"
-                                               FontSize="11"
-                                               FontWeight="Medium"
-                                               Foreground="{DynamicResource TextPrimaryBrush}" />
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-
-                    <!-- Description -->
-                    <TextBlock Text="{Binding Description}"
-                               FontSize="12"
-                               Foreground="{DynamicResource TextSecondaryBrush}"
-                               TextWrapping="Wrap" />
-
-                    <!-- Inactive reason -->
-                    <TextBlock Text="{Binding InactiveReason, FallbackValue=''}"
-                               FontSize="12"
-                               Foreground="{DynamicResource TextTertiaryBrush}"
-                               FontStyle="Italic"
-                               TextWrapping="Wrap"
-                               IsVisible="{Binding InactiveReason, FallbackValue='', Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-
-                    <!-- Warning text -->
-                    <TextBlock Text="{Binding WarningText}"
-                               FontSize="12"
-                               Foreground="{DynamicResource DangerBrush}"
-                               TextWrapping="Wrap"
-                               IsVisible="{Binding WarningText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-
-                    <!-- System path (monospace) -->
-                    <TextBlock Text="{Binding SystemPath}"
-                               FontFamily="{StaticResource MonoFont}"
-                               FontSize="11"
-                               Foreground="{DynamicResource TextTertiaryBrush}"
-                               Margin="0,2,0,0" />
-                </StackPanel>
-            </DockPanel>
-        </Border>
+        <controls:ToggleCard Title="{Binding Label}"
+                             Detail="{Binding SystemPath}"
+                             IsOn="{Binding IsEnabled}"
+                             IsSwitchEnabled="{Binding IsToggleEnabled}"
+                             IsVisible="{Binding IsSearchVisible, FallbackValue=True}"
+                             Classes.inactive="{Binding IsInactive, FallbackValue=False}"
+                             Classes.pending-enable="{Binding IsPendingEnable}"
+                             Classes.pending-disable="{Binding IsPendingDisable}">
+            <StackPanel Spacing="4" Margin="0,2,0,0">
+                <ItemsControl ItemsSource="{Binding ScopeBadges}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:ScopeBadge">
+                            <Border Padding="8,3"
+                                    Margin="0,0,6,0"
+                                    CornerRadius="4"
+                                    Classes="scope-badge"
+                                    Classes.file="{Binding IsFile}"
+                                    Classes.folder="{Binding IsFolder}"
+                                    Classes.background="{Binding IsBackground}"
+                                    Classes.desktop="{Binding IsDesktop}"
+                                    Classes.misc="{Binding IsMisc}">
+                                <TextBlock Text="{Binding Label}"
+                                           FontSize="11"
+                                           FontWeight="Medium"
+                                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Text="{Binding Description}"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           TextWrapping="Wrap" />
+                <TextBlock Text="{Binding InactiveReason, FallbackValue=''}"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextTertiaryBrush}"
+                           FontStyle="Italic"
+                           TextWrapping="Wrap"
+                           IsVisible="{Binding InactiveReason, FallbackValue='', Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                <TextBlock Text="{Binding WarningText}"
+                           FontSize="12"
+                           Foreground="{DynamicResource DangerBrush}"
+                           TextWrapping="Wrap"
+                           IsVisible="{Binding WarningText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            </StackPanel>
+        </controls:ToggleCard>
     </DataTemplate>
 
 </ResourceDictionary>

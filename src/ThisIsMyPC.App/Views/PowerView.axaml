@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ThisIsMyPC.App.ViewModels"
+             xmlns:controls="using:ThisIsMyPC.App.Controls"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
@@ -284,27 +285,15 @@
                 </Border>
 
                 <!-- Modern Standby (AC5) -->
-                <Border IsVisible="{Binding ShowModernStandby}"
-                        Padding="16,12" CornerRadius="6"
-                        Classes="card">
-                    <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel Grid.Column="0" Spacing="4">
-                            <TextBlock Text="Disable Modern Standby"
-                                       FontSize="14" FontWeight="SemiBold"
-                                       Foreground="{DynamicResource TextPrimaryBrush}" />
-                            <TextBlock Text="{Binding ModernStandbyDescription}"
-                                       FontSize="12"
-                                       Foreground="{DynamicResource TextSecondaryBrush}"
-                                       TextWrapping="Wrap" />
-                            <TextBlock Text="Requires a restart to take effect."
-                                       FontSize="12"
-                                       Foreground="{DynamicResource WarningBrush}" />
-                        </StackPanel>
-                        <ToggleSwitch Grid.Column="1" VerticalAlignment="Center"
-                                      IsChecked="{Binding IsModernStandbyDisabled}"
-                                      Command="{Binding ToggleModernStandbyCommand}" />
-                    </Grid>
-                </Border>
+                <controls:ToggleCard IsVisible="{Binding ShowModernStandby}"
+                                     Title="Disable Modern Standby"
+                                     Description="{Binding ModernStandbyDescription}"
+                                     IsOn="{Binding IsModernStandbyDisabled}"
+                                     Command="{Binding ToggleModernStandbyCommand}">
+                    <TextBlock Text="Requires a restart to take effect."
+                               FontSize="12"
+                               Foreground="{DynamicResource WarningBrush}" />
+                </controls:ToggleCard>
 
                 <!-- One tab per subgroup: a plan carries about 170 settings
                      in a dozen groups, far too many for one column. The strip

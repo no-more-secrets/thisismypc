@@ -261,7 +261,7 @@ public sealed class UiSession : IDisposable
             ?? throw new InvalidOperationException("Control is not connected to the window's visual tree.");
     }
 
-    private static string FindRepoRoot()
+    internal static string FindRepoRoot()
     {
         var dir = AppContext.BaseDirectory;
         while (dir is not null && !File.Exists(Path.Combine(dir, "ThisIsMyPC.slnx")))

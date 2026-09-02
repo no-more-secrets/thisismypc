@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ThisIsMyPC.App.ViewModels"
+             xmlns:controls="using:ThisIsMyPC.App.Controls"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="1400"
@@ -214,20 +215,17 @@
             </StackPanel>
 
             <!-- Standard toggle row -->
-            <TextBlock Classes="gallery-section" Text="Toggle row" />
-            <Border Classes="card" CornerRadius="8" Padding="16,12">
-                <DockPanel>
-                    <ToggleSwitch DockPanel.Dock="Right" IsChecked="True" OnContent="" OffContent=""
-                                  VerticalAlignment="Top" />
-                    <StackPanel Margin="0,0,16,0">
-                        <TextBlock Text="Row label 14 semibold" FontWeight="SemiBold"
-                                   Foreground="{DynamicResource TextPrimaryBrush}" />
-                        <TextBlock Text="Description 12 tertiary: what the toggle actually does, one or two short sentences."
-                                   FontSize="12" TextWrapping="Wrap"
-                                   Foreground="{DynamicResource TextTertiaryBrush}" Margin="0,2,0,0" />
-                    </StackPanel>
-                </DockPanel>
-            </Border>
+            <TextBlock Classes="gallery-section" Text="Toggle card (ToggleCard)" />
+            <controls:ToggleCard Title="Row label 14 semibold"
+                                 Description="The (i) tooltip carries the description, one or two short sentences."
+                                 Detail="HKCU\Software\Example\Value"
+                                 IsOn="True" />
+            <controls:ToggleCard Title="Pending enable" Classes="pending-enable" IsOn="True" />
+            <controls:ToggleCard Title="Pending disable" Classes="pending-disable" IsOn="False" />
+            <controls:ToggleCard Title="Inactive, switch disabled" Classes="inactive" IsOn="False" IsSwitchEnabled="False">
+                <TextBlock Text="Inactive reason 12 tertiary italic" FontSize="12" FontStyle="Italic"
+                           Foreground="{DynamicResource TextTertiaryBrush}" />
+            </controls:ToggleCard>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

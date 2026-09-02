@@ -1,116 +1,82 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ThisIsMyPC.App.ViewModels"
+             xmlns:controls="using:ThisIsMyPC.App.Controls"
              x:Class="ThisIsMyPC.App.Controls.SettingCardControl"
              x:DataType="vm:SettingCardViewModel">
 
-    <!-- Card renderer (Epic 10). One control, visual states; never four templates.
-         Display modes (10-2) drive IsDescriptionVisible / IsRegistryDataVisible;
-         enforcement badges and Owner Mode degradation arrive in 10-3. -->
-    <Border Padding="14,6"
-            Margin="0,2"
-            CornerRadius="6"
-            Classes="card"
-            Classes.pending-enable="{Binding IsPendingEnable}"
-            Classes.pending-disable="{Binding IsPendingDisable}">
-        <DockPanel>
-            <!-- Control docked right; Toggle is the only interactive type for now.
-                 Owner Mode degradation disables ONLY the control (10-3). -->
-            <ToggleSwitch DockPanel.Dock="Right"
-                          IsChecked="{Binding IsEnabled}"
-                          IsVisible="{Binding IsToggle}"
-                          IsEnabled="{Binding IsControlEnabled}"
-                          OnContent="{x:Null}" OffContent="{x:Null}"
-                          MinHeight="0"
-                          VerticalAlignment="Center"
-                          Margin="16,0,0,0" />
-
-            <StackPanel Spacing="2">
-                <StackPanel Orientation="Horizontal" Spacing="6">
-                    <TextBlock Text="{Binding DisplayName}"
-                               FontWeight="SemiBold"
-                               FontSize="14"
-                               Foreground="{DynamicResource TextPrimaryBrush}" />
-                    <Border Classes="info-icon" ToolTip.Tip="{Binding Description}">
-                        <TextBlock Classes="info-icon-glyph" />
-                    </Border>
-                </StackPanel>
-
-                <!-- Badges & callouts (10-3); visible in EVERY display mode;
-                     safety-critical information is never hidden by display preference -->
-                <StackPanel Spacing="2">
-                    <Border Background="{DynamicResource WarningMutedBrush}"
-                            CornerRadius="3"
-                            Padding="6,1"
-                            Margin="0,2,0,0"
-                            HorizontalAlignment="Left"
-                            IsVisible="{Binding HasEnforcementBadge}">
-                        <TextBlock Text="{Binding EnforcementSummary}"
-                                   FontSize="11"
-                                   TextWrapping="Wrap"
-                                   Foreground="{DynamicResource WarningBrush}" />
-                    </Border>
-                    <TextBlock Text="{Binding ReversionRisksText}"
-                               FontSize="11"
-                               Foreground="{DynamicResource WarningBrush}"
-                               TextWrapping="Wrap"
-                               IsVisible="{Binding HasReversionRisks}" />
-                    <TextBlock Text="{Binding SkuNotice}"
-                               FontSize="11"
-                               Foreground="{DynamicResource InfoBrush}"
-                               TextWrapping="Wrap"
-                               IsVisible="{Binding HasSkuNotice}" />
-                    <StackPanel Spacing="4" IsVisible="{Binding IsOwnerModeDegraded}">
-                        <TextBlock Text="{Binding OwnerModeCallout}"
-                                   FontSize="11"
-                                   Foreground="{DynamicResource InfoBrush}"
-                                   TextWrapping="Wrap" />
-                        <Button Content="Turn on Owner Mode"
-                                FontSize="11"
-                                Padding="8,3"
-                                HorizontalAlignment="Left"
-                                Command="{Binding TurnOnOwnerModeCommand}"
-                                IsVisible="{Binding CanTurnOnOwnerMode}" />
-                        <TextBlock Text="{Binding OwnerModeError}"
-                                   FontSize="11"
-                                   Foreground="{DynamicResource DangerBrush}"
-                                   TextWrapping="Wrap"
-                                   IsVisible="{Binding OwnerModeError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-                    </StackPanel>
-                    <Border Background="{DynamicResource InfoMutedBrush}"
-                            CornerRadius="3"
-                            Padding="6,1"
-                            HorizontalAlignment="Left"
-                            IsVisible="{Binding ShowOwnerModeBadge}">
-                        <TextBlock Text="Owner Mode"
-                                   FontSize="11"
-                                   Foreground="{DynamicResource InfoBrush}" />
-                    </Border>
-                </StackPanel>
-
-                <!-- Affected system component; visible in every display mode -->
-                <TextBlock Text="{Binding SystemPath}"
+    <!-- Card renderer (Epic 10): a ToggleCard whose content carries the
+         badges and callouts. Display modes (10-2) drive IsRegistryDataVisible;
+         badges show in every mode, safety information is never hidden by a
+         display preference; Owner Mode degradation disables only the switch. -->
+    <controls:ToggleCard Title="{Binding DisplayName}"
+                         Description="{Binding Description}"
+                         Detail="{Binding SystemPath}"
+                         IsOn="{Binding IsEnabled}"
+                         IsSwitchVisible="{Binding IsToggle}"
+                         IsSwitchEnabled="{Binding IsControlEnabled}"
+                         Classes.pending-enable="{Binding IsPendingEnable}"
+                         Classes.pending-disable="{Binding IsPendingDisable}">
+        <StackPanel Spacing="2">
+            <Border Background="{DynamicResource WarningMutedBrush}"
+                    CornerRadius="3"
+                    Padding="6,1"
+                    Margin="0,2,0,0"
+                    HorizontalAlignment="Left"
+                    IsVisible="{Binding HasEnforcementBadge}">
+                <TextBlock Text="{Binding EnforcementSummary}"
+                           FontSize="11"
+                           TextWrapping="Wrap"
+                           Foreground="{DynamicResource WarningBrush}" />
+            </Border>
+            <TextBlock Text="{Binding ReversionRisksText}"
+                       FontSize="11"
+                       Foreground="{DynamicResource WarningBrush}"
+                       TextWrapping="Wrap"
+                       IsVisible="{Binding HasReversionRisks}" />
+            <TextBlock Text="{Binding SkuNotice}"
+                       FontSize="11"
+                       Foreground="{DynamicResource InfoBrush}"
+                       TextWrapping="Wrap"
+                       IsVisible="{Binding HasSkuNotice}" />
+            <StackPanel Spacing="4" IsVisible="{Binding IsOwnerModeDegraded}">
+                <TextBlock Text="{Binding OwnerModeCallout}"
+                           FontSize="11"
+                           Foreground="{DynamicResource InfoBrush}"
+                           TextWrapping="Wrap" />
+                <Button Content="Turn on Owner Mode"
+                        FontSize="11"
+                        Padding="8,3"
+                        HorizontalAlignment="Left"
+                        Command="{Binding TurnOnOwnerModeCommand}"
+                        IsVisible="{Binding CanTurnOnOwnerMode}" />
+                <TextBlock Text="{Binding OwnerModeError}"
+                           FontSize="11"
+                           Foreground="{DynamicResource DangerBrush}"
+                           TextWrapping="Wrap"
+                           IsVisible="{Binding OwnerModeError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            </StackPanel>
+            <Border Background="{DynamicResource InfoMutedBrush}"
+                    CornerRadius="3"
+                    Padding="6,1"
+                    HorizontalAlignment="Left"
+                    IsVisible="{Binding ShowOwnerModeBadge}">
+                <TextBlock Text="Owner Mode"
+                           FontSize="11"
+                           Foreground="{DynamicResource InfoBrush}" />
+            </Border>
+            <!-- Registry data (10-2 Registry Data mode; hidden by default) -->
+            <StackPanel Orientation="Horizontal" Spacing="6"
+                        Margin="0,2,0,0"
+                        IsVisible="{Binding IsRegistryDataVisible}">
+                <TextBlock Text="{Binding Model.RegistryValueType}"
                            FontFamily="{StaticResource MonoFont}"
                            FontSize="11"
-                           Foreground="{DynamicResource TextTertiaryBrush}"
-                           TextWrapping="Wrap"
-                           IsVisible="{Binding SystemPath, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-
-                <!-- Registry data (10-2 Registry Data mode; hidden by default) -->
-                <StackPanel Spacing="1"
-                            Margin="0,4,0,0"
-                            IsVisible="{Binding IsRegistryDataVisible}">
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                        <TextBlock Text="{Binding Model.RegistryValueType}"
-                                   FontFamily="{StaticResource MonoFont}"
-                                   FontSize="11"
-                                   Foreground="{DynamicResource TextTertiaryBrush}" />
-                        <TextBlock Text="{Binding Model.CurrentDisplayValue}"
-                                   FontSize="11"
-                                   Foreground="{DynamicResource TextTertiaryBrush}" />
-                    </StackPanel>
-                </StackPanel>
+                           Foreground="{DynamicResource TextTertiaryBrush}" />
+                <TextBlock Text="{Binding Model.CurrentDisplayValue}"
+                           FontSize="11"
+                           Foreground="{DynamicResource TextTertiaryBrush}" />
             </StackPanel>
-        </DockPanel>
-    </Border>
+        </StackPanel>
+    </controls:ToggleCard>
 </UserControl>

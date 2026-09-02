@@ -1,0 +1,74 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="using:ThisIsMyPC.App.Controls">
+
+    <!-- ToggleCard: the shared card-with-a-switch. Surface fill, outline,
+         14px semibold title with an (i) tooltip, content slot, monospace
+         detail line, switch docked right. Pending and inactive classes set
+         on the card reach the border here. -->
+    <ControlTheme x:Key="{x:Type controls:ToggleCard}" TargetType="controls:ToggleCard">
+        <Setter Property="Padding" Value="14,6" />
+        <Setter Property="Margin" Value="0,2" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Name="PART_Card"
+                        Background="{DynamicResource SurfaceBrush}"
+                        BorderBrush="{DynamicResource OutlineBrush}"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Padding="{TemplateBinding Padding}">
+                    <DockPanel>
+                        <ToggleSwitch Name="PART_Switch"
+                                      DockPanel.Dock="Right"
+                                      IsChecked="{TemplateBinding IsOn, Mode=TwoWay}"
+                                      IsEnabled="{TemplateBinding IsSwitchEnabled}"
+                                      IsVisible="{TemplateBinding IsSwitchVisible}"
+                                      Command="{TemplateBinding Command}"
+                                      OnContent="{x:Null}" OffContent="{x:Null}"
+                                      MinHeight="0" MinWidth="0"
+                                      VerticalAlignment="Center"
+                                      Margin="16,0,0,0" />
+                        <StackPanel Spacing="2">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock Text="{TemplateBinding Title}"
+                                           FontWeight="SemiBold"
+                                           FontSize="14"
+                                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                                <Border Classes="info-icon"
+                                        ToolTip.Tip="{TemplateBinding Description}"
+                                        IsVisible="{TemplateBinding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                    <TextBlock Classes="info-icon-glyph" />
+                                </Border>
+                            </StackPanel>
+                            <ContentPresenter Name="PART_ContentPresenter"
+                                              Content="{TemplateBinding Content}"
+                                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                                              HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              IsVisible="{TemplateBinding Content, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                            <TextBlock Text="{TemplateBinding Detail}"
+                                       FontFamily="{StaticResource MonoFont}"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource TextTertiaryBrush}"
+                                       TextWrapping="Wrap"
+                                       IsVisible="{TemplateBinding Detail, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^.pending-enable /template/ Border#PART_Card">
+            <Setter Property="Background" Value="{DynamicResource SuccessMutedBrush}" />
+        </Style>
+        <Style Selector="^.pending-disable /template/ Border#PART_Card">
+            <Setter Property="Background" Value="{DynamicResource DangerMutedBrush}" />
+        </Style>
+        <Style Selector="^.pending-modify /template/ Border#PART_Card">
+            <Setter Property="Background" Value="{DynamicResource WarningMutedBrush}" />
+        </Style>
+        <Style Selector="^.inactive">
+            <Setter Property="Opacity" Value="0.55" />
+        </Style>
+    </ControlTheme>
+</ResourceDictionary>
