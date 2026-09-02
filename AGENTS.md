@@ -105,7 +105,11 @@ dotnet test --filter "Category!=Integration&Category!=Diagnostic"   # what CI ru
 change MUST be verified by looking at rendered screenshots before commit**,
 never by reasoning about XAML, and never by asking Sam to launch the app.
 Manual verification from Sam is reserved for things only the elevated exe can
-show (real applies, tray, UAC).
+show (real applies, tray, UAC). **Write every manual test for a common Windows
+user**, whoever is asked to run it: clicks, menus, what the screen shows. No
+commands, no paths, no log files, no developer knowledge assumed. The app
+exists for people who do not know what a command prompt is; a test written
+for the developer is not a test of the product.
 
 ```
 dotnet test tests/ThisIsMyPC.App.UiTests --configuration Release --filter "Category!=Diagnostic"  # CI-safe view tests
