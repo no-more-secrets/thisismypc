@@ -75,7 +75,127 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
         _supportsModernStandby = _powerService?.SupportsModernStandby() ?? false;
         SystemPowerToggles = BuildSystemPowerRows(scanData);
 
+        // Rehydrate plan creations staged in an earlier visit.
+        foreach (var group in pendingChangesService.PendingGroups)
+        {
+            if (group.Changes.Count == 1
+                && group.Changes[0].ModuleId == PowerPlanChangeFactory.ModuleId
+                && group.Changes[0].SettingId.StartsWith(PowerPlanChangeFactory.CreatePlanPrefix, StringComparison.Ordinal))
+            {
+                PendingCreations.Add(new PendingPlanCreationViewModel(group.GroupId, group.Changes[0], pendingChangesService));
+            }
+        }
+        PendingCreations.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasPendingCreations));
+
         _pendingChangesService.PropertyChanged += OnPendingChangesPropertyChanged;
+    }
+
+    // ---- Plan creation: a copy of an existing plan under a new name.
+    //      Reversible; undo deletes the copy this app made. ----
+
+    public ObservableCollection<PendingPlanCreationViewModel> PendingCreations { get; } = [];
+    public bool HasPendingCreations => PendingCreations.Count > 0;
+
+    /// <summary>Creating copies a plan through powrprof, so it needs the service and something to copy.</summary>
+    public bool CanCreatePlans => _powerService is not null && Plans.Count > 0;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanConfirmCreatePlan))]
+    private bool _isCreatingPlan;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanConfirmCreatePlan))]
+    [NotifyPropertyChangedFor(nameof(NewPlanNameError))]
+    [NotifyPropertyChangedFor(nameof(HasNewPlanNameError))]
+    private string _newPlanName = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanConfirmCreatePlan))]
+    private PowerPlanItemViewModel? _newPlanSource;
+
+    /// <summary>Why the Create button is off: a name that is already taken, on the machine or in the queue.</summary>
+    public string? NewPlanNameError
+    {
+        get
+        {
+            var name = NewPlanName.Trim();
+            if (name.Length == 0)
+                return null;
+            var taken = Plans.Any(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+                || PendingCreations.Any(c => c.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+            return taken ? "A plan with this name already exists." : null;
+        }
+    }
+
+    public bool HasNewPlanNameError => NewPlanNameError is not null;
+
+    public bool CanConfirmCreatePlan =>
+        IsCreatingPlan && NewPlanName.Trim().Length > 0 && NewPlanNameError is null && NewPlanSource is not null;
+
+    [RelayCommand]
+    private void BeginCreatePlan()
+    {
+        if (!CanCreatePlans)
+            return;
+        NewPlanName = string.Empty;
+        NewPlanSource = Plans.FirstOrDefault(p => p.IsActive) ?? Plans[0];
+        IsCreatingPlan = true;
+    }
+
+    [RelayCommand]
+    private void CancelCreatePlan() => IsCreatingPlan = false;
+
+    [RelayCommand]
+    private void ConfirmCreatePlan()
+    {
+        if (!CanConfirmCreatePlan || NewPlanSource is null)
+            return;
+
+        var change = PowerPlanChangeFactory.CreatePlanChange(NewPlanName, NewPlanSource.Plan);
+        var group = WrapChange(change);
+        _isStagingChange = true;
+        try
+        {
+            _pendingChangesService.Stage(group);
+        }
+        finally
+        {
+            _isStagingChange = false;
+        }
+
+        PendingCreations.Add(new PendingPlanCreationViewModel(group.GroupId, change, _pendingChangesService));
+        IsCreatingPlan = false;
+    }
+
+    /// <summary>
+    /// Pending creations the queue no longer holds were discarded or applied.
+    /// After an apply the copies exist now; scan once and list them.
+    /// </summary>
+    private void SyncPendingCreations(bool isApplying)
+    {
+        var gone = PendingCreations
+            .Where(c => !_pendingChangesService.PendingGroups.Any(g => g.GroupId == c.GroupId))
+            .ToList();
+        if (gone.Count == 0)
+            return;
+
+        foreach (var creation in gone)
+            PendingCreations.Remove(creation);
+
+        if (!isApplying || _powerService is null)
+            return;
+
+        var scanner = new Modules.Power.Services.PowerPlanScanner(_powerService);
+        foreach (var plan in scanner.Scan())
+        {
+            if (Plans.Any(p => p.Plan.PlanGuid == plan.PlanGuid))
+                continue;
+            if (Modules.Power.Services.PowerPlanScanner.FindCreatedPlan([plan], plan.Name) is null)
+                continue;
+            Plans.Add(new PowerPlanItemViewModel(plan, _pendingActionsService));
+        }
+        OnPropertyChanged(nameof(HasNoPlans));
+        OnPropertyChanged(nameof(NewPlanNameError));
     }
 
     public ObservableCollection<PowerPlanItemViewModel> Plans { get; }
@@ -167,7 +287,7 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
             }
 
             rows.Add(new ShellSettingViewModel(
-                "Hibernation",
+                "Allow hibernation",
                 HibernateDescription,
                 "powrprof:SystemReserveHiberFile",
                 hibernateAtScan,
@@ -190,7 +310,7 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
             }
 
             rows.Add(new ShellSettingViewModel(
-                "Ultimate Performance plan",
+                "Add the Ultimate Performance plan",
                 UltimatePerformanceDescription,
                 $"powrprof:PowerDuplicateScheme {PowerPlanChangeFactory.UltimatePerformanceSourceGuid:D}",
                 lastKnownInstalled,
@@ -427,6 +547,7 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
     private void HandlePendingGroupsChanged()
     {
         var isApplying = _pendingChangesService.IsApplying;
+        SyncPendingCreations(isApplying);
 
         // Active-plan switch removed externally (review-panel discard or apply)
         if (_stagedGroupId is not null &&
@@ -515,6 +636,28 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
         if (_pendingActionsService is not null)
             _pendingActionsService.PropertyChanged -= OnPendingActionsPropertyChanged;
     }
+}
+
+/// <summary>A plan creation waiting in the queue: shown under the plan list until Apply or Remove.</summary>
+public sealed partial class PendingPlanCreationViewModel : ObservableObject
+{
+    private readonly IPendingChangesService _pendingChangesService;
+
+    public PendingPlanCreationViewModel(string groupId, ChangeDescriptor change, IPendingChangesService pendingChangesService)
+    {
+        ArgumentNullException.ThrowIfNull(change);
+        GroupId = groupId;
+        Name = change.SettingId[PowerPlanChangeFactory.CreatePlanPrefix.Length..];
+        Detail = $"{change.AfterDisplay}. Created when you press Apply; undo deletes it again.";
+        _pendingChangesService = pendingChangesService;
+    }
+
+    public string GroupId { get; }
+    public string Name { get; }
+    public string Detail { get; }
+
+    [RelayCommand]
+    private void Remove() => _pendingChangesService.Unstage(GroupId);
 }
 
 public sealed partial class PowerPlanItemViewModel : ObservableObject

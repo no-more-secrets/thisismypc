@@ -376,6 +376,20 @@ greyed switch; non-string values are not items;
 `tools/check-binary-hardening.ps1` is now tracked, binds `-Path`
 positionally, and skips non-PE files in folder mode.
 
+Power plan creation, same day (Sam: "Can we add power plan creation?"):
+New plan on the Power Plans page opens an inline form (name, copy of which
+plan). Create stages a reversible change (`create-plan:{name}`, Category
+Create); apply duplicates the source through powrprof and names the copy
+with the marker description "Created by ThisIsMyPC", undo deletes that copy
+by name and marker (never a same-named plan someone else made, never the
+active plan). The staged plan shows as a green pending card under the list
+with Remove; after Apply the page rescans and lists the real plan. Same
+afternoon's page review: a queued deletion tints the card red with a red
+"Queued" button and greyed buttons; the Apply badge counts actions; the
+review panel wraps long lines and keeps the scrollbar lane; popups float
+8px above the bar; the System power switches read "Allow hibernation" and
+"Add the Ultimate Performance plan" (Sam could not tell what on meant).
+
 Scheduled tasks, same day (Sam: still an absurd number of tasks, and the
 task rows had no icons): the scheduler reader now returns each task's
 Exec action (command and arguments) or ComHandler class id, and the

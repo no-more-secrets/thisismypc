@@ -115,6 +115,9 @@ public sealed class PowerModule : IActionModule
             ChangeValueType.PowerPlan_Setting when change.SettingId == PowerPlanChangeFactory.UltimatePerformanceSettingId
                 => ApplyUltimatePerformanceChange(change),
             ChangeValueType.PowerPlan_Setting when change.SettingId.StartsWith(
+                PowerPlanChangeFactory.CreatePlanPrefix, StringComparison.Ordinal)
+                => ApplyCreatePlanChange(change),
+            ChangeValueType.PowerPlan_Setting when change.SettingId.StartsWith(
                 PowerPlanChangeFactory.SettingIdPrefix, StringComparison.Ordinal)
                 => ApplySettingChange(change),
             ChangeValueType.Registry_DWord => ApplyRegistryDWordChange(change),
@@ -230,6 +233,61 @@ public sealed class PowerModule : IActionModule
         }
 
         return _powerService.DeleteScheme(target.PlanGuid);
+    }
+
+    /// <summary>
+    /// AfterValue "1": duplicate the source plan and name it; a plan of that
+    /// name we already made counts as done. AfterValue "0" (undo): delete the
+    /// plan we made, never a plan of the same name someone else made, and
+    /// never the active plan.
+    /// </summary>
+    private OperationResult<bool> ApplyCreatePlanChange(ChangeDescriptor change)
+    {
+        var name = change.SettingId[PowerPlanChangeFactory.CreatePlanPrefix.Length..];
+        var scanner = new PowerPlanScanner(_powerService);
+        var plans = scanner.Scan();
+        var existing = PowerPlanScanner.FindCreatedPlan(plans, name);
+
+        if (change.AfterValue == "1")
+        {
+            if (existing is not null)
+                return OperationResult<bool>.Success(true);
+
+            if (!PowerPlanChangeFactory.TryParseSourceGuid(change.SystemLocation, out var sourceGuid))
+            {
+                return OperationResult<bool>.Failure(
+                    $"No source plan in '{change.SystemLocation}'.", ErrorCategory.NotFound);
+            }
+
+            var duplicated = _powerService.DuplicateScheme(sourceGuid);
+            if (!duplicated.IsSuccess)
+            {
+                return OperationResult<bool>.Failure(
+                    duplicated.ErrorMessage!, duplicated.ErrorCategory!.Value, duplicated.Exception);
+            }
+
+            // The name and marker are how undo finds the copy; an unnamed
+            // duplicate would be an orphan, so a failed text write rolls back.
+            var named = _powerService.WriteSchemeText(duplicated.Value, name, PowerPlanChangeFactory.CreatedPlanMarker);
+            if (!named.IsSuccess)
+            {
+                _ = _powerService.DeleteScheme(duplicated.Value);
+                return named;
+            }
+
+            return OperationResult<bool>.Success(true);
+        }
+
+        if (existing is null)
+            return OperationResult<bool>.Success(true);
+
+        if (existing.IsActive)
+        {
+            return OperationResult<bool>.Failure(
+                $"'{name}' is the active plan. Switch to another plan first.", ErrorCategory.ServiceUnavailable);
+        }
+
+        return _powerService.DeleteScheme(existing.PlanGuid);
     }
 
     private OperationResult<bool> ApplyActivePlanChange(ChangeDescriptor change)

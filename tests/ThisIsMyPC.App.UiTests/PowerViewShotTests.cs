@@ -42,9 +42,9 @@ public class PowerViewShotTests
         session.Screenshot("system-power-section");
 
         Assert.True(session.IsTextVisible("System power"));
-        Assert.True(session.IsTextVisible("Hibernation"));
+        Assert.True(session.IsTextVisible("Allow hibernation"));
         // No power service in this session — the Ultimate Performance row must not render.
-        Assert.False(session.IsTextVisible("Ultimate Performance plan"));
+        Assert.False(session.IsTextVisible("Add the Ultimate Performance plan"));
     }
 
     [AvaloniaFact]
@@ -61,7 +61,7 @@ public class PowerViewShotTests
         var viewModel = new PowerViewModel(CreateScanData(liveEnabled), queue, registryService: Registry);
         using var session = UiSession.ForView(new PowerView(), viewModel, "power-view", height: 1400);
 
-        var row = viewModel.SystemPowerToggles.First(r => r.Label == "Hibernation");
+        var row = viewModel.SystemPowerToggles.First(r => r.Label == "Allow hibernation");
         row.IsEnabled = !liveEnabled;
         await session.WaitForAsync(() => queue.PendingCount == 1, timeoutMs: 5000, what: "hibernate staging");
         session.Screenshot("hibernate-staged");

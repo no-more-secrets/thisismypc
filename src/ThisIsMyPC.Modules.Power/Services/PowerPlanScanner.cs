@@ -32,6 +32,11 @@ public sealed class PowerPlanScanner
     public static PowerPlan? FindMarkedUltimatePerformance(IReadOnlyList<PowerPlan> plans) =>
         plans.FirstOrDefault(p => p.Description == Changes.PowerPlanChangeFactory.UltimatePerformanceMarker);
 
+    /// <summary>A plan the person created through this app (marker description) with the given name.</summary>
+    public static PowerPlan? FindCreatedPlan(IReadOnlyList<PowerPlan> plans, string name) =>
+        plans.FirstOrDefault(p => p.Description == Changes.PowerPlanChangeFactory.CreatedPlanMarker
+            && p.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+
     public IReadOnlyList<PowerPlan> Scan()
     {
         LastScanError = null;

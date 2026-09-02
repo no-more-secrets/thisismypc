@@ -29,6 +29,46 @@ public static class PowerPlanChangeFactory
     /// <summary>Description written on our duplicate so scan and removal find it across locales.</summary>
     public const string UltimatePerformanceMarker = "Ultimate Performance plan installed by ThisIsMyPC";
 
+    /// <summary>SettingId prefix for a plan the person creates; the suffix is the plan name.</summary>
+    public const string CreatePlanPrefix = "create-plan:";
+
+    /// <summary>Description written on a created plan so undo deletes only what this app made.</summary>
+    public const string CreatedPlanMarker = "Created by ThisIsMyPC";
+
+    /// <summary>
+    /// Creates a plan as a copy of <paramref name="source"/> (every setting
+    /// carried over) under a new name. Reversible: undo deletes the copy,
+    /// found by name and marker, and refuses while it is the active plan.
+    /// </summary>
+    public static ChangeDescriptor CreatePlanChange(string name, PowerPlan source)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        ArgumentNullException.ThrowIfNull(source);
+        var trimmed = name.Trim();
+        return new ChangeDescriptor
+        {
+            ModuleId = ModuleId,
+            SettingId = CreatePlanPrefix + trimmed,
+            DisplayName = $"Create power plan {trimmed}",
+            SystemLocation = $"powrprof:PowerDuplicateScheme {source.PlanGuid:D}",
+            BeforeValue = "0",
+            AfterValue = "1",
+            BeforeDisplay = "Not present",
+            AfterDisplay = $"Copy of {source.Name}",
+            ValueType = ChangeValueType.PowerPlan_Setting,
+            Category = ChangeCategory.Create,
+            RestartRequirement = RestartRequirement.None,
+        };
+    }
+
+    /// <summary>The plan a create change copies: the GUID at the end of its SystemLocation.</summary>
+    public static bool TryParseSourceGuid(string systemLocation, out Guid sourceGuid)
+    {
+        ArgumentNullException.ThrowIfNull(systemLocation);
+        var lastSpace = systemLocation.LastIndexOf(' ');
+        return Guid.TryParse(lastSpace < 0 ? systemLocation : systemLocation[(lastSpace + 1)..], out sourceGuid);
+    }
+
     /// <summary>Stages one AC or DC value-index write for an individual plan setting.</summary>
     public static ChangeDescriptor CreateSettingChange(
         PowerPlan plan, PowerSetting setting, bool ac, uint currentIndex, uint newIndex)
