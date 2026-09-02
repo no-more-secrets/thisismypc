@@ -27,7 +27,7 @@ public sealed partial class StartupViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _showWindowsEntries;
 
-    /// <summary>Other Microsoft-published entries show only when ticked.</summary>
+    /// <summary>Microsoft-published entries that are not part of Windows (Office, OneDrive, Teams) show only when ticked.</summary>
     [ObservableProperty]
     private bool _showMicrosoftEntries;
 
@@ -85,8 +85,9 @@ public sealed partial class StartupViewModel : ObservableObject, IDisposable
     private IEnumerable<AutorunItemViewModel> Visible(AutorunCategory category)
         => _allAutoruns
             .Where(a => a.Entry.Category == category)
-            .Where(a => ShowWindowsEntries || !a.IsWindowsEntry)
-            .Where(a => ShowMicrosoftEntries || !a.IsMicrosoft);
+            // Two disjoint groups: a Windows entry answers to the Windows box
+            // alone, a non-Windows Microsoft entry to the Microsoft box alone.
+            .Where(a => a.IsWindowsEntry ? ShowWindowsEntries : ShowMicrosoftEntries || !a.IsMicrosoft);
 
     /// <summary>Rows grouped under their location, locations in first-seen (catalog) order, rows by name. The view shows or hides the headers.</summary>
     private static List<object> WithLocationHeaders(IEnumerable<AutorunItemViewModel> rows)

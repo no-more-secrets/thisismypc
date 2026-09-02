@@ -156,12 +156,9 @@ public class AutorunsTabShotTests
 
         Assert.True(session.IsTextVisible("Services (0)"));
         Assert.True(session.IsTextVisible("Scheduled Tasks (1)"));
-        // SecurityHealth is both Windows and Microsoft, so both boxes must be on to see it.
+        // SecurityHealth is a Windows entry: the Windows box alone shows it.
         session.ClickText("Windows");
         Assert.True(viewModel.ShowWindowsEntries);
-        Assert.False(session.IsTextVisible("SecurityHealth"));
-        session.ClickText("Microsoft");
-        Assert.True(viewModel.ShowMicrosoftEntries);
         Assert.True(session.IsTextVisible("Logon (6)"));
         Assert.True(session.IsTextVisible("SecurityHealth"));
         Assert.True(session.IsTextVisible("Off in Task Manager"));
@@ -193,9 +190,13 @@ public class AutorunsTabShotTests
         Assert.Single(taskTab.Items.OfType<AutorunLocationHeader>());
 
         ClickTab(session, "Logon");
+        // The Microsoft box is for Microsoft entries outside Windows; it leaves SecurityHealth alone.
         session.ClickText("Microsoft");
-        session.Screenshot("logon-tab-hide-microsoft");
-        Assert.False(viewModel.ShowMicrosoftEntries);
+        session.Screenshot("logon-tab-microsoft-on");
+        Assert.True(viewModel.ShowMicrosoftEntries);
+        Assert.True(session.IsTextVisible("Logon (6)"));
+        session.ClickText("Windows");
+        Assert.False(viewModel.ShowWindowsEntries);
         Assert.True(session.IsTextVisible("Logon (5)"));
         Assert.False(session.IsTextVisible("SecurityHealth"));
     }
