@@ -7,7 +7,9 @@ The app corresponds to the PC, not a user profile (CLAUDE.md). Packaging follows
   violates this, so releases ship ONLY the per-machine MSI
   (`vpk pack --msi --instLocation PerMachine`, WiX 5, installs to
   `Program Files\{publisher}\ThisIsMyPC`, requires elevation). No per-user
-  Setup.exe, no portable zip.
+  Setup.exe, no portable zip. vpk always emits the Setup.exe; the release
+  script deletes it after pack (the MSI is a complete install by itself,
+  checked with `msiexec /a` extraction on 2026-09-01).
 - **Mutable state in `%ProgramData%\ThisIsMyPC`** (settings, history.db, sets,
   monitoring state, drift baseline): one database for the machine. The app
   creates and DACL-hardens the folder at startup (Administrators/SYSTEM only);
@@ -29,6 +31,13 @@ The script publishes the App and the Session 0 Service (self-contained,
 win-x64) into one staging directory (the service exe must sit next to the app
 exe for Owner Mode enable), packs the MSI, and writes `SHA256SUMS`. Then follow
 `update-signing.md` for signing and upload.
+
+First end-to-end unsigned build ran 2026-09-01 (`-Version 0.1.0`): MSI,
+full nupkg, RELEASES, releases.win.json, assets.win.json, SHA256SUMS. The
+Velopack library and the vpk tool are kept on the same version (1.2.0 in
+`Directory.Packages.props`; `dotnet tool update -g vpk` when it moves) because
+vpk warns on a mismatch. A rebuild of the same version wipes the per-version
+output directory first; vpk refuses to pack over an existing release.
 
 ## Open items before first release
 

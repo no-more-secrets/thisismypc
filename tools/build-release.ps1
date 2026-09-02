@@ -43,7 +43,10 @@ if (-not (Get-Command vpk -ErrorAction SilentlyContinue)) {
     throw 'vpk not found. Install with: dotnet tool install -g vpk'
 }
 
+# Both directories are per-version scratch: vpk refuses to pack over an
+# existing release of the same version, so a rebuild starts clean.
 if (Test-Path $staging) { Remove-Item $staging -Recurse -Force }
+if (Test-Path $output) { Remove-Item $output -Recurse -Force }
 New-Item -ItemType Directory -Force $staging | Out-Null
 New-Item -ItemType Directory -Force $output | Out-Null
 
@@ -92,6 +95,22 @@ vpk pack `
     --noPortable `
     --outputDir $output @signArgs
 if ($LASTEXITCODE -ne 0) { throw 'vpk pack failed' }
+
+# vpk has no switch that suppresses the per-user Setup.exe, and the MSI is a
+# complete per-machine install on its own (verified by msiexec /a extraction:
+# it carries current\* plus Update.exe). Drop the Setup.exe and its entry in
+# assets.win.json so SHA256SUMS and any vpk upload only cover shipped assets.
+$setupExe = Get-ChildItem $output -Filter '*-Setup.exe'
+if ($setupExe) {
+    Write-Host "Removing per-user installer(s): $($setupExe.Name -join ', ')"
+    $setupExe | Remove-Item -Force
+}
+$assetsJson = Join-Path $output 'assets.win.json'
+if (Test-Path $assetsJson) {
+    $assets = Get-Content $assetsJson -Raw | ConvertFrom-Json
+    $kept = @($assets | Where-Object { $_.Type -ne 'Installer' })
+    ConvertTo-Json $kept -Compress | Set-Content $assetsJson -Encoding utf8
+}
 
 if ($SignThumbprint) {
     Write-Host 'Verifying Authenticode signatures on the packed assets...'
