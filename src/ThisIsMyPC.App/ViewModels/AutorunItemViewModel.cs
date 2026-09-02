@@ -48,15 +48,15 @@ public sealed partial class AutorunTabViewModel : ObservableObject
     [ObservableProperty]
     private bool _hasItems;
 
-    public void Replace(IReadOnlyList<object> items, int shown, int total)
+    public void Replace(IReadOnlyList<object> items, int shown)
     {
         Items = items;
-        Header = CountLabel(Name, shown, total);
+        Header = CountLabel(Name, shown);
         HasItems = shown > 0;
     }
 
-    public static string CountLabel(string name, int shown, int total)
-        => shown == total ? $"{name} ({total})" : $"{name} ({shown} of {total})";
+    /// <summary>The rows the tab shows under the current filters; hidden ones are not counted.</summary>
+    public static string CountLabel(string name, int shown) => $"{name} ({shown})";
 }
 
 /// <summary>

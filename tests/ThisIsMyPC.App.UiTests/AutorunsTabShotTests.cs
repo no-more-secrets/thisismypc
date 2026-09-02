@@ -102,7 +102,7 @@ public class AutorunsTabShotTests
 
         session.Screenshot("logon");
         // Windows and Microsoft entries are hidden until ticked: SecurityHealth is Windows.
-        Assert.True(session.IsTextVisible("Logon (5 of 6)"));
+        Assert.True(session.IsTextVisible("Logon (5)"));
         Assert.False(session.IsTextVisible("SecurityHealth"));
         // Dense by default: no location headers, no paths, until asked for.
         Assert.False(session.IsTextVisible(StartupScanner.MachineRunKey));
@@ -154,8 +154,8 @@ public class AutorunsTabShotTests
         using var session = UiSession.ForView(new StartupView(), viewModel, "autoruns-tab");
         await WaitForSignersAsync(session, viewModel);
 
-        Assert.True(session.IsTextVisible("Services (0 of 1)"));
-        Assert.True(session.IsTextVisible("Scheduled Tasks (1 of 3)"));
+        Assert.True(session.IsTextVisible("Services (0)"));
+        Assert.True(session.IsTextVisible("Scheduled Tasks (1)"));
         // SecurityHealth is both Windows and Microsoft, so both boxes must be on to see it.
         session.ClickText("Windows");
         Assert.True(viewModel.ShowWindowsEntries);
@@ -196,7 +196,7 @@ public class AutorunsTabShotTests
         session.ClickText("Microsoft");
         session.Screenshot("logon-tab-hide-microsoft");
         Assert.False(viewModel.ShowMicrosoftEntries);
-        Assert.True(session.IsTextVisible("Logon (5 of 6)"));
+        Assert.True(session.IsTextVisible("Logon (5)"));
         Assert.False(session.IsTextVisible("SecurityHealth"));
     }
 

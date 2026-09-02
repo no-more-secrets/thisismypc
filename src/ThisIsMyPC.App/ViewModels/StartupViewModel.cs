@@ -104,9 +104,8 @@ public sealed partial class StartupViewModel : ObservableObject, IDisposable
     {
         foreach (var tab in Tabs)
         {
-            var total = _allAutoruns.Count(a => a.Entry.Category == tab.Category);
             var visible = Visible(tab.Category).ToList();
-            tab.Replace(WithLocationHeaders(visible), visible.Count, total);
+            tab.Replace(WithLocationHeaders(visible), visible.Count);
         }
     }
 
