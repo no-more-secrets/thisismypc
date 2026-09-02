@@ -4,7 +4,8 @@
     <LangVersion>14</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <AnalysisLevel>latest-all</AnalysisLevel>
+    <!-- Recommended, not all: the full set floods every build with CA1062/CA1031/CA2007 noise. -->
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
     <!-- Publisher identity in exe version resources. Company is the short form used on the MSI publisher line; Copyright names the legal entity. -->
     <Company>NMS</Company>
     <Authors>NMS</Authors>

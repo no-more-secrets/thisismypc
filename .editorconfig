@@ -128,3 +128,11 @@ dotnet_naming_style.camel_case_underscore.required_prefix = _
 dotnet_naming_style.camel_case_underscore.capitalization = camel_case
 
 dotnet_naming_style.camel_case.capitalization = camel_case
+
+# Test method names use underscores on purpose (Given_When_Then).
+[tests/**.cs]
+dotnet_diagnostic.CA1707.severity = none
+
+# Enum members named String or Unsigned are the clearest names for them.
+[*.cs]
+dotnet_diagnostic.CA1720.severity = none
