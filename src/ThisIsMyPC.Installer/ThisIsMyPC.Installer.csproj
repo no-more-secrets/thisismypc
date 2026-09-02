@@ -2,7 +2,7 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <!-- The download is one file with a plain name; the assembly name is that name. -->
-    <AssemblyName>ThisIsMyPC-Install</AssemblyName>
+    <AssemblyName>ThisIsMyPC-Installer</AssemblyName>
     <RootNamespace>ThisIsMyPC.Installer</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>

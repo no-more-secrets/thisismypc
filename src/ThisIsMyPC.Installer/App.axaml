@@ -19,10 +19,10 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceInclude Source="avares://ThisIsMyPC-Install/Styles/Theme.axaml" />
+                <ResourceInclude Source="avares://ThisIsMyPC-Installer/Styles/Theme.axaml" />
             </ResourceDictionary.MergedDictionaries>
-            <FontFamily x:Key="BodyFont">avares://ThisIsMyPC-Install/Assets/Fonts#IBM Plex Sans</FontFamily>
-            <FontFamily x:Key="MonoFont">avares://ThisIsMyPC-Install/Assets/Fonts#IBM Plex Mono</FontFamily>
+            <FontFamily x:Key="BodyFont">avares://ThisIsMyPC-Installer/Assets/Fonts#IBM Plex Sans</FontFamily>
+            <FontFamily x:Key="MonoFont">avares://ThisIsMyPC-Installer/Assets/Fonts#IBM Plex Mono</FontFamily>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

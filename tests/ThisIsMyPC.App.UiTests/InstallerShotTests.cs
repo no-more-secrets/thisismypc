@@ -43,6 +43,27 @@ public class InstallerShotTests
     private static void ClickButton(UiSession session, string text)
         => session.Click(session.Find<Avalonia.Controls.Button>(b => b.Content as string == text));
 
+    /// <summary>
+    /// The installer's own App.axaml names its resources by assembly name
+    /// (avares://ThisIsMyPC-Installer/...). The shot tests run under the App
+    /// test host, so this is the only check that those URIs resolve; a
+    /// mismatch would crash the real exe at startup.
+    /// </summary>
+    [AvaloniaFact]
+    public void InstallerResources_ResolveUnderItsAssemblyName()
+    {
+        var assemblyName = typeof(InstallerView).Assembly.GetName().Name;
+        Assert.Equal("ThisIsMyPC-Installer", assemblyName);
+        var root = new Uri($"avares://{assemblyName}/");
+        foreach (var path in new[] { "Assets/Fonts/IBMPlexSans-Regular.ttf", "Assets/Fonts/IBMPlexMono-Regular.ttf" })
+            Assert.True(Avalonia.Platform.AssetLoader.Exists(new Uri(root, path)), path);
+
+        // Theme.axaml is compiled XAML, not a raw asset: load it the way App.axaml does.
+        var theme = new Avalonia.Markup.Xaml.Styling.ResourceInclude(root) { Source = new Uri(root, "Styles/Theme.axaml") };
+        Assert.True(theme.Loaded.TryGetResource("AccentBrush", Avalonia.Styling.ThemeVariant.Dark, out var accent));
+        Assert.NotNull(accent);
+    }
+
     [AvaloniaFact]
     public async Task Walkthrough_EveryPageRendersAndChoicesReachTheEngine()
     {

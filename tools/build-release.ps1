@@ -117,7 +117,7 @@ if (Test-Path $assetsJson) {
 # UAC prompt is a normal modal instead of a taskbar flash, and it offers the
 # options the Velopack wizard cannot (folder, shortcuts, start with Windows,
 # update checks). NativeAOT always: one small native exe around the MSI.
-Write-Host 'Publishing the installer (ThisIsMyPC-Install.exe) around the MSI...'
+Write-Host 'Publishing the installer (ThisIsMyPC-Installer.exe) around the MSI...'
 $installerStaging = Join-Path $repoRoot "artifacts\release-staging\$Version-installer"
 if (Test-Path $installerStaging) { Remove-Item $installerStaging -Recurse -Force }
 $msiPath = Join-Path $output 'ThisIsMyPC-win.msi'
@@ -126,10 +126,10 @@ dotnet publish (Join-Path $repoRoot 'src\ThisIsMyPC.Installer\ThisIsMyPC.Install
     --configuration Release --runtime win-x64 --self-contained true `
     -p:Version=$Version -p:AotPublish=true "-p:EmbeddedMsiPath=$msiPath" --output $installerStaging
 if ($LASTEXITCODE -ne 0) { throw 'Installer publish failed' }
-$installerExe = Join-Path $installerStaging 'ThisIsMyPC-Install.exe'
-if (-not (Test-Path $installerExe)) { throw 'ThisIsMyPC-Install.exe missing from the installer publish output' }
+$installerExe = Join-Path $installerStaging 'ThisIsMyPC-Installer.exe'
+if (-not (Test-Path $installerExe)) { throw 'ThisIsMyPC-Installer.exe missing from the installer publish output' }
 # Release assets carry the version in the name (Sam, 2026-09-01).
-$installerAsset = Join-Path $output "ThisIsMyPC-Install-$Version.exe"
+$installerAsset = Join-Path $output "ThisIsMyPC-Installer-$Version.exe"
 Copy-Item $installerExe $installerAsset -Force
 
 if ($SignThumbprint) {
@@ -140,7 +140,7 @@ if ($SignThumbprint) {
         $signtool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\signtool.exe" -ErrorAction SilentlyContinue |
             Sort-Object FullName -Descending | Select-Object -First 1 -ExpandProperty FullName
     }
-    if (-not $signtool) { throw 'signtool.exe not found (Windows SDK). Needed to sign ThisIsMyPC-Install.exe.' }
+    if (-not $signtool) { throw 'signtool.exe not found (Windows SDK). Needed to sign ThisIsMyPC-Installer.exe.' }
     Write-Host "Signing $(Split-Path $installerAsset -Leaf)..."
     & $signtool sign /fd sha256 /tr $TimestampUrl /td sha256 /sha1 $SignThumbprint $installerAsset
     if ($LASTEXITCODE -ne 0) { throw 'signtool failed on the installer exe' }

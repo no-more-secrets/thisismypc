@@ -100,7 +100,7 @@ The app corresponds to the PC, not a profile. Implemented:
   Program Files, elevation required). Per-user Setup.exe and portable zip are
   not shipped.
 - **Installer shipped 2026-09-01** (`src/ThisIsMyPC.Installer`): the download is
-  `ThisIsMyPC-Install.exe`, an elevated NativeAOT Avalonia launcher with the MSI
+  `ThisIsMyPC-Installer.exe`, an elevated NativeAOT Avalonia launcher with the MSI
   inside. Reason: a bare per-machine MSI gets its UAC prompt parked in the
   taskbar and its follow-up dialog can land off screen (Sam, 4K display), and
   the Velopack wizard has no options. Pages: Welcome, GPLv2 license with

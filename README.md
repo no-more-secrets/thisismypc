@@ -86,7 +86,7 @@ the service talk over a hardened named pipe whose message envelope is in
 
 ## Install
 
-1. Download `ThisIsMyPC-Install-<version>.exe` from the
+1. Download `ThisIsMyPC-Installer-<version>.exe` from the
    [Releases page](https://github.com/No-More-Secrets/thisismypc/releases).
 2. Double-click it. Windows asks for permission; click Yes.
 3. Read the license, choose the folder and the options you want, click

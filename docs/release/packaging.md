@@ -10,7 +10,7 @@ The app corresponds to the PC, not a user profile (CLAUDE.md). Packaging follows
   Setup.exe, no portable zip. vpk always emits the Setup.exe; the release
   script deletes it after pack (the MSI is a complete install by itself,
   checked with `msiexec /a` extraction on 2026-09-01).
-- **The download is `ThisIsMyPC-Install-<version>.exe`** (`src/ThisIsMyPC.Installer`,
+- **The download is `ThisIsMyPC-Installer-<version>.exe`** (`src/ThisIsMyPC.Installer`,
   Avalonia, NativeAOT, the MSI embedded as a resource). Two reasons it exists.
   A bare per-machine MSI gets its UAC consent requested by the Installer
   service, not by the wizard window, so Windows parks the prompt in the
