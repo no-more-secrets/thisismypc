@@ -34,7 +34,8 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:PowerPlanItemViewModel">
                             <Border Padding="16,12" Margin="0,3" CornerRadius="6"
-                                    Classes="card">
+                                    Classes="card"
+                                    Classes.pending-disable="{Binding IsDeleteQueued}">
                                 <Grid ColumnDefinitions="*,Auto">
                                     <StackPanel Grid.Column="0" Spacing="4">
                                         <StackPanel Orientation="Horizontal" Spacing="8">
@@ -78,8 +79,14 @@
                                                 Padding="12,6" FontSize="12"
                                                 Command="{Binding $parent[UserControl].((vm:PowerViewModel)DataContext).SelectPlanCommand}"
                                                 CommandParameter="{Binding}"
-                                                IsEnabled="{Binding $parent[UserControl].((vm:PowerViewModel)DataContext).CanSelectPlans}"
-                                                IsVisible="{Binding !IsActive}" />
+                                                IsVisible="{Binding !IsActive}">
+                                            <Button.IsEnabled>
+                                                <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                                    <Binding Path="$parent[UserControl].((vm:PowerViewModel)DataContext).CanSelectPlans" />
+                                                    <Binding Path="!IsDeleteQueued" />
+                                                </MultiBinding>
+                                            </Button.IsEnabled>
+                                        </Button>
                                         <Button Content="Cancel"
                                                 Padding="12,6" FontSize="12"
                                                 Command="{Binding $parent[UserControl].((vm:PowerViewModel)DataContext).CancelPendingSwitchCommand}"
@@ -88,9 +95,11 @@
                                                 Padding="12,6" FontSize="12"
                                                 Command="{Binding $parent[UserControl].((vm:PowerViewModel)DataContext).OpenSettingsCommand}"
                                                 CommandParameter="{Binding}"
+                                                IsEnabled="{Binding !IsDeleteQueued}"
                                                 IsVisible="{Binding $parent[UserControl].((vm:PowerViewModel)DataContext).CanOpenSettings}" />
                                         <Button Content="{Binding DeleteButtonText}"
                                                 Padding="12,6" FontSize="12"
+                                                Classes.queued="{Binding IsDeleteQueued}"
                                                 Command="{Binding ToggleDeleteQueueCommand}"
                                                 IsVisible="{Binding CanDelete}"
                                                 ToolTip.Tip="Stages the deletion; runs on Apply. Custom settings cannot be restored." />

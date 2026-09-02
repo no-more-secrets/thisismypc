@@ -254,6 +254,20 @@
         <Setter Property="Background" Value="{DynamicResource ControlPressedBrush}" />
     </Style>
 
+    <!-- A button whose one-way action is staged (Delete -> Queued): red, so
+         the staged state reads at a glance; clicking again unstages. -->
+    <Style Selector="Button.queued">
+        <Setter Property="Background" Value="{DynamicResource DangerMutedBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="Button.queued:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource DangerMutedBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}" />
+    </Style>
+
     <!-- Pending state tinting: enable/create (green-ish) -->
     <Style Selector="Border.pending-enable">
         <Setter Property="Background" Value="{DynamicResource SuccessMutedBrush}" />

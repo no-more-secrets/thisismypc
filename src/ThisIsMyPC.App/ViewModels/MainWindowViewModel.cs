@@ -241,16 +241,21 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasPendingChanges))]
     [NotifyPropertyChangedFor(nameof(PendingCountText))]
+    [NotifyPropertyChangedFor(nameof(TotalPendingCount))]
     [NotifyPropertyChangedFor(nameof(CanModifyPending))]
     private int _pendingCount;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasPendingChanges))]
     [NotifyPropertyChangedFor(nameof(PendingCountText))]
+    [NotifyPropertyChangedFor(nameof(TotalPendingCount))]
     [NotifyPropertyChangedFor(nameof(CanModifyPending))]
     private int _actionCount;
 
-    public bool HasPendingChanges => PendingCount + ActionCount > 0;
+    /// <summary>Changes plus one-way actions: what the Apply badge shows.</summary>
+    public int TotalPendingCount => PendingCount + ActionCount;
+
+    public bool HasPendingChanges => TotalPendingCount > 0;
 
     public string PendingCountText
     {

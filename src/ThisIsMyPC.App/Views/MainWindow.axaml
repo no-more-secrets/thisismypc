@@ -256,7 +256,7 @@
                                             CornerRadius="10"
                                             Padding="7,2"
                                             IsVisible="{Binding HasPendingChanges}">
-                                        <TextBlock Text="{Binding PendingCount}"
+                                        <TextBlock Text="{Binding TotalPendingCount}"
                                                    FontSize="12"
                                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                                     </Border>
@@ -340,6 +340,7 @@
                        PlacementTarget="{Binding #ApplyBar}"
                        Placement="Top"
                        HorizontalOffset="-16"
+                       VerticalOffset="-8"
                        IsLightDismissEnabled="True"
                        WindowManagerAddShadowHint="False">
                     <views:ReviewPanelView DataContext="{Binding ReviewPanel}" />
@@ -350,6 +351,7 @@
                        PlacementTarget="{Binding #ApplyBar}"
                        Placement="Top"
                        HorizontalOffset="-16"
+                       VerticalOffset="-8"
                        IsLightDismissEnabled="True"
                        WindowManagerAddShadowHint="False">
                     <views:ChangeHistoryView DataContext="{Binding ChangeHistory}" />

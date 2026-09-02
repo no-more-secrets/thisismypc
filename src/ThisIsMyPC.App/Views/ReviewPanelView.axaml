@@ -99,7 +99,7 @@
                               VerticalScrollBarVisibility="Auto"
                               IsVisible="{Binding !IsEmpty}">
                   <StackPanel>
-                    <ItemsControl ItemsSource="{Binding ReviewGroups}" Margin="8,8"
+                    <ItemsControl ItemsSource="{Binding ReviewGroups}" Margin="8,8,16,8"
                                   IsVisible="{Binding !!ReviewGroups.Count}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:ReviewGroupViewModel">
@@ -114,6 +114,7 @@
                                         <TextBlock Text="{Binding DisplayName}"
                                                    FontWeight="SemiBold"
                                                    FontSize="14"
+                                                   TextWrapping="Wrap"
                                                    Foreground="{DynamicResource TextPrimaryBrush}" />
 
                                         <!-- Before -> After -->
@@ -182,7 +183,7 @@
                     </ItemsControl>
 
                     <!-- One-way actions (installs/uninstalls). Not undoable from history. -->
-                    <StackPanel IsVisible="{Binding HasActions}" Margin="8,0,8,8">
+                    <StackPanel IsVisible="{Binding HasActions}" Margin="8,0,16,8">
                         <TextBlock Text="One-way actions"
                                    FontWeight="SemiBold"
                                    FontSize="12"
@@ -191,6 +192,7 @@
                         <TextBlock Text="These run on Apply. They cannot be undone from history and are not included in saved presets."
                                    FontSize="11"
                                    Margin="4,0,0,4"
+                                   TextWrapping="Wrap"
                                    Foreground="{DynamicResource TextTertiaryBrush}" />
                         <ItemsControl ItemsSource="{Binding ReviewActions}">
                             <ItemsControl.ItemTemplate>
@@ -204,6 +206,7 @@
                                             <Button DockPanel.Dock="Right"
                                                     Classes="apply-bar-discard"
                                                     Content="Remove"
+                                                    Margin="8,0,0,0"
                                                     VerticalAlignment="Center"
                                                     IsEnabled="{Binding !$parent[Window].((vm:MainWindowViewModel)DataContext).IsApplying}"
                                                     Command="{Binding $parent[ItemsControl].((vm:ReviewPanelViewModel)DataContext).UnstageActionCommand}"
@@ -212,14 +215,17 @@
                                                 <TextBlock Text="{Binding DisplayName}"
                                                            FontWeight="SemiBold"
                                                            FontSize="14"
+                                                           TextWrapping="Wrap"
                                                            Foreground="{DynamicResource TextPrimaryBrush}" />
                                                 <TextBlock Text="{Binding Detail}"
                                                            FontFamily="{StaticResource MonoFont}"
                                                            FontSize="11"
+                                                           TextWrapping="Wrap"
                                                            Foreground="{DynamicResource TextTertiaryBrush}" />
                                                 <TextBlock Text="{Binding UndoHint}"
                                                            IsVisible="{Binding HasUndoHint}"
                                                            FontSize="11"
+                                                           TextWrapping="Wrap"
                                                            Foreground="{DynamicResource TextSecondaryBrush}" />
                                             </StackPanel>
                                         </DockPanel>
