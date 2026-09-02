@@ -135,6 +135,31 @@ dotnet test tests/ThisIsMyPC.App.UiTests --configuration Release --filter "Categ
 - The harness evolves with the UI/UX chapter: as the visual feedback and
   interaction loop improves, update this section to match.
 
+### UI review checklist (learned the hard way, 2026-09-02)
+
+Run over every page before showing it; each line cost a correction once.
+
+- Vertical space is tight: 12px host top padding, 4px page margin, 30px tab
+  band with text at the top. When a gap reads as spare room, fix the whole
+  stack and measure every page, not the one that was pointed at.
+- A staged state is loud: tint the card (green create, red delete), colour
+  the button, grey out sibling buttons. Counters count everything staged,
+  one-way actions included.
+- No text trails off an edge: wrap or trim every line in cards and popups;
+  popups keep the 16px scrollbar lane and sit 8px clear of adjacent chrome.
+- Toggles only for state the person owns. "Add X" is a button or a
+  dropdown entry. A switch label says what on means as a verb ("Allow
+  hibernation"); an (i) tooltip does not replace a clear label.
+- New items appear at the top, in edit mode, never appended.
+- One outline per row: inner text boxes and buttons are borderless; header
+  rows, search boxes, and cards share the same left and right edges.
+- Big lists get a tab per category, no Everything tab, search that replaces
+  the tabs, virtualized rows.
+- Descriptions are terse product copy, not instructions.
+- Before answering "not fixed", compare the running exe's build time with
+  the last commit: Visual Studio runs the last successful build when the
+  app was still running and locked the output.
+
 ### Edge-geometry contract (every module page, no exceptions)
 
 The MainWindow host Border pads 24 left and bottom, 12 top, and 6 right. Every view
