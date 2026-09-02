@@ -174,8 +174,9 @@ margins. `Styles/TabStripTheme.axaml` owns tab strips: the headers are chips in 
 sunken well that ends 16px short of the page edge (the same edge a search
 box above it uses) while the selected content keeps the full width for its
 scrollbar lane; a new tab page needs `Margin="0,4,0,0"` on its TabControl
-and nothing else (a TabControl inside a panel that already keeps the 16px
-edge cancels the well's margin with `Margin="0,4,-16,0"`, see PowerView).
+and nothing else; a panel that holds a TabControl carries no right margin of
+its own, each fixed row above the strip keeps 16 (see PowerView's settings
+panel).
 
 After touching any page layout, verify parity in pixels, not by eye and never
 from XAML: screenshot the pages (walkthrough or `EdgeGeometryShotTests`), then

@@ -254,10 +254,13 @@
             </StackPanel>
 
             <!-- ======== Settings panel ======== -->
-            <StackPanel Spacing="12" Margin="0,4,16,24"
+            <!-- No right margin on the panel itself: the fixed rows keep 16,
+                 the strip's well keeps its own 16, and the tab content keeps
+                 16 for the scrollbar lane, so every edge lines up. -->
+            <StackPanel Spacing="12" Margin="0,4,0,24"
                         IsVisible="{Binding IsSettingsView}">
 
-                <Grid ColumnDefinitions="Auto,*,Auto">
+                <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,16,0">
                     <Button Grid.Column="0" Content="&#8592; Back to plans"
                             Padding="12,6" FontSize="12"
                             Command="{Binding CloseSettingsCommand}" />
@@ -278,7 +281,7 @@
 
                 <Border IsVisible="{Binding HasSettingsError}"
                         Background="{DynamicResource DangerMutedBrush}"
-                        CornerRadius="4" Padding="12,8">
+                        CornerRadius="4" Padding="12,8" Margin="0,0,16,0">
                     <TextBlock Text="{Binding SettingsError}"
                                Foreground="{DynamicResource DangerBrush}"
                                TextWrapping="Wrap" FontSize="12" />
@@ -286,6 +289,7 @@
 
                 <!-- Modern Standby (AC5) -->
                 <controls:ToggleCard IsVisible="{Binding ShowModernStandby}"
+                                     Margin="0,2,16,2"
                                      Title="Disable Modern Standby"
                                      Description="{Binding ModernStandbyDescription}"
                                      IsOn="{Binding IsModernStandbyDisabled}"
@@ -299,11 +303,9 @@
                      in a dozen groups, far too many for one column. The strip
                      wraps; the settings panel sits inside the page scroller,
                      so a tab's rows scroll with the page. -->
-                <!-- The panel already keeps the 16px edge; the strip's own
-                     right margin would inset it twice -->
                 <TabControl ItemsSource="{Binding SettingsGroups}"
                             IsVisible="{Binding !!SettingsGroups.Count}"
-                            Margin="0,4,-16,0">
+                            Margin="0,4,0,0">
                     <TabControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:PowerSettingGroupViewModel">
                             <TextBlock Text="{Binding Header}" />
@@ -311,7 +313,7 @@
                     </TabControl.ItemTemplate>
                     <TabControl.ContentTemplate>
                         <DataTemplate x:DataType="vm:PowerSettingGroupViewModel">
-                            <ItemsControl ItemsSource="{Binding Settings}" Margin="0,8,0,0">
+                            <ItemsControl ItemsSource="{Binding Settings}" Margin="0,8,16,0">
                                 <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:PowerSettingItemViewModel">
                     <Border Padding="12,8" Margin="0,2" CornerRadius="4"
