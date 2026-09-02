@@ -297,7 +297,13 @@
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderBrush" Value="{DynamicResource OutlineBrush}" />
         <Setter Property="BorderThickness" Value="0,0,0,1" />
-        <Setter Property="Padding" Value="8,2" />
+        <Setter Property="Padding" Value="0" />
+    </Style>
+    <!-- The 3px bar at the row's left edge: its own element, so the row's
+         hairline keeps the outline colour when the bar lights up. -->
+    <Style Selector="Border.row-bar">
+        <Setter Property="Width" Value="3" />
+        <Setter Property="Background" Value="Transparent" />
     </Style>
     <Style Selector="Border.row.missing">
         <Setter Property="Background" Value="{DynamicResource WarningMutedBrush}" />
@@ -321,17 +327,13 @@
         <Setter Property="Background" Value="{DynamicResource WarningMutedBrush}" />
     </Style>
 
-    <!-- A queued flip on a row also gets a 3px bar at the left, so it reads
+    <!-- A queued flip on a row also lights the bar at the left, so it reads
          on a row that is already red (unverified) or yellow (missing). -->
-    <Style Selector="Border.row.pending-enable">
-        <Setter Property="BorderBrush" Value="{DynamicResource SuccessBrush}" />
-        <Setter Property="BorderThickness" Value="3,0,0,1" />
-        <Setter Property="Padding" Value="5,2,8,2" />
+    <Style Selector="Border.row.pending-enable Border.row-bar">
+        <Setter Property="Background" Value="{DynamicResource SuccessBrush}" />
     </Style>
-    <Style Selector="Border.row.pending-disable">
-        <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}" />
-        <Setter Property="BorderThickness" Value="3,0,0,1" />
-        <Setter Property="Padding" Value="5,2,8,2" />
+    <Style Selector="Border.row.pending-disable Border.row-bar">
+        <Setter Property="Background" Value="{DynamicResource DangerBrush}" />
     </Style>
 
     <!-- Inactive handler: dimmed appearance -->

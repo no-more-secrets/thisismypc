@@ -76,7 +76,9 @@
                     Classes.unverified="{Binding IsUnverified}"
                     Classes.pending-enable="{Binding IsPendingEnable}"
                     Classes.pending-disable="{Binding IsPendingDisable}">
-                <StackPanel Spacing="1">
+              <Grid ColumnDefinitions="Auto,*">
+                <Border Grid.Column="0" Classes="row-bar" />
+                <StackPanel Grid.Column="1" Spacing="1" Margin="5,2,8,2">
                     <!-- One line: check, icon, name and description, publisher, notes, date -->
                     <Grid ColumnDefinitions="Auto,Auto,2*,1.3*,Auto,Auto">
                         <CheckBox Grid.Column="0"
@@ -159,6 +161,7 @@
                                TextTrimming="CharacterEllipsis"
                                Margin="28,0,0,0" />
                 </StackPanel>
+              </Grid>
             </Border>
         </DataTemplate>
     </UserControl.DataTemplates>

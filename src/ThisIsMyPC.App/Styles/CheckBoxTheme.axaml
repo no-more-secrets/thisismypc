@@ -28,7 +28,7 @@
                             VerticalAlignment="Center">
                         <Panel>
                             <Path Name="PART_Check"
-                                  Data="M 3.5,8.5 L 7,12 L 13,5.5"
+                                  Data="M 3,8 L 6.5,11.5 L 12.5,5"
                                   Stroke="#FFFFFF"
                                   StrokeThickness="2"
                                   StrokeLineCap="Round"
