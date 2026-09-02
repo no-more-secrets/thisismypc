@@ -155,8 +155,9 @@ run `tools/measure-edge-geometry.ps1` over the PNGs. Every page must read
 ContentL 25 and LaneFrom 10; ContentR 23 except width-capped pages (Home,
 Settings, Display, Gallery cap content width, so their ContentR is large);
 ContentT 37 give or take 4, except tab pages (~55: Fluent centers header text
-in the tab min-height). Any page off those numbers is the bug, even if it
-looks close.
+in the tab min-height) and Startup & Services (29: its first element is a
+38px-tall search box, so its top margin is 4, not 12). Any page off those
+numbers is the bug, even if it looks close.
 
 ## Architecture must-rules (violations get caught in review)
 

@@ -176,8 +176,10 @@
     <!-- Autoruns' layout: one tab per category, the filter row above the
          strip. Typing swaps the strip for one list across every category.
          Fixed chrome keeps the 16px right margin so it shares the content
-         edge; the strip wraps because thirteen headers do not fit one row. -->
-    <Grid RowDefinitions="Auto,Auto,*" Margin="0,12,0,0">
+         edge; the strip wraps because thirteen headers do not fit one row.
+         Top margin 4, not the usual 12: the search box is tall (MinHeight
+         38) and 12 read as spare room above it (Sam, 2026-09-02). -->
+    <Grid RowDefinitions="Auto,Auto,*" Margin="0,4,0,0">
         <TextBlock Grid.Row="0"
                    Text="{Binding AutorunsScanError, StringFormat='Part of the scan failed: {0}'}"
                    IsVisible="{Binding AutorunsScanError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
