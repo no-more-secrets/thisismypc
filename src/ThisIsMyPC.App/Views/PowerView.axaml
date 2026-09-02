@@ -147,6 +147,13 @@
                                                            FontSize="11" FontWeight="SemiBold"
                                                            Foreground="{DynamicResource InfoBrush}" />
                                             </Border>
+                                            <Border IsVisible="{Binding IsActiveAfterRestart}"
+                                                    Background="{DynamicResource WarningMutedBrush}"
+                                                    CornerRadius="3" Padding="6,2">
+                                                <TextBlock Text="Active after restart"
+                                                           FontSize="11" FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource WarningBrush}" />
+                                            </Border>
                                         </StackPanel>
                                         <TextBlock IsVisible="{Binding HasDescription}"
                                                    Text="{Binding DescriptionText}"

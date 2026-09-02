@@ -125,9 +125,35 @@ public sealed class PowerModuleTests
 
         var scan = await Module.ScanSystemStateAsync();
 
-        var data = Assert.IsType<PowerScanData>(Assert.IsType<PowerScanData>(scan.Value));
+        var data = Assert.IsType<PowerScanData>(scan.Value);
         Assert.Equal(BalancedGuid, data.PolicyPinnedPlan);
         Assert.True(data.ActivePlanLockedByPolicy);
+        // The pin names the active plan: nothing changes at restart.
+        Assert.Null(data.ActiveAfterRestartPlan);
+    }
+
+    [Fact]
+    public async Task Scan_NamesThePlanThatComesUpAfterARestart()
+    {
+        _power.AddPlan(BalancedGuid, "Balanced", isActive: true);
+        _power.AddPlan(HighPerformanceGuid, "High performance");
+        _power.ActivePlanLockedByPolicy = true;
+        _registry.WriteString(PowerPlanChangeFactory.ActivePlanPolicyKeyPath, PowerPlanChangeFactory.ActivePlanPolicyValueName, HighPerformanceGuid.ToString("D"));
+
+        var pinned = Assert.IsType<PowerScanData>((await Module.ScanSystemStateAsync()).Value);
+        Assert.Equal(HighPerformanceGuid, pinned.ActiveAfterRestartPlan);
+
+        // Pin gone, startup scheme set: the startup scheme is what comes up.
+        _registry.DeleteValue(PowerPlanChangeFactory.ActivePlanPolicyKeyPath, PowerPlanChangeFactory.ActivePlanPolicyValueName);
+        _registry.WriteString(PowerPlanChangeFactory.StartupActiveSchemeKeyPath, PowerPlanChangeFactory.StartupActiveSchemeValueName, HighPerformanceGuid.ToString("D"));
+        var startup = Assert.IsType<PowerScanData>((await Module.ScanSystemStateAsync()).Value);
+        Assert.Null(startup.PolicyPinnedPlan);
+        Assert.Equal(HighPerformanceGuid, startup.ActiveAfterRestartPlan);
+
+        // Not locked: the startup scheme is irrelevant.
+        _power.ActivePlanLockedByPolicy = false;
+        var free = Assert.IsType<PowerScanData>((await Module.ScanSystemStateAsync()).Value);
+        Assert.Null(free.ActiveAfterRestartPlan);
     }
 
     [Fact]

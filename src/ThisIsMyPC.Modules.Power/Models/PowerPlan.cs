@@ -21,10 +21,12 @@ public sealed record PowerPlan
 /// <param name="UltimatePerformancePlan">The registered Ultimate Performance plan, when one exists.</param>
 /// <param name="PolicyPinnedPlan">The plan a Group Policy value pins as active, when the value exists.</param>
 /// <param name="ActivePlanLockedByPolicy">True while the power service refuses plan switches until a restart.</param>
+/// <param name="ActiveAfterRestartPlan">While locked: the plan Windows activates at the next startup, when it differs from the active one.</param>
 public sealed record PowerScanData(
     IReadOnlyList<PowerPlan> Plans,
     string? ScanError = null,
     bool? HibernateEnabled = null,
     PowerPlan? UltimatePerformancePlan = null,
     Guid? PolicyPinnedPlan = null,
-    bool ActivePlanLockedByPolicy = false);
+    bool ActivePlanLockedByPolicy = false,
+    Guid? ActiveAfterRestartPlan = null);

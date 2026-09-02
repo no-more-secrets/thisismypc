@@ -92,6 +92,22 @@ public sealed class PowerModule : IActionModule
                 var pinRead = _registryService.ReadString(
                     PowerPlanChangeFactory.ActivePlanPolicyKeyPath, PowerPlanChangeFactory.ActivePlanPolicyValueName);
                 Guid? pinnedPlan = pinRead.IsSuccess && Guid.TryParse(pinRead.Value, out var pinGuid) ? pinGuid : null;
+                var locked = _powerService.IsActivePlanLockedByPolicy();
+
+                // While locked, the plan Windows will activate at startup is the
+                // pin, or the startup scheme once the pin is gone; it matters only
+                // when it differs from what is active now.
+                Guid? afterRestart = null;
+                if (locked)
+                {
+                    var startupRead = _registryService.ReadString(
+                        PowerPlanChangeFactory.StartupActiveSchemeKeyPath, PowerPlanChangeFactory.StartupActiveSchemeValueName);
+                    var startup = pinnedPlan
+                        ?? (startupRead.IsSuccess && Guid.TryParse(startupRead.Value, out var startupGuid) ? startupGuid : null);
+                    var active = plans.FirstOrDefault(p => p.IsActive)?.PlanGuid;
+                    if (startup is { } next && next != active)
+                        afterRestart = next;
+                }
 
                 return OperationResult<object>.Success(
                     (object)new PowerScanData(
@@ -100,7 +116,8 @@ public sealed class PowerModule : IActionModule
                         hibernateEnabled,
                         Services.PowerPlanScanner.FindUltimatePerformance(plans),
                         pinnedPlan,
-                        _powerService.IsActivePlanLockedByPolicy()));
+                        locked,
+                        afterRestart));
             }
             catch (Exception ex)
             {

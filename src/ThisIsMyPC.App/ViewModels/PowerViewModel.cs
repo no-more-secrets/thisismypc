@@ -52,6 +52,11 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
 
         Plans = new ObservableCollection<PowerPlanItemViewModel>(
             scanData.Plans.Select(p => new PowerPlanItemViewModel(p, pendingActionsService)));
+        if (scanData.ActiveAfterRestartPlan is { } afterRestart)
+        {
+            foreach (var row in Plans)
+                row.IsActiveAfterRestart = row.Plan.PlanGuid == afterRestart;
+        }
 
         if (_pendingActionsService is not null)
             _pendingActionsService.PropertyChanged += OnPendingActionsPropertyChanged;
@@ -643,12 +648,22 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
             _stagedGroupId = null;
             var pendingTarget = Plans.FirstOrDefault(p => p.IsPendingTarget);
 
-            if (isApplying && pendingTarget is not null)
+            if (isApplying && pendingTarget is not null && _activePlanLockedByPolicy)
+            {
+                // Applied, but the power service holds its startup pin: Windows
+                // switches at the next restart, and the live plan stays active.
+                foreach (var row in Plans)
+                    row.IsActiveAfterRestart = row.Plan.PlanGuid == pendingTarget.Plan.PlanGuid;
+            }
+            else if (isApplying && pendingTarget is not null)
             {
                 // The switch was applied; the pending target is now the live active plan
                 _liveActivePlan = pendingTarget.Plan;
                 foreach (var row in Plans)
+                {
                     row.IsActive = row.Plan.PlanGuid == pendingTarget.Plan.PlanGuid;
+                    row.IsActiveAfterRestart = false;
+                }
                 ResortPlans();
             }
 
@@ -793,6 +808,10 @@ public sealed partial class PowerPlanItemViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isPendingTarget;
+
+    /// <summary>Windows activates this plan at the next startup; the live plan stays active until then.</summary>
+    [ObservableProperty]
+    private bool _isActiveAfterRestart;
 
     public PowerPlanItemViewModel(PowerPlan plan, Core.Services.IPendingActionsService? pendingActionsService = null)
     {

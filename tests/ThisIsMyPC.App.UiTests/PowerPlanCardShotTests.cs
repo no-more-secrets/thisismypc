@@ -21,7 +21,7 @@ namespace ThisIsMyPC.App.UiTests;
 /// </summary>
 public class PowerPlanCardShotTests
 {
-    private static PowerScanData ScanData() => new(
+    private static PowerScanData ScanData(bool lockedByPolicy = false, Guid? activeAfterRestart = null) => new(
     [
         new PowerPlan
         {
@@ -37,7 +37,49 @@ public class PowerPlanCardShotTests
             Description = "Favors performance, but may use more energy.",
             IsActive = false,
         },
-    ], HibernateEnabled: true);
+    ], HibernateEnabled: true, ActivePlanLockedByPolicy: lockedByPolicy, ActiveAfterRestartPlan: activeAfterRestart);
+
+    [AvaloniaFact]
+    public async Task ALockedSwitch_KeepsTheLivePlanActiveAndMarksTheTargetForRestart()
+    {
+        var changes = new PendingChangesService();
+        var viewModel = new PowerViewModel(ScanData(lockedByPolicy: true), changes);
+        using var session = UiSession.ForView(new PowerView(), viewModel, "power-plan-card", height: 700);
+        var balanced = viewModel.Plans.First(p => p.Name == "Balanced");
+        var high = viewModel.Plans.First(p => p.Name == "High performance");
+
+        session.Click(session.Find<Button>(b => ReferenceEquals(b.DataContext, high) && b.Content as string == "Set active"));
+        Assert.Equal(1, changes.PendingCount);
+        Assert.Equal(Core.Changes.RestartRequirement.Reboot, changes.PendingGroups[0].Changes[0].RestartRequirement);
+
+        // Apply succeeds (the module recorded the switch for startup); Windows has not switched.
+        var applied = await changes.ApplyAllAsync(
+            _ => Task.FromResult(OperationResult<bool>.Success(true)),
+            _ => Task.FromResult(OperationResult<bool>.Success(true)));
+        Assert.True(applied.IsSuccess);
+        await session.WaitForAsync(() => high.IsActiveAfterRestart, timeoutMs: 5000, what: "restart badge");
+        session.Screenshot("active-after-restart");
+
+        Assert.True(balanced.IsActive);
+        Assert.False(high.IsActive);
+        Assert.False(balanced.CanDelete);
+        Assert.True(session.IsTextVisible("Active after restart"));
+    }
+
+    [AvaloniaFact]
+    public void AScanWithAStartupPlan_ShowsTheRestartBadge()
+    {
+        var changes = new PendingChangesService();
+        var high = new Guid("8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c");
+        var viewModel = new PowerViewModel(ScanData(lockedByPolicy: true, activeAfterRestart: high), changes);
+        using var session = UiSession.ForView(new PowerView(), viewModel, "power-plan-card", height: 700);
+
+        session.Screenshot("active-after-restart-from-scan");
+
+        Assert.True(viewModel.Plans.First(p => p.Name == "High performance").IsActiveAfterRestart);
+        Assert.True(viewModel.Plans.First(p => p.Name == "Balanced").IsActive);
+        Assert.True(session.IsTextVisible("Active after restart"));
+    }
 
     [AvaloniaFact]
     public void Delete_StagesTheAction_AndTheCardShowsItQueued()
