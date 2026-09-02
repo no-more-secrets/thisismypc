@@ -24,7 +24,7 @@ public static class PowerPlanChangeFactory
     public const string UltimatePerformanceSettingId = "ultimate-performance";
 
     /// <summary>The hidden scheme Windows ships; installing means duplicating it.</summary>
-    public static readonly Guid UltimatePerformanceSourceGuid = new("e9a42b02-d5df-448d-aa66-1f0000e60cc8");
+    public static readonly Guid UltimatePerformanceSourceGuid = new("e9a42b02-d5df-448d-aa00-03f14749eb61");
 
     /// <summary>Description written on our duplicate so scan and removal find it across locales.</summary>
     public const string UltimatePerformanceMarker = "Ultimate Performance plan installed by ThisIsMyPC";

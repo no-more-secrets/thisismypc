@@ -5,7 +5,7 @@ public sealed record PowerPlan
     /// <summary>Schemes Windows registers but hides from Control Panel on most SKUs.</summary>
     private static readonly HashSet<Guid> NormallyHiddenGuids =
     [
-        new("e9a42b02-d5df-448d-aa66-1f0000e60cc8"), // Ultimate Performance
+        new("e9a42b02-d5df-448d-aa00-03f14749eb61"), // Ultimate Performance
     ];
 
     public required Guid PlanGuid { get; init; }
