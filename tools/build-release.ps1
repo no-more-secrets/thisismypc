@@ -24,10 +24,10 @@ param(
 
     # SHA-1 thumbprint of the SSL.com OV code-signing certificate (No More
     # Secrets, LLC) as it appears in Cert:\CurrentUser\My once the hardware
-    # token is plugged in. When given, vpk runs signtool over every exe, dll,
-    # and the MSI during pack, with an RFC 3161 timestamp from SSL.com, so the
-    # signatures outlive the certificate. SHA256SUMS is written afterwards and
-    # therefore covers the signed files. Omit for unsigned test builds.
+    # token is plugged in. When given, the script signs only the downloadable
+    # outer installer with an RFC 3161 timestamp from SSL.com. The embedded
+    # payload remains reproducible, so removing that one terminal certificate
+    # table produces the exact independently built unsigned installer.
     [ValidatePattern('^[0-9A-Fa-f]{40}$')]
     [string]$SignThumbprint,
 
@@ -44,6 +44,7 @@ $toolManifest = Join-Path $repoRoot '.config\dotnet-tools.json'
 if (-not (Test-Path $toolManifest -PathType Leaf)) {
     throw "Pinned tool manifest missing: $toolManifest"
 }
+& (Join-Path $PSScriptRoot 'test-reproducible-build-environment.ps1')
 Write-Host 'Restoring repository-pinned .NET tools...'
 dotnet tool restore
 if ($LASTEXITCODE -ne 0) { throw 'Pinned .NET tool restore failed' }
@@ -64,13 +65,13 @@ if ($Aot) { $aotArgs = @('-p:AotPublish=true') }
 Write-Host "Publishing App ($Version, win-x64, self-contained$(if ($Aot) { ', NativeAOT' }))..."
 dotnet publish (Join-Path $repoRoot 'src\ThisIsMyPC.App\ThisIsMyPC.App.csproj') `
     --configuration Release --runtime win-x64 --self-contained true `
-    -p:Version=$Version @aotArgs --output $staging
+    -p:Version=$Version @aotArgs --output $staging -m:1
 if ($LASTEXITCODE -ne 0) { throw 'App publish failed' }
 
 Write-Host "Publishing Session 0 Service into the same directory$(if ($Aot) { ' (NativeAOT)' })..."
 dotnet publish (Join-Path $repoRoot 'src\ThisIsMyPC.Service\ThisIsMyPC.Service.csproj') `
     --configuration Release --runtime win-x64 --self-contained true `
-    -p:Version=$Version @aotArgs --output $staging
+    -p:Version=$Version @aotArgs --output $staging -m:1
 if ($LASTEXITCODE -ne 0) { throw 'Service publish failed' }
 
 if (-not (Test-Path (Join-Path $staging 'ThisIsMyPC.Service.exe'))) {
@@ -83,13 +84,23 @@ foreach ($exe in 'ThisIsMyPC.App.exe', 'ThisIsMyPC.Service.exe') {
     & (Join-Path $PSScriptRoot 'set-version-language.ps1') -Path (Join-Path $staging $exe)
 }
 
-$signArgs = @()
+# ZIP and cabinet formats copy source timestamps into their entries. Fix every
+# staged timestamp so the same source and version produce the same payload.
+$deterministicTimestamp = [DateTime]::SpecifyKind(
+    [DateTime]'2000-01-01T00:00:00',
+    [DateTimeKind]::Utc)
+Get-ChildItem $staging -Recurse -Force | ForEach-Object {
+    $_.CreationTimeUtc = $deterministicTimestamp
+    $_.LastWriteTimeUtc = $deterministicTimestamp
+    $_.LastAccessTimeUtc = $deterministicTimestamp
+}
+(Get-Item $staging).LastWriteTimeUtc = $deterministicTimestamp
+
 if ($SignThumbprint) {
     $cert = Get-ChildItem Cert:\CurrentUser\My | Where-Object { $_.Thumbprint -eq $SignThumbprint.ToUpperInvariant() }
     if (-not $cert) { throw "No certificate with thumbprint $SignThumbprint in Cert:\CurrentUser\My. Is the token plugged in?" }
     if (-not $cert.HasPrivateKey) { throw 'Certificate found but its private key is not reachable (token driver or PIN).' }
-    Write-Host "Signing as: $($cert.Subject) (expires $($cert.NotAfter.ToString('yyyy-MM-dd')))"
-    $signArgs = @('--signParams', "/fd sha256 /tr $TimestampUrl /td sha256 /sha1 $SignThumbprint")
+    Write-Host "Outer installer will be signed as: $($cert.Subject) (expires $($cert.NotAfter.ToString('yyyy-MM-dd')))"
 } else {
     Write-Host 'Unsigned build (no -SignThumbprint). Do not publish this.'
 }
@@ -104,7 +115,7 @@ dotnet tool run vpk -- pack `
     --packAuthors $Authors `
     --msi --instLocation PerMachine `
     --noPortable `
-    --outputDir $output @signArgs
+    --outputDir $output
 if ($LASTEXITCODE -ne 0) { throw 'vpk pack failed' }
 
 # vpk has no switch that suppresses the per-user Setup.exe, and the MSI is a
@@ -133,9 +144,10 @@ $installerStaging = Join-Path $repoRoot "artifacts\release-staging\$Version-inst
 if (Test-Path $installerStaging) { Remove-Item $installerStaging -Recurse -Force }
 $msiPath = Join-Path $output 'ThisIsMyPC-win.msi'
 if (-not (Test-Path $msiPath)) { throw 'ThisIsMyPC-win.msi missing from the vpk output' }
+& (Join-Path $PSScriptRoot 'normalize-msi.ps1') -Path $msiPath -Version $Version
 dotnet publish (Join-Path $repoRoot 'src\ThisIsMyPC.Installer\ThisIsMyPC.Installer.csproj') `
     --configuration Release --runtime win-x64 --self-contained true `
-    -p:Version=$Version -p:AotPublish=true "-p:EmbeddedMsiPath=$msiPath" --output $installerStaging
+    -p:Version=$Version -p:AotPublish=true "-p:EmbeddedMsiPath=$msiPath" --output $installerStaging -m:1
 if ($LASTEXITCODE -ne 0) { throw 'Installer publish failed' }
 $installerExe = Join-Path $installerStaging 'ThisIsMyPC-Installer.exe'
 if (-not (Test-Path $installerExe)) { throw 'ThisIsMyPC-Installer.exe missing from the installer publish output' }
@@ -145,6 +157,7 @@ Copy-Item $installerExe $installerAsset -Force
 # The compiler stamps the version block Language Neutral; Explorer should say
 # English (United States). Must precede signing: it rewrites the file.
 & (Join-Path $PSScriptRoot 'set-version-language.ps1') -Path $installerAsset
+& (Join-Path $PSScriptRoot 'normalize-pe-timestamps.ps1') -Path $installerAsset
 
 # Gate: every first-party binary carries ASLR, high-entropy VA, DEP, CFG,
 # the /GS cookie, and table-based unwinding, read from the PE headers of the
@@ -156,8 +169,12 @@ Write-Host 'Checking exploit mitigations on the shipped binaries...'
 if ($LASTEXITCODE -ne 0) { throw 'A shipped binary is missing an exploit mitigation; see the table above.' }
 
 if ($SignThumbprint) {
-    # vpk signed its own outputs during pack; the installer is built after, so
-    # sign it the same way.
+    # Signing only this outer image is required for direct reproducibility.
+    # Signing files inside the embedded MSI would change bytes that cannot be
+    # removed by stripping the outer PE certificate table.
+    if (((Get-Item $installerAsset).Length % 8) -ne 0) {
+        throw 'Unsigned installer length is not eight-byte aligned; Authenticode would insert non-certificate padding.'
+    }
     $signtool = Get-Command signtool.exe -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source
     if (-not $signtool) {
         $signtool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\signtool.exe" -ErrorAction SilentlyContinue |
@@ -170,10 +187,11 @@ if ($SignThumbprint) {
 }
 
 if ($SignThumbprint) {
-    Write-Host 'Verifying Authenticode signatures on the packed assets...'
-    $unsigned = Get-ChildItem $output -Include *.exe, *.msi -Recurse |
-        Where-Object { (Get-AuthenticodeSignature $_.FullName).Status -ne 'Valid' }
-    if ($unsigned) { throw "Unsigned or invalid signature: $($unsigned.Name -join ', ')" }
+    Write-Host 'Verifying the downloadable installer Authenticode signature...'
+    $signature = Get-AuthenticodeSignature $installerAsset
+    if ($signature.Status -ne 'Valid') {
+        throw "Installer signature status is $($signature.Status), not Valid."
+    }
 }
 
 Write-Host 'Writing SHA256SUMS...'

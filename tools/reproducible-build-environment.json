@@ -1,0 +1,11 @@
+{
+  "dotnetSdk": "10.0.400",
+  "windowsBuild": "26200.9168",
+  "windowsInstallerFileVersion": "5.0.26100.9168",
+  "visualStudioVersion": "18.9.12120.119",
+  "msvcToolsVersion": "14.51.36231",
+  "linkerFileVersion": "14.51.36256.0",
+  "windowsSdkVersion": "10.0.26100.0",
+  "msiDbFileVersion": "5.0.26100.8249 (WinBuild.160101.0800)",
+  "msiDbSha256": "573BA215E779B5DD90D417D56256081B948804E468030DB0F802A65FF9B273DA"
+}

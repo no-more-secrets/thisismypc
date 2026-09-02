@@ -104,9 +104,11 @@ The mitigation strategy depends on three properties:
    verify (`GpgManifestUpdateVerifier`, process in
    `docs/release/update-signing.md`). Authenticode signing of the binaries is
    added on release day as a second, independent layer.
-2. **Reproducible builds.** Planned. NativeAOT publish already runs in CI from
-   a pinned SDK; the remaining work is a frozen build environment so an
-   independent party can compile from source and compare bit for bit.
+2. **Reproducible builds.** Shipped. The SDK, NuGet graphs, repository tools,
+   Visual Studio, MSVC linker, and Windows SDK are exact inputs. Package and PE
+   timestamps plus MSI identities are deterministic. Anyone can remove the
+   signed installer's terminal Authenticode table with the repository tool,
+   build the matching tag, and compare the canonical files bit for bit.
 3. **Community auditability.** Any user can inspect the exact code that
    produced the binary running on their machine.
 

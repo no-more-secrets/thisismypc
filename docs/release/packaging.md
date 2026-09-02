@@ -91,14 +91,63 @@ exe for Owner Mode enable), packs the MSI, and writes `SHA256SUMS`. Then follow
 
 Build inputs are locked: `global.json` selects the exact .NET SDK,
 `.config/dotnet-tools.json` pins vpk, and each project commits its NuGet
-`packages.lock.json`. Each lock file covers the normal graph and the only
-supported runtime, win-x64. Release configuration restores fail on lock-file
-drift. After an intentional dependency change, refresh and review the lock-file
-diff:
+`packages.lock.json`. Projects in a NativeAOT graph also commit
+`packages.aot.lock.json`, because NativeAOT adds a different package graph.
+Each lock file covers the only supported runtime, win-x64. Release
+configuration restores fail on lock-file drift. After an intentional
+dependency change, refresh and review both applicable lock-file diffs.
 
 ```
 dotnet restore ThisIsMyPC.slnx --force-evaluate -p:RestoreLockedMode=false
+dotnet restore src\ThisIsMyPC.Installer\ThisIsMyPC.Installer.csproj -r win-x64 --force-evaluate -p:AotPublish=true -p:RestoreLockedMode=false -m:1
 ```
+
+The machine-installed native toolchain is locked separately in
+`tools/reproducible-build-environment.json`. `build-release.ps1` refuses to
+run unless the Windows servicing build, Windows Installer engine, .NET SDK,
+Visual Studio, MSVC tools, link.exe, Windows SDK, and MsiDb.exe match exactly.
+The MsiDb executable is also content-hashed. This is intentional: a newer
+compatible build tool is still a different build input.
+
+## Reproducing the installer
+
+Check out the release tag, install the exact toolchain named in
+`tools/reproducible-build-environment.json`, and build the tag's version:
+
+```
+git checkout v1.0.0
+.\tools\build-release.ps1 -Version 1.0.0
+```
+
+The unsigned release pipeline is byte-for-byte deterministic. Roslyn
+determinism, a checkout-independent compiler path map, and locked inputs cover
+managed code. Release PDBs are omitted
+because Avalonia's Cecil XAML rewrite gives portable-PDB debug records a new
+identifier on each invocation. Staging timestamps are fixed before packaging.
+`normalize-msi.ps1` derives the MSI ProductCode and PackageCode from the
+version and normalizes WiX summary, compound-file, and cabinet timestamps.
+`normalize-pe-timestamps.ps1` clears the three wall-clock timestamps emitted
+by the Windows native linker. Two clean builds of `0.0.1-repro` from identical
+source snapshots in different checkout paths on 2026-09-02 produced identical
+release assets before signing.
+
+To compare a downloaded signed installer with the local build:
+
+```
+.\tools\compare-reproducible-installer.ps1 `
+  -ReleasedInstaller .\ThisIsMyPC-Installer-1.0.0.exe `
+  -LocalInstaller .\artifacts\releases\1.0.0\ThisIsMyPC-Installer-1.0.0.exe
+```
+
+The comparison first requires a valid Authenticode signature. It then writes
+temporary canonical copies through `normalize-authenticode-pe.ps1`. That tool
+validates a terminal, aligned sequence of revision 2 PKCS SignedData
+`WIN_CERTIFICATE` records, rejects overlays and certificate tables overlapping
+section data, removes the table, and zeros the PE checksum and Security
+directory entry that Authenticode excludes from its image digest. It never
+modifies the downloaded file. Matching SHA-256 hashes prove that the signed
+installer, apart from its certificate table, is the installer built from the
+tag.
 
 First end-to-end unsigned build ran 2026-09-01 (`-Version 0.1.0`): MSI,
 full nupkg, RELEASES, releases.win.json, assets.win.json, SHA256SUMS. The
@@ -120,11 +169,13 @@ an existing release.
   identity validation is underway and the hardware token is expected within
   about a week. On release day plug the token in, find the thumbprint with
   `Get-ChildItem Cert:\CurrentUser\My`, and run
-  `build-release.ps1 -Version x.y.z -SignThumbprint <40 hex>`. vpk then signs
-  every exe, dll, and the MSI with an SSL.com RFC 3161 timestamp, the script
-  verifies each signature, and SHA256SUMS is computed over the signed files.
-  Builds without `-SignThumbprint` are unsigned test builds. The GPG manifest
-  layer works with or without Authenticode.
+  `build-release.ps1 -Version x.y.z -SignThumbprint <40 hex>`. The script signs
+  only the downloadable outer installer with an SSL.com RFC 3161 timestamp,
+  verifies it, and computes SHA256SUMS afterward. Signing nested executables or
+  the embedded MSI would make it impossible to remove one certificate table
+  from the download and recover the independently built hash. Update packages
+  and the embedded payload remain protected by the offline-GPG-signed manifest.
+  Builds without `-SignThumbprint` are unsigned test builds.
 - `AppConstants.UpdateUrl` points at github.com/No-More-Secrets/thisismypc
   (public since 2026-09-01).
 - NativeAOT: `build-release.ps1 -Aot` publishes the App (~38 MB exe, zero

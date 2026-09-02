@@ -4,10 +4,15 @@
     <LangVersion>14</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+    <!-- Keep compiler document identities independent of the checkout location. -->
+    <PathMap>$(MSBuildThisFileDirectory)=/_/</PathMap>
     <!-- This product ships only as win-x64. Keep that runtime graph in every lock file. -->
     <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
     <!-- Commit the resolved dependency graph and refuse drift in every Release restore. -->
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <NuGetLockFilePath Condition="'$(AotPublish)' == 'true'">$(MSBuildProjectDirectory)\packages.aot.lock.json</NuGetLockFilePath>
     <RestoreLockedMode Condition="'$(Configuration)' == 'Release'">true</RestoreLockedMode>
     <!-- Recommended, not all: the full set floods every build with CA1062/CA1031/CA2007 noise. -->
     <AnalysisLevel>latest-recommended</AnalysisLevel>
@@ -22,7 +27,15 @@
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
 
-  <!-- TIPC001: DLL search path analyzer — applies to all projects except the analyzer itself -->
+  <!-- Avalonia's Cecil XAML rewrite regenerates portable-PDB identifiers on
+       every invocation. Release packages do not ship symbols, so omit that
+       nondeterministic debug directory and keep the rewritten IL reproducible. -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <DebugType>None</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+  </PropertyGroup>
+
+  <!-- TIPC001: DLL search path analyzer. Applies to all projects except the analyzer itself. -->
   <ItemGroup Condition="'$(IsRoslynComponent)' != 'true'">
     <ProjectReference Include="$(MSBuildThisFileDirectory)analyzers\ThisIsMyPC.Analyzers\ThisIsMyPC.Analyzers.csproj"
                       OutputItemType="Analyzer"

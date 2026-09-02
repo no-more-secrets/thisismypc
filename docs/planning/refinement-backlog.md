@@ -71,8 +71,10 @@ Consequences, verified against the code and upstream:
 - **OV cert PURCHASED 2026-09-01**; identity validation underway, token
   expected by about 2026-09-08. On arrival: install the token driver, confirm
   the cert shows in `Cert:\CurrentUser\My` with a reachable private key,
-  test-sign a scratch exe, then `build-release.ps1 -SignThumbprint` (wired
-  2026-09-01: vpk `--signParams`, SSL.com timestamp, post-pack verification).
+  test-sign a scratch exe, then `build-release.ps1 -SignThumbprint`. Signing is
+  outer-installer-only so its terminal certificate table can be removed for an
+  exact comparison with an independent unsigned build. The GPG manifest covers
+  the unsigned embedded payload and update assets.
 - **App signing plan (FINAL, Sam 2026-08-30): SSL.com OV cert under the LLC,
   hardware-token delivery.** The publisher line must show the LLC, so the
   individual-validated Certum Open Source cert is out. Real prices verified
@@ -151,9 +153,19 @@ prep here.
   --vulnerable --include-transitive` is clean; rerun it before each release.
 - **Build inputs pinned 2026-09-02**: `global.json` locks the .NET SDK,
   `.config/dotnet-tools.json` locks vpk to the Velopack library version, and
-  committed per-project lock files cover the normal and win-x64 NuGet graphs
-  with content hashes. GitHub Actions are commit-SHA pinned. Release and CI
-  restores run in locked mode.
+  committed per-project lock files cover normal and NativeAOT win-x64 NuGet
+  graphs with content hashes. GitHub Actions are commit-SHA pinned. Release and
+  CI restores run in locked mode. The release script also rejects Visual
+  Studio, MSVC, link.exe, or Windows SDK versions that differ from the committed
+  build-environment manifest. That includes the Windows servicing build and
+  Windows Installer engine used to rewrite the MSI compound stream.
+- **Reproducible installer shipped 2026-09-02**: deterministic managed builds,
+  fixed staging metadata, version-derived MSI identities, normalized WiX/CAB
+  metadata, and normalized native-linker timestamps make repeated unsigned
+  builds byte-identical. The public comparison tool validates Authenticode,
+  removes only a valid terminal certificate table, and compares SHA-256 with a
+  local build. Outer-only Authenticode keeps that comparison possible; the
+  offline GPG manifest authenticates the inner MSI and update packages.
 - **PUBLISHED 2026-09-01** at `github.com/No-More-Secrets/thisismypc`;
   `AppConstants.UpdateUrl` points there.
 
