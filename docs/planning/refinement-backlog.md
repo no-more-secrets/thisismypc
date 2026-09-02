@@ -107,7 +107,9 @@ The app corresponds to the PC, not a profile. Implemented:
   accept, Options (folder, Desktop shortcut, start with Windows, update
   checks), Installing, Done. Trusted files go under the hardened ProgramData
   folder, never %TEMP%. First end-to-end unsigned build ran the same day.
-  Open: one real elevated run by a person (Sam) on this machine.
+  Open: one real elevated run by a person (Sam) on this machine, on the
+  `-Aot` build (App and Service both native since 2026-09-01; flip the
+  script default to AOT once that pass is clean).
 - Publisher settled 2026-09-01: NMS, short for No More Secrets, LLC (build
   script, assembly metadata, packaging.md); cert subject is the full name. Open at release: Authenticode signing on release
   day; UpdateUrl org must match the publishing repo.

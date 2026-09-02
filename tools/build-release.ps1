@@ -15,10 +15,11 @@ param(
     # carries the full name.
     [string]$Authors = 'NMS',
 
-    # NativeAOT publish for the App (probe-proven 2026-08-31, zero trim
-    # warnings; needs the VS installer dir on PATH for the native link step).
-    # Default off until a full manual pass on an AOT build; the Service stays
-    # CoreCLR either way.
+    # NativeAOT publish for the App and the Session 0 Service (both probe
+    # zero trim warnings; the native link needs the VS C++ toolchain). Both
+    # or neither: the two share one folder, and a CoreCLR service drags the
+    # whole runtime along, which cancels any AOT saving on the app. Default
+    # off until a full manual pass on an AOT build.
     [switch]$Aot,
 
     # SHA-1 thumbprint of the SSL.com OV code-signing certificate (No More
@@ -62,10 +63,10 @@ dotnet publish (Join-Path $repoRoot 'src\ThisIsMyPC.App\ThisIsMyPC.App.csproj') 
     -p:Version=$Version @aotArgs --output $staging
 if ($LASTEXITCODE -ne 0) { throw 'App publish failed' }
 
-Write-Host 'Publishing Session 0 Service into the same directory...'
+Write-Host "Publishing Session 0 Service into the same directory$(if ($Aot) { ' (NativeAOT)' })..."
 dotnet publish (Join-Path $repoRoot 'src\ThisIsMyPC.Service\ThisIsMyPC.Service.csproj') `
     --configuration Release --runtime win-x64 --self-contained true `
-    -p:Version=$Version --output $staging
+    -p:Version=$Version @aotArgs --output $staging
 if ($LASTEXITCODE -ne 0) { throw 'Service publish failed' }
 
 if (-not (Test-Path (Join-Path $staging 'ThisIsMyPC.Service.exe'))) {

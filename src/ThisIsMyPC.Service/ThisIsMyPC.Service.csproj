@@ -2,6 +2,11 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <AssemblyTitle>ThisIsMyPC Service</AssemblyTitle>
+    <!-- NativeAOT: same opt-in as the App (-p:AotPublish=true) so the
+         netstandard2.0 analyzer project never sees PublishAot. CFG on, as
+         the AOT toolchain leaves it off by default. -->
+    <PublishAot Condition="'$(AotPublish)' == 'true'">true</PublishAot>
+    <ControlFlowGuard Condition="'$(AotPublish)' == 'true'">Guard</ControlFlowGuard>
   </PropertyGroup>
 
   <ItemGroup>

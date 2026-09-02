@@ -99,10 +99,13 @@ output directory first; vpk refuses to pack over an existing release.
   layer works with or without Authenticode.
 - `AppConstants.UpdateUrl` points at github.com/No-More-Secrets/thisismypc
   (public since 2026-09-01).
-- NativeAOT works (probed 2026-08-31): `-p:AotPublish=true` (or
-  `build-release.ps1 -Aot`) produces a ~34 MB native App exe with ZERO trim
-  warnings after the two shared row templates gained compiled bindings
-  (IToggleSettingRow); a smoke launch on the live machine started clean.
-  Native link needs the VS installer dir on PATH (vswhere). Default stays
-  CoreCLR until one full manual pass on an AOT build (every module page plus
-  an apply); the Session 0 Service is unprobed and stays CoreCLR.
+- NativeAOT: `build-release.ps1 -Aot` publishes the App (~38 MB exe, zero
+  trim warnings since the shared row templates gained compiled bindings) and
+  the Session 0 Service (~6 MB exe, zero trim warnings, probed 2026-09-01:
+  hosts and starts as a console process) native with Control Flow Guard. It
+  is both or neither: they share one folder, and a CoreCLR service drags the
+  whole runtime along (232 DLLs), which cancels the App saving. The installer
+  is always NativeAOT. Default stays CoreCLR until one full manual pass on an
+  AOT build (every module page plus an apply, Owner Mode enable for the
+  service); the 0.1.0 test build handed to Sam on 2026-09-01 is that AOT
+  build, so the pass is underway.
