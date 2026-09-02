@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.VisualTree;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
@@ -25,6 +26,7 @@ public partial class PathEditorView : UserControl
 
     private Control? _dragSourceRow;
     private Border? _dragGhost;
+    private const double InsertLineHeight = 3;
     private Border? _insertLine;
     private int _insertGap = -1;
 
@@ -198,15 +200,20 @@ public partial class PathEditorView : UserControl
         if (rowPos is null)
             return;
 
+        // Rows carry a 1px margin top and bottom (see the row template), so the
+        // slot between two rows is 2px tall; the line sits on its center, not on
+        // the row's edge.
+        var rowMargin = targetBorder.Margin.Top;
         var lineY = aboveTarget
-            ? rowPos.Value.Y
-            : rowPos.Value.Y + targetBorder.Bounds.Height;
+            ? rowPos.Value.Y - rowMargin
+            : rowPos.Value.Y + targetBorder.Bounds.Height + rowMargin;
 
         if (_insertLine is null)
         {
             _insertLine = new Border
             {
-                Height = 2,
+                Height = InsertLineHeight,
+                CornerRadius = new CornerRadius(InsertLineHeight / 2),
                 Background = ThemeBrush("AccentBrush", Color.FromRgb(0x40, 0x9E, 0xFF)),
                 IsHitTestVisible = false,
                 Width = EntriesList.Bounds.Width,
@@ -215,7 +222,26 @@ public partial class PathEditorView : UserControl
         }
 
         Canvas.SetLeft(_insertLine, 0);
-        Canvas.SetTop(_insertLine, lineY - 1);
+        Canvas.SetTop(_insertLine, lineY - InsertLineHeight / 2);
+    }
+
+    /// <summary>
+    /// Draws the insert line for slot <paramref name="gap"/> (0 = above the
+    /// first row) without a drag, so the sight harness can screenshot it:
+    /// the headless platform has no drag source. Returns the line.
+    /// </summary>
+    internal Border? PreviewInsertLine(int gap)
+    {
+        var count = EntriesList.ItemCount;
+        if (count == 0)
+            return null;
+        var aboveTarget = gap < count;
+        var container = EntriesList.ContainerFromIndex(aboveTarget ? gap : count - 1);
+        var row = container?.GetVisualDescendants().OfType<Border>().FirstOrDefault(b => b.Classes.Contains("card"));
+        if (row is null)
+            return null;
+        ShowInsertLine(row, aboveTarget);
+        return _insertLine;
     }
 
     private void HideInsertLine()

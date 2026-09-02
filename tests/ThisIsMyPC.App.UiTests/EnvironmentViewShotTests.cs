@@ -54,6 +54,30 @@ public class EnvironmentViewShotTests
     }
 
     [AvaloniaFact]
+    public void PathTab_InsertLine_SitsCenteredInTheSlotWithRoundedEnds()
+    {
+        var (viewModel, _) = Build();
+        using var session = UiSession.ForView(new EnvironmentView(), viewModel, "environment-view");
+
+        var editor = session.Find<PathEditorView>(v => ReferenceEquals(v.DataContext, viewModel.UserPathEditor));
+        var line = editor.PreviewInsertLine(1);
+        session.Pump();
+        session.Screenshot("path-insert-line");
+
+        Assert.NotNull(line);
+        Assert.True(line.CornerRadius.TopLeft > 0, "line ends are rounded");
+
+        var rows = session.FindAll<Border>(b => b.Classes.Contains("card") && b.DataContext is PathEntryViewModel)
+            .OrderBy(session.TopOf).Take(2).ToList();
+        var slotTop = session.TopOf(rows[0]) + rows[0].Bounds.Height;
+        var slotBottom = session.TopOf(rows[1]);
+        var lineCenter = session.TopOf(line) + line.Bounds.Height / 2;
+        var slotCenter = (slotTop + slotBottom) / 2;
+        Assert.True(Math.Abs(lineCenter - slotCenter) < 0.51,
+            $"line center {lineCenter} vs slot center {slotCenter} (slot {slotTop}..{slotBottom})");
+    }
+
+    [AvaloniaFact]
     public void UserTab_AddVariable_PutsTheNewRowFirst()
     {
         var (viewModel, _) = Build();
