@@ -84,6 +84,18 @@ the service talk over a hardened named pipe whose message envelope is in
 - Installed per machine from an MSI into `Program Files`. No per-user install,
   no portable build.
 
+## Install
+
+1. Download `ThisIsMyPC-win.msi` from the
+   [Releases page](https://github.com/No-More-Secrets/thisismypc/releases).
+2. Double-click it. Windows asks for permission to install; click Yes.
+3. Open ThisIsMyPC from the Start menu. It asks for permission every time it
+   starts, because everything it does needs administrator rights.
+
+Updates arrive inside the app. Each one is checked against a signed manifest
+before it is applied, and an update that fails the check is refused
+(details in [docs/release/update-signing.md](docs/release/update-signing.md)).
+
 ## Development
 
 This project is built with Claude Code and expects contributors to work the
