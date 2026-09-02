@@ -165,7 +165,9 @@ prep here.
   builds byte-identical. The public comparison tool validates Authenticode,
   removes only a valid terminal certificate table, and compares SHA-256 with a
   local build. Outer-only Authenticode keeps that comparison possible; the
-  offline GPG manifest authenticates the inner MSI and update packages.
+  offline GPG manifest authenticates the inner MSI and update packages. The
+  generated Claude, Codex, and Antigravity guides carry the complete clean-clone
+  reproduction procedure so any agent can execute it consistently.
 - **PUBLISHED 2026-09-01** at `github.com/No-More-Secrets/thisismypc`;
   `AppConstants.UpdateUrl` points there.
 

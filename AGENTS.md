@@ -98,6 +98,45 @@ dotnet test --filter "Category!=Integration&Category!=Diagnostic"   # what CI ru
   touching the live system (excluded from CI).
 - The TIPC001 analyzer (`analyzers/`) auto-applies to every project.
 
+## Reproduce a released signed installer
+
+Use this procedure whenever someone asks whether an official signed installer
+was built from its tagged source. Never run the downloaded exe. Never modify it
+in place, and never use `-AllowUnsignedRelease` for a public-release check.
+
+1. Start from a fresh clone so local or concurrent edits cannot contaminate the
+   result. Read the version from the release filename and check out that exact
+   tag. Do not switch a dirty working tree.
+2. Install the exact machine-level inputs listed in
+   `tools/reproducible-build-environment.json`. Do not edit the manifest to
+   match the machine. The validator intentionally stops on any difference. Use
+   a disposable Windows VM matching the manifest when the host cannot match.
+3. Build the unsigned installer, then compare it with the downloaded signed
+   installer:
+
+```
+$version = '1.0.0'
+$releasedInstaller = 'C:\path\to\ThisIsMyPC-Installer-1.0.0.exe'
+$reproRoot = Join-Path $env:TEMP ("thisismypc-repro-" + [guid]::NewGuid().ToString('N'))
+
+git clone --branch "v$version" --depth 1 https://github.com/no-more-secrets/thisismypc.git $reproRoot
+Set-Location $reproRoot
+.\tools\test-reproducible-build-environment.ps1
+.\Setup.ps1
+.\tools\build-release.ps1 -Version $version
+.\tools\compare-reproducible-installer.ps1 `
+  -ReleasedInstaller $releasedInstaller `
+  -LocalInstaller ".\artifacts\releases\$version\ThisIsMyPC-Installer-$version.exe"
+```
+
+Success ends with `Reproducible installer verified` and one SHA-256 value. The
+comparison first requires valid Authenticode, copies both files to a temporary
+directory, removes only a structurally valid terminal certificate table, and
+compares the canonical bytes. The downloaded file is unchanged. A mismatch is
+not expected signing noise. Confirm the exact tag, version, clean clone, and
+environment; then report both canonical hashes. Full design and manual command
+details live in `docs/release/packaging.md`.
+
 ## UI work: use the sight harness, not Sam's eyes
 
 `tests/ThisIsMyPC.App.UiTests` renders the real UI headlessly (Avalonia.Headless
