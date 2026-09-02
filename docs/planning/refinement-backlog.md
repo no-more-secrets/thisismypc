@@ -149,6 +149,11 @@ prep here.
   (GHSA-xrw6-gwf8-vvr9, Linux D-Bus only but restored regardless); pinned to
   0.21.3 via CentralPackageTransitivePinningEnabled. `dotnet list package
   --vulnerable --include-transitive` is clean; rerun it before each release.
+- **Build inputs pinned 2026-09-02**: `global.json` locks the .NET SDK,
+  `.config/dotnet-tools.json` locks vpk to the Velopack library version, and
+  committed per-project lock files cover the normal and win-x64 NuGet graphs
+  with content hashes. GitHub Actions are commit-SHA pinned. Release and CI
+  restores run in locked mode.
 - **PUBLISHED 2026-09-01** at `github.com/No-More-Secrets/thisismypc`;
   `AppConstants.UpdateUrl` points there.
 

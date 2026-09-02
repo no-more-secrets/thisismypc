@@ -4,7 +4,7 @@
 # elevation). The per-user Setup.exe and the portable zip are deliberately not
 # shipped: the app corresponds to the PC, so one elevated machine-wide install
 # is the only supported shape.
-# Prerequisite: dotnet tool install -g vpk
+# The repository tool manifest pins vpk; this script restores that exact version.
 param(
     [Parameter(Mandatory = $true)]
     [ValidatePattern('^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$')]
@@ -40,9 +40,13 @@ $repoRoot = Split-Path $PSScriptRoot -Parent
 $staging = Join-Path $repoRoot "artifacts\release-staging\$Version"
 $output = Join-Path $repoRoot "artifacts\releases\$Version"
 
-if (-not (Get-Command vpk -ErrorAction SilentlyContinue)) {
-    throw 'vpk not found. Install with: dotnet tool install -g vpk'
+$toolManifest = Join-Path $repoRoot '.config\dotnet-tools.json'
+if (-not (Test-Path $toolManifest -PathType Leaf)) {
+    throw "Pinned tool manifest missing: $toolManifest"
 }
+Write-Host 'Restoring repository-pinned .NET tools...'
+dotnet tool restore
+if ($LASTEXITCODE -ne 0) { throw 'Pinned .NET tool restore failed' }
 
 # Both directories are per-version scratch: vpk refuses to pack over an
 # existing release of the same version, so a rebuild starts clean.
@@ -91,7 +95,7 @@ if ($SignThumbprint) {
 }
 
 Write-Host 'Packing per-machine MSI with Velopack...'
-vpk pack `
+dotnet tool run vpk -- pack `
     --packId ThisIsMyPC `
     --packVersion $Version `
     --packDir $staging `

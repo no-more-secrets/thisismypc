@@ -80,7 +80,7 @@ The app corresponds to the PC, not a user profile (CLAUDE.md). Packaging follows
 ## Building a release
 
 ```
-dotnet tool install -g vpk        # once
+dotnet tool restore               # restores the repository-pinned vpk version
 .\tools\build-release.ps1 -Version 1.0.0
 ```
 
@@ -89,12 +89,24 @@ win-x64) into one staging directory (the service exe must sit next to the app
 exe for Owner Mode enable), packs the MSI, and writes `SHA256SUMS`. Then follow
 `update-signing.md` for signing and upload.
 
+Build inputs are locked: `global.json` selects the exact .NET SDK,
+`.config/dotnet-tools.json` pins vpk, and each project commits its NuGet
+`packages.lock.json`. Each lock file covers the normal graph and the only
+supported runtime, win-x64. Release configuration restores fail on lock-file
+drift. After an intentional dependency change, refresh and review the lock-file
+diff:
+
+```
+dotnet restore ThisIsMyPC.slnx --force-evaluate -p:RestoreLockedMode=false
+```
+
 First end-to-end unsigned build ran 2026-09-01 (`-Version 0.1.0`): MSI,
 full nupkg, RELEASES, releases.win.json, assets.win.json, SHA256SUMS. The
 Velopack library and the vpk tool are kept on the same version (1.2.0 in
-`Directory.Packages.props`; `dotnet tool update -g vpk` when it moves) because
-vpk warns on a mismatch. A rebuild of the same version wipes the per-version
-output directory first; vpk refuses to pack over an existing release.
+`Directory.Packages.props` and `.config/dotnet-tools.json`; update both in one
+change when it moves) because vpk warns on a mismatch. A rebuild of the same
+version wipes the per-version output directory first; vpk refuses to pack over
+an existing release.
 
 ## Open items before first release
 

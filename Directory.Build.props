@@ -4,6 +4,11 @@
     <LangVersion>14</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- This product ships only as win-x64. Keep that runtime graph in every lock file. -->
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+    <!-- Commit the resolved dependency graph and refuse drift in every Release restore. -->
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <RestoreLockedMode Condition="'$(Configuration)' == 'Release'">true</RestoreLockedMode>
     <!-- Recommended, not all: the full set floods every build with CA1062/CA1031/CA2007 noise. -->
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <!-- Publisher identity in exe version resources. Company is the short form used on the MSI publisher line; Copyright names the legal entity. -->

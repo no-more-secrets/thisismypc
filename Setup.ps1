@@ -31,9 +31,14 @@ if ($git) { Ok "git $((git --version) -replace 'git version ', '')" } else { Fai
 
 $dotnet = Get-Command dotnet -ErrorAction SilentlyContinue
 if ($dotnet) {
-    $sdks = & dotnet --list-sdks 2>$null | Where-Object { $_ -match '^10\.' }
-    if ($sdks) { Ok ".NET SDK $(($sdks | Select-Object -Last 1) -replace ' .*', '')" }
-    else { Fail '.NET 10 SDK not installed (dotnet --list-sdks shows no 10.x). https://dotnet.microsoft.com/download/dotnet/10.0' }
+    $sdkConfigPath = Join-Path $repoRoot 'global.json'
+    $requiredSdk = if (Test-Path $sdkConfigPath) {
+        (Get-Content $sdkConfigPath -Raw | ConvertFrom-Json).sdk.version
+    } else { $null }
+    $installedSdks = @(& dotnet --list-sdks 2>$null | ForEach-Object { ($_ -split '\s+')[0] })
+    if (-not $requiredSdk) { Fail 'global.json is missing its pinned SDK version.' }
+    elseif ($installedSdks -contains $requiredSdk) { Ok ".NET SDK $requiredSdk (repository pin)" }
+    else { Fail ".NET SDK $requiredSdk is required by global.json. https://dotnet.microsoft.com/download/dotnet/10.0" }
 } else {
     Fail 'dotnet not found on PATH. Install the .NET 10 SDK.'
 }
@@ -51,8 +56,9 @@ $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer
 if (Test-Path $vswhere) { Ok 'Visual Studio installer present (NativeAOT native link available)' }
 else { Warn 'No Visual Studio installer found; NativeAOT publish needs the VC++ toolchain. Ordinary builds and tests do not.' }
 
-if (Get-Command vpk -ErrorAction SilentlyContinue) { Ok 'vpk (Velopack) present' }
-else { Warn 'vpk not installed; only needed to pack releases: dotnet tool install -g vpk' }
+$toolManifest = Join-Path $repoRoot '.config\dotnet-tools.json'
+if (Test-Path $toolManifest -PathType Leaf) { Ok 'vpk pinned in the repository tool manifest' }
+else { Fail '.config\dotnet-tools.json is missing; release tooling is not pinned.' }
 
 $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
 $elevated = (New-Object Security.Principal.WindowsPrincipal $identity).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
