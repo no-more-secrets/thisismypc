@@ -9,7 +9,7 @@
 
     <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                   VerticalScrollBarVisibility="Auto">
-        <StackPanel Spacing="8" Margin="0,12,16,24">
+        <StackPanel Spacing="8" Margin="0,4,16,24">
 
             <!-- Search + Registry Info toggle -->
             <DockPanel Margin="0,0,16,4">

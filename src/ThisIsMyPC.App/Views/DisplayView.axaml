@@ -41,7 +41,7 @@
     </UserControl.DataTemplates>
 
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-        <StackPanel MaxWidth="760" HorizontalAlignment="Left" Spacing="10" Margin="0,12,16,24">
+        <StackPanel MaxWidth="760" HorizontalAlignment="Left" Spacing="10" Margin="0,4,16,24">
 
             <TextBlock Text="Changes here apply immediately; sliders are their own undo."
                        FontSize="12"

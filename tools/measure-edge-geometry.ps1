@@ -2,7 +2,7 @@
 # Measures edge geometry of MainWindow screenshots (dark theme) so page parity
 # is verified in pixels, never by reasoning about XAML.
 # Usage: .\tools\measure-edge-geometry.ps1 (Get-ChildItem artifacts\ui-shots\walkthrough\*.png).FullName | Format-Table -AutoSize
-# Expected on every page: ContentL 25, ContentR 23, LaneFrom 10, ContentT 37 (+/-3 for glyphs);
+# Expected on every page: ContentL 25, ContentR 23, LaneFrom 10, ContentT 29 (+/-3 for glyphs);
 # ContentR minus LaneTo is the content-to-thumb gap, ~10px by design.
 # Base #1a1a2e window bg, Raised #242438 card bg, Outline #3f3f5a border.
 Add-Type -AssemblyName System.Drawing

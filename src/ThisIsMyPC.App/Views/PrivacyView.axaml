@@ -10,7 +10,7 @@
 
     <!-- Card-rendered module tab (Annoyances pattern). -->
     <DockPanel>
-        <DockPanel DockPanel.Dock="Top" Margin="0,12,16,0">
+        <DockPanel DockPanel.Dock="Top" Margin="0,4,16,0">
             <StackPanel DockPanel.Dock="Right"
                         Orientation="Horizontal"
                         Spacing="8"

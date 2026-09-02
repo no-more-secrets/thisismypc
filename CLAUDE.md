@@ -140,11 +140,12 @@ gives its scroll content a 16px right margin: the scrollbar overlays the
 viewport (it reserves no space), so 16 leaves a ~10px gap between content and
 the 4px thumb and puts bg-to-content at ~24 on both sides. Fixed chrome above
 a scroller (card-page toolbar rows) uses right margin 16 too, so it shares the
-content edge exactly. Inside a page: first element starts 12px below the host
-padding; scrolled content ends 24px above it. Views never set their own left
+content edge exactly. Inside a page: first element starts 4px below the host
+padding (12 read as spare room on every page; Sam, 2026-09-02); scrolled
+content ends 24px above it. Views never set their own left
 margins. `Controls.axaml` zeroes TabControl/TabItem padding globally (stock
 Fluent pads tab content 12px per side, which pushes scrollbars out of the lane
-and indents content); a new tab page needs `Margin="0,12,0,0"` on its
+and indents content); a new tab page needs `Margin="0,4,0,0"` on its
 TabControl and nothing else.
 
 After touching any page layout, verify parity in pixels, not by eye and never
@@ -152,10 +153,9 @@ from XAML: screenshot the pages (walkthrough or `EdgeGeometryShotTests`), then
 run `tools/measure-edge-geometry.ps1` over the PNGs. Every page must read
 ContentL 25 and LaneFrom 10; ContentR 23 except width-capped pages (Home,
 Settings, Display, Gallery cap content width, so their ContentR is large);
-ContentT 37 give or take 4, except tab pages (~55: Fluent centers header text
-in the tab min-height) and Startup & Services (29: its first element is a
-38px-tall search box, so its top margin is 4, not 12). Any page off those
-numbers is the bug, even if it looks close.
+ContentT 29 give or take 4, except tab pages (~47: Fluent centers header text
+in the tab min-height). Any page off those numbers is the bug, even if it
+looks close.
 
 ## Architecture must-rules (violations get caught in review)
 
