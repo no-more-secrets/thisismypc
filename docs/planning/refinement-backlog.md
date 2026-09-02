@@ -403,8 +403,18 @@ command, and the harness test clicks the row with real mouse events instead
 of a raised event. Dropdowns (Button flyouts and ComboBox lists) sat on
 Fluent's neutral gray; both now use the palette (Overlay tier dark, Surface
 light, shared outline, hover and press like buttons, sidebar tint on the
-chosen row, 6px rounding). Still owed from Sam: an elevated pass that
-applies one stock plan restore, which has never run on Windows.
+chosen row, 6px rounding). The Add plan dropdown lost its "Windows plans
+not in the list" header, and pending cards say what the plan is in a few
+words (Sam: no apply/undo instructions in cards). Plan settings never
+loaded (Sam: "stuck"): on Windows 11 26200 `PowerIsSettingRangeDefined`
+answers false for range settings such as "Turn off hard disk after", and
+for those `PowerReadPossibleFriendlyName` returns the setting's own name at
+every index, so the possible-values walk never ended. A readable Min and
+Max now marks a range (enumerated settings answer ERROR_FILE_NOT_FOUND to
+both), the walk is capped at 64 and stops on a repeated label, and
+`PowerPlanSettingsLiveTests` (Diagnostic) loads the active plan's settings
+against a 30 s limit. Still owed from Sam: an elevated pass that applies
+one stock plan restore, which has never run on Windows.
 
 Scheduled tasks, same day (Sam: still an absurd number of tasks, and the
 task rows had no icons): the scheduler reader now returns each task's

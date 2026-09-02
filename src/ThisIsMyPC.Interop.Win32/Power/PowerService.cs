@@ -111,6 +111,9 @@ public sealed class PowerService : IPowerService
         }
     }
 
+    /// <summary>No stock setting lists more than a dozen choices; the cap only stops a runaway walk.</summary>
+    private const uint MaxPossibleValues = 64;
+
     /// <summary>Everything per-setting is best-effort; an unreadable field folds to null/default, never fails the scan.</summary>
     private static PowerSettingInfo ReadSetting(Guid planGuid, Guid subgroupGuid, string subgroupName, Guid settingGuid)
     {
@@ -127,14 +130,22 @@ public sealed class PowerService : IPowerService
         uint? dcIndex = PowerReadDCValueIndex(0, in planGuid, in subgroupGuid, in settingGuid, out var dc) == ERROR_SUCCESS
             ? dc : null;
 
-        var isRange = PowerIsSettingRangeDefined(0, in subgroupGuid, in settingGuid);
+        // PowerIsSettingRangeDefined answers false for plain range settings
+        // ("Turn off hard disk after") on Windows 11 26200, and for those
+        // PowerReadPossibleFriendlyName returns the setting's own name at
+        // every index, so an unbounded walk never ends. A readable Min and
+        // Max is the reliable sign of a range (enumerated settings answer
+        // ERROR_FILE_NOT_FOUND to both).
+        var hasMin = PowerReadValueMin(0, in subgroupGuid, in settingGuid, out var readMin) == ERROR_SUCCESS;
+        var hasMax = PowerReadValueMax(0, in subgroupGuid, in settingGuid, out var readMax) == ERROR_SUCCESS;
+        var isRange = (hasMin && hasMax) || PowerIsSettingRangeDefined(0, in subgroupGuid, in settingGuid);
         uint min = 0, max = 0, increment = 1;
         var possibleValues = new List<PowerPossibleValue>();
         if (isRange)
         {
-            if (PowerReadValueMin(0, in subgroupGuid, in settingGuid, out var readMin) == ERROR_SUCCESS)
+            if (hasMin)
                 min = readMin;
-            if (PowerReadValueMax(0, in subgroupGuid, in settingGuid, out var readMax) == ERROR_SUCCESS)
+            if (hasMax)
                 max = readMax;
             if (PowerReadValueIncrement(0, in subgroupGuid, in settingGuid, out var readIncrement) == ERROR_SUCCESS
                 && readIncrement > 0)
@@ -144,11 +155,13 @@ public sealed class PowerService : IPowerService
         }
         else
         {
-            for (uint possibleIndex = 0; ; possibleIndex++)
+            // Bounded, and a repeated label ends the walk: both guard against
+            // an API that keeps answering.
+            for (uint possibleIndex = 0; possibleIndex < MaxPossibleValues; possibleIndex++)
             {
                 var label = ReadPowerString(
                     (byte[]? b, ref uint s) => PowerReadPossibleFriendlyName(0, in subgroupGuid, in settingGuid, possibleIndex, b, ref s));
-                if (label is null)
+                if (label is null || (possibleValues.Count > 0 && possibleValues[^1].Name == label))
                     break;
                 possibleValues.Add(new PowerPossibleValue(possibleIndex, label));
             }
