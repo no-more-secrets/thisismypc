@@ -28,7 +28,7 @@ public static class TestAppBuilder
         .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false });
 }
 
-public sealed partial class TestApp : Application
+public sealed class TestApp : Application
 {
     private static readonly Uri AppBase = new("avares://ThisIsMyPC.App/");
 
@@ -36,7 +36,10 @@ public sealed partial class TestApp : Application
     {
         RequestedThemeVariant = ThemeVariant.Dark;
 
-        var appXaml = File.ReadAllText(Path.Combine(UiSession.FindRepoRoot(), "src", "ThisIsMyPC.App", "App.axaml"));
+        var appXamlPath = Path.Combine(UiSession.FindRepoRoot(), "src", "ThisIsMyPC.App", "App.axaml");
+        if (!File.Exists(appXamlPath))
+            throw new FileNotFoundException("The UI tests read the production include list from App.axaml and must run from a checkout.", appXamlPath);
+        var appXaml = File.ReadAllText(appXamlPath);
 
         Styles.Add(new FluentTheme());
         foreach (var source in Includes("StyleInclude", appXaml))
@@ -48,9 +51,9 @@ public sealed partial class TestApp : Application
         Resources = resources;
     }
 
-    /// <summary>Every avares Source of the given include element, in file order.</summary>
+    /// <summary>Every avares Source of the given include element, in file order, whatever the attribute order or quote style.</summary>
     public static IReadOnlyList<string> Includes(string element, string appXaml) =>
-        Regex.Matches(appXaml, $@"<{element}\s+Source=""(avares://[^""]+)""")
+        Regex.Matches(appXaml, $@"<{element}\b[^>]*?\bSource\s*=\s*[""'](avares://[^""']+)[""']")
             .Select(m => m.Groups[1].Value)
             .ToList();
 }

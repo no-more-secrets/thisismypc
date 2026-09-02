@@ -18,6 +18,16 @@
                          Classes.pending-enable="{Binding IsPendingEnable}"
                          Classes.pending-disable="{Binding IsPendingDisable}">
         <StackPanel Spacing="2">
+            <StackPanel.IsVisible>
+                <MultiBinding Converter="{x:Static BoolConverters.Or}">
+                    <Binding Path="HasEnforcementBadge" />
+                    <Binding Path="HasReversionRisks" />
+                    <Binding Path="HasSkuNotice" />
+                    <Binding Path="IsOwnerModeDegraded" />
+                    <Binding Path="ShowOwnerModeBadge" />
+                    <Binding Path="IsRegistryDataVisible" />
+                </MultiBinding>
+            </StackPanel.IsVisible>
             <Border Background="{DynamicResource WarningMutedBrush}"
                     CornerRadius="3"
                     Padding="6,1"

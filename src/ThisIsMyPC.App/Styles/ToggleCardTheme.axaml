@@ -5,7 +5,9 @@
     <!-- ToggleCard: the shared card-with-a-switch. Surface fill, outline,
          14px semibold title with an (i) tooltip, content slot, monospace
          detail line, switch docked right. Pending and inactive classes set
-         on the card reach the border here. -->
+         on the card reach the border here. The content slot takes part in
+         the 2px stack spacing, so a consumer hides its panel when every
+         line in it is hidden. -->
     <ControlTheme x:Key="{x:Type controls:ToggleCard}" TargetType="controls:ToggleCard">
         <Setter Property="Padding" Value="14,6" />
         <Setter Property="Margin" Value="0,2" />
@@ -30,17 +32,24 @@
                                       VerticalAlignment="Center"
                                       Margin="16,0,0,0" />
                         <StackPanel Spacing="2">
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <TextBlock Text="{TemplateBinding Title}"
+                            <!-- Star column so a long title trims instead of
+                                 running under the switch; left-aligned so the
+                                 (i) sits right after a short title. -->
+                            <Grid ColumnDefinitions="*,Auto" HorizontalAlignment="Left">
+                                <TextBlock Grid.Column="0"
+                                           Text="{TemplateBinding Title}"
                                            FontWeight="SemiBold"
                                            FontSize="14"
+                                           TextTrimming="CharacterEllipsis"
                                            Foreground="{DynamicResource TextPrimaryBrush}" />
-                                <Border Classes="info-icon"
+                                <Border Grid.Column="1"
+                                        Classes="info-icon"
+                                        Margin="6,0,0,0"
                                         ToolTip.Tip="{TemplateBinding Description}"
                                         IsVisible="{TemplateBinding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                                     <TextBlock Classes="info-icon-glyph" />
                                 </Border>
-                            </StackPanel>
+                            </Grid>
                             <ContentPresenter Name="PART_ContentPresenter"
                                               Content="{TemplateBinding Content}"
                                               ContentTemplate="{TemplateBinding ContentTemplate}"

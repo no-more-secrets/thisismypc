@@ -33,7 +33,7 @@ public sealed partial class StartupViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _showPaths;
 
-    /// <summary>Location headers and each row's key or folder show only when asked.</summary>
+    /// <summary>Location headers and each row's key or folder show only when asked; the view binds it, nothing rebuilds.</summary>
     [ObservableProperty]
     private bool _showLocations;
 
@@ -74,12 +74,6 @@ public sealed partial class StartupViewModel : ObservableObject, IDisposable
         RebuildSearch();
     }
 
-    partial void OnShowLocationsChanged(bool value)
-    {
-        RebuildTabs();
-        RebuildSearch();
-    }
-
     partial void OnHideMicrosoftAutorunsChanged(bool value)
     {
         RebuildTabs();
@@ -92,14 +86,13 @@ public sealed partial class StartupViewModel : ObservableObject, IDisposable
             .Where(a => !HideWindowsEntries || !a.IsWindowsEntry)
             .Where(a => !HideMicrosoftAutoruns || !a.IsMicrosoft);
 
-    /// <summary>Rows grouped by location, locations in first-seen (catalog) order, rows by name; a header per location only when locations are shown.</summary>
-    private List<object> WithLocationHeaders(IEnumerable<AutorunItemViewModel> rows)
+    /// <summary>Rows grouped under their location, locations in first-seen (catalog) order, rows by name. The view shows or hides the headers.</summary>
+    private static List<object> WithLocationHeaders(IEnumerable<AutorunItemViewModel> rows)
     {
         var result = new List<object>();
         foreach (var group in rows.GroupBy(r => r.Entry.LocationGroup, StringComparer.OrdinalIgnoreCase))
         {
-            if (ShowLocations)
-                result.Add(new AutorunLocationHeader(group.Key, group.First().Entry.LocationTimestamp));
+            result.Add(new AutorunLocationHeader(group.Key, group.First().Entry.LocationTimestamp));
             result.AddRange(group.OrderBy(r => r.Name, StringComparer.OrdinalIgnoreCase));
         }
         return result;

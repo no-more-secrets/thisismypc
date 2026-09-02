@@ -23,10 +23,13 @@ public sealed class PowerPlanScanner
     /// Display/idempotency only; deletion must use <see cref="FindMarkedUltimatePerformance"/>.
     /// </summary>
     public static PowerPlan? FindUltimatePerformance(IReadOnlyList<PowerPlan> plans) =>
-        FindMarkedUltimatePerformance(plans)
-        ?? plans.FirstOrDefault(p =>
-            p.PlanGuid == Changes.PowerPlanChangeFactory.UltimatePerformanceSourceGuid
-            || p.Name.Equals("Ultimate Performance", StringComparison.OrdinalIgnoreCase));
+        FindMarkedUltimatePerformance(plans) ?? plans.FirstOrDefault(IsUltimatePerformance);
+
+    /// <summary>Our marked copy, the hidden source itself, or anything named Ultimate Performance.</summary>
+    public static bool IsUltimatePerformance(PowerPlan plan) =>
+        plan.Description == Changes.PowerPlanChangeFactory.UltimatePerformanceMarker
+        || plan.PlanGuid == Changes.PowerPlanChangeFactory.UltimatePerformanceSourceGuid
+        || plan.Name.Equals("Ultimate Performance", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Only a plan ThisIsMyPC created (marker description); the sole legal deletion target.</summary>
     public static PowerPlan? FindMarkedUltimatePerformance(IReadOnlyList<PowerPlan> plans) =>

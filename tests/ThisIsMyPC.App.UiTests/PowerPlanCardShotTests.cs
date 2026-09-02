@@ -3,6 +3,7 @@ using Avalonia.Styling;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using Avalonia.Headless.XUnit;
+using ThisIsMyPC.App.UiTests.Fakes;
 using ThisIsMyPC.App.ViewModels;
 using ThisIsMyPC.App.Views;
 using ThisIsMyPC.Core.Results;
@@ -199,18 +200,3 @@ public class PowerPlanCardShotTests
 }
 
 /// <summary>Enough of IPowerService for the plan list: plans only, no settings.</summary>
-file sealed class UiFakePowerService : IPowerService
-{
-    public OperationResult<IReadOnlyList<PowerPlanInfo>> EnumeratePlans() =>
-        OperationResult<IReadOnlyList<PowerPlanInfo>>.Success([]);
-    public OperationResult<bool> SetActivePlan(Guid planGuid) => OperationResult<bool>.Success(true);
-    public OperationResult<IReadOnlyList<PowerSettingInfo>> EnumeratePlanSettings(Guid planGuid) =>
-        OperationResult<IReadOnlyList<PowerSettingInfo>>.Success([]);
-    public OperationResult<bool> WriteSettingIndex(Guid planGuid, Guid subgroupGuid, Guid settingGuid, bool ac, uint valueIndex) =>
-        OperationResult<bool>.Success(true);
-    public bool SupportsModernStandby() => false;
-    public OperationResult<bool> SetHibernateEnabled(bool enable) => OperationResult<bool>.Success(true);
-    public OperationResult<Guid> DuplicateScheme(Guid sourceSchemeGuid) => OperationResult<Guid>.Success(Guid.NewGuid());
-    public OperationResult<bool> DeleteScheme(Guid schemeGuid) => OperationResult<bool>.Success(true);
-    public OperationResult<bool> WriteSchemeText(Guid schemeGuid, string name, string description) => OperationResult<bool>.Success(true);
-}

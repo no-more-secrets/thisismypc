@@ -5,6 +5,7 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.VisualTree;
 using Avalonia.Styling;
+using ThisIsMyPC.App.UiTests.Fakes;
 using ThisIsMyPC.App.ViewModels;
 using ThisIsMyPC.App.Views;
 using ThisIsMyPC.Core.Display;
@@ -53,22 +54,6 @@ public class DisplayViewShotTests
         public bool HasSystemBattery() => false;
     }
 
-    private sealed class StubPowerService : IPowerService
-    {
-        public OperationResult<IReadOnlyList<PowerPlanInfo>> EnumeratePlans() =>
-            OperationResult<IReadOnlyList<PowerPlanInfo>>.Success([]);
-        public OperationResult<bool> SetActivePlan(Guid planGuid) => OperationResult<bool>.Success(true);
-        public OperationResult<IReadOnlyList<PowerSettingInfo>> EnumeratePlanSettings(Guid planGuid) =>
-            OperationResult<IReadOnlyList<PowerSettingInfo>>.Success([]);
-        public OperationResult<bool> WriteSettingIndex(Guid planGuid, Guid subgroupGuid, Guid settingGuid, bool ac, uint valueIndex) =>
-            OperationResult<bool>.Success(true);
-        public bool SupportsModernStandby() => false;
-        public OperationResult<bool> SetHibernateEnabled(bool enable) => OperationResult<bool>.Success(true);
-        public OperationResult<Guid> DuplicateScheme(Guid sourceSchemeGuid) => OperationResult<Guid>.Success(Guid.NewGuid());
-        public OperationResult<bool> DeleteScheme(Guid schemeGuid) => OperationResult<bool>.Success(true);
-        public OperationResult<bool> WriteSchemeText(Guid schemeGuid, string name, string description) =>
-            OperationResult<bool>.Success(true);
-    }
 
     private static DisplayScanData SampleData() => new(
         [
@@ -115,7 +100,7 @@ public class DisplayViewShotTests
     public void DisplayView_RendersMonitorsInBothThemes()
     {
         var monitors = new StubMonitorService();
-        var viewModel = new DisplayViewModel(SampleData(), monitors, new StubPowerService());
+        var viewModel = new DisplayViewModel(SampleData(), monitors, new UiFakePowerService());
         using var session = UiSession.ForView(new DisplayView(), viewModel, "display-view");
 
         try
@@ -138,7 +123,7 @@ public class DisplayViewShotTests
     public void MovingTheBrightnessSlider_WritesThroughTheService()
     {
         var monitors = new StubMonitorService();
-        var viewModel = new DisplayViewModel(SampleData(), monitors, new StubPowerService());
+        var viewModel = new DisplayViewModel(SampleData(), monitors, new UiFakePowerService());
         using var session = UiSession.ForView(new DisplayView(), viewModel, "display-view");
 
         var external = viewModel.Monitors[1];
@@ -158,7 +143,7 @@ public class DisplayViewShotTests
     public void MovingAVendorFeatureSlider_WritesItsVcpCode()
     {
         var monitors = new StubMonitorService();
-        var viewModel = new DisplayViewModel(SampleData(), monitors, new StubPowerService());
+        var viewModel = new DisplayViewModel(SampleData(), monitors, new UiFakePowerService());
         using var session = UiSession.ForView(new DisplayView(), viewModel, "display-view");
 
         var blueLight = Assert.Single(viewModel.Monitors[1].VendorFeatures);
@@ -181,7 +166,7 @@ public class DisplayViewShotTests
     public void DraggingTheBrightnessSlider_WithRealMouse_WritesThroughTheService()
     {
         var monitors = new StubMonitorService();
-        var viewModel = new DisplayViewModel(SampleData(), monitors, new StubPowerService());
+        var viewModel = new DisplayViewModel(SampleData(), monitors, new UiFakePowerService());
         using var session = UiSession.ForView(new DisplayView(), viewModel, "display-view");
 
         var slider = session.Window.GetVisualDescendants().OfType<Slider>()
@@ -215,7 +200,7 @@ public class DisplayViewShotTests
     public void ScrollingOverTheSlider_StepsTheValue()
     {
         var monitors = new StubMonitorService();
-        var viewModel = new DisplayViewModel(SampleData(), monitors, new StubPowerService());
+        var viewModel = new DisplayViewModel(SampleData(), monitors, new UiFakePowerService());
         using var session = UiSession.ForView(new DisplayView(), viewModel, "display-view");
 
         var slider = session.Window.GetVisualDescendants().OfType<Slider>()
@@ -233,7 +218,7 @@ public class DisplayViewShotTests
     public void TypingAnExactValue_AppliesOnEnter()
     {
         var monitors = new StubMonitorService();
-        var viewModel = new DisplayViewModel(SampleData(), monitors, new StubPowerService());
+        var viewModel = new DisplayViewModel(SampleData(), monitors, new UiFakePowerService());
         using var session = UiSession.ForView(new DisplayView(), viewModel, "display-view");
 
         var box = session.Window.GetVisualDescendants().OfType<TextBox>()
@@ -260,7 +245,7 @@ public class DisplayViewShotTests
     public void LinkedBrightness_MovesEveryDdcMonitorToTheSameFraction()
     {
         var monitors = new StubMonitorService();
-        var viewModel = new DisplayViewModel(SampleData(), monitors, new StubPowerService());
+        var viewModel = new DisplayViewModel(SampleData(), monitors, new UiFakePowerService());
         using var session = UiSession.ForView(new DisplayView(), viewModel, "display-view");
 
         Assert.True(viewModel.CanLinkBrightness); // built-in + VG27AQ both dimmable
@@ -286,7 +271,7 @@ public class DisplayViewShotTests
     public void UnlinkedBrightness_LeavesOtherMonitorsAlone()
     {
         var monitors = new StubMonitorService();
-        var viewModel = new DisplayViewModel(SampleData(), monitors, new StubPowerService());
+        var viewModel = new DisplayViewModel(SampleData(), monitors, new UiFakePowerService());
         using var session = UiSession.ForView(new DisplayView(), viewModel, "display-view");
 
         viewModel.Monitors[1].Brightness = 40;
@@ -297,7 +282,7 @@ public class DisplayViewShotTests
     public void ScreenOffButton_WritesPowerModeD6()
     {
         var monitors = new StubMonitorService();
-        var viewModel = new DisplayViewModel(SampleData(), monitors, new StubPowerService());
+        var viewModel = new DisplayViewModel(SampleData(), monitors, new UiFakePowerService());
         using var session = UiSession.ForView(new DisplayView(), viewModel, "display-view");
 
         var external = viewModel.Monitors[1];

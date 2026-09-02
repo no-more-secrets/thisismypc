@@ -297,6 +297,23 @@
         <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}" />
     </Style>
 
+    <!-- Dense list row (Startup & Services): one line, a hairline under it,
+         no card chrome. Autoruns' colors tint the row: yellow for a missing
+         file, red for no verified signer. Declared before the pending tints
+         so a queued flip wins the background. -->
+    <Style Selector="Border.row">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderBrush" Value="{DynamicResource OutlineBrush}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+        <Setter Property="Padding" Value="8,2" />
+    </Style>
+    <Style Selector="Border.row.missing">
+        <Setter Property="Background" Value="{DynamicResource WarningMutedBrush}" />
+    </Style>
+    <Style Selector="Border.row.unverified">
+        <Setter Property="Background" Value="{DynamicResource DangerMutedBrush}" />
+    </Style>
+
     <!-- Pending state tinting: enable/create (green-ish) -->
     <Style Selector="Border.pending-enable">
         <Setter Property="Background" Value="{DynamicResource SuccessMutedBrush}" />
@@ -310,6 +327,19 @@
     <!-- Pending state tinting: modify (neutral warning) -->
     <Style Selector="Border.pending-modify">
         <Setter Property="Background" Value="{DynamicResource WarningMutedBrush}" />
+    </Style>
+
+    <!-- A queued flip on a row also gets a 3px bar at the left, so it reads
+         on a row that is already red (unverified) or yellow (missing). -->
+    <Style Selector="Border.row.pending-enable">
+        <Setter Property="BorderBrush" Value="{DynamicResource SuccessBrush}" />
+        <Setter Property="BorderThickness" Value="3,0,0,1" />
+        <Setter Property="Padding" Value="5,2,8,2" />
+    </Style>
+    <Style Selector="Border.row.pending-disable">
+        <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}" />
+        <Setter Property="BorderThickness" Value="3,0,0,1" />
+        <Setter Property="Padding" Value="5,2,8,2" />
     </Style>
 
     <!-- Inactive handler: dimmed appearance -->

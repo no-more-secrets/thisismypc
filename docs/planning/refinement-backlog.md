@@ -420,7 +420,15 @@ template in the walkthrough). Startup & Services rows are one line each
 with a check box for enabled, a hairline between rows, and no card chrome;
 file paths and locations (headers and per-row keys) show only when the
 "Show paths" and "Show locations" boxes are ticked; a queued flip tints the
-row green or red over the Autoruns yellow and red. Later that
+row green or red and draws a 3px bar at the left, so it reads on a row
+that is already red or yellow. A fresh-context review over the chapter
+(ten findings, all applied): the plan list re-sorts from row state after
+an applied switch or a restored plan; the ToggleCard title trims and its
+content slot hides when every line is hidden; the dense row and pending
+tints live in Controls.axaml only; the test app's include regex takes any
+attribute order and fails loudly off a checkout; Show locations binds the
+headers' visibility instead of rebuilding every tab; the power fake is one
+shared class; the plan sort ranks by key once per plan. Later that
 day (Sam: adding plans did nothing): a row of the Add plan dropdown closed
 the menu before its command ran, and closing detached the menu content and
 its bindings, so nothing was staged; the close is now posted after the

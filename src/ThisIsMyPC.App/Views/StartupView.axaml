@@ -35,27 +35,6 @@
             <Setter Property="Padding" Value="12,8" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
-        <!-- Dense rows: one line each, a hairline between rows, no card
-             chrome. Autoruns' colors (yellow missing file, red unverified
-             signer) tint the row; a queued flip tints louder and wins. -->
-        <Style Selector="Border.row">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderBrush" Value="{DynamicResource OutlineBrush}" />
-            <Setter Property="BorderThickness" Value="0,0,0,1" />
-            <Setter Property="Padding" Value="8,2" />
-        </Style>
-        <Style Selector="Border.row.missing">
-            <Setter Property="Background" Value="{DynamicResource WarningMutedBrush}" />
-        </Style>
-        <Style Selector="Border.row.unverified">
-            <Setter Property="Background" Value="{DynamicResource DangerMutedBrush}" />
-        </Style>
-        <Style Selector="Border.row.pending-enable">
-            <Setter Property="Background" Value="{DynamicResource SuccessMutedBrush}" />
-        </Style>
-        <Style Selector="Border.row.pending-disable">
-            <Setter Property="Background" Value="{DynamicResource DangerMutedBrush}" />
-        </Style>
     </UserControl.Styles>
 
     <UserControl.DataTemplates>
@@ -67,9 +46,10 @@
                        Foreground="{DynamicResource TextPrimaryBrush}" />
         </DataTemplate>
 
-        <!-- Location header: the key or folder and when it was last written. -->
+        <!-- Location header: the key or folder and when it was last written; shown only with Show locations. -->
         <DataTemplate x:DataType="vm:AutorunLocationHeader">
             <Border Background="{DynamicResource SurfaceBrush}"
+                    IsVisible="{Binding $parent[UserControl].((vm:StartupViewModel)DataContext).ShowLocations}"
                     BorderBrush="{DynamicResource OutlineBrush}" BorderThickness="0,0,0,1"
                     CornerRadius="4,4,0,0" Padding="8,4" Margin="0,8,0,0">
                 <DockPanel>

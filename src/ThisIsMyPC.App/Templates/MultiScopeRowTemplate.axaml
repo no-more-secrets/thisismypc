@@ -16,7 +16,7 @@
                              Classes.inactive="{Binding IsInactive, FallbackValue=False}"
                              Classes.pending-enable="{Binding IsPendingEnable}"
                              Classes.pending-disable="{Binding IsPendingDisable}">
-            <StackPanel Spacing="4" Margin="0,2,0,0">
+            <StackPanel Spacing="4">
                 <ItemsControl ItemsSource="{Binding ScopeBadges}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>

@@ -258,15 +258,33 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
                 && plan.Description != PowerPlanChangeFactory.UltimatePerformanceMarker
                 && StockPowerPlan.FindByGuid(plan.PlanGuid) is null)
                 continue;
-            // Into its place in the list order, not the bottom
-            var at = Plans.TakeWhile(p => Modules.Power.Services.PowerPlanOrder.Compare(p.Plan, plan) <= 0).Count();
-            Plans.Insert(at, new PowerPlanItemViewModel(plan, _pendingActionsService));
+            Plans.Add(new PowerPlanItemViewModel(plan, _pendingActionsService));
         }
+        ResortPlans();
         OnPropertyChanged(nameof(HasNoPlans));
         OnPropertyChanged(nameof(NewPlanNameError));
     }
 
     public ObservableCollection<PowerPlanItemViewModel> Plans { get; }
+
+    /// <summary>
+    /// Puts the rows back in list order from their live state (the active
+    /// flag moves after an applied switch; a restored plan lands at the end).
+    /// Moves, never rebuilds, so the cards keep their bindings.
+    /// </summary>
+    private void ResortPlans()
+    {
+        var ordered = Plans
+            .OrderBy(p => Modules.Power.Services.PowerPlanOrder.Rank(p.Plan, p.IsActive))
+            .ThenBy(p => p.Name, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
+        for (var i = 0; i < ordered.Count; i++)
+        {
+            var current = Plans.IndexOf(ordered[i]);
+            if (current != i)
+                Plans.Move(current, i);
+        }
+    }
 
     public string? ScanError { get; }
     public bool HasScanError => !string.IsNullOrEmpty(ScanError);
@@ -297,7 +315,6 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
     public bool HasSettingsError => !string.IsNullOrEmpty(SettingsError);
 
     public ObservableCollection<PowerSettingGroupViewModel> SettingsGroups { get; } = [];
-    public bool HasSettingsGroups => SettingsGroups.Count > 0;
 
     // ---- Modern Standby ----
 
@@ -477,7 +494,6 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
         {
             IsLoadingSettings = false;
             OnPropertyChanged(nameof(HasSettingsError));
-            OnPropertyChanged(nameof(HasSettingsGroups));
         }
     }
 
@@ -610,6 +626,7 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
                 _liveActivePlan = pendingTarget.Plan;
                 foreach (var row in Plans)
                     row.IsActive = row.Plan.PlanGuid == pendingTarget.Plan.PlanGuid;
+                ResortPlans();
             }
 
             SetPendingTarget(null);

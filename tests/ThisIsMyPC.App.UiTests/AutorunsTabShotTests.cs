@@ -137,6 +137,14 @@ public class AutorunsTabShotTests
 
         session.Click(acme);
         Assert.Empty(queue.PendingGroups);
+
+        // A queued flip must read on a row that is already red: the bar at the left.
+        var twinkle = Check(session, "Twinkle Tray");
+        session.Click(twinkle);
+        session.Screenshot("logon-unverified-queued");
+        Assert.Single(queue.PendingGroups);
+        session.Click(twinkle);
+        Assert.Empty(queue.PendingGroups);
     }
 
     [AvaloniaFact]

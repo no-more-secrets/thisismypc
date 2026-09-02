@@ -11,27 +11,21 @@ namespace ThisIsMyPC.Modules.Power.Services;
 public static class PowerPlanOrder
 {
     public static IReadOnlyList<PowerPlan> Sort(IEnumerable<PowerPlan> plans) =>
-        plans.OrderBy(p => p, Comparer).ToList();
+        plans.OrderBy(Rank).ThenBy(p => p.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
 
-    public static IComparer<PowerPlan> Comparer { get; } = Comparer<PowerPlan>.Create(Compare);
+    public static int Rank(PowerPlan plan) => Rank(plan, plan.IsActive);
 
-    public static int Compare(PowerPlan left, PowerPlan right)
+    /// <summary>Rank with the active flag supplied, for rows whose live state has moved on from the scan.</summary>
+    public static int Rank(PowerPlan plan, bool isActive)
     {
-        var byRank = Rank(left).CompareTo(Rank(right));
-        return byRank != 0
-            ? byRank
-            : string.Compare(left.Name, right.Name, StringComparison.CurrentCultureIgnoreCase);
-    }
-
-    private static int Rank(PowerPlan plan)
-    {
-        if (plan.IsActive)
+        if (isActive)
             return 0;
-        var stock = StockPowerPlan.All.ToList().FindIndex(s => s.PlanGuid == plan.PlanGuid);
-        if (stock >= 0)
-            return 1 + stock;
-        if (PowerPlanScanner.FindUltimatePerformance([plan]) is not null)
-            return 1 + StockPowerPlan.All.Count;
-        return 2 + StockPowerPlan.All.Count;
+        var stock = StockPowerPlan.All;
+        for (var i = 0; i < stock.Count; i++)
+        {
+            if (stock[i].PlanGuid == plan.PlanGuid)
+                return 1 + i;
+        }
+        return PowerPlanScanner.IsUltimatePerformance(plan) ? 1 + stock.Count : 2 + stock.Count;
     }
 }
