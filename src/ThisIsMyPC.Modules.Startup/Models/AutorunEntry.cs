@@ -89,6 +89,12 @@ public sealed record AutorunEntry
 
     public bool IsReRegistered => LiveSnapshot is not null;
 
+    /// <summary>The header every scheduled task sits under; a task's own path is not a location.</summary>
+    public const string TaskSchedulerLocation = "Task Scheduler";
+
+    /// <summary>What the page groups rows under: the key or folder, or "Task Scheduler" for every task.</summary>
+    public string LocationGroup => Kind == AutorunItemKind.ScheduledTask ? TaskSchedulerLocation : Location;
+
     public static string CategoryName(AutorunCategory category) => category switch
     {
         AutorunCategory.Logon => "Logon",

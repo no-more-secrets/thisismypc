@@ -64,15 +64,18 @@ public sealed class AutorunsScanner
 
         foreach (var task in scheduledTasks)
         {
+            var image = ResolveTaskImage(task);
+            var metadata = GetMetadata(image);
             entries.Add(new AutorunEntry
             {
                 Category = AutorunCategory.ScheduledTasks,
                 Kind = AutorunItemKind.ScheduledTask,
                 Name = task.Name,
                 Location = task.Path,
-                Data = task.Path,
-                Description = task.Description,
-                Publisher = task.Author,
+                Data = TaskData(task),
+                ImagePath = image,
+                Description = FirstNonEmpty(task.Description, metadata?.Description),
+                Publisher = image is null ? task.Author : metadata?.Publisher,
                 IsEnabled = task.IsEnabled,
             });
         }
@@ -492,6 +495,54 @@ public sealed class AutorunsScanner
                 return ExpandPath(dll);
         }
         return exe;
+    }
+
+    // ---- Scheduled tasks ----
+
+    /// <summary>The command line as the task runs it, the COM handler's class id, or the task path when it has neither.</summary>
+    private static string TaskData(ScheduledTaskEntry task)
+    {
+        if (!string.IsNullOrWhiteSpace(task.Command))
+            return string.IsNullOrWhiteSpace(task.Arguments) ? task.Command : $"{task.Command} {task.Arguments}";
+        return task.ComHandlerClsid ?? task.Path;
+    }
+
+    /// <summary>
+    /// The program an Exec action runs: quotes and %vars% resolved, a bare
+    /// name looked up the way the scheduler does (System32, Windows, PATH).
+    /// A ComHandler action resolves through its CLSID like a shell extension.
+    /// </summary>
+    private string? ResolveTaskImage(ScheduledTaskEntry task)
+    {
+        if (!string.IsNullOrWhiteSpace(task.Command))
+        {
+            var exe = StartupScanner.ExtractExecutablePath(task.Command) ?? ExpandPath(task.Command);
+            return Path.IsPathRooted(exe) ? exe : FindProgram(exe);
+        }
+        return task.ComHandlerClsid is { } clsid ? ResolveClsidImage(clsid, is32Bit: false) : null;
+    }
+
+    private string FindProgram(string name)
+    {
+        var windows = Path.GetDirectoryName(_system32) ?? _system32;
+        IEnumerable<string> folders = [_system32, windows, .. (Environment.GetEnvironmentVariable("PATH") ?? string.Empty).Split(';', StringSplitOptions.RemoveEmptyEntries)];
+        var candidates = Path.HasExtension(name) ? [name] : new[] { name + ".exe", name };
+        foreach (var folder in folders)
+        {
+            foreach (var candidate in candidates)
+            {
+                var full = Path.Combine(folder.Trim(), candidate);
+                try
+                {
+                    if (File.Exists(full))
+                        return full;
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
+                {
+                }
+            }
+        }
+        return Path.Combine(_system32, candidates[0]);
     }
 
     // ---- Helpers ----

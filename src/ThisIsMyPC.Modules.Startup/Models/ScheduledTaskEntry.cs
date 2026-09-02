@@ -24,6 +24,13 @@ public sealed record ScheduledTaskEntry
     public required bool IsEnabled { get; init; }
     public required TaskClassification Classification { get; init; }
 
+    /// <summary>The first Exec action's program, as written in the task (may be quoted, relative, or use %vars%).</summary>
+    public string? Command { get; init; }
+    public string? Arguments { get; init; }
+
+    /// <summary>The first ComHandler action's class id when the task runs COM code instead of a program.</summary>
+    public string? ComHandlerClsid { get; init; }
+
     /// <summary>True when the user overrode the auto-classification.</summary>
     public bool IsClassificationOverridden { get; init; }
 

@@ -82,7 +82,7 @@ public sealed partial class StartupViewModel : ObservableObject, IDisposable
     private static List<object> WithLocationHeaders(IEnumerable<AutorunItemViewModel> rows)
     {
         var result = new List<object>();
-        foreach (var group in rows.GroupBy(r => r.Entry.Location, StringComparer.OrdinalIgnoreCase))
+        foreach (var group in rows.GroupBy(r => r.Entry.LocationGroup, StringComparer.OrdinalIgnoreCase))
         {
             result.Add(new AutorunLocationHeader(group.Key, group.First().Entry.LocationTimestamp));
             result.AddRange(group.OrderBy(r => r.Name, StringComparer.OrdinalIgnoreCase));

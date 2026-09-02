@@ -376,6 +376,26 @@ greyed switch; non-string values are not items;
 `tools/check-binary-hardening.ps1` is now tracked, binds `-Path`
 positionally, and skips non-PE files in folder mode.
 
+Scheduled tasks, same day (Sam: still an absurd number of tasks, and the
+task rows had no icons): the scheduler reader now returns each task's
+Exec action (command and arguments) or ComHandler class id, and the
+Autoruns scanner resolves that to a file the way it does for Run values and
+shell extensions (quotes, `%vars%`, bare names through System32 and PATH,
+CLSID through InprocServer32). With a file, a task gets an icon, a signer,
+a date, and the Windows filter; the live tab on this machine went from
+every task to 45 of 223 with the default filter. Every task sits under one
+"Task Scheduler" header instead of a header per task path. Windows' own
+tasks whose author and description are string resources
+(`$(@%SystemRoot%\System32\x.dll,-103)`) read through SHLoadIndirectString.
+A task under `\Microsoft\Windows\` whose handler has no server path
+(WaaSMedic, StartComponentCleanup) counts as a Windows entry. A task's
+publisher is its program's company; the task author stands in only when
+there is no program, so a user-created task no longer shows the user name
+as its publisher. Long descriptions trim instead of running into the
+signer column. Two Integration tests cover the real shell icon and the
+catalog signer; a Diagnostic UI test boots the real main window, waits for
+icons and signers, and dumps the visible tasks beside its screenshots.
+
 Open: a real elevated pass on this machine (disable a Run entry and a
 context-menu handler, apply, confirm in Autoruns, undo). Set entries
 (`autorun:` setting ids) are not resolved by `StartupSetEntryInspector`; the

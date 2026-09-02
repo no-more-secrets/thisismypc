@@ -114,7 +114,7 @@ public class ScheduledTaskScannerTests : IDisposable
     }
 
     [Fact]
-    public void ParseDefinitionXml_ExtractsAuthorDescriptionTriggers()
+    public void ParseDefinitionXml_ExtractsAuthorDescriptionTriggersAndTheExecAction()
     {
         const string xml = """
             <Task xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
@@ -126,14 +126,64 @@ public class ScheduledTaskScannerTests : IDisposable
                 <LogonTrigger><Enabled>true</Enabled></LogonTrigger>
                 <CalendarTrigger />
               </Triggers>
+              <Actions Context="Author">
+                <Exec>
+                  <Command>"C:\Program Files\Contoso\update.exe"</Command>
+                  <Arguments>/silent</Arguments>
+                </Exec>
+              </Actions>
             </Task>
             """;
 
-        var (author, description, triggers) =
-            Interop.Com.Tasks.ScheduledTaskService.ParseDefinitionXml(xml);
+        var definition = Interop.Com.Tasks.ScheduledTaskService.ParseDefinitionXml(xml);
 
-        Assert.Equal("Contoso Ltd", author);
-        Assert.Equal("Does contoso things", description);
-        Assert.Equal(["LogonTrigger", "CalendarTrigger"], triggers);
+        Assert.Equal("Contoso Ltd", definition.Author);
+        Assert.Equal("Does contoso things", definition.Description);
+        Assert.Equal(["LogonTrigger", "CalendarTrigger"], definition.TriggerTypes);
+        Assert.Equal(@"""C:\Program Files\Contoso\update.exe""", definition.Command);
+        Assert.Equal("/silent", definition.Arguments);
+        Assert.Null(definition.ComHandlerClsid);
+    }
+
+    [Fact]
+    public void ParseDefinitionXml_ComHandlerAction_GivesTheClassId()
+    {
+        const string xml = """
+            <Task xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+              <Actions>
+                <ComHandler>
+                  <ClassId>{2DEA658F-54C1-4227-AF9B-260AB5FC3543}</ClassId>
+                </ComHandler>
+              </Actions>
+            </Task>
+            """;
+
+        var definition = Interop.Com.Tasks.ScheduledTaskService.ParseDefinitionXml(xml);
+
+        Assert.Null(definition.Command);
+        Assert.Equal("{2DEA658F-54C1-4227-AF9B-260AB5FC3543}", definition.ComHandlerClsid);
+    }
+
+    [Fact]
+    public void ResolveIndirect_PlainText_IsReturnedAsIs()
+    {
+        Assert.Equal("Contoso Ltd", Interop.Com.Tasks.ScheduledTaskService.ResolveIndirect("Contoso Ltd"));
+        Assert.Null(Interop.Com.Tasks.ScheduledTaskService.ResolveIndirect(null));
+    }
+
+    [Fact]
+    public void ResolveIndirect_UnresolvableResource_KeepsTheReference()
+    {
+        const string reference = @"$(@%SystemRoot%\System32\no-such-file-here.dll,-103)";
+        Assert.Equal(reference, Interop.Com.Tasks.ScheduledTaskService.ResolveIndirect(reference));
+    }
+
+    [Fact]
+    public void ParseDefinitionXml_BrokenXml_IsEmpty()
+    {
+        var definition = Interop.Com.Tasks.ScheduledTaskService.ParseDefinitionXml("<Task><Actions>");
+
+        Assert.Null(definition.Command);
+        Assert.Empty(definition.TriggerTypes);
     }
 }

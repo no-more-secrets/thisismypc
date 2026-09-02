@@ -69,7 +69,11 @@ public class AutorunsTabShotTests
             Entry(AutorunCategory.Drivers, AutorunItemKind.Service, "acmefilt", AutorunLocations.ServicesKey,
                 @"System32\drivers\acmefilt.sys", @"C:\Windows\System32\drivers\acmefilt.sys", "Acme Filter Driver", "Acme Inc.", note: "Boot start"),
             Entry(AutorunCategory.ScheduledTasks, AutorunItemKind.ScheduledTask, "AcmeUpdateTask", @"\Acme\AcmeUpdateTask",
-                @"\Acme\AcmeUpdateTask", description: "Checks for Acme updates", publisher: "Acme Inc."),
+                @"""C:\Program Files\Acme\updater.exe"" /check", @"C:\Program Files\Acme\updater.exe", "Checks for Acme updates", "Acme Inc."),
+            Entry(AutorunCategory.ScheduledTasks, AutorunItemKind.ScheduledTask, "ScheduledDefrag", @"\Microsoft\Windows\Defrag\ScheduledDefrag",
+                @"%windir%\system32\defrag.exe -c", @"C:\Windows\system32\defrag.exe", "This task optimizes local storage drives.", "Microsoft Corporation"),
+            Entry(AutorunCategory.ScheduledTasks, AutorunItemKind.ScheduledTask, "PerformRemediation", @"\Microsoft\Windows\WaaSMedic\PerformRemediation",
+                "{72566E27-1ABB-4EB3-B4F0-EB431CB1CB32}", publisher: "Microsoft Corporation"),
         ],
     };
 
@@ -137,6 +141,7 @@ public class AutorunsTabShotTests
         await WaitForSignersAsync(session, viewModel);
 
         Assert.True(session.IsTextVisible("Services (0 of 1)"));
+        Assert.True(session.IsTextVisible("Scheduled Tasks (1 of 3)"));
         session.ClickText("Hide Windows entries");
         Assert.False(viewModel.HideWindowsEntries);
         Assert.True(session.IsTextVisible("Logon (6)"));
@@ -155,6 +160,16 @@ public class AutorunsTabShotTests
 
         ClickTab(session, "Font Drivers");
         Assert.True(session.IsTextVisible("Nothing in this category"));
+
+        // Every task sits under one header; a task's own path is not a location.
+        ClickTab(session, "Scheduled Tasks");
+        session.Screenshot("scheduled-tasks-windows-shown");
+        Assert.True(session.IsTextVisible(AutorunEntry.TaskSchedulerLocation));
+        Assert.True(session.IsTextVisible("ScheduledDefrag"));
+        Assert.True(session.IsTextVisible(@"C:\Windows\system32\defrag.exe"));
+        Assert.True(session.IsTextVisible("PerformRemediation"));
+        var taskTab = viewModel.Tabs.First(t => t.Name == "Scheduled Tasks");
+        Assert.Single(taskTab.Items.OfType<AutorunLocationHeader>());
 
         ClickTab(session, "Logon");
         session.ClickText("Hide Microsoft entries");

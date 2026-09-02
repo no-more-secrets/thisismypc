@@ -11,7 +11,7 @@ Design rationale for `ThisIsMyPC.Modules.Startup`. This is AI-written, condensed
 | Logon | `HKCU` and `HKLM` `...\CurrentVersion\Run`, HKLM `WOW6432Node` Run, `Active Setup\Installed Components` (subkeys with a `StubPath`), `SafeBoot\AlternateShell`, the user and common Startup folders | values, keys, files | move the value or key under an `AutorunsDisabled` subkey; move the file into an `AutorunsDisabled` subfolder |
 | Explorer | `Classes\Directory\Background\ShellEx\ContextMenuHandlers`, `Explorer\ShellIconOverlayIdentifiers` | keys | move under `AutorunsDisabled` |
 | Internet Explorer | `Explorer\Browser Helper Objects` (64-bit and `WOW6432Node`) | keys | move under `AutorunsDisabled` |
-| Scheduled Tasks | the whole task library | tasks | scheduler Enabled flag |
+| Scheduled Tasks | the whole task library, one "Task Scheduler" header; the image is the Exec action's program (bare names looked up through System32 and PATH) or the ComHandler CLSID's InprocServer32; resource-string authors and descriptions resolve through SHLoadIndirectString | tasks | scheduler Enabled flag |
 | Services | `HKLM\SYSTEM\CurrentControlSet\Services` keys with a Win32 `Type` (0x10, 0x20) and `Start` 0, 1, or 2 | service keys | `Start` = 4, the old `Start` kept in an `AutorunsDisabled` DWORD |
 | Drivers | same key, `Type` 1, 2, or 8, `Start` 0, 1, or 2 | service keys | same as Services |
 | Font Drivers | `Windows NT\CurrentVersion\Font Drivers` | values | move under `AutorunsDisabled` |

@@ -166,11 +166,27 @@ public sealed partial class AutorunItemViewModel : ObservableObject, IDisposable
     };
 
     public bool IsMicrosoft => Entry.Publisher?.Contains("Microsoft", StringComparison.OrdinalIgnoreCase) == true
-        || Signature?.Signer?.Contains("Microsoft", StringComparison.OrdinalIgnoreCase) == true;
+        || Signature?.Signer?.Contains("Microsoft", StringComparison.OrdinalIgnoreCase) == true
+        || IsFilelessWindowsTask;
 
-    /// <summary>Part of Windows itself: signed by "Microsoft Windows", or Microsoft's and living under the Windows folder.</summary>
+    /// <summary>
+    /// Part of Windows itself: signed by "Microsoft Windows", or Microsoft's
+    /// and living under the Windows folder, or a task in Windows' own task
+    /// tree that runs a built-in COM handler with no file to sign.
+    /// </summary>
     public bool IsWindowsEntry => Signature is { State: SignatureState.Verified, Signer: { } signer } && signer.Contains("Microsoft Windows", StringComparison.OrdinalIgnoreCase)
-        || (Signature is null && IsMicrosoft && Entry.ImagePath is { } image && image.StartsWith(WindowsDirectory, StringComparison.OrdinalIgnoreCase));
+        || (Signature is null && IsMicrosoft && Entry.ImagePath is { } image && image.StartsWith(WindowsDirectory, StringComparison.OrdinalIgnoreCase))
+        || IsFilelessWindowsTask;
+
+    /// <summary>
+    /// Some Windows tasks (WaaSMedic, StartComponentCleanup, SharedPC) run a
+    /// COM handler registered without a server path, so there is no file to
+    /// check. Nothing can hide behind such a task: a handler with real code
+    /// resolves to a DLL and gets signature-checked like everything else.
+    /// </summary>
+    private bool IsFilelessWindowsTask => Entry.Kind == AutorunItemKind.ScheduledTask
+        && Entry.ImagePath is null
+        && Entry.Location.StartsWith(@"\Microsoft\Windows\", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Text the filter box matches against.</summary>
     public bool Matches(string filter)

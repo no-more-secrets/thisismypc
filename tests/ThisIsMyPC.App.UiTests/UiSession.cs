@@ -27,6 +27,9 @@ public sealed class UiSession : IDisposable
 
     public Window Window { get; }
 
+    /// <summary>Where this session's screenshots land; tests may drop text dumps beside them.</summary>
+    public string ShotDirectory => _shotDirectory;
+
     public ServiceProvider? Services { get; private init; }
 
     private UiSession(Window window, string suiteName)

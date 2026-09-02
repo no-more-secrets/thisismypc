@@ -5,7 +5,9 @@ namespace ThisIsMyPC.Core.Services;
 /// <summary>
 /// One scheduled task. Author/Description come from the task definition XML;
 /// TriggerTypes are the trigger element names (LogonTrigger, BootTrigger,
-/// CalendarTrigger, …). LastRunTime is null when the task has never run.
+/// CalendarTrigger, ...). LastRunTime is null when the task has never run.
+/// Command/Arguments are the first Exec action; ComHandlerClsid the first
+/// ComHandler action's class id; both null when the task has neither.
 /// </summary>
 public sealed record ScheduledTaskInfo(
     string Name,
@@ -15,7 +17,10 @@ public sealed record ScheduledTaskInfo(
     IReadOnlyList<string> TriggerTypes,
     DateTime? LastRunTime,
     int LastTaskResult,
-    bool IsEnabled);
+    bool IsEnabled,
+    string? Command = null,
+    string? Arguments = null,
+    string? ComHandlerClsid = null);
 
 /// <summary>
 /// Task Scheduler access via the ITaskService COM API. The app runs elevated;

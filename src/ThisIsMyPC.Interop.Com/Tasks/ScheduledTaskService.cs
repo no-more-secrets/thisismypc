@@ -289,16 +289,13 @@ public sealed partial class ScheduledTaskService : IScheduledTaskService
             var getLastResultFn = (delegate* unmanaged[Stdcall]<nint, int*, int>)vtable[VtblTaskGetLastTaskResult];
             getLastResultFn(pTask, &lastResult);
 
-            string? author = null;
-            string? description = null;
-            IReadOnlyList<string> triggerTypes = [];
             var xml = ReadBstr(pTask, vtable[VtblTaskGetXml]);
-            if (xml is not null)
-                (author, description, triggerTypes) = ParseDefinitionXml(xml);
+            var definition = xml is null ? TaskDefinition.Empty : ParseDefinitionXml(xml);
 
             return new ScheduledTaskInfo(
-                name, path, author, description, triggerTypes,
-                lastRun, lastResult, enabledRaw != 0);
+                name, path, ResolveIndirect(definition.Author), ResolveIndirect(definition.Description), definition.TriggerTypes,
+                lastRun, lastResult, enabledRaw != 0,
+                definition.Command, definition.Arguments, definition.ComHandlerClsid);
         }
         catch
         {
@@ -306,25 +303,69 @@ public sealed partial class ScheduledTaskService : IScheduledTaskService
         }
     }
 
-    public static (string? Author, string? Description, IReadOnlyList<string> TriggerTypes) ParseDefinitionXml(string xml)
+    /// <summary>What the definition XML says about a task; every field null or empty when the XML does not say.</summary>
+    public sealed record TaskDefinition(
+        string? Author,
+        string? Description,
+        IReadOnlyList<string> TriggerTypes,
+        string? Command,
+        string? Arguments,
+        string? ComHandlerClsid)
+    {
+        public static TaskDefinition Empty { get; } = new(null, null, [], null, null, null);
+    }
+
+    public static TaskDefinition ParseDefinitionXml(string xml)
     {
         try
         {
             var doc = XDocument.Parse(xml);
             var registration = doc.Descendants().FirstOrDefault(e => e.Name.LocalName == "RegistrationInfo");
-            var author = registration?.Elements().FirstOrDefault(e => e.Name.LocalName == "Author")?.Value;
-            var description = registration?.Elements().FirstOrDefault(e => e.Name.LocalName == "Description")?.Value;
             var triggers = doc.Descendants().FirstOrDefault(e => e.Name.LocalName == "Triggers")
                 ?.Elements().Select(e => e.Name.LocalName).Distinct().ToList();
-            return (
-                string.IsNullOrWhiteSpace(author) ? null : author,
-                string.IsNullOrWhiteSpace(description) ? null : description,
-                triggers ?? []);
+
+            var actions = doc.Descendants().FirstOrDefault(e => e.Name.LocalName == "Actions");
+            var exec = actions?.Elements().FirstOrDefault(e => e.Name.LocalName == "Exec");
+            var comHandler = actions?.Elements().FirstOrDefault(e => e.Name.LocalName == "ComHandler");
+            return new TaskDefinition(
+                Child(registration, "Author"),
+                Child(registration, "Description"),
+                triggers ?? [],
+                Child(exec, "Command"),
+                Child(exec, "Arguments"),
+                Child(comHandler, "ClassId"));
         }
-        catch
+        catch (System.Xml.XmlException)
         {
-            return (null, null, []);
+            return TaskDefinition.Empty;
         }
+    }
+
+    /// <summary>
+    /// Windows' own tasks carry "$(@%SystemRoot%\System32\x.dll,-103)" for
+    /// author and description: a string resource, resolved the way the
+    /// Task Scheduler UI does with SHLoadIndirectString. Anything else is
+    /// returned as is.
+    /// </summary>
+    public static string? ResolveIndirect(string? text)
+    {
+        if (text is null || !text.StartsWith("$(@", StringComparison.Ordinal))
+            return text;
+        var reference = text.EndsWith(')') ? text[2..^1] : text[2..];
+        var expanded = Environment.ExpandEnvironmentVariables(reference);
+        var buffer = new char[1024];
+        var hr = SHLoadIndirectString(expanded, buffer, buffer.Length, 0);
+        if (hr < 0)
+            return text;
+        var length = Array.IndexOf(buffer, '\0');
+        var resolved = new string(buffer, 0, length < 0 ? buffer.Length : length);
+        return string.IsNullOrWhiteSpace(resolved) ? text : resolved;
+    }
+
+    private static string? Child(XElement? parent, string localName)
+    {
+        var value = parent?.Elements().FirstOrDefault(e => e.Name.LocalName == localName)?.Value;
+        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
     }
 
     private static unsafe string? ReadBstr(nint pInterface, nint fnPtr)
@@ -381,4 +422,8 @@ public sealed partial class ScheduledTaskService : IScheduledTaskService
     [LibraryImport("ole32.dll")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static partial int CoCreateInstance(in Guid rclsid, nint pUnkOuter, uint dwClsContext, in Guid riid, out nint ppv);
+
+    [LibraryImport("shlwapi.dll", StringMarshalling = StringMarshalling.Utf16)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial int SHLoadIndirectString(string pszSource, [Out] char[] pszOutBuf, int cchOutBuf, nint ppvReserved);
 }

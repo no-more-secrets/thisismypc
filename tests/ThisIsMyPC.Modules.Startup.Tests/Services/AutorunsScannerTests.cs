@@ -192,6 +192,46 @@ public class AutorunsScannerTests
     }
 
     [Fact]
+    public void ScheduledTasks_ResolveTheirProgramLikeAnyOtherItem()
+    {
+        const string clsid = "{2DEA658F-54C1-4227-AF9B-260AB5FC3543}";
+        _registry.SetString($@"HKLM\SOFTWARE\Classes\CLSID\{clsid}\InprocServer32", "", @"%SystemRoot%\System32\handler.dll");
+        ScheduledTaskEntry MakeTask(string name, string? command = null, string? arguments = null, string? clsidValue = null) => new()
+        {
+            Name = name,
+            Path = $@"\Acme\{name}",
+            Author = "Acme Author",
+            Command = command,
+            Arguments = arguments,
+            ComHandlerClsid = clsidValue,
+            IsEnabled = true,
+            Classification = TaskClassification.Unknown,
+        };
+
+        var tasks = Scan(tasks:
+        [
+            MakeTask("Quoted", @"""C:\Program Files\Acme\updater.exe""", "/check"),
+            MakeTask("Expanded", @"%SystemRoot%\system32\defrag.exe", "-c"),
+            MakeTask("Bare", "sc.exe"),
+            MakeTask("Com", clsidValue: clsid),
+            MakeTask("Nothing"),
+        ]).Where(e => e.Category == AutorunCategory.ScheduledTasks).ToDictionary(e => e.Name);
+
+        Assert.Equal(@"C:\Program Files\Acme\updater.exe", tasks["Quoted"].ImagePath);
+        Assert.Equal(@"""C:\Program Files\Acme\updater.exe"" /check", tasks["Quoted"].Data);
+        Assert.Equal("Acme", tasks["Quoted"].Publisher);
+        Assert.Equal("updater description", tasks["Quoted"].Description);
+        Assert.Equal(Environment.ExpandEnvironmentVariables(@"%SystemRoot%\system32\defrag.exe"), tasks["Expanded"].ImagePath);
+        Assert.Equal(Path.Combine(Windows, "System32", "sc.exe"), tasks["Bare"].ImagePath, ignoreCase: true);
+        Assert.Equal(Environment.ExpandEnvironmentVariables(@"%SystemRoot%\System32\handler.dll"), tasks["Com"].ImagePath);
+        Assert.Equal(clsid, tasks["Com"].Data);
+        Assert.Null(tasks["Nothing"].ImagePath);
+        Assert.Equal(@"\Acme\Nothing", tasks["Nothing"].Data);
+        Assert.Equal("Acme Author", tasks["Nothing"].Publisher);
+        Assert.All(tasks.Values, t => Assert.Equal(AutorunEntry.TaskSchedulerLocation, t.LocationGroup));
+    }
+
+    [Fact]
     public void ScheduledTasks_PassThroughWithAuthorAsPublisher()
     {
         var task = new ScheduledTaskEntry

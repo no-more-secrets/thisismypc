@@ -18,11 +18,14 @@ public sealed partial class FileIconService : IFileIconService
     private const uint FILE_ATTRIBUTE_NORMAL = 0x00000080;
     private const uint DIB_RGB_COLORS = 0;
     private const uint BI_RGB = 0;
+    private const uint COINIT_APARTMENTTHREADED = 0x2;
 
     public OperationResult<FileIcon> GetSmallIcon(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         nint hIcon = 0;
+        // The shell wants COM on the calling thread; enrichment runs on pool threads.
+        var comInit = CoInitializeEx(0, COINIT_APARTMENTTHREADED);
         try
         {
             var flags = SHGFI_ICON | SHGFI_SMALLICON;
@@ -48,6 +51,8 @@ public sealed partial class FileIconService : IFileIconService
         {
             if (hIcon != 0)
                 DestroyIcon(hIcon);
+            if (comInit >= 0)
+                CoUninitialize();
         }
     }
 
@@ -216,4 +221,12 @@ public sealed partial class FileIconService : IFileIconService
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool DeleteObject(nint hObject);
+
+    [LibraryImport("ole32.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial int CoInitializeEx(nint reserved, uint coInit);
+
+    [LibraryImport("ole32.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial void CoUninitialize();
 }
