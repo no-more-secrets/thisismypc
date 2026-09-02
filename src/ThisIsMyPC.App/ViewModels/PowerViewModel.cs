@@ -711,10 +711,10 @@ public sealed partial class PendingPlanCreationViewModel : ObservableObject
             ? "Ultimate Performance"
             : stock?.Name ?? (StockPlanGuid is null ? change.SettingId[PowerPlanChangeFactory.CreatePlanPrefix.Length..] : change.DisplayName);
         Detail = IsUltimatePerformance
-            ? "The hidden Windows plan for workstations. Created when you press Apply; undo deletes it again."
+            ? "Hidden Windows plan for workstations"
             : stock is not null
-                ? $"Windows' default {stock.Name} plan, put back with its default settings. Created when you press Apply; undo deletes it again."
-                : $"{change.AfterDisplay}. Created when you press Apply; undo deletes it again.";
+                ? "Windows default plan"
+                : change.AfterDisplay;
         _pendingChangesService = pendingChangesService;
     }
 

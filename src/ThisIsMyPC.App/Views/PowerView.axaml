@@ -84,7 +84,7 @@
                         <TextBlock Text="New power plan"
                                    FontSize="14" FontWeight="SemiBold"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
-                        <TextBlock Text="Copies a plan with all of its settings. The copy is created when you press Apply, and undo deletes it."
+                        <TextBlock Text="A copy of an existing plan with all of its settings"
                                    FontSize="12"
                                    Foreground="{DynamicResource TextSecondaryBrush}"
                                    TextWrapping="Wrap" />
