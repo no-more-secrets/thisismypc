@@ -61,10 +61,7 @@
     <TabControl>
 
         <!-- PATH Tab -->
-        <TabItem>
-            <TabItem.Header>
-                <TextBlock Text="PATH" FontSize="14" />
-            </TabItem.Header>
+        <TabItem Header="PATH">
             <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Auto">
                 <StackPanel Spacing="20" Margin="0,8,16,24">
@@ -110,10 +107,7 @@
         </TabItem>
 
         <!-- User Tab -->
-        <TabItem>
-            <TabItem.Header>
-                <TextBlock Text="{Binding UserTabHeader}" FontSize="14" />
-            </TabItem.Header>
+        <TabItem Header="{Binding UserTabHeader}">
             <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Auto">
                 <StackPanel Spacing="8" Margin="0,8,16,24">
@@ -141,10 +135,7 @@
         </TabItem>
 
         <!-- System Tab -->
-        <TabItem>
-            <TabItem.Header>
-                <TextBlock Text="{Binding SystemTabHeader}" FontSize="14" />
-            </TabItem.Header>
+        <TabItem Header="{Binding SystemTabHeader}">
             <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Auto">
                 <StackPanel Spacing="8" Margin="0,8,16,24">

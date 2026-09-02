@@ -204,14 +204,9 @@
 
         <TabControl Grid.Row="2" ItemsSource="{Binding Tabs}" Margin="0,8,0,0"
                     IsVisible="{Binding !IsSearching}">
-            <TabControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                    <WrapPanel />
-                </ItemsPanelTemplate>
-            </TabControl.ItemsPanel>
             <TabControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:AutorunTabViewModel">
-                    <TextBlock Text="{Binding Header}" FontSize="14" />
+                    <TextBlock Text="{Binding Header}" />
                 </DataTemplate>
             </TabControl.ItemTemplate>
             <TabControl.ContentTemplate>

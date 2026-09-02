@@ -306,107 +306,113 @@
                     </Grid>
                 </Border>
 
-                <ItemsControl ItemsSource="{Binding SettingsGroups}">
-                    <ItemsControl.ItemTemplate>
+                <!-- One tab per subgroup: a plan carries about 170 settings
+                     in a dozen groups, far too many for one column. The strip
+                     wraps; the settings panel sits inside the page scroller,
+                     so a tab's rows scroll with the page. -->
+                <TabControl ItemsSource="{Binding SettingsGroups}"
+                            IsVisible="{Binding HasSettingsGroups}"
+                            Margin="0,4,0,0">
+                    <TabControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:PowerSettingGroupViewModel">
-                            <StackPanel Spacing="4" Margin="0,8,0,0">
-                                <TextBlock Text="{Binding GroupName}"
-                                           FontSize="14" FontWeight="SemiBold"
-                                           Foreground="{DynamicResource TextPrimaryBrush}" />
-                                <ItemsControl ItemsSource="{Binding Settings}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:PowerSettingItemViewModel">
-                                            <Border Padding="12,8" Margin="0,2" CornerRadius="4"
-                                                    Classes="card">
-                                                <StackPanel Spacing="4">
-                                                    <TextBlock Text="{Binding Name}"
-                                                               FontSize="14" FontWeight="SemiBold"
-                                                               Foreground="{DynamicResource TextPrimaryBrush}" />
-                                                    <TextBlock IsVisible="{Binding HasDescription}"
-                                                               Text="{Binding DescriptionText}"
-                                                               FontSize="12"
-                                                               Foreground="{DynamicResource TextSecondaryBrush}"
-                                                               TextWrapping="Wrap" />
-
-                                                    <!-- Registry view (AC3) -->
-                                                    <StackPanel IsVisible="{Binding $parent[UserControl].((vm:PowerViewModel)DataContext).IsRegistryView}"
-                                                                Spacing="2">
-                                                        <TextBlock Text="{Binding SettingGuidText, StringFormat='Setting: {0}'}"
-                                                                   FontSize="11" FontFamily="Consolas,monospace"
-                                                                   Foreground="{DynamicResource TextTertiaryBrush}" />
-                                                        <TextBlock Text="{Binding SubgroupGuidText, StringFormat='Subgroup: {0}'}"
-                                                                   FontSize="11" FontFamily="Consolas,monospace"
-                                                                   Foreground="{DynamicResource TextTertiaryBrush}" />
-                                                        <TextBlock Text="{Binding RawValuesText}"
-                                                                   FontSize="11" FontFamily="Consolas,monospace"
-                                                                   Foreground="{DynamicResource TextTertiaryBrush}" />
-                                                    </StackPanel>
-
-                                                    <Grid ColumnDefinitions="Auto,220,16,Auto,220,Auto"
-                                                          VerticalAlignment="Center">
-                                                        <TextBlock Grid.Column="0" Text="Plugged in:"
-                                                                   FontSize="12" Margin="0,0,8,0"
-                                                                   VerticalAlignment="Center"
-                                                                   Foreground="{DynamicResource TextSecondaryBrush}" />
-                                                        <ComboBox Grid.Column="1"
-                                                                  ItemsSource="{Binding Options}"
-                                                                  SelectedIndex="{Binding SelectedAcOptionIndex}"
-                                                                  IsEnabled="{Binding CanEditAc}"
-                                                                  IsVisible="{Binding IsEnumerated}"
-                                                                  FontSize="12" HorizontalAlignment="Stretch" />
-                                                        <TextBox Grid.Column="1"
-                                                                 Text="{Binding AcText, UpdateSourceTrigger=LostFocus}"
-                                                                 IsEnabled="{Binding CanEditAc}"
-                                                                 IsVisible="{Binding IsRangeEditor}"
-                                                                 Watermark="{Binding RangeHint}"
-                                                                 FontSize="12" />
-                                                        <TextBlock Grid.Column="3" Text="On battery:"
-                                                                   FontSize="12" Margin="0,0,8,0"
-                                                                   VerticalAlignment="Center"
-                                                                   Foreground="{DynamicResource TextSecondaryBrush}" />
-                                                        <ComboBox Grid.Column="4"
-                                                                  ItemsSource="{Binding Options}"
-                                                                  SelectedIndex="{Binding SelectedDcOptionIndex}"
-                                                                  IsEnabled="{Binding CanEditDc}"
-                                                                  IsVisible="{Binding IsEnumerated}"
-                                                                  FontSize="12" HorizontalAlignment="Stretch" />
-                                                        <TextBox Grid.Column="4"
-                                                                 Text="{Binding DcText, UpdateSourceTrigger=LostFocus}"
-                                                                 IsEnabled="{Binding CanEditDc}"
-                                                                 IsVisible="{Binding IsRangeEditor}"
-                                                                 Watermark="{Binding RangeHint}"
-                                                                 FontSize="12" />
-                                                        <StackPanel Grid.Column="5" Orientation="Horizontal"
-                                                                    Spacing="4" Margin="8,0,0,0"
-                                                                    VerticalAlignment="Center">
-                                                            <Border IsVisible="{Binding HasPendingAc}"
-                                                                    Background="{DynamicResource InfoMutedBrush}"
-                                                                    CornerRadius="3" Padding="5,2">
-                                                                <TextBlock Text="AC pending" FontSize="11"
-                                                                           Foreground="{DynamicResource InfoBrush}" />
-                                                            </Border>
-                                                            <Border IsVisible="{Binding HasPendingDc}"
-                                                                    Background="{DynamicResource InfoMutedBrush}"
-                                                                    CornerRadius="3" Padding="5,2">
-                                                                <TextBlock Text="DC pending" FontSize="11"
-                                                                           Foreground="{DynamicResource InfoBrush}" />
-                                                            </Border>
-                                                        </StackPanel>
-                                                    </Grid>
-
-                                                    <TextBlock IsVisible="{Binding IsRangeEditor}"
-                                                               Text="{Binding RangeHint}"
-                                                               FontSize="11"
-                                                               Foreground="{DynamicResource TextTertiaryBrush}" />
-                                                </StackPanel>
-                                            </Border>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </StackPanel>
+                            <TextBlock Text="{Binding Header}" />
                         </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                    </TabControl.ItemTemplate>
+                    <TabControl.ContentTemplate>
+                        <DataTemplate x:DataType="vm:PowerSettingGroupViewModel">
+                            <ItemsControl ItemsSource="{Binding Settings}" Margin="0,8,0,0">
+                                <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:PowerSettingItemViewModel">
+                    <Border Padding="12,8" Margin="0,2" CornerRadius="4"
+                            Classes="card">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="{Binding Name}"
+                                       FontSize="14" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock IsVisible="{Binding HasDescription}"
+                                       Text="{Binding DescriptionText}"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       TextWrapping="Wrap" />
+
+                            <!-- Registry view (AC3) -->
+                            <StackPanel IsVisible="{Binding $parent[UserControl].((vm:PowerViewModel)DataContext).IsRegistryView}"
+                                        Spacing="2">
+                                <TextBlock Text="{Binding SettingGuidText, StringFormat='Setting: {0}'}"
+                                           FontSize="11" FontFamily="Consolas,monospace"
+                                           Foreground="{DynamicResource TextTertiaryBrush}" />
+                                <TextBlock Text="{Binding SubgroupGuidText, StringFormat='Subgroup: {0}'}"
+                                           FontSize="11" FontFamily="Consolas,monospace"
+                                           Foreground="{DynamicResource TextTertiaryBrush}" />
+                                <TextBlock Text="{Binding RawValuesText}"
+                                           FontSize="11" FontFamily="Consolas,monospace"
+                                           Foreground="{DynamicResource TextTertiaryBrush}" />
+                            </StackPanel>
+
+                            <Grid ColumnDefinitions="Auto,220,16,Auto,220,Auto"
+                                  VerticalAlignment="Center">
+                                <TextBlock Grid.Column="0" Text="Plugged in:"
+                                           FontSize="12" Margin="0,0,8,0"
+                                           VerticalAlignment="Center"
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                                <ComboBox Grid.Column="1"
+                                          ItemsSource="{Binding Options}"
+                                          SelectedIndex="{Binding SelectedAcOptionIndex}"
+                                          IsEnabled="{Binding CanEditAc}"
+                                          IsVisible="{Binding IsEnumerated}"
+                                          FontSize="12" HorizontalAlignment="Stretch" />
+                                <TextBox Grid.Column="1"
+                                         Text="{Binding AcText, UpdateSourceTrigger=LostFocus}"
+                                         IsEnabled="{Binding CanEditAc}"
+                                         IsVisible="{Binding IsRangeEditor}"
+                                         Watermark="{Binding RangeHint}"
+                                         FontSize="12" />
+                                <TextBlock Grid.Column="3" Text="On battery:"
+                                           FontSize="12" Margin="0,0,8,0"
+                                           VerticalAlignment="Center"
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                                <ComboBox Grid.Column="4"
+                                          ItemsSource="{Binding Options}"
+                                          SelectedIndex="{Binding SelectedDcOptionIndex}"
+                                          IsEnabled="{Binding CanEditDc}"
+                                          IsVisible="{Binding IsEnumerated}"
+                                          FontSize="12" HorizontalAlignment="Stretch" />
+                                <TextBox Grid.Column="4"
+                                         Text="{Binding DcText, UpdateSourceTrigger=LostFocus}"
+                                         IsEnabled="{Binding CanEditDc}"
+                                         IsVisible="{Binding IsRangeEditor}"
+                                         Watermark="{Binding RangeHint}"
+                                         FontSize="12" />
+                                <StackPanel Grid.Column="5" Orientation="Horizontal"
+                                            Spacing="4" Margin="8,0,0,0"
+                                            VerticalAlignment="Center">
+                                    <Border IsVisible="{Binding HasPendingAc}"
+                                            Background="{DynamicResource InfoMutedBrush}"
+                                            CornerRadius="3" Padding="5,2">
+                                        <TextBlock Text="AC pending" FontSize="11"
+                                                   Foreground="{DynamicResource InfoBrush}" />
+                                    </Border>
+                                    <Border IsVisible="{Binding HasPendingDc}"
+                                            Background="{DynamicResource InfoMutedBrush}"
+                                            CornerRadius="3" Padding="5,2">
+                                        <TextBlock Text="DC pending" FontSize="11"
+                                                   Foreground="{DynamicResource InfoBrush}" />
+                                    </Border>
+                                </StackPanel>
+                            </Grid>
+
+                            <TextBlock IsVisible="{Binding IsRangeEditor}"
+                                       Text="{Binding RangeHint}"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource TextTertiaryBrush}" />
+                        </StackPanel>
+                    </Border>
+                </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </DataTemplate>
+                    </TabControl.ContentTemplate>
+                </TabControl>
             </StackPanel>
         </Panel>
     </ScrollViewer>

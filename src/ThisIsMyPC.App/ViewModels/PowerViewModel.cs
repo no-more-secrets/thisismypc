@@ -297,6 +297,7 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
     public bool HasSettingsError => !string.IsNullOrEmpty(SettingsError);
 
     public ObservableCollection<PowerSettingGroupViewModel> SettingsGroups { get; } = [];
+    public bool HasSettingsGroups => SettingsGroups.Count > 0;
 
     // ---- Modern Standby ----
 
@@ -476,6 +477,7 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
         {
             IsLoadingSettings = false;
             OnPropertyChanged(nameof(HasSettingsError));
+            OnPropertyChanged(nameof(HasSettingsGroups));
         }
     }
 
@@ -810,6 +812,9 @@ public sealed class PowerSettingGroupViewModel
 
     public string GroupName { get; }
     public IReadOnlyList<PowerSettingItemViewModel> Settings { get; }
+
+    /// <summary>Tab header: the group and how many settings it holds.</summary>
+    public string Header => $"{GroupName} ({Settings.Count})";
 }
 
 /// <summary>

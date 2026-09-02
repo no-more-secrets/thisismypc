@@ -9,10 +9,7 @@
 
     <TabControl>
         <!-- App Catalog tab -->
-        <TabItem>
-            <TabItem.Header>
-                <TextBlock Text="App Catalog" FontSize="14" />
-            </TabItem.Header>
+        <TabItem Header="App Catalog">
             <DockPanel>
                 <!-- Toolbar: search + category filter + installed-state note -->
                 <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,8,16,8">
@@ -108,10 +105,7 @@
         </TabItem>
 
         <!-- Updates tab: winget upgrade management -->
-        <TabItem>
-            <TabItem.Header>
-                <TextBlock Text="Updates" FontSize="14" />
-            </TabItem.Header>
+        <TabItem Header="Updates">
             <DockPanel>
                 <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,8,16,8">
                     <DockPanel>
@@ -186,10 +180,7 @@
         </TabItem>
 
         <!-- Windows Apps tab: built-in app removal -->
-        <TabItem>
-            <TabItem.Header>
-                <TextBlock Text="Windows Apps" FontSize="14" />
-            </TabItem.Header>
+        <TabItem Header="Windows Apps">
             <DockPanel>
                 <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,8,16,8">
                     <TextBox Text="{Binding WindowsAppsSearchText}"

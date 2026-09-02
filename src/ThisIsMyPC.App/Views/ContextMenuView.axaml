@@ -30,10 +30,7 @@
 
             <TabControl>
                 <!-- Multi-scope Tab -->
-                <TabItem>
-                    <TabItem.Header>
-                        <TextBlock Text="{Binding MultiHandlerCount}" FontSize="14" />
-                    </TabItem.Header>
+                <TabItem Header="{Binding MultiHandlerCount}">
                     <StackPanel Spacing="4" Margin="0,8,0,0">
                         <TextBlock Text="Handlers that appear in multiple right-click contexts. One toggle controls all scopes."
                                    FontSize="12"
@@ -47,40 +44,28 @@
                 </TabItem>
 
                 <!-- File Tab -->
-                <TabItem>
-                    <TabItem.Header>
-                        <TextBlock Text="{Binding FileHandlerCount}" FontSize="14" />
-                    </TabItem.Header>
+                <TabItem Header="{Binding FileHandlerCount}">
                     <ItemsControl ItemsSource="{Binding FileHandlers}"
                                   ItemTemplate="{StaticResource ToggleSettingRowTemplate}"
                                   Margin="0,8,0,0" />
                 </TabItem>
 
                 <!-- Folder Tab -->
-                <TabItem>
-                    <TabItem.Header>
-                        <TextBlock Text="{Binding FolderHandlerCount}" FontSize="14" />
-                    </TabItem.Header>
+                <TabItem Header="{Binding FolderHandlerCount}">
                     <ItemsControl ItemsSource="{Binding FolderHandlers}"
                                   ItemTemplate="{StaticResource ToggleSettingRowTemplate}"
                                   Margin="0,8,0,0" />
                 </TabItem>
 
                 <!-- Folder Background Tab -->
-                <TabItem>
-                    <TabItem.Header>
-                        <TextBlock Text="{Binding FolderBackgroundHandlerCount}" FontSize="14" />
-                    </TabItem.Header>
+                <TabItem Header="{Binding FolderBackgroundHandlerCount}">
                     <ItemsControl ItemsSource="{Binding FolderBackgroundHandlers}"
                                   ItemTemplate="{StaticResource ToggleSettingRowTemplate}"
                                   Margin="0,8,0,0" />
                 </TabItem>
 
                 <!-- Desktop Tab -->
-                <TabItem>
-                    <TabItem.Header>
-                        <TextBlock Text="{Binding DesktopHandlerCount}" FontSize="14" />
-                    </TabItem.Header>
+                <TabItem Header="{Binding DesktopHandlerCount}">
                     <StackPanel Spacing="8" Margin="0,8,0,0">
                         <TextBlock Text="System entries like Display settings and Personalize are built-in and not toggleable."
                                    FontSize="12"
@@ -93,10 +78,7 @@
                 </TabItem>
 
                 <!-- Misc Tab -->
-                <TabItem>
-                    <TabItem.Header>
-                        <TextBlock Text="{Binding MiscHandlerCount}" FontSize="14" />
-                    </TabItem.Header>
+                <TabItem Header="{Binding MiscHandlerCount}">
                     <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                                   VerticalScrollBarVisibility="Auto">
                         <StackPanel Spacing="12" Margin="0,8,16,0">
@@ -151,10 +133,7 @@
                     </ScrollViewer>
                 </TabItem>
                 <!-- Windows entries: curated named toggles (Sophia recipes) -->
-                <TabItem>
-                    <TabItem.Header>
-                        <TextBlock Text="Windows" FontSize="14" />
-                    </TabItem.Header>
+                <TabItem Header="Windows">
                     <StackPanel Spacing="4" Margin="0,8,0,0">
                         <TextBlock Text="Built-in Windows entries. Add useful ones and hide the rest."
                                    FontSize="12"
@@ -168,10 +147,7 @@
                 </TabItem>
 
                 <!-- Per File Type Tab -->
-                <TabItem>
-                    <TabItem.Header>
-                        <TextBlock Text="Per File Type" FontSize="14" />
-                    </TabItem.Header>
+                <TabItem Header="Per File Type">
                     <StackPanel Spacing="8" Margin="0,8,0,0">
                         <TextBlock Text="Select a file extension to see its specific context menu entries"
                                    FontSize="12"
@@ -199,10 +175,7 @@
                 </TabItem>
 
                 <!-- Custom Entries Tab (2-6) -->
-                <TabItem>
-                    <TabItem.Header>
-                        <TextBlock Text="Custom" FontSize="14" />
-                    </TabItem.Header>
+                <TabItem Header="Custom">
                     <StackPanel DataContext="{Binding Custom}" Spacing="8" Margin="0,8,0,0">
                         <TextBlock Text="Your own right-click entries. Changes stage in the review panel; the list below shows what is applied on the system."
                                    FontSize="12" FontStyle="Italic"

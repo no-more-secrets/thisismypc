@@ -41,11 +41,20 @@
          24px rhythm between headers. -->
     <Style Selector="TabControl">
         <Setter Property="Padding" Value="0" />
+        <!-- Strips wrap: a module can carry a dozen tabs -->
+        <Setter Property="ItemsPanel">
+            <ItemsPanelTemplate>
+                <WrapPanel />
+            </ItemsPanelTemplate>
+        </Setter>
     </Style>
+    <!-- One tab header everywhere: 14px text (stock Fluent uses 24), so a
+         view writes Header="Name" and nothing else. -->
     <Style Selector="TabItem">
         <Setter Property="Padding" Value="0" />
         <Setter Property="Margin" Value="0,0,24,0" />
         <Setter Property="MinHeight" Value="30" />
+        <Setter Property="FontSize" Value="14" />
         <Setter Property="VerticalContentAlignment" Value="Top" />
         <Setter Property="Cursor" Value="Hand" />
     </Style>
