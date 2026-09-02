@@ -11,28 +11,41 @@ public enum InstallStep
     License,
     Options,
     Installing,
+    ConfirmUninstall,
+    Uninstalling,
     Done,
 }
 
+/// <summary>How the version already on the PC compares with the one in this installer.</summary>
+public enum InstalledVersionRelation
+{
+    NotInstalled,
+    Older,
+    Same,
+    Newer,
+}
+
 /// <summary>
-/// One window, five pages, one primary button whose label follows the page.
-/// The view model never touches the system; the engine does.
+/// One window, one primary button whose label follows the page. The view
+/// model never touches the system; the engine does.
 /// </summary>
 public sealed partial class InstallerViewModel : ObservableObject
 {
     private readonly IInstallEngine _engine;
 
-    public InstallerViewModel(IInstallEngine engine, string licenseText, InstallOptions? existing)
+    public InstallerViewModel(IInstallEngine engine, string licenseText, InstalledApp? installed, InstallOptions? existing)
     {
         ArgumentNullException.ThrowIfNull(engine);
         _engine = engine;
         LicenseText = licenseText ?? string.Empty;
+        Installed = installed;
+        VersionRelation = Compare(installed?.Version, AppVersion);
 
-        _installFolder = existing?.InstallFolder ?? InstallFolderRules.DefaultFolder;
+        // An update goes where the app already is; the MSI upgrade replaces it in place.
+        _installFolder = installed?.InstallFolder ?? existing?.InstallFolder ?? InstallFolderRules.DefaultFolder;
         _desktopShortcut = existing?.DesktopShortcut ?? true;
         _startWithWindows = existing?.StartWithWindows ?? false;
         _checkForUpdates = existing?.CheckForUpdates ?? true;
-        IsUpgrade = existing is not null;
         RefreshFolderCheck();
     }
 
@@ -44,14 +57,22 @@ public sealed partial class InstallerViewModel : ObservableObject
 
     public string LicenseText { get; }
 
-    public bool IsUpgrade { get; }
-
     public static string AppVersion { get; } = ReadVersion();
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsWelcome), nameof(IsLicense), nameof(IsOptions), nameof(IsInstalling), nameof(IsDone))]
-    [NotifyPropertyChangedFor(nameof(PrimaryButtonText), nameof(CanGoBack), nameof(CanGoPrimary), nameof(CanCancel), nameof(StepCaption))]
-    [NotifyCanExecuteChangedFor(nameof(PrimaryCommand), nameof(BackCommand), nameof(CancelCommand))]
+    [NotifyPropertyChangedFor(nameof(IsInstalled), nameof(InstalledSummary), nameof(CanChooseFolder))]
+    [NotifyCanExecuteChangedFor(nameof(UninstallCommand))]
+    private InstalledApp? _installed;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(InstallBlockedByNewer), nameof(CanGoPrimary), nameof(PrimaryButtonText), nameof(InstalledSummary))]
+    [NotifyCanExecuteChangedFor(nameof(PrimaryCommand))]
+    private InstalledVersionRelation _versionRelation;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsWelcome), nameof(IsLicense), nameof(IsOptions), nameof(IsInstalling), nameof(IsConfirmUninstall), nameof(IsUninstalling), nameof(IsDone))]
+    [NotifyPropertyChangedFor(nameof(PrimaryButtonText), nameof(CanGoBack), nameof(CanGoPrimary), nameof(CanCancel), nameof(StepCaption), nameof(IsBusy))]
+    [NotifyCanExecuteChangedFor(nameof(PrimaryCommand), nameof(BackCommand), nameof(CancelCommand), nameof(UninstallCommand))]
     private InstallStep _step = InstallStep.Welcome;
 
     [ObservableProperty]
@@ -87,8 +108,12 @@ public sealed partial class InstallerViewModel : ObservableObject
     private string _statusText = string.Empty;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(Failed), nameof(PrimaryButtonText))]
+    [NotifyPropertyChangedFor(nameof(Failed), nameof(PrimaryButtonText), nameof(StepCaption), nameof(DoneInstalled))]
     private string? _errorText;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PrimaryButtonText), nameof(StepCaption), nameof(DoneInstalled))]
+    private bool _removed;
 
     [ObservableProperty]
     private bool _rebootRequired;
@@ -101,9 +126,31 @@ public sealed partial class InstallerViewModel : ObservableObject
     public bool IsLicense => Step == InstallStep.License;
     public bool IsOptions => Step == InstallStep.Options;
     public bool IsInstalling => Step == InstallStep.Installing;
+    public bool IsConfirmUninstall => Step == InstallStep.ConfirmUninstall;
+    public bool IsUninstalling => Step == InstallStep.Uninstalling;
     public bool IsDone => Step == InstallStep.Done;
+    public bool IsBusy => Step is InstallStep.Installing or InstallStep.Uninstalling;
+
+    public bool IsInstalled => Installed is not null;
+    public bool InstallBlockedByNewer => VersionRelation == InstalledVersionRelation.Newer;
+
+    /// <summary>Updates stay in the folder the app already occupies.</summary>
+    public bool CanChooseFolder => !IsInstalled;
+
+    public string InstalledSummary => Installed is null
+        ? string.Empty
+        : VersionRelation switch
+        {
+            InstalledVersionRelation.Same =>
+                $"Version {Installed.Version} is already installed in {Installed.InstallFolder}. Continue to reinstall it, or remove it.",
+            InstalledVersionRelation.Newer =>
+                $"Version {Installed.Version} is installed in {Installed.InstallFolder}, and it is newer than this installer ({AppVersion}). Remove it first if you want this version.",
+            _ =>
+                $"Version {Installed.Version} is installed in {Installed.InstallFolder}. Continue to update it to {AppVersion}; your settings and history stay.",
+        };
 
     public bool Failed => ErrorText is not null;
+    public bool DoneInstalled => !Failed && !Removed;
     public bool HasFolderError => FolderError is not null;
     public bool HasFolderWarning => FolderWarning is not null;
     public bool HasLogPath => LogPath is not null;
@@ -114,7 +161,10 @@ public sealed partial class InstallerViewModel : ObservableObject
         InstallStep.License => "License",
         InstallStep.Options => "Options",
         InstallStep.Installing => "Installing",
-        InstallStep.Done => Failed ? "Not installed" : "Finished",
+        InstallStep.ConfirmUninstall => "Remove ThisIsMyPC",
+        InstallStep.Uninstalling => "Removing",
+        InstallStep.Done when Failed => Removed ? "Not removed" : "Not installed",
+        InstallStep.Done => Removed ? "Removed" : "Finished",
         _ => string.Empty,
     };
 
@@ -122,21 +172,31 @@ public sealed partial class InstallerViewModel : ObservableObject
     {
         InstallStep.Welcome => "Next",
         InstallStep.License => "Next",
-        InstallStep.Options => IsUpgrade ? "Update" : "Install",
+        InstallStep.Options => VersionRelation switch
+        {
+            InstalledVersionRelation.Same => "Reinstall",
+            InstalledVersionRelation.Older => "Update",
+            _ => "Install",
+        },
         InstallStep.Installing => "Installing...",
-        InstallStep.Done => Failed ? "Close" : "Finish",
+        InstallStep.ConfirmUninstall => "Remove",
+        InstallStep.Uninstalling => "Removing...",
+        InstallStep.Done => Failed || Removed ? "Close" : "Finish",
         _ => "Next",
     };
 
-    public bool CanGoBack => Step is InstallStep.License or InstallStep.Options;
+    public bool CanGoBack => Step is InstallStep.License or InstallStep.Options or InstallStep.ConfirmUninstall;
 
-    public bool CanCancel => Step is not InstallStep.Installing and not InstallStep.Done;
+    public bool CanCancel => Step is not (InstallStep.Installing or InstallStep.Uninstalling or InstallStep.Done);
+
+    public bool CanUninstall => IsInstalled && Step == InstallStep.Welcome;
 
     public bool CanGoPrimary => Step switch
     {
+        InstallStep.Welcome => !InstallBlockedByNewer,
         InstallStep.License => LicenseAccepted,
         InstallStep.Options => FolderError is null,
-        InstallStep.Installing => false,
+        InstallStep.Installing or InstallStep.Uninstalling => false,
         _ => true,
     };
 
@@ -163,12 +223,16 @@ public sealed partial class InstallerViewModel : ObservableObject
             case InstallStep.Options:
                 await InstallAsync().ConfigureAwait(true);
                 break;
+            case InstallStep.ConfirmUninstall:
+                await UninstallAsync().ConfigureAwait(true);
+                break;
             case InstallStep.Done:
-                if (!Failed && LaunchWhenDone)
+                if (DoneInstalled && LaunchWhenDone)
                     _engine.Launch(InstallFolder);
                 RequestClose?.Invoke();
                 break;
             case InstallStep.Installing:
+            case InstallStep.Uninstalling:
             default:
                 break;
         }
@@ -181,6 +245,7 @@ public sealed partial class InstallerViewModel : ObservableObject
         {
             InstallStep.License => InstallStep.Welcome,
             InstallStep.Options => InstallStep.License,
+            InstallStep.ConfirmUninstall => InstallStep.Welcome,
             _ => Step,
         };
     }
@@ -188,10 +253,13 @@ public sealed partial class InstallerViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanCancel))]
     private void Cancel() => RequestClose?.Invoke();
 
+    [RelayCommand(CanExecute = nameof(CanUninstall))]
+    private void Uninstall() => Step = InstallStep.ConfirmUninstall;
+
     [RelayCommand]
     private async Task BrowseAsync()
     {
-        if (FolderPicker is null)
+        if (FolderPicker is null || !CanChooseFolder)
             return;
         var picked = await FolderPicker.PickAsync(InstallFolder).ConfigureAwait(true);
         if (!string.IsNullOrWhiteSpace(picked))
@@ -208,9 +276,12 @@ public sealed partial class InstallerViewModel : ObservableObject
         }
 
         ErrorText = null;
+        Removed = false;
         Step = InstallStep.Installing;
         StatusText = "Starting...";
-        var options = new InstallOptions(InstallFolder, DesktopShortcut, StartWithWindows, CheckForUpdates);
+        var options = new InstallOptions(
+            InstallFolder, DesktopShortcut, StartWithWindows, CheckForUpdates,
+            Reinstall: VersionRelation == InstalledVersionRelation.Same);
         var progress = new Progress<string>(text => StatusText = text);
 
         var outcome = await _engine.InstallAsync(options, progress, CancellationToken.None).ConfigureAwait(true);
@@ -219,6 +290,57 @@ public sealed partial class InstallerViewModel : ObservableObject
         RebootRequired = outcome.RebootRequired;
         ErrorText = outcome.Succeeded ? null : outcome.Error ?? "The installation did not finish.";
         Step = InstallStep.Done;
+    }
+
+    private async Task UninstallAsync()
+    {
+        if (Installed is null)
+            return;
+
+        ErrorText = null;
+        Removed = true;
+        Step = InstallStep.Uninstalling;
+        StatusText = "Starting...";
+        var progress = new Progress<string>(text => StatusText = text);
+
+        var outcome = await _engine.UninstallAsync(Installed, progress, CancellationToken.None).ConfigureAwait(true);
+
+        LogPath = outcome.LogPath;
+        ErrorText = outcome.Succeeded ? null : outcome.Error ?? "The removal did not finish.";
+        if (outcome.Succeeded)
+        {
+            Installed = null;
+            VersionRelation = InstalledVersionRelation.NotInstalled;
+        }
+        Step = InstallStep.Done;
+    }
+
+    /// <summary>Numeric comparison where both parse; otherwise string equality decides Same, and anything else counts as Older.</summary>
+    public static InstalledVersionRelation Compare(string? installedVersion, string packageVersion)
+    {
+        if (string.IsNullOrWhiteSpace(installedVersion))
+            return InstalledVersionRelation.NotInstalled;
+        if (Version.TryParse(Normalize(installedVersion), out var installed) && Version.TryParse(Normalize(packageVersion), out var package))
+        {
+            // System.Version ranks 1.0.0.0 above 1.0.0 (a missing part is -1); pad both to four parts.
+            var order = Pad(installed).CompareTo(Pad(package));
+            return order == 0 ? InstalledVersionRelation.Same
+                : order < 0 ? InstalledVersionRelation.Older
+                : InstalledVersionRelation.Newer;
+        }
+        return string.Equals(installedVersion.Trim(), packageVersion.Trim(), StringComparison.OrdinalIgnoreCase)
+            ? InstalledVersionRelation.Same
+            : InstalledVersionRelation.Older;
+    }
+
+    private static Version Pad(Version version)
+        => new(version.Major, version.Minor, Math.Max(version.Build, 0), Math.Max(version.Revision, 0));
+
+    /// <summary>System.Version wants dotted numbers only: drop a prerelease tag or build metadata.</summary>
+    private static string Normalize(string version)
+    {
+        var cut = version.IndexOfAny(['-', '+']);
+        return cut > 0 ? version[..cut] : version;
     }
 
     private static string ReadVersion()

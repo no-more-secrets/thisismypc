@@ -81,9 +81,15 @@
                 <StackPanel IsVisible="{Binding IsWelcome}" Spacing="14">
                     <TextBlock Classes="body" Text="ThisIsMyPC puts the settings Windows scatters across a dozen tools in one place: startup programs, the right-click menu, taskbar and Explorer behavior, privacy switches, Windows Update, power plans, and monitors. Every change records what was there before, so any of them can be undone." />
                     <TextBlock Classes="body" Text="It installs for everyone who uses this PC and needs administrator rights, which you already granted when this window opened." />
-                    <TextBlock Classes="body" IsVisible="{Binding IsUpgrade}"
-                               Text="A copy of ThisIsMyPC is already on this PC. This will update it and keep your settings and history." />
-                    <TextBlock Classes="caption" Text="Click Next to read the license." />
+                    <Border IsVisible="{Binding IsInstalled}" Background="{DynamicResource SurfaceBrush}"
+                            BorderBrush="{DynamicResource OutlineBrush}" BorderThickness="1" CornerRadius="6" Padding="14,12">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14">
+                            <TextBlock Grid.Column="0" Classes="body" VerticalAlignment="Center" Text="{Binding InstalledSummary}" />
+                            <Button Grid.Column="1" Classes="footer" VerticalAlignment="Center" Content="Uninstall"
+                                    Command="{Binding UninstallCommand}" />
+                        </Grid>
+                    </Border>
+                    <TextBlock Classes="caption" IsVisible="{Binding !InstallBlockedByNewer}" Text="Click Next to read the license." />
                 </StackPanel>
 
                 <!-- License -->
@@ -104,9 +110,11 @@
                 <StackPanel IsVisible="{Binding IsOptions}" Spacing="10">
                     <TextBlock Classes="label" Text="Install folder" />
                     <Grid ColumnDefinitions="*,Auto">
-                        <TextBox Grid.Column="0" Text="{Binding InstallFolder}" />
-                        <Button Grid.Column="1" Margin="8,0,0,0" Content="Browse..." Command="{Binding BrowseCommand}" />
+                        <TextBox Grid.Column="0" Text="{Binding InstallFolder}" IsEnabled="{Binding CanChooseFolder}" />
+                        <Button Grid.Column="1" Margin="8,0,0,0" Content="Browse..." Command="{Binding BrowseCommand}"
+                                IsEnabled="{Binding CanChooseFolder}" />
                     </Grid>
+                    <TextBlock Classes="caption" IsVisible="{Binding !CanChooseFolder}" Text="Updates go into the folder the app is already in." />
                     <TextBlock Classes="danger" IsVisible="{Binding HasFolderError}" Text="{Binding FolderError}" />
                     <TextBlock Classes="warning" IsVisible="{Binding HasFolderWarning}" Text="{Binding FolderWarning}" />
 
@@ -117,7 +125,7 @@
                     <TextBlock Classes="label" Margin="0,14,0,0" Text="Behavior" />
                     <CheckBox IsChecked="{Binding StartWithWindows}" Content="Start with Windows, in the tray" />
                     <CheckBox IsChecked="{Binding CheckForUpdates}" Content="Check for updates automatically" />
-                    <TextBlock Classes="caption" Margin="28,-6,0,0" Text="Both can be changed later in the app's Settings." />
+                    <TextBlock Classes="caption" Margin="28,-6,0,0" Text="Both can be changed later in Settings inside the app." />
                 </StackPanel>
 
                 <!-- Installing -->
@@ -128,13 +136,30 @@
                     <TextBlock Classes="caption" HorizontalAlignment="Center" Text="This takes under a minute." />
                 </StackPanel>
 
+                <!-- Confirm uninstall -->
+                <StackPanel IsVisible="{Binding IsConfirmUninstall}" Spacing="14">
+                    <TextBlock Classes="body" Text="Remove ThisIsMyPC from this PC? The app, its shortcuts, and its entry in Installed apps go away." />
+                    <TextBlock Classes="body" Text="Your settings and change history stay in the ProgramData folder, so a later install picks them up. Changes you applied to Windows stay as they are; undo them in the app first if you want them reverted." />
+                    <TextBlock Classes="caption" Text="Click Remove to continue, or Back to keep it." />
+                </StackPanel>
+
+                <!-- Uninstalling -->
+                <StackPanel IsVisible="{Binding IsUninstalling}" Spacing="16" VerticalAlignment="Center">
+                    <TextBlock Classes="body" HorizontalAlignment="Center" Text="{Binding StatusText}" />
+                    <ProgressBar IsIndeterminate="True" Height="6" Width="360"
+                                 Foreground="{DynamicResource AccentBrush}" />
+                </StackPanel>
+
                 <!-- Done -->
                 <StackPanel IsVisible="{Binding IsDone}" Spacing="14">
-                    <StackPanel IsVisible="{Binding !Failed}" Spacing="14">
+                    <StackPanel IsVisible="{Binding DoneInstalled}" Spacing="14">
                         <TextBlock Classes="body" Text="ThisIsMyPC is installed. You will find it in the Start menu. It asks for permission every time it starts, because everything it does needs administrator rights." />
                         <TextBlock Classes="warning" IsVisible="{Binding RebootRequired}"
                                    Text="Windows asked for a restart to finish. Restart when convenient." />
                         <CheckBox IsChecked="{Binding LaunchWhenDone}" Content="Open ThisIsMyPC when I click Finish" />
+                    </StackPanel>
+                    <StackPanel IsVisible="{Binding Removed}" Spacing="14">
+                        <TextBlock Classes="body" IsVisible="{Binding !Failed}" Text="ThisIsMyPC was removed. Your settings and change history are still in the ProgramData folder in case you install it again." />
                     </StackPanel>
                     <StackPanel IsVisible="{Binding Failed}" Spacing="14">
                         <TextBlock Classes="danger" Text="{Binding ErrorText}" />

@@ -5,9 +5,10 @@ public sealed record InstallOptions(
     string InstallFolder,
     bool DesktopShortcut,
     bool StartWithWindows,
-    bool CheckForUpdates);
+    bool CheckForUpdates,
+    bool Reinstall = false);
 
-/// <summary>Result of one install run. <see cref="LogPath"/> is the Windows Installer log.</summary>
+/// <summary>Result of one install or uninstall run. <see cref="LogPath"/> is the Windows Installer log when there is one.</summary>
 public sealed record InstallOutcome(
     bool Succeeded,
     bool RebootRequired,
@@ -21,6 +22,9 @@ public interface IInstallEngine
 
     /// <summary>Runs the MSI quietly with the chosen folder, then applies the other choices.</summary>
     Task<InstallOutcome> InstallAsync(InstallOptions options, IProgress<string> progress, CancellationToken cancellationToken);
+
+    /// <summary>Runs Velopack's uninstaller (Update.exe in the install folder) and waits for it.</summary>
+    Task<InstallOutcome> UninstallAsync(InstalledApp installed, IProgress<string> progress, CancellationToken cancellationToken);
 
     /// <summary>Starts the installed app (the Velopack stub in the install folder).</summary>
     void Launch(string installFolder);

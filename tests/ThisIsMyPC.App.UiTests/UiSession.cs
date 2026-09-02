@@ -141,7 +141,7 @@ public sealed class UiSession : IDisposable
     // ---- Finding things the way a person does: by visible text ----
 
     public T? TryFind<T>(Func<T, bool> predicate) where T : Visual =>
-        Window.GetVisualDescendants().OfType<T>().FirstOrDefault(v => v.IsVisible && predicate(v));
+        Window.GetVisualDescendants().OfType<T>().FirstOrDefault(v => v.IsEffectivelyVisible && predicate(v));
 
     public T Find<T>(Func<T, bool> predicate) where T : Visual =>
         TryFind(predicate) ?? throw new InvalidOperationException(
@@ -162,7 +162,7 @@ public sealed class UiSession : IDisposable
     {
         var texts = Window.GetVisualDescendants()
             .OfType<TextBlock>()
-            .Where(t => t.IsVisible && !string.IsNullOrWhiteSpace(t.Text))
+            .Where(t => t.IsEffectivelyVisible && !string.IsNullOrWhiteSpace(t.Text))
             .Select(t => t.Text!.Trim())
             .Distinct()
             .Take(60);

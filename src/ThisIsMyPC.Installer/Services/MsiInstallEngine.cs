@@ -54,7 +54,7 @@ public sealed class MsiInstallEngine : IInstallEngine
             var msiPath = _package.ExtractTo(scratch);
 
             progress.Report("Installing ThisIsMyPC...");
-            var exitCode = await RunMsiExecAsync(msiPath, options.InstallFolder, logPath, cancellationToken).ConfigureAwait(false);
+            var exitCode = await RunMsiExecAsync(msiPath, options.InstallFolder, logPath, options.Reinstall, cancellationToken).ConfigureAwait(false);
             var result = MsiExitCodes.Describe(exitCode);
             if (!result.Succeeded)
                 return new InstallOutcome(false, false, result.Message, logPath);
@@ -76,6 +76,43 @@ public sealed class MsiInstallEngine : IInstallEngine
         }
     }
 
+    public async Task<InstallOutcome> UninstallAsync(InstalledApp installed, IProgress<string> progress, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(installed);
+        ArgumentNullException.ThrowIfNull(progress);
+
+        try
+        {
+            if (!File.Exists(installed.UninstallerPath))
+                return new InstallOutcome(false, false, "The uninstaller (Update.exe) is no longer in the install folder. Remove ThisIsMyPC from Settings, Apps, Installed apps.", null);
+
+            progress.Report("Removing ThisIsMyPC...");
+            // Velopack's own uninstall: shortcuts, the install folder, the
+            // Apps entry. --silent because this window already asked.
+            var start = new ProcessStartInfo
+            {
+                FileName = installed.UninstallerPath,
+                Arguments = "uninstall --silent",
+                WorkingDirectory = Path.GetTempPath(),
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            };
+            using var process = Process.Start(start)
+                ?? throw new InvalidOperationException("The uninstaller did not start.");
+            await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+            if (process.ExitCode != 0)
+                return new InstallOutcome(false, false, $"The uninstaller stopped with error {process.ExitCode}.", null);
+
+            // Velopack removes the folder; the stub can linger for a moment
+            // while Explorer lets go of it, so the folder itself is the check.
+            return new InstallOutcome(true, false, null, null);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or Win32Exception or InvalidOperationException)
+        {
+            return new InstallOutcome(false, false, ex.Message, null);
+        }
+    }
+
     public void Launch(string installFolder)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(installFolder);
@@ -88,9 +125,11 @@ public sealed class MsiInstallEngine : IInstallEngine
 
     /// <summary>
     /// The msiexec command line. Quiet, no restart, the folder through the
-    /// property the Velopack MSI reads, and a verbose log for support.
+    /// property the Velopack MSI reads, and a verbose log for support. A
+    /// reinstall of the version already present needs REINSTALL/REINSTALLMODE,
+    /// or Windows Installer answers 1638 (already installed).
     /// </summary>
-    public static string BuildMsiExecArguments(string msiPath, string installFolder, string logPath)
+    public static string BuildMsiExecArguments(string msiPath, string installFolder, string logPath, bool reinstall = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(msiPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(installFolder);
@@ -98,15 +137,16 @@ public sealed class MsiInstallEngine : IInstallEngine
         // A trailing backslash before a closing quote escapes the quote for
         // the Installer's parser; strip it.
         var folder = installFolder.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-        return $"/i \"{msiPath}\" /qn /norestart VELOPACK_INSTALLDIR=\"{folder}\" /l*v \"{logPath}\"";
+        var reinstallArgs = reinstall ? " REINSTALL=ALL REINSTALLMODE=vomus" : string.Empty;
+        return $"/i \"{msiPath}\" /qn /norestart VELOPACK_INSTALLDIR=\"{folder}\"{reinstallArgs} /l*v \"{logPath}\"";
     }
 
-    private static async Task<int> RunMsiExecAsync(string msiPath, string installFolder, string logPath, CancellationToken cancellationToken)
+    private static async Task<int> RunMsiExecAsync(string msiPath, string installFolder, string logPath, bool reinstall, CancellationToken cancellationToken)
     {
         var start = new ProcessStartInfo
         {
             FileName = Path.Combine(Environment.SystemDirectory, "msiexec.exe"),
-            Arguments = BuildMsiExecArguments(msiPath, installFolder, logPath),
+            Arguments = BuildMsiExecArguments(msiPath, installFolder, logPath, reinstall),
             UseShellExecute = false,
             CreateNoWindow = true,
         };

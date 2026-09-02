@@ -23,7 +23,7 @@ public static class MsiExitCodes
         InstallInProgress => new MsiResult(false, false, "Another installation is running. Wait for it to finish, then try again."),
         PackageOpenFailed or PackageInvalid => new MsiResult(false, false, "The installer package could not be read. Download it again."),
         AlreadyInstalled => new MsiResult(false, false,
-            "This version of ThisIsMyPC is already installed. To install it again, remove it first: Settings, Apps, Installed apps."),
+            "This version of ThisIsMyPC is already installed. Run this installer again and choose Uninstall on the first page, or remove it from Settings, Apps, Installed apps."),
         _ => new MsiResult(false, false, $"Windows Installer returned error {exitCode}."),
     };
 }

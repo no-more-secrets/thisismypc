@@ -17,7 +17,7 @@ public partial class App : Application
         {
             var package = new EmbeddedPackage();
             var engine = new MsiInstallEngine(package);
-            var viewModel = new InstallerViewModel(engine, EmbeddedPackage.LoadLicenseText(), ExistingSettings.Read());
+            var viewModel = new InstallerViewModel(engine, EmbeddedPackage.LoadLicenseText(), InstalledAppDetector.Detect(), ExistingSettings.Read());
             var window = new MainWindow { DataContext = viewModel };
             viewModel.FolderPicker = new StorageFolderPicker(window);
             viewModel.RequestClose = () => desktop.Shutdown();

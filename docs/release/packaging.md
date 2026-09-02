@@ -20,7 +20,15 @@ The app corresponds to the PC, not a user profile (CLAUDE.md). Packaging follows
   desktop switch. And the Velopack wizard has no options; the launcher has
   pages: Welcome, License (GPLv2 with an accept step), Options (install
   folder with a Program Files warning, Desktop shortcut, start with Windows,
-  automatic update checks), Installing, Done (launch when finished). It runs
+  automatic update checks), Installing, Done (launch when finished). When a
+  copy is already installed (found through the Apps entry Update.exe
+  registers, or Update.exe plus current\sq.version in the default folder),
+  Welcome names its version and folder and offers Uninstall behind a confirm
+  page; that runs Velopack's own `Update.exe uninstall --silent`, which is
+  the uninstaller for this app (there is no unins000.exe). An older version
+  updates in place (folder locked, button reads Update), the same version
+  reinstalls (REINSTALL=ALL REINSTALLMODE=vomus, or msiexec answers 1638),
+  and a newer one blocks Next until it is removed. It runs
   the MSI quietly (`/qn`, `VELOPACK_INSTALLDIR`, verbose log under
   `%ProgramData%\ThisIsMyPC\logs`), removes the Public Desktop shortcut when
   unticked, and writes the behavior choices through the app's own

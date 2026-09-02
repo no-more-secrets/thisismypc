@@ -16,6 +16,7 @@ public class InstallerShotTests
     {
         public bool HasPackage => true;
         public InstallOptions? Received { get; private set; }
+        public InstalledApp? Uninstalled { get; private set; }
         public InstallOutcome Outcome { get; set; } = new(true, false, null, @"C:\ProgramData\ThisIsMyPC\logs\install.log");
 
         public Task<InstallOutcome> InstallAsync(InstallOptions options, IProgress<string> progress, CancellationToken cancellationToken)
@@ -24,21 +25,31 @@ public class InstallerShotTests
             return Task.FromResult(Outcome);
         }
 
+        public Task<InstallOutcome> UninstallAsync(InstalledApp installed, IProgress<string> progress, CancellationToken cancellationToken)
+        {
+            Uninstalled = installed;
+            return Task.FromResult(new InstallOutcome(true, false, null, null));
+        }
+
         public void Launch(string installFolder) { }
     }
 
     private const string License = "                    GNU GENERAL PUBLIC LICENSE\n                       Version 2, June 1991\n\n Copyright (C) 1989, 1991 Free Software Foundation, Inc.\n\n                            Preamble\n\n  The licenses for most software are designed to take away your\nfreedom to share and change it.";
 
+    private static UiSession Open(InstallerViewModel viewModel)
+        => UiSession.ForView(new InstallerView(), viewModel, "installer", width: 720, height: 600);
+
     [AvaloniaFact]
     public async Task Walkthrough_EveryPageRendersAndChoicesReachTheEngine()
     {
         var engine = new FakeEngine();
-        var viewModel = new InstallerViewModel(engine, License, existing: null);
-        using var session = UiSession.ForView(new InstallerView(), viewModel, "installer", width: 720, height: 600);
+        var viewModel = new InstallerViewModel(engine, License, installed: null, existing: null);
+        using var session = Open(viewModel);
 
         session.Screenshot("welcome");
         Assert.True(session.IsTextVisible("Next"));
         Assert.False(session.IsTextVisible("Back"));
+        Assert.False(session.IsTextVisible("Uninstall"));
 
         session.ClickText("Next");
         session.Screenshot("license");
@@ -76,9 +87,9 @@ public class InstallerShotTests
     [AvaloniaFact]
     public void Options_BadFolderShowsTheReasonAndDisablesInstall()
     {
-        var viewModel = new InstallerViewModel(new FakeEngine(), License, existing: null) { LicenseAccepted = true };
+        var viewModel = new InstallerViewModel(new FakeEngine(), License, installed: null, existing: null) { LicenseAccepted = true };
         viewModel.Step = InstallStep.Options;
-        using var session = UiSession.ForView(new InstallerView(), viewModel, "installer", width: 720, height: 600);
+        using var session = Open(viewModel);
 
         viewModel.InstallFolder = @"D:\Apps\ThisIsMyPC";
         session.Pump();
@@ -93,17 +104,69 @@ public class InstallerShotTests
     }
 
     [AvaloniaFact]
+    public async Task Installed_WelcomeNamesTheVersionAndUninstallWalksConfirmToRemoved()
+    {
+        var engine = new FakeEngine();
+        var installed = new InstalledApp("0.0.9", @"C:\Program Files\NMS\ThisIsMyPC", @"C:\Program Files\NMS\ThisIsMyPC\Update.exe");
+        var viewModel = new InstallerViewModel(engine, License, installed, existing: null);
+        using var session = Open(viewModel);
+
+        session.Screenshot("welcome-installed");
+        Assert.True(session.IsTextVisible("Uninstall"));
+        Assert.True(session.IsTextVisible(viewModel.InstalledSummary));
+
+        session.ClickText("Uninstall");
+        session.Screenshot("confirm-uninstall");
+        Assert.True(session.IsTextVisible("Remove"));
+        Assert.True(session.IsTextVisible("Back"));
+        Assert.Null(engine.Uninstalled);
+
+        session.ClickText("Remove");
+        await session.WaitForAsync(() => viewModel.Step == InstallStep.Done, what: "uninstall to finish");
+        session.Screenshot("removed");
+        Assert.Same(installed, engine.Uninstalled);
+        Assert.True(session.IsTextVisible("Removed"));
+        Assert.True(session.IsTextVisible("Close"));
+        Assert.False(session.IsTextVisible("Finish"));
+    }
+
+    [AvaloniaFact]
+    public void Installed_OptionsLocksTheFolderAndSaysUpdate()
+    {
+        var installed = new InstalledApp("0.0.9", @"C:\Program Files\NMS\ThisIsMyPC", "x");
+        var viewModel = new InstallerViewModel(new FakeEngine(), License, installed, existing: null) { LicenseAccepted = true };
+        viewModel.Step = InstallStep.Options;
+        using var session = Open(viewModel);
+
+        session.Screenshot("options-update");
+        Assert.True(session.IsTextVisible("Updates go into the folder the app is already in."));
+        Assert.True(session.IsTextVisible("Update"));
+    }
+
+    [AvaloniaFact]
+    public void NewerInstalled_WelcomeBlocksNext()
+    {
+        var installed = new InstalledApp("99.0.0", @"C:\Program Files\NMS\ThisIsMyPC", "x");
+        var viewModel = new InstallerViewModel(new FakeEngine(), License, installed, existing: null);
+        using var session = Open(viewModel);
+
+        session.Screenshot("welcome-newer-installed");
+        Assert.False(viewModel.CanGoPrimary);
+        Assert.True(session.IsTextVisible("Uninstall"));
+    }
+
+    [AvaloniaFact]
     public async Task Done_FailureShowsMessageAndLogPath()
     {
         var engine = new FakeEngine
         {
             Outcome = new InstallOutcome(false, false,
-                "This version of ThisIsMyPC is already installed. To install it again, remove it first: Settings, Apps, Installed apps.",
+                "This version of ThisIsMyPC is already installed. Run this installer again and choose Uninstall on the first page, or remove it from Settings, Apps, Installed apps.",
                 @"C:\ProgramData\ThisIsMyPC\logs\install-20260901-210000.log"),
         };
-        var viewModel = new InstallerViewModel(engine, License, existing: null) { LicenseAccepted = true };
+        var viewModel = new InstallerViewModel(engine, License, installed: null, existing: null) { LicenseAccepted = true };
         viewModel.Step = InstallStep.Options;
-        using var session = UiSession.ForView(new InstallerView(), viewModel, "installer", width: 720, height: 600);
+        using var session = Open(viewModel);
 
         session.ClickText("Install");
         await session.WaitForAsync(() => viewModel.Step == InstallStep.Done, what: "install to finish");
