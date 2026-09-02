@@ -39,16 +39,7 @@
          Headers lose their built-in side padding for the same reason (the
          first header sits flush with page content); the margin keeps the
          24px rhythm between headers. -->
-    <Style Selector="TabControl">
-        <Setter Property="Padding" Value="0" />
-        <!-- Strips wrap: a module can carry a dozen tabs -->
-        <Setter Property="ItemsPanel">
-            <ItemsPanelTemplate>
-                <WrapPanel />
-            </ItemsPanelTemplate>
-        </Setter>
-    </Style>
-    <!-- Tab headers themselves: TabItemTheme.axaml (one definition, so a
+    <!-- Tab strips and headers: TabStripTheme.axaml (one definition, so a
          view writes Header="Name" and nothing else). -->
 
     <!-- Sliders: hand cursor and a thumb that grows toward the pointer.
@@ -235,6 +226,13 @@
         <Setter Property="Background" Value="{DynamicResource AccentPressedBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource AccentOutlineBrush}" />
         <Setter Property="Foreground" Value="White" />
+    </Style>
+
+    <!-- Every apply-bar button is the same height, whether it carries the
+         count badge or not -->
+    <Style Selector="Button.apply-bar-apply, Button.apply-bar-discard">
+        <Setter Property="Height" Value="36" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
 
     <!-- Apply bar: Discard button -->

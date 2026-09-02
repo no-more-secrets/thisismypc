@@ -1,13 +1,51 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="using:ThisIsMyPC.App.Controls">
+
+    <!-- The tab strip: a sunken well (darker than the page, near the window
+         navy) holding the header chips in justified rows, so every row runs
+         the well's full width. The well ends 16px short of the page edge,
+         the same edge a search box or toolbar above it uses; the selected
+         content below keeps the full width (its scrollbar lane needs it).
+         The well's top edge is the strip's first pixel, so a tab page's
+         TabControl still carries Margin="0,4,0,0" and nothing else. -->
+    <ControlTheme x:Key="{x:Type TabControl}" TargetType="TabControl">
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="ItemsPanel">
+            <ItemsPanelTemplate>
+                <controls:JustifiedWrapPanel Gap="6" />
+            </ItemsPanelTemplate>
+        </Setter>
+        <Setter Property="Template">
+            <ControlTemplate>
+                <DockPanel>
+                    <Border Name="PART_Strip"
+                            DockPanel.Dock="Top"
+                            Background="{DynamicResource SunkenBrush}"
+                            BorderBrush="{DynamicResource OutlineBrush}"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="6"
+                            Margin="0,0,16,0">
+                        <ItemsPresenter Name="PART_ItemsPresenter"
+                                        ItemsPanel="{TemplateBinding ItemsPanel}" />
+                    </Border>
+                    <ContentPresenter Name="PART_SelectedContentHost"
+                                      Margin="{TemplateBinding Padding}"
+                                      Content="{TemplateBinding SelectedContent}"
+                                      ContentTemplate="{TemplateBinding SelectedContentTemplate}"
+                                      HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                      VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+                </DockPanel>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
 
     <!-- Tab header as a bordered chip: Surface fill and the shared outline,
          13px secondary text; hover lifts to the control hover wash and
          primary text; the selected chip carries the sidebar's active tint
-         with the accent outline. Chips wrap with an 8px gap both ways, so a
-         strip of a dozen headers (Startup & Services) reads as a tidy grid
-         instead of loose underlined words. The band stays 30px so the strip
-         starts where any first element does (edge-geometry contract). -->
+         with the accent outline. The panel spaces the chips; a chip has no
+         margin of its own. -->
     <ControlTheme x:Key="{x:Type TabItem}" TargetType="TabItem">
         <Setter Property="FontSize" Value="13" />
         <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
@@ -16,8 +54,9 @@
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="4" />
         <Setter Property="Padding" Value="10,0" />
-        <Setter Property="Margin" Value="0,0,8,8" />
+        <Setter Property="Margin" Value="0" />
         <Setter Property="MinHeight" Value="28" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Template">
@@ -31,7 +70,7 @@
                     <ContentPresenter Name="PART_ContentPresenter"
                                       Content="{TemplateBinding Header}"
                                       ContentTemplate="{TemplateBinding HeaderTemplate}"
-                                      HorizontalAlignment="Center"
+                                      HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                       VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
                 </Border>
             </ControlTemplate>

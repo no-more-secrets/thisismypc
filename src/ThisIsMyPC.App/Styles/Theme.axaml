@@ -26,6 +26,8 @@
             <SolidColorBrush x:Key="RaisedBrush" Color="{StaticResource RaisedColor}" />
             <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}" />
             <SolidColorBrush x:Key="OverlayBrush" Color="{StaticResource OverlayColor}" />
+            <!-- A well set into a page: darker than the page, a shade above the window navy -->
+            <SolidColorBrush x:Key="SunkenBrush" Color="#1e1e33" />
 
             <!-- Sidebar -->
             <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="{StaticResource RaisedColor}" />
@@ -233,6 +235,8 @@
             <SolidColorBrush x:Key="RaisedBrush" Color="{StaticResource RaisedColor}" />
             <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource SurfaceColor}" />
             <SolidColorBrush x:Key="OverlayBrush" Color="{StaticResource OverlayColor}" />
+            <!-- A well set into a page: a shade darker than the page -->
+            <SolidColorBrush x:Key="SunkenBrush" Color="#e1e4ee" />
 
             <!-- Sidebar -->
             <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="{StaticResource RaisedColor}" />

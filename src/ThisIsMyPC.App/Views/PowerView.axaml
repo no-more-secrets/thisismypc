@@ -299,9 +299,11 @@
                      in a dozen groups, far too many for one column. The strip
                      wraps; the settings panel sits inside the page scroller,
                      so a tab's rows scroll with the page. -->
+                <!-- The panel already keeps the 16px edge; the strip's own
+                     right margin would inset it twice -->
                 <TabControl ItemsSource="{Binding SettingsGroups}"
                             IsVisible="{Binding !!SettingsGroups.Count}"
-                            Margin="0,4,0,0">
+                            Margin="0,4,-16,0">
                     <TabControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:PowerSettingGroupViewModel">
                             <TextBlock Text="{Binding Header}" />

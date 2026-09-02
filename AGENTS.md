@@ -170,18 +170,19 @@ a scroller (card-page toolbar rows) uses right margin 16 too, so it shares the
 content edge exactly. Inside a page: first element starts 4px below the host
 padding (24 host plus 12 page read as spare room on every page; Sam,
 2026-09-02, twice); scrolled content ends 24px above it. Views never set their own left
-margins. `Controls.axaml` zeroes TabControl/TabItem padding globally (stock
-Fluent pads tab content 12px per side, which pushes scrollbars out of the lane
-and indents content); a new tab page needs `Margin="0,4,0,0"` on its
-TabControl and nothing else.
+margins. `Styles/TabStripTheme.axaml` owns tab strips: the headers are chips in a
+sunken well that ends 16px short of the page edge (the same edge a search
+box above it uses) while the selected content keeps the full width for its
+scrollbar lane; a new tab page needs `Margin="0,4,0,0"` on its TabControl
+and nothing else (a TabControl inside a panel that already keeps the 16px
+edge cancels the well's margin with `Margin="0,4,-16,0"`, see PowerView).
 
 After touching any page layout, verify parity in pixels, not by eye and never
 from XAML: screenshot the pages (walkthrough or `EdgeGeometryShotTests`), then
 run `tools/measure-edge-geometry.ps1` over the PNGs. Every page must read
 ContentL 25 and LaneFrom 10; ContentR 23 except width-capped pages (Home,
 Settings, Display, Gallery cap content width, so their ContentR is large);
-ContentT 17 give or take 4, tab pages included (`Controls.axaml` gives
-TabItem a 30px band with the header text at its top, so a tab strip starts
+ContentT 17 give or take 4, tab pages included (the strip's well starts
 where any other first element does). Any page off those numbers is the bug,
 even if it looks close.
 

@@ -15,7 +15,7 @@
                 <ResourceInclude Source="avares://ThisIsMyPC.App/Styles/Theme.axaml" />
                 <ResourceInclude Source="avares://ThisIsMyPC.App/Styles/ToggleCardTheme.axaml" />
                 <ResourceInclude Source="avares://ThisIsMyPC.App/Styles/CheckBoxTheme.axaml" />
-                <ResourceInclude Source="avares://ThisIsMyPC.App/Styles/TabItemTheme.axaml" />
+                <ResourceInclude Source="avares://ThisIsMyPC.App/Styles/TabStripTheme.axaml" />
                 <ResourceInclude Source="avares://ThisIsMyPC.App/Templates/ToggleSettingRowTemplate.axaml" />
                 <ResourceInclude Source="avares://ThisIsMyPC.App/Templates/MultiScopeRowTemplate.axaml" />
                 <ResourceInclude Source="avares://ThisIsMyPC.App/Templates/ChoiceSettingRowTemplate.axaml" />

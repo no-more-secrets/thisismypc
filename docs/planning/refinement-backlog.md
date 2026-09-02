@@ -451,8 +451,13 @@ above and below the switch track are gone, so a toggle card is 33px with
 title and switch both centred; the Explorer page is two tabs (Explorer,
 Taskbar) under its search box and fits one screen; the tab strip is
 bordered chips (Surface fill, shared outline, sidebar tint plus accent
-outline when selected, 8px gaps both ways) that stack cleanly in the
-two-row Startup & Services strip. Switching the active plan failed on
+outline when selected) that stack cleanly in the two-row Startup &
+Services strip; then (Sam liked them) the strip became a sunken well
+(`SunkenBrush`, a shade above the window navy, the shared outline) as wide
+as the search box above it, with the chips in justified rows
+(`JustifiedWrapPanel`: each row stretches to the well's width, every chip
+in a row growing by the same amount), and the apply-bar buttons share one
+36px height whether or not Apply carries the count badge. Switching the active plan failed on
 Sam's PC with Win32 error 1260: winutil had written the Group Policy value
 `HKLM\SOFTWARE\Policies\Microsoft\Power\PowerSettings\ActivePowerScheme`
 to pin its plan, and Windows refuses every other switch while it points
