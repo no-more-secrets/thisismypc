@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Modules.Startup.Models;
@@ -6,9 +5,10 @@ using ThisIsMyPC.Modules.Startup.Models;
 namespace ThisIsMyPC.App.ViewModels;
 
 /// <summary>
-/// Startup &amp; Services: the Autoruns inventory, grouped by Autoruns
-/// category, with a text filter, a category picker, and a Microsoft filter.
-/// Each row stages its own enable or disable through the pending pipeline.
+/// Startup &amp; Services: the Autoruns inventory as Autoruns lays it out, one
+/// tab per category plus Everything, with a text filter and a Microsoft
+/// filter shared by every tab. Each row stages its own enable or disable
+/// through the pending pipeline.
 /// </summary>
 public sealed partial class StartupViewModel : ObservableObject, IDisposable
 {
@@ -18,54 +18,57 @@ public sealed partial class StartupViewModel : ObservableObject, IDisposable
     private string _autorunFilterText = string.Empty;
 
     [ObservableProperty]
-    private string _autorunCategoryFilter = "All";
-
-    [ObservableProperty]
     private bool _hideMicrosoftAutoruns;
-
-    public static IReadOnlyList<string> AutorunCategoryFilterOptions { get; } =
-        ["All", .. Enum.GetValues<AutorunCategory>().Select(AutorunEntry.CategoryName)];
 
     public StartupViewModel(StartupScanData scanData, IPendingChangesService pendingChangesService)
     {
         ArgumentNullException.ThrowIfNull(scanData);
         _allAutoruns.AddRange(scanData.Autoruns.Select(a => new AutorunItemViewModel(a, pendingChangesService)));
         AutorunsScanError = scanData.AutorunsScanError ?? scanData.ScheduledTasksScanError ?? scanData.ServicesScanError;
-        AutorunGroups = [];
+        Tabs = [new AutorunTabViewModel(null), .. Enum.GetValues<AutorunCategory>().Select(c => new AutorunTabViewModel(c))];
         RebuildAutoruns();
     }
 
     public string? AutorunsScanError { get; }
-    public ObservableCollection<AutorunGroupViewModel> AutorunGroups { get; }
-    public string AutorunsHeader => $"Autoruns ({AutorunGroups.Sum(g => g.Items.Count)} of {_allAutoruns.Count})";
-    public bool HasVisibleAutoruns => AutorunGroups.Count > 0;
+
+    /// <summary>Everything first, then the categories in Autoruns' order.</summary>
+    public IReadOnlyList<AutorunTabViewModel> Tabs { get; }
 
     partial void OnAutorunFilterTextChanged(string value) => RebuildAutoruns();
-    partial void OnAutorunCategoryFilterChanged(string value) => RebuildAutoruns();
     partial void OnHideMicrosoftAutorunsChanged(bool value) => RebuildAutoruns();
 
-    /// <summary>Groups in Autoruns' tab order; a category with nothing visible is left out.</summary>
     private void RebuildAutoruns()
     {
         var filter = AutorunFilterText.Trim();
-        AutorunGroups.Clear();
+        var byCategory = new Dictionary<AutorunCategory, (List<AutorunItemViewModel> Visible, int Total)>();
         foreach (var category in Enum.GetValues<AutorunCategory>())
         {
-            var name = AutorunEntry.CategoryName(category);
-            if (AutorunCategoryFilter != "All" && AutorunCategoryFilter != name)
-                continue;
-
             var all = _allAutoruns.Where(a => a.Entry.Category == category).ToList();
             var visible = all
                 .Where(a => !HideMicrosoftAutoruns || !a.IsMicrosoft)
                 .Where(a => filter.Length == 0 || a.Matches(filter))
                 .OrderBy(a => a.Name, StringComparer.OrdinalIgnoreCase)
                 .ToList();
-            if (visible.Count > 0)
-                AutorunGroups.Add(new AutorunGroupViewModel(category, visible, all.Count));
+            byCategory[category] = (visible, all.Count);
         }
-        OnPropertyChanged(nameof(AutorunsHeader));
-        OnPropertyChanged(nameof(HasVisibleAutoruns));
+
+        foreach (var tab in Tabs)
+        {
+            if (tab.Category is { } category)
+            {
+                var (visible, total) = byCategory[category];
+                var groups = visible.Count == 0 ? [] : new[] { new AutorunGroupViewModel(category, visible, total, showHeader: false) };
+                tab.Replace(groups, visible.Count, total);
+            }
+            else
+            {
+                var groups = Enum.GetValues<AutorunCategory>()
+                    .Where(c => byCategory[c].Visible.Count > 0)
+                    .Select(c => new AutorunGroupViewModel(c, byCategory[c].Visible, byCategory[c].Total, showHeader: true))
+                    .ToList();
+                tab.Replace(groups, byCategory.Sum(p => p.Value.Visible.Count), _allAutoruns.Count);
+            }
+        }
     }
 
     public void Dispose()

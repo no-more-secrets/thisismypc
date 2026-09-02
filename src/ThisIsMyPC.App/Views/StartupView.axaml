@@ -78,6 +78,7 @@
         <DataTemplate x:Key="AutorunGroupTemplate" x:DataType="vm:AutorunGroupViewModel">
             <StackPanel Spacing="6" Margin="0,0,0,14">
                 <TextBlock Text="{Binding Header}"
+                           IsVisible="{Binding ShowHeader}"
                            FontSize="16"
                            FontWeight="SemiBold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -87,49 +88,55 @@
         </DataTemplate>
     </UserControl.Resources>
 
-    <!-- Every autostart location, in Autoruns' categories. No tab strip:
-         this is the whole module page, so content starts 12px below the
-         host padding like every other card page. -->
-    <ScrollViewer HorizontalScrollBarVisibility="Disabled"
-                  VerticalScrollBarVisibility="Auto">
-        <StackPanel Spacing="6" Margin="0,12,16,24">
-            <TextBlock Text="{Binding AutorunsHeader}"
-                       FontSize="16"
-                       FontWeight="SemiBold"
-                       Foreground="{DynamicResource TextPrimaryBrush}" />
-            <TextBlock Text="Everything that starts on its own, grouped the way Sysinternals Autoruns groups it. Switching an item off parks it where Autoruns would (an AutorunsDisabled key, folder, or value), so the two tools agree."
-                       FontSize="12"
-                       TextWrapping="Wrap"
-                       Foreground="{DynamicResource TextSecondaryBrush}" />
-            <TextBlock Text="{Binding AutorunsScanError, StringFormat='Part of the scan failed: {0}'}"
-                       IsVisible="{Binding AutorunsScanError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                       Foreground="{DynamicResource WarningBrush}"
-                       FontSize="12" />
-            <DockPanel>
-                <ComboBox DockPanel.Dock="Right"
-                          ItemsSource="{Binding AutorunCategoryFilterOptions}"
-                          SelectedItem="{Binding AutorunCategoryFilter}"
-                          FontSize="12"
-                          MinWidth="170"
-                          Margin="8,0,0,0"
-                          VerticalAlignment="Center" />
-                <CheckBox DockPanel.Dock="Right"
-                          IsChecked="{Binding HideMicrosoftAutoruns}"
-                          Content="Hide Microsoft entries"
-                          FontSize="12"
-                          Margin="12,0,0,0"
-                          VerticalAlignment="Center" />
-                <TextBox Text="{Binding AutorunFilterText}"
-                         Watermark="Filter by name, description, publisher, file, or location"
-                         FontSize="12" />
-            </DockPanel>
-            <ItemsControl ItemsSource="{Binding AutorunGroups}"
-                          ItemTemplate="{StaticResource AutorunGroupTemplate}"
-                          Margin="0,8,0,0" />
-            <TextBlock Text="No autostart items match the current filter"
-                       FontSize="12" FontStyle="Italic"
-                       Foreground="{DynamicResource TextTertiaryBrush}"
-                       IsVisible="{Binding !HasVisibleAutoruns}" />
-        </StackPanel>
-    </ScrollViewer>
+    <!-- Autoruns' layout: one tab per category plus Everything, the filter
+         row shared above the strip. Fixed chrome above the tabs keeps the
+         16px right margin so it shares the content edge; the strip itself
+         wraps because fourteen headers do not fit one row. -->
+    <Grid RowDefinitions="Auto,Auto,*" Margin="0,12,0,0">
+        <TextBlock Grid.Row="0"
+                   Text="{Binding AutorunsScanError, StringFormat='Part of the scan failed: {0}'}"
+                   IsVisible="{Binding AutorunsScanError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                   Foreground="{DynamicResource WarningBrush}"
+                   FontSize="12"
+                   Margin="0,0,16,6" />
+        <DockPanel Grid.Row="1" Margin="0,0,16,0">
+            <CheckBox DockPanel.Dock="Right"
+                      IsChecked="{Binding HideMicrosoftAutoruns}"
+                      Content="Hide Microsoft entries"
+                      FontSize="12"
+                      Margin="12,0,0,0"
+                      VerticalAlignment="Center" />
+            <TextBox Text="{Binding AutorunFilterText}"
+                     Watermark="Filter by name, description, publisher, file, or location"
+                     FontSize="12" />
+        </DockPanel>
+
+        <TabControl Grid.Row="2" ItemsSource="{Binding Tabs}" Margin="0,8,0,0">
+            <TabControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <WrapPanel />
+                </ItemsPanelTemplate>
+            </TabControl.ItemsPanel>
+            <TabControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:AutorunTabViewModel">
+                    <TextBlock Text="{Binding Header}" FontSize="14" />
+                </DataTemplate>
+            </TabControl.ItemTemplate>
+            <TabControl.ContentTemplate>
+                <DataTemplate x:DataType="vm:AutorunTabViewModel">
+                    <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                                  VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="6" Margin="0,8,16,24">
+                            <ItemsControl ItemsSource="{Binding Groups}"
+                                          ItemTemplate="{StaticResource AutorunGroupTemplate}" />
+                            <TextBlock Text="Nothing here matches the current filter"
+                                       FontSize="12" FontStyle="Italic"
+                                       Foreground="{DynamicResource TextTertiaryBrush}"
+                                       IsVisible="{Binding !HasItems}" />
+                        </StackPanel>
+                    </ScrollViewer>
+                </DataTemplate>
+            </TabControl.ContentTemplate>
+        </TabControl>
+    </Grid>
 </UserControl>

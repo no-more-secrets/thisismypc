@@ -1,6 +1,6 @@
 # Startup Scanner Rationale
 
-Design rationale for `ThisIsMyPC.Modules.Startup`. This is AI-written, condensed from an analysis of an Autoruns export from one personal machine (the export is not in the repo) and from Sam's read of how Autoruns stores state. Since 2026-09-02 the module's page is one Autoruns-style inventory: every autostart location Sysinternals Autoruns lists, grouped by its categories, with items disabled the way Autoruns disables them, so the two tools read each other's state. The earlier Startup, Scheduled Tasks, and Services tabs were removed the same day; their scanners and change factories stay in the module because sets (Clean Boot), the monitoring section on Home, and the set inspector still apply changes through them.
+Design rationale for `ThisIsMyPC.Modules.Startup`. This is AI-written, condensed from an analysis of an Autoruns export from one personal machine (the export is not in the repo) and from Sam's read of how Autoruns stores state. Since 2026-09-02 the module's page is laid out like Autoruns itself: one tab per category plus Everything, a filter box and a "Hide Microsoft entries" box shared by every tab, and items disabled the way Autoruns disables them, so the two tools read each other's state. The earlier Startup, Scheduled Tasks, and Services tabs were removed the same day; their scanners and change factories stay in the module because sets (Clean Boot), the monitoring section on Home, and the set inspector still apply changes through them.
 
 ## The page
 

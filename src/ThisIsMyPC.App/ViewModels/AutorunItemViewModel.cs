@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -8,21 +9,58 @@ using ThisIsMyPC.Modules.Startup.Models;
 
 namespace ThisIsMyPC.App.ViewModels;
 
-/// <summary>One Autoruns category on the Autoruns tab: a header plus its visible rows.</summary>
+/// <summary>One Autoruns category's visible rows. On the Everything tab the header names the category; on a category tab it is hidden.</summary>
 public sealed class AutorunGroupViewModel
 {
-    public AutorunGroupViewModel(AutorunCategory category, IReadOnlyList<AutorunItemViewModel> items, int total)
+    public AutorunGroupViewModel(AutorunCategory category, IReadOnlyList<AutorunItemViewModel> items, int total, bool showHeader)
     {
         Category = category;
         Items = items;
-        Header = items.Count == total
-            ? $"{AutorunEntry.CategoryName(category)} ({total})"
-            : $"{AutorunEntry.CategoryName(category)} ({items.Count} of {total})";
+        ShowHeader = showHeader;
+        Header = CountLabel(AutorunEntry.CategoryName(category), items.Count, total);
     }
 
     public AutorunCategory Category { get; }
     public string Header { get; }
+    public bool ShowHeader { get; }
     public IReadOnlyList<AutorunItemViewModel> Items { get; }
+
+    public static string CountLabel(string name, int shown, int total)
+        => shown == total ? $"{name} ({total})" : $"{name} ({shown} of {total})";
+}
+
+/// <summary>
+/// One tab of the page, the way Autoruns has one per category plus
+/// Everything. Category is null for Everything, which shows every group
+/// with its header. Groups are rebuilt whenever the shared filters change.
+/// </summary>
+public sealed partial class AutorunTabViewModel : ObservableObject
+{
+    public AutorunTabViewModel(AutorunCategory? category)
+    {
+        Category = category;
+        Name = category is null ? "Everything" : AutorunEntry.CategoryName(category.Value);
+        Header = Name;
+    }
+
+    public AutorunCategory? Category { get; }
+    public string Name { get; }
+    public ObservableCollection<AutorunGroupViewModel> Groups { get; } = [];
+
+    [ObservableProperty]
+    private string _header;
+
+    [ObservableProperty]
+    private bool _hasItems;
+
+    public void Replace(IReadOnlyList<AutorunGroupViewModel> groups, int shown, int total)
+    {
+        Groups.Clear();
+        foreach (var group in groups)
+            Groups.Add(group);
+        Header = AutorunGroupViewModel.CountLabel(Name, shown, total);
+        HasItems = groups.Count > 0;
+    }
 }
 
 /// <summary>

@@ -346,8 +346,9 @@ DWORD; every toggle is a pending change (`ChangeValueType.Autorun_State`)
 with undo as the reverse move. `IRegistryService` gained typed
 `ReadValue`/`WriteValue` and `CreateKey` (default implementations, so the
 fakes did not change); `IStartupFolderService` gained `EnumerateDisabled`
-and `Move`. The page has a filter box, a category picker, and "Hide
-Microsoft entries". The old Startup, Scheduled Tasks, and Services tabs were
+and `Move`. The page is laid out like Autoruns: a tab per category plus
+Everything (the strip wraps to two rows), with a filter box and "Hide
+Microsoft entries" shared above the tabs. The old Startup, Scheduled Tasks, and Services tabs were
 deleted the same day (Sam: never liked them); their scanners, change
 factories, and the set inspector stay because Clean Boot sets and the Home
 monitoring section apply through them.
