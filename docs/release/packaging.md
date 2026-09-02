@@ -34,6 +34,15 @@ The app corresponds to the PC, not a user profile (CLAUDE.md). Packaging follows
   unticked, and writes the behavior choices through the app's own
   `SettingsService`; the app's `AutoStartService.Reconcile()` turns the
   setting into the Run entry at first start.
+- **File properties** (Explorer, Details tab): description "ThisIsMyPC
+  Installer", product version without the commit hash
+  (`IncludeSourceRevisionInInformationalVersion` off in Directory.Build.props),
+  original filename ending in .exe (the IL module is compiled as .exe with no
+  apphost; NativeAOT emits the real one), and language English (United States).
+  The C# compiler always writes the version block Language Neutral and no
+  property changes that, so `tools/set-version-language.ps1` rewrites the block
+  in the packed exe before signing. "Type: Application" is Explorer's label for
+  every .exe and cannot be changed.
 - **Nothing trusted goes through %TEMP%.** The installer hardens
   `%ProgramData%\ThisIsMyPC` (Administrators/SYSTEM, the app's own
   `DataDirectoryGuard`) before it writes the unpacked MSI or the two native

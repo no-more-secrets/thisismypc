@@ -4,6 +4,12 @@
     <!-- The download is one file with a plain name; the assembly name is that name. -->
     <AssemblyName>ThisIsMyPC-Installer</AssemblyName>
     <RootNamespace>ThisIsMyPC.Installer</RootNamespace>
+    <AssemblyTitle>ThisIsMyPC Installer</AssemblyTitle>
+    <!-- The version resource copies the IL module name into OriginalFilename.
+         Compile the IL as .exe (no apphost; NativeAOT emits the real exe) so
+         the file properties read ThisIsMyPC-Installer.exe, not .dll. -->
+    <UseAppHost>false</UseAppHost>
+    <TargetExt>.exe</TargetExt>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <!-- LibraryImport (the pre-Avalonia message box in NativeBootstrap) -->

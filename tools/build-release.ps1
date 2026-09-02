@@ -72,6 +72,12 @@ if (-not (Test-Path (Join-Path $staging 'ThisIsMyPC.Service.exe'))) {
     throw 'ThisIsMyPC.Service.exe missing from staging; Owner Mode enable would break'
 }
 
+# Version blocks read English (United States) instead of Language Neutral
+# (the compiler cannot be told otherwise). Before vpk pack, which signs them.
+foreach ($exe in 'ThisIsMyPC.App.exe', 'ThisIsMyPC.Service.exe') {
+    & (Join-Path $PSScriptRoot 'set-version-language.ps1') -Path (Join-Path $staging $exe)
+}
+
 $signArgs = @()
 if ($SignThumbprint) {
     $cert = Get-ChildItem Cert:\CurrentUser\My | Where-Object { $_.Thumbprint -eq $SignThumbprint.ToUpperInvariant() }
@@ -131,6 +137,9 @@ if (-not (Test-Path $installerExe)) { throw 'ThisIsMyPC-Installer.exe missing fr
 # Release assets carry the version in the name (Sam, 2026-09-01).
 $installerAsset = Join-Path $output "ThisIsMyPC-Installer-$Version.exe"
 Copy-Item $installerExe $installerAsset -Force
+# The compiler stamps the version block Language Neutral; Explorer should say
+# English (United States). Must precede signing: it rewrites the file.
+& (Join-Path $PSScriptRoot 'set-version-language.ps1') -Path $installerAsset
 
 if ($SignThumbprint) {
     # vpk signed its own outputs during pack; the installer is built after, so
