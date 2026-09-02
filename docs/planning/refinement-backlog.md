@@ -456,10 +456,12 @@ two-row Startup & Services strip. Switching the active plan failed on
 Sam's PC with Win32 error 1260: winutil had written the Group Policy value
 `HKLM\SOFTWARE\Policies\Microsoft\Power\PowerSettings\ActivePowerScheme`
 to pin its plan, and Windows refuses every other switch while it points
-elsewhere. The active-plan change now moves that pin to the target before
-`PowerSetActiveScheme` (and back on undo, since undo hands the module the
-swapped descriptor); 1260 maps to an AccessDenied message that names the
-policy value. Later that
+elsewhere, and (verified on Sam's PC) while the value exists at all, even
+naming the target. The active-plan change now lifts the pin, calls
+`PowerSetActiveScheme`, and puts the pin back naming the new plan (the old
+one back when activation fails); undo hands the module the swapped
+descriptor, so the same dance runs in reverse. 1260 maps to an AccessDenied
+message that names the policy value. Later that
 day (Sam: adding plans did nothing): a row of the Add plan dropdown closed
 the menu before its command ran, and closing detached the menu content and
 its bindings, so nothing was staged; the close is now posted after the
