@@ -9,8 +9,8 @@ namespace ThisIsMyPC.App.ViewModels;
 /// Startup &amp; Services: the Autoruns inventory as Autoruns lays it out, one
 /// tab per category, rows grouped under their location with the key's or
 /// folder's write time. Typing in the filter box replaces the tabs with one
-/// list across every category. "Hide Windows entries" (on, as in Autoruns)
-/// and "Hide Microsoft entries" apply to both. Icons and signers load in the
+/// list across every category. Windows and Microsoft entries stay hidden
+/// until their boxes are ticked; both filters apply to tabs and search. Icons and signers load in the
 /// background after the page is up; the Windows filter is re-applied once
 /// they are known.
 /// </summary>
@@ -23,11 +23,13 @@ public sealed partial class StartupViewModel : ObservableObject, IDisposable
     [NotifyPropertyChangedFor(nameof(IsSearching))]
     private string _autorunFilterText = string.Empty;
 
+    /// <summary>Windows' own entries (signed by Microsoft Windows) show only when ticked.</summary>
     [ObservableProperty]
-    private bool _hideWindowsEntries = true;
+    private bool _showWindowsEntries;
 
+    /// <summary>Other Microsoft-published entries show only when ticked.</summary>
     [ObservableProperty]
-    private bool _hideMicrosoftAutoruns;
+    private bool _showMicrosoftEntries;
 
     /// <summary>Rows show their file path only when asked; the list stays one line per row otherwise.</summary>
     [ObservableProperty]
@@ -68,13 +70,13 @@ public sealed partial class StartupViewModel : ObservableObject, IDisposable
 
     partial void OnAutorunFilterTextChanged(string value) => RebuildSearch();
 
-    partial void OnHideWindowsEntriesChanged(bool value)
+    partial void OnShowWindowsEntriesChanged(bool value)
     {
         RebuildTabs();
         RebuildSearch();
     }
 
-    partial void OnHideMicrosoftAutorunsChanged(bool value)
+    partial void OnShowMicrosoftEntriesChanged(bool value)
     {
         RebuildTabs();
         RebuildSearch();
@@ -83,8 +85,8 @@ public sealed partial class StartupViewModel : ObservableObject, IDisposable
     private IEnumerable<AutorunItemViewModel> Visible(AutorunCategory category)
         => _allAutoruns
             .Where(a => a.Entry.Category == category)
-            .Where(a => !HideWindowsEntries || !a.IsWindowsEntry)
-            .Where(a => !HideMicrosoftAutoruns || !a.IsMicrosoft);
+            .Where(a => ShowWindowsEntries || !a.IsWindowsEntry)
+            .Where(a => ShowMicrosoftEntries || !a.IsMicrosoft);
 
     /// <summary>Rows grouped under their location, locations in first-seen (catalog) order, rows by name. The view shows or hides the headers.</summary>
     private static List<object> WithLocationHeaders(IEnumerable<AutorunItemViewModel> rows)

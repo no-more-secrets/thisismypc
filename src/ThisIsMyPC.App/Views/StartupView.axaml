@@ -177,23 +177,19 @@
                    Foreground="{DynamicResource WarningBrush}"
                    FontSize="12"
                    Margin="0,0,16,6" />
+        <!-- Search, and a 2x2 grid of show boxes beside it: what a row
+             reveals (paths, locations) over which rows show (Windows,
+             Microsoft; both hidden until ticked). -->
         <DockPanel Grid.Row="1" Margin="0,0,16,0">
-            <CheckBox DockPanel.Dock="Right"
-                      IsChecked="{Binding ShowLocations}"
-                      Content="Show locations"
-                      Margin="12,0,0,0" />
-            <CheckBox DockPanel.Dock="Right"
-                      IsChecked="{Binding ShowPaths}"
-                      Content="Show paths"
-                      Margin="12,0,0,0" />
-            <CheckBox DockPanel.Dock="Right"
-                      IsChecked="{Binding HideMicrosoftAutoruns}"
-                      Content="Hide Microsoft entries"
-                      Margin="12,0,0,0" />
-            <CheckBox DockPanel.Dock="Right"
-                      IsChecked="{Binding HideWindowsEntries}"
-                      Content="Hide Windows entries"
-                      Margin="12,0,0,0" />
+            <Grid DockPanel.Dock="Right"
+                  ColumnDefinitions="Auto,Auto" RowDefinitions="Auto,Auto"
+                  ColumnSpacing="16" RowSpacing="4"
+                  Margin="16,0,0,0" VerticalAlignment="Center">
+                <CheckBox Grid.Row="0" Grid.Column="0" Content="Paths" IsChecked="{Binding ShowPaths}" />
+                <CheckBox Grid.Row="0" Grid.Column="1" Content="Locations" IsChecked="{Binding ShowLocations}" />
+                <CheckBox Grid.Row="1" Grid.Column="0" Content="Windows" IsChecked="{Binding ShowWindowsEntries}" />
+                <CheckBox Grid.Row="1" Grid.Column="1" Content="Microsoft" IsChecked="{Binding ShowMicrosoftEntries}" />
+            </Grid>
             <TextBox Classes="filter"
                      Text="{Binding AutorunFilterText}"
                      Watermark="Search by name, description, publisher, file, or location" />

@@ -435,7 +435,10 @@ their own control themes on the palette now, `Styles/CheckBoxTheme.axaml`
 (18px box, shared outline, Overlay fill, accent fill with a white check,
 button hover and press, no reserved 32px row) and `Styles/TabItemTheme.axaml`
 (14px secondary text, primary on hover and selection, 2px accent line,
-30px band with the text at its top); Startup rows are 23px. Later that
+30px band with the text at its top); Startup rows are 23px. The filter
+row is a 2x2 grid of show boxes beside the search box (Paths, Locations,
+Windows, Microsoft); Windows and Microsoft entries are both hidden until
+ticked (Sam flipped the Microsoft default on purpose). Later that
 day (Sam: adding plans did nothing): a row of the Add plan dropdown closed
 the menu before its command ran, and closing detached the menu content and
 its bindings, so nothing was staged; the close is now posted after the

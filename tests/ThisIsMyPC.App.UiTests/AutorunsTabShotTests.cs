@@ -101,14 +101,14 @@ public class AutorunsTabShotTests
         await WaitForSignersAsync(session, viewModel);
 
         session.Screenshot("logon");
-        // Hide Windows entries is on by default, as in Autoruns: SecurityHealth is Windows.
+        // Windows and Microsoft entries are hidden until ticked: SecurityHealth is Windows.
         Assert.True(session.IsTextVisible("Logon (5 of 6)"));
         Assert.False(session.IsTextVisible("SecurityHealth"));
         // Dense by default: no location headers, no paths, until asked for.
         Assert.False(session.IsTextVisible(StartupScanner.MachineRunKey));
         Assert.False(session.IsTextVisible(@"File not found: C:\Users\me\AppData\Local\splice\app-4.2.77773\Splice.exe"));
-        session.ClickText("Show paths");
-        session.ClickText("Show locations");
+        session.ClickText("Paths");
+        session.ClickText("Locations");
         session.Screenshot("logon-paths-and-locations");
         Assert.True(session.IsTextVisible(StartupScanner.MachineRunKey));
         Assert.True(session.IsTextVisible(StartupScanner.UserRunKey));
@@ -156,8 +156,12 @@ public class AutorunsTabShotTests
 
         Assert.True(session.IsTextVisible("Services (0 of 1)"));
         Assert.True(session.IsTextVisible("Scheduled Tasks (1 of 3)"));
-        session.ClickText("Hide Windows entries");
-        Assert.False(viewModel.HideWindowsEntries);
+        // SecurityHealth is both Windows and Microsoft, so both boxes must be on to see it.
+        session.ClickText("Windows");
+        Assert.True(viewModel.ShowWindowsEntries);
+        Assert.False(session.IsTextVisible("SecurityHealth"));
+        session.ClickText("Microsoft");
+        Assert.True(viewModel.ShowMicrosoftEntries);
         Assert.True(session.IsTextVisible("Logon (6)"));
         Assert.True(session.IsTextVisible("SecurityHealth"));
         Assert.True(session.IsTextVisible("Off in Task Manager"));
@@ -189,9 +193,9 @@ public class AutorunsTabShotTests
         Assert.Single(taskTab.Items.OfType<AutorunLocationHeader>());
 
         ClickTab(session, "Logon");
-        session.ClickText("Hide Microsoft entries");
+        session.ClickText("Microsoft");
         session.Screenshot("logon-tab-hide-microsoft");
-        Assert.True(viewModel.HideMicrosoftAutoruns);
+        Assert.False(viewModel.ShowMicrosoftEntries);
         Assert.True(session.IsTextVisible("Logon (5 of 6)"));
         Assert.False(session.IsTextVisible("SecurityHealth"));
     }

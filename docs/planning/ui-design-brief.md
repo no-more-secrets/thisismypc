@@ -74,7 +74,7 @@ Two themes required, dark and light, equal citizens. Dark is the default.
    Ultimate Performance).
 6. **Startup & Services**: laid out like Autoruns, one tab per category
    (Logon, Explorer, Services, Drivers, Scheduled Tasks, and the rest), a
-   "Hide Microsoft entries" box, a search box that replaces the tabs with one
+   a 2x2 grid of show boxes (Paths, Locations, Windows, Microsoft), a search box that replaces the tabs with one
    list across every category while it has text, and a per-row switch that
    stages the change.
 7. **Windows Annoyances**: ~30 setting cards in groups. The reference
