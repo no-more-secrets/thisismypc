@@ -51,11 +51,6 @@
                                             Command="{Binding BeginCreatePlanCommand}"
                                             Click="OnAddPlanItemClick" />
                                     <Separator IsVisible="{Binding HasAddPlanOptions}" Margin="0,4" />
-                                    <TextBlock Text="Windows plans not in the list"
-                                               IsVisible="{Binding HasAddPlanOptions}"
-                                               FontSize="11"
-                                               Margin="10,0,10,2"
-                                               Foreground="{DynamicResource TextTertiaryBrush}" />
                                     <ItemsControl ItemsSource="{Binding AddPlanOptions}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate x:DataType="vm:AddPlanOptionViewModel">
