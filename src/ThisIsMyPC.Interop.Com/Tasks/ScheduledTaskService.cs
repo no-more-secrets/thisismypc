@@ -295,7 +295,7 @@ public sealed partial class ScheduledTaskService : IScheduledTaskService
             return new ScheduledTaskInfo(
                 name, path, ResolveIndirect(definition.Author), ResolveIndirect(definition.Description), definition.TriggerTypes,
                 lastRun, lastResult, enabledRaw != 0,
-                definition.Command, definition.Arguments, definition.ComHandlerClsid);
+                definition.Command, definition.Arguments, definition.ComHandlerClsid, definition.WorkingDirectory);
         }
         catch
         {
@@ -310,7 +310,8 @@ public sealed partial class ScheduledTaskService : IScheduledTaskService
         IReadOnlyList<string> TriggerTypes,
         string? Command,
         string? Arguments,
-        string? ComHandlerClsid)
+        string? ComHandlerClsid,
+        string? WorkingDirectory = null)
     {
         public static TaskDefinition Empty { get; } = new(null, null, [], null, null, null);
     }
@@ -333,7 +334,8 @@ public sealed partial class ScheduledTaskService : IScheduledTaskService
                 triggers ?? [],
                 Child(exec, "Command"),
                 Child(exec, "Arguments"),
-                Child(comHandler, "ClassId"));
+                Child(comHandler, "ClassId"),
+                Child(exec, "WorkingDirectory"));
         }
         catch (System.Xml.XmlException)
         {

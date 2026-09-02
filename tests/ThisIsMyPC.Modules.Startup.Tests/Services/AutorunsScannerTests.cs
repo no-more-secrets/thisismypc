@@ -196,7 +196,7 @@ public class AutorunsScannerTests
     {
         const string clsid = "{2DEA658F-54C1-4227-AF9B-260AB5FC3543}";
         _registry.SetString($@"HKLM\SOFTWARE\Classes\CLSID\{clsid}\InprocServer32", "", @"%SystemRoot%\System32\handler.dll");
-        ScheduledTaskEntry MakeTask(string name, string? command = null, string? arguments = null, string? clsidValue = null) => new()
+        ScheduledTaskEntry MakeTask(string name, string? command = null, string? arguments = null, string? clsidValue = null, string? startIn = null) => new()
         {
             Name = name,
             Path = $@"\Acme\{name}",
@@ -204,18 +204,31 @@ public class AutorunsScannerTests
             Command = command,
             Arguments = arguments,
             ComHandlerClsid = clsidValue,
+            WorkingDirectory = startIn,
             IsEnabled = true,
             Classification = TaskClassification.Unknown,
         };
 
+        // A bare Command resolves against the task's Start In folder first
+        // (FanControl's task: Command FanControl.exe, Start In its install
+        // folder), and only then the scheduler's System32/Windows/PATH walk.
+        var startInFolder = Directory.CreateTempSubdirectory("tipc-startin-").FullName;
+        File.WriteAllBytes(Path.Combine(startInFolder, "FanControl.exe"), []);
+        try
+        {
         var tasks = Scan(tasks:
         [
             MakeTask("Quoted", @"""C:\Program Files\Acme\updater.exe""", "/check"),
             MakeTask("Expanded", @"%SystemRoot%\system32\defrag.exe", "-c"),
             MakeTask("Bare", "sc.exe"),
+            MakeTask("StartIn", "FanControl.exe", startIn: startInFolder + @"\"),
+            MakeTask("StartInMissing", "nothere.exe", startIn: startInFolder),
             MakeTask("Com", clsidValue: clsid),
             MakeTask("Nothing"),
         ]).Where(e => e.Category == AutorunCategory.ScheduledTasks).ToDictionary(e => e.Name);
+
+        Assert.Equal(Path.Combine(startInFolder, "FanControl.exe"), tasks["StartIn"].ImagePath);
+        Assert.Equal(Path.Combine(Windows, "System32", "nothere.exe"), tasks["StartInMissing"].ImagePath, ignoreCase: true);
 
         Assert.Equal(@"C:\Program Files\Acme\updater.exe", tasks["Quoted"].ImagePath);
         Assert.Equal(@"""C:\Program Files\Acme\updater.exe"" /check", tasks["Quoted"].Data);
@@ -229,6 +242,11 @@ public class AutorunsScannerTests
         Assert.Equal(@"\Acme\Nothing", tasks["Nothing"].Data);
         Assert.Equal("Acme Author", tasks["Nothing"].Publisher);
         Assert.All(tasks.Values, t => Assert.Equal(AutorunEntry.TaskSchedulerLocation, t.LocationGroup));
+        }
+        finally
+        {
+            Directory.Delete(startInFolder, recursive: true);
+        }
     }
 
     [Fact]

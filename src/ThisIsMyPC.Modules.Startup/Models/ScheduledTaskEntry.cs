@@ -28,6 +28,9 @@ public sealed record ScheduledTaskEntry
     public string? Command { get; init; }
     public string? Arguments { get; init; }
 
+    /// <summary>The Exec action's Start In folder; a bare Command resolves here before the scheduler's search.</summary>
+    public string? WorkingDirectory { get; init; }
+
     /// <summary>The first ComHandler action's class id when the task runs COM code instead of a program.</summary>
     public string? ComHandlerClsid { get; init; }
 

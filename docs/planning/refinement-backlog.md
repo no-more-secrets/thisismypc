@@ -434,7 +434,7 @@ there is no program, so a user-created task no longer shows the user name
 as its publisher. Long descriptions trim instead of running into the
 signer column. Two Integration tests cover the real shell icon and the
 catalog signer; a Diagnostic UI test boots the real main window, waits for
-icons and signers, and dumps the visible tasks beside its screenshots.
+icons and signers, and dumps the visible tasks beside its screenshots. Later (Sam: the FanControl task reads "File not found: System32" while its Start In folder holds the exe): the reader now carries the Exec action's WorkingDirectory, and a bare Command resolves against it before the scheduler's System32, Windows, PATH walk.
 
 Open: a real elevated pass on this machine (disable a Run entry and a
 context-menu handler, apply, confirm in Autoruns, undo). Set entries

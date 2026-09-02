@@ -130,6 +130,7 @@ public class ScheduledTaskScannerTests : IDisposable
                 <Exec>
                   <Command>"C:\Program Files\Contoso\update.exe"</Command>
                   <Arguments>/silent</Arguments>
+                  <WorkingDirectory>C:\Program Files\Contoso\</WorkingDirectory>
                 </Exec>
               </Actions>
             </Task>
@@ -142,6 +143,7 @@ public class ScheduledTaskScannerTests : IDisposable
         Assert.Equal(["LogonTrigger", "CalendarTrigger"], definition.TriggerTypes);
         Assert.Equal(@"""C:\Program Files\Contoso\update.exe""", definition.Command);
         Assert.Equal("/silent", definition.Arguments);
+        Assert.Equal(@"C:\Program Files\Contoso\", definition.WorkingDirectory);
         Assert.Null(definition.ComHandlerClsid);
     }
 

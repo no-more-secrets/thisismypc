@@ -49,6 +49,7 @@ public sealed class ScheduledTaskScanner
                 IsEnabled = info.IsEnabled,
                 Command = info.Command,
                 Arguments = info.Arguments,
+                WorkingDirectory = info.WorkingDirectory,
                 ComHandlerClsid = info.ComHandlerClsid,
                 Classification = overridden ?? ScheduledTaskClassifier.Classify(info),
                 IsClassificationOverridden = overridden is not null,

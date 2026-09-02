@@ -509,23 +509,27 @@ public sealed class AutorunsScanner
 
     /// <summary>
     /// The program an Exec action runs: quotes and %vars% resolved, a bare
-    /// name looked up the way the scheduler does (System32, Windows, PATH).
-    /// A ComHandler action resolves through its CLSID like a shell extension.
+    /// name looked up the way the scheduler does (the task's Start In folder,
+    /// then System32, Windows, PATH). A ComHandler action resolves through its
+    /// CLSID like a shell extension.
     /// </summary>
     private string? ResolveTaskImage(ScheduledTaskEntry task)
     {
         if (!string.IsNullOrWhiteSpace(task.Command))
         {
             var exe = StartupScanner.ExtractExecutablePath(task.Command) ?? ExpandPath(task.Command);
-            return Path.IsPathRooted(exe) ? exe : FindProgram(exe);
+            if (Path.IsPathRooted(exe))
+                return exe;
+            var startIn = string.IsNullOrWhiteSpace(task.WorkingDirectory) ? null : ExpandPath(task.WorkingDirectory);
+            return FindProgram(exe, startIn);
         }
         return task.ComHandlerClsid is { } clsid ? ResolveClsidImage(clsid, is32Bit: false) : null;
     }
 
-    private string FindProgram(string name)
+    private string FindProgram(string name, string? startIn)
     {
         var windows = Path.GetDirectoryName(_system32) ?? _system32;
-        IEnumerable<string> folders = [_system32, windows, .. (Environment.GetEnvironmentVariable("PATH") ?? string.Empty).Split(';', StringSplitOptions.RemoveEmptyEntries)];
+        IEnumerable<string> folders = [.. startIn is null ? Array.Empty<string>() : [startIn], _system32, windows, .. (Environment.GetEnvironmentVariable("PATH") ?? string.Empty).Split(';', StringSplitOptions.RemoveEmptyEntries)];
         var candidates = Path.HasExtension(name) ? [name] : new[] { name + ".exe", name };
         foreach (var folder in folders)
         {

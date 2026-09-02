@@ -20,7 +20,8 @@ public sealed record ScheduledTaskInfo(
     bool IsEnabled,
     string? Command = null,
     string? Arguments = null,
-    string? ComHandlerClsid = null);
+    string? ComHandlerClsid = null,
+    string? WorkingDirectory = null);
 
 /// <summary>
 /// Task Scheduler access via the ITaskService COM API. The app runs elevated;
