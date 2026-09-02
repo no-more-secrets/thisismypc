@@ -127,10 +127,10 @@
         </Style>
     </UserControl.Styles>
 
-    <Grid RowDefinitions="Auto,*,Auto" Margin="32,28,32,24">
+    <Grid RowDefinitions="Auto,*,Auto" Margin="32,16,32,20">
 
         <!-- Header -->
-        <StackPanel Grid.Row="0" Spacing="2" Margin="0,0,0,16">
+        <StackPanel Grid.Row="0" Spacing="0" Margin="0,0,0,8">
             <TextBlock Classes="title" Text="ThisIsMyPC" />
             <TextBlock Classes="caption" Text="{Binding AppVersion, StringFormat='Installer Version {0}'}" />
         </StackPanel>
@@ -179,7 +179,7 @@
                                 BorderBrush="{DynamicResource OutlineBrush}" BorderThickness="1" CornerRadius="4">
                             <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Padding="12,10">
                                 <SelectableTextBlock Text="{Binding LicenseText, Mode=OneWay}" HorizontalAlignment="Center"
-                                                     FontFamily="{StaticResource MonoFont}" FontSize="12"
+                                                     FontFamily="{StaticResource MonoFont}" FontSize="14"
                                                      Foreground="{DynamicResource TextPrimaryBrush}" />
                             </ScrollViewer>
                         </Border>
