@@ -48,7 +48,7 @@ public class InstallerViewModelTests
 
         Assert.Equal(InstallStep.Welcome, vm.Step);
         Assert.False(vm.IsInstalled);
-        Assert.Equal("Next >", vm.PrimaryButtonText);
+        Assert.Equal(" Next >", vm.PrimaryButtonText);
         await vm.PrimaryCommand.ExecuteAsync(null);
 
         Assert.Equal(InstallStep.License, vm.Step);

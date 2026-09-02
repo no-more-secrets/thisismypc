@@ -232,8 +232,8 @@ public sealed partial class InstallerViewModel : ObservableObject
 
     public string PrimaryButtonText => Step switch
     {
-        InstallStep.Welcome => "Next >",
-        InstallStep.License => "Next >",
+        InstallStep.Welcome => " Next >",
+        InstallStep.License => " Next >",
         InstallStep.Options => VersionRelation switch
         {
             InstalledVersionRelation.Same => "Reinstall",
@@ -244,7 +244,7 @@ public sealed partial class InstallerViewModel : ObservableObject
         InstallStep.ConfirmUninstall => "Remove",
         InstallStep.Uninstalling => "Removing...",
         InstallStep.Done => Failed || Removed ? "Close" : "Finish",
-        _ => "Next >",
+        _ => " Next >",
     };
 
     public bool CanGoBack => Step is InstallStep.License or InstallStep.Options or InstallStep.ConfirmUninstall;

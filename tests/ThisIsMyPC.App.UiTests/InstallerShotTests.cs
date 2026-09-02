@@ -72,18 +72,18 @@ public class InstallerShotTests
         using var session = Open(viewModel);
 
         session.Screenshot("welcome");
-        Assert.True(session.IsTextVisible("Next >"));
-        Assert.False(session.IsTextVisible("< Back"));
+        Assert.True(session.IsTextVisible(" Next >"));
+        Assert.False(session.IsTextVisible("< Back "));
         Assert.False(session.IsTextVisible("Uninstall"));
 
         // Hover states: the accent button changes its whole fill, the plain
         // button its fill and rim together. Inspect the PNGs.
-        session.HoverText("Next >");
+        session.HoverText(" Next >");
         session.Screenshot("welcome-hover-next");
         session.HoverText("Cancel");
         session.Screenshot("welcome-hover-cancel");
 
-        session.ClickText("Next >");
+        session.ClickText(" Next >");
         session.Screenshot("license");
         // The license lives in a TextBox, which renders as one text run, so
         // look for the checkbox label and the page caption instead.
@@ -93,7 +93,7 @@ public class InstallerShotTests
 
         session.ClickText("I accept the terms of the GNU General Public License, version 2");
         Assert.True(viewModel.LicenseAccepted);
-        session.ClickText("Next >");
+        session.ClickText(" Next >");
         session.Screenshot("options");
         Assert.True(session.IsTextVisible("Install folder"));
         Assert.True(session.IsTextVisible("Install"));
@@ -162,7 +162,7 @@ public class InstallerShotTests
         session.ClickText("Uninstall");
         session.Screenshot("confirm-uninstall");
         Assert.True(session.IsTextVisible("Remove"));
-        Assert.True(session.IsTextVisible("< Back"));
+        Assert.True(session.IsTextVisible("< Back "));
         Assert.Null(engine.Uninstalled);
 
         ClickButton(session, "Remove");

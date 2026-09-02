@@ -273,7 +273,7 @@
 
         <!-- Footer: Back and Next as a pair, a gap, Cancel on the far right. -->
         <Grid Grid.Row="2" ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,20,0,0">
-            <Button Grid.Column="1" Classes="footer" Margin="0,0,10,0" Content="&lt; Back" Command="{Binding BackCommand}"
+            <Button Grid.Column="1" Classes="footer" Margin="0,0,10,0" Content="&lt; Back " Command="{Binding BackCommand}"
                     IsVisible="{Binding CanGoBack}" />
             <Button Grid.Column="2" Classes="footer primary" Content="{Binding PrimaryButtonText}"
                     Command="{Binding PrimaryCommand}" IsDefault="True" />
