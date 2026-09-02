@@ -80,12 +80,21 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
         {
             if (group.Changes.Count == 1
                 && group.Changes[0].ModuleId == PowerPlanChangeFactory.ModuleId
-                && group.Changes[0].SettingId.StartsWith(PowerPlanChangeFactory.CreatePlanPrefix, StringComparison.Ordinal))
+                && PendingPlanCreationViewModel.IsCreation(group.Changes[0]))
             {
                 PendingCreations.Add(new PendingPlanCreationViewModel(group.GroupId, group.Changes[0], pendingChangesService));
             }
         }
-        PendingCreations.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasPendingCreations));
+        PendingCreations.CollectionChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(HasPendingCreations));
+            OnPropertyChanged(nameof(CanAddUltimatePerformance));
+        };
+        Plans.CollectionChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(CanAddUltimatePerformance));
+            OnPropertyChanged(nameof(CanCreatePlans));
+        };
 
         _pendingChangesService.PropertyChanged += OnPendingChangesPropertyChanged;
     }
@@ -98,6 +107,38 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
 
     /// <summary>Creating copies a plan through powrprof, so it needs the service and something to copy.</summary>
     public bool CanCreatePlans => _powerService is not null && Plans.Count > 0;
+
+    /// <summary>
+    /// The Add Ultimate Performance plan button shows only while no such plan
+    /// exists (by marker, source GUID, or name) and none is waiting in the queue.
+    /// </summary>
+    public bool CanAddUltimatePerformance => _powerService is not null
+        && Modules.Power.Services.PowerPlanScanner.FindUltimatePerformance(Plans.Select(p => p.Plan).ToList()) is null
+        && !PendingCreations.Any(c => c.IsUltimatePerformance);
+
+    [RelayCommand]
+    private void AddUltimatePerformance()
+    {
+        if (!CanAddUltimatePerformance)
+            return;
+        StageCreation(PowerPlanChangeFactory.CreateUltimatePerformanceToggle(currentlyInstalled: false, install: true));
+    }
+
+    private void StageCreation(ChangeDescriptor change)
+    {
+        var group = WrapChange(change);
+        _isStagingChange = true;
+        try
+        {
+            _pendingChangesService.Stage(group);
+        }
+        finally
+        {
+            _isStagingChange = false;
+        }
+
+        PendingCreations.Add(new PendingPlanCreationViewModel(group.GroupId, change, _pendingChangesService));
+    }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanConfirmCreatePlan))]
@@ -151,19 +192,7 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
         if (!CanConfirmCreatePlan || NewPlanSource is null)
             return;
 
-        var change = PowerPlanChangeFactory.CreatePlanChange(NewPlanName, NewPlanSource.Plan);
-        var group = WrapChange(change);
-        _isStagingChange = true;
-        try
-        {
-            _pendingChangesService.Stage(group);
-        }
-        finally
-        {
-            _isStagingChange = false;
-        }
-
-        PendingCreations.Add(new PendingPlanCreationViewModel(group.GroupId, change, _pendingChangesService));
+        StageCreation(PowerPlanChangeFactory.CreatePlanChange(NewPlanName, NewPlanSource.Plan));
         IsCreatingPlan = false;
     }
 
@@ -190,7 +219,8 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
         {
             if (Plans.Any(p => p.Plan.PlanGuid == plan.PlanGuid))
                 continue;
-            if (Modules.Power.Services.PowerPlanScanner.FindCreatedPlan([plan], plan.Name) is null)
+            if (plan.Description != PowerPlanChangeFactory.CreatedPlanMarker
+                && plan.Description != PowerPlanChangeFactory.UltimatePerformanceMarker)
                 continue;
             Plans.Add(new PowerPlanItemViewModel(plan, _pendingActionsService));
         }
@@ -263,10 +293,11 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
         "Hibernate from the power menu. On laptops it also removes the critical-battery " +
         "hibernate safety net and any hibernate-instead-of-sleep timers.";
 
-    private const string UltimatePerformanceDescription =
-        "Registers the hidden Ultimate Performance plan Windows ships for workstations. " +
-        "It removes micro-latencies at the cost of higher idle power use. Removing it deletes " +
-        "only the copy this app created; the plan must not be active when removed.";
+    /// <summary>Tooltip on the Add Ultimate Performance plan button.</summary>
+    public string UltimatePerformanceDescription =>
+        "Adds the hidden Ultimate Performance plan Windows ships for workstations. " +
+        "It removes micro-latencies at the cost of higher idle power use. Undo deletes " +
+        "the copy this app made; the plan must not be active then.";
 
     private List<ShellSettingViewModel> BuildSystemPowerRows(PowerScanData scanData)
     {
@@ -296,29 +327,6 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
                     PowerPlanChangeFactory.CreateHibernateToggle(lastKnown, desired)),
                 readRegistryState: ReadHibernate,
                 rehydrateSettingId: PowerPlanChangeFactory.HibernateSettingId));
-        }
-
-        if (_powerService is not null)
-        {
-            var lastKnownInstalled = scanData.UltimatePerformancePlan is not null;
-            bool ReadInstalled()
-            {
-                var scanner = new Modules.Power.Services.PowerPlanScanner(_powerService);
-                lastKnownInstalled = Modules.Power.Services.PowerPlanScanner
-                    .FindUltimatePerformance(scanner.Scan()) is not null;
-                return lastKnownInstalled;
-            }
-
-            rows.Add(new ShellSettingViewModel(
-                "Add the Ultimate Performance plan",
-                UltimatePerformanceDescription,
-                $"powrprof:PowerDuplicateScheme {PowerPlanChangeFactory.UltimatePerformanceSourceGuid:D}",
-                lastKnownInstalled,
-                _pendingChangesService,
-                groupFactory: desired => WrapChange(
-                    PowerPlanChangeFactory.CreateUltimatePerformanceToggle(lastKnownInstalled, desired)),
-                readRegistryState: ReadInstalled,
-                rehydrateSettingId: PowerPlanChangeFactory.UltimatePerformanceSettingId));
         }
 
         return rows;
@@ -647,14 +655,28 @@ public sealed partial class PendingPlanCreationViewModel : ObservableObject
     {
         ArgumentNullException.ThrowIfNull(change);
         GroupId = groupId;
-        Name = change.SettingId[PowerPlanChangeFactory.CreatePlanPrefix.Length..];
-        Detail = $"{change.AfterDisplay}. Created when you press Apply; undo deletes it again.";
+        IsUltimatePerformance = change.SettingId == PowerPlanChangeFactory.UltimatePerformanceSettingId;
+        Name = IsUltimatePerformance
+            ? "Ultimate Performance"
+            : change.SettingId[PowerPlanChangeFactory.CreatePlanPrefix.Length..];
+        Detail = IsUltimatePerformance
+            ? "The hidden Windows plan for workstations. Created when you press Apply; undo deletes it again."
+            : $"{change.AfterDisplay}. Created when you press Apply; undo deletes it again.";
         _pendingChangesService = pendingChangesService;
+    }
+
+    /// <summary>A staged change this row can stand for: a named copy, or the Ultimate Performance install.</summary>
+    public static bool IsCreation(ChangeDescriptor change)
+    {
+        ArgumentNullException.ThrowIfNull(change);
+        return change.SettingId.StartsWith(PowerPlanChangeFactory.CreatePlanPrefix, StringComparison.Ordinal)
+            || (change.SettingId == PowerPlanChangeFactory.UltimatePerformanceSettingId && change.AfterValue == "1");
     }
 
     public string GroupId { get; }
     public string Name { get; }
     public string Detail { get; }
+    public bool IsUltimatePerformance { get; }
 
     [RelayCommand]
     private void Remove() => _pendingChangesService.Unstage(GroupId);

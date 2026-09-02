@@ -101,6 +101,55 @@ public class PowerPlanCardShotTests
         Assert.Empty(changes.PendingGroups);
         Assert.Empty(viewModel.PendingCreations);
     }
+
+    [AvaloniaFact]
+    public void AddUltimatePerformance_StagesTheInstall_AndTheButtonHidesUntilRemoved()
+    {
+        var changes = new PendingChangesService();
+        var viewModel = new PowerViewModel(ScanData(), changes, powerService: new UiFakePowerService());
+        using var session = UiSession.ForView(new PowerView(), viewModel, "power-plan-card", height: 800);
+
+        Assert.True(viewModel.CanAddUltimatePerformance);
+        session.ClickText("Add Ultimate Performance plan");
+        session.Screenshot("ultimate-performance-pending");
+
+        var group = Assert.Single(changes.PendingGroups);
+        var change = Assert.Single(group.Changes);
+        Assert.Equal(Modules.Power.Changes.PowerPlanChangeFactory.UltimatePerformanceSettingId, change.SettingId);
+        Assert.Equal("1", change.AfterValue);
+        Assert.False(viewModel.CanAddUltimatePerformance);
+        Assert.False(session.IsTextVisible("Add Ultimate Performance plan"));
+        Assert.True(session.IsTextVisible("Ultimate Performance"));
+
+        session.ClickText("Remove");
+        Assert.Empty(changes.PendingGroups);
+        Assert.True(viewModel.CanAddUltimatePerformance);
+        Assert.True(session.IsTextVisible("Add Ultimate Performance plan"));
+    }
+
+    [AvaloniaFact]
+    public void AddUltimatePerformance_IsHiddenWhenThePlanExists()
+    {
+        var withPlan = ScanData() with
+        {
+            Plans =
+            [
+                .. ScanData().Plans,
+                new PowerPlan
+                {
+                    PlanGuid = new Guid("c2b0925a-6cf8-4cd8-9ac7-fff967b7f4e3"),
+                    Name = "Ultimate Performance",
+                    IsActive = false,
+                },
+            ],
+        };
+        var viewModel = new PowerViewModel(withPlan, new PendingChangesService(), powerService: new UiFakePowerService());
+        using var session = UiSession.ForView(new PowerView(), viewModel, "power-plan-card", height: 800);
+
+        Assert.False(viewModel.CanAddUltimatePerformance);
+        Assert.False(session.IsTextVisible("Add Ultimate Performance plan"));
+        Assert.True(session.IsTextVisible("New plan"));
+    }
 }
 
 /// <summary>Enough of IPowerService for the plan list: plans only, no settings.</summary>

@@ -37,6 +37,13 @@
                             Padding="12,6" FontSize="12"
                             Command="{Binding BeginCreatePlanCommand}"
                             IsVisible="{Binding !IsCreatingPlan}" />
+                    <Button DockPanel.Dock="Right"
+                            Content="Add Ultimate Performance plan"
+                            Padding="12,6" FontSize="12"
+                            Margin="0,0,8,0"
+                            Command="{Binding AddUltimatePerformanceCommand}"
+                            IsVisible="{Binding CanAddUltimatePerformance}"
+                            ToolTip.Tip="{Binding UltimatePerformanceDescription}" />
                     <TextBlock Text="Power plans"
                                FontSize="14" FontWeight="SemiBold"
                                Foreground="{DynamicResource TextPrimaryBrush}"

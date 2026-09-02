@@ -387,8 +387,11 @@ with Remove; after Apply the page rescans and lists the real plan. Same
 afternoon's page review: a queued deletion tints the card red with a red
 "Queued" button and greyed buttons; the Apply badge counts actions; the
 review panel wraps long lines and keeps the scrollbar lane; popups float
-8px above the bar; the System power switches read "Allow hibernation" and
-"Add the Ultimate Performance plan" (Sam could not tell what on meant).
+8px above the bar; the hibernation switch reads "Allow hibernation" (Sam
+could not tell what on meant), and the Ultimate Performance switch is gone:
+an "Add Ultimate Performance plan" button beside New plan stages the same
+install change and shows only while no such plan exists or is queued (Sam:
+a toggle was the wrong control for it).
 
 Scheduled tasks, same day (Sam: still an absurd number of tasks, and the
 task rows had no icons): the scheduler reader now returns each task's
