@@ -274,6 +274,23 @@ public sealed class PowerService : IPowerService
         }
     }
 
+    public OperationResult<bool> RestoreDefaultScheme(Guid schemeGuid)
+    {
+        try
+        {
+            var result = PowerRestoreIndividualDefaultPowerScheme(in schemeGuid);
+            return result == ERROR_SUCCESS
+                ? OperationResult<bool>.Success(true)
+                : MapError<bool>(result, $"restore power plan {schemeGuid:D} from Windows' defaults");
+        }
+        catch (Exception ex)
+        {
+            return OperationResult<bool>.Failure(
+                $"Unexpected error restoring power plan {schemeGuid:D}: {ex.Message}",
+                ErrorCategory.ServiceUnavailable, ex);
+        }
+    }
+
     public OperationResult<bool> DeleteScheme(Guid schemeGuid)
     {
         try

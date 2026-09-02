@@ -68,13 +68,20 @@ public interface IPowerService
     OperationResult<Guid> DuplicateScheme(Guid sourceSchemeGuid);
 
     /// <summary>
-    /// Duplicates a scheme into a GUID of the caller's choosing. With source
-    /// and destination equal to a stock plan's id, Windows recreates that
-    /// plan from its built-in defaults after it was deleted. Fails when the
-    /// destination already exists.
+    /// Duplicates a scheme into a GUID of the caller's choosing. The source
+    /// must still be registered (a deleted plan is not found), and the
+    /// destination must not exist yet.
     /// </summary>
     OperationResult<Guid> DuplicateSchemeAs(Guid sourceSchemeGuid, Guid destinationSchemeGuid) =>
         OperationResult<Guid>.Failure("Duplicating into a chosen GUID is not supported here.", ErrorCategory.ServiceUnavailable);
+
+    /// <summary>
+    /// Puts a stock scheme (Balanced, High performance, Power saver) back
+    /// from Windows' default store under its own GUID. When the scheme still
+    /// exists this resets its settings to defaults, so callers check first.
+    /// </summary>
+    OperationResult<bool> RestoreDefaultScheme(Guid schemeGuid) =>
+        OperationResult<bool>.Failure("Restoring a stock plan is not supported here.", ErrorCategory.ServiceUnavailable);
 
     /// <summary>Deletes a registered scheme. Fails while the scheme is active.</summary>
     OperationResult<bool> DeleteScheme(Guid schemeGuid);

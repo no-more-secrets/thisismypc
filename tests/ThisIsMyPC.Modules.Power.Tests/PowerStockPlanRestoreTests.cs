@@ -38,7 +38,7 @@ public sealed class PowerStockPlanRestoreTests
 
         Assert.True(result.IsSuccess, result.ErrorMessage);
         var guid = StockPowerPlan.HighPerformance.PlanGuid;
-        Assert.Contains($"DuplicateSchemeAs:{guid:D}->{guid:D}", _power.Calls);
+        Assert.Contains($"RestoreDefaultScheme:{guid:D}", _power.Calls);
         Assert.Equal("High performance", _power.GetPlan(guid)?.Name);
     }
 
@@ -52,14 +52,14 @@ public sealed class PowerStockPlanRestoreTests
         var result = await Module.ApplyChangeAsync(change);
 
         Assert.True(result.IsSuccess);
-        Assert.DoesNotContain(_power.Calls, c => c.StartsWith("DuplicateSchemeAs:", StringComparison.Ordinal));
+        Assert.DoesNotContain(_power.Calls, c => c.StartsWith("RestoreDefaultScheme:", StringComparison.Ordinal));
     }
 
     [Fact]
     public async Task Apply_PassesTheServiceFailureThrough()
     {
         _power.AddPlan(StockPowerPlan.Balanced.PlanGuid, "Balanced", isActive: true);
-        _power.InjectFailure("DuplicateSchemeAs");
+        _power.InjectFailure("RestoreDefaultScheme");
         var change = PowerPlanChangeFactory.CreateStockPlanRestore(StockPowerPlan.PowerSaver);
 
         var result = await Module.ApplyChangeAsync(change);

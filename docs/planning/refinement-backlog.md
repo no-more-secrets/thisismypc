@@ -393,9 +393,12 @@ one "Add plan" dropdown (Sam: a toggle was the wrong control, and a
 generic add button should put back Balanced, Power saver, and High
 performance when they were deleted) lists the custom copy, then every
 Windows plan missing from the list. A deleted stock plan comes back under
-its own GUID from Windows' defaults (`PowerDuplicateScheme` with the
-destination GUID supplied, `add-stock-plan:{guid}`), Ultimate Performance as
-the marked copy it always was; both are reversible creates. Later that
+its own GUID from Windows' default store
+(`PowerRestoreIndividualDefaultPowerScheme`, `add-stock-plan:{guid}`;
+`PowerDuplicateScheme` with the destination GUID supplied was the first
+attempt and fails with "no power plan with that GUID is registered", it only
+reads plans that still exist), Ultimate Performance as the marked copy it
+always was; both are reversible creates. Later that
 day (Sam: adding plans did nothing): a row of the Add plan dropdown closed
 the menu before its command ran, and closing detached the menu content and
 its bindings, so nothing was staged; the close is now posted after the

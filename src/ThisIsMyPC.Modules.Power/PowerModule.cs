@@ -295,8 +295,11 @@ public sealed class PowerModule : IActionModule
 
     /// <summary>
     /// AfterValue "1": recreate the stock plan under its own GUID from
-    /// Windows' defaults; present already counts as done. AfterValue "0"
-    /// (undo): delete it again, never while active.
+    /// Windows' default store (PowerRestoreIndividualDefaultPowerScheme;
+    /// PowerDuplicateScheme cannot read a deleted plan); present already
+    /// counts as done, which also keeps the restore call from resetting a
+    /// live plan's settings. AfterValue "0" (undo): delete it again, never
+    /// while active.
     /// </summary>
     private OperationResult<bool> ApplyStockPlanRestore(ChangeDescriptor change)
     {
@@ -313,10 +316,7 @@ public sealed class PowerModule : IActionModule
         {
             if (existing is not null)
                 return OperationResult<bool>.Success(true);
-            var restored = _powerService.DuplicateSchemeAs(planGuid, planGuid);
-            return restored.IsSuccess
-                ? OperationResult<bool>.Success(true)
-                : OperationResult<bool>.Failure(restored.ErrorMessage!, restored.ErrorCategory!.Value, restored.Exception);
+            return _powerService.RestoreDefaultScheme(planGuid);
         }
 
         if (existing is null)

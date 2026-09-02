@@ -85,6 +85,19 @@ public sealed class FakePowerService : IPowerService
         return OperationResult<Guid>.Success(newGuid);
     }
 
+    public OperationResult<bool> RestoreDefaultScheme(Guid schemeGuid)
+    {
+        Calls.Add($"RestoreDefaultScheme:{schemeGuid:D}");
+        if (_failures.TryGetValue("RestoreDefaultScheme", out var fail))
+            return OperationResult<bool>.Failure("Injected RestoreDefaultScheme failure.", fail);
+        var stock = Modules.Power.Models.StockPowerPlan.FindByGuid(schemeGuid);
+        if (stock is null)
+            return OperationResult<bool>.Failure($"No default power plan '{schemeGuid:D}'.", ErrorCategory.NotFound);
+        _plans.RemoveAll(p => p.PlanGuid == schemeGuid);
+        _plans.Add(new PowerPlanInfo(schemeGuid, stock.Name, null, IsActive: false));
+        return OperationResult<bool>.Success(true);
+    }
+
     public OperationResult<Guid> DuplicateSchemeAs(Guid sourceSchemeGuid, Guid destinationSchemeGuid)
     {
         Calls.Add($"DuplicateSchemeAs:{sourceSchemeGuid:D}->{destinationSchemeGuid:D}");

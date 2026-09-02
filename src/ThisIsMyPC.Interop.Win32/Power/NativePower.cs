@@ -76,6 +76,11 @@ internal static partial class NativePower
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static partial uint PowerDeleteScheme(nint rootPowerKey, in Guid schemeGuid);
 
+    /// <summary>Recreates a stock scheme from Windows' default store, or resets it to defaults when present.</summary>
+    [LibraryImport("powrprof.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    internal static partial uint PowerRestoreIndividualDefaultPowerScheme(in Guid schemeGuid);
+
     /// <summary>Buffer is UTF-16 including the terminating null.</summary>
     [LibraryImport("powrprof.dll")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
