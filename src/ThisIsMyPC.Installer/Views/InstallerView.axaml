@@ -234,7 +234,7 @@
                         </StackPanel>
                         <StackPanel IsVisible="{Binding IsDone}" Spacing="14">
                             <StackPanel IsVisible="{Binding DoneInstalled}" Spacing="14">
-                                <TextBlock Classes="body" Text="ThisIsMyPC is installed. You will find it in the Start menu. It asks for permission every time it starts, because everything it does needs administrator rights." />
+                                <TextBlock Classes="body" Text="ThisIsMyPC is installed. It runs as administrator, so Windows asks for permission each time it opens." />
                                 <TextBlock Classes="warning" IsVisible="{Binding RebootRequired}"
                                            Text="Windows asked for a restart to finish. Restart when convenient." />
                                 <CheckBox IsChecked="{Binding LaunchWhenDone}" Content="Open ThisIsMyPC when I click Finish" />
