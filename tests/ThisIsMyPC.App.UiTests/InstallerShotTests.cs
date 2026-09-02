@@ -75,7 +75,7 @@ public class InstallerShotTests
         session.Screenshot("welcome");
         Assert.True(session.IsTextVisible(" Next >"));
         Assert.False(session.IsTextVisible("< Back "));
-        Assert.False(session.IsTextVisible("Uninstall"));
+        Assert.False(session.IsTextVisible("Uninstall ThisIsMyPC"));
 
         // Hover states: the accent button changes its whole fill, the plain
         // button its fill and rim together. Inspect the PNGs.
@@ -165,10 +165,22 @@ public class InstallerShotTests
         using var session = Open(viewModel);
 
         session.Screenshot("welcome-installed");
-        Assert.True(session.IsTextVisible("Uninstall"));
+        Assert.True(session.IsTextVisible("Uninstall ThisIsMyPC"));
         Assert.True(session.IsTextVisible(viewModel.InstalledSummary));
+        Assert.True(session.IsTextVisible("License"));
+        Assert.False(session.IsTextVisible("Remove"));
 
-        session.ClickText("Uninstall");
+        // Ticking Uninstall swaps License/Options/Install for Remove and
+        // changes what the Next hint says.
+        session.ClickText("Uninstall ThisIsMyPC");
+        Assert.True(viewModel.UninstallMode);
+        session.Screenshot("welcome-uninstall-ticked");
+        Assert.False(session.IsTextVisible("License"));
+        Assert.False(session.IsTextVisible("Options"));
+        Assert.True(session.IsTextVisible("Remove"));
+        Assert.True(session.IsTextVisible("Click \"Next\" to uninstall ThisIsMyPC."));
+
+        session.ClickText(" Next >");
         session.Screenshot("confirm-uninstall");
         Assert.True(session.IsTextVisible("Remove"));
         Assert.True(session.IsTextVisible("< Back "));
@@ -205,7 +217,7 @@ public class InstallerShotTests
 
         session.Screenshot("welcome-newer-installed");
         Assert.False(viewModel.CanGoPrimary);
-        Assert.True(session.IsTextVisible("Uninstall"));
+        Assert.True(session.IsTextVisible("Uninstall ThisIsMyPC"));
     }
 
     [AvaloniaFact]

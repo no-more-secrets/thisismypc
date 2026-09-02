@@ -154,17 +154,17 @@
                                 BorderBrush="{DynamicResource OutlineBrush}" BorderThickness="1" CornerRadius="6" Padding="14,12">
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14">
                                 <TextBlock Grid.Column="0" Classes="body" VerticalAlignment="Center" Text="{Binding InstalledSummary}" />
-                                <Button Grid.Column="1" Classes="footer" VerticalAlignment="Center" Content="Uninstall"
-                                        Command="{Binding UninstallCommand}" />
+                                <CheckBox Grid.Column="1" VerticalAlignment="Center" Content="Uninstall ThisIsMyPC"
+                                          IsChecked="{Binding UninstallMode}" />
                             </Grid>
                         </Border>
-                        <TextBlock Grid.Row="4" Classes="lead" HorizontalAlignment="Right" IsVisible="{Binding !InstallBlockedByNewer}"
-                                   Text="Click &quot;Next&quot; to read the license." />
+                        <TextBlock Grid.Row="4" Classes="lead" HorizontalAlignment="Right" IsVisible="{Binding ShowWelcomeHint}"
+                                   Text="{Binding WelcomeHint}" />
                     </Grid>
                 </Border>
             </TabItem>
 
-            <TabItem IsEnabled="{Binding CanOpenLicense}">
+            <TabItem IsEnabled="{Binding CanOpenLicense}" IsVisible="{Binding ShowInstallTabs}">
                 <TabItem.Header>
                     <TextBlock Classes="tab" Text="License" />
                 </TabItem.Header>
@@ -192,7 +192,7 @@
                 </Border>
             </TabItem>
 
-            <TabItem IsEnabled="{Binding CanOpenOptions}">
+            <TabItem IsEnabled="{Binding CanOpenOptions}" IsVisible="{Binding ShowInstallTabs}">
                 <TabItem.Header>
                     <TextBlock Classes="tab" Text="Options" />
                 </TabItem.Header>
@@ -220,7 +220,7 @@
                 </Border>
             </TabItem>
 
-            <TabItem IsEnabled="{Binding IsInInstallTab}">
+            <TabItem IsEnabled="{Binding IsInInstallTab}" IsVisible="{Binding ShowInstallTabs}">
                 <TabItem.Header>
                     <TextBlock Classes="tab" Text="Install" />
                 </TabItem.Header>

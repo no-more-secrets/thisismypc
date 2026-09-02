@@ -61,21 +61,30 @@ public sealed partial class InstallerViewModel : ObservableObject
     public static string AppVersion { get; } = ReadVersion();
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsInstalled), nameof(InstalledSummary), nameof(CanChooseFolder), nameof(ShowRemoveTab))]
-    [NotifyCanExecuteChangedFor(nameof(UninstallCommand))]
+    [NotifyPropertyChangedFor(nameof(IsInstalled), nameof(InstalledSummary), nameof(CanChooseFolder))]
     private InstalledApp? _installed;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(InstallBlockedByNewer), nameof(CanGoPrimary), nameof(PrimaryButtonText), nameof(InstalledSummary), nameof(CanOpenLicense), nameof(CanOpenOptions))]
+    [NotifyPropertyChangedFor(nameof(InstallBlockedByNewer), nameof(CanGoPrimary), nameof(PrimaryButtonText), nameof(InstalledSummary), nameof(CanOpenLicense), nameof(CanOpenOptions), nameof(ShowWelcomeHint))]
     [NotifyCanExecuteChangedFor(nameof(PrimaryCommand))]
     private InstalledVersionRelation _versionRelation;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsWelcome), nameof(IsLicense), nameof(IsOptions), nameof(IsInstalling), nameof(IsConfirmUninstall), nameof(IsUninstalling), nameof(IsDone))]
     [NotifyPropertyChangedFor(nameof(PrimaryButtonText), nameof(CanGoBack), nameof(CanGoPrimary), nameof(CanCancel), nameof(StepCaption), nameof(IsBusy))]
-    [NotifyPropertyChangedFor(nameof(TabIndex), nameof(IsFinished), nameof(CanOpenWelcome), nameof(CanOpenLicense), nameof(CanOpenOptions), nameof(IsInInstallTab), nameof(IsInRemoveTab), nameof(ShowRemoveTab))]
-    [NotifyCanExecuteChangedFor(nameof(PrimaryCommand), nameof(BackCommand), nameof(CancelCommand), nameof(UninstallCommand))]
+    [NotifyPropertyChangedFor(nameof(TabIndex), nameof(IsFinished), nameof(CanOpenWelcome), nameof(CanOpenLicense), nameof(CanOpenOptions), nameof(IsInInstallTab), nameof(IsInRemoveTab), nameof(ShowRemoveTab), nameof(ShowInstallTabs))]
+    [NotifyCanExecuteChangedFor(nameof(PrimaryCommand), nameof(BackCommand), nameof(CancelCommand))]
     private InstallStep _step = InstallStep.Welcome;
+
+    /// <summary>
+    /// The Welcome page's "Uninstall" box. Ticked, the strip shows Welcome and
+    /// Remove only and Next leads to the removal page instead of the license.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowRemoveTab), nameof(ShowInstallTabs), nameof(WelcomeHint), nameof(ShowWelcomeHint))]
+    [NotifyPropertyChangedFor(nameof(CanGoPrimary), nameof(CanOpenLicense), nameof(CanOpenOptions))]
+    [NotifyCanExecuteChangedFor(nameof(PrimaryCommand))]
+    private bool _uninstallMode;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanGoPrimary), nameof(CanOpenOptions))]
@@ -152,11 +161,21 @@ public sealed partial class InstallerViewModel : ObservableObject
 
     public bool IsInInstallTab => Step is InstallStep.Installing || (Step == InstallStep.Done && !Removed);
     public bool IsInRemoveTab => Step is InstallStep.ConfirmUninstall or InstallStep.Uninstalling || (Step == InstallStep.Done && Removed);
-    public bool ShowRemoveTab => IsInstalled || IsInRemoveTab;
+
+    /// <summary>Remove replaces License, Options, and Install while the Uninstall box is ticked.</summary>
+    public bool ShowRemoveTab => UninstallMode || IsInRemoveTab;
+    public bool ShowInstallTabs => !ShowRemoveTab;
 
     public bool CanOpenWelcome => !IsBusy && !IsFinished;
-    public bool CanOpenLicense => !IsBusy && !IsFinished && !InstallBlockedByNewer;
+    public bool CanOpenLicense => !IsBusy && !IsFinished && !InstallBlockedByNewer && !UninstallMode;
     public bool CanOpenOptions => CanOpenLicense && LicenseAccepted;
+
+    /// <summary>Bottom-right line on the Welcome page: what Next does.</summary>
+    public string WelcomeHint => UninstallMode
+        ? "Click \"Next\" to uninstall ThisIsMyPC."
+        : "Click \"Next\" to read the license.";
+
+    public bool ShowWelcomeHint => UninstallMode || !InstallBlockedByNewer;
 
     /// <summary>
     /// Selected tab, two-way. Reading follows the step; writing from a tab
@@ -251,11 +270,9 @@ public sealed partial class InstallerViewModel : ObservableObject
 
     public bool CanCancel => Step is not (InstallStep.Installing or InstallStep.Uninstalling or InstallStep.Done);
 
-    public bool CanUninstall => IsInstalled && Step == InstallStep.Welcome;
-
     public bool CanGoPrimary => Step switch
     {
-        InstallStep.Welcome => !InstallBlockedByNewer,
+        InstallStep.Welcome => UninstallMode || !InstallBlockedByNewer,
         InstallStep.License => LicenseAccepted,
         InstallStep.Options => FolderError is null,
         InstallStep.Installing or InstallStep.Uninstalling => false,
@@ -277,7 +294,7 @@ public sealed partial class InstallerViewModel : ObservableObject
         switch (Step)
         {
             case InstallStep.Welcome:
-                Step = InstallStep.License;
+                Step = UninstallMode ? InstallStep.ConfirmUninstall : InstallStep.License;
                 break;
             case InstallStep.License:
                 Step = InstallStep.Options;
@@ -314,9 +331,6 @@ public sealed partial class InstallerViewModel : ObservableObject
 
     [RelayCommand(CanExecute = nameof(CanCancel))]
     private void Cancel() => RequestClose?.Invoke();
-
-    [RelayCommand(CanExecute = nameof(CanUninstall))]
-    private void Uninstall() => Step = InstallStep.ConfirmUninstall;
 
     [RelayCommand]
     private async Task BrowseAsync()

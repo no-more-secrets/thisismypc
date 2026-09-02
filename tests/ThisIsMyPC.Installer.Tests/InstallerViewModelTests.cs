@@ -204,7 +204,13 @@ public class InstallerViewModelTests
         Assert.True(vm.InstallBlockedByNewer);
         Assert.False(vm.CanGoPrimary);
         Assert.Contains("newer than this installer", vm.InstalledSummary);
-        Assert.True(vm.CanUninstall);
+        Assert.False(vm.ShowWelcomeHint);
+
+        // Ticking Uninstall is the one way forward.
+        vm.UninstallMode = true;
+        Assert.True(vm.CanGoPrimary);
+        Assert.True(vm.ShowWelcomeHint);
+        Assert.Contains("uninstall", vm.WelcomeHint, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -216,7 +222,8 @@ public class InstallerViewModelTests
         var vm = Fresh(engine, installed);
         vm.RequestClose = () => closed = true;
 
-        vm.UninstallCommand.Execute(null);
+        vm.UninstallMode = true;
+        await vm.PrimaryCommand.ExecuteAsync(null);
         Assert.Equal(InstallStep.ConfirmUninstall, vm.Step);
         Assert.Equal("Remove", vm.PrimaryButtonText);
         Assert.True(vm.CanGoBack);
@@ -310,21 +317,37 @@ public class InstallerViewModelTests
     }
 
     [Fact]
-    public void Tabs_RemoveTabShowsWhenInstalledAndHoldsTheRemoveFlow()
+    public async Task Tabs_UninstallBoxSwapsTheInstallTabsForRemove()
     {
         Assert.False(Fresh(new FakeEngine()).ShowRemoveTab);
 
         var installed = new InstalledApp("0.0.9", @"D:\Apps\ThisIsMyPC", "x");
         var vm = Fresh(new FakeEngine(), installed);
+        Assert.False(vm.ShowRemoveTab);
+        Assert.True(vm.ShowInstallTabs);
+        Assert.Contains("license", vm.WelcomeHint, StringComparison.Ordinal);
+
+        vm.UninstallMode = true;
         Assert.True(vm.ShowRemoveTab);
+        Assert.False(vm.ShowInstallTabs);
+        Assert.False(vm.CanOpenLicense);
+        Assert.Contains("uninstall", vm.WelcomeHint, StringComparison.Ordinal);
         Assert.False(vm.IsInRemoveTab);
 
-        vm.UninstallCommand.Execute(null);
+        await vm.PrimaryCommand.ExecuteAsync(null);
+        Assert.Equal(InstallStep.ConfirmUninstall, vm.Step);
         Assert.Equal(InstallerViewModel.RemoveTab, vm.TabIndex);
         Assert.True(vm.IsInRemoveTab);
         Assert.True(vm.CanOpenWelcome);
         vm.TabIndex = InstallerViewModel.WelcomeTab;
         Assert.Equal(InstallStep.Welcome, vm.Step);
+
+        // Unticking brings the install tabs back and Next reads the license again.
+        vm.UninstallMode = false;
+        Assert.False(vm.ShowRemoveTab);
+        Assert.True(vm.ShowInstallTabs);
+        await vm.PrimaryCommand.ExecuteAsync(null);
+        Assert.Equal(InstallStep.License, vm.Step);
     }
 
     [Theory]
