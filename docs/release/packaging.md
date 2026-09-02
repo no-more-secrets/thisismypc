@@ -50,8 +50,15 @@ The app corresponds to the PC, not a user profile (CLAUDE.md). Packaging follows
   stack cookie, and table-based x64 unwinding. It also reports CET shadow
   stack compatibility (all three first-party exes have it) and the bundled
   native libraries: Skia and HarfBuzz ship without CFG and CET, which is
-  upstream's build and noted here rather than hidden. Stack guard pages are
-  not a file property; Windows places one below every thread stack.
+  upstream's build and noted here rather than hidden. Accepted (Sam,
+  2026-09-01) because the app feeds them only text and its own fonts: no
+  images, icons, or third-party fonts are decoded, and text shaping is a far
+  smaller bug surface than the image and font parsers where those libraries
+  have had CVEs. Revisit the day the app renders third-party images, icons,
+  or fonts (publisher icons in the Software catalog, for example): then
+  either CFG-built natives or decoding outside the elevated process. Stack
+  guard pages are not a file property; Windows places one below every
+  thread stack.
 - **Nothing trusted goes through %TEMP%.** The installer hardens
   `%ProgramData%\ThisIsMyPC` (Administrators/SYSTEM, the app's own
   `DataDirectoryGuard`) before it writes the unpacked MSI or the two native
