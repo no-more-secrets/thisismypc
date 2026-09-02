@@ -102,6 +102,42 @@ Updates arrive inside the app. Each one is checked against a signed manifest
 before it is applied, and an update that fails the check is refused
 (details in [docs/release/update-signing.md](docs/release/update-signing.md)).
 
+## Independently verify a release
+
+This project does not ask users to trust an installer solely because Windows
+shows a verified publisher. Release installers are deterministic and
+reproducible from the corresponding tagged source. The repository pins the
+.NET SDK, NuGet dependency graphs, release tools, Windows SDK, linker, Visual
+Studio toolchain, Windows build, and Windows Installer engine that affect the
+result.
+
+Once code-signed releases begin, anyone can build the same version and compare
+it with the downloaded `.exe`. The comparison tool validates the download's
+Authenticode structure, works on a temporary copy, removes its terminal
+certificate table, normalizes the two PE fields changed by signing, and
+compares the canonical SHA-256 hash with the local build. It never modifies or
+runs the downloaded installer. A match means the executable content is
+byte-for-byte identical apart from the Authenticode signing metadata.
+
+From a clean clone checked out at the release tag:
+
+```powershell
+$version = "1.0.0"
+.\tools\test-reproducible-build-environment.ps1
+.\tools\build-release.ps1 -Version $version
+.\tools\compare-reproducible-installer.ps1 `
+  -ReleasedInstaller "C:\path\to\ThisIsMyPC-Installer-$version.exe" `
+  -LocalInstaller ".\artifacts\releases\$version\ThisIsMyPC-Installer-$version.exe"
+```
+
+The outer installer is the only file Authenticode-signed so this public
+comparison remains possible. Its embedded MSI and update payloads are
+authenticated by the offline GPG-signed release manifest. The exact clean-clone
+procedure, environment requirements, expected outputs, and failure meanings
+are in [docs/release/packaging.md](docs/release/packaging.md). Passing
+`-AllowUnsignedRelease` is only for testing the comparison machinery, never
+for verifying a public release.
+
 ## Development
 
 This project is built with Claude Code and expects contributors to work the
