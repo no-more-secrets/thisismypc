@@ -254,6 +254,19 @@
         <Setter Property="Background" Value="{DynamicResource ControlPressedBrush}" />
     </Style>
 
+    <!-- Rows of a dropdown flyout: full width, text at the left, hover wash only. -->
+    <Style Selector="Button.flyout-item">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="Padding" Value="10,6" />
+        <Setter Property="FontSize" Value="13" />
+    </Style>
+    <Style Selector="Button.flyout-item:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource RowHoverBrush}" />
+    </Style>
+
     <!-- A button whose one-way action is staged (Delete -> Queued): red, so
          the staged state reads at a glance; clicking again unstages. -->
     <Style Selector="Button.queued">

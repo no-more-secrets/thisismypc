@@ -61,6 +61,33 @@ public static class PowerPlanChangeFactory
         };
     }
 
+    /// <summary>SettingId prefix for a deleted stock plan put back; the suffix is its GUID.</summary>
+    public const string AddStockPlanPrefix = "add-stock-plan:";
+
+    /// <summary>
+    /// Puts a deleted stock plan back under its own GUID with Windows'
+    /// default settings. Reversible: undo deletes the plan again, never
+    /// while it is active.
+    /// </summary>
+    public static ChangeDescriptor CreateStockPlanRestore(StockPowerPlan plan)
+    {
+        ArgumentNullException.ThrowIfNull(plan);
+        return new ChangeDescriptor
+        {
+            ModuleId = ModuleId,
+            SettingId = AddStockPlanPrefix + plan.PlanGuid.ToString("D"),
+            DisplayName = $"Add power plan {plan.Name}",
+            SystemLocation = $"powrprof:PowerDuplicateScheme {plan.PlanGuid:D}",
+            BeforeValue = "0",
+            AfterValue = "1",
+            BeforeDisplay = "Not present",
+            AfterDisplay = "Windows default",
+            ValueType = ChangeValueType.PowerPlan_Setting,
+            Category = ChangeCategory.Create,
+            RestartRequirement = RestartRequirement.None,
+        };
+    }
+
     /// <summary>The plan a create change copies: the GUID at the end of its SystemLocation.</summary>
     public static bool TryParseSourceGuid(string systemLocation, out Guid sourceGuid)
     {

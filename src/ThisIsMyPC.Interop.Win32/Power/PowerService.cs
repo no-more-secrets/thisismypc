@@ -242,6 +242,25 @@ public sealed class PowerService : IPowerService
         }
     }
 
+    public unsafe OperationResult<Guid> DuplicateSchemeAs(Guid sourceSchemeGuid, Guid destinationSchemeGuid)
+    {
+        try
+        {
+            var destination = destinationSchemeGuid;
+            var destinationPtr = (nint)(&destination);
+            var result = PowerDuplicateSchemeTo(0, in sourceSchemeGuid, ref destinationPtr);
+            return result != ERROR_SUCCESS
+                ? MapError<Guid>(result, $"recreate power plan {destinationSchemeGuid:D}")
+                : OperationResult<Guid>.Success(destinationSchemeGuid);
+        }
+        catch (Exception ex)
+        {
+            return OperationResult<Guid>.Failure(
+                $"Unexpected error recreating power plan {destinationSchemeGuid:D}: {ex.Message}",
+                ErrorCategory.ServiceUnavailable, ex);
+        }
+    }
+
     public OperationResult<bool> DeleteScheme(Guid schemeGuid)
     {
         try

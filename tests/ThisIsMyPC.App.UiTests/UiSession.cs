@@ -165,6 +165,11 @@ public sealed class UiSession : IDisposable
         ?? throw new InvalidOperationException(
             $"Nothing on screen reads '{text}'. Visible text: {DescribeVisibleText()}");
 
+    /// <summary>Like IsTextVisible, but searched under one control: a flyout's content sits in its own popup window.</summary>
+    public static bool IsTextVisibleIn(Visual root, string text) =>
+        root.GetVisualDescendants().OfType<TextBlock>().Any(t => t.IsEffectivelyVisible && t.Text == text)
+        || root.GetVisualDescendants().OfType<ContentControl>().Any(c => c.IsEffectivelyVisible && c.Content as string == text);
+
     public bool IsTextVisible(string text) =>
         TryFind<TextBlock>(t => t.Text == text) is not null
         || TryFind<ContentControl>(c => c.Content as string == text) is not null;

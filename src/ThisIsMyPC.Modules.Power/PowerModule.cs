@@ -118,6 +118,9 @@ public sealed class PowerModule : IActionModule
                 PowerPlanChangeFactory.CreatePlanPrefix, StringComparison.Ordinal)
                 => ApplyCreatePlanChange(change),
             ChangeValueType.PowerPlan_Setting when change.SettingId.StartsWith(
+                PowerPlanChangeFactory.AddStockPlanPrefix, StringComparison.Ordinal)
+                => ApplyStockPlanRestore(change),
+            ChangeValueType.PowerPlan_Setting when change.SettingId.StartsWith(
                 PowerPlanChangeFactory.SettingIdPrefix, StringComparison.Ordinal)
                 => ApplySettingChange(change),
             ChangeValueType.Registry_DWord => ApplyRegistryDWordChange(change),
@@ -288,6 +291,44 @@ public sealed class PowerModule : IActionModule
         }
 
         return _powerService.DeleteScheme(existing.PlanGuid);
+    }
+
+    /// <summary>
+    /// AfterValue "1": recreate the stock plan under its own GUID from
+    /// Windows' defaults; present already counts as done. AfterValue "0"
+    /// (undo): delete it again, never while active.
+    /// </summary>
+    private OperationResult<bool> ApplyStockPlanRestore(ChangeDescriptor change)
+    {
+        if (!Guid.TryParse(change.SettingId[PowerPlanChangeFactory.AddStockPlanPrefix.Length..], out var planGuid))
+        {
+            return OperationResult<bool>.Failure(
+                $"No plan GUID in '{change.SettingId}'.", ErrorCategory.NotFound);
+        }
+
+        var plans = new PowerPlanScanner(_powerService).Scan();
+        var existing = plans.FirstOrDefault(p => p.PlanGuid == planGuid);
+
+        if (change.AfterValue == "1")
+        {
+            if (existing is not null)
+                return OperationResult<bool>.Success(true);
+            var restored = _powerService.DuplicateSchemeAs(planGuid, planGuid);
+            return restored.IsSuccess
+                ? OperationResult<bool>.Success(true)
+                : OperationResult<bool>.Failure(restored.ErrorMessage!, restored.ErrorCategory!.Value, restored.Exception);
+        }
+
+        if (existing is null)
+            return OperationResult<bool>.Success(true);
+
+        if (existing.IsActive)
+        {
+            return OperationResult<bool>.Failure(
+                $"'{existing.Name}' is the active plan. Switch to another plan first.", ErrorCategory.ServiceUnavailable);
+        }
+
+        return _powerService.DeleteScheme(planGuid);
     }
 
     private OperationResult<bool> ApplyActivePlanChange(ChangeDescriptor change)

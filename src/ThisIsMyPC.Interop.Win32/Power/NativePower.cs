@@ -67,6 +67,11 @@ internal static partial class NativePower
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static partial uint PowerDuplicateScheme(nint rootPowerKey, in Guid sourceSchemeGuid, out nint destinationSchemeGuid);
 
+    /// <summary>Same entry point with a caller-supplied destination: *destinationSchemeGuid points at the GUID to create.</summary>
+    [LibraryImport("powrprof.dll", EntryPoint = "PowerDuplicateScheme")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    internal static partial uint PowerDuplicateSchemeTo(nint rootPowerKey, in Guid sourceSchemeGuid, ref nint destinationSchemeGuid);
+
     [LibraryImport("powrprof.dll")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static partial uint PowerDeleteScheme(nint rootPowerKey, in Guid schemeGuid);

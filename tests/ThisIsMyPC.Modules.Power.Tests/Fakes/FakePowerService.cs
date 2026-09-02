@@ -85,6 +85,18 @@ public sealed class FakePowerService : IPowerService
         return OperationResult<Guid>.Success(newGuid);
     }
 
+    public OperationResult<Guid> DuplicateSchemeAs(Guid sourceSchemeGuid, Guid destinationSchemeGuid)
+    {
+        Calls.Add($"DuplicateSchemeAs:{sourceSchemeGuid:D}->{destinationSchemeGuid:D}");
+        if (_failures.TryGetValue("DuplicateSchemeAs", out var fail))
+            return OperationResult<Guid>.Failure("Injected DuplicateSchemeAs failure.", fail);
+        if (_plans.Any(p => p.PlanGuid == destinationSchemeGuid))
+            return OperationResult<Guid>.Failure($"Power plan '{destinationSchemeGuid:D}' already exists.", ErrorCategory.ServiceUnavailable);
+        var stock = Modules.Power.Models.StockPowerPlan.FindByGuid(sourceSchemeGuid);
+        _plans.Add(new PowerPlanInfo(destinationSchemeGuid, stock?.Name ?? "Duplicated plan", null, IsActive: false));
+        return OperationResult<Guid>.Success(destinationSchemeGuid);
+    }
+
     public OperationResult<bool> DeleteScheme(Guid schemeGuid)
     {
         Calls.Add($"DeleteScheme:{schemeGuid:D}");

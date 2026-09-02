@@ -1,4 +1,6 @@
 using Avalonia.Controls;
+using Avalonia.Interactivity;
+using Avalonia.VisualTree;
 using Avalonia.Headless.XUnit;
 using ThisIsMyPC.App.ViewModels;
 using ThisIsMyPC.App.Views;
@@ -73,7 +75,8 @@ public class PowerPlanCardShotTests
         var viewModel = new PowerViewModel(ScanData(), changes, powerService: power);
         using var session = UiSession.ForView(new PowerView(), viewModel, "power-plan-card", height: 800);
 
-        session.ClickText("New plan");
+        viewModel.BeginCreatePlanCommand.Execute(null);
+        session.Pump();
         session.Screenshot("new-plan-form");
         Assert.True(viewModel.IsCreatingPlan);
         Assert.Equal("Balanced", viewModel.NewPlanSource?.Name);
@@ -103,52 +106,80 @@ public class PowerPlanCardShotTests
     }
 
     [AvaloniaFact]
-    public void AddUltimatePerformance_StagesTheInstall_AndTheButtonHidesUntilRemoved()
+    public void AddPlanDropdown_ListsMissingWindowsPlans_AndStagesOne()
+    {
+        // Balanced and High performance exist; Power saver and Ultimate Performance do not.
+        var changes = new PendingChangesService();
+        var viewModel = new PowerViewModel(ScanData(), changes, powerService: new UiFakePowerService());
+        using var session = UiSession.ForView(new PowerView(), viewModel, "power-plan-card", height: 800);
+
+        Assert.Equal(["Power saver", "Ultimate Performance"], viewModel.AddPlanOptions.Select(o => o.Name));
+
+        var addPlan = session.Find<Button>(b => b.Name == "AddPlanButton");
+        session.Click(addPlan);
+        Assert.True(addPlan.Flyout!.IsOpen);
+        session.Screenshot("add-plan-open");
+
+        var flyoutContent = (Control)((Flyout)addPlan.Flyout).Content!;
+        var powerSaverItem = flyoutContent.GetVisualDescendants().OfType<Button>()
+            .First(b => b.Content as string == "Power saver");
+        Assert.True(UiSession.IsTextVisibleIn(flyoutContent, "New plan (copy of an existing plan)"));
+        powerSaverItem.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        session.Pump();
+        Assert.False(addPlan.Flyout.IsOpen);
+
+        viewModel.AddPlanOptions.First(o => o.Name == "Power saver").AddCommand.Execute(null);
+        session.Pump();
+        session.Screenshot("power-saver-pending");
+
+        var group = Assert.Single(changes.PendingGroups);
+        var change = Assert.Single(group.Changes);
+        Assert.Equal("add-stock-plan:a1841308-3541-4fab-bc81-f71556f20b4a", change.SettingId);
+        Assert.True(session.IsTextVisible("Power saver"));
+        Assert.True(session.IsTextVisible("Pending"));
+        Assert.Equal(["Ultimate Performance"], viewModel.AddPlanOptions.Select(o => o.Name));
+
+        session.ClickText("Remove");
+        Assert.Empty(changes.PendingGroups);
+        Assert.Equal(["Power saver", "Ultimate Performance"], viewModel.AddPlanOptions.Select(o => o.Name));
+    }
+
+    [AvaloniaFact]
+    public void AddPlanDropdown_UltimatePerformance_StagesTheInstall()
     {
         var changes = new PendingChangesService();
         var viewModel = new PowerViewModel(ScanData(), changes, powerService: new UiFakePowerService());
         using var session = UiSession.ForView(new PowerView(), viewModel, "power-plan-card", height: 800);
 
-        Assert.True(viewModel.CanAddUltimatePerformance);
-        session.ClickText("Add Ultimate Performance plan");
+        viewModel.AddPlanOptions.First(o => o.Name == "Ultimate Performance").AddCommand.Execute(null);
+        session.Pump();
         session.Screenshot("ultimate-performance-pending");
 
-        var group = Assert.Single(changes.PendingGroups);
-        var change = Assert.Single(group.Changes);
+        var change = Assert.Single(Assert.Single(changes.PendingGroups).Changes);
         Assert.Equal(Modules.Power.Changes.PowerPlanChangeFactory.UltimatePerformanceSettingId, change.SettingId);
         Assert.Equal("1", change.AfterValue);
-        Assert.False(viewModel.CanAddUltimatePerformance);
-        Assert.False(session.IsTextVisible("Add Ultimate Performance plan"));
+        Assert.DoesNotContain(viewModel.AddPlanOptions, o => o.Name == "Ultimate Performance");
         Assert.True(session.IsTextVisible("Ultimate Performance"));
-
-        session.ClickText("Remove");
-        Assert.Empty(changes.PendingGroups);
-        Assert.True(viewModel.CanAddUltimatePerformance);
-        Assert.True(session.IsTextVisible("Add Ultimate Performance plan"));
     }
 
     [AvaloniaFact]
-    public void AddUltimatePerformance_IsHiddenWhenThePlanExists()
+    public void AddPlanDropdown_HidesPlansThatExist()
     {
-        var withPlan = ScanData() with
+        var withAll = ScanData() with
         {
             Plans =
             [
                 .. ScanData().Plans,
-                new PowerPlan
-                {
-                    PlanGuid = new Guid("c2b0925a-6cf8-4cd8-9ac7-fff967b7f4e3"),
-                    Name = "Ultimate Performance",
-                    IsActive = false,
-                },
+                new PowerPlan { PlanGuid = new Guid("a1841308-3541-4fab-bc81-f71556f20b4a"), Name = "Power saver", IsActive = false },
+                new PowerPlan { PlanGuid = new Guid("c2b0925a-6cf8-4cd8-9ac7-fff967b7f4e3"), Name = "Ultimate Performance", IsActive = false },
             ],
         };
-        var viewModel = new PowerViewModel(withPlan, new PendingChangesService(), powerService: new UiFakePowerService());
+        var viewModel = new PowerViewModel(withAll, new PendingChangesService(), powerService: new UiFakePowerService());
         using var session = UiSession.ForView(new PowerView(), viewModel, "power-plan-card", height: 800);
 
-        Assert.False(viewModel.CanAddUltimatePerformance);
-        Assert.False(session.IsTextVisible("Add Ultimate Performance plan"));
-        Assert.True(session.IsTextVisible("New plan"));
+        Assert.Empty(viewModel.AddPlanOptions);
+        Assert.False(viewModel.HasAddPlanOptions);
+        Assert.NotNull(session.TryFind<Button>(b => b.Name == "AddPlanButton"));
     }
 }
 

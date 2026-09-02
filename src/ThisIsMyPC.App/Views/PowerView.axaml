@@ -32,18 +32,44 @@
 
                 <!-- Plan list header with the New plan button -->
                 <DockPanel IsVisible="{Binding CanCreatePlans}">
+                    <!-- Add plan: a dropdown with the custom copy and every
+                         Windows plan missing from the list. Item clicks close
+                         the flyout in code-behind. -->
                     <Button DockPanel.Dock="Right"
-                            Content="New plan"
+                            x:Name="AddPlanButton"
                             Padding="12,6" FontSize="12"
-                            Command="{Binding BeginCreatePlanCommand}"
-                            IsVisible="{Binding !IsCreatingPlan}" />
-                    <Button DockPanel.Dock="Right"
-                            Content="Add Ultimate Performance plan"
-                            Padding="12,6" FontSize="12"
-                            Margin="0,0,8,0"
-                            Command="{Binding AddUltimatePerformanceCommand}"
-                            IsVisible="{Binding CanAddUltimatePerformance}"
-                            ToolTip.Tip="{Binding UltimatePerformanceDescription}" />
+                            IsVisible="{Binding !IsCreatingPlan}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="Add plan" />
+                            <TextBlock Text="&#x25BE;" FontSize="10" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <Button.Flyout>
+                            <Flyout Placement="BottomEdgeAlignedRight">
+                                <StackPanel MinWidth="240" Spacing="2">
+                                    <Button Classes="flyout-item"
+                                            Content="New plan (copy of an existing plan)"
+                                            Command="{Binding BeginCreatePlanCommand}"
+                                            Click="OnAddPlanItemClick" />
+                                    <Separator IsVisible="{Binding HasAddPlanOptions}" Margin="0,4" />
+                                    <TextBlock Text="Windows plans not in the list"
+                                               IsVisible="{Binding HasAddPlanOptions}"
+                                               FontSize="11"
+                                               Margin="10,0,10,2"
+                                               Foreground="{DynamicResource TextTertiaryBrush}" />
+                                    <ItemsControl ItemsSource="{Binding AddPlanOptions}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:AddPlanOptionViewModel">
+                                                <Button Classes="flyout-item"
+                                                        Content="{Binding Name}"
+                                                        Command="{Binding AddCommand}"
+                                                        Click="OnAddPlanItemClick" />
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
                     <TextBlock Text="Power plans"
                                FontSize="14" FontWeight="SemiBold"
                                Foreground="{DynamicResource TextPrimaryBrush}"

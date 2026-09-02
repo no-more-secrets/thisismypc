@@ -89,12 +89,15 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
         {
             OnPropertyChanged(nameof(HasPendingCreations));
             OnPropertyChanged(nameof(CanAddUltimatePerformance));
+            RefreshAddPlanOptions();
         };
         Plans.CollectionChanged += (_, _) =>
         {
             OnPropertyChanged(nameof(CanAddUltimatePerformance));
             OnPropertyChanged(nameof(CanCreatePlans));
+            RefreshAddPlanOptions();
         };
+        RefreshAddPlanOptions();
 
         _pendingChangesService.PropertyChanged += OnPendingChangesPropertyChanged;
     }
@@ -109,8 +112,8 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
     public bool CanCreatePlans => _powerService is not null && Plans.Count > 0;
 
     /// <summary>
-    /// The Add Ultimate Performance plan button shows only while no such plan
-    /// exists (by marker, source GUID, or name) and none is waiting in the queue.
+    /// Ultimate Performance can be added while no such plan exists (by
+    /// marker, source GUID, or name) and none is waiting in the queue.
     /// </summary>
     public bool CanAddUltimatePerformance => _powerService is not null
         && Modules.Power.Services.PowerPlanScanner.FindUltimatePerformance(Plans.Select(p => p.Plan).ToList()) is null
@@ -122,6 +125,38 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
         if (!CanAddUltimatePerformance)
             return;
         StageCreation(PowerPlanChangeFactory.CreateUltimatePerformanceToggle(currentlyInstalled: false, install: true));
+    }
+
+    /// <summary>
+    /// The Add plan dropdown: Windows plans missing from the list (deleted
+    /// stock plans, and Ultimate Performance while absent). Rebuilt whenever
+    /// the list or the queue changes.
+    /// </summary>
+    public ObservableCollection<AddPlanOptionViewModel> AddPlanOptions { get; } = [];
+    public bool HasAddPlanOptions => AddPlanOptions.Count > 0;
+
+    private void RefreshAddPlanOptions()
+    {
+        AddPlanOptions.Clear();
+        if (_powerService is null)
+            return;
+        foreach (var stock in StockPowerPlan.All)
+        {
+            var present = Plans.Any(p => p.Plan.PlanGuid == stock.PlanGuid)
+                || PendingCreations.Any(c => c.StockPlanGuid == stock.PlanGuid);
+            if (!present)
+                AddPlanOptions.Add(new AddPlanOptionViewModel(stock.Name, () => AddStockPlan(stock)));
+        }
+        if (CanAddUltimatePerformance)
+            AddPlanOptions.Add(new AddPlanOptionViewModel("Ultimate Performance", AddUltimatePerformance));
+        OnPropertyChanged(nameof(HasAddPlanOptions));
+    }
+
+    private void AddStockPlan(StockPowerPlan stock)
+    {
+        if (Plans.Any(p => p.Plan.PlanGuid == stock.PlanGuid) || PendingCreations.Any(c => c.StockPlanGuid == stock.PlanGuid))
+            return;
+        StageCreation(PowerPlanChangeFactory.CreateStockPlanRestore(stock));
     }
 
     private void StageCreation(ChangeDescriptor change)
@@ -220,7 +255,8 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
             if (Plans.Any(p => p.Plan.PlanGuid == plan.PlanGuid))
                 continue;
             if (plan.Description != PowerPlanChangeFactory.CreatedPlanMarker
-                && plan.Description != PowerPlanChangeFactory.UltimatePerformanceMarker)
+                && plan.Description != PowerPlanChangeFactory.UltimatePerformanceMarker
+                && StockPowerPlan.FindByGuid(plan.PlanGuid) is null)
                 continue;
             Plans.Add(new PowerPlanItemViewModel(plan, _pendingActionsService));
         }
@@ -646,6 +682,15 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
     }
 }
 
+/// <summary>One entry of the Add plan dropdown.</summary>
+public sealed partial class AddPlanOptionViewModel(string name, Action add) : ObservableObject
+{
+    public string Name { get; } = name;
+
+    [RelayCommand]
+    private void Add() => add();
+}
+
 /// <summary>A plan creation waiting in the queue: shown under the plan list until Apply or Remove.</summary>
 public sealed partial class PendingPlanCreationViewModel : ObservableObject
 {
@@ -656,20 +701,32 @@ public sealed partial class PendingPlanCreationViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(change);
         GroupId = groupId;
         IsUltimatePerformance = change.SettingId == PowerPlanChangeFactory.UltimatePerformanceSettingId;
+        if (change.SettingId.StartsWith(PowerPlanChangeFactory.AddStockPlanPrefix, StringComparison.Ordinal)
+            && Guid.TryParse(change.SettingId[PowerPlanChangeFactory.AddStockPlanPrefix.Length..], out var stockGuid))
+        {
+            StockPlanGuid = stockGuid;
+        }
+        var stock = StockPlanGuid is { } g ? StockPowerPlan.FindByGuid(g) : null;
         Name = IsUltimatePerformance
             ? "Ultimate Performance"
-            : change.SettingId[PowerPlanChangeFactory.CreatePlanPrefix.Length..];
+            : stock?.Name ?? (StockPlanGuid is null ? change.SettingId[PowerPlanChangeFactory.CreatePlanPrefix.Length..] : change.DisplayName);
         Detail = IsUltimatePerformance
             ? "The hidden Windows plan for workstations. Created when you press Apply; undo deletes it again."
-            : $"{change.AfterDisplay}. Created when you press Apply; undo deletes it again.";
+            : stock is not null
+                ? $"Windows' default {stock.Name} plan, put back with its default settings. Created when you press Apply; undo deletes it again."
+                : $"{change.AfterDisplay}. Created when you press Apply; undo deletes it again.";
         _pendingChangesService = pendingChangesService;
     }
+
+    /// <summary>Set for a deleted stock plan being put back; the option list hides that plan meanwhile.</summary>
+    public Guid? StockPlanGuid { get; }
 
     /// <summary>A staged change this row can stand for: a named copy, or the Ultimate Performance install.</summary>
     public static bool IsCreation(ChangeDescriptor change)
     {
         ArgumentNullException.ThrowIfNull(change);
         return change.SettingId.StartsWith(PowerPlanChangeFactory.CreatePlanPrefix, StringComparison.Ordinal)
+            || change.SettingId.StartsWith(PowerPlanChangeFactory.AddStockPlanPrefix, StringComparison.Ordinal)
             || (change.SettingId == PowerPlanChangeFactory.UltimatePerformanceSettingId && change.AfterValue == "1");
     }
 
