@@ -1,7 +1,6 @@
 using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
-using Avalonia.LogicalTree;
+using Avalonia.Threading;
 
 namespace ThisIsMyPC.App.Views;
 
@@ -12,15 +11,14 @@ public partial class PowerView : UserControl
         InitializeComponent();
     }
 
-    /// <summary>A row of the Add plan dropdown was pressed: its command ran; close the dropdown.</summary>
+    /// <summary>
+    /// A row of the Add plan dropdown was pressed. Button raises Click before
+    /// it runs the row's Command, and hiding the flyout detaches its content
+    /// (the command binding with it), so the close is posted to run after the
+    /// command.
+    /// </summary>
     private void OnAddPlanItemClick(object? sender, RoutedEventArgs e)
     {
-        if (sender is not Control item)
-            return;
-        var presenter = item.FindLogicalAncestorOfType<FlyoutPresenter>();
-        if (presenter?.Parent is Popup popup)
-            popup.IsOpen = false;
-        else
-            AddPlanButton.Flyout?.Hide();
+        Dispatcher.UIThread.Post(() => AddPlanButton.Flyout?.Hide(), DispatcherPriority.Input);
     }
 }

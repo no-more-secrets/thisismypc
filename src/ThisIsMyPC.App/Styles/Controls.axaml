@@ -264,7 +264,14 @@
         <Setter Property="FontSize" Value="13" />
     </Style>
     <Style Selector="Button.flyout-item:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource RowHoverBrush}" />
+        <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
+    </Style>
+    <Style Selector="Button.flyout-item:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource ControlPressedBrush}" />
+    </Style>
+    <!-- Dividers inside dropdowns share the outline colour -->
+    <Style Selector="Separator">
+        <Setter Property="Background" Value="{DynamicResource OutlineBrush}" />
     </Style>
 
     <!-- A button whose one-way action is staged (Delete -> Queued): red, so

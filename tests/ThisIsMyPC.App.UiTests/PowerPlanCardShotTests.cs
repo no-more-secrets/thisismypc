@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Styling;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using Avalonia.Headless.XUnit;
@@ -81,6 +82,17 @@ public class PowerPlanCardShotTests
         Assert.True(viewModel.IsCreatingPlan);
         Assert.Equal("Balanced", viewModel.NewPlanSource?.Name);
 
+        // The "Copy of" list opens on the app palette, the chosen row tinted.
+        var source = session.Find<ComboBox>(_ => true);
+        session.Click(source);
+        Assert.True(source.IsDropDownOpen);
+        session.Screenshot("new-plan-source-open");
+        session.SetTheme(ThemeVariant.Light);
+        session.Screenshot("new-plan-source-open-light");
+        session.SetTheme(ThemeVariant.Dark);
+        source.IsDropDownOpen = false;
+        session.Pump();
+
         var nameBox = session.Find<TextBox>(t => t.Watermark == "Plan name");
         session.Type(nameBox, "Balanced");
         Assert.True(session.IsTextVisible("A plan with this name already exists."));
@@ -124,12 +136,15 @@ public class PowerPlanCardShotTests
         var powerSaverItem = flyoutContent.GetVisualDescendants().OfType<Button>()
             .First(b => b.Content as string == "Power saver");
         Assert.True(UiSession.IsTextVisibleIn(flyoutContent, "New plan (copy of an existing plan)"));
-        powerSaverItem.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-        session.Pump();
+        session.Hover(powerSaverItem);
+        session.Screenshot("add-plan-hover");
+        session.SetTheme(ThemeVariant.Light);
+        session.Screenshot("add-plan-light");
+        session.SetTheme(ThemeVariant.Dark);
+        // A real click, not a raised event: the row's command must run before the
+        // dropdown closes (closing detaches the content and its bindings).
+        session.Click(powerSaverItem);
         Assert.False(addPlan.Flyout.IsOpen);
-
-        viewModel.AddPlanOptions.First(o => o.Name == "Power saver").AddCommand.Execute(null);
-        session.Pump();
         session.Screenshot("power-saver-pending");
 
         var group = Assert.Single(changes.PendingGroups);

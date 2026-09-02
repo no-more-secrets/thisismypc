@@ -395,7 +395,16 @@ performance when they were deleted) lists the custom copy, then every
 Windows plan missing from the list. A deleted stock plan comes back under
 its own GUID from Windows' defaults (`PowerDuplicateScheme` with the
 destination GUID supplied, `add-stock-plan:{guid}`), Ultimate Performance as
-the marked copy it always was; both are reversible creates.
+the marked copy it always was; both are reversible creates. Later that
+day (Sam: adding plans did nothing): a row of the Add plan dropdown closed
+the menu before its command ran, and closing detached the menu content and
+its bindings, so nothing was staged; the close is now posted after the
+command, and the harness test clicks the row with real mouse events instead
+of a raised event. Dropdowns (Button flyouts and ComboBox lists) sat on
+Fluent's neutral gray; both now use the palette (Overlay tier dark, Surface
+light, shared outline, hover and press like buttons, sidebar tint on the
+chosen row, 6px rounding). Still owed from Sam: an elevated pass that
+applies one stock plan restore, which has never run on Windows.
 
 Scheduled tasks, same day (Sam: still an absurd number of tasks, and the
 task rows had no icons): the scheduler reader now returns each task's
