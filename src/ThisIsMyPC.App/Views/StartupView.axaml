@@ -35,11 +35,25 @@
             <Setter Property="Padding" Value="12,8" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
-        <!-- Autoruns' row colors: yellow for a missing file, red for no verified signer. -->
-        <Style Selector="Border.card.missing">
+        <!-- Dense rows: one line each, a hairline between rows, no card
+             chrome. Autoruns' colors (yellow missing file, red unverified
+             signer) tint the row; a queued flip tints louder and wins. -->
+        <Style Selector="Border.row">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="{DynamicResource OutlineBrush}" />
+            <Setter Property="BorderThickness" Value="0,0,0,1" />
+            <Setter Property="Padding" Value="8,2" />
+        </Style>
+        <Style Selector="Border.row.missing">
             <Setter Property="Background" Value="{DynamicResource WarningMutedBrush}" />
         </Style>
-        <Style Selector="Border.card.unverified">
+        <Style Selector="Border.row.unverified">
+            <Setter Property="Background" Value="{DynamicResource DangerMutedBrush}" />
+        </Style>
+        <Style Selector="Border.row.pending-enable">
+            <Setter Property="Background" Value="{DynamicResource SuccessMutedBrush}" />
+        </Style>
+        <Style Selector="Border.row.pending-disable">
             <Setter Property="Background" Value="{DynamicResource DangerMutedBrush}" />
         </Style>
     </UserControl.Styles>
@@ -57,7 +71,7 @@
         <DataTemplate x:DataType="vm:AutorunLocationHeader">
             <Border Background="{DynamicResource SurfaceBrush}"
                     BorderBrush="{DynamicResource OutlineBrush}" BorderThickness="0,0,0,1"
-                    CornerRadius="4,4,0,0" Padding="12,6" Margin="0,10,0,2">
+                    CornerRadius="4,4,0,0" Padding="8,4" Margin="0,8,0,0">
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Right"
                                Text="{Binding TimestampText}"
@@ -77,73 +91,50 @@
         </DataTemplate>
 
         <DataTemplate x:DataType="vm:AutorunItemViewModel">
-            <Border Padding="12,8" Margin="0,2" CornerRadius="4"
-                    Classes="card"
+            <Border Classes="row"
                     Classes.missing="{Binding IsMissing}"
-                    Classes.unverified="{Binding IsUnverified}">
-                <Grid ColumnDefinitions="Auto,2*,1.4*,Auto,Auto" RowDefinitions="Auto,Auto">
-                    <!-- Icon, name, description -->
-                    <Image Grid.Column="0" Grid.Row="0" Source="{Binding Icon}"
-                           Width="16" Height="16" Margin="0,0,8,0"
-                           IsVisible="{Binding Icon, Converter={x:Static ObjectConverters.IsNotNull}}"
-                           VerticalAlignment="Center" />
-                    <Grid Grid.Column="1" Grid.Row="0" ColumnDefinitions="Auto,*">
-                        <TextBlock Grid.Column="0"
-                                   Text="{Binding Name}"
-                                   FontWeight="SemiBold"
-                                   Foreground="{DynamicResource TextPrimaryBrush}"
-                                   TextTrimming="CharacterEllipsis"
-                                   MaxWidth="320"
-                                   VerticalAlignment="Center" />
-                        <TextBlock Grid.Column="1"
-                                   Text="{Binding DescriptionText}"
-                                   IsVisible="{Binding HasDescription}"
+                    Classes.unverified="{Binding IsUnverified}"
+                    Classes.pending-enable="{Binding IsPendingEnable}"
+                    Classes.pending-disable="{Binding IsPendingDisable}">
+                <StackPanel Spacing="1">
+                    <!-- One line: check, icon, name and description, publisher, notes, date -->
+                    <Grid ColumnDefinitions="Auto,Auto,2*,1.3*,Auto,Auto">
+                        <CheckBox Grid.Column="0"
+                                  IsChecked="{Binding IsEnabled}"
+                                  IsEnabled="{Binding CanToggle}"
+                                  ToolTip.Tip="{Binding StateText}"
+                                  MinHeight="0" Height="24" MinWidth="0" Padding="0"
+                                  Margin="0,0,8,0" VerticalAlignment="Center" />
+                        <Image Grid.Column="1" Source="{Binding Icon}"
+                               Width="16" Height="16" Margin="0,0,8,0"
+                               IsVisible="{Binding Icon, Converter={x:Static ObjectConverters.IsNotNull}}"
+                               VerticalAlignment="Center" />
+                        <Grid Grid.Column="2" ColumnDefinitions="Auto,*">
+                            <TextBlock Grid.Column="0"
+                                       Text="{Binding Name}"
+                                       FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                       TextTrimming="CharacterEllipsis"
+                                       MaxWidth="300"
+                                       VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding DescriptionText}"
+                                       IsVisible="{Binding HasDescription}"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       TextTrimming="CharacterEllipsis"
+                                       Margin="8,0,0,0"
+                                       VerticalAlignment="Center" />
+                        </Grid>
+                        <TextBlock Grid.Column="3"
+                                   Text="{Binding PublisherText}"
                                    FontSize="12"
                                    Foreground="{DynamicResource TextSecondaryBrush}"
                                    TextTrimming="CharacterEllipsis"
-                                   Margin="8,0,0,0"
+                                   Margin="8,0"
                                    VerticalAlignment="Center" />
-                    </Grid>
-                    <!-- Publisher: "(Verified) Adobe Inc." -->
-                    <TextBlock Grid.Column="2" Grid.Row="0"
-                               Text="{Binding PublisherText}"
-                               FontSize="12"
-                               Foreground="{DynamicResource TextSecondaryBrush}"
-                               TextTrimming="CharacterEllipsis"
-                               Margin="8,0"
-                               VerticalAlignment="Center" />
-                    <!-- File date -->
-                    <TextBlock Grid.Column="3" Grid.Row="0"
-                               Text="{Binding TimestampText}"
-                               IsVisible="{Binding HasTimestamp}"
-                               FontSize="11"
-                               Foreground="{DynamicResource TextTertiaryBrush}"
-                               Margin="8,0,12,0"
-                               VerticalAlignment="Center" />
-                    <!-- State and switch -->
-                    <StackPanel Grid.Column="4" Grid.Row="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <TextBlock Text="Pending"
-                                   IsVisible="{Binding HasPendingChange}"
-                                   FontSize="11"
-                                   FontWeight="SemiBold"
-                                   Foreground="{DynamicResource WarningBrush}"
-                                   VerticalAlignment="Center" />
-                        <TextBlock Text="{Binding StateText}"
-                                   FontSize="12"
-                                   Foreground="{DynamicResource TextSecondaryBrush}"
-                                   VerticalAlignment="Center" />
-                        <ToggleSwitch IsChecked="{Binding IsEnabled}"
-                                      IsEnabled="{Binding CanToggle}"
-                                      OffContent=""
-                                      OnContent=""
-                                      MinWidth="0"
-                                      VerticalAlignment="Center" />
-                    </StackPanel>
-
-                    <!-- Second line: file and location on the left, notes bottom right. -->
-                    <DockPanel Grid.Column="0" Grid.ColumnSpan="5" Grid.Row="1" Margin="0,4,0,0">
-                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8"
-                                    VerticalAlignment="Bottom" Margin="12,0,0,0">
+                        <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,12,0">
                             <TextBlock Text="{Binding NoteText}"
                                        IsVisible="{Binding HasPlainNote}"
                                        FontSize="11"
@@ -153,22 +144,42 @@
                                        FontSize="11"
                                        FontWeight="SemiBold"
                                        Foreground="{DynamicResource WarningBrush}" />
-                        </StackPanel>
-                        <StackPanel Spacing="2">
-                            <TextBlock Text="{Binding ImagePathText}"
-                                       IsVisible="{Binding HasImagePath}"
+                            <TextBlock Text="Pending"
+                                       IsVisible="{Binding HasPendingChange}"
                                        FontSize="11"
-                                       FontFamily="{StaticResource MonoFont}"
-                                       Foreground="{DynamicResource TextTertiaryBrush}"
-                                       TextTrimming="CharacterEllipsis" />
-                            <TextBlock Text="{Binding LocationText}"
-                                       FontSize="11"
-                                       FontFamily="{StaticResource MonoFont}"
-                                       Foreground="{DynamicResource TextTertiaryBrush}"
-                                       TextTrimming="CharacterEllipsis" />
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource WarningBrush}" />
                         </StackPanel>
-                    </DockPanel>
-                </Grid>
+                        <TextBlock Grid.Column="5"
+                                   Text="{Binding TimestampText}"
+                                   IsVisible="{Binding HasTimestamp}"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource TextTertiaryBrush}"
+                                   VerticalAlignment="Center" />
+                    </Grid>
+
+                    <!-- Detail lines, only when asked for on the toolbar -->
+                    <TextBlock Text="{Binding ImagePathText}"
+                               FontSize="11"
+                               FontFamily="{StaticResource MonoFont}"
+                               Foreground="{DynamicResource TextTertiaryBrush}"
+                               TextTrimming="CharacterEllipsis"
+                               Margin="28,0,0,0">
+                        <TextBlock.IsVisible>
+                            <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                <Binding Path="$parent[UserControl].((vm:StartupViewModel)DataContext).ShowPaths" />
+                                <Binding Path="HasImagePath" />
+                            </MultiBinding>
+                        </TextBlock.IsVisible>
+                    </TextBlock>
+                    <TextBlock Text="{Binding LocationText}"
+                               IsVisible="{Binding $parent[UserControl].((vm:StartupViewModel)DataContext).ShowLocations}"
+                               FontSize="11"
+                               FontFamily="{StaticResource MonoFont}"
+                               Foreground="{DynamicResource TextTertiaryBrush}"
+                               TextTrimming="CharacterEllipsis"
+                               Margin="28,0,0,0" />
+                </StackPanel>
             </Border>
         </DataTemplate>
     </UserControl.DataTemplates>
@@ -186,6 +197,18 @@
                    Margin="0,0,16,6" />
         <DockPanel Grid.Row="1" Margin="0,0,16,0">
             <CheckBox DockPanel.Dock="Right"
+                      IsChecked="{Binding ShowLocations}"
+                      Content="Show locations"
+                      FontSize="13"
+                      Margin="12,0,0,0"
+                      VerticalAlignment="Center" />
+            <CheckBox DockPanel.Dock="Right"
+                      IsChecked="{Binding ShowPaths}"
+                      Content="Show paths"
+                      FontSize="13"
+                      Margin="12,0,0,0"
+                      VerticalAlignment="Center" />
+            <CheckBox DockPanel.Dock="Right"
                       IsChecked="{Binding HideMicrosoftAutoruns}"
                       Content="Hide Microsoft entries"
                       FontSize="13"
@@ -199,7 +222,7 @@
                       VerticalAlignment="Center" />
             <TextBox Classes="filter"
                      Text="{Binding AutorunFilterText}"
-                     Watermark="Search every category by name, description, publisher, file, or location" />
+                     Watermark="Search by name, description, publisher, file, or location" />
         </DockPanel>
 
         <TabControl Grid.Row="2" ItemsSource="{Binding Tabs}" Margin="0,8,0,0"
@@ -211,7 +234,7 @@
             </TabControl.ItemTemplate>
             <TabControl.ContentTemplate>
                 <DataTemplate x:DataType="vm:AutorunTabViewModel">
-                    <Panel Margin="0,8,0,0">
+                    <Panel Margin="0,4,0,0">
                         <ListBox Classes="rows" ItemsSource="{Binding Items}" />
                         <TextBlock Text="Nothing in this category"
                                    FontSize="12" FontStyle="Italic"

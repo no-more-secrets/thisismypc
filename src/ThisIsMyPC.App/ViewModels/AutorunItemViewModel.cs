@@ -77,10 +77,11 @@ public sealed partial class AutorunItemViewModel : ObservableObject, IDisposable
     private bool _disposed;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(StateText))]
+    [NotifyPropertyChangedFor(nameof(StateText), nameof(IsPendingEnable), nameof(IsPendingDisable))]
     private bool _isEnabled;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsPendingEnable), nameof(IsPendingDisable))]
     private bool _hasPendingChange;
 
     [ObservableProperty]
@@ -132,6 +133,10 @@ public sealed partial class AutorunItemViewModel : ObservableObject, IDisposable
     public bool HasPlainNote => HasNote && !Entry.IsReRegistered;
     public bool IsReRegistered => Entry.IsReRegistered;
     public string StateText => IsEnabled ? "Enabled" : "Disabled";
+
+    /// <summary>The row tints green or red while its flip waits in the queue.</summary>
+    public bool IsPendingEnable => HasPendingChange && IsEnabled;
+    public bool IsPendingDisable => HasPendingChange && !IsEnabled;
     public bool CanToggle => Entry.CanToggle;
 
     /// <summary>Autoruns' yellow row: the image file is not there.</summary>

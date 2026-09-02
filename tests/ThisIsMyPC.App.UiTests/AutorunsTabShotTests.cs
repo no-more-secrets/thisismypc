@@ -87,8 +87,8 @@ public class AutorunsTabShotTests
     private static void ClickTab(UiSession session, string name)
         => session.Click(session.Find<TabItem>(t => t.DataContext is AutorunTabViewModel { Name: var n } && n == name));
 
-    private static ToggleSwitch Switch(UiSession session, string name)
-        => session.Find<ToggleSwitch>(t => t.DataContext is AutorunItemViewModel { Name: var n } && n == name);
+    private static CheckBox Check(UiSession session, string name)
+        => session.Find<CheckBox>(c => c.DataContext is AutorunItemViewModel { Name: var n } && n == name);
 
     private static Task WaitForSignersAsync(UiSession session, StartupViewModel viewModel)
         => session.WaitForAsync(() => !viewModel.IsCheckingSignatures, what: "icons and signers to load");
@@ -104,6 +104,12 @@ public class AutorunsTabShotTests
         // Hide Windows entries is on by default, as in Autoruns: SecurityHealth is Windows.
         Assert.True(session.IsTextVisible("Logon (5 of 6)"));
         Assert.False(session.IsTextVisible("SecurityHealth"));
+        // Dense by default: no location headers, no paths, until asked for.
+        Assert.False(session.IsTextVisible(StartupScanner.MachineRunKey));
+        Assert.False(session.IsTextVisible(@"File not found: C:\Users\me\AppData\Local\splice\app-4.2.77773\Splice.exe"));
+        session.ClickText("Show paths");
+        session.ClickText("Show locations");
+        session.Screenshot("logon-paths-and-locations");
         Assert.True(session.IsTextVisible(StartupScanner.MachineRunKey));
         Assert.True(session.IsTextVisible(StartupScanner.UserRunKey));
         Assert.True(session.IsTextVisible("(Verified) Acme Inc."));
@@ -117,7 +123,7 @@ public class AutorunsTabShotTests
         Assert.True(viewModel.Tabs[0].Items.OfType<AutorunItemViewModel>().First(r => r.Name == "Twinkle Tray").IsUnverified);
         Assert.True(viewModel.Tabs[0].Items.OfType<AutorunItemViewModel>().First(r => r.Name == "com.squirrel.splice.Splice").IsMissing);
 
-        var acme = Switch(session, "Acme Updater");
+        var acme = Check(session, "Acme Updater");
         session.Click(acme);
         session.Screenshot("logon-acme-off-pending");
 
@@ -162,6 +168,9 @@ public class AutorunsTabShotTests
         Assert.True(session.IsTextVisible("Nothing in this category"));
 
         // Every task sits under one header; a task's own path is not a location.
+        viewModel.ShowLocations = true;
+        viewModel.ShowPaths = true;
+        session.Pump();
         ClickTab(session, "Scheduled Tasks");
         session.Screenshot("scheduled-tasks-windows-shown");
         Assert.True(session.IsTextVisible(AutorunEntry.TaskSchedulerLocation));
@@ -199,7 +208,7 @@ public class AutorunsTabShotTests
         Assert.True(session.IsTextVisible("acmefilt"));
         Assert.False(session.IsTextVisible("7-Zip"));
 
-        session.Click(Switch(session, "acmefilt"));
+        session.Click(Check(session, "acmefilt"));
         Assert.True(session.IsTextVisible("Pending"));
 
         viewModel.AutorunFilterText = "zzz";

@@ -29,6 +29,14 @@ public sealed partial class StartupViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _hideMicrosoftAutoruns;
 
+    /// <summary>Rows show their file path only when asked; the list stays one line per row otherwise.</summary>
+    [ObservableProperty]
+    private bool _showPaths;
+
+    /// <summary>Location headers and each row's key or folder show only when asked.</summary>
+    [ObservableProperty]
+    private bool _showLocations;
+
     /// <summary>Header rows (category, location) and item rows, in category order, while searching.</summary>
     [ObservableProperty]
     private IReadOnlyList<object> _searchResults = [];
@@ -66,6 +74,12 @@ public sealed partial class StartupViewModel : ObservableObject, IDisposable
         RebuildSearch();
     }
 
+    partial void OnShowLocationsChanged(bool value)
+    {
+        RebuildTabs();
+        RebuildSearch();
+    }
+
     partial void OnHideMicrosoftAutorunsChanged(bool value)
     {
         RebuildTabs();
@@ -78,13 +92,14 @@ public sealed partial class StartupViewModel : ObservableObject, IDisposable
             .Where(a => !HideWindowsEntries || !a.IsWindowsEntry)
             .Where(a => !HideMicrosoftAutoruns || !a.IsMicrosoft);
 
-    /// <summary>Rows grouped under their location, locations in first-seen (catalog) order, rows by name.</summary>
-    private static List<object> WithLocationHeaders(IEnumerable<AutorunItemViewModel> rows)
+    /// <summary>Rows grouped by location, locations in first-seen (catalog) order, rows by name; a header per location only when locations are shown.</summary>
+    private List<object> WithLocationHeaders(IEnumerable<AutorunItemViewModel> rows)
     {
         var result = new List<object>();
         foreach (var group in rows.GroupBy(r => r.Entry.LocationGroup, StringComparer.OrdinalIgnoreCase))
         {
-            result.Add(new AutorunLocationHeader(group.Key, group.First().Entry.LocationTimestamp));
+            if (ShowLocations)
+                result.Add(new AutorunLocationHeader(group.Key, group.First().Entry.LocationTimestamp));
             result.AddRange(group.OrderBy(r => r.Name, StringComparer.OrdinalIgnoreCase));
         }
         return result;

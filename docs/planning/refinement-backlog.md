@@ -403,7 +403,24 @@ code carried a GUID that exists nowhere until 2026-09-02); both are
 reversible creates. The plan list has an order (Sam asked; Windows
 enumerates by GUID): active plan, then Balanced, Power saver, High
 performance, then Ultimate Performance, then custom plans by name
-(`PowerPlanOrder`); a plan added by Apply slots into that order. Later that
+(`PowerPlanOrder`); a plan added by Apply slots into that order.
+
+UI chapter two, 2026-09-02 evening (Sam: settings are extensive, tabs and
+cards need one definition, Startup & Services must be dense): a plan's
+settings open as one tab per subgroup with counts in the headers
+(`PowerSettingsShotTests`); the tab strip is defined once in
+`Controls.axaml` (wrapping panel, 14px headers) so a view writes
+`Header="..."` and nothing else; `ToggleCard` (Controls/ToggleCard.cs,
+Styles/ToggleCardTheme.axaml) is the one card-with-a-switch (title, (i)
+tooltip, detail line, content slot, pending and inactive classes) behind
+the card renderer, both row templates, the Modern Standby card, and the
+gallery; the headless test app reads its includes from App.axaml instead of
+a hand-kept twin (a missing include had left every ToggleCard without a
+template in the walkthrough). Startup & Services rows are one line each
+with a check box for enabled, a hairline between rows, and no card chrome;
+file paths and locations (headers and per-row keys) show only when the
+"Show paths" and "Show locations" boxes are ticked; a queued flip tints the
+row green or red over the Autoruns yellow and red. Later that
 day (Sam: adding plans did nothing): a row of the Add plan dropdown closed
 the menu before its command ran, and closing detached the menu content and
 its bindings, so nothing was staged; the close is now posted after the
