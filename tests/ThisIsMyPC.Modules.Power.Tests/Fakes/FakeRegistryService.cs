@@ -41,7 +41,9 @@ public sealed class FakeRegistryService : IRegistryService
     }
 
     public OperationResult<string> ReadString(string keyPath, string valueName)
-        => OperationResult<string>.Failure("Not found", ErrorCategory.NotFound);
+        => _values.TryGetValue(Key(keyPath, valueName), out var v) && v is string text
+            ? OperationResult<string>.Success(text)
+            : OperationResult<string>.Failure("Not found", ErrorCategory.NotFound);
     public OperationResult<string> ReadExpandString(string keyPath, string valueName)
         => OperationResult<string>.Failure("Not found", ErrorCategory.NotFound);
     public OperationResult<string[]> ReadMultiString(string keyPath, string valueName)
@@ -49,7 +51,11 @@ public sealed class FakeRegistryService : IRegistryService
     public OperationResult<byte[]> ReadBinary(string keyPath, string valueName)
         => OperationResult<byte[]>.Failure("Not found", ErrorCategory.NotFound);
     public OperationResult<bool> WriteString(string keyPath, string valueName, string value)
-        => OperationResult<bool>.Success(true);
+    {
+        Calls.Add($"WriteString:{Key(keyPath, valueName)}={value}");
+        _values[Key(keyPath, valueName)] = value;
+        return OperationResult<bool>.Success(true);
+    }
     public OperationResult<bool> WriteExpandString(string keyPath, string valueName, string value)
         => OperationResult<bool>.Success(true);
     public OperationResult<bool> WriteMultiString(string keyPath, string valueName, string[] values)

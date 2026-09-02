@@ -22,6 +22,42 @@ public sealed class PowerModuleTests
             new PowerPlan { PlanGuid = Guid.Parse(afterGuid), Name = "After", IsActive = false });
 
     [Fact]
+    public async Task Apply_ActivePlanChange_MovesAGroupPolicyPinToTheTargetFirst()
+    {
+        _power.AddPlan(BalancedGuid, "Balanced", isActive: true);
+        _power.AddPlan(HighPerformanceGuid, "High performance");
+        _registry.WriteString(PowerPlanChangeFactory.ActivePlanPolicyKeyPath, PowerPlanChangeFactory.ActivePlanPolicyValueName, BalancedGuid.ToString("D"));
+
+        var result = await Module.ApplyChangeAsync(
+            ActivePlanChange(BalancedGuid.ToString("D"), HighPerformanceGuid.ToString("D")));
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.Equal(HighPerformanceGuid.ToString("D"),
+            _registry.ReadString(PowerPlanChangeFactory.ActivePlanPolicyKeyPath, PowerPlanChangeFactory.ActivePlanPolicyValueName).Value);
+        Assert.Contains($"SetActivePlan:{HighPerformanceGuid:D}", _power.Calls);
+
+        // Undo hands back the swapped descriptor: the pin follows the plan back.
+        var undone = await Module.RevertChangeAsync(
+            ActivePlanChange(HighPerformanceGuid.ToString("D"), BalancedGuid.ToString("D")));
+        Assert.True(undone.IsSuccess, undone.ErrorMessage);
+        Assert.Equal(BalancedGuid.ToString("D"),
+            _registry.ReadString(PowerPlanChangeFactory.ActivePlanPolicyKeyPath, PowerPlanChangeFactory.ActivePlanPolicyValueName).Value);
+    }
+
+    [Fact]
+    public async Task Apply_ActivePlanChange_LeavesTheRegistryAloneWithoutAPolicy()
+    {
+        _power.AddPlan(BalancedGuid, "Balanced", isActive: true);
+        _power.AddPlan(HighPerformanceGuid, "High performance");
+        var result = await Module.ApplyChangeAsync(
+            ActivePlanChange(BalancedGuid.ToString("D"), HighPerformanceGuid.ToString("D")));
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.False(_registry.ReadString(PowerPlanChangeFactory.ActivePlanPolicyKeyPath, PowerPlanChangeFactory.ActivePlanPolicyValueName).IsSuccess);
+        Assert.DoesNotContain(_registry.Calls, c => c.StartsWith("WriteString:", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task CheckAvailability_AlwaysAvailable()
     {
         var availability = await Module.CheckAvailabilityAsync();

@@ -373,6 +373,9 @@ public sealed class PowerService : IPowerService
             ERROR_ACCESS_DENIED => (
                 $"Cannot {verb}: access denied by Windows (power policy may be locked by group policy).",
                 ErrorCategory.AccessDenied),
+            ERROR_ACCESS_DISABLED_BY_POLICY => (
+                $@"Cannot {verb}: a Group Policy pins the active power plan (HKLM\SOFTWARE\Policies\Microsoft\Power\PowerSettings\ActivePowerScheme).",
+                ErrorCategory.AccessDenied),
             _ => (
                 $"Cannot {verb}: Win32 error {win32Error}.",
                 ErrorCategory.ServiceUnavailable),

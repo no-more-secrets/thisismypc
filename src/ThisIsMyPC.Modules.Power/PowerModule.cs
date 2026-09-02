@@ -331,12 +331,33 @@ public sealed class PowerModule : IActionModule
         return _powerService.DeleteScheme(planGuid);
     }
 
+    /// <summary>
+    /// Switches the active plan. When the Group Policy value pins the active
+    /// plan, the pin moves to the target first, or Windows refuses the switch
+    /// with error 1260; undo hands back the swapped descriptor, so the pin
+    /// follows the plan both ways and the policy stays consistent with what
+    /// is active.
+    /// </summary>
     private OperationResult<bool> ApplyActivePlanChange(ChangeDescriptor change)
     {
         if (!Guid.TryParse(change.AfterValue, out var planGuid))
         {
             return OperationResult<bool>.Failure(
                 $"Invalid power plan GUID '{change.AfterValue}' for {change.DisplayName}", ErrorCategory.NotFound);
+        }
+
+        var pinned = _registryService.ReadString(
+            PowerPlanChangeFactory.ActivePlanPolicyKeyPath, PowerPlanChangeFactory.ActivePlanPolicyValueName);
+        if (pinned.IsSuccess && Guid.TryParse(pinned.Value, out var pinnedGuid) && pinnedGuid != planGuid)
+        {
+            var moved = _registryService.WriteString(
+                PowerPlanChangeFactory.ActivePlanPolicyKeyPath, PowerPlanChangeFactory.ActivePlanPolicyValueName, planGuid.ToString("D"));
+            if (!moved.IsSuccess)
+            {
+                return OperationResult<bool>.Failure(
+                    $"A Group Policy pins the active power plan and could not be moved: {moved.ErrorMessage}",
+                    moved.ErrorCategory ?? ErrorCategory.AccessDenied, moved.Exception);
+            }
         }
 
         return _powerService.SetActivePlan(planGuid);

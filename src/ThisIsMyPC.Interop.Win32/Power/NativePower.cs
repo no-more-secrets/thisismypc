@@ -13,6 +13,7 @@ internal static partial class NativePower
     internal const uint ERROR_SUCCESS = 0;
     internal const uint ERROR_FILE_NOT_FOUND = 2;
     internal const uint ERROR_ACCESS_DENIED = 5;
+    internal const uint ERROR_ACCESS_DISABLED_BY_POLICY = 1260;
     internal const uint ERROR_NO_MORE_ITEMS = 259;
 
     [LibraryImport("powrprof.dll")]

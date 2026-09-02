@@ -11,6 +11,14 @@ public static class PowerPlanChangeFactory
     /// <summary>The active plan is one logical setting; re-selection re-stages this id.</summary>
     public const string ActivePlanSettingId = "active-power-plan";
 
+    /// <summary>
+    /// Group Policy "Specify a custom active power plan": while this value
+    /// names a scheme, Windows refuses every other switch (Win32 error 1260).
+    /// winutil writes it when it activates its Ultimate plan.
+    /// </summary>
+    public const string ActivePlanPolicyKeyPath = @"HKLM\SOFTWARE\Policies\Microsoft\Power\PowerSettings";
+    public const string ActivePlanPolicyValueName = "ActivePowerScheme";
+
     /// <summary>SettingId prefix for individual plan settings; suffix is :AC or :DC.</summary>
     public const string SettingIdPrefix = "power-setting:";
 
