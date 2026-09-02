@@ -34,7 +34,8 @@ public class InstallerShotTests
         public void Launch(string installFolder) { }
     }
 
-    private const string License = "                    GNU GENERAL PUBLIC LICENSE\n                       Version 2, June 1991\n\n Copyright (C) 1989, 1991 Free Software Foundation, Inc.\n\n                            Preamble\n\n  The licenses for most software are designed to take away your\nfreedom to share and change it.";
+    /// <summary>The real GPLv2 text, so the widest lines (77 columns) are what the license box renders.</summary>
+    private static readonly string License = EmbeddedPackage.LoadLicenseText();
 
     private static UiSession Open(InstallerViewModel viewModel)
         => UiSession.ForView(new InstallerView(), viewModel, "installer", width: 720, height: 640);
@@ -85,11 +86,19 @@ public class InstallerShotTests
 
         session.ClickText(" Next >");
         session.Screenshot("license");
-        // The license lives in a TextBox, which renders as one text run, so
-        // look for the checkbox label and the page caption instead.
+        // The license renders as one text run, so look for the checkbox
+        // label and the page caption instead.
         Assert.True(session.IsTextVisible("License"));
         Assert.True(session.IsTextVisible("I accept the terms of the GNU General Public License, version 2"));
         Assert.False(viewModel.CanGoPrimary);
+
+        // The box must hold the widest GPL line without a sideways scrollbar.
+        var licenseBox = session.Find<Avalonia.Controls.ScrollViewer>(s => s.Content is Avalonia.Controls.SelectableTextBlock);
+        Assert.True(licenseBox.Extent.Width <= licenseBox.Viewport.Width,
+            $"license text {licenseBox.Extent.Width}px wide in a {licenseBox.Viewport.Width}px box");
+        licenseBox.Offset = new Avalonia.Vector(0, licenseBox.Extent.Height);
+        session.Pump();
+        session.Screenshot("license-scrolled-to-end");
 
         session.ClickText("I accept the terms of the GNU General Public License, version 2");
         Assert.True(viewModel.LicenseAccepted);

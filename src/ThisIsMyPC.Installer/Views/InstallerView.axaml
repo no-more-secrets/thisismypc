@@ -174,12 +174,15 @@
                                    Text="ThisIsMyPC is free software under the GNU General Public License, version 2. You may use it, share it, and change it under these terms." />
                         <!-- The GPL text centres its own headings with spaces for a
                              ~70-column line, so the block, not the lines, is centred
-                             in the box; a TextBox would pin it to the left edge. -->
+                             in the box; a TextBox would pin it to the left edge.
+                             Widest line is 77 columns: at 13px mono (7.8px a column)
+                             that is 601px, so the side padding stays at 4 to keep
+                             the box free of a horizontal scrollbar. -->
                         <Border Grid.Row="1" Background="{DynamicResource SurfaceBrush}"
                                 BorderBrush="{DynamicResource OutlineBrush}" BorderThickness="1" CornerRadius="4">
-                            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Padding="12,10">
+                            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Padding="4,10">
                                 <SelectableTextBlock Text="{Binding LicenseText, Mode=OneWay}" HorizontalAlignment="Center"
-                                                     FontFamily="{StaticResource MonoFont}" FontSize="14"
+                                                     FontFamily="{StaticResource MonoFont}" FontSize="13"
                                                      Foreground="{DynamicResource TextPrimaryBrush}" />
                             </ScrollViewer>
                         </Border>
