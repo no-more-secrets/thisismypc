@@ -7,6 +7,19 @@ namespace ThisIsMyPC.Interop.Win32.Registry;
 
 public sealed partial class RegistryService : IRegistryService
 {
+    private static readonly NLog.Logger Log = NLog.LogManager.GetLogger("ThisIsMyPC.Interop.Win32.Registry.RegistryService");
+
+    /// <summary>Every write and delete leaves a line: what, where, and whether Windows took it.</summary>
+    private static OperationResult<bool> Logged(string operation, string keyPath, string? valueName, OperationResult<bool> result)
+    {
+        var where = valueName is null ? keyPath : keyPath + "\\" + valueName;
+        if (result.IsSuccess)
+            Log.Debug("{Operation} {Where}: ok", operation, where);
+        else
+            Log.Warn("{Operation} {Where}: {Error}", operation, where, result.ErrorMessage);
+        return result;
+    }
+
     public OperationResult<int> ReadDWord(string keyPath, string valueName) =>
         Execute(() => ReadValueCore(keyPath, valueName, raw =>
         {
@@ -37,22 +50,22 @@ public sealed partial class RegistryService : IRegistryService
             throw new InvalidCastException($"Value is not REG_BINARY: {keyPath}\\{valueName}");
         }), keyPath);
 
-    public OperationResult<bool> WriteDWord(string keyPath, string valueName, int value) =>
-        Execute(() => WriteValueCore(keyPath, valueName, value, RegistryValueKind.DWord), keyPath);
+    public OperationResult<bool> WriteDWord(string keyPath, string valueName, int value) => Logged("WriteDWord", keyPath, valueName,
+        Execute(() => WriteValueCore(keyPath, valueName, value, RegistryValueKind.DWord), keyPath));
 
-    public OperationResult<bool> WriteString(string keyPath, string valueName, string value) =>
-        Execute(() => WriteValueCore(keyPath, valueName, value, RegistryValueKind.String), keyPath);
+    public OperationResult<bool> WriteString(string keyPath, string valueName, string value) => Logged("WriteString", keyPath, valueName,
+        Execute(() => WriteValueCore(keyPath, valueName, value, RegistryValueKind.String), keyPath));
 
-    public OperationResult<bool> WriteExpandString(string keyPath, string valueName, string value) =>
-        Execute(() => WriteValueCore(keyPath, valueName, value, RegistryValueKind.ExpandString), keyPath);
+    public OperationResult<bool> WriteExpandString(string keyPath, string valueName, string value) => Logged("WriteExpandString", keyPath, valueName,
+        Execute(() => WriteValueCore(keyPath, valueName, value, RegistryValueKind.ExpandString), keyPath));
 
-    public OperationResult<bool> WriteMultiString(string keyPath, string valueName, string[] values) =>
-        Execute(() => WriteValueCore(keyPath, valueName, values, RegistryValueKind.MultiString), keyPath);
+    public OperationResult<bool> WriteMultiString(string keyPath, string valueName, string[] values) => Logged("WriteMultiString", keyPath, valueName,
+        Execute(() => WriteValueCore(keyPath, valueName, values, RegistryValueKind.MultiString), keyPath));
 
-    public OperationResult<bool> WriteBinary(string keyPath, string valueName, byte[] value) =>
-        Execute(() => WriteValueCore(keyPath, valueName, value, RegistryValueKind.Binary), keyPath);
+    public OperationResult<bool> WriteBinary(string keyPath, string valueName, byte[] value) => Logged("WriteBinary", keyPath, valueName,
+        Execute(() => WriteValueCore(keyPath, valueName, value, RegistryValueKind.Binary), keyPath));
 
-    public OperationResult<bool> DeleteValue(string keyPath, string valueName) =>
+    public OperationResult<bool> DeleteValue(string keyPath, string valueName) => Logged("DeleteValue", keyPath, valueName,
         Execute<bool>(() =>
         {
             var (root, subKeyPath) = ParseKeyPath(keyPath);
@@ -62,9 +75,9 @@ public sealed partial class RegistryService : IRegistryService
 
             key.DeleteValue(valueName, throwOnMissingValue: false);
             return OperationResult<bool>.Success(true);
-        }, keyPath);
+        }, keyPath));
 
-    public OperationResult<bool> DeleteKey(string keyPath, bool recursive = false) =>
+    public OperationResult<bool> DeleteKey(string keyPath, bool recursive = false) => Logged("DeleteKey", keyPath, null,
         Execute<bool>(() =>
         {
             var (root, subKeyPath) = ParseKeyPath(keyPath);
@@ -84,7 +97,7 @@ public sealed partial class RegistryService : IRegistryService
                 root.DeleteSubKey(subKeyPath, throwOnMissingSubKey: false);
 
             return OperationResult<bool>.Success(true);
-        }, keyPath);
+        }, keyPath));
 
     public OperationResult<bool> KeyExists(string keyPath) =>
         Execute<bool>(() =>
@@ -210,13 +223,13 @@ public sealed partial class RegistryService : IRegistryService
         nint lpcbMaxSubKeyLen, nint lpcbMaxClassLen, nint lpcValues, nint lpcbMaxValueNameLen, nint lpcbMaxValueLen,
         nint lpcbSecurityDescriptor, out long lpftLastWriteTime);
 
-    public OperationResult<bool> CreateKey(string keyPath) =>
+    public OperationResult<bool> CreateKey(string keyPath) => Logged("CreateKey", keyPath, null,
         Execute<bool>(() =>
         {
             var (root, subKeyPath) = ParseKeyPath(keyPath);
             using var key = root.CreateSubKey(subKeyPath, writable: true);
             return OperationResult<bool>.Success(true);
-        }, keyPath);
+        }, keyPath));
 
     private static OperationResult<T> ReadValueCore<T>(string keyPath, string valueName, Func<object, T> convert, bool doNotExpand = false)
     {

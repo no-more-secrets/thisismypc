@@ -16,7 +16,10 @@ public sealed class PowerModuleTests
 
     private readonly FakePolicyRefreshService _policy = new();
 
-    private PowerModule Module => new(_power, _registry, _policy);
+    // Waits are 20 ms units here; the real module waits in seconds.
+    private PowerModule Module => new(_power, _registry, _policy, TimeSpan.FromMilliseconds(20));
+
+    private const string Pin = PowerPlanChangeFactory.ActivePlanPolicyKeyPath + "\\" + PowerPlanChangeFactory.ActivePlanPolicyValueName;
 
     private static ChangeDescriptor ActivePlanChange(string beforeGuid, string afterGuid) =>
         PowerPlanChangeFactory.CreateActivePlanChange(
@@ -37,10 +40,10 @@ public sealed class PowerModuleTests
         Assert.Equal(HighPerformanceGuid.ToString("D"),
             _registry.ReadString(PowerPlanChangeFactory.ActivePlanPolicyKeyPath, PowerPlanChangeFactory.ActivePlanPolicyValueName).Value);
         Assert.Contains($"SetActivePlan:{HighPerformanceGuid:D}", _power.Calls);
-        // Moved to the target before the switch, then policy re-read.
-        var pin = PowerPlanChangeFactory.ActivePlanPolicyKeyPath + "\\" + PowerPlanChangeFactory.ActivePlanPolicyValueName;
-        Assert.Contains("WriteString:" + pin + "=" + HighPerformanceGuid.ToString("D"), _registry.Calls);
-        Assert.Equal(1, _policy.Refreshes);
+        // Moved to the target before the first switch; Windows took it, so no later phase ran.
+        Assert.Contains("WriteString:" + Pin + "=" + HighPerformanceGuid.ToString("D"), _registry.Calls);
+        Assert.Equal(0, _policy.Refreshes);
+        Assert.DoesNotContain("DeleteValue:" + Pin, _registry.Calls);
 
         // Undo hands back the swapped descriptor: the pin follows the plan back.
         var undone = await Module.RevertChangeAsync(
@@ -89,6 +92,57 @@ public sealed class PowerModuleTests
 
         Assert.True(result.IsSuccess, result.ErrorMessage);
         Assert.Equal(HighPerformanceGuid.ToString("D"),
+            _registry.ReadString(PowerPlanChangeFactory.ActivePlanPolicyKeyPath, PowerPlanChangeFactory.ActivePlanPolicyValueName).Value);
+    }
+
+    [Fact]
+    public async Task Apply_ActivePlanChange_RemovesThePinWhenOnlyItsAbsenceUnlocksWindows()
+    {
+        _power.AddPlan(BalancedGuid, "Balanced", isActive: true);
+        _power.AddPlan(HighPerformanceGuid, "High performance");
+        _registry.WriteString(PowerPlanChangeFactory.ActivePlanPolicyKeyPath, PowerPlanChangeFactory.ActivePlanPolicyValueName, BalancedGuid.ToString("D"));
+        // Nudge and refresh change nothing; the service accepts only once the value is gone.
+        _power.InjectFailure("SetActivePlan", ErrorCategory.AccessDenied);
+        _registry.OnCall = call =>
+        {
+            if (call == "DeleteValue:" + Pin)
+                _power.ClearFailure("SetActivePlan");
+        };
+
+        var result = await Module.ApplyChangeAsync(
+            ActivePlanChange(BalancedGuid.ToString("D"), HighPerformanceGuid.ToString("D")));
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.Equal(1, _policy.Refreshes);
+        Assert.True(_power.GetPlan(HighPerformanceGuid)!.IsActive);
+        // The pin is back, on the plan that is now active.
+        Assert.Equal(HighPerformanceGuid.ToString("D"),
+            _registry.ReadString(PowerPlanChangeFactory.ActivePlanPolicyKeyPath, PowerPlanChangeFactory.ActivePlanPolicyValueName).Value);
+        var nudge = PowerPlanChangeFactory.ActivePlanPolicyKeyPath + "\\ThisIsMyPC-refresh";
+        Assert.True(_registry.Calls.IndexOf("CreateKey:" + nudge) < _registry.Calls.IndexOf("DeleteKey:" + nudge), string.Join(" | ", _registry.Calls));
+    }
+
+    [Fact]
+    public async Task Apply_ActivePlanChange_TriesEveryPhaseThenPutsTheOldPinBack()
+    {
+        _power.AddPlan(BalancedGuid, "Balanced", isActive: true);
+        _power.AddPlan(HighPerformanceGuid, "High performance");
+        _registry.WriteString(PowerPlanChangeFactory.ActivePlanPolicyKeyPath, PowerPlanChangeFactory.ActivePlanPolicyValueName, BalancedGuid.ToString("D"));
+        _power.InjectFailure("SetActivePlan", ErrorCategory.AccessDenied);
+
+        var result = await Module.ApplyChangeAsync(
+            ActivePlanChange(BalancedGuid.ToString("D"), HighPerformanceGuid.ToString("D")));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorCategory.AccessDenied, result.ErrorCategory);
+        Assert.Equal(1, _policy.Refreshes);
+        Assert.Contains("DeleteValue:" + Pin, _registry.Calls);
+        Assert.Contains("nudged the policy key", result.ErrorMessage, StringComparison.Ordinal);
+        Assert.Contains("refreshed machine policy", result.ErrorMessage, StringComparison.Ordinal);
+        Assert.Contains("removed the pin", result.ErrorMessage, StringComparison.Ordinal);
+        Assert.Contains("'Balanced' stayed active", result.ErrorMessage, StringComparison.Ordinal);
+        Assert.Contains("restart", result.ErrorMessage, StringComparison.Ordinal);
+        Assert.Equal(BalancedGuid.ToString("D"),
             _registry.ReadString(PowerPlanChangeFactory.ActivePlanPolicyKeyPath, PowerPlanChangeFactory.ActivePlanPolicyValueName).Value);
     }
 

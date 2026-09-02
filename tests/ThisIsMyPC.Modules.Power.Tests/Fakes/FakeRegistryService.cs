@@ -13,6 +13,15 @@ public sealed class FakeRegistryService : IRegistryService
 
     public List<string> Calls { get; } = [];
 
+    /// <summary>Sees every recorded call; a test flips the power fake when a step happens.</summary>
+    public Action<string>? OnCall { get; set; }
+
+    private void Record(string call)
+    {
+        Calls.Add(call);
+        OnCall?.Invoke(call);
+    }
+
     public void SetDWord(string keyPath, string valueName, int value)
         => _values[Key(keyPath, valueName)] = value;
 
@@ -28,14 +37,14 @@ public sealed class FakeRegistryService : IRegistryService
 
     public OperationResult<bool> WriteDWord(string keyPath, string valueName, int value)
     {
-        Calls.Add($"WriteDWord:{Key(keyPath, valueName)}={value}");
+        Record($"WriteDWord:{Key(keyPath, valueName)}={value}");
         _values[Key(keyPath, valueName)] = value;
         return OperationResult<bool>.Success(true);
     }
 
     public OperationResult<bool> DeleteValue(string keyPath, string valueName)
     {
-        Calls.Add($"DeleteValue:{Key(keyPath, valueName)}");
+        Record($"DeleteValue:{Key(keyPath, valueName)}");
         _values.Remove(Key(keyPath, valueName));
         return OperationResult<bool>.Success(true);
     }
@@ -52,7 +61,7 @@ public sealed class FakeRegistryService : IRegistryService
         => OperationResult<byte[]>.Failure("Not found", ErrorCategory.NotFound);
     public OperationResult<bool> WriteString(string keyPath, string valueName, string value)
     {
-        Calls.Add($"WriteString:{Key(keyPath, valueName)}={value}");
+        Record($"WriteString:{Key(keyPath, valueName)}={value}");
         _values[Key(keyPath, valueName)] = value;
         return OperationResult<bool>.Success(true);
     }
@@ -63,7 +72,15 @@ public sealed class FakeRegistryService : IRegistryService
     public OperationResult<bool> WriteBinary(string keyPath, string valueName, byte[] value)
         => OperationResult<bool>.Success(true);
     public OperationResult<bool> DeleteKey(string keyPath, bool recursive = false)
-        => OperationResult<bool>.Success(true);
+    {
+        Record($"DeleteKey:{keyPath}");
+        return OperationResult<bool>.Success(true);
+    }
+    public OperationResult<bool> CreateKey(string keyPath)
+    {
+        Record($"CreateKey:{keyPath}");
+        return OperationResult<bool>.Success(true);
+    }
     public OperationResult<bool> KeyExists(string keyPath)
         => OperationResult<bool>.Success(false);
     public OperationResult<bool> ValueExists(string keyPath, string valueName)
