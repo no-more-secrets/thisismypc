@@ -66,31 +66,115 @@ public sealed class JustifiedWrapPanel : Panel
         public double Height { get; set; }
     }
 
-    /// <summary>Rows by desired width; Width is the sum of children and the gaps between them.</summary>
+    /// <summary>
+    /// Rows by desired width. A greedy fill finds the fewest rows that hold
+    /// everything; the children are then re-split into that many rows so the
+    /// widest row is as narrow as possible (a linear partition), which spreads
+    /// the chips evenly instead of leaving one orphan on the last row. Width
+    /// is the sum of the children and the gaps between them.
+    /// </summary>
     private List<Row> BuildRows(double availableWidth, bool measure)
     {
-        var rows = new List<Row>();
-        var current = new Row();
+        var children = new List<Control>();
         foreach (var child in Children)
         {
             if (!child.IsVisible)
                 continue;
             if (measure)
                 child.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-            var size = child.DesiredSize;
-            var widthIfAdded = current.Children.Count == 0 ? size.Width : current.Width + Gap + size.Width;
-            if (current.Children.Count > 0 && widthIfAdded > availableWidth)
-            {
-                rows.Add(current);
-                current = new Row();
-                widthIfAdded = size.Width;
-            }
-            current.Children.Add(child);
-            current.Width = widthIfAdded;
-            current.Height = Math.Max(current.Height, size.Height);
+            children.Add(child);
         }
-        if (current.Children.Count > 0)
-            rows.Add(current);
+        if (children.Count == 0)
+            return [];
+
+        var widths = children.Select(c => c.DesiredSize.Width).ToArray();
+        var rowCount = double.IsInfinity(availableWidth) ? 1 : GreedyRowCount(widths, availableWidth);
+        var breaks = rowCount <= 1 ? [children.Count] : EvenBreaks(widths, rowCount);
+
+        var rows = new List<Row>();
+        var from = 0;
+        foreach (var to in breaks)
+        {
+            var row = new Row();
+            for (var i = from; i < to; i++)
+            {
+                row.Children.Add(children[i]);
+                row.Width += (row.Children.Count > 1 ? Gap : 0) + widths[i];
+                row.Height = Math.Max(row.Height, children[i].DesiredSize.Height);
+            }
+            rows.Add(row);
+            from = to;
+        }
         return rows;
+    }
+
+    /// <summary>The fewest rows a first-fit fill needs; one child per row at least.</summary>
+    private int GreedyRowCount(double[] widths, double availableWidth)
+    {
+        var rows = 1;
+        var width = 0.0;
+        for (var i = 0; i < widths.Length; i++)
+        {
+            var next = i == 0 || width == 0 ? widths[i] : width + Gap + widths[i];
+            if (width > 0 && next > availableWidth)
+            {
+                rows++;
+                width = widths[i];
+            }
+            else
+            {
+                width = next;
+            }
+        }
+        return rows;
+    }
+
+    /// <summary>
+    /// End indexes (exclusive) of <paramref name="rowCount"/> contiguous rows
+    /// whose widest row is as narrow as possible. Never wider than the greedy
+    /// rows, so everything that fit before still fits.
+    /// </summary>
+    private int[] EvenBreaks(double[] widths, int rowCount)
+    {
+        var n = widths.Length;
+        rowCount = Math.Min(rowCount, n);
+        // prefix[i] = width of children 0..i-1 laid in one row
+        var prefix = new double[n + 1];
+        for (var i = 0; i < n; i++)
+            prefix[i + 1] = prefix[i] + widths[i] + (i > 0 ? Gap : 0);
+        double Span(int from, int to) => prefix[to] - prefix[from] - (from > 0 ? Gap : 0);
+
+        // best[k][i]: the narrowest widest-row when children 0..i-1 fill k rows
+        var best = new double[rowCount + 1, n + 1];
+        var cut = new int[rowCount + 1, n + 1];
+        for (var i = 0; i <= n; i++)
+            best[0, i] = i == 0 ? 0 : double.PositiveInfinity;
+        for (var k = 1; k <= rowCount; k++)
+        {
+            for (var i = 0; i <= n; i++)
+            {
+                best[k, i] = double.PositiveInfinity;
+                for (var j = k - 1; j < i; j++)
+                {
+                    if (double.IsInfinity(best[k - 1, j]))
+                        continue;
+                    var candidate = Math.Max(best[k - 1, j], Span(j, i));
+                    if (candidate < best[k, i])
+                    {
+                        best[k, i] = candidate;
+                        cut[k, i] = j;
+                    }
+                }
+            }
+        }
+
+        var breaks = new int[rowCount];
+        var end = n;
+        for (var k = rowCount; k >= 1; k--)
+        {
+            breaks[k - 1] = end;
+            end = cut[k, end];
+        }
+        return breaks;
     }
 }
