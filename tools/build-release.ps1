@@ -128,7 +128,9 @@ dotnet publish (Join-Path $repoRoot 'src\ThisIsMyPC.Installer\ThisIsMyPC.Install
 if ($LASTEXITCODE -ne 0) { throw 'Installer publish failed' }
 $installerExe = Join-Path $installerStaging 'ThisIsMyPC-Install.exe'
 if (-not (Test-Path $installerExe)) { throw 'ThisIsMyPC-Install.exe missing from the installer publish output' }
-Copy-Item $installerExe $output -Force
+# Release assets carry the version in the name (Sam, 2026-09-01).
+$installerAsset = Join-Path $output "ThisIsMyPC-Install-$Version.exe"
+Copy-Item $installerExe $installerAsset -Force
 
 if ($SignThumbprint) {
     # vpk signed its own outputs during pack; the installer is built after, so
@@ -139,9 +141,9 @@ if ($SignThumbprint) {
             Sort-Object FullName -Descending | Select-Object -First 1 -ExpandProperty FullName
     }
     if (-not $signtool) { throw 'signtool.exe not found (Windows SDK). Needed to sign ThisIsMyPC-Install.exe.' }
-    Write-Host 'Signing ThisIsMyPC-Install.exe...'
-    & $signtool sign /fd sha256 /tr $TimestampUrl /td sha256 /sha1 $SignThumbprint (Join-Path $output 'ThisIsMyPC-Install.exe')
-    if ($LASTEXITCODE -ne 0) { throw 'signtool failed on ThisIsMyPC-Install.exe' }
+    Write-Host "Signing $(Split-Path $installerAsset -Leaf)..."
+    & $signtool sign /fd sha256 /tr $TimestampUrl /td sha256 /sha1 $SignThumbprint $installerAsset
+    if ($LASTEXITCODE -ne 0) { throw 'signtool failed on the installer exe' }
 }
 
 if ($SignThumbprint) {
