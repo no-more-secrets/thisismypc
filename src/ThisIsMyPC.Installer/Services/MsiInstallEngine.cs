@@ -61,7 +61,9 @@ public sealed class MsiInstallEngine : IInstallEngine
 
             progress.Report("Applying your choices...");
             if (!options.DesktopShortcut)
-                RemoveDesktopShortcut();
+                RemoveShortcut(Environment.SpecialFolder.CommonDesktopDirectory);
+            if (!options.StartMenuShortcut)
+                RemoveShortcut(Environment.SpecialFolder.CommonPrograms);
             WriteSettings(dataDir, options);
 
             return new InstallOutcome(true, result.RebootRequired, null, logPath);
@@ -156,12 +158,14 @@ public sealed class MsiInstallEngine : IInstallEngine
         return process.ExitCode;
     }
 
-    /// <summary>The MSI is per-machine (ALLUSERS=1), so its Desktop shortcut lands on the Public desktop.</summary>
-    private static void RemoveDesktopShortcut()
+    /// <summary>
+    /// The MSI is per-machine (ALLUSERS=1), so Velopack puts its shortcuts on
+    /// the Public desktop and in the all-users Start menu. vpk creates both at
+    /// pack time; an unticked box means deleting the file afterwards.
+    /// </summary>
+    private static void RemoveShortcut(Environment.SpecialFolder folder)
     {
-        var link = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.CommonDesktopDirectory),
-            InstallFolderRules.AppFolderName + ".lnk");
+        var link = Path.Combine(Environment.GetFolderPath(folder), InstallFolderRules.AppFolderName + ".lnk");
         if (File.Exists(link))
             File.Delete(link);
     }

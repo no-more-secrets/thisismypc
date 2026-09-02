@@ -41,6 +41,9 @@
             <Color x:Key="WarningMutedColor">#4a3a1e</Color>
             <Color x:Key="DangerColor">#ef5350</Color>
             <Color x:Key="DangerMutedColor">#4a2020</Color>
+            <!-- Ring on danger-filled controls, lighter than the fill like AccentOutline -->
+            <Color x:Key="DangerOutlineColor">#f7908d</Color>
+            <SolidColorBrush x:Key="DangerOutlineBrush" Color="{StaticResource DangerOutlineColor}" />
             <Color x:Key="InfoColor">#29b6f6</Color>
             <Color x:Key="InfoMutedColor">#1e3a4a</Color>
             <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}" />
@@ -201,6 +204,8 @@
             <Color x:Key="WarningMutedColor">#f3e8cd</Color>
             <Color x:Key="DangerColor">#c62828</Color>
             <Color x:Key="DangerMutedColor">#f3d9d9</Color>
+            <Color x:Key="DangerOutlineColor">#8e1b1b</Color>
+            <SolidColorBrush x:Key="DangerOutlineBrush" Color="{StaticResource DangerOutlineColor}" />
             <Color x:Key="InfoColor">#0277bd</Color>
             <Color x:Key="InfoMutedColor">#d7e9f5</Color>
             <SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}" />

@@ -44,6 +44,7 @@ public sealed partial class InstallerViewModel : ObservableObject
         // An update goes where the app already is; the MSI upgrade replaces it in place.
         _installFolder = installed?.InstallFolder ?? existing?.InstallFolder ?? InstallFolderRules.DefaultFolder;
         _desktopShortcut = existing?.DesktopShortcut ?? true;
+        _startMenuShortcut = existing?.StartMenuShortcut ?? true;
         _startWithWindows = existing?.StartWithWindows ?? false;
         _checkForUpdates = existing?.CheckForUpdates ?? true;
         RefreshFolderCheck();
@@ -95,6 +96,9 @@ public sealed partial class InstallerViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _desktopShortcut;
+
+    [ObservableProperty]
+    private bool _startMenuShortcut;
 
     [ObservableProperty]
     private bool _startWithWindows;
@@ -339,7 +343,8 @@ public sealed partial class InstallerViewModel : ObservableObject
         StatusText = "Starting...";
         var options = new InstallOptions(
             InstallFolder, DesktopShortcut, StartWithWindows, CheckForUpdates,
-            Reinstall: VersionRelation == InstalledVersionRelation.Same);
+            Reinstall: VersionRelation == InstalledVersionRelation.Same,
+            StartMenuShortcut: StartMenuShortcut);
         var progress = new Progress<string>(text => StatusText = text);
 
         var outcome = await _engine.InstallAsync(options, progress, CancellationToken.None).ConfigureAwait(true);

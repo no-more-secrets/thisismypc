@@ -100,6 +100,7 @@ public class InstallerShotTests
 
         session.ClickText("Add a shortcut on the Desktop");
         Assert.False(viewModel.DesktopShortcut);
+        Assert.True(viewModel.StartMenuShortcut);
         session.ClickText("Start with Windows, in the tray");
         Assert.True(viewModel.StartWithWindows);
 
@@ -121,6 +122,7 @@ public class InstallerShotTests
 
         Assert.NotNull(engine.Received);
         Assert.False(engine.Received.DesktopShortcut);
+        Assert.True(engine.Received.StartMenuShortcut);
         Assert.True(engine.Received.StartWithWindows);
         Assert.True(engine.Received.CheckForUpdates);
         Assert.Equal(InstallFolderRules.DefaultFolder, engine.Received.InstallFolder);

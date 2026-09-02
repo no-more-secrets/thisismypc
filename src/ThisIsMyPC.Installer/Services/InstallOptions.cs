@@ -6,7 +6,8 @@ public sealed record InstallOptions(
     bool DesktopShortcut,
     bool StartWithWindows,
     bool CheckForUpdates,
-    bool Reinstall = false);
+    bool Reinstall = false,
+    bool StartMenuShortcut = true);
 
 /// <summary>Result of one install or uninstall run. <see cref="LogPath"/> is the Windows Installer log when there is one.</summary>
 public sealed record InstallOutcome(

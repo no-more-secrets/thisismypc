@@ -61,6 +61,7 @@ public class InstallerViewModelTests
         Assert.Equal("Install", vm.PrimaryButtonText);
         Assert.True(vm.CanChooseFolder);
         vm.DesktopShortcut = false;
+        vm.StartMenuShortcut = false;
         vm.StartWithWindows = true;
         await vm.PrimaryCommand.ExecuteAsync(null);
 
@@ -71,6 +72,7 @@ public class InstallerViewModelTests
         Assert.NotNull(engine.Received);
         Assert.Equal(InstallFolderRules.DefaultFolder, engine.Received.InstallFolder);
         Assert.False(engine.Received.DesktopShortcut);
+        Assert.False(engine.Received.StartMenuShortcut);
         Assert.True(engine.Received.StartWithWindows);
         Assert.True(engine.Received.CheckForUpdates);
         Assert.False(engine.Received.Reinstall);

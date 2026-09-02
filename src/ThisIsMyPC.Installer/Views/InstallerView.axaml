@@ -66,7 +66,9 @@
         <Style Selector="TabItem TextBlock.tab">
             <Setter Property="FontSize" Value="14" />
         </Style>
+        <!-- Every page card fills the content area exactly, whatever the page holds. -->
         <Style Selector="Border.page">
+            <Setter Property="VerticalAlignment" Value="Stretch" />
             <Setter Property="Background" Value="{DynamicResource RaisedBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource OutlineBrush}" />
             <Setter Property="BorderThickness" Value="1" />
@@ -75,13 +77,15 @@
             <Setter Property="Margin" Value="0,12,0,0" />
         </Style>
 
-        <!-- Same recipe as the app's Apply button (Controls.axaml
-             apply-bar-apply): accent fill, no rim, and hover/press change the
-             whole fill. A rim would pick up Fluent's grey hover border. -->
+        <!-- Filled buttons carry a rim in their own family (AccentOutline,
+             DangerOutline), the ring Theme.axaml gives accent-filled controls.
+             Hover and press restate the rim on the presenter, or Fluent swaps
+             in its grey hover border while only the fill changes. -->
         <Style Selector="Button.primary">
             <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentOutlineBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Foreground" Value="White" />
-            <Setter Property="BorderThickness" Value="0" />
             <Setter Property="FontWeight" Value="SemiBold" />
         </Style>
         <Style Selector="Button.primary:disabled">
@@ -89,26 +93,30 @@
         </Style>
         <Style Selector="Button.primary:pointerover /template/ ContentPresenter">
             <Setter Property="Background" Value="{DynamicResource AccentHoverBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentOutlineBrush}" />
             <Setter Property="Foreground" Value="White" />
         </Style>
         <Style Selector="Button.primary:pressed /template/ ContentPresenter">
             <Setter Property="Background" Value="{DynamicResource AccentPressedBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentOutlineBrush}" />
             <Setter Property="Foreground" Value="White" />
         </Style>
-        <!-- Cancel: the danger fill, same no-rim recipe; hover and press dim the fill. -->
         <Style Selector="Button.danger">
             <Setter Property="Background" Value="{DynamicResource DangerBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource DangerOutlineBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Foreground" Value="White" />
-            <Setter Property="BorderThickness" Value="0" />
             <Setter Property="FontWeight" Value="SemiBold" />
         </Style>
         <Style Selector="Button.danger:pointerover /template/ ContentPresenter">
             <Setter Property="Background" Value="{DynamicResource DangerBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource DangerOutlineBrush}" />
             <Setter Property="Foreground" Value="White" />
             <Setter Property="Opacity" Value="0.85" />
         </Style>
         <Style Selector="Button.danger:pressed /template/ ContentPresenter">
             <Setter Property="Background" Value="{DynamicResource DangerBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource DangerOutlineBrush}" />
             <Setter Property="Foreground" Value="White" />
             <Setter Property="Opacity" Value="0.7" />
         </Style>
@@ -130,7 +138,8 @@
         <!-- Tab strip plus pages. Tabs a person can click follow the same
              rules as the buttons; Install and Remove are reached by the
              buttons and only show where you are. -->
-        <TabControl Grid.Row="1" SelectedIndex="{Binding TabIndex, Mode=TwoWay}">
+        <TabControl Grid.Row="1" SelectedIndex="{Binding TabIndex, Mode=TwoWay}"
+                    VerticalAlignment="Stretch" VerticalContentAlignment="Stretch">
 
             <TabItem IsEnabled="{Binding CanOpenWelcome}">
                 <TabItem.Header>
@@ -163,12 +172,17 @@
                     <Grid RowDefinitions="Auto,*,Auto">
                         <TextBlock Grid.Row="0" Classes="body" Margin="0,0,0,12"
                                    Text="ThisIsMyPC is free software under the GNU General Public License, version 2. You may use it, share it, and change it under these terms." />
-                        <TextBox Grid.Row="1" Text="{Binding LicenseText, Mode=OneWay}" IsReadOnly="True"
-                                 AcceptsReturn="True" TextWrapping="NoWrap"
-                                 FontFamily="{StaticResource MonoFont}" FontSize="12"
-                                 Background="{DynamicResource SurfaceBrush}"
-                                 ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                                 ScrollViewer.VerticalScrollBarVisibility="Auto" />
+                        <!-- The GPL text centres its own headings with spaces for a
+                             ~70-column line, so the block, not the lines, is centred
+                             in the box; a TextBox would pin it to the left edge. -->
+                        <Border Grid.Row="1" Background="{DynamicResource SurfaceBrush}"
+                                BorderBrush="{DynamicResource OutlineBrush}" BorderThickness="1" CornerRadius="4">
+                            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Padding="12,10">
+                                <SelectableTextBlock Text="{Binding LicenseText, Mode=OneWay}" HorizontalAlignment="Center"
+                                                     FontFamily="{StaticResource MonoFont}" FontSize="12"
+                                                     Foreground="{DynamicResource TextPrimaryBrush}" />
+                            </ScrollViewer>
+                        </Border>
                         <CheckBox Grid.Row="2" Margin="0,12,0,0" IsChecked="{Binding LicenseAccepted}"
                                   Content="I accept the terms of the GNU General Public License, version 2" />
                     </Grid>
@@ -192,8 +206,8 @@
                         <TextBlock Classes="warning" IsVisible="{Binding HasFolderWarning}" Text="{Binding FolderWarning}" />
 
                         <TextBlock Classes="label" Margin="0,14,0,0" Text="Shortcuts" />
+                        <CheckBox IsChecked="{Binding StartMenuShortcut}" Content="Add ThisIsMyPC to the Start menu" />
                         <CheckBox IsChecked="{Binding DesktopShortcut}" Content="Add a shortcut on the Desktop" />
-                        <TextBlock Classes="caption" Margin="28,-6,0,0" Text="A Start menu entry is always added." />
 
                         <TextBlock Classes="label" Margin="0,14,0,0" Text="Behavior" />
                         <CheckBox IsChecked="{Binding StartWithWindows}" Content="Start with Windows, in the tray" />
