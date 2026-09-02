@@ -19,8 +19,12 @@ public sealed record PowerPlan
 /// <summary>Aggregate scan result for the Power Plans module.</summary>
 /// <param name="HibernateEnabled">Null when the state could not be read.</param>
 /// <param name="UltimatePerformancePlan">The registered Ultimate Performance plan, when one exists.</param>
+/// <param name="PolicyPinnedPlan">The plan a Group Policy value pins as active, when the value exists.</param>
+/// <param name="ActivePlanLockedByPolicy">True while the power service refuses plan switches until a restart.</param>
 public sealed record PowerScanData(
     IReadOnlyList<PowerPlan> Plans,
     string? ScanError = null,
     bool? HibernateEnabled = null,
-    PowerPlan? UltimatePerformancePlan = null);
+    PowerPlan? UltimatePerformancePlan = null,
+    Guid? PolicyPinnedPlan = null,
+    bool ActivePlanLockedByPolicy = false);

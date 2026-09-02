@@ -30,6 +30,9 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
     private string? _modernStandbyGroupId;
     private bool _isStagingChange;
     private bool _suppressModernStandby;
+
+    /// <summary>The power service refuses plan switches until a restart (policy pin read at startup).</summary>
+    private readonly bool _activePlanLockedByPolicy;
     private bool _disposed;
 
     public PowerViewModel(
@@ -45,6 +48,7 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
         _pendingActionsService = pendingActionsService;
         ScanError = scanData.ScanError;
         _liveActivePlan = scanData.Plans.FirstOrDefault(p => p.IsActive);
+        _activePlanLockedByPolicy = scanData.ActivePlanLockedByPolicy;
 
         Plans = new ObservableCollection<PowerPlanItemViewModel>(
             scanData.Plans.Select(p => new PowerPlanItemViewModel(p, pendingActionsService)));
@@ -385,6 +389,25 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
                 rehydrateSettingId: PowerPlanChangeFactory.HibernateSettingId));
         }
 
+        if (_registryService is not null && scanData.PolicyPinnedPlan is { } pin)
+        {
+            var pinnedName = scanData.Plans.FirstOrDefault(p => p.PlanGuid == pin)?.Name ?? pin.ToString("D");
+            bool ReadPin() => _registryService.ReadString(
+                PowerPlanChangeFactory.ActivePlanPolicyKeyPath, PowerPlanChangeFactory.ActivePlanPolicyValueName)
+                is { IsSuccess: true, Value.Length: > 0 };
+
+            rows.Add(new ShellSettingViewModel(
+                "Pin the active plan by policy",
+                $"A Group Policy value pins '{pinnedName}'; tools such as winutil set it. " +
+                "Windows applies the pinned plan at startup and refuses plan switches until a restart.",
+                PowerPlanChangeFactory.ActivePlanPolicyKeyPath + "\\" + PowerPlanChangeFactory.ActivePlanPolicyValueName,
+                true,
+                _pendingChangesService,
+                groupFactory: keep => WrapChange(PowerPlanChangeFactory.CreatePolicyPinToggle(pin, keep)),
+                readRegistryState: ReadPin,
+                rehydrateSettingId: PowerPlanChangeFactory.ActivePlanPolicyPinSettingId));
+        }
+
         return rows;
     }
 
@@ -414,7 +437,7 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
             // Selecting the live active plan just clears the pending switch
             if (plan.Plan.PlanGuid != _liveActivePlan.PlanGuid)
             {
-                var change = PowerPlanChangeFactory.CreateActivePlanChange(_liveActivePlan, plan.Plan);
+                var change = PowerPlanChangeFactory.CreateActivePlanChange(_liveActivePlan, plan.Plan, _activePlanLockedByPolicy);
                 Stage(change, out _stagedGroupId);
             }
         }

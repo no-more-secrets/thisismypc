@@ -145,6 +145,10 @@ public sealed class FakePowerService : IPowerService
         return OperationResult<bool>.Success(true);
     }
 
+    public bool ActivePlanLockedByPolicy { get; set; }
+
+    public bool IsActivePlanLockedByPolicy() => ActivePlanLockedByPolicy;
+
     public OperationResult<bool> SetActivePlan(Guid planGuid)
     {
         Calls.Add($"SetActivePlan:{planGuid:D}");

@@ -151,24 +151,26 @@ prep here.
   refused powrprof call with its Win32 code, so an error is copied from the
   log instead of screenshotted. Every shipped package is
   now MIT or BSD; xunit is Apache-2.0 but test-only, never distributed.
-- **Group Policy pin on the active power plan (open, 2026-09-02)**: winutil
-  leaves the ActivePowerScheme policy value (under Policies, Microsoft,
-  Power, PowerSettings in HKLM) naming its plan, and the power service then
-  answers every PowerSetActiveScheme with 1260. Measured on Sam's PC from an
-  unelevated shell: with the registry value already naming the target plan
-  and machine policy processed seconds earlier (event 1502), a switch to the
-  target still returned 1260 while a switch to the plan the service had
-  cached returned 0. So umpoext.dll (which holds the key string and imports
-  both RegisterGPNotification and RegNotifyChangeKeyValue) enforces a cached
-  copy that neither a value write nor a policy refresh replaced. The module
-  now runs three bounded phases with the log as the instrument: pin moved to
-  the target plus a subkey added and removed under the key (3 s), machine
-  policy refresh (5 s), pin removed outright (6 s); success re-pins the
-  active plan, failure restores the old pin and lists the phases. If every
-  phase fails on the next run the pin is boot-time state and the product
-  answer is a "remove the pin, applies at restart" change on the Power page
-  instead of a wait (Sam's call whether the pin is kept at all; enterprise
-  policy handling is post-release).
+- **Group Policy pin on the active power plan (resolved 2026-09-02)**:
+  winutil leaves the ActivePowerScheme policy value (HKLM Policies, Microsoft,
+  Power, PowerSettings) naming its plan, and the power service then answers
+  every PowerSetActiveScheme with 1260 until the next restart. Measured on
+  Sam's PC with the debug log as the instrument: the registry named the target
+  and machine policy had just processed (event 1502), yet the target got 1260
+  while the cached plan got 0; moving the pin, a subkey nudge under the key,
+  RefreshPolicyEx, and removing the pin outright all changed nothing within 14
+  seconds. umpoext.dll holds the key string and registers both
+  RegisterGPNotification and RegNotifyChangeKeyValue, but reads the pin at
+  startup only. Product answer: the scan reports the pin (registry) and the
+  lock (PowerSettingAccessCheck ACCESS_ACTIVE_SCHEME = 1260); a switch while
+  locked is recorded where the service reads at startup (pin moved to the
+  target, or the startup active scheme when the pin is already gone) and the
+  change carries RestartRequirement.Reboot; System power gains "Pin the
+  active plan by policy", a switch that removes the value (restart). Error
+  1260 maps to ProtectedByPolicy, so the guidance no longer blames
+  TrustedInstaller. IPolicyRefreshService and its retries are gone. Owed: Sam's
+  restart to confirm the pinned target comes up active. Domain-managed pins
+  are post-release (the switch would remove a pin the domain re-applies).
 - **Package advisories cleared 2026-09-01**: Microsoft.Data.Sqlite 10.0.3
   pulled SQLitePCLRaw 2.1.11 (GHSA-2m69-gcr7-jv3q); bumped to 10.0.11, which
   resolves 2.1.12. Avalonia 11.3.12 pulls Tmds.DBus.Protocol 0.21.2

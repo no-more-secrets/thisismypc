@@ -48,6 +48,14 @@ public interface IPowerService
 
     OperationResult<bool> SetActivePlan(Guid planGuid);
 
+    /// <summary>
+    /// True while the power service refuses every plan switch because a
+    /// Group Policy pinned the active plan when the service started. The
+    /// registry value may already be gone; the service keeps its copy until
+    /// the next restart.
+    /// </summary>
+    bool IsActivePlanLockedByPolicy() => false;
+
     /// <summary>All individual settings of one plan, grouped by subgroup in enumeration order.</summary>
     OperationResult<IReadOnlyList<PowerSettingInfo>> EnumeratePlanSettings(Guid planGuid);
 

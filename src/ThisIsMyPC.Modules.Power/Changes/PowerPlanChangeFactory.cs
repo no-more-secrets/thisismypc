@@ -19,6 +19,17 @@ public static class PowerPlanChangeFactory
     public const string ActivePlanPolicyKeyPath = @"HKLM\SOFTWARE\Policies\Microsoft\Power\PowerSettings";
     public const string ActivePlanPolicyValueName = "ActivePowerScheme";
 
+    /// <summary>The switch that keeps or removes the policy pin.</summary>
+    public const string ActivePlanPolicyPinSettingId = "active-plan-policy-pin";
+
+    /// <summary>
+    /// Where the power service keeps the plan it activates at startup when
+    /// no policy pins one. Written only when the service refuses a live
+    /// switch after the pin is gone.
+    /// </summary>
+    public const string StartupActiveSchemeKeyPath = @"HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes";
+    public const string StartupActiveSchemeValueName = "ActivePowerScheme";
+
     /// <summary>SettingId prefix for individual plan settings; suffix is :AC or :DC.</summary>
     public const string SettingIdPrefix = "power-setting:";
 
@@ -195,7 +206,12 @@ public static class PowerPlanChangeFactory
         };
     }
 
-    public static ChangeDescriptor CreateActivePlanChange(PowerPlan currentActive, PowerPlan newPlan)
+    /// <summary>
+    /// A plan switch. While the power service enforces a policy pin the
+    /// switch is recorded for the next startup instead, so the change needs
+    /// a restart.
+    /// </summary>
+    public static ChangeDescriptor CreateActivePlanChange(PowerPlan currentActive, PowerPlan newPlan, bool lockedByPolicy = false)
     {
         return new ChangeDescriptor
         {
@@ -209,7 +225,31 @@ public static class PowerPlanChangeFactory
             AfterDisplay = newPlan.Name,
             ValueType = ChangeValueType.PowerPlan_Setting,
             Category = ChangeCategory.Modify,
-            RestartRequirement = RestartRequirement.None,
+            RestartRequirement = lockedByPolicy ? RestartRequirement.Reboot : RestartRequirement.None,
+        };
+    }
+
+    /// <summary>
+    /// Keeps or removes the Group Policy value that pins the active plan.
+    /// Removal takes effect at the next startup; until then the power
+    /// service keeps enforcing the copy it read.
+    /// </summary>
+    public static ChangeDescriptor CreatePolicyPinToggle(Guid pinnedPlan, bool keep)
+    {
+        var pin = pinnedPlan.ToString("D");
+        return new ChangeDescriptor
+        {
+            ModuleId = ModuleId,
+            SettingId = ActivePlanPolicyPinSettingId,
+            DisplayName = "Policy pin on the active plan",
+            SystemLocation = ActivePlanPolicyKeyPath + "\\" + ActivePlanPolicyValueName,
+            BeforeValue = keep ? "" : pin,
+            AfterValue = keep ? pin : "",
+            BeforeDisplay = keep ? "Removed" : "Pinned",
+            AfterDisplay = keep ? "Pinned" : "Removed",
+            ValueType = ChangeValueType.PowerPlan_Setting,
+            Category = keep ? ChangeCategory.Enable : ChangeCategory.Disable,
+            RestartRequirement = RestartRequirement.Reboot,
         };
     }
 }

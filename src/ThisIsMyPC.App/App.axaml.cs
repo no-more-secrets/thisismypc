@@ -169,7 +169,6 @@ public partial class App : Application
         services.AddSingleton<ISecurityApi, SecurityApi>();
         services.AddSingleton<IDataDirectoryGuard, DataDirectoryGuard>();
         services.AddSingleton<IRegistryService, RegistryService>();
-        services.AddSingleton<IPolicyRefreshService, ThisIsMyPC.Interop.Win32.Services.PolicyRefreshService>();
         services.AddSingleton<IFileIconService, ThisIsMyPC.Interop.Win32.Shell.FileIconService>();
         services.AddSingleton<IAuthenticodeService, AuthenticodeService>();
         services.AddSingleton<Services.AutorunEnrichment>();

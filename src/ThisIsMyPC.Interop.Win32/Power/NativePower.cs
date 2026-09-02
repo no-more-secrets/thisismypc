@@ -16,6 +16,14 @@ internal static partial class NativePower
     internal const uint ERROR_ACCESS_DISABLED_BY_POLICY = 1260;
     internal const uint ERROR_NO_MORE_ITEMS = 259;
 
+    /// <summary>POWER_DATA_ACCESSOR.ACCESS_ACTIVE_SCHEME: "may the active scheme be changed".</summary>
+    internal const int ACCESS_ACTIVE_SCHEME = 19;
+
+    /// <summary>Returns ERROR_ACCESS_DISABLED_BY_POLICY while a Group Policy governs the accessor.</summary>
+    [LibraryImport("powrprof.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    internal static partial uint PowerSettingAccessCheck(int accessFlags, nint powerGuid);
+
     [LibraryImport("powrprof.dll")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static partial uint PowerEnumerate(

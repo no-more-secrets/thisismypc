@@ -74,6 +74,21 @@ public sealed class PowerService : IPowerService
         }
     }
 
+    public bool IsActivePlanLockedByPolicy()
+    {
+        try
+        {
+            var result = PowerSettingAccessCheck(ACCESS_ACTIVE_SCHEME, 0);
+            Log.Debug("PowerSettingAccessCheck(ACCESS_ACTIVE_SCHEME) = {Code}", result);
+            return result == ERROR_ACCESS_DISABLED_BY_POLICY;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "PowerSettingAccessCheck threw");
+            return false;
+        }
+    }
+
     public OperationResult<IReadOnlyList<PowerSettingInfo>> EnumeratePlanSettings(Guid planGuid)
     {
         try
@@ -390,8 +405,8 @@ public sealed class PowerService : IPowerService
                 $"Cannot {verb}: access denied by Windows (power policy may be locked by group policy).",
                 ErrorCategory.AccessDenied),
             ERROR_ACCESS_DISABLED_BY_POLICY => (
-                $@"Cannot {verb}: a Group Policy pins the active power plan (HKLM\SOFTWARE\Policies\Microsoft\Power\PowerSettings\ActivePowerScheme).",
-                ErrorCategory.AccessDenied),
+                $"Cannot {verb}: a Group Policy pinned the active power plan when Windows started, and the power service refuses switches until the next restart.",
+                ErrorCategory.ProtectedByPolicy),
             _ => (
                 $"Cannot {verb}: Win32 error {win32Error}.",
                 ErrorCategory.ServiceUnavailable),
