@@ -17,9 +17,18 @@ public sealed class ExplorerPatcherSettingsReaderTests
     private readonly FakeRegistryService _registry = new();
     private readonly ExplorerPatcherSettingsReader _sut;
 
+    // Windows 11 23H2 with ExplorerPatcher's taskbar DLL present: every style
+    // and every flyout still exists, so the machine running the tests does not
+    // decide what a row offers.
+    private const int Build23H2 = 22631;
+    private const int Build25H2 = 26200;
+
+    private ExplorerPatcherSettingsReader ReaderFor(int build, bool taskbarDll = true) =>
+        new(_registry, build, _ => taskbarDll);
+
     public ExplorerPatcherSettingsReaderTests()
     {
-        _sut = new ExplorerPatcherSettingsReader(_registry);
+        _sut = ReaderFor(Build23H2);
     }
 
     [Fact]
@@ -99,11 +108,76 @@ public sealed class ExplorerPatcherSettingsReaderTests
     public void A_value_defined_once_per_Windows_version_reads_as_one_available_row()
     {
         // The language switcher has a pre-22H2 and a 22H2+ option list; the
-        // build this runs on decides which one applies.
+        // build decides which one applies.
         var variants = _sut.ReadAll().Where(s => s.RegistryValueName == "IMEStyle").ToList();
 
         Assert.Equal(2, variants.Count);
-        Assert.Single(variants, v => v.IsAvailable);
+        var available = Assert.Single(variants, v => v.IsAvailable);
+        Assert.Equal("IsWindows11Version22H2OrHigher", available.Condition);
+    }
+
+    [Fact]
+    public void The_stock_Windows_10_taskbar_is_not_offered_on_builds_that_no_longer_have_one()
+    {
+        // Sam, 25H2: "The non-explorerpatcher one does nothing." Microsoft
+        // removed that taskbar from explorer.exe at build 26002, and
+        // ExplorerPatcher's own window drops the option there (GUI.c).
+        var on23H2 = ReaderFor(Build23H2).ReadAll().First(s => s.RegistryValueName == "OldTaskbar");
+        var on25H2 = ReaderFor(Build25H2).ReadAll().First(s => s.RegistryValueName == "OldTaskbar");
+
+        Assert.Equal([0, 1, 2], on23H2.Options.Select(o => o.Value));
+        Assert.Equal([0, 2], on25H2.Options.Select(o => o.Value));
+    }
+
+    [Fact]
+    public void ExplorerPatchers_own_taskbar_is_not_offered_without_its_DLL_for_this_build()
+    {
+        var setting = ReaderFor(Build25H2, taskbarDll: false).ReadAll().First(s => s.RegistryValueName == "OldTaskbar");
+
+        Assert.Equal([0], setting.Options.Select(o => o.Value));
+    }
+
+    [Fact]
+    public void A_taskbar_style_whose_files_are_gone_reads_as_the_one_ExplorerPatcher_falls_back_to()
+    {
+        // Value 1 on 25H2 is treated as 0 by ExplorerPatcher (utility.h
+        // AdjustTaskbarStyleValue), so the row shows Windows 11 and the rows
+        // that need a Windows 10 taskbar stay hidden. The raw value is kept
+        // for undo.
+        _registry.SetDWord(ExplorerPatcherSettingsReader.ExplorerPatcherKeyPath, "OldTaskbar", 1);
+        var reader = ReaderFor(Build25H2);
+        var all = reader.ReadAll();
+
+        var style = all.First(s => s.RegistryValueName == "OldTaskbar");
+        Assert.Equal(1, style.CurrentValue);
+        Assert.Equal(0, style.AdjustedValue);
+        Assert.Equal(0, style.EffectiveValue);
+        Assert.False(all.First(s => s.RegistryValueName == "OrbStyle").IsAvailable);
+        Assert.Equal(0, reader.AdjustTaskbarStyle(1));
+        Assert.Equal(2, reader.AdjustTaskbarStyle(2));
+
+        // On 23H2 the same value is what it says.
+        Assert.Null(ReaderFor(Build23H2).ReadAll().First(s => s.RegistryValueName == "OldTaskbar").AdjustedValue);
+    }
+
+    [Fact]
+    public void The_Windows_8_network_flyout_is_not_offered_where_Windows_removed_it()
+    {
+        _registry.SetDWord(ExplorerPatcherSettingsReader.ExplorerPatcherKeyPath, "OldTaskbar", 2);
+
+        var on23H2 = ReaderFor(Build23H2).ReadAll().First(s => s.RegistryValueName == "ReplaceVan");
+        var on25H2 = ReaderFor(Build25H2).ReadAll().First(s => s.RegistryValueName == "ReplaceVan");
+
+        Assert.Contains(on23H2.Options, o => o.Value == 2);
+        Assert.DoesNotContain(on25H2.Options, o => o.Value == 2);
+    }
+
+    [Fact]
+    public void The_taskbar_DLL_is_looked_for_under_ExplorerPatchers_install_folder()
+    {
+        Assert.EndsWith(@"ExplorerPatcher\ep_taskbar.ge.dll", ReaderFor(Build25H2).TaskbarDllPath(), StringComparison.Ordinal);
+        Assert.EndsWith(@"ExplorerPatcher\ep_taskbar.ni.dll", ReaderFor(Build23H2).TaskbarDllPath(), StringComparison.Ordinal);
+        Assert.Null(ReaderFor(10240).TaskbarDllPath());
     }
 
     [Fact]
@@ -112,7 +186,7 @@ public sealed class ExplorerPatcherSettingsReaderTests
         // Show desktop button is a three-way choice on the Windows 10 taskbar
         // and a plain switch on the Windows 11 one; the same set entry has to
         // land on whichever is in force.
-        var inspector = new ShellSetEntryInspector(_registry);
+        var inspector = new ShellSetEntryInspector(_registry, ReaderFor(Build23H2));
         var entry = new Core.Sets.SetEntry
         {
             ModuleId = ExplorerPatcherChangeFactory.ModuleId,
@@ -264,7 +338,7 @@ public sealed class ExplorerPatcherSettingsReaderTests
         // The end goal is exporting a whole configuration, so a saved set has
         // to resolve these rows as well as the app's own.
         _registry.SetDWord(ExplorerPatcherSettingsReader.ExplorerPatcherKeyPath, "SkinMenus", 1);
-        var inspector = new ShellSetEntryInspector(_registry);
+        var inspector = new ShellSetEntryInspector(_registry, ReaderFor(Build23H2));
         var entry = new Core.Sets.SetEntry
         {
             ModuleId = ExplorerPatcherChangeFactory.ModuleId,

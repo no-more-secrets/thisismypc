@@ -27,6 +27,12 @@ public sealed record ExplorerPatcherOption(int Value, string DisplayName);
 /// <param name="Page">The ExplorerPatcher settings page the value came from.</param>
 /// <param name="CurrentValue">Null when the value is absent, which means ExplorerPatcher uses <paramref name="DefaultValue"/>.</param>
 /// <param name="IsAvailable">False when ExplorerPatcher's own condition for the setting does not hold, so it would do nothing.</param>
+/// <param name="AdjustedValue">
+/// Set when ExplorerPatcher treats the live value as a different one on this
+/// machine (a taskbar style whose files are gone reads as the next one down),
+/// so the row shows what is in force. The change pipeline still records the
+/// raw value, so undo puts back exactly what was there.
+/// </param>
 public sealed record ExplorerPatcherSetting(
     string Id,
     string DisplayName,
@@ -42,13 +48,14 @@ public sealed record ExplorerPatcherSetting(
     string Condition,
     IReadOnlyList<ExplorerPatcherOption> Options,
     int? CurrentValue = null,
-    bool IsAvailable = true)
+    bool IsAvailable = true,
+    int? AdjustedValue = null)
 {
     /// <summary>Where the value lives, in the "key\value" form the change pipeline uses.</summary>
     public string SystemLocation => $@"{RegistryKeyPath}\{RegistryValueName}";
 
-    /// <summary>The value in force now: the live one, or ExplorerPatcher's default when absent.</summary>
-    public int EffectiveValue => CurrentValue ?? DefaultValue;
+    /// <summary>The value in force now: what ExplorerPatcher makes of the live one, or its default when absent.</summary>
+    public int EffectiveValue => AdjustedValue ?? CurrentValue ?? DefaultValue;
 
     /// <summary>Toggle rows only: whether the row reads as on right now.</summary>
     public bool IsOn => Kind == ExplorerPatcherSettingKind.InvertedToggle

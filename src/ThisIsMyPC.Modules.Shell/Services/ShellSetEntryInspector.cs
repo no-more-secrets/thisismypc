@@ -17,11 +17,12 @@ public sealed class ShellSetEntryInspector : ISetEntryInspector
     private readonly TaskbarSettingsReader _taskbarReader;
     private readonly ExplorerPatcherSettingsReader _patcherReader;
 
-    public ShellSetEntryInspector(IRegistryService registryService)
+    /// <param name="patcherReader">The ExplorerPatcher reader to resolve rows with; a live one when null. Tests pin its build.</param>
+    public ShellSetEntryInspector(IRegistryService registryService, ExplorerPatcherSettingsReader? patcherReader = null)
     {
         _explorerReader = new ExplorerSettingsReader(registryService);
         _taskbarReader = new TaskbarSettingsReader(registryService);
-        _patcherReader = new ExplorerPatcherSettingsReader(registryService);
+        _patcherReader = patcherReader ?? new ExplorerPatcherSettingsReader(registryService);
     }
 
     public string ModuleId => "Explorer";

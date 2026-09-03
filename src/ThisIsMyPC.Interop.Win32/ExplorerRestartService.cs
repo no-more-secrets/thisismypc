@@ -49,7 +49,7 @@ public sealed class ExplorerRestartService : IExplorerRestartService
             {
                 var back = await WaitForShellRecoveryAsync(ShellRecoveryTimeout).ConfigureAwait(false);
                 Log.Info("Explorer restarted through the Restart Manager in {Ms} ms (taskbar back: {Back})", clock.ElapsedMilliseconds, back);
-                return OperationResult<bool>.Success(true);
+                return back ? OperationResult<bool>.Success(true) : ShellDidNotComeBack();
             }
             Log.Warn("Restart Manager could not restart Explorer ({Error}); falling back to the tray quit", managed.ErrorMessage);
 
@@ -85,11 +85,9 @@ public sealed class ExplorerRestartService : IExplorerRestartService
 
             // 7. Poll for Shell_TrayWnd to reappear (shell is ready when taskbar is back)
             var recovered = await WaitForShellRecoveryAsync(ShellRecoveryTimeout).ConfigureAwait(false);
-            if (!recovered)
-                Log.Warn("Shell_TrayWnd did not reappear within {Seconds} s; Explorer may be starting slowly", ShellRecoveryTimeout.TotalSeconds);
-            Log.Info("Explorer restarted through the tray quit in {Ms} ms", clock.ElapsedMilliseconds);
+            Log.Info("Explorer restarted through the tray quit in {Ms} ms (taskbar back: {Back})", clock.ElapsedMilliseconds, recovered);
 
-            return OperationResult<bool>.Success(true);
+            return recovered ? OperationResult<bool>.Success(true) : ShellDidNotComeBack();
         }
         catch (Exception ex)
         {
@@ -170,6 +168,21 @@ public sealed class ExplorerRestartService : IExplorerRestartService
         {
             _ = NativeRestartManager.RmEndSession(session);
         }
+    }
+
+    /// <summary>
+    /// The shell process was replaced but no taskbar window appeared in time.
+    /// A shell extension that fails on this build (ExplorerPatcher's own
+    /// taskbar on an untested Windows build, say) looks exactly like this, so
+    /// it is reported as a failure the person can act on, not as success.
+    /// </summary>
+    private static OperationResult<bool> ShellDidNotComeBack()
+    {
+        Log.Warn("Shell_TrayWnd did not reappear within {Seconds} s after the restart", ShellRecoveryTimeout.TotalSeconds);
+        return OperationResult<bool>.Failure(
+            $"Explorer was restarted, but its taskbar has not come back after {ShellRecoveryTimeout.TotalSeconds:0} seconds. "
+            + "A setting that changes the taskbar may not work on this Windows build; undo the last change from History and restart Explorer again.",
+            ErrorCategory.ServiceUnavailable);
     }
 
     private static async Task<bool> WaitForShellRecoveryAsync(TimeSpan timeout)

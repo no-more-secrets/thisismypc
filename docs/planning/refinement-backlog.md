@@ -191,7 +191,21 @@ prep here.
   Its update policy stays as the one self-referential row, since "Do not
   check" is what holds the pin. A value ExplorerPatcher defines once per
   Windows version (language switcher, show desktop button) keeps both
-  variants under their conditions, and sets resolve the one in force.
+  variants under their conditions, and sets resolve the one in force. The
+  reader also offers only the options ExplorerPatcher's own window offers
+  (GUI.c GUI_RemoveChoiceEntry): the stock Windows 10 taskbar is gone from
+  explorer.exe at build 26002, so that choice is dropped there and a stored
+  value 1 reads as Windows 11 the way its AdjustTaskbarStyleValue treats it
+  (undo still puts the raw value back); its own taskbar is offered only when
+  its DLL for this build exists under Program Files\ExplorerPatcher, and the
+  Windows 8 network flyout only below build 25346. Found on Sam's PC
+  (2026-09-03, Windows 26200.9168, ExplorerPatcher 26100.8457.70.3): choosing
+  ExplorerPatcher's taskbar left Explorer without a taskbar after the restart.
+  Its stored explorer symbol record for this build has zeros for the entries
+  that taskbar needs, so the pinned release predates the build; not a fault of
+  the app's restart, but the app reported success while the taskbar was gone.
+  `ExplorerRestartService` now fails with guidance when Shell_TrayWnd does not
+  return within its timeout, on both routes.
   Values the app already
   renders are excluded so no two rows write one value. `ExplorerPatcherSettingsReader`
   reads live values and evaluates the section conditions the way its GUI.c
