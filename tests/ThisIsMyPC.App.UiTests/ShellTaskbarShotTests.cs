@@ -23,7 +23,7 @@ public class ShellTaskbarShotTests
         Taskbar: new TaskbarSettingsReader(Registry).Read());
 
     [AvaloniaFact]
-    public void ExplorerPage_HasFiveTabs_AndTheStartMenuTabOffersExplorerPatcher()
+    public void ExplorerPage_HasFiveTabs_AndTheGeneralTabOffersExplorerPatcher()
     {
         var queue = new PendingChangesService();
         var actions = new PendingActionsService();
@@ -40,7 +40,12 @@ public class ShellTaskbarShotTests
         Assert.NotEmpty(viewModel.GeneralSettings);
         Assert.NotEmpty(viewModel.DesktopSettings);
         Assert.NotEmpty(viewModel.StartMenuSettings);
+        // The installer card opens the ExplorerPatcher block on General; the
+        // other tabs carry only its settings, so it is not a Start Menu thing.
+        Assert.False(session.IsTextVisible("valinet.ExplorerPatcher"), "the card is still on the Start Menu tab");
+        session.ClickText("General");
         Assert.True(session.IsTextVisible("ExplorerPatcher"));
+        Assert.True(session.IsTextVisible("valinet.ExplorerPatcher"));
         Assert.NotNull(viewModel.ExplorerPatcher);
 
         // Install queues the one-way action; a second press takes it back.
@@ -60,6 +65,7 @@ public class ShellTaskbarShotTests
         var viewModel = new ShellViewModel(CreateScanData(), queue, Registry);
         using var session = UiSession.ForView(new ShellView(), viewModel, "shell-taskbar", height: 1100);
 
+        session.ClickText("Taskbar");
         session.Screenshot("taskbar-choice-rows");
 
         Assert.True(session.IsTextVisible("Taskbar search"));

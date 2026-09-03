@@ -8,6 +8,74 @@
              x:Class="ThisIsMyPC.App.Views.ShellView"
              x:DataType="vm:ShellViewModel">
 
+    <UserControl.Resources>
+        <!-- One run of ExplorerPatcher rows under a sub-heading named after
+             the page it sits on in ExplorerPatcher's own window; the tab's
+             main run has no heading. Toggles and choices keep the manifest's
+             order, so the rows interleave in one list. -->
+        <DataTemplate x:Key="PatcherGroupTemplate" x:DataType="vm:ExplorerPatcherGroupViewModel">
+            <StackPanel Spacing="4" IsVisible="{Binding IsSearchVisible}">
+                <TextBlock Text="{Binding Heading}"
+                           IsVisible="{Binding ShowHeading}"
+                           Margin="0,8,0,0"
+                           FontSize="13" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <ItemsControl ItemsSource="{Binding Rows}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <controls:ResponsiveColumnsPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.DataTemplates>
+                        <DataTemplate DataType="vm:ShellSettingViewModel">
+                            <ContentControl Content="{Binding}"
+                                            ContentTemplate="{StaticResource ToggleSettingRowTemplate}" />
+                        </DataTemplate>
+                        <DataTemplate DataType="vm:ShellChoiceSettingViewModel">
+                            <ContentControl Content="{Binding}"
+                                            ContentTemplate="{StaticResource ChoiceSettingRowTemplate}" />
+                        </DataTemplate>
+                    </ItemsControl.DataTemplates>
+                </ItemsControl>
+            </StackPanel>
+        </DataTemplate>
+
+        <!-- The installer card at the top of the General tab's block. -->
+        <DataTemplate x:Key="ExplorerPatcherCardTemplate" x:DataType="vm:SoftwareAppViewModel">
+            <Border Classes="card" CornerRadius="4" Padding="14,10">
+                <DockPanel>
+                    <Button DockPanel.Dock="Right"
+                            MinWidth="84"
+                            Padding="12,6" FontSize="12"
+                            VerticalAlignment="Center"
+                            HorizontalContentAlignment="Center"
+                            Content="{Binding ActionButtonText}"
+                            Command="{Binding ToggleQueueCommand}" />
+                    <StackPanel Margin="0,0,12,0" Spacing="2"
+                                VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Ellipse Width="7" Height="7"
+                                     VerticalAlignment="Center"
+                                     Fill="{DynamicResource SuccessBrush}"
+                                     IsVisible="{Binding IsInstalled}"
+                                     ToolTip.Tip="Installed" />
+                            <TextBlock Text="{Binding Name}"
+                                       FontSize="14" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding Description}"
+                                   FontSize="12" TextWrapping="Wrap"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                        <TextBlock Text="{Binding WingetId}"
+                                   FontFamily="{StaticResource MonoFont}"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource TextTertiaryBrush}" />
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+        </DataTemplate>
+    </UserControl.Resources>
+
     <!-- Search above, one tab per area below. The search filters the cards
          of every tab; a tab with no match reads as empty. -->
     <Grid RowDefinitions="Auto,*" Margin="0,4,0,0">
@@ -30,32 +98,24 @@
                             </ItemsControl.ItemsPanel>
                         </ItemsControl>
                         <!-- ExplorerPatcher owns the taskbar and Start menu it draws,
-                             so these are its values, not Windows' own. Shown only
-                             while it is installed. -->
+                             so these are its values, not Windows' own. Rows show
+                             only while it is installed, grouped by the page they
+                             sit on in its own window. -->
                         <StackPanel Spacing="4" Margin="0,10,0,0" IsVisible="{Binding ShowGeneralPatcher}">
                             <TextBlock Text="{Binding PatcherHeading}"
                                        FontSize="14" FontWeight="SemiBold"
                                        Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <!-- Install or installed state, through the one-way actions
+                                 queue; Apply runs it through winget. -->
+                            <ContentControl Content="{Binding ExplorerPatcher}"
+                                            IsVisible="{Binding ShowExplorerPatcher}"
+                                            ContentTemplate="{StaticResource ExplorerPatcherCardTemplate}" />
                             <TextBlock Text="{Binding PatcherVersionNote}"
                                        IsVisible="{Binding ShowPatcherVersionNote}"
                                        FontSize="12" TextWrapping="Wrap"
                                        Foreground="{DynamicResource WarningBrush}" />
-                            <ItemsControl ItemsSource="{Binding GeneralPatcherToggles}"
-                                          ItemTemplate="{StaticResource ToggleSettingRowTemplate}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <controls:ResponsiveColumnsPanel />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                            </ItemsControl>
-                            <ItemsControl ItemsSource="{Binding GeneralPatcherChoices}"
-                                          ItemTemplate="{StaticResource ChoiceSettingRowTemplate}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <controls:ResponsiveColumnsPanel />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                            </ItemsControl>
+                            <ItemsControl ItemsSource="{Binding GeneralPatcherGroups}"
+                                          ItemTemplate="{StaticResource PatcherGroupTemplate}" />
                         </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
@@ -73,8 +133,9 @@
                             </ItemsControl.ItemsPanel>
                         </ItemsControl>
                         <!-- ExplorerPatcher owns the taskbar and Start menu it draws,
-                             so these are its values, not Windows' own. Shown only
-                             while it is installed. -->
+                             so these are its values, not Windows' own. Rows show
+                             only while it is installed, grouped by the page they
+                             sit on in its own window. -->
                         <StackPanel Spacing="4" Margin="0,10,0,0" IsVisible="{Binding ShowFileExplorerPatcher}">
                             <TextBlock Text="{Binding PatcherHeading}"
                                        FontSize="14" FontWeight="SemiBold"
@@ -83,22 +144,8 @@
                                        IsVisible="{Binding ShowPatcherVersionNote}"
                                        FontSize="12" TextWrapping="Wrap"
                                        Foreground="{DynamicResource WarningBrush}" />
-                            <ItemsControl ItemsSource="{Binding FileExplorerPatcherToggles}"
-                                          ItemTemplate="{StaticResource ToggleSettingRowTemplate}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <controls:ResponsiveColumnsPanel />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                            </ItemsControl>
-                            <ItemsControl ItemsSource="{Binding FileExplorerPatcherChoices}"
-                                          ItemTemplate="{StaticResource ChoiceSettingRowTemplate}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <controls:ResponsiveColumnsPanel />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                            </ItemsControl>
+                            <ItemsControl ItemsSource="{Binding FileExplorerPatcherGroups}"
+                                          ItemTemplate="{StaticResource PatcherGroupTemplate}" />
                         </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
@@ -124,8 +171,9 @@
                             </ItemsControl.ItemsPanel>
                         </ItemsControl>
                         <!-- ExplorerPatcher owns the taskbar and Start menu it draws,
-                             so these are its values, not Windows' own. Shown only
-                             while it is installed. -->
+                             so these are its values, not Windows' own. Rows show
+                             only while it is installed, grouped by the page they
+                             sit on in its own window. -->
                         <StackPanel Spacing="4" Margin="0,10,0,0" IsVisible="{Binding ShowTaskbarPatcher}">
                             <TextBlock Text="{Binding PatcherHeading}"
                                        FontSize="14" FontWeight="SemiBold"
@@ -134,22 +182,8 @@
                                        IsVisible="{Binding ShowPatcherVersionNote}"
                                        FontSize="12" TextWrapping="Wrap"
                                        Foreground="{DynamicResource WarningBrush}" />
-                            <ItemsControl ItemsSource="{Binding TaskbarPatcherToggles}"
-                                          ItemTemplate="{StaticResource ToggleSettingRowTemplate}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <controls:ResponsiveColumnsPanel />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                            </ItemsControl>
-                            <ItemsControl ItemsSource="{Binding TaskbarPatcherChoices}"
-                                          ItemTemplate="{StaticResource ChoiceSettingRowTemplate}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <controls:ResponsiveColumnsPanel />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                            </ItemsControl>
+                            <ItemsControl ItemsSource="{Binding TaskbarPatcherGroups}"
+                                          ItemTemplate="{StaticResource PatcherGroupTemplate}" />
                         </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
@@ -167,8 +201,9 @@
                             </ItemsControl.ItemsPanel>
                         </ItemsControl>
                         <!-- ExplorerPatcher owns the taskbar and Start menu it draws,
-                             so these are its values, not Windows' own. Shown only
-                             while it is installed. -->
+                             so these are its values, not Windows' own. Rows show
+                             only while it is installed, grouped by the page they
+                             sit on in its own window. -->
                         <StackPanel Spacing="4" Margin="0,10,0,0" IsVisible="{Binding ShowDesktopPatcher}">
                             <TextBlock Text="{Binding PatcherHeading}"
                                        FontSize="14" FontWeight="SemiBold"
@@ -177,22 +212,8 @@
                                        IsVisible="{Binding ShowPatcherVersionNote}"
                                        FontSize="12" TextWrapping="Wrap"
                                        Foreground="{DynamicResource WarningBrush}" />
-                            <ItemsControl ItemsSource="{Binding DesktopPatcherToggles}"
-                                          ItemTemplate="{StaticResource ToggleSettingRowTemplate}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <controls:ResponsiveColumnsPanel />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                            </ItemsControl>
-                            <ItemsControl ItemsSource="{Binding DesktopPatcherChoices}"
-                                          ItemTemplate="{StaticResource ChoiceSettingRowTemplate}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <controls:ResponsiveColumnsPanel />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                            </ItemsControl>
+                            <ItemsControl ItemsSource="{Binding DesktopPatcherGroups}"
+                                          ItemTemplate="{StaticResource PatcherGroupTemplate}" />
                         </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
@@ -210,8 +231,9 @@
                             </ItemsControl.ItemsPanel>
                         </ItemsControl>
                         <!-- ExplorerPatcher owns the taskbar and Start menu it draws,
-                             so these are its values, not Windows' own. Shown only
-                             while it is installed. -->
+                             so these are its values, not Windows' own. Rows show
+                             only while it is installed, grouped by the page they
+                             sit on in its own window. -->
                         <StackPanel Spacing="4" Margin="0,10,0,0" IsVisible="{Binding ShowStartMenuPatcher}">
                             <TextBlock Text="{Binding PatcherHeading}"
                                        FontSize="14" FontWeight="SemiBold"
@@ -220,66 +242,8 @@
                                        IsVisible="{Binding ShowPatcherVersionNote}"
                                        FontSize="12" TextWrapping="Wrap"
                                        Foreground="{DynamicResource WarningBrush}" />
-                            <ItemsControl ItemsSource="{Binding StartMenuPatcherToggles}"
-                                          ItemTemplate="{StaticResource ToggleSettingRowTemplate}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <controls:ResponsiveColumnsPanel />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                            </ItemsControl>
-                            <ItemsControl ItemsSource="{Binding StartMenuPatcherChoices}"
-                                          ItemTemplate="{StaticResource ChoiceSettingRowTemplate}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <controls:ResponsiveColumnsPanel />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                            </ItemsControl>
-                        </StackPanel>
-                        <!-- Companion app: the first installer linked from a settings page.
-                             Install queues a one-way action; Apply runs it through winget. -->
-                        <StackPanel Spacing="4" Margin="0,10,0,0" IsVisible="{Binding ShowExplorerPatcher}">
-                            <TextBlock Text="Companion app"
-                                       FontSize="14" FontWeight="SemiBold"
-                                       Foreground="{DynamicResource TextPrimaryBrush}" />
-                            <ContentControl Content="{Binding ExplorerPatcher}">
-                                <ContentControl.ContentTemplate>
-                                    <DataTemplate x:DataType="vm:SoftwareAppViewModel">
-                                        <Border Classes="card" CornerRadius="4" Padding="14,10">
-                                            <DockPanel>
-                                                <Button DockPanel.Dock="Right"
-                                                        MinWidth="84"
-                                                        Padding="12,6" FontSize="12"
-                                                        VerticalAlignment="Center"
-                                                        HorizontalContentAlignment="Center"
-                                                        Content="{Binding ActionButtonText}"
-                                                        Command="{Binding ToggleQueueCommand}" />
-                                                <StackPanel Margin="0,0,12,0" Spacing="2"
-                                                            VerticalAlignment="Center">
-                                                    <StackPanel Orientation="Horizontal" Spacing="6">
-                                                        <Ellipse Width="7" Height="7"
-                                                                 VerticalAlignment="Center"
-                                                                 Fill="{DynamicResource SuccessBrush}"
-                                                                 IsVisible="{Binding IsInstalled}"
-                                                                 ToolTip.Tip="Installed" />
-                                                        <TextBlock Text="{Binding Name}"
-                                                                   FontSize="14" FontWeight="SemiBold"
-                                                                   Foreground="{DynamicResource TextPrimaryBrush}" />
-                                                    </StackPanel>
-                                                    <TextBlock Text="{Binding Description}"
-                                                               FontSize="12" TextWrapping="Wrap"
-                                                               Foreground="{DynamicResource TextSecondaryBrush}" />
-                                                    <TextBlock Text="{Binding WingetId}"
-                                                               FontFamily="{StaticResource MonoFont}"
-                                                               FontSize="11"
-                                                               Foreground="{DynamicResource TextTertiaryBrush}" />
-                                                </StackPanel>
-                                            </DockPanel>
-                                        </Border>
-                                    </DataTemplate>
-                                </ContentControl.ContentTemplate>
-                            </ContentControl>
+                            <ItemsControl ItemsSource="{Binding StartMenuPatcherGroups}"
+                                          ItemTemplate="{StaticResource PatcherGroupTemplate}" />
                         </StackPanel>
                     </StackPanel>
                 </ScrollViewer>

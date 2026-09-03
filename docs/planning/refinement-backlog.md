@@ -155,11 +155,13 @@ prep here.
   (2026-09-02)**: the Explorer page reads General, File Explorer, Taskbar,
   Desktop, Start Menu; every ExplorerPreference carries a ShellSection and the
   reader assigns it (classic context menu sits on General, command bar on File
-  Explorer). Start Menu links the first installer from a settings page: an
+  Explorer). The page links the first installer from a settings page: an
   ExplorerPatcher card (catalog id explorerpatcher, winget
   valinet.ExplorerPatcher, GPLv2) reusing SoftwareAppViewModel and the one-way
   actions queue; installed state comes from ExplorerPatcher's own uninstall
-  key ({D17F1E1A-...}_ExplorerPatcher). Explorer restart now goes through the
+  key ({D17F1E1A-...}_ExplorerPatcher). It opened on Start Menu first and
+  moved to the top of the General tab's ExplorerPatcher block on 2026-09-03,
+  since its settings sit on every tab. Explorer restart now goes through the
   Restart Manager the way ExplorerPatcher does (RmStartSession, register the
   shell process, RmShutdown force, RmRestart), with the old tray WM_QUIT route
   as fallback; the log records which route ran and how long it took. Owed:
@@ -172,9 +174,25 @@ prep here.
   value is the whole interface. `tools/import-explorerpatcher-settings.ps1`
   reads its annotated manifest (ep_gui/resources/settings.reg), its resource
   ids, and its English string table at a pinned release tag, and writes
-  `Modules.Shell/Data/explorerpatcher-settings.json`: 88 settings, each with
-  key, value, default, options, the section condition, and the tab it belongs
-  on. Values the app already
+  `Modules.Shell/Data/explorerpatcher-settings.json`: 79 settings, each with
+  key, value, default, options, the section condition, the tab it belongs
+  on, a sub-heading, and a description. The manifest side is mechanical; the
+  reading side is curated in `tools/explorerpatcher-catalog-overrides.psd1`:
+  which values stay out (its debug console, memory checks, symbol download,
+  update channel, and its own settings window rows: 11 values that configure
+  ExplorerPatcher rather than Windows), which tab a row from its Other or
+  Advanced pages belongs on (toolbar separators and quick launch to Taskbar,
+  Alt+F4 default and build info to Desktop), the sub-heading (ExplorerPatcher's
+  own page names: System tray, Weather widget, Window switcher (Alt+Tab),
+  Windows Spotlight, plus Control Panel and Updates), a clearer label where
+  ExplorerPatcher's only reads under its page heading ("Sound icon opens"),
+  and a description for every row (its (i) tooltip, searched). The import
+  fails on a value without a description, so a pin bump surfaces new rows.
+  Its update policy stays as the one self-referential row, since "Do not
+  check" is what holds the pin. A value ExplorerPatcher defines once per
+  Windows version (language switcher, show desktop button) keeps both
+  variants under their conditions, and sets resolve the one in force.
+  Values the app already
   renders are excluded so no two rows write one value. `ExplorerPatcherSettingsReader`
   reads live values and evaluates the section conditions the way its GUI.c
   does (taskbar style, 22H2 build, AltTabSettings, PeopleBand, the Windows 10
@@ -189,7 +207,8 @@ prep here.
   above the rows when the two differ, because a newer release can rename or
   drop a value. Its own update policy is imported too, so its self-updater
   can be set to "Do not check for updates" and the pin holds. Move the pin
-  only by bumping -Version, rerunning, reading the diff, and testing. Owed:
+  only by bumping -Version, rerunning, reading the diff (the overrides file
+  warns about names the release no longer has), and testing. Owed:
   Sam's elevated pass applying one of these rows. Deferred: its four string settings (weather location and
   the update URLs) need a text row type.
 - **Group Policy pin on the active power plan (resolved 2026-09-02)**:

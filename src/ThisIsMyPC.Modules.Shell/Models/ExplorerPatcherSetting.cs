@@ -22,11 +22,15 @@ public sealed record ExplorerPatcherOption(int Value, string DisplayName);
 /// tools/import-explorerpatcher-settings.ps1); the live value and
 /// <see cref="IsAvailable"/> come from the registry at scan time.
 /// </summary>
+/// <param name="Description">What the row does, in the app's own words (tools/explorerpatcher-catalog-overrides.psd1).</param>
+/// <param name="GroupHeading">Sub-heading the row sits under on its tab, named after ExplorerPatcher's own page; empty for the tab's main run.</param>
+/// <param name="Page">The ExplorerPatcher settings page the value came from.</param>
 /// <param name="CurrentValue">Null when the value is absent, which means ExplorerPatcher uses <paramref name="DefaultValue"/>.</param>
 /// <param name="IsAvailable">False when ExplorerPatcher's own condition for the setting does not hold, so it would do nothing.</param>
 public sealed record ExplorerPatcherSetting(
     string Id,
     string DisplayName,
+    string Description,
     string GroupHeading,
     string Page,
     ShellSection Section,

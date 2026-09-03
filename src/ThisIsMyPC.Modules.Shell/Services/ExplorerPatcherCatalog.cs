@@ -65,6 +65,7 @@ public static class ExplorerPatcherCatalog
             settings.Add(new ExplorerPatcherSetting(
                 Id: element.GetProperty("id").GetString()!,
                 DisplayName: element.GetProperty("name").GetString()!,
+                Description: element.GetProperty("description").GetString() ?? string.Empty,
                 GroupHeading: element.GetProperty("group").GetString() ?? string.Empty,
                 Page: element.GetProperty("page").GetString()!,
                 Section: ParseSection(element.GetProperty("section").GetString()!),

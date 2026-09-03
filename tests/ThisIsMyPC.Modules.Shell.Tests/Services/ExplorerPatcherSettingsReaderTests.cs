@@ -28,10 +28,15 @@ public sealed class ExplorerPatcherSettingsReaderTests
         var entries = ExplorerPatcherCatalog.Entries;
 
         Assert.NotEmpty(entries);
-        Assert.Equal(entries.Count, entries.Select(e => e.SystemLocation).Distinct(StringComparer.OrdinalIgnoreCase).Count());
+        // One row per value and condition: a value ExplorerPatcher defines once
+        // per Windows version appears once per version, never twice for one.
+        Assert.Equal(entries.Count, entries.Select(e => e.SystemLocation + "|" + e.Condition).Distinct(StringComparer.OrdinalIgnoreCase).Count());
+        Assert.Equal(entries.Count, entries.Select(e => e.Id).Distinct(StringComparer.Ordinal).Count());
         Assert.All(entries, e =>
         {
             Assert.False(string.IsNullOrWhiteSpace(e.DisplayName));
+            Assert.False(string.IsNullOrWhiteSpace(e.Description), $"{e.RegistryValueName} has no description");
+            Assert.DoesNotContain("%PLACEHOLDER", e.DisplayName, StringComparison.Ordinal);
             Assert.StartsWith("HK", e.RegistryKeyPath, StringComparison.Ordinal);
             Assert.False(string.IsNullOrWhiteSpace(e.RegistryValueName));
             if (e.Kind == ExplorerPatcherSettingKind.Choice)
@@ -50,6 +55,79 @@ public sealed class ExplorerPatcherSettingsReaderTests
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         Assert.DoesNotContain(ExplorerPatcherCatalog.Entries, e => ours.Contains(e.SystemLocation));
+    }
+
+    [Theory]
+    [InlineData("AllocConsole")]
+    [InlineData("Memcheck")]
+    [InlineData("EnableSymbolDownload")]
+    [InlineData("LastSectionInProperties")]
+    [InlineData("PropertiesInWinX")]
+    [InlineData("UpdatePreferStaging")]
+    [InlineData("UpdateUseLocal")]
+    public void Values_that_configure_ExplorerPatcher_itself_stay_out(string valueName)
+    {
+        // Its debug console, memory checks, update channel, and its own
+        // settings window are not part of a machine's configuration.
+        Assert.DoesNotContain(ExplorerPatcherCatalog.Entries, e => e.RegistryValueName == valueName);
+    }
+
+    [Fact]
+    public void Rows_from_its_Other_and_Advanced_pages_land_on_the_tab_they_belong_to()
+    {
+        var byName = ExplorerPatcherCatalog.Entries.DistinctBy(e => e.RegistryValueName).ToDictionary(e => e.RegistryValueName);
+
+        Assert.Equal(ShellSection.Taskbar, byName["ToolbarSeparators"].Section);
+        Assert.Equal(ShellSection.Taskbar, byName["PinnedItemsActAsQuickLaunch"].Section);
+        Assert.Equal(ShellSection.Desktop, byName["Start_PowerButtonAction"].Section);
+        Assert.Equal(ShellSection.Desktop, byName["PaintDesktopVersion"].Section);
+        Assert.Equal(ShellSection.General, byName["DisableWinFHotkey"].Section);
+        Assert.Equal("Control Panel", byName["DoNotRedirectSystemToSettingsApp"].GroupHeading);
+        Assert.Equal("System tray", byName["SkinMenus"].GroupHeading);
+        Assert.Equal("Window switcher (Alt+Tab)", byName["RowHeight"].GroupHeading);
+        Assert.Equal(string.Empty, byName["OldTaskbar"].GroupHeading);
+
+        // Within a group the manifest's order holds, toggles and choices interleaved,
+        // so the switcher style comes first and its toggles sit before its choices.
+        var order = ExplorerPatcherCatalog.Entries.Select(e => e.RegistryValueName).ToList();
+        Assert.True(order.IndexOf("AltTabSettings") < order.IndexOf("IncludeWallpaper"));
+        Assert.True(order.IndexOf("IncludeWallpaper") < order.IndexOf("Theme"));
+        Assert.True(order.IndexOf("OldTaskbar") < order.IndexOf("SkinMenus"));
+    }
+
+    [Fact]
+    public void A_value_defined_once_per_Windows_version_reads_as_one_available_row()
+    {
+        // The language switcher has a pre-22H2 and a 22H2+ option list; the
+        // build this runs on decides which one applies.
+        var variants = _sut.ReadAll().Where(s => s.RegistryValueName == "IMEStyle").ToList();
+
+        Assert.Equal(2, variants.Count);
+        Assert.Single(variants, v => v.IsAvailable);
+    }
+
+    [Fact]
+    public void A_set_resolves_the_variant_whose_condition_holds()
+    {
+        // Show desktop button is a three-way choice on the Windows 10 taskbar
+        // and a plain switch on the Windows 11 one; the same set entry has to
+        // land on whichever is in force.
+        var inspector = new ShellSetEntryInspector(_registry);
+        var entry = new Core.Sets.SetEntry
+        {
+            ModuleId = ExplorerPatcherChangeFactory.ModuleId,
+            SettingId = ExplorerPatcherChangeFactory.SettingIdPrefix + "TaskbarSD",
+            Value = "0",
+            Description = "Show desktop button",
+        };
+
+        _registry.SetDWord(ExplorerPatcherSettingsReader.ExplorerPatcherKeyPath, "OldTaskbar", 0);
+        var onWindows11Taskbar = Assert.Single(inspector.CreateChangeGroup(entry)!.Changes);
+        Assert.Equal("Off", onWindows11Taskbar.AfterDisplay);
+
+        _registry.SetDWord(ExplorerPatcherSettingsReader.ExplorerPatcherKeyPath, "OldTaskbar", 1);
+        var onWindows10Taskbar = Assert.Single(inspector.CreateChangeGroup(entry)!.Changes);
+        Assert.Equal("Disabled", onWindows10Taskbar.AfterDisplay);
     }
 
     [Fact]
@@ -95,7 +173,9 @@ public sealed class ExplorerPatcherSettingsReaderTests
 
         Assert.Equal(ExplorerPatcherSettingKind.Choice, policy.Kind);
         Assert.Contains(policy.Options, o => o.DisplayName.Contains("Do not check", StringComparison.Ordinal));
-        Assert.Contains("ExplorerPatcher updates", policy.DisplayName, StringComparison.Ordinal);
+        Assert.Equal("Check for updates", policy.DisplayName);
+        Assert.Equal("Updates", policy.GroupHeading);
+        Assert.Contains("ExplorerPatcher", policy.Description, StringComparison.Ordinal);
     }
 
     [Fact]

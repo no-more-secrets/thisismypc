@@ -81,8 +81,12 @@ public sealed class ShellSetEntryInspector : ISetEntryInspector
         if (!settingId.StartsWith(ExplorerPatcherChangeFactory.SettingIdPrefix, StringComparison.Ordinal))
             return null;
         var valueName = settingId[ExplorerPatcherChangeFactory.SettingIdPrefix.Length..];
-        return _patcherReader.ReadAll().FirstOrDefault(s =>
-            string.Equals(s.RegistryValueName, valueName, StringComparison.OrdinalIgnoreCase));
+        // ExplorerPatcher defines a couple of values once per Windows version;
+        // the variant whose condition holds here is the one to read and write.
+        return _patcherReader.ReadAll()
+            .Where(s => string.Equals(s.RegistryValueName, valueName, StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(s => s.IsAvailable)
+            .FirstOrDefault();
     }
 
     public ChangeGroup? CreateChangeGroup(SetEntry entry)

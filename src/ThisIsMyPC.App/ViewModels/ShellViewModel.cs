@@ -15,7 +15,7 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, IDispos
     private static readonly string ClassicContextMenuKeyPath = Modules.Shell.ShellRegistryPaths.ClassicContextMenuKeyPath;
     private static readonly string CommandBarKeyPath = Modules.Shell.ShellRegistryPaths.CommandBarKeyPath;
 
-    /// <summary>Catalog id of the companion app the Start Menu tab offers.</summary>
+    /// <summary>Catalog id of the ExplorerPatcher installer card on the General tab.</summary>
     public const string ExplorerPatcherCatalogId = "explorerpatcher";
 
     public ObservableCollection<ShellSettingViewModel> GeneralSettings { get; } = [];
@@ -25,27 +25,34 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, IDispos
     public ObservableCollection<ShellSettingViewModel> DesktopSettings { get; } = [];
     public ObservableCollection<ShellSettingViewModel> StartMenuSettings { get; } = [];
 
-    // ExplorerPatcher's own settings, split the same way and shown under their
-    // own heading on each tab. Empty unless ExplorerPatcher is installed.
-    public ObservableCollection<ShellSettingViewModel> GeneralPatcherToggles { get; } = [];
-    public ObservableCollection<ShellChoiceSettingViewModel> GeneralPatcherChoices { get; } = [];
-    public ObservableCollection<ShellSettingViewModel> FileExplorerPatcherToggles { get; } = [];
-    public ObservableCollection<ShellChoiceSettingViewModel> FileExplorerPatcherChoices { get; } = [];
-    public ObservableCollection<ShellSettingViewModel> TaskbarPatcherToggles { get; } = [];
-    public ObservableCollection<ShellChoiceSettingViewModel> TaskbarPatcherChoices { get; } = [];
-    public ObservableCollection<ShellSettingViewModel> DesktopPatcherToggles { get; } = [];
-    public ObservableCollection<ShellChoiceSettingViewModel> DesktopPatcherChoices { get; } = [];
-    public ObservableCollection<ShellSettingViewModel> StartMenuPatcherToggles { get; } = [];
-    public ObservableCollection<ShellChoiceSettingViewModel> StartMenuPatcherChoices { get; } = [];
+    // ExplorerPatcher's own settings, one block per tab under its heading,
+    // grouped by the page they sit on in ExplorerPatcher's own window.
+    // Empty unless ExplorerPatcher is installed.
+    public ObservableCollection<ExplorerPatcherGroupViewModel> GeneralPatcherGroups { get; } = [];
+    public ObservableCollection<ExplorerPatcherGroupViewModel> FileExplorerPatcherGroups { get; } = [];
+    public ObservableCollection<ExplorerPatcherGroupViewModel> TaskbarPatcherGroups { get; } = [];
+    public ObservableCollection<ExplorerPatcherGroupViewModel> DesktopPatcherGroups { get; } = [];
+    public ObservableCollection<ExplorerPatcherGroupViewModel> StartMenuPatcherGroups { get; } = [];
 
     /// <summary>True while ExplorerPatcher is installed, so its rows are worth showing.</summary>
     public bool ShowPatcherSettings { get; }
 
-    public bool ShowGeneralPatcher => ShowPatcherSettings && (GeneralPatcherToggles.Count > 0 || GeneralPatcherChoices.Count > 0);
-    public bool ShowFileExplorerPatcher => ShowPatcherSettings && (FileExplorerPatcherToggles.Count > 0 || FileExplorerPatcherChoices.Count > 0);
-    public bool ShowTaskbarPatcher => ShowPatcherSettings && (TaskbarPatcherToggles.Count > 0 || TaskbarPatcherChoices.Count > 0);
-    public bool ShowDesktopPatcher => ShowPatcherSettings && (DesktopPatcherToggles.Count > 0 || DesktopPatcherChoices.Count > 0);
-    public bool ShowStartMenuPatcher => ShowPatcherSettings && (StartMenuPatcherToggles.Count > 0 || StartMenuPatcherChoices.Count > 0);
+    /// <summary>The General tab's block also carries the installer card, so it shows whenever there is a card.</summary>
+    public bool ShowGeneralPatcher => ShowExplorerPatcher || (ShowPatcherSettings && GeneralPatcherGroups.Count > 0);
+    public bool ShowFileExplorerPatcher => ShowPatcherSettings && FileExplorerPatcherGroups.Count > 0;
+    public bool ShowTaskbarPatcher => ShowPatcherSettings && TaskbarPatcherGroups.Count > 0;
+    public bool ShowDesktopPatcher => ShowPatcherSettings && DesktopPatcherGroups.Count > 0;
+    public bool ShowStartMenuPatcher => ShowPatcherSettings && StartMenuPatcherGroups.Count > 0;
+
+    private IEnumerable<ExplorerPatcherGroupViewModel> PatcherGroups =>
+        GeneralPatcherGroups.Concat(FileExplorerPatcherGroups).Concat(TaskbarPatcherGroups)
+            .Concat(DesktopPatcherGroups).Concat(StartMenuPatcherGroups);
+
+    /// <summary>Every ExplorerPatcher toggle row, across tabs.</summary>
+    public IEnumerable<ShellSettingViewModel> PatcherToggles => PatcherGroups.SelectMany(g => g.Toggles);
+
+    /// <summary>Every ExplorerPatcher choice row, across tabs.</summary>
+    public IEnumerable<ShellChoiceSettingViewModel> PatcherChoices => PatcherGroups.SelectMany(g => g.Choices);
 
     /// <summary>Heading above each tab's ExplorerPatcher rows.</summary>
     public static string PatcherHeading => "ExplorerPatcher";
@@ -59,7 +66,7 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, IDispos
 
     public bool ShowPatcherVersionNote => PatcherVersionNote.Length > 0;
 
-    /// <summary>The ExplorerPatcher card on the Start Menu tab; null without an actions queue.</summary>
+    /// <summary>The ExplorerPatcher installer card at the top of the General tab's block; null without an actions queue.</summary>
     public SoftwareAppViewModel? ExplorerPatcher { get; }
 
     public bool ShowExplorerPatcher => ExplorerPatcher is not null;
@@ -67,24 +74,29 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, IDispos
     private readonly IPendingActionsService? _pendingActionsService;
 
     private IEnumerable<ShellSettingViewModel> ToggleRows =>
-        GeneralSettings.Concat(FileExplorerSettings).Concat(TaskbarSettings).Concat(DesktopSettings).Concat(StartMenuSettings)
-            .Concat(GeneralPatcherToggles).Concat(FileExplorerPatcherToggles).Concat(TaskbarPatcherToggles)
-            .Concat(DesktopPatcherToggles).Concat(StartMenuPatcherToggles);
+        GeneralSettings.Concat(FileExplorerSettings).Concat(TaskbarSettings).Concat(DesktopSettings).Concat(StartMenuSettings);
 
-    private IEnumerable<ShellChoiceSettingViewModel> ChoiceRows =>
-        TaskbarChoiceSettings
-            .Concat(GeneralPatcherChoices).Concat(FileExplorerPatcherChoices).Concat(TaskbarPatcherChoices)
-            .Concat(DesktopPatcherChoices).Concat(StartMenuPatcherChoices);
+    private IEnumerable<ShellChoiceSettingViewModel> ChoiceRows => TaskbarChoiceSettings;
 
-    private (ObservableCollection<ShellSettingViewModel> Toggles, ObservableCollection<ShellChoiceSettingViewModel> Choices)
-        PatcherRowsFor(ShellSection section) => section switch
-        {
-            ShellSection.General => (GeneralPatcherToggles, GeneralPatcherChoices),
-            ShellSection.Taskbar => (TaskbarPatcherToggles, TaskbarPatcherChoices),
-            ShellSection.Desktop => (DesktopPatcherToggles, DesktopPatcherChoices),
-            ShellSection.StartMenu => (StartMenuPatcherToggles, StartMenuPatcherChoices),
-            _ => (FileExplorerPatcherToggles, FileExplorerPatcherChoices),
-        };
+    private ObservableCollection<ExplorerPatcherGroupViewModel> PatcherGroupsFor(ShellSection section) => section switch
+    {
+        ShellSection.General => GeneralPatcherGroups,
+        ShellSection.Taskbar => TaskbarPatcherGroups,
+        ShellSection.Desktop => DesktopPatcherGroups,
+        ShellSection.StartMenu => StartMenuPatcherGroups,
+        _ => FileExplorerPatcherGroups,
+    };
+
+    /// <summary>The catalog is ordered by tab, then group, so a new heading opens a new group.</summary>
+    private ExplorerPatcherGroupViewModel PatcherGroupFor(ShellSection section, string heading)
+    {
+        var groups = PatcherGroupsFor(section);
+        if (groups.Count > 0 && groups[^1].Heading == heading)
+            return groups[^1];
+        var group = new ExplorerPatcherGroupViewModel(heading);
+        groups.Add(group);
+        return group;
+    }
 
     private ObservableCollection<ShellSettingViewModel> RowsFor(ShellSection section) => section switch
     {
@@ -104,6 +116,8 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, IDispos
             row.ApplySearch(value);
         foreach (var row in ChoiceRows)
             row.ApplySearch(value);
+        foreach (var group in PatcherGroups)
+            group.ApplySearch(value);
     }
 
     public ShellViewModel(
@@ -122,7 +136,7 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, IDispos
                 readRegistryState: () => ReadExplorerPrefFromRegistry(registryService, capturedPref)));
         }
 
-        // The Start Menu tab links the first companion installer: ExplorerPatcher
+        // The General tab's ExplorerPatcher block opens with its installer card,
         // through the same one-way actions queue the Software page uses.
         if (pendingActionsService is not null
             && SoftwareCatalog.Entries.FirstOrDefault(e => e.Id == ExplorerPatcherCatalogId) is { } explorerPatcher)
@@ -148,10 +162,8 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, IDispos
                 continue;
 
             var captured = setting;
-            var (toggles, choices) = PatcherRowsFor(captured.Section);
-            var description = string.IsNullOrEmpty(captured.GroupHeading)
-                ? $"ExplorerPatcher, {captured.Page}"
-                : $"ExplorerPatcher, {captured.Page}: {captured.GroupHeading}";
+            var rows = PatcherGroupFor(captured.Section, captured.GroupHeading).Rows;
+            var description = captured.Description;
 
             int? ReadLive()
             {
@@ -161,7 +173,7 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, IDispos
 
             if (captured.Kind == Modules.Shell.Models.ExplorerPatcherSettingKind.Choice)
             {
-                choices.Add(new ShellChoiceSettingViewModel(
+                rows.Add(new ShellChoiceSettingViewModel(
                     captured.DisplayName,
                     description,
                     captured.SystemLocation,
@@ -173,7 +185,7 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, IDispos
             }
             else
             {
-                toggles.Add(new ShellSettingViewModel(
+                rows.Add(new ShellSettingViewModel(
                     captured.DisplayName,
                     description,
                     captured.SystemLocation,

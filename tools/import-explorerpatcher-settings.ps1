@@ -17,7 +17,11 @@
     (see its SettingsMonitor.c), so writing the value is the whole interface.
 
     Settings the app already renders from its own readers are excluded, so no
-    two rows ever write the same value.
+    two rows ever write the same value. Values that configure ExplorerPatcher
+    itself (its debugging, update channel, own settings window) stay out too.
+    Tab, group, label, and description for every row come from
+    explorerpatcher-catalog-overrides.psd1 next to this script; a value without
+    a description fails the import, so a pin bump shows its new rows.
 
     The catalog is pinned to one ExplorerPatcher release and records it. The
     app compares that version with the installed one and says so when they
@@ -59,30 +63,15 @@ $AlreadyOurs = @(
     'TaskbarAl', 'TaskbarDa', 'SearchboxTaskbarMode', 'TaskbarGlomLevel'
 )
 
-# ExplorerPatcher pages that uninstall it or just show version text. Its
-# update policy is imported: turning its self-updater off is what keeps the
-# installed version pinned to the one this catalog was built from.
+# ExplorerPatcher pages that uninstall it or just show version text.
 $SkipPages = @('Settings and uninstall', 'About')
 
-# A few ExplorerPatcher labels only read correctly under their own page
-# heading. Renamed here so the row still says what it does on a shared tab.
-$LabelOverrides = @{
-    'UpdatePolicy' = 'Check for ExplorerPatcher updates when File Explorer starts'
-}
-
-# Which tab of the app's Explorer page each ExplorerPatcher page lands on.
-$PageToSection = @{
-    'Taskbar'         = 'Taskbar'
-    'System tray'     = 'Taskbar'
-    'Weather'         = 'Taskbar'
-    'File Explorer'   = 'FileExplorer'
-    'Start menu'      = 'StartMenu'
-    'Window switcher' = 'Desktop'
-    'Spotlight'       = 'Desktop'
-    'Other'           = 'General'
-    'Advanced'        = 'General'
-    'Updates'         = 'General'
-}
+# Everything about how a row reads in the app (which tab, which group, its
+# label, its description) and which values stay out lives next to this
+# script in explorerpatcher-catalog-overrides.psd1, so a pin bump changes
+# the manifest side only.
+$Overrides = Import-PowerShellDataFile (Join-Path $PSScriptRoot 'explorerpatcher-catalog-overrides.psd1')
+$SectionOrder = @('Taskbar', 'FileExplorer', 'StartMenu', 'Desktop', 'General')
 
 function Get-EpFile {
     param([string]$RelativePath)
@@ -153,6 +142,7 @@ $pendingKind = $null
 $pendingLabel = ''
 $pendingOptions = [System.Collections.Generic.List[object]]::new()
 $skipped = 0
+$excluded = 0
 
 foreach ($rawLine in ($settingsReg -split "`r?`n")) {
     $line = $rawLine.Trim()
@@ -243,6 +233,7 @@ foreach ($rawLine in ($settingsReg -split "`r?`n")) {
 
         if ($SkipPages -contains $page) { continue }
         if ($AlreadyOurs -contains $valueName) { $skipped++; continue }
+        if ($Overrides.Exclude.ContainsKey($valueName)) { $excluded++; continue }
         if ($data -notmatch '^dword:([0-9a-fA-F]{8})$') { continue }   # strings need their own row type
         # Capture now: the label tidying below runs its own matches over $Matches.
         $defaultValue = [Convert]::ToInt32($Matches[1], 16)
@@ -251,19 +242,22 @@ foreach ($rawLine in ($settingsReg -split "`r?`n")) {
         $label = ($label -replace '\*+$', '').Trim()
         # "&&" is menu-escaping in the source strings.
         $label = $label -replace '&&', '&'
-        $groupText = ($heading -replace '\*+$', '').Trim() -replace '&&', '&'
-        if ($label -match '^%PLACEHOLDER') {
-            # ExplorerPatcher ships a couple of strings its own table never fills in.
-            $label = [regex]::Replace($valueName, '(?<!^)([A-Z])', ' $1')
-        }
-        if ($LabelOverrides.ContainsKey($valueName)) { $label = $LabelOverrides[$valueName] }
-        if (-not $label) { continue }
+        $headingText = ($heading -replace '\*+$', '').Trim() -replace '&&', '&'
 
         # A label that opens lower-case is the tail of the heading's sentence.
-        if ($groupText -and $label -cmatch '^[a-z]') {
-            $label = ($groupText.TrimEnd(':') + ' ' + $label).Trim()
-            $groupText = ''
+        if ($headingText -and $label -cmatch '^[a-z]') {
+            $label = ($headingText.TrimEnd(':') + ' ' + $label).Trim()
         }
+        if ($Overrides.Label.ContainsKey($valueName)) { $label = $Overrides.Label[$valueName] }
+        if (-not $label -or $label -match '^%PLACEHOLDER') {
+            throw "$valueName has no usable label; add one to the Label table or exclude it."
+        }
+        if (-not $Overrides.Description.ContainsKey($valueName)) {
+            throw "$valueName has no description; add one to explorerpatcher-catalog-overrides.psd1 or exclude it."
+        }
+
+        $section = if ($Overrides.Section.ContainsKey($valueName)) { $Overrides.Section[$valueName] } else { $Overrides.PageToSection[$page] }
+        $group = if ($Overrides.Group.ContainsKey($valueName)) { $Overrides.Group[$valueName] } else { $Overrides.PageToGroup[$page] }
 
         # The innermost non-empty section condition governs the row.
         $condition = ''
@@ -272,18 +266,19 @@ foreach ($rawLine in ($settingsReg -split "`r?`n")) {
         }
 
         $settings.Add([ordered]@{
-                id        = "ep:$valueName"
-                name      = $label
-                group     = $groupText
-                page      = $page
-                section   = $PageToSection[$page]
-                key       = $key
-                value     = $valueName
-                kind      = $kind
-                default   = $defaultValue
-                restart   = $requiresRestart
-                condition = $condition
-                options   = $options
+                id          = "ep:$valueName"
+                name        = $label
+                description = $Overrides.Description[$valueName]
+                group       = [string]$group
+                page        = $page
+                section     = $section
+                key         = $key
+                value       = $valueName
+                kind        = $kind
+                default     = $defaultValue
+                restart     = $requiresRestart
+                condition   = $condition
+                options     = $options
             })
         continue
     }
@@ -292,18 +287,52 @@ foreach ($rawLine in ($settingsReg -split "`r?`n")) {
     if ($line.StartsWith(';') -and -not ($line -match '^;[a-z]\s')) { continue }
 }
 
-# Ids must be unique; ExplorerPatcher lists a couple of values twice for
-# different Windows versions, and the first occurrence is the one that applies.
+# ExplorerPatcher lists a couple of values twice, once per Windows version,
+# each under its own condition; both stay, and the reader's condition check
+# picks the one that applies. A repeat of the same value under the same
+# condition is dropped.
 $unique = [System.Collections.Generic.List[object]]::new()
 $seen = [System.Collections.Generic.HashSet[string]]::new()
+$perValue = @{}
 $dupes = 0
 foreach ($setting in $settings) {
-    if ($seen.Add("$($setting.key)|$($setting.value)")) { $unique.Add($setting) } else { $dupes++ }
+    if (-not $seen.Add("$($setting.key)|$($setting.value)|$($setting.condition)")) { $dupes++; continue }
+    $n = 1 + [int]$perValue[$setting.value]
+    $perValue[$setting.value] = $n
+    if ($n -gt 1) { $setting.id = "$($setting.id):$n" }
+    $unique.Add($setting)
 }
 
 $missingSection = @($unique | Where-Object { -not $_.section })
 if ($missingSection.Count -gt 0) {
     throw "No tab mapped for page(s): $(($missingSection | ForEach-Object { $_.page } | Sort-Object -Unique) -join ', ')"
+}
+$unknownGroup = @($unique | Where-Object { $Overrides.GroupOrder -notcontains $_.group })
+if ($unknownGroup.Count -gt 0) {
+    throw "Group(s) missing from GroupOrder: $(($unknownGroup | ForEach-Object { $_.group } | Sort-Object -Unique) -join ', ')"
+}
+
+# Overrides naming a value the manifest no longer has are stale.
+$present = [System.Collections.Generic.HashSet[string]]::new([string[]]($settings | ForEach-Object { $_.value }))
+foreach ($table in 'Exclude', 'Section', 'Group', 'Label', 'Description') {
+    foreach ($name in $Overrides[$table].Keys) {
+        if (-not $present.Contains($name) -and -not ($AlreadyOurs -contains $name) -and -not $Overrides.Exclude.ContainsKey($name)) {
+            Write-Warning "$table override '$name' matches no value in release $Version"
+        }
+    }
+}
+
+# Tab, then group order, then the manifest's own order.
+$index = 0
+foreach ($setting in $unique) { $setting._index = ($index++) }
+$ordered = $unique | Sort-Object `
+    @{ Expression = { [Array]::IndexOf($SectionOrder, [string]$_.section) } }, `
+    @{ Expression = { [Array]::IndexOf($Overrides.GroupOrder, [string]$_.group) } }, `
+    @{ Expression = { $_._index } }
+$unique = [System.Collections.Generic.List[object]]::new()
+foreach ($setting in $ordered) {
+    $setting.Remove('_index')
+    $unique.Add($setting)
 }
 
 $document = [ordered]@{
@@ -320,7 +349,7 @@ New-Item -ItemType Directory -Force -Path (Split-Path $outFull) | Out-Null
 
 Write-Host ''
 Write-Host "Wrote $($unique.Count) settings to $outFull"
-Write-Host "  skipped $skipped already rendered by the app's own readers, $dupes duplicate value(s)"
+Write-Host "  skipped $skipped already rendered by the app's own readers, $excluded that configure ExplorerPatcher itself, $dupes duplicate value(s)"
 $unique | Group-Object section | Sort-Object Name | ForEach-Object {
     Write-Host ("  {0,-14} {1,3}" -f $_.Name, $_.Count)
 }
