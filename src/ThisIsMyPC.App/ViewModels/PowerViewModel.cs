@@ -828,10 +828,12 @@ public sealed partial class PowerPlanItemViewModel : ObservableObject
     private bool _isActive;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowSetActive))]
     private bool _isPendingTarget;
 
     /// <summary>Windows activates this plan at the next startup; the live plan stays active until then.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowSetActive))]
     private bool _isActiveAfterRestart;
 
     /// <summary>The live plan while another plan waits for the restart: "Keep active" stages the way back.</summary>
@@ -840,7 +842,12 @@ public sealed partial class PowerPlanItemViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(SetActiveLabel))]
     private bool _canSwitchBack;
 
-    public bool ShowSetActive => !IsActive || CanSwitchBack;
+    /// <summary>
+    /// A pending target has Cancel instead, and a plan already recorded for
+    /// the restart has nothing left to stage; otherwise every plan but the
+    /// live one, and the live one while another waits for the restart.
+    /// </summary>
+    public bool ShowSetActive => !IsPendingTarget && !IsActiveAfterRestart && (!IsActive || CanSwitchBack);
 
     public string SetActiveLabel => CanSwitchBack ? "Keep active" : "Set active";
 
