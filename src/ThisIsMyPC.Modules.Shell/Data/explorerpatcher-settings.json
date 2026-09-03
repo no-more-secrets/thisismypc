@@ -1,6 +1,6 @@
 {
-    "_license":  "Settings definitions imported from ExplorerPatcher (https://github.com/valinet/ExplorerPatcher), GNU General Public License v2.0, Copyright (c) valinet. Regenerate with tools/import-explorerpatcher-settings.ps1.",
-    "_commit":  "0a88a6e0ef6b1752fea36e581cffff1097e862b0",
+    "_license":  "Settings definitions imported from ExplorerPatcher (https://github.com/valinet/ExplorerPatcher), GNU General Public License v2.0, Copyright (c) valinet. Regenerate with tools/import-explorerpatcher-settings.ps1; the pin moves only after a deliberate check.",
+    "_version":  "26100.8457.70.3",
     "_imported":  "2026-09-03",
     "settings":  [
                      {
@@ -2061,6 +2061,81 @@
                          "section":  "General",
                          "key":  "HKCU\\Software\\ExplorerPatcher",
                          "value":  "DoNotRedirectNotificationIconsToSettingsApp",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:UpdatePolicy",
+                         "name":  "Check for ExplorerPatcher updates when File Explorer starts",
+                         "group":  "",
+                         "page":  "Updates",
+                         "section":  "General",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "UpdatePolicy",
+                         "kind":  "choice",
+                         "default":  1,
+                         "restart":  false,
+                         "condition":  "",
+                         "options":  [
+                                         {
+                                             "value":  1,
+                                             "name":  "Notify about available updates (default)"
+                                         },
+                                         {
+                                             "value":  0,
+                                             "name":  "Prompt to install available updates"
+                                         },
+                                         {
+                                             "value":  2,
+                                             "name":  "Do not check for updates"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:UpdatePreferStaging",
+                         "name":  "Receive pre-release versions, if available (not recommended)",
+                         "group":  "",
+                         "page":  "Updates",
+                         "section":  "General",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "UpdatePreferStaging",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:UpdateAllowDowngrades",
+                         "name":  "Suggest the latest version on the server, even if it\u0027s older (not recommended)",
+                         "group":  "",
+                         "page":  "Updates",
+                         "section":  "General",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "UpdateAllowDowngrades",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:UpdateUseLocal",
+                         "name":  "Build updates locally before installing",
+                         "group":  "",
+                         "page":  "Updates",
+                         "section":  "General",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "UpdateUseLocal",
                          "kind":  "toggle",
                          "default":  0,
                          "restart":  false,

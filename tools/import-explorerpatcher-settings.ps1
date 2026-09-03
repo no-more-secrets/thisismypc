@@ -1,7 +1,7 @@
 <#
 .SYNOPSIS
     Regenerates the ExplorerPatcher settings catalog from ExplorerPatcher's own
-    source, pinned to one commit.
+    source, pinned to one released version.
 
 .DESCRIPTION
     ExplorerPatcher keeps every setting it exposes in a single annotated .reg
@@ -19,8 +19,13 @@
     Settings the app already renders from its own readers are excluded, so no
     two rows ever write the same value.
 
-.PARAMETER Commit
-    ExplorerPatcher commit to import from. Pin it; do not track master.
+    The catalog is pinned to one ExplorerPatcher release and records it. The
+    app compares that version with the installed one and says so when they
+    differ, because a newer ExplorerPatcher can rename or drop a value. Move
+    the pin deliberately: bump -Version, rerun, read the diff, test.
+
+.PARAMETER Version
+    ExplorerPatcher release tag to import from. Pin it; never track master.
 
 .PARAMETER SourceRoot
     Optional local ExplorerPatcher clone to read instead of downloading.
@@ -30,7 +35,7 @@
 #>
 [CmdletBinding()]
 param(
-    [string]$Commit = '0a88a6e0ef6b1752fea36e581cffff1097e862b0',
+    [string]$Version = '26100.8457.70.3',
     [string]$SourceRoot,
     [string]$OutputPath
 )
@@ -54,9 +59,16 @@ $AlreadyOurs = @(
     'TaskbarAl', 'TaskbarDa', 'SearchboxTaskbarMode', 'TaskbarGlomLevel'
 )
 
-# ExplorerPatcher pages that configure its own updater, its uninstaller, or
-# show version text. Those are not Windows settings and are left to its own UI.
-$SkipPages = @('Updates', 'Settings and uninstall', 'About')
+# ExplorerPatcher pages that uninstall it or just show version text. Its
+# update policy is imported: turning its self-updater off is what keeps the
+# installed version pinned to the one this catalog was built from.
+$SkipPages = @('Settings and uninstall', 'About')
+
+# A few ExplorerPatcher labels only read correctly under their own page
+# heading. Renamed here so the row still says what it does on a shared tab.
+$LabelOverrides = @{
+    'UpdatePolicy' = 'Check for ExplorerPatcher updates when File Explorer starts'
+}
 
 # Which tab of the app's Explorer page each ExplorerPatcher page lands on.
 $PageToSection = @{
@@ -69,6 +81,7 @@ $PageToSection = @{
     'Spotlight'       = 'Desktop'
     'Other'           = 'General'
     'Advanced'        = 'General'
+    'Updates'         = 'General'
 }
 
 function Get-EpFile {
@@ -78,7 +91,7 @@ function Get-EpFile {
         if (-not (Test-Path $local)) { throw "Missing $local" }
         return [System.IO.File]::ReadAllBytes($local)
     }
-    $uri = "https://raw.githubusercontent.com/valinet/ExplorerPatcher/$Commit/$RelativePath"
+    $uri = "https://raw.githubusercontent.com/valinet/ExplorerPatcher/$Version/$RelativePath"
     Write-Host "  fetching $RelativePath"
     return (Invoke-WebRequest -Uri $uri -UseBasicParsing).Content
 }
@@ -95,7 +108,7 @@ function ConvertFrom-EpBytes {
     return [System.Text.Encoding]::UTF8.GetString($Bytes)
 }
 
-Write-Host "Importing ExplorerPatcher settings from commit $Commit"
+Write-Host "Importing ExplorerPatcher settings from release $Version"
 
 $settingsReg = ConvertFrom-EpBytes (Get-EpFile 'ep_gui/resources/settings.reg')
 $langRc = ConvertFrom-EpBytes (Get-EpFile 'ep_gui/resources/lang/ep_gui.en-US.rc')
@@ -243,6 +256,7 @@ foreach ($rawLine in ($settingsReg -split "`r?`n")) {
             # ExplorerPatcher ships a couple of strings its own table never fills in.
             $label = [regex]::Replace($valueName, '(?<!^)([A-Z])', ' $1')
         }
+        if ($LabelOverrides.ContainsKey($valueName)) { $label = $LabelOverrides[$valueName] }
         if (-not $label) { continue }
 
         # A label that opens lower-case is the tail of the heading's sentence.
@@ -293,8 +307,8 @@ if ($missingSection.Count -gt 0) {
 }
 
 $document = [ordered]@{
-    _license  = 'Settings definitions imported from ExplorerPatcher (https://github.com/valinet/ExplorerPatcher), GNU General Public License v2.0, Copyright (c) valinet. Regenerate with tools/import-explorerpatcher-settings.ps1.'
-    _commit   = $Commit
+    _license  = 'Settings definitions imported from ExplorerPatcher (https://github.com/valinet/ExplorerPatcher), GNU General Public License v2.0, Copyright (c) valinet. Regenerate with tools/import-explorerpatcher-settings.ps1; the pin moves only after a deliberate check.'
+    _version  = $Version
     _imported = (Get-Date -Format 'yyyy-MM-dd')
     settings  = $unique
 }

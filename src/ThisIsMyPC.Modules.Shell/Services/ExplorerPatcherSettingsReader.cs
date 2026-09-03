@@ -38,6 +38,16 @@ public sealed class ExplorerPatcherSettingsReader
         _registryService.KeyExists(UninstallKeyPath) is { IsSuccess: true, Value: true };
 
     /// <summary>
+    /// The installed version, as its own setup records it. Empty when it is
+    /// not installed or the value is missing. The app compares this with the
+    /// version the catalog was pinned to.
+    /// </summary>
+    public string InstalledVersion() =>
+        _registryService.ReadString(UninstallKeyPath, "DisplayVersion") is { IsSuccess: true, Value: { } version }
+            ? version
+            : string.Empty;
+
+    /// <summary>
     /// Every catalogued setting with its live value and availability. Values
     /// that are absent read as null, which means ExplorerPatcher falls back to
     /// the default the catalog carries.

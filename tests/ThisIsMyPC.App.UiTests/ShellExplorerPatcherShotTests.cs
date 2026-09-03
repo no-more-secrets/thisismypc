@@ -17,13 +17,42 @@ public class ShellExplorerPatcherShotTests
 {
     private static readonly TaskbarSettings Taskbar = new(1, true, false, false);
 
-    private static ShellScanData ScanData(bool patcherInstalled) => new(
+    private static ShellScanData ScanData(bool patcherInstalled, string installedVersion = "") => new(
         ExplorerPreferences: [],
         Taskbar: Taskbar,
         ExplorerPatcherSettings: patcherInstalled
             ? [.. ExplorerPatcherCatalog.Entries.Select(e => e with { IsAvailable = e.Condition.Length == 0 })]
             : [],
-        ExplorerPatcherInstalled: patcherInstalled);
+        ExplorerPatcherInstalled: patcherInstalled,
+        ExplorerPatcherVersion: installedVersion.Length > 0 ? installedVersion : ExplorerPatcherCatalog.Version,
+        ExplorerPatcherCatalogVersion: ExplorerPatcherCatalog.Version);
+
+    [AvaloniaFact]
+    public void AnExplorerPatcherOtherThanThePinnedOne_SaysSoAboveTheRows()
+    {
+        var queue = new PendingChangesService();
+        var viewModel = new ShellViewModel(
+            ScanData(patcherInstalled: true, installedVersion: "99999.1.2.3"), queue, new UiFakeRegistryService());
+        using var session = UiSession.ForView(new ShellView(), viewModel, "shell-explorerpatcher", height: 1400);
+
+        session.ClickText("Taskbar");
+        session.Screenshot("patcher-version-mismatch");
+
+        Assert.True(viewModel.ShowPatcherVersionNote);
+        Assert.Contains(ExplorerPatcherCatalog.Version, viewModel.PatcherVersionNote, StringComparison.Ordinal);
+        Assert.Contains("99999.1.2.3", viewModel.PatcherVersionNote, StringComparison.Ordinal);
+        Assert.True(session.IsTextVisible(viewModel.PatcherVersionNote));
+    }
+
+    [AvaloniaFact]
+    public void ThePinnedExplorerPatcher_ShowsNoVersionNote()
+    {
+        var queue = new PendingChangesService();
+        var viewModel = new ShellViewModel(ScanData(patcherInstalled: true), queue, new UiFakeRegistryService());
+
+        Assert.False(viewModel.ShowPatcherVersionNote);
+        Assert.Equal(string.Empty, viewModel.PatcherVersionNote);
+    }
 
     [AvaloniaFact]
     public void WithExplorerPatcherInstalled_EveryTabShowsItsSettings()

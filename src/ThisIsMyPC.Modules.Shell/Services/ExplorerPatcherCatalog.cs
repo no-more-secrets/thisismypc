@@ -15,21 +15,37 @@ public static class ExplorerPatcherCatalog
 {
     private const string ResourceName = "ThisIsMyPC.Modules.Shell.Data.explorerpatcher-settings.json";
 
-    private static readonly Lazy<IReadOnlyList<ExplorerPatcherSetting>> _entries = new(LoadFromResource);
+    private static readonly Lazy<CatalogDocument> _document = new(LoadFromResource);
 
-    public static IReadOnlyList<ExplorerPatcherSetting> Entries => _entries.Value;
+    public static IReadOnlyList<ExplorerPatcherSetting> Entries => _document.Value.Settings;
 
-    private static IReadOnlyList<ExplorerPatcherSetting> LoadFromResource()
+    /// <summary>
+    /// The ExplorerPatcher release these definitions were imported from. The
+    /// pin moves only when someone regenerates the catalog and checks the
+    /// result, so a machine running a different version is worth saying out
+    /// loud rather than silently writing values that may have moved.
+    /// </summary>
+    public static string Version => _document.Value.Version;
+
+    private sealed record CatalogDocument(string Version, IReadOnlyList<ExplorerPatcherSetting> Settings);
+
+    private static CatalogDocument LoadFromResource()
     {
         using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(ResourceName)
             ?? throw new InvalidOperationException($"Embedded catalog resource '{ResourceName}' is missing.");
-        return Parse(stream);
+        return ParseDocument(stream);
     }
 
     /// <summary>Parses a catalog document. Exposed for tests.</summary>
-    public static IReadOnlyList<ExplorerPatcherSetting> Parse(Stream stream)
+    public static IReadOnlyList<ExplorerPatcherSetting> Parse(Stream stream) => ParseDocument(stream).Settings;
+
+    private static CatalogDocument ParseDocument(Stream stream)
     {
         using var document = JsonDocument.Parse(stream);
+
+        var version = document.RootElement.TryGetProperty("_version", out var versionElement)
+            ? versionElement.GetString() ?? string.Empty
+            : string.Empty;
 
         var settings = new List<ExplorerPatcherSetting>();
         foreach (var element in document.RootElement.GetProperty("settings").EnumerateArray())
@@ -61,7 +77,7 @@ public static class ExplorerPatcherCatalog
                 Options: options.AsReadOnly()));
         }
 
-        return settings.AsReadOnly();
+        return new CatalogDocument(version, settings.AsReadOnly());
     }
 
     private static ShellSection ParseSection(string name) => name switch

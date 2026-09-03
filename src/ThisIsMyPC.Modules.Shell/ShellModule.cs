@@ -52,7 +52,9 @@ public sealed class ShellModule : IModule
                     ExplorerPreferences: explorerPreferences,
                     Taskbar: taskbar,
                     ExplorerPatcherSettings: explorerPatcherInstalled ? explorerPatcherReader.ReadAll() : [],
-                    ExplorerPatcherInstalled: explorerPatcherInstalled);
+                    ExplorerPatcherInstalled: explorerPatcherInstalled,
+                    ExplorerPatcherVersion: explorerPatcherInstalled ? explorerPatcherReader.InstalledVersion() : "",
+                    ExplorerPatcherCatalogVersion: ExplorerPatcherCatalog.Version);
 
                 return OperationResult<object>.Success(scanData);
             }

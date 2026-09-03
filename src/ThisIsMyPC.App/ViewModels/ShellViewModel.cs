@@ -50,6 +50,15 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, IDispos
     /// <summary>Heading above each tab's ExplorerPatcher rows.</summary>
     public static string PatcherHeading => "ExplorerPatcher";
 
+    /// <summary>
+    /// Set when the installed ExplorerPatcher is not the release these rows
+    /// were built from. The settings are pinned to one version on purpose, so
+    /// a difference is worth saying rather than hiding.
+    /// </summary>
+    public string PatcherVersionNote { get; } = string.Empty;
+
+    public bool ShowPatcherVersionNote => PatcherVersionNote.Length > 0;
+
     /// <summary>The ExplorerPatcher card on the Start Menu tab; null without an actions queue.</summary>
     public SoftwareAppViewModel? ExplorerPatcher { get; }
 
@@ -127,6 +136,12 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, IDispos
         // own monitor thread watches, so the app writes them like any other
         // preference; the ones it reads only at startup carry a restart.
         ShowPatcherSettings = scanData.ExplorerPatcherInstalled;
+        if (scanData.ExplorerPatcherVersionDiffers)
+        {
+            PatcherVersionNote =
+                $"These settings match ExplorerPatcher {scanData.ExplorerPatcherCatalogVersion}; "
+                + $"version {scanData.ExplorerPatcherVersion} is installed. A setting may have moved in between.";
+        }
         foreach (var setting in scanData.ExplorerPatcherSettings)
         {
             if (!setting.IsAvailable)

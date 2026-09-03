@@ -171,10 +171,10 @@ prep here.
   its keys with RegNotifyChangeKeyValue (SettingsMonitor.c), so writing the
   value is the whole interface. `tools/import-explorerpatcher-settings.ps1`
   reads its annotated manifest (ep_gui/resources/settings.reg), its resource
-  ids, and its English string table at a pinned commit, and writes
-  `Modules.Shell/Data/explorerpatcher-settings.json`: 84 settings (40
-  toggles, 2 inverted, 42 choices), each with key, value, default, options,
-  the section condition, and the tab it belongs on. Values the app already
+  ids, and its English string table at a pinned release tag, and writes
+  `Modules.Shell/Data/explorerpatcher-settings.json`: 88 settings, each with
+  key, value, default, options, the section condition, and the tab it belongs
+  on. Values the app already
   renders are excluded so no two rows write one value. `ExplorerPatcherSettingsReader`
   reads live values and evaluates the section conditions the way its GUI.c
   does (taskbar style, 22H2 build, AltTabSettings, PeopleBand, the Windows 10
@@ -183,9 +183,14 @@ prep here.
   while ExplorerPatcher is installed. `ShellSetEntryInspector` resolves and
   replays them, so a saved set carries them like any other setting, which is
   the point: the goal is exporting a whole Windows configuration and putting
-  it back. Regenerate after an ExplorerPatcher release by bumping the pinned
-  commit. Owed: Sam's elevated pass applying
-  one of these rows. Deferred: its four string settings (weather location and
+  it back. **The pin is deliberate** (26100.8457.70.3, the version on Sam's
+  PC): the catalog records the release, the scan reads the installed
+  DisplayVersion from ExplorerPatcher's uninstall entry, and the page says so
+  above the rows when the two differ, because a newer release can rename or
+  drop a value. Its own update policy is imported too, so its self-updater
+  can be set to "Do not check for updates" and the pin holds. Move the pin
+  only by bumping -Version, rerunning, reading the diff, and testing. Owed:
+  Sam's elevated pass applying one of these rows. Deferred: its four string settings (weather location and
   the update URLs) need a text row type.
 - **Group Policy pin on the active power plan (resolved 2026-09-02)**:
   winutil leaves the ActivePowerScheme policy value (HKLM Policies, Microsoft,

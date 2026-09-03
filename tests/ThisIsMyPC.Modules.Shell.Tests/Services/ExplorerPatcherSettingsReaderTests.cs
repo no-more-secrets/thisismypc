@@ -53,6 +53,52 @@ public sealed class ExplorerPatcherSettingsReaderTests
     }
 
     [Fact]
+    public void The_catalog_names_the_ExplorerPatcher_release_it_came_from()
+    {
+        // The pin is the point: these definitions match one release, and the
+        // page says so when a different one is installed.
+        Assert.Matches(@"^\d+(\.\d+)+$", ExplorerPatcherCatalog.Version);
+    }
+
+    [Fact]
+    public void The_installed_version_comes_from_ExplorerPatchers_own_uninstall_entry()
+    {
+        Assert.Equal(string.Empty, _sut.InstalledVersion());
+
+        _registry.SetString(ExplorerPatcherSettingsReader.UninstallKeyPath, "DisplayVersion", "26100.8457.70.3");
+
+        Assert.Equal("26100.8457.70.3", _sut.InstalledVersion());
+    }
+
+    [Theory]
+    [InlineData("26100.8457.70.3", "26100.8457.70.3", false)]
+    [InlineData("26100.8457.70.4", "26100.8457.70.3", true)]
+    [InlineData("", "26100.8457.70.3", false)]
+    public void A_version_that_does_not_match_the_pin_is_reported(string installed, string catalog, bool differs)
+    {
+        var scan = new ShellScanData(
+            ExplorerPreferences: [],
+            Taskbar: new TaskbarSettings(1, true, false, false),
+            ExplorerPatcherInstalled: true,
+            ExplorerPatcherVersion: installed,
+            ExplorerPatcherCatalogVersion: catalog);
+
+        Assert.Equal(differs, scan.ExplorerPatcherVersionDiffers);
+    }
+
+    [Fact]
+    public void ExplorerPatchers_own_update_policy_is_one_of_the_rows()
+    {
+        // Turning its self-updater off is what keeps the installed version on
+        // the release these definitions were built from.
+        var policy = ExplorerPatcherCatalog.Entries.First(s => s.RegistryValueName == "UpdatePolicy");
+
+        Assert.Equal(ExplorerPatcherSettingKind.Choice, policy.Kind);
+        Assert.Contains(policy.Options, o => o.DisplayName.Contains("Do not check", StringComparison.Ordinal));
+        Assert.Contains("ExplorerPatcher updates", policy.DisplayName, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void IsInstalled_follows_the_uninstall_key()
     {
         Assert.False(_sut.IsInstalled());
