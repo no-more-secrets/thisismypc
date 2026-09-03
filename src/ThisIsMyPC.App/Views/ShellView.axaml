@@ -17,18 +17,34 @@
                  Margin="0,0,16,0" />
 
         <TabControl Grid.Row="1" Margin="0,8,0,0">
-            <TabItem Header="Explorer">
+            <TabItem Header="General">
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                               VerticalScrollBarVisibility="Auto">
-                    <ItemsControl ItemsSource="{Binding ExplorerSettings}"
-                                  ItemTemplate="{StaticResource ToggleSettingRowTemplate}"
-                                  Margin="0,8,16,24">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <controls:ResponsiveColumnsPanel />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                    </ItemsControl>
+                    <StackPanel Spacing="4" Margin="0,8,16,24">
+                        <ItemsControl ItemsSource="{Binding GeneralSettings}"
+                                      ItemTemplate="{StaticResource ToggleSettingRowTemplate}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <controls:ResponsiveColumnsPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            <TabItem Header="File Explorer">
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="4" Margin="0,8,16,24">
+                        <ItemsControl ItemsSource="{Binding FileExplorerSettings}"
+                                      ItemTemplate="{StaticResource ToggleSettingRowTemplate}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <controls:ResponsiveColumnsPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                    </StackPanel>
                 </ScrollViewer>
             </TabItem>
             <TabItem Header="Taskbar">
@@ -51,6 +67,80 @@
                                 </ItemsPanelTemplate>
                             </ItemsControl.ItemsPanel>
                         </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            <TabItem Header="Desktop">
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="4" Margin="0,8,16,24">
+                        <ItemsControl ItemsSource="{Binding DesktopSettings}"
+                                      ItemTemplate="{StaticResource ToggleSettingRowTemplate}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <controls:ResponsiveColumnsPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            <TabItem Header="Start Menu">
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="4" Margin="0,8,16,24">
+                        <ItemsControl ItemsSource="{Binding StartMenuSettings}"
+                                      ItemTemplate="{StaticResource ToggleSettingRowTemplate}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <controls:ResponsiveColumnsPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                        <!-- Companion app: the first installer linked from a settings page.
+                             Install queues a one-way action; Apply runs it through winget. -->
+                        <StackPanel Spacing="4" Margin="0,8,0,0" IsVisible="{Binding ShowExplorerPatcher}">
+                            <TextBlock Text="Companion app"
+                                       FontSize="14" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <ContentControl Content="{Binding ExplorerPatcher}">
+                                <ContentControl.ContentTemplate>
+                                    <DataTemplate x:DataType="vm:SoftwareAppViewModel">
+                                        <Border Classes="card" CornerRadius="4" Padding="14,10">
+                                            <DockPanel>
+                                                <Button DockPanel.Dock="Right"
+                                                        MinWidth="84"
+                                                        Padding="12,6" FontSize="12"
+                                                        VerticalAlignment="Center"
+                                                        HorizontalContentAlignment="Center"
+                                                        Content="{Binding ActionButtonText}"
+                                                        Command="{Binding ToggleQueueCommand}" />
+                                                <StackPanel Margin="0,0,12,0" Spacing="2"
+                                                            VerticalAlignment="Center">
+                                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                                        <Ellipse Width="7" Height="7"
+                                                                 VerticalAlignment="Center"
+                                                                 Fill="{DynamicResource SuccessBrush}"
+                                                                 IsVisible="{Binding IsInstalled}"
+                                                                 ToolTip.Tip="Installed" />
+                                                        <TextBlock Text="{Binding Name}"
+                                                                   FontSize="14" FontWeight="SemiBold"
+                                                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                                                    </StackPanel>
+                                                    <TextBlock Text="{Binding Description}"
+                                                               FontSize="12" TextWrapping="Wrap"
+                                                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                                                    <TextBlock Text="{Binding WingetId}"
+                                                               FontFamily="{StaticResource MonoFont}"
+                                                               FontSize="11"
+                                                               Foreground="{DynamicResource TextTertiaryBrush}" />
+                                                </StackPanel>
+                                            </DockPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ContentControl.ContentTemplate>
+                            </ContentControl>
+                        </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

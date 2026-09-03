@@ -2,6 +2,16 @@
  "_license": "Catalog data ported from CTT winutil (https://github.com/ChrisTitusTech/winutil), MIT License, Copyright (c) Chris Titus Tech.",
  "apps": [
   {
+   "id": "explorerpatcher",
+   "name": "ExplorerPatcher",
+   "description": "Brings the Windows 10 taskbar, Start menu, and other shell behaviours back to Windows 11. Open source (GPLv2).",
+   "category": "Utilities",
+   "wingetId": "valinet.ExplorerPatcher",
+   "source": "winget",
+   "link": "https://github.com/valinet/ExplorerPatcher",
+   "foss": true
+  },
+  {
    "id": "1password",
    "name": "1Password",
    "description": "1Password is a password manager that allows you to store and manage your passwords securely.",

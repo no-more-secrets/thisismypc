@@ -439,7 +439,7 @@ public partial class MainWindowViewModel : ViewModelBase
                     {
                         ContentTitle = current.Module.Info.Name;
                         ContentDescription = current.Module.Info.Description;
-                        CurrentContent = new ShellViewModel(scanData, _pendingChangesService, _registryService);
+                        CurrentContent = new ShellViewModel(scanData, _pendingChangesService, _registryService, _pendingActionsService);
                     }
                     else
                     {
@@ -1443,6 +1443,8 @@ public partial class MainWindowViewModel : ViewModelBase
                     softwareVm.ApplyActionResults(actionResult);
                 if (CurrentContent is PowerViewModel powerVm)
                     powerVm.ApplyActionResults(actionResult);
+                if (CurrentContent is ShellViewModel shellVm)
+                    shellVm.ApplyActionResults(actionResult);
 
                 if (!actionResult.IsSuccess)
                 {

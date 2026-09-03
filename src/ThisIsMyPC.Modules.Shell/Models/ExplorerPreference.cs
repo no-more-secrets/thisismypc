@@ -13,4 +13,5 @@ public sealed record ExplorerPreference(
     string EnabledValue,
     string DisabledValue,
     bool IsEnabled,
-    RestartRequirement RestartRequirement);
+    RestartRequirement RestartRequirement,
+    ShellSection Section = ShellSection.FileExplorer);

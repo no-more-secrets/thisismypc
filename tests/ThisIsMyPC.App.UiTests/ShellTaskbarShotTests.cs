@@ -23,6 +23,37 @@ public class ShellTaskbarShotTests
         Taskbar: new TaskbarSettingsReader(Registry).Read());
 
     [AvaloniaFact]
+    public void ExplorerPage_HasFiveTabs_AndTheStartMenuTabOffersExplorerPatcher()
+    {
+        var queue = new PendingChangesService();
+        var actions = new PendingActionsService();
+        var scan = new ShellScanData(new ExplorerSettingsReader(Registry).ReadAll(), new TaskbarSettingsReader(Registry).Read());
+        var viewModel = new ShellViewModel(scan, queue, Registry, actions);
+        using var session = UiSession.ForView(new ShellView(), viewModel, "shell-tabs", height: 1100);
+
+        foreach (var tab in new[] { "General", "File Explorer", "Taskbar", "Desktop", "Start Menu" })
+        {
+            session.ClickText(tab);
+            session.Screenshot(tab.ToLowerInvariant().Replace(' ', '-'));
+        }
+
+        Assert.NotEmpty(viewModel.GeneralSettings);
+        Assert.NotEmpty(viewModel.DesktopSettings);
+        Assert.NotEmpty(viewModel.StartMenuSettings);
+        Assert.True(session.IsTextVisible("ExplorerPatcher"));
+        Assert.NotNull(viewModel.ExplorerPatcher);
+
+        // Install queues the one-way action; a second press takes it back.
+        var button = session.Find<Avalonia.Controls.Button>(b => ReferenceEquals(b.DataContext, viewModel.ExplorerPatcher));
+        session.Click(button);
+        session.Screenshot("explorerpatcher-queued");
+        Assert.Equal(1, actions.PendingCount);
+        Assert.Equal("Queued", viewModel.ExplorerPatcher!.ActionButtonText);
+        session.Click(button);
+        Assert.Equal(0, actions.PendingCount);
+    }
+
+    [AvaloniaFact]
     public void TaskbarSection_RendersTheChoiceRows()
     {
         var queue = new PendingChangesService();

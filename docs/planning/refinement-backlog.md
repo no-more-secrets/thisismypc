@@ -151,6 +151,20 @@ prep here.
   refused powrprof call with its Win32 code, so an error is copied from the
   log instead of screenshotted. Every shipped package is
   now MIT or BSD; xunit is Apache-2.0 but test-only, never distributed.
+- **Explorer page in five tabs + first companion installer + Restart Manager
+  (2026-09-02)**: the Explorer page reads General, File Explorer, Taskbar,
+  Desktop, Start Menu; every ExplorerPreference carries a ShellSection and the
+  reader assigns it (classic context menu sits on General, command bar on File
+  Explorer). Start Menu links the first installer from a settings page: an
+  ExplorerPatcher card (catalog id explorerpatcher, winget
+  valinet.ExplorerPatcher, GPLv2) reusing SoftwareAppViewModel and the one-way
+  actions queue; installed state comes from ExplorerPatcher's own uninstall
+  key ({D17F1E1A-...}_ExplorerPatcher). Explorer restart now goes through the
+  Restart Manager the way ExplorerPatcher does (RmStartSession, register the
+  shell process, RmShutdown force, RmRestart), with the old tray WM_QUIT route
+  as fallback; the log records which route ran and how long it took. Owed:
+  Sam's timing of the new restart on the live PC (first restart after a
+  build tells whether Restart Manager or the fallback ran).
 - **Group Policy pin on the active power plan (resolved 2026-09-02)**:
   winutil leaves the ActivePowerScheme policy value (HKLM Policies, Microsoft,
   Power, PowerSettings) naming its plan, and the power service then answers

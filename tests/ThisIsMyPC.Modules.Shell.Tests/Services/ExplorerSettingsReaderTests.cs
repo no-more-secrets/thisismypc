@@ -27,6 +27,24 @@ public sealed class ExplorerSettingsReaderTests
         Assert.Equal(prefs.Count, prefs.Select(p => p.Id).Distinct().Count());
     }
 
+    [Theory]
+    [InlineData("hidden-files", ShellSection.FileExplorer)]
+    [InlineData("launch-to", ShellSection.FileExplorer)]
+    [InlineData("shortcut-suffix", ShellSection.General)]
+    [InlineData("restore-folder-windows", ShellSection.General)]
+    [InlineData("seconds-in-clock", ShellSection.Taskbar)]
+    [InlineData("taskbar-end-task", ShellSection.Taskbar)]
+    [InlineData("snap-assist", ShellSection.Desktop)]
+    [InlineData("aero-shake", ShellSection.Desktop)]
+    [InlineData("start-recommendations", ShellSection.StartMenu)]
+    [InlineData("start-account-notifications", ShellSection.StartMenu)]
+    public void Every_preference_sits_on_its_tab(string id, ShellSection section)
+    {
+        SetDefaults();
+        var pref = _sut.ReadAll().First(p => p.Id == id);
+        Assert.Equal(section, pref.Section);
+    }
+
     [Fact]
     public void HiddenFiles_enabled_when_Hidden_is_1()
     {

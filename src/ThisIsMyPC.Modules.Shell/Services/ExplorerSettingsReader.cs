@@ -69,6 +69,7 @@ public sealed class ExplorerSettingsReader
         // Sync provider notifications: ShowSyncProviderNotifications=0 off, 1 on
         preferences.Add(ReadPreference(
             id: "sync-provider-notifications",
+            section: ShellSection.General,
             displayName: "Show sync provider notifications",
             description: "Lets OneDrive and other sync services show prompts (including promotions) inside Explorer",
             keyPath: ShellRegistryPaths.AdvancedKeyPath,
@@ -165,6 +166,7 @@ public sealed class ExplorerSettingsReader
         // File transfer dialog: EnthusiastMode=1 opens expanded with the speed graph
         preferences.Add(ReadPreference(
             id: "transfer-dialog-details",
+            section: ShellSection.General,
             displayName: "Open file transfer dialog in detailed mode",
             description: "Show the copy/move dialog expanded with the transfer speed graph by default",
             keyPath: ShellRegistryPaths.OperationStatusManagerKeyPath,
@@ -177,6 +179,7 @@ public sealed class ExplorerSettingsReader
         // Merge conflicts: HideMergeConflicts=0 shows the conflict details
         preferences.Add(ReadPreference(
             id: "merge-conflicts",
+            section: ShellSection.General,
             displayName: "Show folder merge conflicts",
             description: "Show details when merging folders that contain items with the same name",
             keyPath: ShellRegistryPaths.AdvancedKeyPath,
@@ -189,6 +192,7 @@ public sealed class ExplorerSettingsReader
         // Restore folder windows: PersistBrowsers=1 restores at logon
         preferences.Add(ReadPreference(
             id: "restore-folder-windows",
+            section: ShellSection.General,
             displayName: "Restore previous folder windows at logon",
             description: "Reopen the Explorer windows you had open when you sign back in",
             keyPath: ShellRegistryPaths.AdvancedKeyPath,
@@ -201,6 +205,7 @@ public sealed class ExplorerSettingsReader
         // Taskbar clock seconds: ShowSecondsInSystemClock=1 shows seconds
         preferences.Add(ReadPreference(
             id: "seconds-in-clock",
+            section: ShellSection.Taskbar,
             displayName: "Show seconds in the taskbar clock",
             description: "Display seconds in the system tray clock (uses slightly more power)",
             keyPath: ShellRegistryPaths.AdvancedKeyPath,
@@ -213,6 +218,7 @@ public sealed class ExplorerSettingsReader
         // Task View button: ShowTaskViewButton=1 shows
         preferences.Add(ReadPreference(
             id: "task-view-button",
+            section: ShellSection.Taskbar,
             displayName: "Show the Task View button",
             description: "Display the Task View (virtual desktops) button on the taskbar",
             keyPath: ShellRegistryPaths.AdvancedKeyPath,
@@ -225,6 +231,7 @@ public sealed class ExplorerSettingsReader
         // End Task on taskbar right-click: TaskbarEndTask=1 enables
         preferences.Add(ReadPreference(
             id: "taskbar-end-task",
+            section: ShellSection.Taskbar,
             displayName: "Show End Task in taskbar right-click",
             description: "Kill an app from its taskbar icon without opening Task Manager",
             keyPath: ShellRegistryPaths.TaskbarDeveloperSettingsKeyPath,
@@ -237,6 +244,7 @@ public sealed class ExplorerSettingsReader
         // Start recommendations: Start_IrisRecommendations=0 hides the Recommended feed
         preferences.Add(ReadPreference(
             id: "start-recommendations",
+            section: ShellSection.StartMenu,
             displayName: "Show Start menu recommendations",
             description: "Show tips, shortcuts, and new-app suggestions in Start's Recommended section. Recent files are a separate setting.",
             keyPath: ShellRegistryPaths.AdvancedKeyPath,
@@ -249,6 +257,7 @@ public sealed class ExplorerSettingsReader
         // Start account notifications: Start_AccountNotifications=0 hides account nags
         preferences.Add(ReadPreference(
             id: "start-account-notifications",
+            section: ShellSection.StartMenu,
             displayName: "Show Microsoft account notifications in Start",
             description: "Show Microsoft account alerts next to your name in the Start menu",
             keyPath: ShellRegistryPaths.AdvancedKeyPath,
@@ -261,6 +270,7 @@ public sealed class ExplorerSettingsReader
         // Snap Assist: SnapAssist=1 suggests what to snap next to a snapped window
         preferences.Add(ReadPreference(
             id: "snap-assist",
+            section: ShellSection.Desktop,
             displayName: "Show Snap Assist suggestions",
             description: "When you snap a window, suggest what to snap next to it",
             keyPath: ShellRegistryPaths.AdvancedKeyPath,
@@ -273,6 +283,7 @@ public sealed class ExplorerSettingsReader
         // Aero Shake: DisallowShaking=0 lets shaking a title bar minimize other windows
         preferences.Add(ReadPreference(
             id: "aero-shake",
+            section: ShellSection.Desktop,
             displayName: "Enable title bar window shake",
             description: "Shake a window's title bar to minimize all other windows (off by default in Windows 11)",
             keyPath: ShellRegistryPaths.AdvancedKeyPath,
@@ -286,6 +297,7 @@ public sealed class ExplorerSettingsReader
         // deleting the value (AbsentValue) restores the Windows default
         preferences.Add(ReadPreference(
             id: "shortcut-suffix",
+            section: ShellSection.General,
             displayName: "Create shortcuts without the \"- Shortcut\" suffix",
             description: "New shortcuts get the file's name only",
             keyPath: ShellRegistryPaths.NamingTemplatesKeyPath,
@@ -309,7 +321,8 @@ public sealed class ExplorerSettingsReader
         string disabledValue,
         string defaultValue,
         RestartRequirement restart,
-        ChangeValueType valueType = ChangeValueType.Registry_DWord)
+        ChangeValueType valueType = ChangeValueType.Registry_DWord,
+        ShellSection section = ShellSection.FileExplorer)
     {
         string currentValue;
         if (valueType == ChangeValueType.Registry_String)
@@ -336,6 +349,7 @@ public sealed class ExplorerSettingsReader
             EnabledValue: enabledValue,
             DisabledValue: disabledValue,
             IsEnabled: currentValue == enabledValue,
-            RestartRequirement: restart);
+            RestartRequirement: restart,
+            Section: section);
     }
 }

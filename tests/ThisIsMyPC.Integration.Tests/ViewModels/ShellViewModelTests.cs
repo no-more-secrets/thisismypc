@@ -37,7 +37,7 @@ public sealed class ShellViewModelTests
         var registryService = new Fakes.FakeRegistryService();
         var vm = new ShellViewModel(MakeScanData(), pendingService, registryService);
 
-        Assert.Equal(3, vm.ExplorerSettings.Count); // 2 preferences + command bar toggle
+        Assert.Equal(3, vm.FileExplorerSettings.Count); // 2 preferences + command bar toggle
     }
 
     [Fact]
@@ -47,7 +47,7 @@ public sealed class ShellViewModelTests
         var registryService = new Fakes.FakeRegistryService();
         var vm = new ShellViewModel(MakeScanData(), pendingService, registryService);
 
-        Assert.Equal(3, vm.TaskbarSettings.Count);
+        Assert.Equal(2, vm.TaskbarSettings.Count);
     }
 
     [Fact]
@@ -57,8 +57,8 @@ public sealed class ShellViewModelTests
         var registryService = new Fakes.FakeRegistryService();
         var vm = new ShellViewModel(MakeScanData(), pendingService, registryService);
 
-        Assert.Equal("Show hidden files", vm.ExplorerSettings[0].Label);
-        Assert.Equal("Show file extensions", vm.ExplorerSettings[1].Label);
+        Assert.Equal("Show hidden files", vm.FileExplorerSettings[0].Label);
+        Assert.Equal("Show file extensions", vm.FileExplorerSettings[1].Label);
     }
 
     [Fact]
@@ -68,8 +68,8 @@ public sealed class ShellViewModelTests
         var registryService = new Fakes.FakeRegistryService();
         var vm = new ShellViewModel(MakeScanData(), pendingService, registryService);
 
-        Assert.False(vm.ExplorerSettings[0].IsEnabled); // Hidden=2 means not showing
-        Assert.False(vm.ExplorerSettings[1].IsEnabled); // HideFileExt=1 means hiding
+        Assert.False(vm.FileExplorerSettings[0].IsEnabled); // Hidden=2 means not showing
+        Assert.False(vm.FileExplorerSettings[1].IsEnabled); // HideFileExt=1 means hiding
     }
 
     [Fact]
@@ -112,7 +112,7 @@ public sealed class ShellViewModelTests
         var scanData = MakeScanData(taskbar: new TaskbarSettings(1, true, true, false));
         var vm = new ShellViewModel(scanData, pendingService, registryService);
 
-        Assert.True(vm.TaskbarSettings[2].IsEnabled); // classic menu enabled
+        Assert.True(vm.GeneralSettings[^1].IsEnabled); // classic menu enabled; it sits on the General tab
     }
 
     [Fact]
@@ -123,8 +123,8 @@ public sealed class ShellViewModelTests
         var scanData = MakeScanData(prefs: []);
         var vm = new ShellViewModel(scanData, pendingService, registryService);
 
-        Assert.Single(vm.ExplorerSettings); // command bar toggle is always present
-        Assert.Equal("Use classic command bar", vm.ExplorerSettings[0].Label);
+        Assert.Single(vm.FileExplorerSettings); // command bar toggle is always present
+        Assert.Equal("Use classic command bar", vm.FileExplorerSettings[0].Label);
     }
 
     [Fact]
@@ -134,7 +134,7 @@ public sealed class ShellViewModelTests
         var registryService = new Fakes.FakeRegistryService();
         var vm = new ShellViewModel(MakeScanData(), pendingService, registryService);
 
-        var commandBarToggle = vm.ExplorerSettings[^1]; // last explorer setting
+        var commandBarToggle = vm.FileExplorerSettings[^1]; // last explorer setting
         Assert.Equal("Use classic command bar", commandBarToggle.Label);
         Assert.Contains("classic", commandBarToggle.Description, StringComparison.OrdinalIgnoreCase);
     }
@@ -147,7 +147,7 @@ public sealed class ShellViewModelTests
         var scanData = MakeScanData(taskbar: new TaskbarSettings(1, true, false, true));
         var vm = new ShellViewModel(scanData, pendingService, registryService);
 
-        Assert.True(vm.ExplorerSettings[^1].IsEnabled); // classic command bar enabled
+        Assert.True(vm.FileExplorerSettings[^1].IsEnabled); // classic command bar enabled
     }
 
     [Fact]
@@ -158,6 +158,6 @@ public sealed class ShellViewModelTests
         var scanData = MakeScanData(taskbar: new TaskbarSettings(1, true, false, false));
         var vm = new ShellViewModel(scanData, pendingService, registryService);
 
-        Assert.False(vm.ExplorerSettings[^1].IsEnabled); // modern command bar (default)
+        Assert.False(vm.FileExplorerSettings[^1].IsEnabled); // modern command bar (default)
     }
 }

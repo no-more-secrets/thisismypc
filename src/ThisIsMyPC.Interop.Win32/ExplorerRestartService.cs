@@ -6,8 +6,16 @@ using Windows.Win32.UI.Shell;
 
 namespace ThisIsMyPC.Interop.Win32;
 
+/// <summary>
+/// Restarts the shell. First choice is the Restart Manager: it force-closes
+/// the shell process and relaunches it as the same user in one session,
+/// which ExplorerPatcher uses and which takes well under a second. The old
+/// route (WM_QUIT to the tray, wait, kill, start explorer.exe by hand) stays
+/// as the fallback when the manager refuses.
+/// </summary>
 public sealed class ExplorerRestartService : IExplorerRestartService
 {
+    private static readonly NLog.Logger Log = NLog.LogManager.GetLogger("ThisIsMyPC.Interop.Win32.ExplorerRestartService");
     private const uint WM_QUIT = 0x0012;
     private static readonly TimeSpan GracefulTimeout = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan ShellRecoveryTimeout = TimeSpan.FromSeconds(10);
@@ -34,6 +42,16 @@ public sealed class ExplorerRestartService : IExplorerRestartService
                     "Could not identify the Explorer shell process.",
                     ErrorCategory.ServiceUnavailable);
             }
+
+            var clock = Stopwatch.StartNew();
+            var managed = await Task.Run(() => RestartWithRestartManager(shellProcess)).ConfigureAwait(false);
+            if (managed.IsSuccess)
+            {
+                var back = await WaitForShellRecoveryAsync(ShellRecoveryTimeout).ConfigureAwait(false);
+                Log.Info("Explorer restarted through the Restart Manager in {Ms} ms (taskbar back: {Back})", clock.ElapsedMilliseconds, back);
+                return OperationResult<bool>.Success(true);
+            }
+            Log.Warn("Restart Manager could not restart Explorer ({Error}); falling back to the tray quit", managed.ErrorMessage);
 
             // 3. Send WM_QUIT for graceful shutdown
             PInvoke.PostMessage(trayHandle, WM_QUIT, 0, 0);
@@ -68,9 +86,8 @@ public sealed class ExplorerRestartService : IExplorerRestartService
             // 7. Poll for Shell_TrayWnd to reappear (shell is ready when taskbar is back)
             var recovered = await WaitForShellRecoveryAsync(ShellRecoveryTimeout).ConfigureAwait(false);
             if (!recovered)
-            {
-                Debug.WriteLine("Shell_TrayWnd did not reappear within timeout; Explorer may be starting slowly");
-            }
+                Log.Warn("Shell_TrayWnd did not reappear within {Seconds} s; Explorer may be starting slowly", ShellRecoveryTimeout.TotalSeconds);
+            Log.Info("Explorer restarted through the tray quit in {Ms} ms", clock.ElapsedMilliseconds);
 
             return OperationResult<bool>.Success(true);
         }
@@ -99,10 +116,59 @@ public sealed class ExplorerRestartService : IExplorerRestartService
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"SHChangeNotify failed: {ex.Message}");
+            Log.Warn(ex, "SHChangeNotify failed");
             return OperationResult<bool>.Failure(
                 $"Failed to refresh Explorer views: {ex.Message}",
                 ErrorCategory.ServiceUnavailable, ex);
+        }
+    }
+
+    /// <summary>
+    /// One Restart Manager session around the shell process: register it,
+    /// confirm no reboot is needed, force shutdown, restart. Any refusal is
+    /// returned as a failure so the caller can fall back.
+    /// </summary>
+    private static unsafe OperationResult<bool> RestartWithRestartManager(Process shellProcess)
+    {
+        var key = stackalloc char[NativeRestartManager.CCH_RM_SESSION_KEY + 1];
+        var rc = NativeRestartManager.RmStartSession(out var session, 0, key);
+        if (rc != NativeRestartManager.ERROR_SUCCESS)
+            return OperationResult<bool>.Failure($"RmStartSession returned {rc}", ErrorCategory.ServiceUnavailable);
+
+        try
+        {
+            var startTime = shellProcess.StartTime.ToFileTime();
+            var app = new NativeRestartManager.RM_UNIQUE_PROCESS
+            {
+                dwProcessId = (uint)shellProcess.Id,
+                ProcessStartTimeLow = (uint)(startTime & 0xFFFFFFFF),
+                ProcessStartTimeHigh = (uint)(startTime >> 32),
+            };
+            rc = NativeRestartManager.RmRegisterResources(session, 0, 0, 1, &app, 0, 0);
+            if (rc != NativeRestartManager.ERROR_SUCCESS)
+                return OperationResult<bool>.Failure($"RmRegisterResources returned {rc}", ErrorCategory.ServiceUnavailable);
+
+            uint count = 16;
+            var affected = stackalloc NativeRestartManager.RM_PROCESS_INFO[16];
+            rc = NativeRestartManager.RmGetList(session, out _, ref count, affected, out var rebootReason);
+            if (rc != NativeRestartManager.ERROR_SUCCESS && rc != NativeRestartManager.ERROR_MORE_DATA)
+                return OperationResult<bool>.Failure($"RmGetList returned {rc}", ErrorCategory.ServiceUnavailable);
+            if (rebootReason != NativeRestartManager.RmRebootReasonNone)
+                return OperationResult<bool>.Failure($"Restart Manager wants a reboot (reason {rebootReason})", ErrorCategory.RequiresRestart);
+
+            rc = NativeRestartManager.RmShutdown(session, NativeRestartManager.RmForceShutdown, 0);
+            if (rc != NativeRestartManager.ERROR_SUCCESS)
+                return OperationResult<bool>.Failure($"RmShutdown returned {rc}", ErrorCategory.ServiceUnavailable);
+
+            rc = NativeRestartManager.RmRestart(session, 0, 0);
+            if (rc != NativeRestartManager.ERROR_SUCCESS)
+                return OperationResult<bool>.Failure($"RmRestart returned {rc}", ErrorCategory.ServiceUnavailable);
+
+            return OperationResult<bool>.Success(true);
+        }
+        finally
+        {
+            _ = NativeRestartManager.RmEndSession(session);
         }
     }
 
