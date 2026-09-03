@@ -56,6 +56,7 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
         {
             foreach (var row in Plans)
                 row.IsActiveAfterRestart = row.Plan.PlanGuid == afterRestart;
+            RefreshSwitchBack();
         }
 
         if (_pendingActionsService is not null)
@@ -68,7 +69,8 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
             g.Changes[0].SettingId == PowerPlanChangeFactory.ActivePlanSettingId);
         if (existing is not null && Guid.TryParse(existing.Changes[0].AfterValue, out var pendingGuid))
         {
-            if (_liveActivePlan is not null && pendingGuid == _liveActivePlan.PlanGuid)
+            if (_liveActivePlan is not null && pendingGuid == _liveActivePlan.PlanGuid
+                && !Plans.Any(p => p.IsActiveAfterRestart))
             {
                 // Pending target already matches live state; drop the redundant group
                 pendingChangesService.Unstage(existing.GroupId);
@@ -439,12 +441,20 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
                 _stagedGroupId = null;
             }
 
-            // Selecting the live active plan just clears the pending switch
             if (plan.Plan.PlanGuid != _liveActivePlan.PlanGuid)
             {
                 var change = PowerPlanChangeFactory.CreateActivePlanChange(_liveActivePlan, plan.Plan, _activePlanLockedByPolicy);
                 Stage(change, out _stagedGroupId);
             }
+            else if (Plans.FirstOrDefault(p => p.IsActiveAfterRestart) is { } restartPlan)
+            {
+                // Windows would switch at the next startup; the way back is a
+                // switch to the live plan, which the power service accepts at
+                // once, so no restart is involved.
+                var change = PowerPlanChangeFactory.CreateActivePlanChange(restartPlan.Plan, _liveActivePlan);
+                Stage(change, out _stagedGroupId);
+            }
+            // Otherwise selecting the live active plan just clears the pending switch
         }
         finally
         {
@@ -617,6 +627,14 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
         groupId = group.GroupId;
     }
 
+    /// <summary>The live plan offers "Keep active" while another plan waits for the restart.</summary>
+    private void RefreshSwitchBack()
+    {
+        var waiting = Plans.Any(p => p.IsActiveAfterRestart);
+        foreach (var row in Plans)
+            row.CanSwitchBack = waiting && row.IsActive;
+    }
+
     private void SetPendingTarget(Guid? targetGuid)
     {
         foreach (var row in Plans)
@@ -652,8 +670,9 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
             {
                 // Applied, but the power service holds its startup pin: Windows
                 // switches at the next restart, and the live plan stays active.
+                // A switch back to the live plan clears the wait instead.
                 foreach (var row in Plans)
-                    row.IsActiveAfterRestart = row.Plan.PlanGuid == pendingTarget.Plan.PlanGuid;
+                    row.IsActiveAfterRestart = row.Plan.PlanGuid == pendingTarget.Plan.PlanGuid && !row.IsActive;
             }
             else if (isApplying && pendingTarget is not null)
             {
@@ -668,6 +687,7 @@ public sealed partial class PowerViewModel : ObservableObject, IDisposable
             }
 
             SetPendingTarget(null);
+            RefreshSwitchBack();
         }
 
         // Modern Standby toggle removed externally
@@ -804,6 +824,7 @@ public sealed partial class PowerPlanItemViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanDelete))]
+    [NotifyPropertyChangedFor(nameof(ShowSetActive))]
     private bool _isActive;
 
     [ObservableProperty]
@@ -812,6 +833,16 @@ public sealed partial class PowerPlanItemViewModel : ObservableObject
     /// <summary>Windows activates this plan at the next startup; the live plan stays active until then.</summary>
     [ObservableProperty]
     private bool _isActiveAfterRestart;
+
+    /// <summary>The live plan while another plan waits for the restart: "Keep active" stages the way back.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowSetActive))]
+    [NotifyPropertyChangedFor(nameof(SetActiveLabel))]
+    private bool _canSwitchBack;
+
+    public bool ShowSetActive => !IsActive || CanSwitchBack;
+
+    public string SetActiveLabel => CanSwitchBack ? "Keep active" : "Set active";
 
     public PowerPlanItemViewModel(PowerPlan plan, Core.Services.IPendingActionsService? pendingActionsService = null)
     {

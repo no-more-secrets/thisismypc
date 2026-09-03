@@ -68,6 +68,25 @@ public sealed class PowerModuleTests
     }
 
     [Fact]
+    public async Task Apply_ActivePlanChange_SwitchBackKeepsTheStartupSchemeInStepWhileLocked()
+    {
+        // Pin gone, service still locked, High performance recorded for startup; the
+        // user keeps Balanced. The service accepts its cached plan at once.
+        _power.AddPlan(BalancedGuid, "Balanced", isActive: true);
+        _power.AddPlan(HighPerformanceGuid, "High performance");
+        _power.ActivePlanLockedByPolicy = true;
+        _registry.WriteString(PowerPlanChangeFactory.StartupActiveSchemeKeyPath, PowerPlanChangeFactory.StartupActiveSchemeValueName, HighPerformanceGuid.ToString("D"));
+
+        var result = await Module.ApplyChangeAsync(
+            ActivePlanChange(HighPerformanceGuid.ToString("D"), BalancedGuid.ToString("D")));
+
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.Equal(BalancedGuid.ToString("D"),
+            _registry.ReadString(PowerPlanChangeFactory.StartupActiveSchemeKeyPath, PowerPlanChangeFactory.StartupActiveSchemeValueName).Value);
+        Assert.Null(PinValue);
+    }
+
+    [Fact]
     public async Task Apply_ActivePlanChange_MovesThePinAlongWhenWindowsAcceptsTheSwitch()
     {
         _power.AddPlan(BalancedGuid, "Balanced", isActive: true);

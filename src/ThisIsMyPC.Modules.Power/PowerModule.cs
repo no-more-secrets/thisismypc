@@ -389,9 +389,15 @@ public sealed class PowerModule : IActionModule
         var switched = _powerService.SetActivePlan(planGuid);
         if (switched.IsSuccess)
         {
-            // Policy keeps agreeing with what is active.
+            // Policy keeps agreeing with what is active; and while the service
+            // is locked with the pin gone, so does the startup scheme (a switch
+            // back to the live plan is accepted and must not leave the earlier
+            // target waiting for the restart).
             if (hasPin && !string.Equals(pinned.Value, target, StringComparison.OrdinalIgnoreCase))
                 _ = _registryService.WriteString(key, name, target);
+            else if (!hasPin && _powerService.IsActivePlanLockedByPolicy())
+                _ = _registryService.WriteString(
+                    PowerPlanChangeFactory.StartupActiveSchemeKeyPath, PowerPlanChangeFactory.StartupActiveSchemeValueName, target);
             return switched;
         }
         if (switched.ErrorCategory != ErrorCategory.ProtectedByPolicy)

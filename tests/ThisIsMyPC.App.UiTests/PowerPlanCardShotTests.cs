@@ -67,6 +67,41 @@ public class PowerPlanCardShotTests
     }
 
     [AvaloniaFact]
+    public async Task WhileAPlanWaitsForTheRestart_TheLivePlanOffersKeepActive()
+    {
+        var changes = new PendingChangesService();
+        var highGuid = new Guid("8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c");
+        var viewModel = new PowerViewModel(ScanData(lockedByPolicy: true, activeAfterRestart: highGuid), changes);
+        using var session = UiSession.ForView(new PowerView(), viewModel, "power-plan-card", height: 700);
+        var balanced = viewModel.Plans.First(p => p.Name == "Balanced");
+        var high = viewModel.Plans.First(p => p.Name == "High performance");
+
+        var keep = session.Find<Button>(b => ReferenceEquals(b.DataContext, balanced) && b.Content as string == "Keep active");
+        Assert.True(keep.IsEffectivelyVisible);
+        session.Click(keep);
+        session.Screenshot("keep-active-staged");
+
+        Assert.Equal(1, changes.PendingCount);
+        var change = changes.PendingGroups[0].Changes[0];
+        Assert.Equal(highGuid.ToString("D"), change.BeforeValue);
+        Assert.Equal(balanced.Plan.PlanGuid.ToString("D"), change.AfterValue);
+        Assert.Equal(Core.Changes.RestartRequirement.None, change.RestartRequirement);
+        Assert.True(balanced.IsPendingTarget);
+
+        var applied = await changes.ApplyAllAsync(
+            _ => Task.FromResult(OperationResult<bool>.Success(true)),
+            _ => Task.FromResult(OperationResult<bool>.Success(true)));
+        Assert.True(applied.IsSuccess);
+        await session.WaitForAsync(() => !high.IsActiveAfterRestart, timeoutMs: 5000, what: "restart badge cleared");
+        session.Screenshot("keep-active-applied");
+
+        Assert.True(balanced.IsActive);
+        Assert.False(balanced.CanSwitchBack);
+        Assert.False(keep.IsEffectivelyVisible);
+        Assert.False(session.IsTextVisible("Active after restart"));
+    }
+
+    [AvaloniaFact]
     public void AScanWithAStartupPlan_ShowsTheRestartBadge()
     {
         var changes = new PendingChangesService();

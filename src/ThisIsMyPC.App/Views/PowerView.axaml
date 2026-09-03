@@ -172,11 +172,11 @@
 
                                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4"
                                                 VerticalAlignment="Center">
-                                        <Button Content="Set active"
+                                        <Button Content="{Binding SetActiveLabel}"
                                                 Padding="12,6" FontSize="12"
                                                 Command="{Binding $parent[UserControl].((vm:PowerViewModel)DataContext).SelectPlanCommand}"
                                                 CommandParameter="{Binding}"
-                                                IsVisible="{Binding !IsActive}">
+                                                IsVisible="{Binding ShowSetActive}">
                                             <Button.IsEnabled>
                                                 <MultiBinding Converter="{x:Static BoolConverters.And}">
                                                     <Binding Path="$parent[UserControl].((vm:PowerViewModel)DataContext).CanSelectPlans" />
