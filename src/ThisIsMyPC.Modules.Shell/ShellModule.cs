@@ -43,9 +43,16 @@ public sealed class ShellModule : IModule
                 var explorerPreferences = _explorerSettingsReader.ReadAll();
                 var taskbar = _taskbarSettingsReader.Read();
 
+                // ExplorerPatcher's settings only mean something while it is
+                // installed and hooked into Explorer, so they are read only then.
+                var explorerPatcherReader = new ExplorerPatcherSettingsReader(_registryService);
+                var explorerPatcherInstalled = explorerPatcherReader.IsInstalled();
+
                 var scanData = new ShellScanData(
                     ExplorerPreferences: explorerPreferences,
-                    Taskbar: taskbar);
+                    Taskbar: taskbar,
+                    ExplorerPatcherSettings: explorerPatcherInstalled ? explorerPatcherReader.ReadAll() : [],
+                    ExplorerPatcherInstalled: explorerPatcherInstalled);
 
                 return OperationResult<object>.Success(scanData);
             }

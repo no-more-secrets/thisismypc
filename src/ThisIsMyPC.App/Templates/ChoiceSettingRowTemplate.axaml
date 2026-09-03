@@ -5,7 +5,9 @@
     <!-- Multi-choice setting row: label/description left, combo right.
          DataContext: ShellChoiceSettingViewModel. A pending selection tints
          the card with the Modify color (there is no enable/disable
-         direction to a value change). -->
+         direction to a value change). The label sits in its own star column
+         and trims, so a long one never runs under the combo; the same
+         arrangement ToggleCard uses for its title. -->
     <DataTemplate x:Key="ChoiceSettingRowTemplate" DataType="vm:ShellChoiceSettingViewModel">
         <Border Padding="14,6"
                 Margin="0,2"
@@ -13,12 +15,32 @@
                 Classes="card"
                 IsVisible="{Binding IsSearchVisible}"
                 Classes.pending-modify="{Binding HasPendingChange}">
-            <DockPanel>
-                <ComboBox DockPanel.Dock="Right"
+            <Grid ColumnDefinitions="*,Auto">
+                <Grid Grid.Column="0"
+                      ColumnDefinitions="*,Auto"
+                      HorizontalAlignment="Left"
+                      VerticalAlignment="Center">
+                    <TextBlock Grid.Column="0"
+                               Text="{Binding Label}"
+                               FontWeight="SemiBold"
+                               FontSize="14"
+                               TextTrimming="CharacterEllipsis"
+                               ToolTip.Tip="{Binding Label}"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <Border Grid.Column="1"
+                            Classes="info-icon"
+                            Margin="6,0,0,0"
+                            ToolTip.Tip="{Binding Description}"
+                            IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                        <TextBlock Classes="info-icon-glyph" />
+                    </Border>
+                </Grid>
+
+                <ComboBox Grid.Column="1"
                           ItemsSource="{Binding Options}"
                           SelectedItem="{Binding SelectedOption}"
                           MinWidth="180"
-                          VerticalAlignment="Top"
+                          VerticalAlignment="Center"
                           Margin="16,0,0,0">
                     <ComboBox.ItemTemplate>
                         <DataTemplate DataType="vm:ShellChoiceOption">
@@ -26,21 +48,7 @@
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
                 </ComboBox>
-
-                <StackPanel Spacing="2">
-                    <StackPanel Orientation="Horizontal" Spacing="6">
-                        <TextBlock Text="{Binding Label}"
-                                   FontWeight="SemiBold"
-                                   FontSize="14"
-                                   Foreground="{DynamicResource TextPrimaryBrush}" />
-                        <Border Classes="info-icon"
-                                ToolTip.Tip="{Binding Description}"
-                                IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                            <TextBlock Classes="info-icon-glyph" />
-                        </Border>
-                    </StackPanel>
-                </StackPanel>
-            </DockPanel>
+            </Grid>
         </Border>
     </DataTemplate>
 

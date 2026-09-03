@@ -18,16 +18,37 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, IDispos
     /// <summary>Catalog id of the companion app the Start Menu tab offers.</summary>
     public const string ExplorerPatcherCatalogId = "explorerpatcher";
 
-    /// <summary>ExplorerPatcher's own uninstall entry (ep_setup writes {CLSID}_ExplorerPatcher); present means installed.</summary>
-    public const string ExplorerPatcherUninstallKeyPath =
-        @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{D17F1E1A-5919-4427-8F89-A1A8503CA3EB}_ExplorerPatcher";
-
     public ObservableCollection<ShellSettingViewModel> GeneralSettings { get; } = [];
     public ObservableCollection<ShellSettingViewModel> FileExplorerSettings { get; } = [];
     public ObservableCollection<ShellSettingViewModel> TaskbarSettings { get; } = [];
     public ObservableCollection<ShellChoiceSettingViewModel> TaskbarChoiceSettings { get; } = [];
     public ObservableCollection<ShellSettingViewModel> DesktopSettings { get; } = [];
     public ObservableCollection<ShellSettingViewModel> StartMenuSettings { get; } = [];
+
+    // ExplorerPatcher's own settings, split the same way and shown under their
+    // own heading on each tab. Empty unless ExplorerPatcher is installed.
+    public ObservableCollection<ShellSettingViewModel> GeneralPatcherToggles { get; } = [];
+    public ObservableCollection<ShellChoiceSettingViewModel> GeneralPatcherChoices { get; } = [];
+    public ObservableCollection<ShellSettingViewModel> FileExplorerPatcherToggles { get; } = [];
+    public ObservableCollection<ShellChoiceSettingViewModel> FileExplorerPatcherChoices { get; } = [];
+    public ObservableCollection<ShellSettingViewModel> TaskbarPatcherToggles { get; } = [];
+    public ObservableCollection<ShellChoiceSettingViewModel> TaskbarPatcherChoices { get; } = [];
+    public ObservableCollection<ShellSettingViewModel> DesktopPatcherToggles { get; } = [];
+    public ObservableCollection<ShellChoiceSettingViewModel> DesktopPatcherChoices { get; } = [];
+    public ObservableCollection<ShellSettingViewModel> StartMenuPatcherToggles { get; } = [];
+    public ObservableCollection<ShellChoiceSettingViewModel> StartMenuPatcherChoices { get; } = [];
+
+    /// <summary>True while ExplorerPatcher is installed, so its rows are worth showing.</summary>
+    public bool ShowPatcherSettings { get; }
+
+    public bool ShowGeneralPatcher => ShowPatcherSettings && (GeneralPatcherToggles.Count > 0 || GeneralPatcherChoices.Count > 0);
+    public bool ShowFileExplorerPatcher => ShowPatcherSettings && (FileExplorerPatcherToggles.Count > 0 || FileExplorerPatcherChoices.Count > 0);
+    public bool ShowTaskbarPatcher => ShowPatcherSettings && (TaskbarPatcherToggles.Count > 0 || TaskbarPatcherChoices.Count > 0);
+    public bool ShowDesktopPatcher => ShowPatcherSettings && (DesktopPatcherToggles.Count > 0 || DesktopPatcherChoices.Count > 0);
+    public bool ShowStartMenuPatcher => ShowPatcherSettings && (StartMenuPatcherToggles.Count > 0 || StartMenuPatcherChoices.Count > 0);
+
+    /// <summary>Heading above each tab's ExplorerPatcher rows.</summary>
+    public static string PatcherHeading => "ExplorerPatcher";
 
     /// <summary>The ExplorerPatcher card on the Start Menu tab; null without an actions queue.</summary>
     public SoftwareAppViewModel? ExplorerPatcher { get; }
@@ -37,7 +58,24 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, IDispos
     private readonly IPendingActionsService? _pendingActionsService;
 
     private IEnumerable<ShellSettingViewModel> ToggleRows =>
-        GeneralSettings.Concat(FileExplorerSettings).Concat(TaskbarSettings).Concat(DesktopSettings).Concat(StartMenuSettings);
+        GeneralSettings.Concat(FileExplorerSettings).Concat(TaskbarSettings).Concat(DesktopSettings).Concat(StartMenuSettings)
+            .Concat(GeneralPatcherToggles).Concat(FileExplorerPatcherToggles).Concat(TaskbarPatcherToggles)
+            .Concat(DesktopPatcherToggles).Concat(StartMenuPatcherToggles);
+
+    private IEnumerable<ShellChoiceSettingViewModel> ChoiceRows =>
+        TaskbarChoiceSettings
+            .Concat(GeneralPatcherChoices).Concat(FileExplorerPatcherChoices).Concat(TaskbarPatcherChoices)
+            .Concat(DesktopPatcherChoices).Concat(StartMenuPatcherChoices);
+
+    private (ObservableCollection<ShellSettingViewModel> Toggles, ObservableCollection<ShellChoiceSettingViewModel> Choices)
+        PatcherRowsFor(ShellSection section) => section switch
+        {
+            ShellSection.General => (GeneralPatcherToggles, GeneralPatcherChoices),
+            ShellSection.Taskbar => (TaskbarPatcherToggles, TaskbarPatcherChoices),
+            ShellSection.Desktop => (DesktopPatcherToggles, DesktopPatcherChoices),
+            ShellSection.StartMenu => (StartMenuPatcherToggles, StartMenuPatcherChoices),
+            _ => (FileExplorerPatcherToggles, FileExplorerPatcherChoices),
+        };
 
     private ObservableCollection<ShellSettingViewModel> RowsFor(ShellSection section) => section switch
     {
@@ -55,7 +93,7 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, IDispos
     {
         foreach (var row in ToggleRows)
             row.ApplySearch(value);
-        foreach (var row in TaskbarChoiceSettings)
+        foreach (var row in ChoiceRows)
             row.ApplySearch(value);
     }
 
@@ -80,10 +118,61 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, IDispos
         if (pendingActionsService is not null
             && SoftwareCatalog.Entries.FirstOrDefault(e => e.Id == ExplorerPatcherCatalogId) is { } explorerPatcher)
         {
-            var installed = registryService.KeyExists(ExplorerPatcherUninstallKeyPath) is { IsSuccess: true, Value: true };
-            ExplorerPatcher = new SoftwareAppViewModel(explorerPatcher, installed, pendingActionsService);
+            ExplorerPatcher = new SoftwareAppViewModel(explorerPatcher, scanData.ExplorerPatcherInstalled, pendingActionsService);
             _pendingActionsService = pendingActionsService;
             pendingActionsService.PropertyChanged += OnPendingActionsPropertyChanged;
+        }
+
+        // ExplorerPatcher's settings. They are plain registry values that its
+        // own monitor thread watches, so the app writes them like any other
+        // preference; the ones it reads only at startup carry a restart.
+        ShowPatcherSettings = scanData.ExplorerPatcherInstalled;
+        foreach (var setting in scanData.ExplorerPatcherSettings)
+        {
+            if (!setting.IsAvailable)
+                continue;
+
+            var captured = setting;
+            var (toggles, choices) = PatcherRowsFor(captured.Section);
+            var description = string.IsNullOrEmpty(captured.GroupHeading)
+                ? $"ExplorerPatcher, {captured.Page}"
+                : $"ExplorerPatcher, {captured.Page}: {captured.GroupHeading}";
+
+            int? ReadLive()
+            {
+                var read = registryService.ReadDWord(captured.RegistryKeyPath, captured.RegistryValueName);
+                return read.IsSuccess ? read.Value : null;
+            }
+
+            if (captured.Kind == Modules.Shell.Models.ExplorerPatcherSettingKind.Choice)
+            {
+                choices.Add(new ShellChoiceSettingViewModel(
+                    captured.DisplayName,
+                    description,
+                    captured.SystemLocation,
+                    [.. captured.Options.Select(o => new ShellChoiceOption(o.Value, o.DisplayName))],
+                    captured.EffectiveValue,
+                    pendingChangesService,
+                    changeFactory: newValue => ExplorerPatcherChangeFactory.Create(captured, ReadLive(), newValue),
+                    readRegistryValue: () => ReadLive() ?? captured.DefaultValue));
+            }
+            else
+            {
+                toggles.Add(new ShellSettingViewModel(
+                    captured.DisplayName,
+                    description,
+                    captured.SystemLocation,
+                    captured.IsOn,
+                    pendingChangesService,
+                    changeFactory: on => ExplorerPatcherChangeFactory.Create(captured, ReadLive(), captured.ValueFor(on)),
+                    readRegistryState: () =>
+                    {
+                        var live = ReadLive() ?? captured.DefaultValue;
+                        return captured.Kind == Modules.Shell.Models.ExplorerPatcherSettingKind.InvertedToggle
+                            ? live == 0
+                            : live != 0;
+                    }));
+            }
         }
 
         // Command bar style (Explorer visual, not a DWord preference; CLSID override)

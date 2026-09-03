@@ -7,18 +7,21 @@ namespace ThisIsMyPC.Modules.Shell.Services;
 
 /// <summary>
 /// Resolves set entries targeting "Explorer" to live system state: the four taskbar/CLSID
-/// toggles via TaskbarSettingsReader (display strings mirror TaskbarChangeFactory) and the
-/// Explorer preferences via ExplorerSettingsReader.
+/// toggles via TaskbarSettingsReader (display strings mirror TaskbarChangeFactory), the
+/// Explorer preferences via ExplorerSettingsReader, and the ExplorerPatcher settings via
+/// ExplorerPatcherSettingsReader, so a saved set carries those too.
 /// </summary>
 public sealed class ShellSetEntryInspector : ISetEntryInspector
 {
     private readonly ExplorerSettingsReader _explorerReader;
     private readonly TaskbarSettingsReader _taskbarReader;
+    private readonly ExplorerPatcherSettingsReader _patcherReader;
 
     public ShellSetEntryInspector(IRegistryService registryService)
     {
         _explorerReader = new ExplorerSettingsReader(registryService);
         _taskbarReader = new TaskbarSettingsReader(registryService);
+        _patcherReader = new ExplorerPatcherSettingsReader(registryService);
     }
 
     public string ModuleId => "Explorer";
@@ -55,12 +58,31 @@ public sealed class ShellSetEntryInspector : ISetEntryInspector
             }
         }
 
+        if (FindPatcherSetting(entry.SettingId) is { } patcher)
+        {
+            // Absent means ExplorerPatcher falls back to its default, and that
+            // is the state a set records, so the value round-trips exactly.
+            var current = patcher.CurrentValue?.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                ?? ShellRegistryPaths.AbsentValue;
+            return Resolve(patcher.DisplayName, current, patcher.DisplayFor(patcher.EffectiveValue), entry);
+        }
+
         var pref = _explorerReader.ReadAll().FirstOrDefault(p => p.Id == entry.SettingId);
         if (pref is null)
             return null;
 
         return Resolve(pref.DisplayName, pref.CurrentValue,
             pref.IsEnabled ? "Enabled" : "Disabled", entry);
+    }
+
+    /// <summary>The catalogued ExplorerPatcher setting a set entry names, with its live value.</summary>
+    private Models.ExplorerPatcherSetting? FindPatcherSetting(string settingId)
+    {
+        if (!settingId.StartsWith(ExplorerPatcherChangeFactory.SettingIdPrefix, StringComparison.Ordinal))
+            return null;
+        var valueName = settingId[ExplorerPatcherChangeFactory.SettingIdPrefix.Length..];
+        return _patcherReader.ReadAll().FirstOrDefault(s =>
+            string.Equals(s.RegistryValueName, valueName, StringComparison.OrdinalIgnoreCase));
     }
 
     public ChangeGroup? CreateChangeGroup(SetEntry entry)
@@ -84,6 +106,16 @@ public sealed class ShellSetEntryInspector : ISetEntryInspector
                 return entry.Value == "" || entry.Value == ShellRegistryPaths.AbsentValue
                     ? Wrap(TaskbarChangeFactory.CreateCommandBarToggle(_taskbarReader.Read(), enable: entry.Value == ""))
                     : null;
+        }
+
+        if (FindPatcherSetting(entry.SettingId) is { } patcher)
+        {
+            if (entry.Value == ShellRegistryPaths.AbsentValue)
+                return null;   // "leave it unset" is not something a set applies
+            return int.TryParse(entry.Value, System.Globalization.NumberStyles.Integer,
+                System.Globalization.CultureInfo.InvariantCulture, out var target)
+                ? Wrap(ExplorerPatcherChangeFactory.Create(patcher, patcher.CurrentValue, target))
+                : null;
         }
 
         var pref = _explorerReader.ReadAll().FirstOrDefault(p => p.Id == entry.SettingId);

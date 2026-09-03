@@ -1,0 +1,2233 @@
+{
+    "_license":  "Settings definitions imported from ExplorerPatcher (https://github.com/valinet/ExplorerPatcher), GNU General Public License v2.0, Copyright (c) valinet. Regenerate with tools/import-explorerpatcher-settings.ps1.",
+    "_commit":  "0a88a6e0ef6b1752fea36e581cffff1097e862b0",
+    "_imported":  "2026-09-03",
+    "settings":  [
+                     {
+                         "id":  "ep:OldTaskbar",
+                         "name":  "Taskbar style",
+                         "group":  "",
+                         "page":  "Taskbar",
+                         "section":  "Taskbar",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "OldTaskbar",
+                         "kind":  "choice",
+                         "default":  2,
+                         "restart":  true,
+                         "condition":  "",
+                         "options":  [
+                                         {
+                                             "value":  0,
+                                             "name":  "Windows 11 (default)"
+                                         },
+                                         {
+                                             "value":  1,
+                                             "name":  "Windows 10"
+                                         },
+                                         {
+                                             "value":  2,
+                                             "name":  "Windows 10 (ExplorerPatcher)"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:OrbStyle",
+                         "name":  "Start button style",
+                         "group":  "",
+                         "page":  "Taskbar",
+                         "section":  "Taskbar",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "OrbStyle",
+                         "kind":  "choice",
+                         "default":  0,
+                         "restart":  true,
+                         "condition":  "IsOldTaskbar",
+                         "options":  [
+                                         {
+                                             "value":  0,
+                                             "name":  "Windows 10 (default)"
+                                         },
+                                         {
+                                             "value":  1,
+                                             "name":  "Windows 11"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:OldTaskbarAl",
+                         "name":  "Primary taskbar alignment",
+                         "group":  "",
+                         "page":  "Taskbar",
+                         "section":  "Taskbar",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "OldTaskbarAl",
+                         "kind":  "choice",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "IsOldTaskbar",
+                         "options":  [
+                                         {
+                                             "value":  0,
+                                             "name":  "At screen edge (default)"
+                                         },
+                                         {
+                                             "value":  1,
+                                             "name":  "Centered"
+                                         },
+                                         {
+                                             "value":  5,
+                                             "name":  "Centered, at screen edge when full"
+                                         },
+                                         {
+                                             "value":  3,
+                                             "name":  "Centered with Start button"
+                                         },
+                                         {
+                                             "value":  7,
+                                             "name":  "Centered with Start button, at screen edge when full"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:MMOldTaskbarAl",
+                         "name":  "Secondary taskbar(s) alignment",
+                         "group":  "",
+                         "page":  "Taskbar",
+                         "section":  "Taskbar",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "MMOldTaskbarAl",
+                         "kind":  "choice",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "IsOldTaskbar",
+                         "options":  [
+                                         {
+                                             "value":  0,
+                                             "name":  "At screen edge (default)"
+                                         },
+                                         {
+                                             "value":  1,
+                                             "name":  "Centered"
+                                         },
+                                         {
+                                             "value":  5,
+                                             "name":  "Centered, at screen edge when full"
+                                         },
+                                         {
+                                             "value":  3,
+                                             "name":  "Centered with Start button"
+                                         },
+                                         {
+                                             "value":  7,
+                                             "name":  "Centered with Start button, at screen edge when full"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:MMTaskbarGlomLevel",
+                         "name":  "Combine taskbar icons on secondary taskbar(s)",
+                         "group":  "",
+                         "page":  "Taskbar",
+                         "section":  "Taskbar",
+                         "key":  "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+                         "value":  "MMTaskbarGlomLevel",
+                         "kind":  "choice",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "",
+                         "options":  [
+                                         {
+                                             "value":  0,
+                                             "name":  "Always combine (default)"
+                                         },
+                                         {
+                                             "value":  1,
+                                             "name":  "Combine when taskbar is full"
+                                         },
+                                         {
+                                             "value":  2,
+                                             "name":  "Never combine"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:TaskbarSmallIcons",
+                         "name":  "Taskbar icon size",
+                         "group":  "",
+                         "page":  "Taskbar",
+                         "section":  "Taskbar",
+                         "key":  "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+                         "value":  "TaskbarSmallIcons",
+                         "kind":  "choice",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "IsOldTaskbar",
+                         "options":  [
+                                         {
+                                             "value":  1,
+                                             "name":  "Small"
+                                         },
+                                         {
+                                             "value":  0,
+                                             "name":  "Large (default)"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:SkinMenus",
+                         "name":  "Skin taskbar and tray pop-up menus",
+                         "group":  "",
+                         "page":  "System tray",
+                         "section":  "Taskbar",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "SkinMenus",
+                         "kind":  "toggle",
+                         "default":  1,
+                         "restart":  false,
+                         "condition":  "",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:CenterMenus",
+                         "name":  "Center tray icon pop-up menus",
+                         "group":  "",
+                         "page":  "System tray",
+                         "section":  "Taskbar",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "CenterMenus",
+                         "kind":  "toggle",
+                         "default":  1,
+                         "restart":  false,
+                         "condition":  "",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:FlyoutMenus",
+                         "name":  "Flyout behavior for tray icon pop-up menus",
+                         "group":  "",
+                         "page":  "System tray",
+                         "section":  "Taskbar",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "FlyoutMenus",
+                         "kind":  "toggle",
+                         "default":  1,
+                         "restart":  false,
+                         "condition":  "",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:TipbandDesiredVisibility",
+                         "name":  "Show touch keyboard button",
+                         "group":  "",
+                         "page":  "System tray",
+                         "section":  "Taskbar",
+                         "key":  "HKCU\\Software\\Microsoft\\TabletTip\\1.7",
+                         "value":  "TipbandDesiredVisibility",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  true,
+                         "condition":  "",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:HideControlCenterButton",
+                         "name":  "Control Center button",
+                         "group":  "",
+                         "page":  "System tray",
+                         "section":  "Taskbar",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "HideControlCenterButton",
+                         "kind":  "invertedToggle",
+                         "default":  0,
+                         "restart":  true,
+                         "condition":  "",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:TaskbarSD",
+                         "name":  "Show desktop button",
+                         "group":  "",
+                         "page":  "System tray",
+                         "section":  "Taskbar",
+                         "key":  "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+                         "value":  "TaskbarSD",
+                         "kind":  "choice",
+                         "default":  1,
+                         "restart":  false,
+                         "condition":  "IsOldTaskbar",
+                         "options":  [
+                                         {
+                                             "value":  1,
+                                             "name":  "Enabled (default)"
+                                         },
+                                         {
+                                             "value":  0,
+                                             "name":  "Disabled"
+                                         },
+                                         {
+                                             "value":  2,
+                                             "name":  "Hidden"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:SkinIcons",
+                         "name":  "Apply Windows 11 style to system tray icons",
+                         "group":  "",
+                         "page":  "System tray",
+                         "section":  "Taskbar",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "SkinIcons",
+                         "kind":  "toggle",
+                         "default":  1,
+                         "restart":  true,
+                         "condition":  "IsOldTaskbar",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:TrayOverflowStyle",
+                         "name":  "Hidden icons popup style",
+                         "group":  "",
+                         "page":  "System tray",
+                         "section":  "Taskbar",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "TrayOverflowStyle",
+                         "kind":  "choice",
+                         "default":  0,
+                         "restart":  true,
+                         "condition":  "IsAltImplTaskbar",
+                         "options":  [
+                                         {
+                                             "value":  0,
+                                             "name":  "Windows 10 (default)"
+                                         },
+                                         {
+                                             "value":  1,
+                                             "name":  "Windows 11"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:ReplaceNetwork",
+                         "name":  "Choosing \u0027Open Network \u0026 Internet settings\u0027 when right-clicking the network icon should open",
+                         "group":  "",
+                         "page":  "System tray",
+                         "section":  "Taskbar",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "ReplaceNetwork",
+                         "kind":  "choice",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "IsOldTaskbar",
+                         "options":  [
+                                         {
+                                             "value":  0,
+                                             "name":  "Network section in the Settings app (default)"
+                                         },
+                                         {
+                                             "value":  1,
+                                             "name":  "Network and Sharing Center in Control Panel"
+                                         },
+                                         {
+                                             "value":  2,
+                                             "name":  "Network Connections in Control Panel"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:ReplaceVan",
+                         "name":  "Network",
+                         "group":  "When clicking a system icon in the system tray, open:",
+                         "page":  "System tray",
+                         "section":  "Taskbar",
+                         "key":  "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Control Panel\\Settings\\Network",
+                         "value":  "ReplaceVan",
+                         "kind":  "choice",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "IsOldTaskbar",
+                         "options":  [
+                                         {
+                                             "value":  6,
+                                             "name":  "Control Center"
+                                         },
+                                         {
+                                             "value":  5,
+                                             "name":  "Windows 11 Wi-Fi flyout"
+                                         },
+                                         {
+                                             "value":  0,
+                                             "name":  "Windows 10 flyout (default)"
+                                         },
+                                         {
+                                             "value":  2,
+                                             "name":  "Windows 8 flyout"
+                                         },
+                                         {
+                                             "value":  1,
+                                             "name":  "Network section in the Settings app"
+                                         },
+                                         {
+                                             "value":  3,
+                                             "name":  "Network and Sharing Center in Control Panel"
+                                         },
+                                         {
+                                             "value":  4,
+                                             "name":  "Network Connections in Control Panel"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:EnableMtcUvc",
+                         "name":  "Sound",
+                         "group":  "When clicking a system icon in the system tray, open:",
+                         "page":  "System tray",
+                         "section":  "Taskbar",
+                         "key":  "HKCU\\Software\\Microsoft\\Windows NT\\CurrentVersion\\MTCUVC",
+                         "value":  "EnableMtcUvc",
+                         "kind":  "choice",
+                         "default":  1,
+                         "restart":  false,
+                         "condition":  "IsOldTaskbar",
+                         "options":  [
+                                         {
+                                             "value":  1,
+                                             "name":  "Windows 10 flyout (default)"
+                                         },
+                                         {
+                                             "value":  0,
+                                             "name":  "Windows 7 flyout"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:UseWin32TrayClockExperience",
+                         "name":  "Clock",
+                         "group":  "When clicking a system icon in the system tray, open:",
+                         "page":  "System tray",
+                         "section":  "Taskbar",
+                         "key":  "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\ImmersiveShell",
+                         "value":  "UseWin32TrayClockExperience",
+                         "kind":  "choice",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "IsOldTaskbar",
+                         "options":  [
+                                         {
+                                             "value":  2,
+                                             "name":  "Windows 11 flyout"
+                                         },
+                                         {
+                                             "value":  0,
+                                             "name":  "Windows 10 flyout (default)"
+                                         },
+                                         {
+                                             "value":  1,
+                                             "name":  "Windows 7"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:UseWin32BatteryFlyout",
+                         "name":  "Battery",
+                         "group":  "When clicking a system icon in the system tray, open:",
+                         "page":  "System tray",
+                         "section":  "Taskbar",
+                         "key":  "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\ImmersiveShell",
+                         "value":  "UseWin32BatteryFlyout",
+                         "kind":  "choice",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "IsOldTaskbar",
+                         "options":  [
+                                         {
+                                             "value":  0,
+                                             "name":  "Windows 10 flyout (default)"
+                                         },
+                                         {
+                                             "value":  1,
+                                             "name":  "Windows 7"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:IMEStyle",
+                         "name":  "Language switcher",
+                         "group":  "When clicking a system icon in the system tray, open:",
+                         "page":  "System tray",
+                         "section":  "Taskbar",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "IMEStyle",
+                         "kind":  "choice",
+                         "default":  0,
+                         "restart":  true,
+                         "condition":  "!IsWindows11Version22H2OrHigher",
+                         "options":  [
+                                         {
+                                             "value":  0,
+                                             "name":  "Windows 11 (default)"
+                                         },
+                                         {
+                                             "value":  1,
+                                             "name":  "Windows 10 (with link to \"Language Preferences\")"
+                                         },
+                                         {
+                                             "value":  4,
+                                             "name":  "Windows 10"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:LegacyFileTransferDialog",
+                         "name":  "Always use legacy file transfer dialog",
+                         "group":  "",
+                         "page":  "File Explorer",
+                         "section":  "FileExplorer",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "LegacyFileTransferDialog",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:UseClassicDriveGrouping",
+                         "name":  "Use classic drive groupings in This PC",
+                         "group":  "",
+                         "page":  "File Explorer",
+                         "section":  "FileExplorer",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "UseClassicDriveGrouping",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:DisableImmersiveContextMenu",
+                         "name":  "Use immersive menus when displaying Windows 10 context menus",
+                         "group":  "The following settings take effect on newly created File Explorer windows:",
+                         "page":  "File Explorer",
+                         "section":  "FileExplorer",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "DisableImmersiveContextMenu",
+                         "kind":  "invertedToggle",
+                         "default":  0,
+                         "restart":  true,
+                         "condition":  "",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:ShrinkExplorerAddressBar",
+                         "name":  "Shrink address bar height",
+                         "group":  "The following settings take effect on newly created File Explorer windows:",
+                         "page":  "File Explorer",
+                         "section":  "FileExplorer",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "ShrinkExplorerAddressBar",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  true,
+                         "condition":  "",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:HideExplorerSearchBar",
+                         "name":  "Hide search bar completely",
+                         "group":  "The following settings take effect on newly created File Explorer windows:",
+                         "page":  "File Explorer",
+                         "section":  "FileExplorer",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "HideExplorerSearchBar",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  true,
+                         "condition":  "",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:HideIconAndTitleInExplorer",
+                         "name":  "Title bar",
+                         "group":  "The following settings take effect on newly created File Explorer windows:",
+                         "page":  "File Explorer",
+                         "section":  "FileExplorer",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "HideIconAndTitleInExplorer",
+                         "kind":  "choice",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "",
+                         "options":  [
+                                         {
+                                             "value":  0,
+                                             "name":  "Show icon and title (default)"
+                                         },
+                                         {
+                                             "value":  1,
+                                             "name":  "Hide title, show icon"
+                                         },
+                                         {
+                                             "value":  2,
+                                             "name":  "Hide icon, show title"
+                                         },
+                                         {
+                                             "value":  3,
+                                             "name":  "Hide icon and title"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:MicaEffectOnTitlebar",
+                         "name":  "Apply Mica effect to the navigation bar of Windows 7 Explorer windows",
+                         "group":  "The following settings take effect on newly created File Explorer windows:",
+                         "page":  "File Explorer",
+                         "section":  "FileExplorer",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "MicaEffectOnTitlebar",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  true,
+                         "condition":  "",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:Start_ShowClassicMode",
+                         "name":  "Start menu style",
+                         "group":  "",
+                         "page":  "Start menu",
+                         "section":  "StartMenu",
+                         "key":  "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+                         "value":  "Start_ShowClassicMode",
+                         "kind":  "choice",
+                         "default":  0,
+                         "restart":  true,
+                         "condition":  "DoesWindows10StartMenuExist",
+                         "options":  [
+                                         {
+                                             "value":  0,
+                                             "name":  "Windows 11 (default)"
+                                         },
+                                         {
+                                             "value":  1,
+                                             "name":  "Windows 10"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:MonitorOverride",
+                         "name":  "When using multiple displays, open Start on this monitor when invoked using the keyboard",
+                         "group":  "",
+                         "page":  "Start menu",
+                         "section":  "StartMenu",
+                         "key":  "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartPage",
+                         "value":  "MonitorOverride",
+                         "kind":  "choice",
+                         "default":  1,
+                         "restart":  false,
+                         "condition":  "",
+                         "options":  [
+                                         {
+                                             "value":  1,
+                                             "name":  "Primary monitor (default)"
+                                         },
+                                         {
+                                             "value":  0,
+                                             "name":  "Monitor containing the cursor"
+                                         },
+                                         {
+                                             "value":  2,
+                                             "name":  "Monitor #2"
+                                         },
+                                         {
+                                             "value":  3,
+                                             "name":  "Monitor #3"
+                                         },
+                                         {
+                                             "value":  4,
+                                             "name":  "Monitor #4"
+                                         },
+                                         {
+                                             "value":  5,
+                                             "name":  "Monitor #5"
+                                         },
+                                         {
+                                             "value":  6,
+                                             "name":  "Monitor #6"
+                                         },
+                                         {
+                                             "value":  7,
+                                             "name":  "Monitor #7"
+                                         },
+                                         {
+                                             "value":  8,
+                                             "name":  "Monitor #8"
+                                         },
+                                         {
+                                             "value":  9,
+                                             "name":  "Monitor #9"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:MakeAllAppsDefault",
+                         "name":  "Open Start in All apps by default",
+                         "group":  "When using multiple displays, open Start on this monitor when invoked using",
+                         "page":  "Start menu",
+                         "section":  "StartMenu",
+                         "key":  "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartPage",
+                         "value":  "MakeAllAppsDefault",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "!IsRedesignedWin11StartMenu",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:AltTabSettings",
+                         "name":  "Window switcher (Alt+Tab) style",
+                         "group":  "",
+                         "page":  "Window switcher",
+                         "section":  "Desktop",
+                         "key":  "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer",
+                         "value":  "AltTabSettings",
+                         "kind":  "choice",
+                         "default":  0,
+                         "restart":  true,
+                         "condition":  "",
+                         "options":  [
+                                         {
+                                             "value":  0,
+                                             "name":  "Windows 11 (default)"
+                                         },
+                                         {
+                                             "value":  3,
+                                             "name":  "Windows 10"
+                                         },
+                                         {
+                                             "value":  1,
+                                             "name":  "Windows NT"
+                                         },
+                                         {
+                                             "value":  2,
+                                             "name":  "Simple Window Switcher"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:IncludeWallpaper",
+                         "name":  "Show the desktop as the last window in the interaction list",
+                         "group":  "",
+                         "page":  "Window switcher",
+                         "section":  "Desktop",
+                         "key":  "HKCU\\Software\\ExplorerPatcher\\sws",
+                         "value":  "IncludeWallpaper",
+                         "kind":  "toggle",
+                         "default":  1,
+                         "restart":  false,
+                         "condition":  "IsSWSEnabled",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:PrimaryOnly",
+                         "name":  "Always display switcher on primary monitor",
+                         "group":  "",
+                         "page":  "Window switcher",
+                         "section":  "Desktop",
+                         "key":  "HKCU\\Software\\ExplorerPatcher\\sws",
+                         "value":  "PrimaryOnly",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "IsSWSEnabled",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:PerMonitor",
+                         "name":  "Display windows only from the monitor containing the cursor",
+                         "group":  "",
+                         "page":  "Window switcher",
+                         "section":  "Desktop",
+                         "key":  "HKCU\\Software\\ExplorerPatcher\\sws",
+                         "value":  "PerMonitor",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "IsSWSEnabled",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:SwitcherIsPerApplication",
+                         "name":  "Group windows of the same app",
+                         "group":  "",
+                         "page":  "Window switcher",
+                         "section":  "Desktop",
+                         "key":  "HKCU\\Software\\ExplorerPatcher\\sws",
+                         "value":  "SwitcherIsPerApplication",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "IsSWSEnabled",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:NoPerApplicationList",
+                         "name":  "No Per Application List",
+                         "group":  "",
+                         "page":  "Window switcher",
+                         "section":  "Desktop",
+                         "key":  "HKCU\\Software\\ExplorerPatcher\\sws",
+                         "value":  "NoPerApplicationList",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "IsSWSEnabled",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:Theme",
+                         "name":  "Theme",
+                         "group":  "",
+                         "page":  "Window switcher",
+                         "section":  "Desktop",
+                         "key":  "HKCU\\Software\\ExplorerPatcher\\sws",
+                         "value":  "Theme",
+                         "kind":  "choice",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "IsSWSEnabled",
+                         "options":  [
+                                         {
+                                             "value":  0,
+                                             "name":  "Default"
+                                         },
+                                         {
+                                             "value":  1,
+                                             "name":  "Acrylic"
+                                         },
+                                         {
+                                             "value":  2,
+                                             "name":  "Mica (always opaque)"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:Grid_backgroundPercent",
+                         "name":  "Opacity",
+                         "group":  "",
+                         "page":  "Window switcher",
+                         "section":  "Desktop",
+                         "key":  "HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\MultitaskingView\\AltTabViewHost",
+                         "value":  "Grid_backgroundPercent",
+                         "kind":  "choice",
+                         "default":  95,
+                         "restart":  false,
+                         "condition":  "IsSWSEnabled",
+                         "options":  [
+                                         {
+                                             "value":  100,
+                                             "name":  "Opaque"
+                                         },
+                                         {
+                                             "value":  98,
+                                             "name":  "98 %"
+                                         },
+                                         {
+                                             "value":  96,
+                                             "name":  "96 %"
+                                         },
+                                         {
+                                             "value":  95,
+                                             "name":  "95 % (default)"
+                                         },
+                                         {
+                                             "value":  94,
+                                             "name":  "94 %"
+                                         },
+                                         {
+                                             "value":  92,
+                                             "name":  "92 %"
+                                         },
+                                         {
+                                             "value":  90,
+                                             "name":  "90 %"
+                                         },
+                                         {
+                                             "value":  85,
+                                             "name":  "85 %"
+                                         },
+                                         {
+                                             "value":  80,
+                                             "name":  "80 %"
+                                         },
+                                         {
+                                             "value":  75,
+                                             "name":  "75 %"
+                                         },
+                                         {
+                                             "value":  70,
+                                             "name":  "70 %"
+                                         },
+                                         {
+                                             "value":  65,
+                                             "name":  "65 %"
+                                         },
+                                         {
+                                             "value":  60,
+                                             "name":  "60 %"
+                                         },
+                                         {
+                                             "value":  55,
+                                             "name":  "55 %"
+                                         },
+                                         {
+                                             "value":  50,
+                                             "name":  "50 %"
+                                         },
+                                         {
+                                             "value":  45,
+                                             "name":  "45 %"
+                                         },
+                                         {
+                                             "value":  40,
+                                             "name":  "40 %"
+                                         },
+                                         {
+                                             "value":  35,
+                                             "name":  "35 %"
+                                         },
+                                         {
+                                             "value":  30,
+                                             "name":  "30 %"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:ColorScheme",
+                         "name":  "Color scheme",
+                         "group":  "",
+                         "page":  "Window switcher",
+                         "section":  "Desktop",
+                         "key":  "HKCU\\Software\\ExplorerPatcher\\sws",
+                         "value":  "ColorScheme",
+                         "kind":  "choice",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "IsSWSEnabled",
+                         "options":  [
+                                         {
+                                             "value":  0,
+                                             "name":  "Follow system setting (default)"
+                                         },
+                                         {
+                                             "value":  1,
+                                             "name":  "Light"
+                                         },
+                                         {
+                                             "value":  2,
+                                             "name":  "Dark"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:CornerPreference",
+                         "name":  "Corner preference",
+                         "group":  "",
+                         "page":  "Window switcher",
+                         "section":  "Desktop",
+                         "key":  "HKCU\\Software\\ExplorerPatcher\\sws",
+                         "value":  "CornerPreference",
+                         "kind":  "choice",
+                         "default":  2,
+                         "restart":  false,
+                         "condition":  "IsSWSEnabled",
+                         "options":  [
+                                         {
+                                             "value":  2,
+                                             "name":  "Rounded (default)"
+                                         },
+                                         {
+                                             "value":  3,
+                                             "name":  "Small rounded"
+                                         },
+                                         {
+                                             "value":  1,
+                                             "name":  "Not rounded"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:RowHeight",
+                         "name":  "Row height",
+                         "group":  "",
+                         "page":  "Window switcher",
+                         "section":  "Desktop",
+                         "key":  "HKCU\\Software\\ExplorerPatcher\\sws",
+                         "value":  "RowHeight",
+                         "kind":  "choice",
+                         "default":  230,
+                         "restart":  false,
+                         "condition":  "IsSWSEnabled",
+                         "options":  [
+                                         {
+                                             "value":  330,
+                                             "name":  "330 pt"
+                                         },
+                                         {
+                                             "value":  320,
+                                             "name":  "320 pt"
+                                         },
+                                         {
+                                             "value":  310,
+                                             "name":  "310 pt"
+                                         },
+                                         {
+                                             "value":  300,
+                                             "name":  "300 pt"
+                                         },
+                                         {
+                                             "value":  290,
+                                             "name":  "290 pt"
+                                         },
+                                         {
+                                             "value":  280,
+                                             "name":  "280 pt"
+                                         },
+                                         {
+                                             "value":  270,
+                                             "name":  "270 pt"
+                                         },
+                                         {
+                                             "value":  260,
+                                             "name":  "260 pt"
+                                         },
+                                         {
+                                             "value":  250,
+                                             "name":  "250 pt"
+                                         },
+                                         {
+                                             "value":  240,
+                                             "name":  "240 pt"
+                                         },
+                                         {
+                                             "value":  230,
+                                             "name":  "230 pt (default)"
+                                         },
+                                         {
+                                             "value":  220,
+                                             "name":  "220 pt"
+                                         },
+                                         {
+                                             "value":  210,
+                                             "name":  "210 pt"
+                                         },
+                                         {
+                                             "value":  200,
+                                             "name":  "200 pt"
+                                         },
+                                         {
+                                             "value":  190,
+                                             "name":  "190 pt"
+                                         },
+                                         {
+                                             "value":  180,
+                                             "name":  "180 pt"
+                                         },
+                                         {
+                                             "value":  170,
+                                             "name":  "170 pt"
+                                         },
+                                         {
+                                             "value":  160,
+                                             "name":  "160 pt"
+                                         },
+                                         {
+                                             "value":  150,
+                                             "name":  "150 pt"
+                                         },
+                                         {
+                                             "value":  140,
+                                             "name":  "140 pt"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:MaxWidth",
+                         "name":  "Maximum width (percentage of screen width)",
+                         "group":  "",
+                         "page":  "Window switcher",
+                         "section":  "Desktop",
+                         "key":  "HKCU\\Software\\ExplorerPatcher\\sws",
+                         "value":  "MaxWidth",
+                         "kind":  "choice",
+                         "default":  80,
+                         "restart":  false,
+                         "condition":  "IsSWSEnabled",
+                         "options":  [
+                                         {
+                                             "value":  100,
+                                             "name":  "100 % (not recommended)"
+                                         },
+                                         {
+                                             "value":  95,
+                                             "name":  "95 %"
+                                         },
+                                         {
+                                             "value":  90,
+                                             "name":  "90 %"
+                                         },
+                                         {
+                                             "value":  85,
+                                             "name":  "85 %"
+                                         },
+                                         {
+                                             "value":  80,
+                                             "name":  "80 % (default)"
+                                         },
+                                         {
+                                             "value":  75,
+                                             "name":  "75 %"
+                                         },
+                                         {
+                                             "value":  70,
+                                             "name":  "70 %"
+                                         },
+                                         {
+                                             "value":  65,
+                                             "name":  "65 %"
+                                         },
+                                         {
+                                             "value":  60,
+                                             "name":  "60 %"
+                                         },
+                                         {
+                                             "value":  55,
+                                             "name":  "55 %"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:MaxHeight",
+                         "name":  "Maximum height (percentage of screen height)",
+                         "group":  "",
+                         "page":  "Window switcher",
+                         "section":  "Desktop",
+                         "key":  "HKCU\\Software\\ExplorerPatcher\\sws",
+                         "value":  "MaxHeight",
+                         "kind":  "choice",
+                         "default":  80,
+                         "restart":  false,
+                         "condition":  "IsSWSEnabled",
+                         "options":  [
+                                         {
+                                             "value":  100,
+                                             "name":  "100 % (not recommended)"
+                                         },
+                                         {
+                                             "value":  95,
+                                             "name":  "95 %"
+                                         },
+                                         {
+                                             "value":  90,
+                                             "name":  "90 %"
+                                         },
+                                         {
+                                             "value":  85,
+                                             "name":  "85 %"
+                                         },
+                                         {
+                                             "value":  80,
+                                             "name":  "80 % (default)"
+                                         },
+                                         {
+                                             "value":  75,
+                                             "name":  "75 %"
+                                         },
+                                         {
+                                             "value":  70,
+                                             "name":  "70 %"
+                                         },
+                                         {
+                                             "value":  65,
+                                             "name":  "65 %"
+                                         },
+                                         {
+                                             "value":  60,
+                                             "name":  "60 %"
+                                         },
+                                         {
+                                             "value":  55,
+                                             "name":  "55 %"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:MasterPadding",
+                         "name":  "Window padding",
+                         "group":  "",
+                         "page":  "Window switcher",
+                         "section":  "Desktop",
+                         "key":  "HKCU\\Software\\ExplorerPatcher\\sws",
+                         "value":  "MasterPadding",
+                         "kind":  "choice",
+                         "default":  20,
+                         "restart":  false,
+                         "condition":  "IsSWSEnabled",
+                         "options":  [
+                                         {
+                                             "value":  50,
+                                             "name":  "50 pt"
+                                         },
+                                         {
+                                             "value":  45,
+                                             "name":  "45 pt"
+                                         },
+                                         {
+                                             "value":  40,
+                                             "name":  "40 pt"
+                                         },
+                                         {
+                                             "value":  35,
+                                             "name":  "30 pt"
+                                         },
+                                         {
+                                             "value":  30,
+                                             "name":  "30 pt"
+                                         },
+                                         {
+                                             "value":  25,
+                                             "name":  "25 pt"
+                                         },
+                                         {
+                                             "value":  20,
+                                             "name":  "20 pt (default)"
+                                         },
+                                         {
+                                             "value":  15,
+                                             "name":  "15 pt"
+                                         },
+                                         {
+                                             "value":  10,
+                                             "name":  "10 pt"
+                                         },
+                                         {
+                                             "value":  5,
+                                             "name":  "5 pt"
+                                         },
+                                         {
+                                             "value":  0,
+                                             "name":  "None"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:ShowDelay",
+                         "name":  "Show delay",
+                         "group":  "",
+                         "page":  "Window switcher",
+                         "section":  "Desktop",
+                         "key":  "HKCU\\Software\\ExplorerPatcher\\sws",
+                         "value":  "ShowDelay",
+                         "kind":  "choice",
+                         "default":  100,
+                         "restart":  false,
+                         "condition":  "IsSWSEnabled",
+                         "options":  [
+                                         {
+                                             "value":  0,
+                                             "name":  "None"
+                                         },
+                                         {
+                                             "value":  25,
+                                             "name":  "25 ms"
+                                         },
+                                         {
+                                             "value":  50,
+                                             "name":  "50 ms"
+                                         },
+                                         {
+                                             "value":  75,
+                                             "name":  "75 ms"
+                                         },
+                                         {
+                                             "value":  100,
+                                             "name":  "100 ms (default)"
+                                         },
+                                         {
+                                             "value":  125,
+                                             "name":  "125 ms"
+                                         },
+                                         {
+                                             "value":  150,
+                                             "name":  "150 ms"
+                                         },
+                                         {
+                                             "value":  200,
+                                             "name":  "200 ms"
+                                         },
+                                         {
+                                             "value":  300,
+                                             "name":  "300 ms"
+                                         },
+                                         {
+                                             "value":  400,
+                                             "name":  "400 ms"
+                                         },
+                                         {
+                                             "value":  500,
+                                             "name":  "500 ms"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:ScrollWheelBehavior",
+                         "name":  "Use the scroll wheel to change selection",
+                         "group":  "",
+                         "page":  "Window switcher",
+                         "section":  "Desktop",
+                         "key":  "HKCU\\Software\\ExplorerPatcher\\sws",
+                         "value":  "ScrollWheelBehavior",
+                         "kind":  "choice",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "IsSWSEnabled",
+                         "options":  [
+                                         {
+                                             "value":  0,
+                                             "name":  "Never (default)"
+                                         },
+                                         {
+                                             "value":  1,
+                                             "name":  "When cursor is over the switcher"
+                                         },
+                                         {
+                                             "value":  2,
+                                             "name":  "Always"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:WeatherViewMode",
+                         "name":  "Layout",
+                         "group":  "",
+                         "page":  "Weather",
+                         "section":  "Taskbar",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "WeatherViewMode",
+                         "kind":  "choice",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "IsWeatherEnabled",
+                         "options":  [
+                                         {
+                                             "value":  0,
+                                             "name":  "Icon and description (default)"
+                                         },
+                                         {
+                                             "value":  3,
+                                             "name":  "Icon and temperature"
+                                         },
+                                         {
+                                             "value":  1,
+                                             "name":  "Icon only"
+                                         },
+                                         {
+                                             "value":  4,
+                                             "name":  "Temperature only"
+                                         },
+                                         {
+                                             "value":  5,
+                                             "name":  "Temperature and description"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:WeatherFixedSize",
+                         "name":  "Widget size",
+                         "group":  "",
+                         "page":  "Weather",
+                         "section":  "Taskbar",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "WeatherFixedSize",
+                         "kind":  "choice",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "IsWeatherEnabled",
+                         "options":  [
+                                         {
+                                             "value":  0,
+                                             "name":  "Automatic (fit contents) (default)"
+                                         },
+                                         {
+                                             "value":  2,
+                                             "name":  "Automatic (fit contents) with threshold"
+                                         },
+                                         {
+                                             "value":  1,
+                                             "name":  "Fixed"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:WeatherToLeft",
+                         "name":  "Widget position",
+                         "group":  "",
+                         "page":  "Weather",
+                         "section":  "Taskbar",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "WeatherToLeft",
+                         "kind":  "choice",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "IsWeatherEnabled",
+                         "options":  [
+                                         {
+                                             "value":  0,
+                                             "name":  "Right / bottom (default)"
+                                         },
+                                         {
+                                             "value":  1,
+                                             "name":  "Left / top"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:WeatherContentUpdateMode",
+                         "name":  "Update frequency",
+                         "group":  "",
+                         "page":  "Weather",
+                         "section":  "Taskbar",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "WeatherContentUpdateMode",
+                         "kind":  "choice",
+                         "default":  1200,
+                         "restart":  false,
+                         "condition":  "IsWeatherEnabled",
+                         "options":  [
+                                         {
+                                             "value":  60,
+                                             "name":  "Every minute"
+                                         },
+                                         {
+                                             "value":  300,
+                                             "name":  "Every 5 minutes"
+                                         },
+                                         {
+                                             "value":  900,
+                                             "name":  "Every 15 minutes"
+                                         },
+                                         {
+                                             "value":  1200,
+                                             "name":  "Every 20 minutes (default)"
+                                         },
+                                         {
+                                             "value":  1800,
+                                             "name":  "Every half an hour"
+                                         },
+                                         {
+                                             "value":  3600,
+                                             "name":  "Every hour"
+                                         },
+                                         {
+                                             "value":  7200,
+                                             "name":  "Every couple of hours"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:WeatherTemperatureUnit",
+                         "name":  "Temperature unit",
+                         "group":  "",
+                         "page":  "Weather",
+                         "section":  "Taskbar",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "WeatherTemperatureUnit",
+                         "kind":  "choice",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "IsWeatherEnabled",
+                         "options":  [
+                                         {
+                                             "value":  0,
+                                             "name":  "Celsius (default)"
+                                         },
+                                         {
+                                             "value":  1,
+                                             "name":  "Fahrenheit"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:WeatherTheme",
+                         "name":  "Color scheme",
+                         "group":  "",
+                         "page":  "Weather",
+                         "section":  "Taskbar",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "WeatherTheme",
+                         "kind":  "choice",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "IsWeatherEnabled",
+                         "options":  [
+                                         {
+                                             "value":  0,
+                                             "name":  "Follow system setting (default)"
+                                         },
+                                         {
+                                             "value":  1,
+                                             "name":  "Light"
+                                         },
+                                         {
+                                             "value":  2,
+                                             "name":  "Dark"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:WeatherWindowCornerPreference",
+                         "name":  "Corner preference",
+                         "group":  "",
+                         "page":  "Weather",
+                         "section":  "Taskbar",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "WeatherWindowCornerPreference",
+                         "kind":  "choice",
+                         "default":  2,
+                         "restart":  false,
+                         "condition":  "IsWeatherEnabled",
+                         "options":  [
+                                         {
+                                             "value":  2,
+                                             "name":  "Rounded (default)"
+                                         },
+                                         {
+                                             "value":  3,
+                                             "name":  "Small rounded"
+                                         },
+                                         {
+                                             "value":  1,
+                                             "name":  "Not rounded"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:WeatherIconPack",
+                         "name":  "Icon pack",
+                         "group":  "",
+                         "page":  "Weather",
+                         "section":  "Taskbar",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "WeatherIconPack",
+                         "kind":  "choice",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "IsWeatherEnabled",
+                         "options":  [
+                                         {
+                                             "value":  0,
+                                             "name":  "Microsoft (default)"
+                                         },
+                                         {
+                                             "value":  1,
+                                             "name":  "Google"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:WeatherContentsMode",
+                         "name":  "Display widget contents",
+                         "group":  "",
+                         "page":  "Weather",
+                         "section":  "Taskbar",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "WeatherContentsMode",
+                         "kind":  "choice",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "IsWeatherEnabled",
+                         "options":  [
+                                         {
+                                             "value":  0,
+                                             "name":  "On a single line (default)"
+                                         },
+                                         {
+                                             "value":  1,
+                                             "name":  "On 2 lines, if possible"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:WeatherZoomFactor",
+                         "name":  "Zoom",
+                         "group":  "",
+                         "page":  "Weather",
+                         "section":  "Taskbar",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "WeatherZoomFactor",
+                         "kind":  "choice",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "IsWeatherEnabled",
+                         "options":  [
+                                         {
+                                             "value":  25,
+                                             "name":  "25 %"
+                                         },
+                                         {
+                                             "value":  33,
+                                             "name":  "33 %"
+                                         },
+                                         {
+                                             "value":  50,
+                                             "name":  "50 %"
+                                         },
+                                         {
+                                             "value":  67,
+                                             "name":  "67 %"
+                                         },
+                                         {
+                                             "value":  75,
+                                             "name":  "75 %"
+                                         },
+                                         {
+                                             "value":  80,
+                                             "name":  "80 %"
+                                         },
+                                         {
+                                             "value":  90,
+                                             "name":  "90 %"
+                                         },
+                                         {
+                                             "value":  0,
+                                             "name":  "100 % (default)"
+                                         },
+                                         {
+                                             "value":  110,
+                                             "name":  "110 %"
+                                         },
+                                         {
+                                             "value":  125,
+                                             "name":  "125 %"
+                                         },
+                                         {
+                                             "value":  150,
+                                             "name":  "150 %"
+                                         },
+                                         {
+                                             "value":  175,
+                                             "name":  "175 %"
+                                         },
+                                         {
+                                             "value":  200,
+                                             "name":  "200 %"
+                                         },
+                                         {
+                                             "value":  250,
+                                             "name":  "250 %"
+                                         },
+                                         {
+                                             "value":  300,
+                                             "name":  "300 %"
+                                         },
+                                         {
+                                             "value":  400,
+                                             "name":  "400 %"
+                                         },
+                                         {
+                                             "value":  500,
+                                             "name":  "500 %"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:SpotlightDisableIcon",
+                         "name":  "Hide the \"Learn about this picture\" icon",
+                         "group":  "",
+                         "page":  "Spotlight",
+                         "section":  "Desktop",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "SpotlightDisableIcon",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "IsSpotlightEnabled",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:SpotlightDesktopMenuMask",
+                         "name":  "Desktop context menu items",
+                         "group":  "",
+                         "page":  "Spotlight",
+                         "section":  "Desktop",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "SpotlightDesktopMenuMask",
+                         "kind":  "choice",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "IsSpotlightEnabled",
+                         "options":  [
+                                         {
+                                             "value":  0,
+                                             "name":  "No items"
+                                         },
+                                         {
+                                             "value":  32,
+                                             "name":  "Switch to the next picture"
+                                         },
+                                         {
+                                             "value":  48,
+                                             "name":  "Learn about and switch to next picture"
+                                         },
+                                         {
+                                             "value":  288,
+                                             "name":  "Info and switch to next picture"
+                                         },
+                                         {
+                                             "value":  800,
+                                             "name":  "Info, copyright, and switch to next picture"
+                                         },
+                                         {
+                                             "value":  304,
+                                             "name":  "Info, learn about, and switch to next picture"
+                                         },
+                                         {
+                                             "value":  816,
+                                             "name":  "Info, copyright, learn about, and switch to next picture"
+                                         },
+                                         {
+                                             "value":  1008,
+                                             "name":  "All items"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:SpotlightUpdateSchedule",
+                         "name":  "Update frequency",
+                         "group":  "",
+                         "page":  "Spotlight",
+                         "section":  "Desktop",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "SpotlightUpdateSchedule",
+                         "kind":  "choice",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "IsSpotlightEnabled",
+                         "options":  [
+                                         {
+                                             "value":  0,
+                                             "name":  "Let Windows decide the best schedule (default)"
+                                         },
+                                         {
+                                             "value":  60,
+                                             "name":  "Every minute"
+                                         },
+                                         {
+                                             "value":  300,
+                                             "name":  "Every 5 minutes"
+                                         },
+                                         {
+                                             "value":  900,
+                                             "name":  "Every 15 minutes"
+                                         },
+                                         {
+                                             "value":  1200,
+                                             "name":  "Every 20 minutes"
+                                         },
+                                         {
+                                             "value":  1800,
+                                             "name":  "Every half an hour"
+                                         },
+                                         {
+                                             "value":  3600,
+                                             "name":  "Every hour"
+                                         },
+                                         {
+                                             "value":  7200,
+                                             "name":  "Every couple of hours"
+                                         },
+                                         {
+                                             "value":  21600,
+                                             "name":  "Every 6 hours"
+                                         },
+                                         {
+                                             "value":  43200,
+                                             "name":  "Every 12 hours"
+                                         },
+                                         {
+                                             "value":  86400,
+                                             "name":  "Once a day"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:LastSectionInProperties",
+                         "name":  "Remember last used section in this window",
+                         "group":  "",
+                         "page":  "Other",
+                         "section":  "General",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "LastSectionInProperties",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:ClockFlyoutOnWinC",
+                         "name":  "Open clock flyout when pressing Win+C instead of Microsoft Teams",
+                         "group":  "",
+                         "page":  "Other",
+                         "section":  "General",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "ClockFlyoutOnWinC",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  true,
+                         "condition":  "",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:ToolbarSeparators",
+                         "name":  "Show separators between taskbar toolbars",
+                         "group":  "",
+                         "page":  "Other",
+                         "section":  "General",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "ToolbarSeparators",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  true,
+                         "condition":  "",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:PropertiesInWinX",
+                         "name":  "Add shortcut to program settings in Win+X menu",
+                         "group":  "",
+                         "page":  "Other",
+                         "section":  "General",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "PropertiesInWinX",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:NoMenuAccelerator",
+                         "name":  "Remove shortcut key from program settings item in Win+X menu",
+                         "group":  "",
+                         "page":  "Other",
+                         "section":  "General",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "NoMenuAccelerator",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:DisableOfficeHotkeys",
+                         "name":  "Disable Office hotkeys (Ctrl+Alt+Shift+Windows key combinations)",
+                         "group":  "",
+                         "page":  "Other",
+                         "section":  "General",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "DisableOfficeHotkeys",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  true,
+                         "condition":  "",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:DisableWinFHotkey",
+                         "name":  "Disable Win+F (Feedback Hub) hotkey",
+                         "group":  "",
+                         "page":  "Other",
+                         "section":  "General",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "DisableWinFHotkey",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  true,
+                         "condition":  "",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:DisableAeroSnapQuadrants",
+                         "name":  "Disable quadrants when snapping windows",
+                         "group":  "",
+                         "page":  "Other",
+                         "section":  "General",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "DisableAeroSnapQuadrants",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  true,
+                         "condition":  "",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:SnapAssistSettings",
+                         "name":  "Snap Assist style",
+                         "group":  "",
+                         "page":  "Other",
+                         "section":  "General",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "SnapAssistSettings",
+                         "kind":  "choice",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "!IsWindows11Version22H2OrHigher",
+                         "options":  [
+                                         {
+                                             "value":  0,
+                                             "name":  "Windows 11 (default)"
+                                         },
+                                         {
+                                             "value":  3,
+                                             "name":  "Windows 10"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:Start_PowerButtonAction",
+                         "name":  "Default action in the Alt+F4 dialog on the desktop",
+                         "group":  "",
+                         "page":  "Other",
+                         "section":  "General",
+                         "key":  "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced",
+                         "value":  "Start_PowerButtonAction",
+                         "kind":  "choice",
+                         "default":  2,
+                         "restart":  false,
+                         "condition":  "",
+                         "options":  [
+                                         {
+                                             "value":  256,
+                                             "name":  "Switch user"
+                                         },
+                                         {
+                                             "value":  1,
+                                             "name":  "Sign out"
+                                         },
+                                         {
+                                             "value":  16,
+                                             "name":  "Sleep"
+                                         },
+                                         {
+                                             "value":  64,
+                                             "name":  "Hibernate"
+                                         },
+                                         {
+                                             "value":  2,
+                                             "name":  "Shut down (default)"
+                                         },
+                                         {
+                                             "value":  4,
+                                             "name":  "Restart"
+                                         }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:LogonLogoffShutdownSounds",
+                         "name":  "Enable logon, logoff, and shutdown sounds",
+                         "group":  "",
+                         "page":  "Other",
+                         "section":  "General",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "LogonLogoffShutdownSounds",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  true,
+                         "condition":  "LogonLogoffShutdownSoundsAvailable",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:DoNotRedirectSystemToSettingsApp",
+                         "name":  "System / About page",
+                         "group":  "Prevent the following Control Panel links from being redirected to the Settings app:",
+                         "page":  "Other",
+                         "section":  "General",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "DoNotRedirectSystemToSettingsApp",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:DoNotRedirectProgramsAndFeaturesToSettingsApp",
+                         "name":  "Programs and Features",
+                         "group":  "Prevent the following Control Panel links from being redirected to the Settings app:",
+                         "page":  "Other",
+                         "section":  "General",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "DoNotRedirectProgramsAndFeaturesToSettingsApp",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:DoNotRedirectDateAndTimeToSettingsApp",
+                         "name":  "Adjust date/time",
+                         "group":  "Prevent the following Control Panel links from being redirected to the Settings app:",
+                         "page":  "Other",
+                         "section":  "General",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "DoNotRedirectDateAndTimeToSettingsApp",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:DoNotRedirectNotificationIconsToSettingsApp",
+                         "name":  "Customize notification icons",
+                         "group":  "Prevent the following Control Panel links from being redirected to the Settings app:",
+                         "page":  "Other",
+                         "section":  "General",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "DoNotRedirectNotificationIconsToSettingsApp",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:AllocConsole",
+                         "name":  "Enable console",
+                         "group":  "",
+                         "page":  "Advanced",
+                         "section":  "General",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "AllocConsole",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:Memcheck",
+                         "name":  "Dump memory leaks",
+                         "group":  "",
+                         "page":  "Advanced",
+                         "section":  "General",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "Memcheck",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:TaskbarAutohideOnDoubleClick",
+                         "name":  "Double-click the taskbar to toggle auto-hide (only works when locked)",
+                         "group":  "",
+                         "page":  "Advanced",
+                         "section":  "General",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "TaskbarAutohideOnDoubleClick",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:PaintDesktopVersion",
+                         "name":  "Show Windows build info on the desktop",
+                         "group":  "",
+                         "page":  "Advanced",
+                         "section":  "General",
+                         "key":  "HKCU\\Control Panel\\Desktop",
+                         "value":  "PaintDesktopVersion",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  true,
+                         "condition":  "",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:ClassicThemeMitigations",
+                         "name":  "Enable advanced mitigations for correct rendering using classic theme",
+                         "group":  "",
+                         "page":  "Advanced",
+                         "section":  "General",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "ClassicThemeMitigations",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  true,
+                         "condition":  "",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:NoPropertiesInContextMenu",
+                         "name":  "Do not change the taskbar context menu (e.g. do not display the \"Properties\" item)",
+                         "group":  "",
+                         "page":  "Advanced",
+                         "section":  "General",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "NoPropertiesInContextMenu",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  false,
+                         "condition":  "",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:EnableSymbolDownload",
+                         "name":  "Enable symbols download",
+                         "group":  "",
+                         "page":  "Advanced",
+                         "section":  "General",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "EnableSymbolDownload",
+                         "kind":  "toggle",
+                         "default":  1,
+                         "restart":  true,
+                         "condition":  "",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:PinnedItemsActAsQuickLaunch",
+                         "name":  "Pinned items act as quick launch (don\u0027t group with active apps)",
+                         "group":  "",
+                         "page":  "Advanced",
+                         "section":  "General",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "PinnedItemsActAsQuickLaunch",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  true,
+                         "condition":  "IsOldTaskbar",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:RemoveExtraGapAroundPinnedItems",
+                         "name":  "When the taskbar shows button labels, remove the extra gap around pinned items",
+                         "group":  "",
+                         "page":  "Advanced",
+                         "section":  "General",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "RemoveExtraGapAroundPinnedItems",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  true,
+                         "condition":  "IsOldTaskbar",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:XamlSounds",
+                         "name":  "Enable UI sounds in Explorer\u0027s XAML views",
+                         "group":  "",
+                         "page":  "Advanced",
+                         "section":  "General",
+                         "key":  "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\ExplorerPatcher",
+                         "value":  "XamlSounds",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  true,
+                         "condition":  "",
+                         "options":  [
+
+                                     ]
+                     }
+                 ]
+}

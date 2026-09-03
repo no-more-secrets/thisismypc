@@ -165,6 +165,28 @@ prep here.
   as fallback; the log records which route ran and how long it took. Owed:
   Sam's timing of the new restart on the live PC (first restart after a
   build tells whether Restart Manager or the fallback ran).
+- **ExplorerPatcher settings imported wholesale (2026-09-03)**: its taskbar
+  and Start menu are its own code, not Windows keys, so the app renders its
+  settings instead of reimplementing them. Nothing calls into it: it watches
+  its keys with RegNotifyChangeKeyValue (SettingsMonitor.c), so writing the
+  value is the whole interface. `tools/import-explorerpatcher-settings.ps1`
+  reads its annotated manifest (ep_gui/resources/settings.reg), its resource
+  ids, and its English string table at a pinned commit, and writes
+  `Modules.Shell/Data/explorerpatcher-settings.json`: 84 settings (40
+  toggles, 2 inverted, 42 choices), each with key, value, default, options,
+  the section condition, and the tab it belongs on. Values the app already
+  renders are excluded so no two rows write one value. `ExplorerPatcherSettingsReader`
+  reads live values and evaluates the section conditions the way its GUI.c
+  does (taskbar style, 22H2 build, AltTabSettings, PeopleBand, the Windows 10
+  Start menu host DLL); unknown conditions show the row. Absent values record
+  as absent, so undo deletes rather than writing a default. Rows appear only
+  while ExplorerPatcher is installed. `ShellSetEntryInspector` resolves and
+  replays them, so a saved set carries them like any other setting, which is
+  the point: the goal is exporting a whole Windows configuration and putting
+  it back. Regenerate after an ExplorerPatcher release by bumping the pinned
+  commit. Owed: Sam's elevated pass applying
+  one of these rows. Deferred: its four string settings (weather location and
+  the update URLs) need a text row type.
 - **Group Policy pin on the active power plan (resolved 2026-09-02)**:
   winutil leaves the ActivePowerScheme policy value (HKLM Policies, Microsoft,
   Power, PowerSettings) naming its plan, and the power service then answers
