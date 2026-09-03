@@ -200,12 +200,20 @@ prep here.
   its DLL for this build exists under Program Files\ExplorerPatcher, and the
   Windows 8 network flyout only below build 25346. Found on Sam's PC
   (2026-09-03, Windows 26200.9168, ExplorerPatcher 26100.8457.70.3): choosing
-  ExplorerPatcher's taskbar left Explorer without a taskbar after the restart.
-  Its stored explorer symbol record for this build has zeros for the entries
-  that taskbar needs, so the pinned release predates the build; not a fault of
-  the app's restart, but the app reported success while the taskbar was gone.
-  `ExplorerRestartService` now fails with guidance when Shell_TrayWnd does not
-  return within its timeout, on both routes.
+  ExplorerPatcher's taskbar from the app left Explorer without a taskbar
+  after the restart, while the same choice from ExplorerPatcher's own window
+  works. The difference is the caller: the app runs elevated, and a shell
+  restarted by an elevated process (RmRestart or Process.Start alike) comes
+  back elevated, where ExplorerPatcher's taskbar never appears; its window
+  runs as the plain user. `ShellLauncher` now starts explorer.exe with the
+  elevated token's linked (unelevated) token via CreateProcessWithTokenW on
+  both restart routes, which is also the correct shell for everything else
+  (an elevated shell would elevate every app opened from Start). RmShutdown
+  stays; RmRestart is no longer used. `ExplorerRestartService` also fails
+  with guidance when Shell_TrayWnd does not return within its timeout,
+  instead of reporting success with the taskbar gone. Owed: Sam's live pass
+  choosing Windows 10 (ExplorerPatcher) from the app and seeing the taskbar
+  return.
   Values the app already
   renders are excluded so no two rows write one value. `ExplorerPatcherSettingsReader`
   reads live values and evaluates the section conditions the way its GUI.c

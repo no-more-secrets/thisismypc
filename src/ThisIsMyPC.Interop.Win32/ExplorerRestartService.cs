@@ -7,11 +7,15 @@ using Windows.Win32.UI.Shell;
 namespace ThisIsMyPC.Interop.Win32;
 
 /// <summary>
-/// Restarts the shell. First choice is the Restart Manager: it force-closes
-/// the shell process and relaunches it as the same user in one session,
-/// which ExplorerPatcher uses and which takes well under a second. The old
-/// route (WM_QUIT to the tray, wait, kill, start explorer.exe by hand) stays
-/// as the fallback when the manager refuses.
+/// Restarts the shell. First choice is the Restart Manager's forced
+/// shutdown of the shell process, which ExplorerPatcher uses too and takes
+/// well under a second. The old route (WM_QUIT to the tray, wait, kill)
+/// stays as the fallback when the manager refuses. Either way the new
+/// explorer.exe is started by <see cref="ShellLauncher"/> as the desktop
+/// user, never with this process's elevated token: RmRestart from an
+/// elevated caller, like a plain Process.Start, brings the shell back
+/// elevated, and ExplorerPatcher's own taskbar never appears in an elevated
+/// Explorer (Sam's PC, 2026-09-03).
 /// </summary>
 public sealed class ExplorerRestartService : IExplorerRestartService
 {
@@ -44,14 +48,17 @@ public sealed class ExplorerRestartService : IExplorerRestartService
             }
 
             var clock = Stopwatch.StartNew();
-            var managed = await Task.Run(() => RestartWithRestartManager(shellProcess)).ConfigureAwait(false);
+            var managed = await Task.Run(() => ShutDownWithRestartManager(shellProcess)).ConfigureAwait(false);
             if (managed.IsSuccess)
             {
+                var started = ShellLauncher.StartExplorerAsDesktopUser();
+                if (!started.IsSuccess)
+                    return started;
                 var back = await WaitForShellRecoveryAsync(ShellRecoveryTimeout).ConfigureAwait(false);
                 Log.Info("Explorer restarted through the Restart Manager in {Ms} ms (taskbar back: {Back})", clock.ElapsedMilliseconds, back);
                 return back ? OperationResult<bool>.Success(true) : ShellDidNotComeBack();
             }
-            Log.Warn("Restart Manager could not restart Explorer ({Error}); falling back to the tray quit", managed.ErrorMessage);
+            Log.Warn("Restart Manager could not shut Explorer down ({Error}); falling back to the tray quit", managed.ErrorMessage);
 
             // 3. Send WM_QUIT for graceful shutdown
             PInvoke.PostMessage(trayHandle, WM_QUIT, 0, 0);
@@ -73,15 +80,10 @@ public sealed class ExplorerRestartService : IExplorerRestartService
                 }
             }
 
-            // 6. Start new explorer.exe (use full path to prevent PATH hijacking)
-            var explorerPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.Windows),
-                "explorer.exe");
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = explorerPath,
-                UseShellExecute = false,
-            });
+            // 6. Start the new explorer.exe as the desktop user
+            var launched = ShellLauncher.StartExplorerAsDesktopUser();
+            if (!launched.IsSuccess)
+                return launched;
 
             // 7. Poll for Shell_TrayWnd to reappear (shell is ready when taskbar is back)
             var recovered = await WaitForShellRecoveryAsync(ShellRecoveryTimeout).ConfigureAwait(false);
@@ -123,10 +125,12 @@ public sealed class ExplorerRestartService : IExplorerRestartService
 
     /// <summary>
     /// One Restart Manager session around the shell process: register it,
-    /// confirm no reboot is needed, force shutdown, restart. Any refusal is
-    /// returned as a failure so the caller can fall back.
+    /// confirm no reboot is needed, force shutdown. Any refusal is returned
+    /// as a failure so the caller can fall back. The session's RmRestart is
+    /// not used: it would start the shell with this process's elevated
+    /// token, so the caller starts it as the desktop user instead.
     /// </summary>
-    private static unsafe OperationResult<bool> RestartWithRestartManager(Process shellProcess)
+    private static unsafe OperationResult<bool> ShutDownWithRestartManager(Process shellProcess)
     {
         var key = stackalloc char[NativeRestartManager.CCH_RM_SESSION_KEY + 1];
         var rc = NativeRestartManager.RmStartSession(out var session, 0, key);
@@ -157,10 +161,6 @@ public sealed class ExplorerRestartService : IExplorerRestartService
             rc = NativeRestartManager.RmShutdown(session, NativeRestartManager.RmForceShutdown, 0);
             if (rc != NativeRestartManager.ERROR_SUCCESS)
                 return OperationResult<bool>.Failure($"RmShutdown returned {rc}", ErrorCategory.ServiceUnavailable);
-
-            rc = NativeRestartManager.RmRestart(session, 0, 0);
-            if (rc != NativeRestartManager.ERROR_SUCCESS)
-                return OperationResult<bool>.Failure($"RmRestart returned {rc}", ErrorCategory.ServiceUnavailable);
 
             return OperationResult<bool>.Success(true);
         }
