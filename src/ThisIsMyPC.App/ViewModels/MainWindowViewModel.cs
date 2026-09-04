@@ -738,6 +738,14 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private bool _hasSearchResults;
 
+    /// <summary>
+    /// The results dropdown under the title bar search. Opens whenever a query
+    /// has results; the window closes it on a click outside or Escape without
+    /// touching the query, so the next keystroke reopens it.
+    /// </summary>
+    [ObservableProperty]
+    private bool _isSearchOpen;
+
     public ObservableCollection<SearchResultViewModel> SearchResults { get; } = [];
 
     partial void OnSearchQueryChanged(string value)
@@ -757,6 +765,7 @@ public partial class MainWindowViewModel : ViewModelBase
         foreach (var result in _searchService.Search(value))
             SearchResults.Add(new SearchResultViewModel(result));
         HasSearchResults = SearchResults.Count > 0;
+        IsSearchOpen = HasSearchResults;
     }
 
     // Set when navigation came from a search result; the arriving content VM

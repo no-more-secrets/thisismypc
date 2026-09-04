@@ -23,7 +23,33 @@
          maximize, caption buttons). OffScreenMargin keeps content on screen
          when Windows parks the maximized frame edges off the monitor. -->
     <Grid RowDefinitions="Auto,*" Margin="{Binding $parent[Window].OffScreenMargin}">
-    <controls:TitleBarControl Grid.Row="0" />
+    <controls:TitleBarControl Grid.Row="0">
+        <controls:TitleBarControl.LeadingContent>
+            <Button Classes="bar-icon"
+                    Command="{Binding ToggleSidebarCommand}"
+                    ToolTip.Tip="Toggle sidebar">
+                <PathIcon Data="M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z"
+                          Width="16" Height="16"
+                          Foreground="{DynamicResource TextSecondaryBrush}" />
+            </Button>
+        </controls:TitleBarControl.LeadingContent>
+        <controls:TitleBarControl.CenterContent>
+            <!-- 5-3: cross-module search. Results drop down in the overlay
+                 below (SearchResultsPanel), aligned on the same centre line. -->
+            <TextBox x:Name="SearchBox"
+                     Classes="bar-search"
+                     Text="{Binding SearchQuery, Mode=TwoWay}"
+                     Watermark="Search settings..."
+                     Width="440">
+                <TextBox.InnerLeftContent>
+                    <PathIcon Data="M15.5,14H14.71L14.43,13.73C15.41,12.59 16,11.11 16,9.5A6.5,6.5 0 0,0 9.5,3A6.5,6.5 0 0,0 3,9.5A6.5,6.5 0 0,0 9.5,16C11.11,16 12.59,15.41 13.73,14.43L14,14.71V15.5L19,20.49L20.49,19L15.5,14M9.5,14C7.01,14 5,11.99 5,9.5C5,7.01 7.01,5 9.5,5C11.99,5 14,7.01 14,9.5C14,11.99 11.99,14 9.5,14Z"
+                              Width="16" Height="16"
+                              Margin="12,0,0,0"
+                              Foreground="{DynamicResource TextSecondaryBrush}" />
+                </TextBox.InnerLeftContent>
+            </TextBox>
+        </controls:TitleBarControl.CenterContent>
+    </controls:TitleBarControl>
 
     <Panel Grid.Row="1">
     <Grid ColumnDefinitions="Auto,*">
@@ -36,16 +62,6 @@
                 Width="{Binding IsSidebarCollapsed, Converter={x:Static vm:SidebarWidthConverter.Instance}}">
 
             <DockPanel>
-                <!-- Sidebar toggle -->
-                <Button DockPanel.Dock="Top"
-                        Classes="sidebar-toggle"
-                        Command="{Binding ToggleSidebarCommand}"
-                        ToolTip.Tip="Toggle sidebar">
-                    <PathIcon Data="M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z"
-                              Width="16" Height="16"
-                              Foreground="{DynamicResource TextSecondaryBrush}" />
-                </Button>
-
                 <!-- Home (not a module; ungrouped, pinned above the module groups) -->
                 <Button DockPanel.Dock="Top"
                         Classes="sidebar-item"
@@ -115,39 +131,6 @@
                                        IsVisible="{Binding !IsSidebarCollapsed}" />
                         </StackPanel>
                     </Button>
-                </StackPanel>
-
-                <!-- 5-3: cross-module search -->
-                <StackPanel DockPanel.Dock="Top" Margin="8,8,8,0"
-                            IsVisible="{Binding !IsSidebarCollapsed}">
-                    <TextBox Text="{Binding SearchQuery, Mode=TwoWay}"
-                             Watermark="Search settings..."
-                             FontSize="13" />
-                    <Border Background="{DynamicResource OverlayBrush}"
-                            CornerRadius="6" Padding="6" Margin="0,4,0,0"
-                            IsVisible="{Binding HasSearchResults}">
-                        <ItemsControl ItemsSource="{Binding SearchResults}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="vm:SearchResultViewModel">
-                                    <Button Classes="sidebar-item"
-                                            Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).SelectSearchResultCommand}"
-                                            CommandParameter="{Binding}"
-                                            IsEnabled="{Binding IsAvailable}"
-                                            HorizontalAlignment="Stretch"
-                                            ToolTip.Tip="{Binding Description}">
-                                        <StackPanel>
-                                            <TextBlock Text="{Binding Name}" FontSize="13"
-                                                       TextWrapping="Wrap"
-                                                       Foreground="{DynamicResource TextPrimaryBrush}" />
-                                            <TextBlock Text="{Binding ModuleLine}" FontSize="11"
-                                                       TextWrapping="Wrap"
-                                                       Foreground="{DynamicResource TextTertiaryBrush}" />
-                                        </StackPanel>
-                                    </Button>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </Border>
                 </StackPanel>
 
                 <!-- Module groups -->
@@ -477,5 +460,48 @@
                                VerticalAlignment="Top"
                                Margin="0,16,24,0" />
     </Panel>
+
+    <!-- Search results: an in-window overlay (not a Popup) hanging from the
+         bar's search box, same width and centre line. Opens on results,
+         closes on a click outside, Escape, or a selection. -->
+    <Border x:Name="SearchResultsPanel"
+            Grid.Row="0" Grid.RowSpan="2"
+            ZIndex="10"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Top"
+            Margin="0,62,0,0"
+            Width="440"
+            MaxHeight="420"
+            Background="{DynamicResource RaisedBrush}"
+            BorderBrush="{DynamicResource OutlineBrush}"
+            BorderThickness="1"
+            CornerRadius="8"
+            Padding="6"
+            IsVisible="{Binding IsSearchOpen}">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding SearchResults}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:SearchResultViewModel">
+                        <Button Classes="sidebar-item"
+                                Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).SelectSearchResultCommand}"
+                                CommandParameter="{Binding}"
+                                IsEnabled="{Binding IsAvailable}"
+                                HorizontalAlignment="Stretch"
+                                ToolTip.Tip="{Binding Description}">
+                            <StackPanel>
+                                <TextBlock Text="{Binding Name}" FontSize="13"
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                                <TextBlock Text="{Binding ModuleLine}" FontSize="11"
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextTertiaryBrush}" />
+                            </StackPanel>
+                        </Button>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </Border>
     </Grid>
 </Window>

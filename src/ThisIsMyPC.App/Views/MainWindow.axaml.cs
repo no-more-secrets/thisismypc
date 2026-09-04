@@ -20,6 +20,7 @@ public partial class MainWindow : Window
         PropertyChanged += OnWindowPropertyChanged;
         Loaded += OnLoaded;
         AddHandler(PointerPressedEvent, OnGlobalPointerPressed, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+        AddHandler(KeyDownEvent, OnSearchKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         HookDisplayChanges();
 #if DEBUG
         KeyDown += OnDebugKeyDown;
@@ -37,17 +38,29 @@ public partial class MainWindow : Window
             return;
 
         var hitFocusable = false;
+        var hitSearch = false;
         for (Visual? v = source; v is not null; v = Avalonia.VisualTree.VisualExtensions.GetVisualParent(v))
         {
             if (v is IInputElement { Focusable: true })
-            {
                 hitFocusable = true;
-                break;
-            }
+            if (v == SearchBox || v == SearchResultsPanel)
+                hitSearch = true;
         }
 
         if (!hitFocusable)
             FocusManager?.ClearFocus();
+
+        // A click anywhere but the search box or its dropdown closes the dropdown.
+        if (!hitSearch && DataContext is MainWindowViewModel vm)
+            vm.IsSearchOpen = false;
+    }
+
+    private void OnSearchKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Escape || DataContext is not MainWindowViewModel { IsSearchOpen: true } vm)
+            return;
+        vm.IsSearchOpen = false;
+        e.Handled = true;
     }
 
     // --- Resume/display-change watch: monitors forget DDC state across sleep ---

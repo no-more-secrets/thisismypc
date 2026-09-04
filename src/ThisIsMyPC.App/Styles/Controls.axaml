@@ -160,22 +160,40 @@
     </Style>
 
     <!-- Sidebar toggle button -->
-    <Style Selector="Button.sidebar-toggle">
+    <!-- Title bar: round icon button (sidebar toggle) -->
+    <Style Selector="Button.bar-icon">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="Padding" Value="12,8" />
-        <Setter Property="HorizontalAlignment" Value="Stretch" />
-        <Setter Property="HorizontalContentAlignment" Value="Left" />
-        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Width" Value="36" />
+        <Setter Property="Height" Value="36" />
+        <Setter Property="CornerRadius" Value="18" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="Cursor" Value="Hand" />
     </Style>
 
-    <Style Selector="Button.sidebar-toggle:pointerover /template/ ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource SidebarItemHoverBrush}" />
+    <Style Selector="Button.bar-icon /template/ ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="CornerRadius" Value="18" />
     </Style>
 
-    <Style Selector="Button.sidebar-toggle:pressed /template/ ContentPresenter">
+    <Style Selector="Button.bar-icon:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
+    </Style>
+
+    <Style Selector="Button.bar-icon:pressed /template/ ContentPresenter">
         <Setter Property="Background" Value="{DynamicResource ControlPressedBrush}" />
+    </Style>
+
+    <!-- Title bar: the settings search, a 36px pill on the bar's centre line -->
+    <Style Selector="TextBox.bar-search">
+        <Setter Property="Height" Value="36" />
+        <Setter Property="MinHeight" Value="36" />
+        <Setter Property="CornerRadius" Value="18" />
+        <Setter Property="Padding" Value="8,0,12,0" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="FontSize" Value="13" />
     </Style>
 
     <!-- Apply bar: Pending count button (transparent, clickable) -->

@@ -13,6 +13,26 @@ namespace ThisIsMyPC.App.Controls;
 /// </summary>
 public partial class TitleBarControl : UserControl
 {
+    /// <summary>Sits left of the app icon; the host puts the sidebar toggle here.</summary>
+    public static readonly StyledProperty<object?> LeadingContentProperty =
+        AvaloniaProperty.Register<TitleBarControl, object?>(nameof(LeadingContent));
+
+    /// <summary>Centred on the whole bar; the host puts the settings search here.</summary>
+    public static readonly StyledProperty<object?> CenterContentProperty =
+        AvaloniaProperty.Register<TitleBarControl, object?>(nameof(CenterContent));
+
+    public object? LeadingContent
+    {
+        get => GetValue(LeadingContentProperty);
+        set => SetValue(LeadingContentProperty, value);
+    }
+
+    public object? CenterContent
+    {
+        get => GetValue(CenterContentProperty);
+        set => SetValue(CenterContentProperty, value);
+    }
+
     private Window? _window;
 
     public TitleBarControl()

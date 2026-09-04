@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="ThisIsMyPC.App.Controls.TitleBarControl"
+             x:Name="Root"
              Height="80">
 
     <!-- Custom window frame. The Window extends its client area over the
@@ -9,7 +10,9 @@
          80px tall (about 2.5 stock title bars), app icon and name at the left,
          caption buttons pinned to the top-right at the stock 46x32 size so the
          hand still lands where Windows trained it. Everything else is a drag
-         region; a double-click toggles maximize. -->
+         region; a double-click toggles maximize. The host fills two slots:
+         LeadingContent sits left of the icon (the sidebar toggle),
+         CenterContent is centred on the whole bar (the settings search). -->
     <UserControl.Styles>
         <Style Selector="Button.caption">
             <Setter Property="Background" Value="Transparent" />
@@ -50,29 +53,40 @@
         </Style>
     </UserControl.Styles>
 
-    <Grid ColumnDefinitions="*,Auto"
+    <Grid ColumnDefinitions="*,Auto,*"
           Background="Transparent"
           PointerPressed="OnDragRegionPressed">
 
-        <!-- Identity: icon and product name, vertically centred in the bar -->
-        <StackPanel Orientation="Horizontal"
+        <!-- Identity: host slot, then icon and product name, vertically centred -->
+        <StackPanel Grid.Column="0"
+                    Orientation="Horizontal"
                     Spacing="12"
-                    Margin="20,0"
-                    VerticalAlignment="Center"
-                    IsHitTestVisible="False">
+                    Margin="8,0,0,0"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Center">
+            <ContentPresenter Content="{Binding #Root.LeadingContent}"
+                              IsVisible="{Binding #Root.LeadingContent, Converter={x:Static ObjectConverters.IsNotNull}}"
+                              VerticalAlignment="Center" />
             <Image Source="avares://ThisIsMyPC.App/Assets/ThisIsMyPC.ico"
                    Width="28" Height="28"
-                   VerticalAlignment="Center" />
+                   VerticalAlignment="Center"
+                   IsHitTestVisible="False" />
             <TextBlock Text="ThisIsMyPC"
                        FontFamily="{StaticResource DisplayFont}"
                        FontSize="18"
                        FontWeight="SemiBold"
                        VerticalAlignment="Center"
+                       IsHitTestVisible="False"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
         </StackPanel>
 
+        <!-- Centre slot: the equal star columns either side keep it on the window's centre line -->
+        <ContentPresenter Grid.Column="1"
+                          Content="{Binding #Root.CenterContent}"
+                          VerticalAlignment="Center" />
+
         <!-- Caption buttons, top-right -->
-        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+        <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
             <Button Classes="caption" Click="OnMinimizeClick" ToolTip.Tip="Minimize"
                     AutomationProperties.Name="Minimize">
                 <PathIcon Data="M0,5H10V6H0Z" />

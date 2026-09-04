@@ -379,7 +379,10 @@ upgrade edition?" flow). Belongs with the install-engine chapter, not refinement
 - **Custom window frame (2026-09-04)**: MainWindow extends its client area over
   the system title bar (NoChrome) and hosts TitleBarControl: an 80px bar
   (about 2.5 stock title bars, Spotify-like) with the app icon and name at the
-  left and stock-size caption buttons top-right. Drag, double-click maximize,
+  left (the sidebar toggle moved up beside them), the settings search as a
+  440px pill on the bar's centre line with its results in an in-window
+  overlay under it (no Popup, so the sight harness can click results), and
+  stock-size caption buttons top-right. Drag, double-click maximize,
   restore glyph swap, and Close through Window.Close (hide-to-tray keeps its
   hook); OffScreenMargin keeps maximized content on screen. CI-safe shots in
   the title-bar suite. Deferred: Windows 11 snap layouts on maximize hover
