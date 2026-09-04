@@ -129,16 +129,19 @@ in place, and never use `-AllowUnsignedRelease` for a public-release check.
    `tools/reproducible-build-environment.json`. Do not edit the manifest to
    match the machine. The validator intentionally stops on any difference. Use
    a disposable Windows VM matching the manifest when the host cannot match.
-3. Run the one-command verifier. It detects CoreCLR versus NativeAOT, clones
-   the exact tag into a disposable directory, builds it, and compares it:
+3. Run the one-command verifier. Official releases are NativeAOT only. The
+   verifier recognizes the package shape, clones the exact tag into a
+   disposable directory, builds it, and compares it:
 
 ```
 $releasedInstaller = 'C:\path\to\ThisIsMyPC-Installer-1.0.0.exe'
 .\tools\verify-release.ps1 -ReleasedInstaller $releasedInstaller
 ```
 
-Success ends with `Reproducible release verified` and one SHA-256 value. The
-comparison requires valid Authenticode on the outer installer, embedded MSI,
+Success is exit code 0 together with `Reproducible release verified` and one
+SHA-256 value. Any failed trust, environment, structure, or content check exits
+nonzero. The comparison requires valid Authenticode on the outer installer,
+embedded MSI,
 app, service, and Velopack helpers. It compares MSI metadata and every installed
 file after removing only structurally valid certificate tables from temporary
 copies. The download is unchanged. A mismatch is not expected signing noise.
@@ -158,6 +161,7 @@ $env:ESIGNER_USERNAME = 'SSL.com account username'
 $env:ESIGNER_CREDENTIAL_ID = 'code-signing credential ID, not eSeal ID'
 $env:ESIGNER_CODESIGNTOOL_ARCHIVE = 'C:\path\to\CodeSignTool-v1.3.3-windows.zip'
 .\tools\build-release.ps1 -Version 1.0.0 `
+  -Aot `
   -SignThumbprint '40-character certificate thumbprint'
 ```
 

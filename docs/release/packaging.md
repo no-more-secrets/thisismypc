@@ -81,12 +81,13 @@ The app corresponds to the PC, not a user profile (CLAUDE.md). Packaging follows
 
 ```
 dotnet tool restore               # restores the repository-pinned vpk version
-.\tools\build-release.ps1 -Version 1.0.0
+.\tools\build-release.ps1 -Version 1.0.0 -Aot
 ```
 
-The script publishes the App and the Session 0 Service (self-contained,
-win-x64) into one staging directory (the service exe must sit next to the app
-exe for Owner Mode enable), packs the MSI, and writes `SHA256SUMS`. Then follow
+Official releases are NativeAOT only. The script publishes the App and the
+Session 0 Service (self-contained, win-x64) into one staging directory (the
+service exe must sit next to the app exe for Owner Mode enable), packs the MSI,
+and writes `SHA256SUMS`. Then follow
 `update-signing.md` for signing and upload.
 
 ### Signing with SSL.com eSigner
@@ -107,6 +108,7 @@ $env:ESIGNER_USERNAME = 'your SSL.com account username'
 $env:ESIGNER_CREDENTIAL_ID = 'the code-signing credential ID'
 $env:ESIGNER_CODESIGNTOOL_ARCHIVE = 'C:\path\to\CodeSignTool-v1.3.3-windows.zip'
 .\tools\build-release.ps1 -Version 1.0.0 `
+  -Aot `
   -SignThumbprint 'the 40-character certificate thumbprint'
 ```
 
@@ -145,13 +147,12 @@ signs that bundle. Every object is checked for signer, chain, timestamp, and
 thumbprint. `SHA256SUMS` is written only after the complete signed install tree
 matches the preserved unsigned build.
 
-NativeAOT uses six SSL.com signing credits per release: app, service, Velopack
-app stub, Update.exe, MSI, and outer installer. CoreCLR currently uses about
-twenty because its first-party assemblies remain separate PE files. Velopack
-batches up to 100 paths into one callback, which reduces authentication and
-network round trips but does not reduce SSL.com's per-object credit count. A
-catalog signature could cover many files with one credit, but those files would
-not carry embedded signatures and catalog registration adds failure-prone
+Each official NativeAOT release uses six SSL.com signing credits: app, service,
+Velopack app stub, Update.exe, MSI, and outer installer. Velopack batches up to
+100 paths into one callback, which reduces authentication and network round
+trips but does not reduce SSL.com's per-object credit count. A catalog signature
+could cover many files with one credit, but those files would not carry
+embedded signatures and catalog registration adds failure-prone
 installer state. It saves nothing for the two-file NativeAOT payload, so the
 release pipeline deliberately uses embedded signatures. Third-party binaries
 retain their upstream signatures and are never re-signed as No More Secrets.
@@ -196,7 +197,7 @@ Check out the release tag, install the exact toolchain named in
 
 ```
 git checkout v1.0.0
-.\tools\build-release.ps1 -Version 1.0.0
+.\tools\build-release.ps1 -Version 1.0.0 -Aot
 ```
 
 The unsigned release pipeline is byte-for-byte deterministic. Roslyn
@@ -218,10 +219,13 @@ The easiest independent check, suitable for a coding agent, is:
   -ReleasedInstaller C:\Downloads\ThisIsMyPC-Installer-1.0.0.exe
 ```
 
-It infers the version and CoreCLR or NativeAOT shape, clones the exact tag into
-a disposable directory, validates the pinned environment, builds, compares,
-and deletes the disposable clone. It parses but never executes the downloaded
-file. To compare against an already prepared local build:
+It infers the version, recognizes the NativeAOT package shape, clones the exact
+tag into a disposable directory, validates the pinned environment, builds,
+compares, and deletes the disposable clone. It parses but never executes the
+downloaded file. For automation, success is exit code 0 together with a line
+beginning `Reproducible release verified:`. Every failed trust, environment,
+structure, or content check terminates with a nonzero exit code. To compare
+against an already prepared local build:
 
 ```
 .\tools\compare-reproducible-installer.ps1 `
@@ -280,9 +284,9 @@ an existing release.
   trim warnings since the shared row templates gained compiled bindings) and
   the Session 0 Service (~6 MB exe, zero trim warnings, probed 2026-09-01:
   hosts and starts as a console process) native with Control Flow Guard. It
-  is both or neither: they share one folder, and a CoreCLR service drags the
-  whole runtime along (232 DLLs), which cancels the App saving. The installer
-  is always NativeAOT. Default stays CoreCLR until one full manual pass on an
-  AOT build (every module page plus an apply, Owner Mode enable for the
-  service). The install half is done: Sam installed AOT 0.1.0 and updated
-  it to AOT 0.1.1 on 2026-09-02, both clean. The in-app half is open.
+  is both or neither: they share one folder. The installer is always NativeAOT,
+  and no CoreCLR release will be published. Passing `-Aot` is mandatory for a
+  release. The remaining release gate is one full manual pass on an AOT build
+  (every module page plus an apply, Owner Mode enable for the service). The
+  install half is done: Sam installed AOT 0.1.0 and updated it to AOT 0.1.1 on
+  2026-09-02, both clean. The in-app half is open.

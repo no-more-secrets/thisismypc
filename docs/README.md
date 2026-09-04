@@ -22,7 +22,7 @@ anything here; `planning/refinement-backlog.md` is the plan and status.
 |---|---|
 | [planning/refinement-backlog.md](planning/refinement-backlog.md) | What shipped, what is deferred, and the release blockers. |
 | [planning/ui-design-brief.md](planning/ui-design-brief.md) | What every screen contains and how the app behaves, written for redesign work. |
-| [release/packaging.md](release/packaging.md) | Per-machine MSI, ProgramData store, publisher line, build script. |
+| [release/packaging.md](release/packaging.md) | NativeAOT release signing, deterministic packaging, public source verification, per-machine MSI, and ProgramData store. |
 | [release/update-signing.md](release/update-signing.md) | GPG-signed release manifest: key ceremony, signing, verification. |
 | [release/hardening-checklist.md](release/hardening-checklist.md) | Binary and process hardening record: CFG, DLL search lockdown, IPC audit. |
 | [why-gplv2.md](why-gplv2.md) | Why every component, including the Session 0 service, is GPLv2. |

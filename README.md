@@ -104,12 +104,14 @@ before it is applied, and an update that fails the check is refused
 
 ## Independently verify a release
 
-This project does not ask users to trust an installer solely because Windows
-shows a verified publisher. Release installers are deterministic and
-reproducible from the corresponding tagged source. The repository pins the
-.NET SDK, NuGet dependency graphs, release tools, Windows SDK, linker, Visual
-Studio toolchain, Windows build, and Windows Installer engine that affect the
-result.
+A successful verification proves that the signed installer's complete
+functional contents came from its public tagged source. In that concrete sense,
+the source of every verified signed installer is fully transparent. This
+project does not ask users to trust an installer solely because Windows shows a
+verified publisher. Release installers are deterministic and reproducible from
+the corresponding tagged source. The repository pins the .NET SDK, NuGet
+dependency graphs, release tools, Windows SDK, linker, Visual Studio toolchain,
+Windows build, and Windows Installer engine that affect the result.
 
 Anyone, or any coding agent, can verify a downloaded `.exe` with one command:
 
@@ -125,18 +127,22 @@ outer installer, embedded MSI, app, service, and Velopack helper signatures.
 It removes only structurally valid Authenticode certificate tables from
 temporary copies before hashing. It never modifies or runs the download. A
 match proves that every installed file came from the tagged source apart from
-its signature metadata.
+its signature metadata. For automation, success is exit code 0 together with an
+output line beginning `Reproducible release verified:`. Any failed signature,
+environment, structure, or content check terminates with a nonzero exit code.
 
-This is tested, not only designed. On September 3, 2026, an installer signed by
-SSL.com for No More Secrets, LLC and RFC 3161 timestamped was stripped by this
-tool and matched its clean unsigned build exactly.
+The certificate-removal foundation is tested, not only designed. On September
+3, 2026, an outer installer signed by SSL.com for No More Secrets, LLC and RFC
+3161 timestamped matched its clean unsigned build after its certificate was
+removed. The first live test of the complete six-signature NativeAOT path will
+be recorded here after it is run.
 
 For an already prepared clean clone, the lower-level comparison is:
 
 ```powershell
 $version = "1.0.0"
 .\tools\test-reproducible-build-environment.ps1
-.\tools\build-release.ps1 -Version $version
+.\tools\build-release.ps1 -Version $version -Aot
 .\tools\compare-reproducible-installer.ps1 `
   -ReleasedInstaller "C:\path\to\ThisIsMyPC-Installer-$version.exe" `
   -LocalInstaller ".\artifacts\releases\$version\ThisIsMyPC-Installer-$version.exe"
@@ -266,9 +272,9 @@ checklist is what they check:
 Naming, branding, and anything irreversible on a user machine are the
 owner's decisions; raise them in the issue rather than deciding in the PR.
 
-Release builds are packed by `tools/build-release.ps1` and can be published
-NativeAOT ([docs/release/packaging.md](docs/release/packaging.md)). Releases
-are cut by the owner only.
+Release builds are packed by `tools/build-release.ps1` and published only as
+NativeAOT ([docs/release/packaging.md](docs/release/packaging.md)). Releases are
+cut by the owner only.
 
 ## Architecture
 
