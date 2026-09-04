@@ -376,6 +376,15 @@ upgrade edition?" flow). Belongs with the install-engine chapter, not refinement
   the target page's own search box (ISearchFocusTarget: Explorer, Annoyances,
   Privacy, Windows Update), so the matched card is the page content on arrival.
   Pages without per-setting filters keep the status-bar fallback.
+- **Custom window frame (2026-09-04)**: MainWindow extends its client area over
+  the system title bar (NoChrome) and hosts TitleBarControl: an 80px bar
+  (about 2.5 stock title bars, Spotify-like) with the app icon and name at the
+  left and stock-size caption buttons top-right. Drag, double-click maximize,
+  restore glyph swap, and Close through Window.Close (hide-to-tray keeps its
+  hook); OffScreenMargin keeps maximized content on screen. CI-safe shots in
+  the title-bar suite. Deferred: Windows 11 snap layouts on maximize hover
+  (needs WM_NCHITTEST returning HTMAXBUTTON plus WM_NCLBUTTON handling through
+  the existing WndProc hook); the installer window keeps stock chrome.
 
 ## 0a2. Light theme: DONE 2026-08-31
 

@@ -1,0 +1,97 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="ThisIsMyPC.App.Controls.TitleBarControl"
+             Height="80">
+
+    <!-- Custom window frame. The Window extends its client area over the
+         system title bar (ExtendClientAreaToDecorationsHint) and hides the
+         stock caption buttons (NoChrome), so this control is the whole frame:
+         80px tall (about 2.5 stock title bars), app icon and name at the left,
+         caption buttons pinned to the top-right at the stock 46x32 size so the
+         hand still lands where Windows trained it. Everything else is a drag
+         region; a double-click toggles maximize. -->
+    <UserControl.Styles>
+        <Style Selector="Button.caption">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Width" Value="46" />
+            <Setter Property="Height" Value="32" />
+            <Setter Property="VerticalAlignment" Value="Top" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.caption /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="0" />
+        </Style>
+        <Style Selector="Button.caption:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
+        </Style>
+        <Style Selector="Button.caption:pressed /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource ControlPressedBrush}" />
+        </Style>
+        <Style Selector="Button.caption PathIcon">
+            <Setter Property="Width" Value="10" />
+            <Setter Property="Height" Value="10" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        </Style>
+        <!-- Close turns Windows red on hover, white glyph, like every stock window -->
+        <Style Selector="Button.caption.close:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#C42B1C" />
+        </Style>
+        <Style Selector="Button.caption.close:pressed /template/ ContentPresenter">
+            <Setter Property="Background" Value="#B12A1B" />
+        </Style>
+        <Style Selector="Button.caption.close:pointerover PathIcon">
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid ColumnDefinitions="*,Auto"
+          Background="Transparent"
+          PointerPressed="OnDragRegionPressed">
+
+        <!-- Identity: icon and product name, vertically centred in the bar -->
+        <StackPanel Orientation="Horizontal"
+                    Spacing="12"
+                    Margin="20,0"
+                    VerticalAlignment="Center"
+                    IsHitTestVisible="False">
+            <Image Source="avares://ThisIsMyPC.App/Assets/ThisIsMyPC.ico"
+                   Width="28" Height="28"
+                   VerticalAlignment="Center" />
+            <TextBlock Text="ThisIsMyPC"
+                       FontFamily="{StaticResource DisplayFont}"
+                       FontSize="18"
+                       FontWeight="SemiBold"
+                       VerticalAlignment="Center"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+        </StackPanel>
+
+        <!-- Caption buttons, top-right -->
+        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+            <Button Classes="caption" Click="OnMinimizeClick" ToolTip.Tip="Minimize"
+                    AutomationProperties.Name="Minimize">
+                <PathIcon Data="M0,5H10V6H0Z" />
+            </Button>
+            <Button x:Name="MaximizeButton" Classes="caption" Click="OnMaximizeClick"
+                    ToolTip.Tip="Maximize"
+                    AutomationProperties.Name="Maximize">
+                <Panel>
+                    <!-- Single square: maximize -->
+                    <PathIcon x:Name="MaximizeGlyph" Data="M0,0H10V10H0Z M1,1V9H9V1Z" />
+                    <!-- Two offset squares: restore -->
+                    <PathIcon x:Name="RestoreGlyph" IsVisible="False"
+                              Data="M2,0H10V8H8V2H2Z M0,2H8V10H0Z M1,3V9H7V3Z" />
+                </Panel>
+            </Button>
+            <Button Classes="caption close" Click="OnCloseClick" ToolTip.Tip="Close"
+                    AutomationProperties.Name="Close">
+                <PathIcon Data="M0,0.7L0.7,0L5,4.3L9.3,0L10,0.7L5.7,5L10,9.3L9.3,10L5,5.7L0.7,10L0,9.3L4.3,5Z" />
+            </Button>
+        </StackPanel>
+    </Grid>
+</UserControl>
