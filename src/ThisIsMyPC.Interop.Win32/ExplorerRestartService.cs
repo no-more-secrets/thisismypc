@@ -13,7 +13,7 @@ namespace ThisIsMyPC.Interop.Win32;
 /// is not the first choice because its window messages cannot cross UIPI
 /// from an elevated caller to the unelevated shell, so it waits its full
 /// ~30 s timeout before force-killing anyway (Sam's log, 2026-09-03).
-/// Either way the new explorer.exe is started by <see cref="ShellLauncher"/>
+/// Either way the new explorer.exe is started by <see cref="IInteractiveUserContext.LaunchAsUser"/>
 /// as the desktop user, never with this process's elevated token: a shell
 /// started elevated elevates every app opened from Start, and
 /// ExplorerPatcher's own taskbar never appears in an elevated Explorer.
@@ -26,6 +26,17 @@ public sealed class ExplorerRestartService : IExplorerRestartService
     private static readonly TimeSpan ShellRecoveryTimeout = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan ShellPollInterval = TimeSpan.FromMilliseconds(250);
 
+    private readonly IInteractiveUserContext _userContext;
+
+    public ExplorerRestartService(IInteractiveUserContext userContext)
+    {
+        ArgumentNullException.ThrowIfNull(userContext);
+        _userContext = userContext;
+    }
+
+    private static readonly string ExplorerPath =
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe");
+
     public async Task<OperationResult<bool>> RestartExplorerAsync()
     {
         try
@@ -36,10 +47,6 @@ public sealed class ExplorerRestartService : IExplorerRestartService
             // a shell is started rather than restarted.
             var trayHandle = PInvoke.FindWindow("Shell_TrayWnd", null);
             using var shellProcess = trayHandle.IsNull ? null : GetProcessFromWindow(trayHandle);
-
-            // The new shell must run as the desktop user, and the old shell is
-            // the best source of that token; borrow it before it goes away.
-            using var token = ShellLauncher.CaptureDesktopUserToken(shellProcess);
 
             if (shellProcess is not null)
             {
@@ -67,7 +74,7 @@ public sealed class ExplorerRestartService : IExplorerRestartService
                 }
             }
 
-            var launched = ShellLauncher.StartExplorer(token);
+            var launched = _userContext.LaunchAsUser(ExplorerPath);
             if (!launched.IsSuccess)
                 return launched;
 

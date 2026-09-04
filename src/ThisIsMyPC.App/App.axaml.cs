@@ -174,6 +174,7 @@ public partial class App : Application
         services.AddSingleton<Services.AutorunEnrichment>();
         services.AddSingleton<IShellExtensionService, ShellExtensionService>();
         services.AddSingleton<IContextMenuProbe, ContextMenuProbe>();
+        services.AddSingleton<IInteractiveUserContext, DesktopUserContext>();
         services.AddSingleton<IExplorerRestartService, ExplorerRestartService>();
         services.AddSingleton<IEnvironmentBroadcaster, EnvironmentBroadcaster>();
         services.AddSingleton<IServiceControlService, ServiceControlService>();

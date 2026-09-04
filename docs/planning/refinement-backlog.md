@@ -229,6 +229,24 @@ prep here.
   timeout, instead of reporting success with the taskbar gone. Owed: Sam's
   live pass choosing Windows 10 (ExplorerPatcher) from the app and seeing the
   taskbar return quickly; the log names the process the token came from.
+- **Interactive-user context (2026-09-03)**: acting as the signed-in desktop
+  user became its own capability, since the app runs elevated and is the PC
+  not a profile, so launching apps, opening folders, writing the user's hive,
+  and resolving the user's SID all need the user's context rather than
+  admin's. `IInteractiveUserContext` (Core, pure) exposes `IsCallerElevated`,
+  `Current` (SID, account, session id), `LaunchAsUser`, and `RunAsUser<T>`
+  (impersonate the user around a synchronous action, so registry and file
+  work inside it hit the user's hive). `DesktopUserContext` (Interop.Win32)
+  implements it for the elevated desktop app by borrowing a primary token
+  from a live user-level process (sihost, ctfmon, taskhostw, RuntimeBroker,
+  explorer), since the elevated token's own linked token comes back at
+  identification level without the TCB privilege (1346). The Explorer restart
+  launches the new shell through `LaunchAsUser`; the old `ShellLauncher` folded
+  into this. Future: the Session 0 service implements the same interface from
+  SYSTEM via WTSQueryUserToken (SYSTEM holds the TCB privilege, so the linked
+  token works there), and per-user registry writes route through `RunAsUser`
+  or HKU\{sid} once that migration is scoped. Integration-tested against the
+  live session (SID resolves, RunAsUser acts as the user and reverts).
   Values the app already
   renders are excluded so no two rows write one value. `ExplorerPatcherSettingsReader`
   reads live values and evaluates the section conditions the way its GUI.c

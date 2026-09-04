@@ -8,7 +8,7 @@ public sealed class ExplorerRestartServiceTests
     [Fact]
     public void Service_implements_IExplorerRestartService()
     {
-        var service = new ExplorerRestartService();
+        var service = new ExplorerRestartService(new DesktopUserContext());
 
         Assert.IsAssignableFrom<IExplorerRestartService>(service);
     }

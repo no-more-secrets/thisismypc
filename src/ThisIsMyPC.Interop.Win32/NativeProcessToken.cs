@@ -12,9 +12,12 @@ internal static unsafe partial class NativeProcessToken
     internal const uint TOKEN_QUERY = 0x0008;
     internal const uint TOKEN_DUPLICATE = 0x0002;
     internal const uint TOKEN_ASSIGN_PRIMARY = 0x0001;
+    internal const uint TOKEN_IMPERSONATE = 0x0004;
     internal const uint MAXIMUM_ALLOWED = 0x02000000;
 
     // TOKEN_INFORMATION_CLASS
+    internal const int TokenUser = 1;
+    internal const int TokenSessionId = 12;
     internal const int TokenElevationType = 18;
     internal const int TokenLinkedToken = 19;
 
@@ -93,4 +96,37 @@ internal static unsafe partial class NativeProcessToken
     internal static partial bool CreateProcessWithTokenW(
         nint token, uint logonFlags, string? applicationName, char* commandLine, uint creationFlags,
         nint environment, string? currentDirectory, STARTUPINFOW* startupInfo, PROCESS_INFORMATION* processInformation);
+
+    [LibraryImport("advapi32.dll", SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool ImpersonateLoggedOnUser(nint token);
+
+    [LibraryImport("advapi32.dll", SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool RevertToSelf();
+
+    // TOKEN_USER is a SID_AND_ATTRIBUTES: a pointer to the SID, then its attributes.
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct TOKEN_USER
+    {
+        public nint Sid;
+        public uint Attributes;
+    }
+
+    [LibraryImport("advapi32.dll", SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool ConvertSidToStringSidW(nint sid, out nint stringSid);
+
+    [LibraryImport("advapi32.dll", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool LookupAccountSidW(
+        string? systemName, nint sid, char* name, ref uint cchName, char* referencedDomain, ref uint cchReferencedDomain, out int use);
+
+    [LibraryImport("kernel32.dll", SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    internal static partial nint LocalFree(nint mem);
 }
