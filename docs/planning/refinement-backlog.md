@@ -378,18 +378,25 @@ upgrade edition?" flow). Belongs with the install-engine chapter, not refinement
   Pages without per-setting filters keep the status-bar fallback.
 - **Custom window frame (2026-09-04)**: MainWindow extends its client area over
   the system title bar (NoChrome) and hosts TitleBarControl: a 64px bar
-  (two stock title bars; 80 read as too tall live) with the 48px app icon,
-  the name and a "Version x.y.z" subtitle at the
-  left (the sidebar toggle moved up beside them), the settings search as a
+  (two stock title bars; 80 read as too tall live). The logo owns the
+  top-left corner: an identity block (48px icon, name, "Version x.y.z"
+  subtitle) 96 tall, overhanging 32px into the sidebar column with a rounded
+  bottom-right corner and a BaseBrush notch behind it, so the page panel is
+  carved out around the logo like Sam's website shell; the sidebar toggle
+  sits just below it at the top of the sidebar. Identity block at the
+  left, the settings search as a
   440px pill on the bar's centre line with its results in an in-window
   overlay under it (no Popup, so the sight harness can click results), and
   stock-size caption buttons top-right. Shell shape (Sam's website shell,
   2026-09-04): bar and sidebar are one L-shaped block in the sidebar colour,
-  the page area is an inset BaseBrush panel with 16px rounded top corners;
+  the page area is an inset BaseBrush panel with a 16px rounded inner
+  corner only (the top-right fillet under the close button was removed);
   a 1px OutlineBrush rim runs along the L (the sidebar's old right outline
   moved onto the panel), sidebar rows are inset rounded rows so the active
   highlight clears the fillet, the logo is 48px with a 22px name, and the
   caption buttons run the full bar height like Spotify and Windows Terminal.
+  Icon buttons (toggle, shortcuts) are the app's standard rimmed surface
+  (OverlayBrush fill, OutlineBrush rim, radius 4), not bare glyphs.
   Right of the search, a TrailingContent slot holds four shortcuts: Settings
   (gear), Report a bug (GitHub issue form, bug-report template), GitHub
   (repository), and About (info), which opens an in-window card under the bar

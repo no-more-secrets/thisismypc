@@ -162,26 +162,24 @@
     </Style>
 
     <!-- Sidebar toggle button -->
-    <!-- Title bar: round icon button (sidebar toggle) -->
+    <!-- Title bar and sidebar icon buttons (toggle, shortcuts): the same
+         discrete rimmed surface as every other button in the app, square. -->
     <Style Selector="Button.bar-icon">
-        <Setter Property="Background" Value="Transparent" />
-        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Background" Value="{DynamicResource OverlayBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource OutlineBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
         <Setter Property="Padding" Value="0" />
         <Setter Property="Width" Value="36" />
         <Setter Property="Height" Value="36" />
-        <Setter Property="CornerRadius" Value="18" />
+        <Setter Property="CornerRadius" Value="4" />
         <Setter Property="HorizontalContentAlignment" Value="Center" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="Cursor" Value="Hand" />
     </Style>
 
-    <Style Selector="Button.bar-icon /template/ ContentPresenter">
-        <Setter Property="Background" Value="Transparent" />
-        <Setter Property="CornerRadius" Value="18" />
-    </Style>
-
     <Style Selector="Button.bar-icon:pointerover /template/ ContentPresenter">
         <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource OutlineStrongBrush}" />
     </Style>
 
     <Style Selector="Button.bar-icon:pressed /template/ ContentPresenter">

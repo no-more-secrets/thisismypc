@@ -13,9 +13,17 @@ namespace ThisIsMyPC.App.Controls;
 /// </summary>
 public partial class TitleBarControl : UserControl
 {
-    /// <summary>Sits left of the app icon; the host puts the sidebar toggle here.</summary>
-    public static readonly StyledProperty<object?> LeadingContentProperty =
-        AvaloniaProperty.Register<TitleBarControl, object?>(nameof(LeadingContent));
+    /// <summary>Width of the identity block; the host binds it to the sidebar width.</summary>
+    public static readonly StyledProperty<double> IdentityWidthProperty =
+        AvaloniaProperty.Register<TitleBarControl, double>(nameof(IdentityWidth), 200);
+
+    /// <summary>Height of the identity block; taller than the bar, so it overhangs into the sidebar.</summary>
+    public static readonly StyledProperty<double> IdentityHeightProperty =
+        AvaloniaProperty.Register<TitleBarControl, double>(nameof(IdentityHeight), 96);
+
+    /// <summary>Icon only, for the collapsed sidebar width.</summary>
+    public static readonly StyledProperty<bool> IsIdentityCompactProperty =
+        AvaloniaProperty.Register<TitleBarControl, bool>(nameof(IsIdentityCompact));
 
     /// <summary>Centred on the whole bar; the host puts the settings search here.</summary>
     public static readonly StyledProperty<object?> CenterContentProperty =
@@ -41,10 +49,22 @@ public partial class TitleBarControl : UserControl
         set => SetValue(SubtitleProperty, value);
     }
 
-    public object? LeadingContent
+    public double IdentityWidth
     {
-        get => GetValue(LeadingContentProperty);
-        set => SetValue(LeadingContentProperty, value);
+        get => GetValue(IdentityWidthProperty);
+        set => SetValue(IdentityWidthProperty, value);
+    }
+
+    public double IdentityHeight
+    {
+        get => GetValue(IdentityHeightProperty);
+        set => SetValue(IdentityHeightProperty, value);
+    }
+
+    public bool IsIdentityCompact
+    {
+        get => GetValue(IsIdentityCompactProperty);
+        set => SetValue(IsIdentityCompactProperty, value);
     }
 
     public object? CenterContent
