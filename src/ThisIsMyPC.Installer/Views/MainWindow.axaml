@@ -5,6 +5,7 @@
         x:Class="ThisIsMyPC.Installer.Views.MainWindow"
         x:DataType="vm:InstallerViewModel"
         Title="Install ThisIsMyPC"
+        Icon="/Assets/ThisIsMyPC.ico"
         Width="720" Height="640"
         CanResize="False"
         WindowStartupLocation="CenterScreen"

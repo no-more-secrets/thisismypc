@@ -9,6 +9,7 @@
         x:Class="ThisIsMyPC.App.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Title="ThisIsMyPC"
+        Icon="/Assets/ThisIsMyPC.ico"
         MinWidth="900" MinHeight="600"
         Width="1200" Height="800"
         Background="{DynamicResource BaseBrush}"

@@ -11,6 +11,7 @@
     <UseAppHost>false</UseAppHost>
     <TargetExt>.exe</TargetExt>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>..\ThisIsMyPC.App\Assets\ThisIsMyPC.ico</ApplicationIcon>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <!-- LibraryImport (the pre-Avalonia message box in NativeBootstrap) -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -26,6 +27,7 @@
     <!-- Palette and type are the App's own files, linked, so the installer
          cannot drift from the app it installs. -->
     <AvaloniaResource Include="..\ThisIsMyPC.App\Styles\Theme.axaml" Link="Styles\Theme.axaml" />
+    <AvaloniaResource Include="..\ThisIsMyPC.App\Assets\ThisIsMyPC.ico" Link="Assets\ThisIsMyPC.ico" />
     <AvaloniaResource Include="..\ThisIsMyPC.App\Assets\Fonts\IBMPlexSans-Regular.ttf" Link="Assets\Fonts\IBMPlexSans-Regular.ttf" />
     <AvaloniaResource Include="..\ThisIsMyPC.App\Assets\Fonts\IBMPlexSans-SemiBold.ttf" Link="Assets\Fonts\IBMPlexSans-SemiBold.ttf" />
     <AvaloniaResource Include="..\ThisIsMyPC.App\Assets\Fonts\IBMPlexSans-Bold.ttf" Link="Assets\Fonts\IBMPlexSans-Bold.ttf" />

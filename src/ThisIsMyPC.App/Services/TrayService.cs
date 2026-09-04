@@ -81,7 +81,7 @@ public sealed class TrayService : IDisposable
         WindowIcon windowIcon;
         try
         {
-            using var stream = AssetLoader.Open(new Uri("avares://ThisIsMyPC.App/Assets/avalonia-logo.ico"));
+            using var stream = AssetLoader.Open(new Uri("avares://ThisIsMyPC.App/Assets/ThisIsMyPC.ico"));
             windowIcon = new WindowIcon(stream);
         }
         catch (Exception ex) when (ex is IOException or ArgumentException or InvalidOperationException)

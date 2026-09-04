@@ -3,6 +3,7 @@
     <OutputType>WinExe</OutputType>
     <AssemblyTitle>ThisIsMyPC</AssemblyTitle>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\ThisIsMyPC.ico</ApplicationIcon>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <!-- CA1515: Avalonia XAML requires public types for views/viewmodels -->
     <!-- CA1724: App class name conflicts with ThisIsMyPC.App namespace (unavoidable convention) -->
