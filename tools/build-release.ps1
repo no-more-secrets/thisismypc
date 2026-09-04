@@ -54,7 +54,7 @@ if (Test-Path Env:ESIGNER_PASSWORD) {
     throw 'Refusing to build with ESIGNER_PASSWORD in the environment. Build unsigned, then expose the secret only to sign-release-installer.ps1.'
 }
 $repoRoot = Split-Path $PSScriptRoot -Parent
-$staging = Join-Path $repoRoot "artifacts\release-staging\$Version"
+$staging = Join-Path $repoRoot "artifacts\staging\$Version"
 $output = Join-Path $repoRoot "artifacts\releases\$Version"
 
 $toolManifest = Join-Path $repoRoot '.config\dotnet-tools.json'
@@ -199,7 +199,7 @@ if (Test-Path $assetsJson) {
 # options the Velopack wizard cannot (folder, shortcuts, start with Windows,
 # update checks). NativeAOT always: one small native exe around the MSI.
 Write-Host 'Publishing the installer (ThisIsMyPC-Installer.exe) around the MSI...'
-$installerStaging = Join-Path $repoRoot "artifacts\release-staging\$Version-installer"
+$installerStaging = Join-Path $repoRoot "artifacts\staging\$Version-installer"
 if (Test-Path $installerStaging) { Remove-Item $installerStaging -Recurse -Force }
 $msiPath = Join-Path $output 'ThisIsMyPC-win.msi'
 if (-not (Test-Path $msiPath)) { throw 'ThisIsMyPC-win.msi missing from the vpk output' }

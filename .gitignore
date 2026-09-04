@@ -11,9 +11,8 @@ TWEAKS.md
 x64/
 x86/
 publish/
-builds/
 
-# NuGet (root-level packages folder only — source dirs named Packages/ are code)
+# NuGet (root-level packages folder only; source dirs named Packages/ are code)
 *.nupkg
 *.snupkg
 /[Pp]ackages/*
@@ -32,6 +31,9 @@ builds/
 BenchmarkDotNet.Artifacts/
 project.lock.json
 project.fragment.lock.json
+
+# The single build/test output root: artifacts/<type>/<build>/
+# (releases, staging, ui-shots, aot, diagnostics). All regenerable.
 artifacts/
 
 # JetBrains Rider
@@ -64,9 +66,7 @@ $RECYCLE.BIN/
 .cursor/
 .windsurf/
 
-# Dependency study repos — only README.md and *-STUDY.md are tracked.
+# Dependency study repos: only README.md and *-STUDY.md are tracked.
 # Cloned repos are ignored to prevent gitlink/submodule references.
 deps/*/
 
-# Headless UI test screenshots
-artifacts/

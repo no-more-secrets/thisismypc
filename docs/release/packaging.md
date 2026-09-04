@@ -127,8 +127,8 @@ Windows signing step, expose the password and run:
 ```powershell
 .\tools\sign-release-installer.ps1 `
   -AssetDirectory ".\artifacts\releases\$version" `
-  -StagingDirectory ".\artifacts\release-staging\$version" `
-  -InstallerStub ".\artifacts\release-staging\$version-installer\ThisIsMyPC-Installer.exe" `
+  -StagingDirectory ".\artifacts\staging\$version" `
+  -InstallerStub ".\artifacts\staging\$version-installer\ThisIsMyPC-Installer.exe" `
   -Version $version `
   -SignThumbprint $thumbprint `
   -ESignerCredentialId $env:ESIGNER_CREDENTIAL_ID `

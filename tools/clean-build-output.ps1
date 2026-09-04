@@ -3,14 +3,19 @@
     Removes regenerable build and test output from the working tree.
 
 .DESCRIPTION
-    Everything this deletes is gitignored and rebuilt on demand: the artifacts
-    tree (release builds and staging, reproducible-build clones, the sight
-    harness screenshots, diagnostic logs), the builds output, and, with
-    -IncludeBinObj, every project's bin and obj.
+    All build and test output lives under one gitignored root, artifacts\,
+    as artifacts\<type>\<build>\ (see the Build & test section of CLAUDE.md):
 
-    It never touches tracked files. build-release.ps1 recreates
-    artifacts\releases and artifacts\release-staging, the UI tests recreate
-    artifacts\ui-shots, and a normal build recreates bin and obj.
+      releases\<version>       shippable release outputs
+      staging\<version>        intermediate publish staging for a release build
+      ui-shots\<suite>         sight-harness screenshots, one folder per suite
+      aot\<name>               ad-hoc NativeAOT publishes
+      diagnostics\<name>       one-off logs, dumps, audits, probes
+
+    This empties artifacts\ and, with -IncludeBinObj, every project's bin and
+    obj. It never touches tracked files, and every path it removes is rebuilt
+    on demand: build-release.ps1 recreates releases and staging, the UI tests
+    recreate ui-shots, and a normal build recreates bin and obj.
 
 .PARAMETER IncludeBinObj
     Also remove every bin and obj under src, tests, and analyzers. The next
@@ -32,23 +37,21 @@ $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path $PSScriptRoot -Parent
 
 function Get-SizeMB {
-    param([string[]]$Paths)
-    $bytes = 0L
-    foreach ($p in $Paths) {
-        if (Test-Path $p) {
-            $bytes += (Get-ChildItem $p -Recurse -Force -File -ErrorAction SilentlyContinue |
-                Measure-Object -Property Length -Sum).Sum
-        }
-    }
-    return [math]::Round($bytes / 1MB, 1)
+    param([string]$Path)
+    if (-not (Test-Path $Path)) { return 0.0 }
+    $bytes = (Get-ChildItem $Path -Recurse -Force -File -ErrorAction SilentlyContinue |
+        Measure-Object -Property Length -Sum).Sum
+    return [math]::Round(([double]$bytes) / 1MB, 1)
 }
 
-# Regenerable output roots. Contents go; the directory itself stays so tools
+# The one output root. Its contents go; the directory itself stays so tools
 # that assume it exists do not have to recreate it.
-$targets = @(
-    (Join-Path $repoRoot 'artifacts'),
-    (Join-Path $repoRoot 'builds')
-)
+$artifacts = Join-Path $repoRoot 'artifacts'
+$targets = @()
+if (Test-Path $artifacts) {
+    $targets += Get-ChildItem $artifacts -Force -ErrorAction SilentlyContinue |
+        Select-Object -ExpandProperty FullName
+}
 
 if ($IncludeBinObj) {
     foreach ($top in 'src', 'tests', 'analyzers') {
@@ -61,28 +64,21 @@ if ($IncludeBinObj) {
     }
 }
 
-$totalBefore = 0.0
+$total = 0.0
 foreach ($target in $targets) {
     if (-not (Test-Path $target)) { continue }
     $size = Get-SizeMB $target
-    $totalBefore += $size
+    $total += $size
     $rel = $target.Substring($repoRoot.Length + 1)
     if ($PSCmdlet.ShouldProcess($rel, "remove ($size MB)")) {
-        # Empty the roots we keep (artifacts, builds); delete bin/obj outright.
-        $leaf = Split-Path $target -Leaf
-        if ($leaf -in 'artifacts', 'builds') {
-            Get-ChildItem $target -Force -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
-        }
-        else {
-            Remove-Item $target -Recurse -Force -ErrorAction SilentlyContinue
-        }
-        Write-Host ("  removed {0,-40} {1,8:N1} MB" -f $rel, $size)
+        Remove-Item $target -Recurse -Force -ErrorAction SilentlyContinue
+        Write-Host ("  removed {0,-44} {1,8:N1} MB" -f $rel, $size)
     }
     else {
-        Write-Host ("  would remove {0,-36} {1,8:N1} MB" -f $rel, $size)
+        Write-Host ("  would remove {0,-40} {1,8:N1} MB" -f $rel, $size)
     }
 }
 
 $verb = if ($WhatIfPreference) { 'Would reclaim' } else { 'Reclaimed' }
 Write-Host ""
-Write-Host ("{0} {1:N1} MB" -f $verb, $totalBefore)
+Write-Host ("{0} {1:N1} MB" -f $verb, $total)

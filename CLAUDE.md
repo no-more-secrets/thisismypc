@@ -108,11 +108,18 @@ dotnet test --filter "Category!=Integration&Category!=Diagnostic"   # what CI ru
   `tests/ThisIsMyPC.Core.Tests/Fakes/`; `Category=Integration|Diagnostic` traits for anything
   touching the live system (excluded from CI).
 - The TIPC001 analyzer (`analyzers/`) auto-applies to every project.
-- Build and test output is gitignored and piles up: `artifacts/` (release
-  builds and staging, reproducible-build clones, `ui-shots/`, diagnostic logs)
-  and `builds/`. `tools/clean-build-output.ps1` empties both (add
-  `-IncludeBinObj` to also clear every `bin`/`obj`, `-WhatIf` to preview). It
-  never touches tracked files, and every path it removes is rebuilt on demand.
+- **All build and test output goes under one gitignored root, `artifacts/`,
+  shaped `artifacts/<type>/<build>/`.** One folder per type, one per build
+  within it. Types: `releases/<version>` (shippable outputs),
+  `staging/<version>` (release build staging), `ui-shots/<suite>` (sight
+  harness), `aot/<name>` (ad-hoc NativeAOT publishes), `diagnostics/<name>`
+  (one-off logs, dumps, audits, probes). Build here, never in the scratchpad,
+  the repo root, or a project folder; a throwaway AOT publish goes to
+  `artifacts/aot/<name>/`, not the scratchpad. `builds/` is retired.
+- Output piles up (a full reproducible-build run is gigabytes).
+  `tools/clean-build-output.ps1` empties `artifacts/` (add `-IncludeBinObj` to
+  also clear every `bin`/`obj`, `-WhatIf` to preview). It never touches tracked
+  files, and every path it removes is rebuilt on demand.
 
 ## Reproduce a released signed installer
 

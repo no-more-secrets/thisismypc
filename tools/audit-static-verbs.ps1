@@ -10,7 +10,7 @@
     Progress bars shown for the three large scans (extensions, ProgIDs, SystemFileAssociations).
 
 .OUTPUTS
-    Writes markdown to artifacts\static-verb-registry-audit.md (gitignored).
+    Writes markdown to artifacts\diagnostics\static-verbs\registry-audit.md (gitignored).
     The report contains local paths and installed-software names; do not commit it.
 
 .NOTES
@@ -27,8 +27,10 @@ if (-not $OutputPath) {
     $scriptDir = if ($PSScriptRoot) { $PSScriptRoot }
                  elseif ($MyInvocation.MyCommand.Path) { Split-Path $MyInvocation.MyCommand.Path }
                  else { $PWD.Path }
-    $OutputPath = Join-Path (Join-Path $scriptDir "..") "artifacts\static-verb-registry-audit.md"
+    $OutputPath = Join-Path (Join-Path $scriptDir "..") "artifacts\diagnostics\static-verbs\registry-audit.md"
 }
+$outputDir = Split-Path $OutputPath -Parent
+if ($outputDir -and -not (Test-Path $outputDir)) { New-Item -ItemType Directory -Force $outputDir | Out-Null }
 
 $ErrorActionPreference = 'SilentlyContinue'
 
