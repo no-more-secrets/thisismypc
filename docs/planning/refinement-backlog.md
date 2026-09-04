@@ -72,9 +72,9 @@ Consequences, verified against the code and upstream:
   Secrets, LLC. CKA 1.1.2 Automated Production signing, mandatory CodeSignTool
   malware scanning, SignTool RFC 3161 timestamping, signature verification, and
   certificate-table removal all passed on a deterministic test installer.
-  Canonical SHA-256 matched the independent unsigned build exactly. Signing is
-  outer-installer-only; the GPG manifest covers the unsigned embedded payload
-  and update assets.
+  Canonical SHA-256 matched the independent unsigned build exactly. Extended
+  2026-09-04 to sign the first-party installed PEs, MSI, and outer installer;
+  canonical tree comparison keeps every layer independently reproducible.
 - **Signing tool supply chain pinned 2026-09-03**: the unsigned installed CKA
   runtime files, complete CodeSignTool 1.3.3 archive, scanner jar, and bundled
   Java executable have committed hashes. The release script rejects drift,
@@ -300,17 +300,16 @@ prep here.
   package as a private assetless dependency. Restore imports no telemetry
   target, task, or collector. A normal sandboxed build verified that
   `%LocalAppData%` remained untouched.
-- **Reproducible installer shipped 2026-09-02**: deterministic managed builds,
+- **Reproducible signed install tree shipped 2026-09-04**: deterministic managed builds,
   fixed staging metadata, version-derived MSI identities, normalized WiX/CAB
   metadata, and normalized native-linker timestamps make repeated unsigned
   builds byte-identical. The public comparison tool validates Authenticode,
   removes only a valid terminal certificate table, and compares SHA-256 with a
-  local build. Outer-only Authenticode keeps that comparison possible; the
-  offline GPG manifest authenticates the inner MSI and update packages. The
-  generated Claude, Codex, and Antigravity guides carry the complete clean-clone
-  reproduction procedure so any agent can execute it consistently. The public
-  README explains the trust model and gives users the direct verification
-  commands.
+  local build. A length-delimited payload lets the verifier separate the outer
+  launcher and MSI safely; logical MSI export and per-PE certificate removal
+  cover every installed file. The generated Claude, Codex, and Antigravity
+  guides carry the one-command clean-clone procedure so any agent can execute
+  it consistently. The public README explains the trust model.
 - **PUBLISHED 2026-09-01** at `github.com/No-More-Secrets/thisismypc`;
   `AppConstants.UpdateUrl` points there.
 

@@ -111,19 +111,27 @@ reproducible from the corresponding tagged source. The repository pins the
 Studio toolchain, Windows build, and Windows Installer engine that affect the
 result.
 
-Anyone can build the same version and compare it with the downloaded signed
-`.exe`. The comparison tool validates the download's
-Authenticode structure, works on a temporary copy, removes its terminal
-certificate table, normalizes the two PE fields changed by signing, and
-compares the canonical SHA-256 hash with the local build. It never modifies or
-runs the downloaded installer. A match means the executable content is
-byte-for-byte identical apart from the Authenticode signing metadata.
+Anyone, or any coding agent, can verify a downloaded `.exe` with one command:
+
+```powershell
+.\tools\verify-release.ps1 `
+  -ReleasedInstaller "C:\path\to\ThisIsMyPC-Installer-1.0.0.exe"
+```
+
+The script reads the version and build type from the installer, clones that
+exact tag into a disposable directory, validates the pinned build environment,
+builds it, and compares the complete logical install tree. It validates the
+outer installer, embedded MSI, app, service, and Velopack helper signatures.
+It removes only structurally valid Authenticode certificate tables from
+temporary copies before hashing. It never modifies or runs the download. A
+match proves that every installed file came from the tagged source apart from
+its signature metadata.
 
 This is tested, not only designed. On September 3, 2026, an installer signed by
 SSL.com for No More Secrets, LLC and RFC 3161 timestamped was stripped by this
 tool and matched its clean unsigned build exactly.
 
-From a clean clone checked out at the release tag:
+For an already prepared clean clone, the lower-level comparison is:
 
 ```powershell
 $version = "1.0.0"
@@ -134,11 +142,9 @@ $version = "1.0.0"
   -LocalInstaller ".\artifacts\releases\$version\ThisIsMyPC-Installer-$version.exe"
 ```
 
-The outer installer is the only file Authenticode-signed so this public
-comparison remains possible. Its embedded MSI and update payloads are
-authenticated by the offline GPG-signed release manifest. The exact clean-clone
-procedure, environment requirements, expected outputs, and failure meanings
-are in [docs/release/packaging.md](docs/release/packaging.md). Passing
+The exact clean-clone procedure, canonical tree design, environment
+requirements, expected outputs, and failure meanings are in
+[docs/release/packaging.md](docs/release/packaging.md). Passing
 `-AllowUnsignedRelease` is only for testing the comparison machinery, never
 for verifying a public release.
 

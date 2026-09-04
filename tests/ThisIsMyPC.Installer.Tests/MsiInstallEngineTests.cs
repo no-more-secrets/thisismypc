@@ -1,4 +1,5 @@
 using ThisIsMyPC.Installer.Services;
+using System.Security.Cryptography;
 
 namespace ThisIsMyPC.Installer.Tests;
 
@@ -53,5 +54,69 @@ public class MsiInstallEngineTests
         Assert.False(package.IsPresent);
         Assert.Contains("GNU GENERAL PUBLIC LICENSE", EmbeddedPackage.LoadLicenseText());
         Assert.Contains("Version 2, June 1991", EmbeddedPackage.LoadLicenseText());
+    }
+
+    [Fact]
+    public void EmbeddedPackage_AppendedPayloadExtractsAndVerifies()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"tipc-bundle-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        try
+        {
+            var bundle = Path.Combine(root, "installer.exe");
+            var payload = "signed MSI payload"u8.ToArray();
+            CreateBundle(bundle, payload);
+
+            var package = new EmbeddedPackage(bundle);
+            Assert.True(package.IsPresent);
+            var extracted = package.ExtractTo(Path.Combine(root, "out"));
+            Assert.Equal(payload, File.ReadAllBytes(extracted));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void EmbeddedPackage_TamperedPayloadIsRejected()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"tipc-bundle-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        try
+        {
+            var bundle = Path.Combine(root, "installer.exe");
+            CreateBundle(bundle, "original"u8.ToArray());
+            using (var stream = File.OpenWrite(bundle))
+            {
+                stream.Position = new FileInfo(typeof(EmbeddedPackage).Assembly.Location).Length;
+                stream.WriteByte(0xFF);
+            }
+
+            var package = new EmbeddedPackage(bundle);
+            Assert.Throws<InvalidDataException>(() => package.ExtractTo(Path.Combine(root, "out")));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    private static void CreateBundle(string path, byte[] payload)
+    {
+        var stub = File.ReadAllBytes(typeof(EmbeddedPackage).Assembly.Location);
+        var footer = new byte[72];
+        "TIPC-MSI-PAYLOAD"u8.CopyTo(footer);
+        BitConverter.GetBytes((uint)1).CopyTo(footer, 16);
+        BitConverter.GetBytes((ulong)stub.Length).CopyTo(footer, 24);
+        BitConverter.GetBytes((ulong)payload.Length).CopyTo(footer, 32);
+        SHA256.HashData(payload).CopyTo(footer, 40);
+        var padding = (8 - ((stub.Length + payload.Length + footer.Length) % 8)) % 8;
+
+        using var output = File.Create(path);
+        output.Write(stub);
+        output.Write(payload);
+        output.Write(new byte[padding]);
+        output.Write(footer);
     }
 }

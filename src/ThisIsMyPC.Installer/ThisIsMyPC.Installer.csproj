@@ -35,20 +35,17 @@
   <ItemGroup>
     <!-- The license page shows the repo LICENSE verbatim. -->
     <EmbeddedResource Include="..\..\LICENSE" LogicalName="LICENSE" />
-    <!-- build-release.ps1 passes the packed MSI; a build without it runs the
-         UI but refuses to install (EmbeddedPackage.IsPresent == false). -->
-    <EmbeddedResource Include="$(EmbeddedMsiPath)" LogicalName="ThisIsMyPC-win.msi" Condition="'$(EmbeddedMsiPath)' != ''" />
   </ItemGroup>
 
-  <!-- Release publish only (the script sets EmbeddedMsiPath): the two native
-       libraries NativeAOT cannot fold into the exe ride inside it as
-       resources; NativeBootstrap unpacks and loads them. Dev builds keep the
-       DLLs beside the exe. -->
+  <!-- Release publish only: the two native libraries NativeAOT cannot fold
+       into the launcher ride inside it as resources. NativeBootstrap unpacks
+       and loads them. The MSI is appended after publish, not embedded here.
+       Dev builds keep the DLLs beside the exe. -->
   <!-- BeforeTargets on AssignTargetPaths, the first consumer of EmbeddedResource:
        a later hook (PrepareResourceNames) runs after that target's own
        dependencies have already split the resource list. -->
   <Target Name="EmbedNativeLibraries" BeforeTargets="AssignTargetPaths" DependsOnTargets="ResolvePackageAssets"
-          Condition="'$(EmbeddedMsiPath)' != ''">
+          Condition="'$(BundleNativeLibraries)' == 'true'">
     <ItemGroup>
       <_InstallerNativeLibrary Include="@(NativeCopyLocalItems)"
           Condition="'%(Filename)' == 'libSkiaSharp' Or '%(Filename)' == 'libHarfBuzzSharp'" />

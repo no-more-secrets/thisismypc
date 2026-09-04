@@ -8,7 +8,9 @@ param(
     [string]$Path,
 
     [Parameter(Mandatory = $true)]
-    [string]$OutputPath
+    [string]$OutputPath,
+
+    [switch]$Quiet
 )
 
 $ErrorActionPreference = 'Stop'
@@ -132,10 +134,12 @@ $canonical = New-Object byte[] $canonicalLength
 [IO.File]::WriteAllBytes($outputFullPath, $canonical)
 
 $hash = (Get-FileHash -LiteralPath $outputFullPath -Algorithm SHA256).Hash
-Write-Host "Canonical PE: $outputFullPath"
-Write-Host "SHA256: $hash"
-if ($certificateOffset -eq 0) {
-    Write-Host 'Authenticode certificate table: absent'
-} else {
-    Write-Host "Authenticode certificate table: removed $certificateSize bytes"
+if (-not $Quiet) {
+    Write-Host "Canonical PE: $outputFullPath"
+    Write-Host "SHA256: $hash"
+    if ($certificateOffset -eq 0) {
+        Write-Host 'Authenticode certificate table: absent'
+    } else {
+        Write-Host "Authenticode certificate table: removed $certificateSize bytes"
+    }
 }

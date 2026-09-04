@@ -24,8 +24,8 @@ param(
 
     # SHA-1 thumbprint of the SSL.com OV code-signing certificate (No More
     # Secrets, LLC) exposed through eSigner CKA. When given, the script scans
-    # and signs only the downloadable outer installer. Removing its terminal
-    # certificate table produces the exact independently built unsigned file.
+    # and signs every first-party installed binary, the MSI, and the outer
+    # installer. Canonical comparison removes each certificate table.
     [ValidatePattern('^[0-9A-Fa-f]{40}$')]
     [string]$SignThumbprint,
 
@@ -194,8 +194,8 @@ if (Test-Path $assetsJson) {
 }
 
 # The download users get: our own elevated installer (src/ThisIsMyPC.Installer)
-# with the MSI embedded. It elevates before Windows Installer starts, so the
-# UAC prompt is a normal modal instead of a taskbar flash, and it offers the
+# with the MSI in a length-delimited appended payload. It elevates before
+# Windows Installer starts, so the UAC prompt is a normal modal, and it offers the
 # options the Velopack wizard cannot (folder, shortcuts, start with Windows,
 # update checks). NativeAOT always: one small native exe around the MSI.
 Write-Host 'Publishing the installer (ThisIsMyPC-Installer.exe) around the MSI...'
@@ -206,17 +206,18 @@ if (-not (Test-Path $msiPath)) { throw 'ThisIsMyPC-win.msi missing from the vpk 
 & (Join-Path $PSScriptRoot 'normalize-msi.ps1') -Path $msiPath -Version $Version
 dotnet publish (Join-Path $repoRoot 'src\ThisIsMyPC.Installer\ThisIsMyPC.Installer.csproj') `
     --configuration Release --runtime win-x64 --self-contained true `
-    -p:Version=$Version -p:AotPublish=true "-p:EmbeddedMsiPath=$msiPath" --output $installerStaging -m:1
+    -p:Version=$Version -p:AotPublish=true -p:BundleNativeLibraries=true --output $installerStaging -m:1
 if ($LASTEXITCODE -ne 0) { throw 'Installer publish failed' }
 $installerExe = Join-Path $installerStaging 'ThisIsMyPC-Installer.exe'
 if (-not (Test-Path $installerExe)) { throw 'ThisIsMyPC-Installer.exe missing from the installer publish output' }
 # Release assets carry the version in the name (Sam, 2026-09-01).
 $installerAsset = Join-Path $output "ThisIsMyPC-Installer-$Version.exe"
-Copy-Item $installerExe $installerAsset -Force
 # The compiler stamps the version block Language Neutral; Explorer should say
 # English (United States). Must precede signing: it rewrites the file.
-& (Join-Path $PSScriptRoot 'set-version-language.ps1') -Path $installerAsset
-& (Join-Path $PSScriptRoot 'normalize-pe-timestamps.ps1') -Path $installerAsset
+& (Join-Path $PSScriptRoot 'set-version-language.ps1') -Path $installerExe
+& (Join-Path $PSScriptRoot 'normalize-pe-timestamps.ps1') -Path $installerExe
+Import-Module (Join-Path $PSScriptRoot 'InstallerBundle.psm1') -Force
+Add-InstallerPayload -StubPath $installerExe -PayloadPath $msiPath -OutputPath $installerAsset | Out-Null
 
 # Gate: every first-party binary carries ASLR, high-entropy VA, DEP, CFG,
 # the /GS cookie, and table-based unwinding, read from the PE headers of the
@@ -228,11 +229,12 @@ Write-Host 'Checking exploit mitigations on the shipped binaries...'
 if ($LASTEXITCODE -ne 0) { throw 'A shipped binary is missing an exploit mitigation; see the table above.' }
 
 if ($SignThumbprint) {
-    # Only the outer image is signed so one terminal certificate table can be
-    # removed to recover the exact independently built unsigned installer.
     & (Join-Path $PSScriptRoot 'sign-release-installer.ps1') `
         -AssetDirectory $output `
+        -StagingDirectory $staging `
+        -InstallerStub $installerExe `
         -Version $Version `
+        -Authors $Authors `
         -SignThumbprint $SignThumbprint `
         -ESignerCredentialId $ESignerCredentialId `
         -CodeSignToolArchive $CodeSignToolArchive `

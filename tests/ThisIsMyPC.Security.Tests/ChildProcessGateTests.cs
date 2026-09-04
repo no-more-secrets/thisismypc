@@ -82,6 +82,20 @@ public sealed class ChildProcessGateTests
         Assert.Contains("Contoso", result.ErrorMessage, StringComparison.Ordinal);
     }
 
+    [Fact]
+    [Trait("Category", "Integration")]
+    public void SignedBinary_ExactSignerName_DoesNotAcceptASubstring()
+    {
+        if (!File.Exists(DotnetExe))
+            return;
+
+        var accepted = AuthenticodeVerifier.VerifyTrusted(DotnetExe, ".NET", exactSignerName: true);
+        var rejected = AuthenticodeVerifier.VerifyTrusted(DotnetExe, "NET", exactSignerName: true);
+
+        Assert.True(accepted.IsSuccess, accepted.ErrorMessage);
+        Assert.False(rejected.IsSuccess);
+    }
+
     /// <summary>The exact path the winget launch gate takes on a real machine.</summary>
     [Fact]
     [Trait("Category", "Integration")]

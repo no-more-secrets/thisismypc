@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Globalization;
 using ThisIsMyPC.Core;
 using ThisIsMyPC.Core.Settings;
+using ThisIsMyPC.Interop.Win32.Security;
 
 namespace ThisIsMyPC.Installer.Services;
 
@@ -52,6 +53,18 @@ public sealed class MsiInstallEngine : IInstallEngine
         {
             progress.Report("Unpacking...");
             var msiPath = _package.ExtractTo(scratch);
+#if !DEBUG
+            var trust = AuthenticodeVerifier.VerifyTrusted(
+                msiPath,
+                "No More Secrets, LLC",
+                exactSignerName: true);
+            if (!trust.IsSuccess)
+                return new InstallOutcome(
+                    false,
+                    false,
+                    "The embedded Windows Installer signature is invalid. " + trust.ErrorMessage,
+                    logPath);
+#endif
 
             progress.Report("Installing ThisIsMyPC...");
             var exitCode = await RunMsiExecAsync(msiPath, options.InstallFolder, logPath, options.Reinstall, cancellationToken).ConfigureAwait(false);

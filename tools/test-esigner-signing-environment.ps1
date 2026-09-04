@@ -48,8 +48,9 @@ foreach ($property in $manifest.cka.files.PSObject.Properties) {
     }
 }
 
+$windowsRoot = [Environment]::GetFolderPath([Environment+SpecialFolder]::Windows)
 foreach ($property in $manifest.cka.systemFiles.PSObject.Properties) {
-    $path = Join-Path $env:SystemRoot $property.Name
+    $path = Join-Path $windowsRoot $property.Name
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
         throw "Pinned eSigner KSP file is missing: $path"
     }
@@ -59,7 +60,7 @@ foreach ($property in $manifest.cka.systemFiles.PSObject.Properties) {
     }
 }
 
-$certutil = Join-Path $env:SystemRoot 'System32\certutil.exe'
+$certutil = Join-Path ([Environment]::SystemDirectory) 'certutil.exe'
 $providerList = (& $certutil -v -csplist 2>&1) -join [Environment]::NewLine
 $providerMatch = [regex]::Match(
     $providerList,

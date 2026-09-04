@@ -11,7 +11,7 @@ The app corresponds to the PC, not a user profile (CLAUDE.md). Packaging follows
   script deletes it after pack (the MSI is a complete install by itself,
   checked with `msiexec /a` extraction on 2026-09-01).
 - **The download is `ThisIsMyPC-Installer-<version>.exe`** (`src/ThisIsMyPC.Installer`,
-  Avalonia, NativeAOT, the MSI embedded as a resource). Two reasons it exists.
+  Avalonia, NativeAOT, with a length-delimited MSI payload). Two reasons it exists.
   A bare per-machine MSI gets its UAC consent requested by the Installer
   service, not by the wizard window, so Windows parks the prompt in the
   taskbar and the dialog that follows can land off screen (seen 2026-09-01
@@ -125,6 +125,8 @@ Windows signing step, expose the password and run:
 ```powershell
 .\tools\sign-release-installer.ps1 `
   -AssetDirectory ".\artifacts\releases\$version" `
+  -StagingDirectory ".\artifacts\release-staging\$version" `
+  -InstallerStub ".\artifacts\release-staging\$version-installer\ThisIsMyPC-Installer.exe" `
   -Version $version `
   -SignThumbprint $thumbprint `
   -ESignerCredentialId $env:ESIGNER_CREDENTIAL_ID `
@@ -136,13 +138,23 @@ environment variable before starting any child process. This prevents build
 tools, SignTool, and later children from inheriting it. `build-release.ps1`
 refuses to start if the password is already in its environment.
 
-The script scans the finished unsigned installer, then invokes SignTool with
-the same program description. Those values must match: SSL.com binds malware
-approval to the resulting signing digest. The script next verifies the signer,
-certificate chain, RFC 3161 timestamp, and thumbprint. Finally, it removes the
-certificate table from a temporary copy and proves that the canonical SHA-256
-matches the preserved unsigned installer. It writes `SHA256SUMS` only after all
-of those gates pass.
+The script repacks through Velopack's signing callback. Each exact first-party
+file is malware-scanned immediately before the pinned SignTool signs it. It then
+normalizes, scans, and signs the MSI, builds the outer bundle, and scans and
+signs that bundle. Every object is checked for signer, chain, timestamp, and
+thumbprint. `SHA256SUMS` is written only after the complete signed install tree
+matches the preserved unsigned build.
+
+NativeAOT uses six SSL.com signing credits per release: app, service, Velopack
+app stub, Update.exe, MSI, and outer installer. CoreCLR currently uses about
+twenty because its first-party assemblies remain separate PE files. Velopack
+batches up to 100 paths into one callback, which reduces authentication and
+network round trips but does not reduce SSL.com's per-object credit count. A
+catalog signature could cover many files with one credit, but those files would
+not carry embedded signatures and catalog registration adds failure-prone
+installer state. It saves nothing for the two-file NativeAOT payload, so the
+release pipeline deliberately uses embedded signatures. Third-party binaries
+retain their upstream signatures and are never re-signed as No More Secrets.
 
 The complete path was exercised on 2026-09-03 using source commit
 `1dc1ff3f86262ae064cbc9dc3d7384bd6410924d` and test version
@@ -199,7 +211,17 @@ by the Windows native linker. Two clean builds of `0.0.1-repro` from identical
 source snapshots in different checkout paths on 2026-09-02 produced identical
 release assets before signing.
 
-To compare a downloaded signed installer with the local build:
+The easiest independent check, suitable for a coding agent, is:
+
+```
+.\tools\verify-release.ps1 `
+  -ReleasedInstaller C:\Downloads\ThisIsMyPC-Installer-1.0.0.exe
+```
+
+It infers the version and CoreCLR or NativeAOT shape, clones the exact tag into
+a disposable directory, validates the pinned environment, builds, compares,
+and deletes the disposable clone. It parses but never executes the downloaded
+file. To compare against an already prepared local build:
 
 ```
 .\tools\compare-reproducible-installer.ps1 `
@@ -207,15 +229,28 @@ To compare a downloaded signed installer with the local build:
   -LocalInstaller .\artifacts\releases\1.0.0\ThisIsMyPC-Installer-1.0.0.exe
 ```
 
-The comparison first requires a valid Authenticode signature. It then writes
-temporary canonical copies through `normalize-authenticode-pe.ps1`. That tool
-validates a terminal, aligned sequence of revision 2 PKCS SignedData
-`WIN_CERTIFICATE` records, rejects overlays and certificate tables overlapping
-section data, removes the table, and zeros the PE checksum and Security
-directory entry that Authenticode excludes from its image digest. It never
-modifies the downloaded file. Matching SHA-256 hashes prove that the signed
-installer, apart from its certificate table, is the installer built from the
-tag.
+The comparison requires valid, timestamped Authenticode from No More Secrets,
+LLC on the outer installer, MSI, app, service, and Velopack helpers. The outer
+format is `[launcher][MSI][0 to 7 zero padding bytes][72-byte footer][signature]`.
+The footer records a magic value, version, MSI offset, length, and SHA-256. This
+lets the verifier separate the launcher and MSI without loading or running
+either. The installer refuses to start unless WinVerifyTrust validates its own
+No More Secrets, LLC signature. It performs the same bounds and payload-hash
+checks, then requires a valid No More Secrets, LLC signature on the extracted
+MSI before invoking Windows Installer.
+
+For each PE, `normalize-authenticode-pe.ps1` accepts only a terminal, aligned
+sequence of revision 2 PKCS SignedData records. It rejects overlays and tables
+overlapping section data, removes the certificate table, and zeros only the PE
+checksum and Security directory entry that Authenticode excludes from its image
+digest. MSI comparison exports deterministic logical metadata while excluding
+only signature tables and first-party PE sizes changed by nested signing. All
+other File-table columns and the complete MsiFileHash table remain part of the
+canonical metadata. It
+then expands the cabinet and canonicalizes each first-party PE. Third-party
+files compare byte for byte, including any upstream signatures.
+Missing, additional, or different paths fail with their names. Matching records
+are sorted into one SHA-256 release root. The download is never modified.
 
 First end-to-end unsigned build ran 2026-09-01 (`-Version 0.1.0`): MSI,
 full nupkg, RELEASES, releases.win.json, assets.win.json, SHA256SUMS. The
@@ -234,13 +269,11 @@ an existing release.
   assembly Copyright carry the full legal name. Release contact for Defender
   submissions and cert validation: inquiries@no-more-secrets.com.
 - Authenticode signing is ready: SSL.com issued the No More Secrets, LLC OV
-  certificate through eSigner on 2026-09-03. The pinned, malware-scanned,
-  timestamped, outer-only signing path and canonical comparison passed end to
-  end that day. Signing nested executables or the embedded MSI would make it
-  impossible to remove one certificate table from the download and recover the
-  independently built hash. Update packages and the embedded payload remain
-  protected by the offline-GPG-signed manifest. Builds without
-  `-SignThumbprint` are unsigned test builds.
+  certificate through eSigner on 2026-09-03. The original outer-only path
+  passed that day. The release now signs every first-party installed PE, the
+  MSI, and the outer installer while preserving public source verification
+  through the canonical release tree. Builds without `-SignThumbprint` are
+  unsigned test builds.
 - `AppConstants.UpdateUrl` points at github.com/No-More-Secrets/thisismypc
   (public since 2026-09-01).
 - NativeAOT: `build-release.ps1 -Aot` publishes the App (~38 MB exe, zero

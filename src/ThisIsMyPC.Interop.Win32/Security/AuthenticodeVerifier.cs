@@ -10,16 +10,22 @@ namespace ThisIsMyPC.Interop.Win32.Security;
 /// locations a standard user can write to (the winget app-execution alias lives
 /// under the user profile). A tampered binary there would otherwise run with
 /// our token: classic user-to-admin escalation. Full Authenticode chain
-/// verification plus an optional signer-subject substring check.
+/// verification plus an optional signer-subject substring or exact simple-name
+/// check.
 /// </summary>
 public static partial class AuthenticodeVerifier
 {
     /// <summary>
     /// Succeeds only when <paramref name="filePath"/> carries a valid, trusted
     /// Authenticode signature, and (when given) the signer subject contains
-    /// <paramref name="requiredSubjectFragment"/> (ordinal, case-insensitive).
+    /// <paramref name="requiredSubjectFragment"/>. The default is an ordinal,
+    /// case-insensitive subject substring. <paramref name="exactSignerName"/>
+    /// instead requires an ordinal match against the certificate's simple name.
     /// </summary>
-    public static OperationResult<bool> VerifyTrusted(string filePath, string? requiredSubjectFragment = null)
+    public static OperationResult<bool> VerifyTrusted(
+        string filePath,
+        string? requiredSubjectFragment = null,
+        bool exactSignerName = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
         try
@@ -38,11 +44,14 @@ public static partial class AuthenticodeVerifier
             if (requiredSubjectFragment is not null)
             {
                 using var signer = ReadSignerCertificate(filePath);
-                if (signer is null
-                    || !signer.Subject.Contains(requiredSubjectFragment, StringComparison.OrdinalIgnoreCase))
+                var signerName = signer?.GetNameInfo(X509NameType.SimpleName, false);
+                var matches = exactSignerName
+                    ? string.Equals(signerName, requiredSubjectFragment, StringComparison.Ordinal)
+                    : signer?.Subject.Contains(requiredSubjectFragment, StringComparison.OrdinalIgnoreCase) == true;
+                if (!matches)
                 {
                     return OperationResult<bool>.Failure(
-                        $"{Path.GetFileName(filePath)} is signed, but not by '{requiredSubjectFragment}' (signer: {signer?.Subject ?? "unknown"}).",
+                        $"{Path.GetFileName(filePath)} is signed, but not by '{requiredSubjectFragment}' (signer: {signerName ?? "unknown"}).",
                         ErrorCategory.AccessDenied);
                 }
             }

@@ -124,31 +124,21 @@ in place, and never use `-AllowUnsignedRelease` for a public-release check.
    `tools/reproducible-build-environment.json`. Do not edit the manifest to
    match the machine. The validator intentionally stops on any difference. Use
    a disposable Windows VM matching the manifest when the host cannot match.
-3. Build the unsigned installer, then compare it with the downloaded signed
-   installer:
+3. Run the one-command verifier. It detects CoreCLR versus NativeAOT, clones
+   the exact tag into a disposable directory, builds it, and compares it:
 
 ```
-$version = '1.0.0'
 $releasedInstaller = 'C:\path\to\ThisIsMyPC-Installer-1.0.0.exe'
-$reproRoot = Join-Path $env:TEMP ("thisismypc-repro-" + [guid]::NewGuid().ToString('N'))
-
-git clone --branch "v$version" --depth 1 https://github.com/no-more-secrets/thisismypc.git $reproRoot
-Set-Location $reproRoot
-.\tools\test-reproducible-build-environment.ps1
-.\Setup.ps1
-.\tools\build-release.ps1 -Version $version
-.\tools\compare-reproducible-installer.ps1 `
-  -ReleasedInstaller $releasedInstaller `
-  -LocalInstaller ".\artifacts\releases\$version\ThisIsMyPC-Installer-$version.exe"
+.\tools\verify-release.ps1 -ReleasedInstaller $releasedInstaller
 ```
 
-Success ends with `Reproducible installer verified` and one SHA-256 value. The
-comparison first requires valid Authenticode, copies both files to a temporary
-directory, removes only a structurally valid terminal certificate table, and
-compares the canonical bytes. The downloaded file is unchanged. A mismatch is
-not expected signing noise. Confirm the exact tag, version, clean clone, and
-environment; then report both canonical hashes. Full design and manual command
-details live in `docs/release/packaging.md`.
+Success ends with `Reproducible release verified` and one SHA-256 value. The
+comparison requires valid Authenticode on the outer installer, embedded MSI,
+app, service, and Velopack helpers. It compares MSI metadata and every installed
+file after removing only structurally valid certificate tables from temporary
+copies. The download is unchanged. A mismatch is not expected signing noise.
+Report the named differing path and hashes. Full design and lower-level commands
+live in `docs/release/packaging.md`.
 
 ## Sign a release with SSL.com eSigner
 
@@ -179,12 +169,13 @@ the completed release directory. That script removes the password from its
 environment before any child starts. `build-release.ps1` refuses to run when
 the password is present, so MSBuild, NuGet, and vpk cannot inherit it.
 
-The script requires the No More Secrets, LLC code-signing identity, scans the
-finished installer, gives SignTool the identical description, verifies the
-signature and RFC 3161 timestamp, and proves that stripping the certificate
-table recovers the preserved unsigned hash. Do not disable or bypass any of
-these gates. If a vendor tool changes, investigate it and deliberately update
-the committed pins; never edit the manifest merely to match the machine.
+The script requires the No More Secrets, LLC identity. Velopack sends each exact
+installed first-party executable through the pinned malware scanner and
+SignTool before packing. The MSI and outer installer follow the same scan and
+sign gate. Every signature needs an RFC 3161 timestamp, and the final canonical
+tree must match the preserved unsigned build. Do not bypass these gates. If a
+vendor tool changes, investigate it and deliberately update the committed pins;
+never edit the manifest merely to match the machine.
 
 ## UI work: use the sight harness, not Sam's eyes
 

@@ -15,6 +15,18 @@ sealed class Program
 #pragma warning disable CA1031 // Last resort: a crash must show words, not vanish (NativeAOT fail-fasts silently).
         try
         {
+#if !DEBUG
+            var executablePath = Environment.ProcessPath
+                ?? throw new InvalidOperationException("The installer executable path is unavailable.");
+            var trust = AuthenticodeVerifier.VerifyTrusted(
+                executablePath,
+                "No More Secrets, LLC",
+                exactSignerName: true);
+            if (!trust.IsSuccess)
+                throw new InvalidOperationException(
+                    "The installer signature is invalid. This file may be incomplete or modified.\n\n" +
+                    trust.ErrorMessage);
+#endif
             NativeBootstrap.Prepare();
             BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
             return 0;
