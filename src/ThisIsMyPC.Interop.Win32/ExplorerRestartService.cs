@@ -7,21 +7,22 @@ using Windows.Win32.UI.Shell;
 namespace ThisIsMyPC.Interop.Win32;
 
 /// <summary>
-/// Restarts the shell. First choice is the Restart Manager's forced
-/// shutdown of the shell process, which ExplorerPatcher uses too and takes
-/// well under a second. The old route (WM_QUIT to the tray, wait, kill)
-/// stays as the fallback when the manager refuses. Either way the new
-/// explorer.exe is started by <see cref="ShellLauncher"/> as the desktop
-/// user, never with this process's elevated token: RmRestart from an
-/// elevated caller, like a plain Process.Start, brings the shell back
-/// elevated, and ExplorerPatcher's own taskbar never appears in an elevated
-/// Explorer (Sam's PC, 2026-09-03).
+/// Restarts the shell by terminating explorer.exe and starting a new one.
+/// The app is elevated, so it can force-kill the shell at once; the Restart
+/// Manager is the fallback for the rare refused kill. Its graceful shutdown
+/// is not the first choice because its window messages cannot cross UIPI
+/// from an elevated caller to the unelevated shell, so it waits its full
+/// ~30 s timeout before force-killing anyway (Sam's log, 2026-09-03).
+/// Either way the new explorer.exe is started by <see cref="ShellLauncher"/>
+/// as the desktop user, never with this process's elevated token: a shell
+/// started elevated elevates every app opened from Start, and
+/// ExplorerPatcher's own taskbar never appears in an elevated Explorer.
 /// </summary>
 public sealed class ExplorerRestartService : IExplorerRestartService
 {
     private static readonly NLog.Logger Log = NLog.LogManager.GetLogger("ThisIsMyPC.Interop.Win32.ExplorerRestartService");
-    private const uint WM_QUIT = 0x0012;
-    private static readonly TimeSpan GracefulTimeout = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan KillTimeout = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan AutoRespawnGrace = TimeSpan.FromSeconds(2);
     private static readonly TimeSpan ShellRecoveryTimeout = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan ShellPollInterval = TimeSpan.FromMilliseconds(250);
 
@@ -31,75 +32,47 @@ public sealed class ExplorerRestartService : IExplorerRestartService
         {
             var clock = Stopwatch.StartNew();
 
-            // 1. Find the shell tray window (owned by the shell explorer.exe process).
-            //    None means there is no shell: nothing to shut down, so start one.
+            // The running shell, if any. None means there is nothing to stop, so
+            // a shell is started rather than restarted.
             var trayHandle = PInvoke.FindWindow("Shell_TrayWnd", null);
-            if (trayHandle.IsNull)
-            {
-                Log.Warn("No Shell_TrayWnd: no shell is running, so one is started rather than restarted");
-                using var borrowed = ShellLauncher.CaptureDesktopUserToken(preferred: null);
-                var startedFresh = ShellLauncher.StartExplorer(borrowed);
-                if (!startedFresh.IsSuccess)
-                    return startedFresh;
-                var fresh = await WaitForShellRecoveryAsync(ShellRecoveryTimeout).ConfigureAwait(false);
-                Log.Info("Explorer started in {Ms} ms (taskbar back: {Back})", clock.ElapsedMilliseconds, fresh);
-                return fresh ? OperationResult<bool>.Success(true) : ShellDidNotComeBack();
-            }
-
-            // 2. Identify the shell process before sending quit
-            using var shellProcess = GetProcessFromWindow(trayHandle);
-            if (shellProcess is null)
-            {
-                return OperationResult<bool>.Failure(
-                    "Could not identify the Explorer shell process.",
-                    ErrorCategory.ServiceUnavailable);
-            }
+            using var shellProcess = trayHandle.IsNull ? null : GetProcessFromWindow(trayHandle);
 
             // The new shell must run as the desktop user, and the old shell is
             // the best source of that token; borrow it before it goes away.
             using var token = ShellLauncher.CaptureDesktopUserToken(shellProcess);
 
-            var managed = await Task.Run(() => ShutDownWithRestartManager(shellProcess)).ConfigureAwait(false);
-            if (managed.IsSuccess)
+            if (shellProcess is not null)
             {
-                var started = ShellLauncher.StartExplorer(token);
-                if (!started.IsSuccess)
-                    return started;
-                var back = await WaitForShellRecoveryAsync(ShellRecoveryTimeout).ConfigureAwait(false);
-                Log.Info("Explorer restarted through the Restart Manager in {Ms} ms (taskbar back: {Back})", clock.ElapsedMilliseconds, back);
-                return back ? OperationResult<bool>.Success(true) : ShellDidNotComeBack();
-            }
-            Log.Warn("Restart Manager could not shut Explorer down ({Error}); falling back to the tray quit", managed.ErrorMessage);
-
-            // 3. Send WM_QUIT for graceful shutdown
-            PInvoke.PostMessage(trayHandle, WM_QUIT, 0, 0);
-
-            // 4. Wait for graceful exit
-            var exited = await WaitForExitAsync(shellProcess, GracefulTimeout).ConfigureAwait(false);
-
-            // 5. Force-kill if graceful shutdown failed
-            if (!exited)
-            {
-                try
+                // Terminate the shell directly. The app is elevated, so it can,
+                // and this avoids the Restart Manager's graceful shutdown, whose
+                // window messages an elevated caller cannot deliver to the
+                // unelevated shell (UIPI): it then waits its full ~30 s timeout
+                // before force-killing anyway (Sam's log, 2026-09-03 21:21).
+                if (!await TerminateShellAsync(shellProcess).ConfigureAwait(false))
                 {
-                    shellProcess.Kill();
-                    await WaitForExitAsync(shellProcess, TimeSpan.FromSeconds(2)).ConfigureAwait(false);
+                    // A refused kill is rare; fall back to the Restart Manager,
+                    // which force-kills after its wait, slow but sure.
+                    Log.Warn("Could not terminate the shell directly; falling back to the Restart Manager");
+                    var managed = await Task.Run(() => ShutDownWithRestartManager(shellProcess)).ConfigureAwait(false);
+                    if (!managed.IsSuccess)
+                        return managed;
                 }
-                catch (InvalidOperationException)
+
+                // Killing the shell can leave the desktop user's own relaunch to
+                // Windows; give it a moment, and only start one if none appears.
+                if (await WaitForShellRecoveryAsync(AutoRespawnGrace).ConfigureAwait(false))
                 {
-                    // Process already exited between check and kill; that's fine
+                    Log.Info("Explorer came back on its own in {Ms} ms after the shell was stopped", clock.ElapsedMilliseconds);
+                    return OperationResult<bool>.Success(true);
                 }
             }
 
-            // 6. Start the new explorer.exe as the desktop user
             var launched = ShellLauncher.StartExplorer(token);
             if (!launched.IsSuccess)
                 return launched;
 
-            // 7. Poll for Shell_TrayWnd to reappear (shell is ready when taskbar is back)
             var recovered = await WaitForShellRecoveryAsync(ShellRecoveryTimeout).ConfigureAwait(false);
-            Log.Info("Explorer restarted through the tray quit in {Ms} ms (taskbar back: {Back})", clock.ElapsedMilliseconds, recovered);
-
+            Log.Info("Explorer restarted in {Ms} ms (taskbar back: {Back})", clock.ElapsedMilliseconds, recovered);
             return recovered ? OperationResult<bool>.Success(true) : ShellDidNotComeBack();
         }
         catch (Exception ex)
@@ -194,6 +167,29 @@ public sealed class ExplorerRestartService : IExplorerRestartService
             $"Explorer was restarted, but its taskbar has not come back after {ShellRecoveryTimeout.TotalSeconds:0} seconds. "
             + "A setting that changes the taskbar may not work on this Windows build; undo the last change from History and restart Explorer again.",
             ErrorCategory.ServiceUnavailable);
+    }
+
+    /// <summary>
+    /// Force-terminates the shell process and waits for it to exit. True when
+    /// it is gone. An elevated app can terminate the desktop user's shell, and
+    /// a clean termination does not auto-respawn on Windows 10 and 11.
+    /// </summary>
+    private static async Task<bool> TerminateShellAsync(Process shellProcess)
+    {
+        try
+        {
+            shellProcess.Kill();
+        }
+        catch (InvalidOperationException)
+        {
+            return true;   // already gone
+        }
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or NotSupportedException)
+        {
+            Log.Warn(ex, "Kill on the shell process ({Pid}) was refused", shellProcess.Id);
+            return false;
+        }
+        return await WaitForExitAsync(shellProcess, KillTimeout).ConfigureAwait(false);
     }
 
     private static async Task<bool> WaitForShellRecoveryAsync(TimeSpan timeout)

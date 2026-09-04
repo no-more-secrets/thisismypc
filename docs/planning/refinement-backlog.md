@@ -216,12 +216,19 @@ prep here.
   21:12). Without any borrowed token the shell is started plainly and the
   log says it runs elevated, since no shell is worse. With no Shell_TrayWnd
   at all, Restart Explorer starts a shell instead of refusing (it refused
-  five times in that log and Sam started explorer by hand). RmShutdown
-  stays; RmRestart is no longer used. `ExplorerRestartService` also fails
-  with guidance when Shell_TrayWnd does not return within its timeout,
-  instead of reporting success with the taskbar gone. Owed: Sam's live pass
-  choosing Windows 10 (ExplorerPatcher) from the app and seeing the taskbar
-  return; the log names the process the token came from.
+  five times in that log and Sam started explorer by hand). The restart now
+  terminates the shell directly rather than through the Restart Manager: its
+  graceful shutdown sends window messages the elevated app cannot deliver to
+  the unelevated shell (UIPI), so it waited its full ~30 s timeout before
+  force-killing anyway (Sam's log, 2026-09-03 21:21, restart took 30457 ms,
+  taskbar back true). The elevated app force-kills explorer at once, gives
+  Windows a 2 s grace to relaunch the shell itself (as the desktop user), and
+  starts one with the borrowed token only if none appears; the Restart
+  Manager stays as the fallback for a refused kill. `ExplorerRestartService`
+  also fails with guidance when Shell_TrayWnd does not return within its
+  timeout, instead of reporting success with the taskbar gone. Owed: Sam's
+  live pass choosing Windows 10 (ExplorerPatcher) from the app and seeing the
+  taskbar return quickly; the log names the process the token came from.
   Values the app already
   renders are excluded so no two rows write one value. `ExplorerPatcherSettingsReader`
   reads live values and evaluates the section conditions the way its GUI.c
