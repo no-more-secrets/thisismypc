@@ -64,6 +64,38 @@ public partial class MainWindow : Window
         }
     }
 
+    // --- Sidebar grip: drag the sidebar edge between its two widths ---
+
+    private bool _gripDragging;
+
+    private void OnSidebarGripPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+            return;
+        _gripDragging = true;
+        e.Pointer.Capture(SidebarGrip);
+        e.Handled = true;
+    }
+
+    private void OnSidebarGripMoved(object? sender, PointerEventArgs e)
+    {
+        if (!_gripDragging || DataContext is not MainWindowViewModel vm)
+            return;
+        // Snap as the pointer crosses the midpoint between the two widths.
+        var x = e.GetPosition(this).X;
+        var midpoint = (SidebarWidthConverter.CollapsedWidth + SidebarWidthConverter.ExpandedWidth) / 2;
+        vm.IsSidebarCollapsed = x < midpoint;
+    }
+
+    private void OnSidebarGripReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        if (!_gripDragging)
+            return;
+        _gripDragging = false;
+        e.Pointer.Capture(null);
+        e.Handled = true;
+    }
+
     private void OnSearchKeyDown(object? sender, KeyEventArgs e)
     {
         if (e.Key != Key.Escape || DataContext is not MainWindowViewModel vm)

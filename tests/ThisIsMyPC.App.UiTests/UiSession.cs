@@ -254,7 +254,7 @@ public sealed class UiSession : IDisposable
         Pump();
     }
 
-    private Point CenterOf(Visual target)
+    public Point CenterOf(Visual target)
     {
         var bounds = target.Bounds;
         return target.TranslatePoint(new Point(bounds.Width / 2, bounds.Height / 2), Window)

@@ -162,16 +162,16 @@
     </Style>
 
     <!-- Sidebar toggle button -->
-    <!-- Title bar and sidebar icon buttons (toggle, shortcuts): the same
-         discrete rimmed surface as every other button in the app, square. -->
+    <!-- Title bar icon buttons (shortcuts): the app's discrete rimmed
+         surface, as a 28px circle hugging a 16px glyph. -->
     <Style Selector="Button.bar-icon">
         <Setter Property="Background" Value="{DynamicResource OverlayBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource OutlineBrush}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="Padding" Value="0" />
-        <Setter Property="Width" Value="36" />
-        <Setter Property="Height" Value="36" />
-        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Width" Value="28" />
+        <Setter Property="Height" Value="28" />
+        <Setter Property="CornerRadius" Value="14" />
         <Setter Property="HorizontalContentAlignment" Value="Center" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="Cursor" Value="Hand" />

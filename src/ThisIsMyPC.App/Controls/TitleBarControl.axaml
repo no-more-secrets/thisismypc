@@ -2,23 +2,19 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="ThisIsMyPC.App.Controls.TitleBarControl"
              x:Name="Root"
-             ClipToBounds="False"
              Height="64">
 
     <!-- Custom window frame. The Window extends its client area over the
          system title bar (ExtendClientAreaToDecorationsHint) and hides the
          stock caption buttons (NoChrome), so this control is the whole frame:
          64px tall (two stock title bars). The logo owns the top-left corner:
-         an identity block (48px app icon, name, subtitle) IdentityWidth wide
-         and IdentityHeight tall, taller than the bar, so it spills below into
-         the sidebar column with a rounded bottom-right corner and the page
-         panel is carved out around it, like the shell it is modelled on. The
-         caption buttons at the right run the full bar height like Spotify's
-         and Windows Terminal's, at the stock 46 width so the hand still lands
-         where Windows trained it. Everything else is a drag region; a
-         double-click toggles maximize. CenterContent is centred on the whole
-         bar (the settings search); TrailingContent sits just left of the
-         caption buttons (shortcuts). -->
+         48px app icon, name and subtitle, with the icon on the same x as the
+         sidebar icons below it. The caption buttons at the right run the full
+         bar height like Spotify's and Windows Terminal's, at the stock 46
+         width so the hand still lands where Windows trained it. Everything
+         else is a drag region; a double-click toggles maximize. CenterContent
+         is centred on the whole bar (the settings search); TrailingContent
+         sits just left of the caption buttons (shortcuts). -->
     <UserControl.Styles>
         <Style Selector="Button.caption">
             <Setter Property="Background" Value="Transparent" />
@@ -60,54 +56,32 @@
 
     <Grid ColumnDefinitions="*,Auto,*"
           Background="Transparent"
-          ClipToBounds="False"
           PointerPressed="OnDragRegionPressed">
 
-        <!-- Identity block. Taller than the bar, so it overhangs into the
-             sidebar column; its own fill covers the notch the host paints
-             behind the rounded corner, and its bottom and right rim continue
-             the page panel's outline. Compact (collapsed sidebar): icon only. -->
-        <Border x:Name="IdentityBlock"
-                Grid.Column="0"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Top"
-                Width="{Binding #Root.IdentityWidth}"
-                Height="{Binding #Root.IdentityHeight}"
-                Background="{DynamicResource SidebarBackgroundBrush}"
-                BorderBrush="{DynamicResource OutlineBrush}"
-                BorderThickness="0,0,1,1"
-                CornerRadius="0,0,16,0">
-            <Panel>
-                <StackPanel Orientation="Horizontal"
-                            Spacing="12"
-                            Margin="15,0,0,0"
-                            VerticalAlignment="Center"
-                            IsHitTestVisible="False"
-                            IsVisible="{Binding !#Root.IsIdentityCompact}">
-                    <Image Source="avares://ThisIsMyPC.App/Assets/ThisIsMyPC.ico"
-                           Width="48" Height="48"
-                           VerticalAlignment="Center" />
-                    <StackPanel VerticalAlignment="Center">
-                        <TextBlock Text="ThisIsMyPC"
-                                   FontFamily="{StaticResource DisplayFont}"
-                                   FontSize="20"
-                                   FontWeight="SemiBold"
-                                   Foreground="{DynamicResource TextPrimaryBrush}" />
-                        <TextBlock Text="{Binding #Root.Subtitle}"
-                                   IsVisible="{Binding #Root.Subtitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                                   FontSize="11"
-                                   Margin="0,1,0,0"
-                                   Foreground="{DynamicResource TextSecondaryBrush}" />
-                    </StackPanel>
-                </StackPanel>
-                <Image Source="avares://ThisIsMyPC.App/Assets/ThisIsMyPC.ico"
-                       Width="32" Height="32"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       IsHitTestVisible="False"
-                       IsVisible="{Binding #Root.IsIdentityCompact}" />
-            </Panel>
-        </Border>
+        <!-- Identity: icon, name, subtitle -->
+        <StackPanel Grid.Column="0"
+                    Orientation="Horizontal"
+                    Spacing="12"
+                    Margin="15,0,0,0"
+                    HorizontalAlignment="Left"
+                    VerticalAlignment="Center"
+                    IsHitTestVisible="False">
+            <Image Source="avares://ThisIsMyPC.App/Assets/ThisIsMyPC.ico"
+                   Width="48" Height="48"
+                   VerticalAlignment="Center" />
+            <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="ThisIsMyPC"
+                           FontFamily="{StaticResource DisplayFont}"
+                           FontSize="20"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Text="{Binding #Root.Subtitle}"
+                           IsVisible="{Binding #Root.Subtitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                           FontSize="11"
+                           Margin="0,1,0,0"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+            </StackPanel>
+        </StackPanel>
 
         <!-- Centre slot: the equal star columns either side keep it on the window's centre line -->
         <ContentPresenter Grid.Column="1"

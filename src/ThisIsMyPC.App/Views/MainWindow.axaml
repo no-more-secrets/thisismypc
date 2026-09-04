@@ -24,18 +24,11 @@
          when Windows parks the maximized frame edges off the monitor. -->
     <!-- Shell shape: the bar and the sidebar are one L-shaped block in the
          sidebar colour; the page area is an inset panel with a rounded
-         inner corner, so the bar reads as chrome and the page as the surface.
-         The bar's identity block is 96 tall and overhangs 32px into the
-         sidebar column (ZIndex puts it over the sidebar and page panel); the
-         sidebar paints a BaseBrush notch behind its rounded corner. -->
+         inner corner, so the bar reads as chrome and the page as the surface. -->
     <Grid RowDefinitions="Auto,*"
           Background="{DynamicResource SidebarBackgroundBrush}"
           Margin="{Binding $parent[Window].OffScreenMargin}">
-    <controls:TitleBarControl Grid.Row="0"
-                              ZIndex="5"
-                              Subtitle="{Binding VersionText}"
-                              IdentityWidth="{Binding IsSidebarCollapsed, Converter={x:Static vm:SidebarWidthConverter.Instance}}"
-                              IsIdentityCompact="{Binding IsSidebarCollapsed}">
+    <controls:TitleBarControl Grid.Row="0" Subtitle="{Binding VersionText}">
         <controls:TitleBarControl.CenterContent>
             <!-- 5-3: cross-module search. Results drop down in the overlay
                  below (SearchResultsPanel), aligned on the same centre line. -->
@@ -54,7 +47,7 @@
         </controls:TitleBarControl.CenterContent>
         <controls:TitleBarControl.TrailingContent>
             <!-- Shortcuts: Settings, bug report, GitHub, About -->
-            <StackPanel Orientation="Horizontal" Spacing="2">
+            <StackPanel Orientation="Horizontal" Spacing="6">
                 <Button Classes="bar-icon"
                         Command="{Binding OpenSettingsCommand}"
                         ToolTip.Tip="Settings"
@@ -99,27 +92,8 @@
         <Border Grid.Column="0"
                 Background="{DynamicResource SidebarBackgroundBrush}"
                 Width="{Binding IsSidebarCollapsed, Converter={x:Static vm:SidebarWidthConverter.Instance}}">
-            <Panel>
-            <!-- Notch: page colour showing through the identity block's rounded corner -->
-            <Border Width="16" Height="16"
-                    HorizontalAlignment="Right" VerticalAlignment="Top"
-                    Margin="0,16,0,0"
-                    Background="{DynamicResource BaseBrush}" />
 
-            <!-- List starts under the identity block's 32px overhang -->
-            <DockPanel Margin="0,32,0,0">
-                <!-- Sidebar toggle, just below the logo -->
-                <Button DockPanel.Dock="Top"
-                        Classes="bar-icon"
-                        HorizontalAlignment="Left"
-                        Margin="6,8,0,0"
-                        Command="{Binding ToggleSidebarCommand}"
-                        ToolTip.Tip="Toggle sidebar">
-                    <PathIcon Data="M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z"
-                              Width="16" Height="16"
-                              Foreground="{DynamicResource TextSecondaryBrush}" />
-                </Button>
-
+            <DockPanel>
                 <!-- Home (not a module; ungrouped, pinned above the module groups) -->
                 <Button DockPanel.Dock="Top"
                         Classes="sidebar-item"
@@ -233,8 +207,22 @@
                     </ItemsControl>
                 </ScrollViewer>
             </DockPanel>
-            </Panel>
         </Border>
+
+        <!-- Sidebar grip: drag the sidebar's edge to collapse or expand it. It
+             snaps to one of the two widths as the pointer crosses the midpoint;
+             there is no in-between width. Straddles the edge by 4px each side. -->
+        <Border x:Name="SidebarGrip"
+                Grid.Column="0"
+                HorizontalAlignment="Right"
+                Width="8"
+                Margin="0,0,-4,0"
+                ZIndex="3"
+                Background="Transparent"
+                Cursor="SizeWestEast"
+                PointerPressed="OnSidebarGripPressed"
+                PointerMoved="OnSidebarGripMoved"
+                PointerReleased="OnSidebarGripReleased" />
 
         <!-- Page area: the inset panel with a 1px rim along the L. Rim plus
              margin add up to the 24,16 inner edge every page's geometry is

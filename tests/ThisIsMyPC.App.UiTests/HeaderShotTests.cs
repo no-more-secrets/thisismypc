@@ -1,5 +1,6 @@
 using Avalonia.Automation;
 using Avalonia.Controls;
+using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using ThisIsMyPC.App.ViewModels;
 
@@ -39,5 +40,37 @@ public class HeaderShotTests
         session.Click(gear);
         await session.WaitForAsync(() => vm.ContentTitle == "Settings", what: "Settings page");
         session.Screenshot("settings-from-gear");
+    }
+}
+
+/// <summary>
+/// The sidebar has no toggle button: dragging its right edge snaps it between
+/// the expanded and collapsed widths as the pointer crosses the midpoint.
+/// </summary>
+[Trait("Category", "Diagnostic")]
+public class SidebarGripShotTests
+{
+    [AvaloniaFact(Timeout = 120_000)]
+    public async Task DraggingTheEdge_SnapsBetweenCollapsedAndExpanded()
+    {
+        using var session = UiSession.ForMainWindow("sidebar-grip");
+        var vm = (MainWindowViewModel)session.Window.DataContext!;
+        await session.WaitForAsync(() => vm.SidebarGroups.Count > 0, timeoutMs: 30_000, what: "sidebar population");
+        Assert.False(vm.IsSidebarCollapsed);
+
+        var grip = session.Find<Border>(b => b.Name == "SidebarGrip");
+        var start = session.CenterOf(grip);
+        session.Window.MouseDown(start, Avalonia.Input.MouseButton.Left);
+        session.Window.MouseMove(new Avalonia.Point(60, start.Y));
+        session.Pump();
+        Assert.True(vm.IsSidebarCollapsed);
+        session.Screenshot("collapsed-mid-drag");
+
+        session.Window.MouseMove(new Avalonia.Point(180, start.Y));
+        session.Pump();
+        Assert.False(vm.IsSidebarCollapsed);
+        session.Window.MouseUp(new Avalonia.Point(180, start.Y), Avalonia.Input.MouseButton.Left);
+        session.Pump();
+        session.Screenshot("expanded-after-drag");
     }
 }
