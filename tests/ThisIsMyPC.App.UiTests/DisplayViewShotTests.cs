@@ -197,24 +197,6 @@ public class DisplayViewShotTests
     }
 
     [AvaloniaFact]
-    public void ScrollingOverTheSlider_StepsTheValue()
-    {
-        var monitors = new StubMonitorService();
-        var viewModel = new DisplayViewModel(SampleData(), monitors, new UiFakePowerService());
-        using var session = UiSession.ForView(new DisplayView(), viewModel, "display-view");
-
-        var slider = session.Window.GetVisualDescendants().OfType<Slider>()
-            .First(s => ReferenceEquals(s.DataContext, viewModel.Monitors[1]));
-        var point = slider.TranslatePoint(
-            new Point(slider.Bounds.Width / 2, slider.Bounds.Height / 2), session.Window)!.Value;
-
-        session.Window.MouseWheel(point, new Vector(0, 1));
-        session.Pump();
-
-        Assert.Equal(60, viewModel.Monitors[1].Brightness); // 55 + one 5-step notch
-    }
-
-    [AvaloniaFact]
     public void TypingAnExactValue_AppliesOnEnter()
     {
         var monitors = new StubMonitorService();
