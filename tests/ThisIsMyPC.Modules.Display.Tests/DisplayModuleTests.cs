@@ -45,6 +45,71 @@ public sealed class DisplayModuleTests
     }
 
     [Fact]
+    public async Task FirstScan_IsQuick_AndMarksFeaturesPending()
+    {
+        var monitors = new FakeMonitorService();
+        monitors.Devices.Add(External());
+        var module = new DisplayModule(monitors, PowerWithPanel());
+
+        var data = Assert.IsType<DisplayScanData>((await module.ScanSystemStateAsync()).Value);
+
+        Assert.Equal(["EnumerateMonitors:Quick"], monitors.Calls);
+        Assert.True(data.IsPartial);
+        Assert.True(data.Monitors[0].FeaturesPending);
+        Assert.Same(data, module.Snapshot);
+    }
+
+    [Fact]
+    public async Task SecondScan_ReturnsTheSnapshot_WithoutTouchingTheBus()
+    {
+        var monitors = new FakeMonitorService();
+        monitors.Devices.Add(External());
+        var module = new DisplayModule(monitors, PowerWithPanel());
+        var first = (await module.ScanSystemStateAsync()).Value;
+
+        var second = (await module.ScanSystemStateAsync()).Value;
+
+        Assert.Same(first, second);
+        Assert.Single(monitors.Calls);
+    }
+
+    [Fact]
+    public async Task Refresh_RunsTheFullScan_AndBecomesTheSnapshot()
+    {
+        var monitors = new FakeMonitorService();
+        monitors.Devices.Add(External() with { VendorFeatures = [new VendorVcpFeature(0xE6, "Blue light filter", [0, 1, 2], 1, true)] });
+        var module = new DisplayModule(monitors, PowerWithPanel());
+        await module.ScanSystemStateAsync();
+
+        var full = await module.RefreshAsync();
+
+        Assert.True(full.IsSuccess);
+        Assert.False(full.Value!.IsPartial);
+        Assert.Single(full.Value.Monitors[0].VendorFeatures);
+        Assert.Same(full.Value, module.Snapshot);
+        Assert.Equal(["EnumerateMonitors:Quick", "EnumerateMonitors:Full"], monitors.Calls);
+
+        // A later quick scan never downgrades a full snapshot.
+        var again = (await module.ScanSystemStateAsync()).Value;
+        Assert.Same(full.Value, again);
+    }
+
+    [Fact]
+    public async Task Invalidate_MakesTheNextOpenScanAgain()
+    {
+        var monitors = new FakeMonitorService();
+        monitors.Devices.Add(External());
+        var module = new DisplayModule(monitors, PowerWithPanel());
+        await module.RefreshAsync();
+
+        module.InvalidateSnapshot();
+        Assert.Null(module.Snapshot);
+        await module.ScanSystemStateAsync();
+
+        Assert.Equal(["EnumerateMonitors:Full", "EnumerateMonitors:Quick"], monitors.Calls);
+    }
+
+    [Fact]
     public async Task Scan_WithoutABattery_ListsOnlyDdcMonitors()
     {
         var monitors = new FakeMonitorService { HasBattery = false };

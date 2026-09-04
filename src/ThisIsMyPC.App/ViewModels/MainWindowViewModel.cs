@@ -576,7 +576,7 @@ public partial class MainWindowViewModel : ViewModelBase
                     }
                 });
             }
-            else if (current?.Module is Modules.Display.DisplayModule)
+            else if (current?.Module is Modules.Display.DisplayModule displayModule)
             {
                 var scanResult = await current.Module.ScanSystemStateAsync().ConfigureAwait(false);
                 await Dispatcher.UIThread.InvokeAsync(() =>
@@ -589,7 +589,10 @@ public partial class MainWindowViewModel : ViewModelBase
                     {
                         ContentTitle = current.Module.Info.Name;
                         ContentDescription = current.Module.Info.Description;
-                        CurrentContent = new DisplayViewModel(displayData, _monitorService, _powerService);
+                        // Snapshot or quick scan on screen now; the full scan
+                        // runs behind it and fills the cards in.
+                        CurrentContent = new DisplayViewModel(
+                            displayData, _monitorService, _powerService, displayModule.RefreshAsync);
                     }
                     else
                     {
@@ -696,6 +699,10 @@ public partial class MainWindowViewModel : ViewModelBase
         // 7-3: fire-and-forget update check; never blocks startup, never surfaces
         // failures (fully offline-safe). Skipped entirely when the user opted out.
         _ = CheckForUpdateBadgeAsync();
+
+        // The Display page's full DDC scan takes seconds; do it now, in the
+        // background, so the first open is instant.
+        _ = PrewarmDisplaySnapshotAsync();
     }
 
     private void PopulateSidebar()
@@ -1064,6 +1071,13 @@ public partial class MainWindowViewModel : ViewModelBase
 
         await Task.Run(() => _monitorService.ReapplyLastWrites()).ConfigureAwait(true);
 
+        // Monitors may have come or gone: the snapshot is stale either way.
+        var displayModule = _navigationService.Modules
+            .Select(m => m.Module)
+            .OfType<Modules.Display.DisplayModule>()
+            .FirstOrDefault();
+        displayModule?.InvalidateSnapshot();
+
         if (CurrentContent is not DisplayViewModel
             || SelectedModule?.Module is not Modules.Display.DisplayModule module
             || _powerService is null)
@@ -1077,7 +1091,36 @@ public partial class MainWindowViewModel : ViewModelBase
             return; // the user navigated away meanwhile
 
         if (scan.IsSuccess && scan.Value is Modules.Display.Models.DisplayScanData data)
-            CurrentContent = new DisplayViewModel(data, _monitorService, _powerService);
+            CurrentContent = new DisplayViewModel(data, _monitorService, _powerService, module.RefreshAsync);
+    }
+
+    /// <summary>
+    /// Warms the Display snapshot shortly after startup, so the first click on
+    /// Display finds it ready. Delayed past the Home page's own reads, and
+    /// skipped when the module is not installed or not available.
+    /// </summary>
+    private async Task PrewarmDisplaySnapshotAsync()
+    {
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(3)).ConfigureAwait(false);
+            var registration = _navigationService.Modules
+                .FirstOrDefault(m => m.Module is Modules.Display.DisplayModule);
+            if (registration is not { Availability.IsAvailable: true }
+                || registration.Module is not Modules.Display.DisplayModule module
+                || module.Snapshot is not null)
+            {
+                return;
+            }
+
+            await module.RefreshAsync().ConfigureAwait(false);
+        }
+#pragma warning disable CA1031 // A warm-up that fails changes nothing; the page scans on open as before.
+        catch (Exception ex)
+        {
+            Log.Warn(ex, "Display snapshot warm-up failed");
+        }
+#pragma warning restore CA1031
     }
 
     [ObservableProperty]

@@ -16,5 +16,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\ThisIsMyPC.Modules.Display\ThisIsMyPC.Modules.Display.csproj" />
+    <ProjectReference Include="..\..\src\ThisIsMyPC.Interop.Win32\ThisIsMyPC.Interop.Win32.csproj" />
   </ItemGroup>
 </Project>

@@ -56,4 +56,10 @@ public sealed record MonitorDevice
 
     /// <summary>Why DDC is unavailable, for the card's degraded note.</summary>
     public string? DdcError { get; init; }
+
+    /// <summary>
+    /// A quick scan found no cached feature list for this monitor: input
+    /// sources and vendor features are unknown until a full scan completes.
+    /// </summary>
+    public bool FeaturesPending { get; init; }
 }

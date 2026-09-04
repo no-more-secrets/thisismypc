@@ -11,12 +11,13 @@ namespace ThisIsMyPC.Core.Services;
 public interface IMonitorService
 {
     /// <summary>
-    /// Enumerates physical monitors and reads their DDC state (brightness,
-    /// contrast, input list from the capabilities string). The capabilities
-    /// request is slow (hundreds of ms per monitor); call from a scan, not a
-    /// hot path.
+    /// Enumerates physical monitors and reads their DDC state. Quick reads
+    /// brightness, contrast, and input (three DDC reads per monitor) and reuses
+    /// cached feature knowledge; a monitor whose features were never read has
+    /// <see cref="MonitorDevice.FeaturesPending"/> set. Full also requests the
+    /// capabilities string and probes the vendor codes, seconds per monitor.
     /// </summary>
-    OperationResult<IReadOnlyList<MonitorDevice>> EnumerateMonitors();
+    OperationResult<IReadOnlyList<MonitorDevice>> EnumerateMonitors(MonitorScanDepth depth = MonitorScanDepth.Full);
 
     OperationResult<bool> SetBrightness(string monitorId, int value);
 

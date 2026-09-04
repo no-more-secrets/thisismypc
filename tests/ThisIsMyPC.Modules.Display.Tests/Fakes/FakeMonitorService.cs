@@ -12,12 +12,19 @@ public sealed class FakeMonitorService : IMonitorService
     public string? EnumerateFailure { get; set; }
     public List<string> Calls { get; } = [];
 
-    public OperationResult<IReadOnlyList<MonitorDevice>> EnumerateMonitors()
+    /// <summary>Devices a quick scan returns when set; otherwise Devices with FeaturesPending on each.</summary>
+    public List<MonitorDevice>? QuickDevices { get; set; }
+
+    public OperationResult<IReadOnlyList<MonitorDevice>> EnumerateMonitors(MonitorScanDepth depth = MonitorScanDepth.Full)
     {
-        Calls.Add("EnumerateMonitors");
-        return EnumerateFailure is { } error
-            ? OperationResult<IReadOnlyList<MonitorDevice>>.Failure(error, ErrorCategory.ServiceUnavailable)
-            : OperationResult<IReadOnlyList<MonitorDevice>>.Success(Devices.ToList());
+        Calls.Add($"EnumerateMonitors:{depth}");
+        if (EnumerateFailure is { } error)
+            return OperationResult<IReadOnlyList<MonitorDevice>>.Failure(error, ErrorCategory.ServiceUnavailable);
+        if (depth == MonitorScanDepth.Full)
+            return OperationResult<IReadOnlyList<MonitorDevice>>.Success(Devices.ToList());
+        return OperationResult<IReadOnlyList<MonitorDevice>>.Success(
+            QuickDevices?.ToList()
+            ?? Devices.Select(d => d with { InputSources = [], VendorFeatures = [], FeaturesPending = true }).ToList());
     }
 
     public OperationResult<bool> SetBrightness(string monitorId, int value)

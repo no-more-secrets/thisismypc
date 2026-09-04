@@ -33,7 +33,8 @@ public sealed class DdcMonitorService : IMonitorService
     /// </summary>
     private sealed record CachedCapabilities(
         IReadOnlyDictionary<int, IReadOnlyList<int>> CodeValues,
-        IReadOnlyList<int> AnsweringVendorCodes);
+        IReadOnlyList<int> AnsweringVendorCodes,
+        System.Collections.Concurrent.ConcurrentDictionary<int, int> LastVendorValues);
 
     private readonly System.Collections.Concurrent.ConcurrentDictionary<string, CachedCapabilities> _capabilitiesCache = new();
 
@@ -71,7 +72,7 @@ public sealed class DdcMonitorService : IMonitorService
         [0x1B] = "USB-C",
     };
 
-    public OperationResult<IReadOnlyList<MonitorDevice>> EnumerateMonitors()
+    public OperationResult<IReadOnlyList<MonitorDevice>> EnumerateMonitors(MonitorScanDepth depth = MonitorScanDepth.Full)
     {
         try
         {
@@ -81,7 +82,7 @@ public sealed class DdcMonitorService : IMonitorService
             {
                 try
                 {
-                    devices.Add(ReadDevice(physical, deviceName, index));
+                    devices.Add(ReadDevice(physical, deviceName, index, depth));
                 }
                 finally
                 {
@@ -134,7 +135,7 @@ public sealed class DdcMonitorService : IMonitorService
     }
 
     private MonitorDevice ReadDevice(
-        NativeDisplay.PHYSICAL_MONITOR physical, string deviceName, int index)
+        NativeDisplay.PHYSICAL_MONITOR physical, string deviceName, int index, MonitorScanDepth depth)
     {
         var id = $"{deviceName}|{index}";
         var name = ReadEdidName(deviceName, index)
@@ -173,29 +174,49 @@ public sealed class DdcMonitorService : IMonitorService
             currentInput = (int)(input & 0xFF);
         }
 
-        // One capabilities request (slow, scan-time only) feeds both the input
+        // One capabilities request (slow, full scans only) feeds both the input
         // list and the vendor feature rows; cached after the first success.
+        // A quick scan never touches the bus for features: it reuses the
+        // cache, including the last vendor values it saw, or reports them
+        // pending when the monitor has not had a full scan yet.
         var cacheKey = $"{id}|{name}";
-        IReadOnlyDictionary<int, IReadOnlyList<int>>? codeValues;
-        IReadOnlyList<int>? knownVendorCodes = null;
-        if (_capabilitiesCache.TryGetValue(cacheKey, out var cached))
+        _capabilitiesCache.TryGetValue(cacheKey, out var cached);
+        IReadOnlyDictionary<int, IReadOnlyList<int>>? codeValues = cached?.CodeValues;
+        IReadOnlyList<VendorVcpFeature> vendorFeatures;
+        var featuresPending = false;
+
+        if (depth == MonitorScanDepth.Quick)
         {
-            codeValues = cached.CodeValues;
-            knownVendorCodes = cached.AnsweringVendorCodes;
+            if (cached is null)
+            {
+                featuresPending = true;
+                vendorFeatures = [];
+            }
+            else
+            {
+                vendorFeatures = BuildVendorFeaturesFromCache(cached);
+            }
         }
         else
         {
-            codeValues = ReadCodeValueGroups(physical.hPhysicalMonitor);
-        }
+            codeValues ??= ReadCodeValueGroups(physical.hPhysicalMonitor);
+            vendorFeatures = codeValues is null
+                ? []
+                : BuildVendorFeatures(physical.hPhysicalMonitor, codeValues, cached?.AnsweringVendorCodes);
 
-        var vendorFeatures = codeValues is null
-            ? []
-            : BuildVendorFeatures(physical.hPhysicalMonitor, codeValues, knownVendorCodes);
+            if (codeValues is not null)
+            {
+                var lastValues = cached?.LastVendorValues
+                    ?? new System.Collections.Concurrent.ConcurrentDictionary<int, int>();
+                foreach (var f in vendorFeatures)
+                {
+                    if (f.Current is { } current)
+                        lastValues[f.Code] = current;
+                }
 
-        if (codeValues is not null && knownVendorCodes is null)
-        {
-            _capabilitiesCache[cacheKey] = new CachedCapabilities(
-                codeValues, vendorFeatures.Select(f => f.Code).ToList());
+                _capabilitiesCache[cacheKey] = new CachedCapabilities(
+                    codeValues, vendorFeatures.Select(f => f.Code).ToList(), lastValues);
+            }
         }
 
         return new MonitorDevice
@@ -215,10 +236,33 @@ public sealed class DdcMonitorService : IMonitorService
                 && codeValues.TryGetValue(VcpPowerMode, out var powerModes)
                 ? VcpCapabilities.ChoosePowerOffValue(powerModes)
                 : null,
-            DdcError = codeValues is null
+            DdcError = codeValues is null && !featuresPending
                 ? "The monitor's feature list could not be read this time. Input and vendor controls are hidden; leave and reopen this page to retry."
                 : null,
+            FeaturesPending = featuresPending,
         };
+    }
+
+    /// <summary>Vendor rows from the cache alone: declared values plus the last value seen, no DDC traffic.</summary>
+    private static IReadOnlyList<VendorVcpFeature> BuildVendorFeaturesFromCache(CachedCapabilities cached)
+    {
+        var features = new List<VendorVcpFeature>();
+        foreach (var code in cached.AnsweringVendorCodes.Order())
+        {
+            if (!cached.CodeValues.TryGetValue(code, out var values) || values.Count < 2)
+                continue;
+
+            var isNamed = VendorFeatureNames.TryGetValue(code, out var name);
+            features.Add(new VendorVcpFeature(
+                code,
+                isNamed ? name! : $"Feature 0x{code:X2}",
+                values.Distinct().Order().ToList(),
+                cached.LastVendorValues.TryGetValue(code, out var last) ? last : null,
+                isNamed,
+                VendorFeatureHints.TryGetValue(code, out var hint) ? hint : null));
+        }
+
+        return features;
     }
 
     /// <summary>
@@ -327,6 +371,17 @@ public sealed class DdcMonitorService : IMonitorService
                     // inputs or turn the screen off under the user.
                     if (record && code is not (VcpInputSource or VcpPowerMode))
                         _lastWrites[(monitorId, code)] = value;
+
+                    // A successful vendor write is the newest value the cache
+                    // can hand a quick scan.
+                    if (code >= 0xE0)
+                    {
+                        foreach (var entry in _capabilitiesCache)
+                        {
+                            if (entry.Key.StartsWith(monitorId + "|", StringComparison.Ordinal))
+                                entry.Value.LastVendorValues[code] = value;
+                        }
+                    }
 
                     return OperationResult<bool>.Success(true);
                 }

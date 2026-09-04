@@ -43,37 +43,75 @@ public sealed class DisplayModule : IModule
         return Task.FromResult(new ModuleAvailability(IsAvailable: true));
     }
 
+    // The last scan, full or quick. A page open returns it at once and the
+    // page refreshes in the background, so the DDC bus (seconds per monitor
+    // for a capabilities request) never sits between a click and the page.
+    private DisplayScanData? _snapshot;
+
+    /// <summary>The most recent scan, if any; null until the first scan of the session.</summary>
+    public DisplayScanData? Snapshot => _snapshot;
+
+    /// <summary>
+    /// What a page open gets: the snapshot when there is one, otherwise a
+    /// quick scan (three DDC reads per monitor). Either way the page follows
+    /// up with <see cref="RefreshAsync"/> for the full picture.
+    /// </summary>
     public Task<OperationResult<object>> ScanSystemStateAsync()
     {
+        if (_snapshot is { } snapshot)
+            return Task.FromResult(OperationResult<object>.Success((object)snapshot));
+
         return Task.Run(() =>
         {
-            try
-            {
-                var devices = new List<MonitorDevice>();
-                string? scanError = null;
-
-                // The internal panel first, so it tops the list on laptops.
-                if (_monitors.HasSystemBattery()
-                    && new InternalPanelService(_power).ReadPanel() is { } panel)
-                {
-                    devices.Add(panel);
-                }
-
-                var ddc = _monitors.EnumerateMonitors();
-                if (ddc.IsSuccess)
-                    devices.AddRange(ddc.Value!);
-                else
-                    scanError = ddc.ErrorMessage;
-
-                return OperationResult<object>.Success(
-                    (object)new DisplayScanData(devices, scanError));
-            }
-            catch (Exception ex)
-            {
-                return OperationResult<object>.Failure(
-                    $"Failed to scan displays: {ex.Message}", ErrorCategory.ServiceUnavailable, ex);
-            }
+            var result = Scan(MonitorScanDepth.Quick);
+            return result.IsSuccess
+                ? OperationResult<object>.Success((object)result.Value!)
+                : OperationResult<object>.Failure(result.ErrorMessage!, result.ErrorCategory ?? ErrorCategory.ServiceUnavailable, result.Exception);
         });
+    }
+
+    /// <summary>
+    /// The full scan (capabilities strings, vendor probes) on a worker thread;
+    /// its result becomes the snapshot the next page open shows instantly.
+    /// </summary>
+    public Task<OperationResult<DisplayScanData>> RefreshAsync() =>
+        Task.Run(() => Scan(MonitorScanDepth.Full));
+
+    /// <summary>Monitors changed (display change, resume): the next open scans afresh.</summary>
+    public void InvalidateSnapshot() => _snapshot = null;
+
+    private OperationResult<DisplayScanData> Scan(MonitorScanDepth depth)
+    {
+        try
+        {
+            var devices = new List<MonitorDevice>();
+            string? scanError = null;
+
+            // The internal panel first, so it tops the list on laptops.
+            if (_monitors.HasSystemBattery()
+                && new InternalPanelService(_power).ReadPanel() is { } panel)
+            {
+                devices.Add(panel);
+            }
+
+            var ddc = _monitors.EnumerateMonitors(depth);
+            if (ddc.IsSuccess)
+                devices.AddRange(ddc.Value!);
+            else
+                scanError = ddc.ErrorMessage;
+
+            var data = new DisplayScanData(devices, scanError, IsPartial: devices.Any(d => d.FeaturesPending));
+            // A quick scan only fills an empty snapshot; it never replaces a
+            // full one with less.
+            if (depth == MonitorScanDepth.Full || _snapshot is null)
+                _snapshot = data;
+            return OperationResult<DisplayScanData>.Success(data);
+        }
+        catch (Exception ex)
+        {
+            return OperationResult<DisplayScanData>.Failure(
+                $"Failed to scan displays: {ex.Message}", ErrorCategory.ServiceUnavailable, ex);
+        }
     }
 
     public Task<OperationResult<bool>> ApplyChangeAsync(ChangeDescriptor change) =>

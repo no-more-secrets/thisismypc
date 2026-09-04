@@ -140,6 +140,13 @@
           "Microsoft.Data.Sqlite": "[10.0.11, )"
         }
       },
+      "thisismypc.interop.win32": {
+        "type": "Project",
+        "dependencies": {
+          "NLog": "[6.2.0, )",
+          "ThisIsMyPC.Core": "[1.0.0, )"
+        }
+      },
       "thisismypc.modules.display": {
         "type": "Project",
         "dependencies": {
@@ -156,6 +163,12 @@
           "SQLitePCLRaw.bundle_e_sqlite3": "2.1.12",
           "SQLitePCLRaw.core": "2.1.12"
         }
+      },
+      "NLog": {
+        "type": "CentralTransitive",
+        "requested": "[6.2.0, )",
+        "resolved": "6.2.0",
+        "contentHash": "CxK6AjM1Wy3hM8YeBpLJJuB/JdoeIVvX0/fMTWeIXD917UozCtzv6cZDamevugeEaBBF0TIatfcNX2iJHI0Cew=="
       }
     },
     "net10.0-windows10.0.22621/win-x64": {

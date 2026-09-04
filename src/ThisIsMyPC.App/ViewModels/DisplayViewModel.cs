@@ -30,14 +30,79 @@ public sealed partial class DisplayViewModel : ViewModelBase
 
     private bool _syncingLinkedBrightness;
 
-    public DisplayViewModel(DisplayScanData data, IMonitorService monitorService, IPowerService powerService)
+    private readonly IMonitorService _monitorService;
+    private readonly InternalPanelService _panel;
+
+    /// <summary>
+    /// True while the background full scan runs after a quick or cached open;
+    /// cards whose feature list is still pending say so themselves.
+    /// </summary>
+    [ObservableProperty]
+    private bool _isRefreshing;
+
+    public DisplayViewModel(
+        DisplayScanData data,
+        IMonitorService monitorService,
+        IPowerService powerService,
+        Func<Task<OperationResult<DisplayScanData>>>? refresh = null)
     {
+        _monitorService = monitorService;
+        _panel = new InternalPanelService(powerService);
         ScanError = data.ScanError;
-        var panel = new InternalPanelService(powerService);
         foreach (var device in data.Monitors)
-            Monitors.Add(new MonitorItemViewModel(device, monitorService, panel, OnMonitorBrightnessChanged));
+            Monitors.Add(new MonitorItemViewModel(device, monitorService, _panel, OnMonitorBrightnessChanged));
 
         CanLinkBrightness = Monitors.Count(m => m.SupportsDdc) >= 2;
+
+        if (refresh is not null)
+            _ = RefreshAsync(refresh);
+    }
+
+    /// <summary>
+    /// Runs the full scan behind the page that is already showing and folds
+    /// the result in: values update in place, cards whose shape changed (a
+    /// feature list arrived, an input list grew) are rebuilt, and a changed
+    /// set of monitors rebuilds the list.
+    /// </summary>
+    private async Task RefreshAsync(Func<Task<OperationResult<DisplayScanData>>> refresh)
+    {
+        IsRefreshing = true;
+        try
+        {
+            var result = await refresh().ConfigureAwait(true);
+            if (result.IsSuccess && result.Value is { } data)
+                Apply(data);
+        }
+        finally
+        {
+            IsRefreshing = false;
+        }
+    }
+
+    /// <summary>Folds a newer scan into the live page. Public for tests.</summary>
+    public void Apply(DisplayScanData data)
+    {
+        var sameSet = data.Monitors.Count == Monitors.Count
+            && data.Monitors.Select(d => d.Id).SequenceEqual(Monitors.Select(m => m.Id));
+        if (!sameSet)
+        {
+            Monitors.Clear();
+            foreach (var device in data.Monitors)
+                Monitors.Add(new MonitorItemViewModel(device, _monitorService, _panel, OnMonitorBrightnessChanged));
+        }
+        else
+        {
+            for (var i = 0; i < data.Monitors.Count; i++)
+            {
+                var fresh = data.Monitors[i];
+                if (Monitors[i].HasSameShape(fresh))
+                    Monitors[i].ApplyValues(fresh);
+                else
+                    Monitors[i] = new MonitorItemViewModel(fresh, _monitorService, _panel, OnMonitorBrightnessChanged);
+            }
+        }
+
+        OnPropertyChanged(nameof(HasNoMonitors));
     }
 
     /// <summary>
@@ -81,6 +146,10 @@ public sealed partial class MonitorItemViewModel : ViewModelBase
     private int _contrastWriting;
     private int? _contrastPending;
 
+    // Set while a refresh pushes values read from the monitor into the
+    // sliders, so those changes are not written back to the monitor.
+    private bool _applyingValues;
+
     public MonitorItemViewModel(
         MonitorDevice device,
         IMonitorService monitors,
@@ -117,11 +186,57 @@ public sealed partial class MonitorItemViewModel : ViewModelBase
     public IReadOnlyList<VendorFeatureViewModel> AdvancedVendorFeatures { get; }
     public bool HasAdvancedVendorFeatures => AdvancedVendorFeatures.Count > 0;
 
+    public string Id => _device.Id;
     public string Name => _device.Name;
     public bool IsInternalPanel => _device.IsInternalPanel;
     public bool SupportsDdc => _device.SupportsDdc;
     public string? DdcError => _device.DdcError;
     public bool HasDdcError => DdcError is { Length: > 0 };
+
+    /// <summary>The quick open had no feature list for this monitor; the full scan is filling it in.</summary>
+    public bool FeaturesPending => _device.FeaturesPending;
+
+    /// <summary>
+    /// Same card layout: the same controls would be built from the fresh
+    /// device, so its values can be applied in place instead of rebuilding.
+    /// </summary>
+    public bool HasSameShape(MonitorDevice fresh) =>
+        fresh.Id == _device.Id
+        && fresh.SupportsDdc == _device.SupportsDdc
+        && fresh.FeaturesPending == _device.FeaturesPending
+        && fresh.DdcError == _device.DdcError
+        && (fresh.Contrast is null) == (_device.Contrast is null)
+        && fresh.PowerOffValue == _device.PowerOffValue
+        && fresh.InputSources.Select(s => s.Value).SequenceEqual(_device.InputSources.Select(s => s.Value))
+        && fresh.VendorFeatures.Select(f => f.Code).SequenceEqual(_device.VendorFeatures.Select(f => f.Code));
+
+    /// <summary>
+    /// Pushes freshly read values into the controls without writing them back.
+    /// A control with a write in flight or queued keeps the user's value.
+    /// </summary>
+    public void ApplyValues(MonitorDevice fresh)
+    {
+        _applyingValues = true;
+        try
+        {
+            if (_brightnessWriting == 0 && _brightnessPending is null)
+                Brightness = fresh.Brightness;
+            if (fresh.Contrast is { } contrast && _contrastWriting == 0 && _contrastPending is null)
+                Contrast = contrast;
+            SelectedInput = fresh.InputSources.FirstOrDefault(i => i.Value == fresh.CurrentInput);
+
+            foreach (var feature in fresh.VendorFeatures)
+            {
+                var row = VendorFeatures.Concat(AdvancedVendorFeatures).FirstOrDefault(r => r.Code == feature.Code);
+                if (row is not null && feature.Current is { } current)
+                    row.ApplyValue(current);
+            }
+        }
+        finally
+        {
+            _applyingValues = false;
+        }
+    }
 
     public double BrightnessMax => _device.BrightnessMax;
     public bool HasContrast => _device.Contrast is not null;
@@ -156,6 +271,9 @@ public sealed partial class MonitorItemViewModel : ViewModelBase
             return;
         }
 
+        if (_applyingValues)
+            return;
+
         _brightnessChanged?.Invoke(this, value);
         _ = PushAsync((int)value, brightness: true);
     }
@@ -168,6 +286,9 @@ public sealed partial class MonitorItemViewModel : ViewModelBase
             Contrast = clamped;
             return;
         }
+
+        if (_applyingValues)
+            return;
 
         _ = PushAsync((int)value, brightness: false);
     }
@@ -256,6 +377,7 @@ public sealed partial class VendorFeatureViewModel : ViewModelBase
     private readonly Action<string> _reportError;
     private int _writing;
     private int? _pending;
+    private bool _applyingValue;
 
     public VendorFeatureViewModel(
         VendorVcpFeature feature,
@@ -270,6 +392,7 @@ public sealed partial class VendorFeatureViewModel : ViewModelBase
         IsSlider = IsContiguous(feature.Values);
     }
 
+    public int Code => _feature.Code;
     public string Name => _feature.Name;
     public string? Hint => _feature.Hint;
     public bool IsSlider { get; }
@@ -284,9 +407,35 @@ public sealed partial class VendorFeatureViewModel : ViewModelBase
     [ObservableProperty]
     private int _selectedValue;
 
-    partial void OnValueChanged(double value) => _ = PushAsync((int)value);
+    partial void OnValueChanged(double value)
+    {
+        if (!_applyingValue)
+            _ = PushAsync((int)value);
+    }
 
-    partial void OnSelectedValueChanged(int value) => _ = PushAsync(value);
+    partial void OnSelectedValueChanged(int value)
+    {
+        if (!_applyingValue)
+            _ = PushAsync(value);
+    }
+
+    /// <summary>A value read from the monitor; shown, not written back. A pending write wins.</summary>
+    public void ApplyValue(int current)
+    {
+        if (_writing == 1 || _pending is not null)
+            return;
+        _applyingValue = true;
+        try
+        {
+            Value = current;
+            if (_feature.Values.Contains(current))
+                SelectedValue = current;
+        }
+        finally
+        {
+            _applyingValue = false;
+        }
+    }
 
     private async Task PushAsync(int value)
     {

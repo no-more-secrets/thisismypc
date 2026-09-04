@@ -747,6 +747,21 @@ no UI now; delete or resurface.
 
 ## Display module: v1 SHIPPED 2026-08-30 (first Hardware-group module)
 
+- **Instant open (2026-09-04).** Measured on Sam's PG27UCDM: every open ran a
+  full DDC scan, 6.3 s cold (capabilities request plus 21 vendor probes) and
+  1.5 s warm, longer live with Twinkle Tray polling the same bus. Now
+  DisplayModule keeps a snapshot: an open returns it at once, or a Quick scan
+  (brightness, contrast, input: three reads, ~350 ms) when there is none;
+  RefreshAsync runs the Full scan behind the page and DisplayViewModel.Apply
+  folds it in (values in place without writing back, a card rebuilt only when
+  its shape changed, the list rebuilt when monitors changed); a startup
+  pre-warm runs the Full scan 3 s after launch; display change or resume
+  invalidates the snapshot. IMonitorService.EnumerateMonitors takes a
+  MonitorScanDepth; DdcMonitorService caches last vendor values too, so a
+  quick scan never touches the bus for features. Cards say "Reading this
+  monitor's features..." until the first full scan lands. Page ready in ~360 ms
+  every pass (DisplayLoadTimingTests, Diagnostic; DdcTimingDiagnosticTests
+  times the raw service).
 Absorbed Twinkle Tray's core, lean scope: per-monitor brightness/contrast
 sliders and input switching over DDC/CI (dxva2, fresh handles per operation so
 display changes never strand a stale handle), input options parsed from the

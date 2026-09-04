@@ -22,7 +22,7 @@ public class DisplayViewShotTests
     {
         public List<string> Writes { get; } = [];
 
-        public OperationResult<IReadOnlyList<MonitorDevice>> EnumerateMonitors() =>
+        public OperationResult<IReadOnlyList<MonitorDevice>> EnumerateMonitors(MonitorScanDepth depth = MonitorScanDepth.Full) =>
             OperationResult<IReadOnlyList<MonitorDevice>>.Success([]);
 
         public OperationResult<bool> SetBrightness(string monitorId, int value)
@@ -298,5 +298,50 @@ public class DisplayViewShotTests
         }
 
         Assert.Contains(monitors.Writes, w => w == @"vcp:\\.\DISPLAY2|0:0xD6=4");
+    }
+
+    /// <summary>
+    /// A background refresh folds fresh readings into the page: values move
+    /// without being written back to the monitor, a pending card gains its
+    /// rows when the feature list arrives, and the hint disappears.
+    /// </summary>
+    [AvaloniaFact]
+    public void Apply_UpdatesValuesWithoutWriting_AndFillsPendingCards()
+    {
+        var monitors = new StubMonitorService();
+        var quick = new DisplayScanData(
+            [new MonitorDevice { Id = "m1", Name = "PG27UCDM", SupportsDdc = true, Brightness = 40, Contrast = 50, FeaturesPending = true }],
+            null, IsPartial: true);
+        var viewModel = new DisplayViewModel(quick, monitors, new UiFakePowerService());
+        using var session = UiSession.ForView(new DisplayView(), viewModel, "display-refresh");
+        session.Screenshot("quick-pending");
+        Assert.True(session.IsTextVisible("Reading this monitor's features..."));
+
+        var full = new DisplayScanData(
+            [new MonitorDevice
+            {
+                Id = "m1", Name = "PG27UCDM", SupportsDdc = true, Brightness = 60, Contrast = 80, CurrentInput = 0x11,
+                InputSources = [new MonitorInputSource(0x0F, "DisplayPort 1"), new MonitorInputSource(0x11, "HDMI 1")],
+                VendorFeatures = [new VendorVcpFeature(0xE6, "Blue light filter", [0, 1, 2, 3, 4], Current: 2, IsNamed: true)],
+            }],
+            null);
+        viewModel.Apply(full);
+        session.Pump();
+        session.Screenshot("after-apply");
+
+        var card = Assert.Single(viewModel.Monitors);
+        Assert.Equal(60, card.Brightness);
+        Assert.Equal(80, card.Contrast);
+        Assert.False(card.FeaturesPending);
+        Assert.Single(card.VendorFeatures);
+        Assert.Equal(2, card.VendorFeatures[0].Value);
+        Assert.False(session.IsTextVisible("Reading this monitor's features..."));
+        Assert.Empty(monitors.Writes);
+
+        // Same shape again: values move in place, still no writes.
+        viewModel.Apply(full with { Monitors = [full.Monitors[0] with { Brightness = 30 }] });
+        Assert.Same(card, viewModel.Monitors[0]);
+        Assert.Equal(30, card.Brightness);
+        Assert.Empty(monitors.Writes);
     }
 }

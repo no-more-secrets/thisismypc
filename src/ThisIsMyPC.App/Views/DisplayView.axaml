@@ -100,6 +100,13 @@
                                            Foreground="{DynamicResource TextTertiaryBrush}"
                                            IsVisible="{Binding HasDdcError}" />
 
+                                <!-- Quick open: brightness is live already, the input and
+                                     feature rows arrive when the full scan finishes -->
+                                <TextBlock Text="Reading this monitor's features..."
+                                           FontSize="12"
+                                           Foreground="{DynamicResource TextTertiaryBrush}"
+                                           IsVisible="{Binding FeaturesPending}" />
+
                                 <StackPanel Spacing="8" IsVisible="{Binding SupportsDdc}">
                                     <!-- Brightness -->
                                     <DockPanel>
