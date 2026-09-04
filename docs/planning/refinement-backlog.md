@@ -221,9 +221,18 @@ prep here.
   starts one with the borrowed token only if none appears; the Restart
   Manager stays as the fallback for a refused kill. `ExplorerRestartService`
   also fails with guidance when Shell_TrayWnd does not return within its
-  timeout, instead of reporting success with the taskbar gone. Owed: Sam's
-  live pass choosing Windows 10 (ExplorerPatcher) from the app and seeing the
-  taskbar return quickly; the log names the process the token came from.
+  timeout, instead of reporting success with the taskbar gone. **Confirmed on
+  Sam's PC 2026-09-04**: switching to Windows 10 (ExplorerPatcher) and back
+  restarts in 2 to 3 s with its taskbar in place, as fast as ExplorerPatcher
+  itself. The log showed the shell "came back on its own in 279 ms": on this
+  machine Windows relaunches the shell after the kill, as the desktop user,
+  and the 2 s grace rides that respawn, so `LaunchAsUser` was not even needed
+  here. That settles the earlier premise: the kill does auto-respawn on this
+  build, but the design is correct either way, since the grace catches the
+  respawn and `LaunchAsUser` starts one only when none appears. The separate
+  asInvoker helper that would run the Restart Manager restart as the user is
+  therefore not needed and was dropped; the speed came from removing the 30 s
+  graceful wait, not from matching ExplorerPatcher's in-process mechanism.
 - **Interactive-user context (2026-09-03)**: acting as the signed-in desktop
   user became its own capability, since the app runs elevated and is the PC
   not a profile, so launching apps, opening folders, writing the user's hive,
