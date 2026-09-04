@@ -51,7 +51,7 @@ Open design decisions carried forward:
 - Sidebar icons: DONE 2026-08-30 (privacy shield, windows-update refresh arrow,
   environment chevrons).
 
-## Signing decision (Sam, 2026-08-30): no EV certificate for the foreseeable future
+## Release signing: SSL.com OV through eSigner
 
 Consequences, verified against the code and upstream:
 - **Hardware modules stay feasible**: use the upstream-signed PawnIO release
@@ -68,27 +68,22 @@ Consequences, verified against the code and upstream:
   so every update is rejected until then: correct direction, but the ceremony
   is a release blocker. Tooling: tools/new-release-manifest.ps1. Release tags
   must be v{version}.
-- **OV cert PURCHASED 2026-09-01**; identity validation underway, token
-  expected by about 2026-09-08. On arrival: install the token driver, confirm
-  the cert shows in `Cert:\CurrentUser\My` with a reachable private key,
-  test-sign a scratch exe, then `build-release.ps1 -SignThumbprint`. Signing is
-  outer-installer-only so its terminal certificate table can be removed for an
-  exact comparison with an independent unsigned build. The GPG manifest covers
-  the unsigned embedded payload and update assets.
-- **App signing plan (FINAL, Sam 2026-08-30): SSL.com OV cert under the LLC,
-  hardware-token delivery.** The publisher line must show the LLC, so the
-  individual-validated Certum Open Source cert is out. Real prices verified
-  2026-08-30: SSL.com OV cert $65-75/yr + FIPS USB token + shipping = ~$150-200
-  first year, ~$70/yr after; sign locally with the token on release day. Avoid
-  SSL.com eSigner (adds $20/mo). Upgrade path if CI cloud signing is ever
-  needed: Certum Standard Cloud via SimplySign, flat ~€209/yr, no usage fees.
-  Validation uses the LLC registration + DUNS + phone callback; no org-age
-  requirement. Certs max ~459 days (CA/B Forum, early 2026): multi-year buys
-  mean mid-term reissues. Azure Trusted Signing unavailable until ~Apr 2029
-  (3-year org history). EV unnecessary: driver signing is moot via upstream
-  PawnIO and the EV SmartScreen advantage is reportedly gone in 2026.
-  SmartScreen reputation builds from download volume regardless. Only
-  release-signing material stays private (GPLv2 rule).
+- **OV cert ISSUED AND VERIFIED 2026-09-03** through SSL.com eSigner for No More
+  Secrets, LLC. CKA 1.1.2 Automated Production signing, mandatory CodeSignTool
+  malware scanning, SignTool RFC 3161 timestamping, signature verification, and
+  certificate-table removal all passed on a deterministic test installer.
+  Canonical SHA-256 matched the independent unsigned build exactly. Signing is
+  outer-installer-only; the GPG manifest covers the unsigned embedded payload
+  and update assets.
+- **Signing tool supply chain pinned 2026-09-03**: the unsigned installed CKA
+  runtime files, complete CodeSignTool 1.3.3 archive, scanner jar, and bundled
+  Java executable have committed hashes. The release script rejects drift,
+  requires the LLC code-signing EKU and identity, keeps the malware blocker in
+  the path, gives scan_code and SignTool the same description, requires a valid
+  timestamp, and self-checks canonical reproducibility before SHA256SUMS.
+  Password, TOTP seed, and CKA master key remain private. A future unattended
+  pipeline builds unsigned first, then supplies the account password only to a
+  short Windows signing process that clears it before starting child tools.
 
 ## Machine-scope packaging: SHIPPED 2026-08-31 (docs/release/packaging.md)
 
@@ -300,6 +295,11 @@ prep here.
   Studio, MSVC, link.exe, or Windows SDK versions that differ from the committed
   build-environment manifest. That includes the Windows servicing build and
   Windows Installer engine used to rewrite the MSI compound stream.
+- **Avalonia build telemetry removed 2026-09-03**: every project whose graph
+  reaches Avalonia overrides the optional transitive `Avalonia.BuildServices`
+  package as a private assetless dependency. Restore imports no telemetry
+  target, task, or collector. A normal sandboxed build verified that
+  `%LocalAppData%` remained untouched.
 - **Reproducible installer shipped 2026-09-02**: deterministic managed builds,
   fixed staging metadata, version-derived MSI identities, normalized WiX/CAB
   metadata, and normalized native-linker timestamps make repeated unsigned

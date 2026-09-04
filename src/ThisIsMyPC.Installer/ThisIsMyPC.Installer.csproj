@@ -60,6 +60,9 @@
 
   <ItemGroup>
     <PackageReference Include="Avalonia" />
+    <!-- Avalonia adds optional build telemetry transitively. Keep the package
+         assetless so its task and collector are never imported or executed. -->
+    <PackageReference Include="Avalonia.BuildServices" ExcludeAssets="all" PrivateAssets="all" />
     <PackageReference Include="Avalonia.Desktop" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
     <PackageReference Include="CommunityToolkit.Mvvm" />

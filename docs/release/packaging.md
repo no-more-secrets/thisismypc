@@ -89,6 +89,68 @@ win-x64) into one staging directory (the service exe must sit next to the app
 exe for Owner Mode enable), packs the MSI, and writes `SHA256SUMS`. Then follow
 `update-signing.md` for signing and upload.
 
+### Signing with SSL.com eSigner
+
+Releases use SSL.com eSigner CKA in Automated Code Signing and Production mode.
+Keep the account's malware blocker enabled. Install CKA 1.1.2, load its master
+key, and download the unmodified CodeSignTool 1.3.3 Windows zip from SSL.com.
+The release gate checks every executable CKA runtime file against
+`tools/esigner-signing-environment.json`. It also verifies the complete
+CodeSignTool archive hash before extracting it into a new temporary directory.
+This pin is important because the installed CKA runtime files are not themselves
+Authenticode-signed.
+
+Set the non-password inputs for the shell and run the signed build:
+
+```powershell
+$env:ESIGNER_USERNAME = 'your SSL.com account username'
+$env:ESIGNER_CREDENTIAL_ID = 'the code-signing credential ID'
+$env:ESIGNER_CODESIGNTOOL_ARCHIVE = 'C:\path\to\CodeSignTool-v1.3.3-windows.zip'
+.\tools\build-release.ps1 -Version 1.0.0 `
+  -SignThumbprint 'the 40-character certificate thumbprint'
+```
+
+Use the credential ID beside the eSigner code-signing certificate, not the
+document eSeal ID. The local command prompts privately for the SSL.com account
+password. CodeSignTool has no protected password-input channel, so its Java
+process still receives that password as an argument for the lifetime of the
+scan. Use a dedicated release machine with no untrusted same-user processes.
+For unattended CI, store `ESIGNER_PASSWORD` in the runner's secret store and
+expose it only to the signing step. Never put the password, CKA master key, or
+TOTP seed in the repository, workflow text, command history, artifacts, or logs.
+
+CI must build unsigned before the secret-bearing process starts. In a separate
+Windows signing step, expose the password and run:
+
+```powershell
+.\tools\sign-release-installer.ps1 `
+  -AssetDirectory ".\artifacts\releases\$version" `
+  -Version $version `
+  -SignThumbprint $thumbprint `
+  -ESignerCredentialId $env:ESIGNER_CREDENTIAL_ID `
+  -CodeSignToolArchive $env:ESIGNER_CODESIGNTOOL_ARCHIVE
+```
+
+That script converts `ESIGNER_PASSWORD` to a secure string and removes the
+environment variable before starting any child process. This prevents build
+tools, SignTool, and later children from inheriting it. `build-release.ps1`
+refuses to start if the password is already in its environment.
+
+The script scans the finished unsigned installer, then invokes SignTool with
+the same program description. Those values must match: SSL.com binds malware
+approval to the resulting signing digest. The script next verifies the signer,
+certificate chain, RFC 3161 timestamp, and thumbprint. Finally, it removes the
+certificate table from a temporary copy and proves that the canonical SHA-256
+matches the preserved unsigned installer. It writes `SHA256SUMS` only after all
+of those gates pass.
+
+The complete path was exercised on 2026-09-03 using source commit
+`1dc1ff3f86262ae064cbc9dc3d7384bd6410924d` and test version
+`0.0.1-signingtest.1`. SignTool reported a valid No More Secrets, LLC signature
+and SSL.com timestamp. Removing the 8,072-byte certificate table produced the
+exact unsigned SHA-256
+`73049718503DE3A1CCFD4225CB31B6A501B7FB431A01922316BB5D45B7F67E4F`.
+
 Build inputs are locked: `global.json` selects the exact .NET SDK,
 `.config/dotnet-tools.json` pins vpk, and each project commits its NuGet
 `packages.lock.json`. Projects in a NativeAOT graph also commit
@@ -96,6 +158,12 @@ Build inputs are locked: `global.json` selects the exact .NET SDK,
 Each lock file covers the only supported runtime, win-x64. Release
 configuration restores fail on lock-file drift. After an intentional
 dependency change, refresh and review both applicable lock-file diffs.
+
+Avalonia's transitive `Avalonia.BuildServices` dependency is overridden as a
+private assetless reference in every project whose dependency graph reaches
+Avalonia. No telemetry task, collector, build target, or runtime assembly is
+imported. This is enforced at restore rather than through a machine-specific
+opt-out environment variable.
 
 ```
 dotnet restore ThisIsMyPC.slnx --force-evaluate -p:RestoreLockedMode=false
@@ -165,17 +233,14 @@ an existing release.
   `Program Files\NMS\ThisIsMyPC`. The OV certificate subject and the
   assembly Copyright carry the full legal name. Release contact for Defender
   submissions and cert validation: inquiries@no-more-secrets.com.
-- Authenticode signing: the SSL.com OV certificate was purchased 2026-09-01;
-  identity validation is underway and the hardware token is expected within
-  about a week. On release day plug the token in, find the thumbprint with
-  `Get-ChildItem Cert:\CurrentUser\My`, and run
-  `build-release.ps1 -Version x.y.z -SignThumbprint <40 hex>`. The script signs
-  only the downloadable outer installer with an SSL.com RFC 3161 timestamp,
-  verifies it, and computes SHA256SUMS afterward. Signing nested executables or
-  the embedded MSI would make it impossible to remove one certificate table
-  from the download and recover the independently built hash. Update packages
-  and the embedded payload remain protected by the offline-GPG-signed manifest.
-  Builds without `-SignThumbprint` are unsigned test builds.
+- Authenticode signing is ready: SSL.com issued the No More Secrets, LLC OV
+  certificate through eSigner on 2026-09-03. The pinned, malware-scanned,
+  timestamped, outer-only signing path and canonical comparison passed end to
+  end that day. Signing nested executables or the embedded MSI would make it
+  impossible to remove one certificate table from the download and recover the
+  independently built hash. Update packages and the embedded payload remain
+  protected by the offline-GPG-signed manifest. Builds without
+  `-SignThumbprint` are unsigned test builds.
 - `AppConstants.UpdateUrl` points at github.com/No-More-Secrets/thisismypc
   (public since 2026-09-01).
 - NativeAOT: `build-release.ps1 -Aot` publishes the App (~38 MB exe, zero

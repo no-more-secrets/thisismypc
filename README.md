@@ -111,13 +111,17 @@ reproducible from the corresponding tagged source. The repository pins the
 Studio toolchain, Windows build, and Windows Installer engine that affect the
 result.
 
-Once code-signed releases begin, anyone can build the same version and compare
-it with the downloaded `.exe`. The comparison tool validates the download's
+Anyone can build the same version and compare it with the downloaded signed
+`.exe`. The comparison tool validates the download's
 Authenticode structure, works on a temporary copy, removes its terminal
 certificate table, normalizes the two PE fields changed by signing, and
 compares the canonical SHA-256 hash with the local build. It never modifies or
 runs the downloaded installer. A match means the executable content is
 byte-for-byte identical apart from the Authenticode signing metadata.
+
+This is tested, not only designed. On September 3, 2026, an installer signed by
+SSL.com for No More Secrets, LLC and RFC 3161 timestamped was stripped by this
+tool and matched its clean unsigned build exactly.
 
 From a clean clone checked out at the release tag:
 
@@ -145,6 +149,9 @@ same way: a person sets direction and reviews, their agent does the work. The
 sections below are written so the agent can follow them directly. Everything
 here is also in [CLAUDE.md](CLAUDE.md), which the agent loads on its own when
 it opens the repo; that file is the authority if the two ever differ.
+
+Avalonia's optional build telemetry package is explicitly excluded from all
+build assets. Its task and collector are never imported or executed.
 
 ### Prerequisites
 

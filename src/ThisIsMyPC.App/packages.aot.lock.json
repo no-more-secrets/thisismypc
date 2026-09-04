@@ -13,6 +13,12 @@
           "MicroCom.Runtime": "0.11.0"
         }
       },
+      "Avalonia.BuildServices": {
+        "type": "Direct",
+        "requested": "[11.3.2, )",
+        "resolved": "11.3.2",
+        "contentHash": "qHDToxto1e3hci5YqbG9n0Ty8mlp3zBUN5wT66wKqaDVzXyQ0do3EnRILd4Ke9jpvsktaPpgE0YjEk7hornryQ=="
+      },
       "Avalonia.Desktop": {
         "type": "Direct",
         "requested": "[11.3.12, )",
@@ -95,11 +101,6 @@
         "type": "Transitive",
         "resolved": "2.1.25547.20250602",
         "contentHash": "ZL0VLc4s9rvNNFt19Pxm5UNAkmKNylugAwJPX9ulXZ6JWs/l6XZihPWWTyezaoNOVyEPU8YbURtW7XMAtqXH5A=="
-      },
-      "Avalonia.BuildServices": {
-        "type": "Transitive",
-        "resolved": "11.3.2",
-        "contentHash": "qHDToxto1e3hci5YqbG9n0Ty8mlp3zBUN5wT66wKqaDVzXyQ0do3EnRILd4Ke9jpvsktaPpgE0YjEk7hornryQ=="
       },
       "Avalonia.Controls.ColorPicker": {
         "type": "Transitive",

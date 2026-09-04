@@ -23,19 +23,36 @@ param(
     [switch]$Aot,
 
     # SHA-1 thumbprint of the SSL.com OV code-signing certificate (No More
-    # Secrets, LLC) as it appears in Cert:\CurrentUser\My once the hardware
-    # token is plugged in. When given, the script signs only the downloadable
-    # outer installer with an RFC 3161 timestamp from SSL.com. The embedded
-    # payload remains reproducible, so removing that one terminal certificate
-    # table produces the exact independently built unsigned installer.
+    # Secrets, LLC) exposed through eSigner CKA. When given, the script scans
+    # and signs only the downloadable outer installer. Removing its terminal
+    # certificate table produces the exact independently built unsigned file.
     [ValidatePattern('^[0-9A-Fa-f]{40}$')]
     [string]$SignThumbprint,
+
+    # eSigner certificate credential ID. Not the document eSeal ID.
+    [string]$ESignerCredentialId = $env:ESIGNER_CREDENTIAL_ID,
+
+    # Unmodified SSL.com CodeSignTool zip. The exact version and archive hash
+    # are pinned in tools/esigner-signing-environment.json.
+    [string]$CodeSignToolArchive = $env:ESIGNER_CODESIGNTOOL_ARCHIVE,
+
+    # The account password is intentionally not a parameter. This build script
+    # permits only a local secure prompt. CI signs in a separate short process.
+    [string]$ESignerUsername = $env:ESIGNER_USERNAME,
+
+    # This value must be identical in scan_code and SignTool /d. SSL.com binds
+    # malware approval to the resulting signing digest.
+    [ValidateNotNullOrEmpty()]
+    [string]$SigningDescription = 'ThisIsMyPC',
 
     # RFC 3161 timestamp server used with -SignThumbprint.
     [string]$TimestampUrl = 'http://ts.ssl.com'
 )
 
 $ErrorActionPreference = 'Stop'
+if (Test-Path Env:ESIGNER_PASSWORD) {
+    throw 'Refusing to build with ESIGNER_PASSWORD in the environment. Build unsigned, then expose the secret only to sign-release-installer.ps1.'
+}
 $repoRoot = Split-Path $PSScriptRoot -Parent
 $staging = Join-Path $repoRoot "artifacts\release-staging\$Version"
 $output = Join-Path $repoRoot "artifacts\releases\$Version"
@@ -45,6 +62,51 @@ if (-not (Test-Path $toolManifest -PathType Leaf)) {
     throw "Pinned tool manifest missing: $toolManifest"
 }
 & (Join-Path $PSScriptRoot 'test-reproducible-build-environment.ps1')
+
+$signerCertificate = $null
+if ($SignThumbprint) {
+    if ($ESignerCredentialId -notmatch '^[0-9a-fA-F-]{36}$') {
+        throw 'Signing requires -ESignerCredentialId or ESIGNER_CREDENTIAL_ID.'
+    }
+    if ([string]::IsNullOrWhiteSpace($CodeSignToolArchive)) {
+        throw 'Signing requires -CodeSignToolArchive or ESIGNER_CODESIGNTOOL_ARCHIVE.'
+    }
+    & (Join-Path $PSScriptRoot 'test-esigner-signing-environment.ps1') `
+        -CodeSignToolArchive $CodeSignToolArchive
+
+    $certificates = @(
+        Get-ChildItem Cert:\CurrentUser\My |
+            Where-Object { $_.Thumbprint -eq $SignThumbprint.ToUpperInvariant() }
+    )
+    if ($certificates.Count -ne 1) {
+        throw "Expected one certificate with thumbprint $SignThumbprint in Cert:\CurrentUser\My, found $($certificates.Count). Is eSigner CKA loaded?"
+    }
+    $signerCertificate = $certificates[0]
+    if (-not $signerCertificate.HasPrivateKey) {
+        throw 'Certificate found but its eSigner CKA private key is not reachable.'
+    }
+    $signerName = $signerCertificate.GetNameInfo(
+        [Security.Cryptography.X509Certificates.X509NameType]::SimpleName,
+        $false)
+    if ($signerName -ne 'No More Secrets, LLC') {
+        throw "Refusing unexpected signing identity: $signerName"
+    }
+    $ekuExtension = $signerCertificate.Extensions |
+        Where-Object { $_.Oid.Value -eq '2.5.29.37' } |
+        Select-Object -First 1
+    if (-not $ekuExtension) {
+        throw 'Signing certificate has no Enhanced Key Usage extension.'
+    }
+    $enhancedKeyUsages = [Security.Cryptography.X509Certificates.X509EnhancedKeyUsageExtension]$ekuExtension
+    if ($enhancedKeyUsages.EnhancedKeyUsages.Value -notcontains '1.3.6.1.5.5.7.3.3') {
+        throw 'Selected certificate is not authorized for code signing.'
+    }
+    $now = Get-Date
+    if ($now -lt $signerCertificate.NotBefore -or $now -gt $signerCertificate.NotAfter) {
+        throw 'Selected signing certificate is not currently valid.'
+    }
+}
+
 Write-Host 'Restoring repository-pinned .NET tools...'
 dotnet tool restore
 if ($LASTEXITCODE -ne 0) { throw 'Pinned .NET tool restore failed' }
@@ -97,10 +159,7 @@ Get-ChildItem $staging -Recurse -Force | ForEach-Object {
 (Get-Item $staging).LastWriteTimeUtc = $deterministicTimestamp
 
 if ($SignThumbprint) {
-    $cert = Get-ChildItem Cert:\CurrentUser\My | Where-Object { $_.Thumbprint -eq $SignThumbprint.ToUpperInvariant() }
-    if (-not $cert) { throw "No certificate with thumbprint $SignThumbprint in Cert:\CurrentUser\My. Is the token plugged in?" }
-    if (-not $cert.HasPrivateKey) { throw 'Certificate found but its private key is not reachable (token driver or PIN).' }
-    Write-Host "Outer installer will be signed as: $($cert.Subject) (expires $($cert.NotAfter.ToString('yyyy-MM-dd')))"
+    Write-Host "Outer installer will be signed as: $($signerCertificate.Subject) (expires $($signerCertificate.NotAfter.ToString('yyyy-MM-dd')))"
 } else {
     Write-Host 'Unsigned build (no -SignThumbprint). Do not publish this.'
 }
@@ -169,33 +228,21 @@ Write-Host 'Checking exploit mitigations on the shipped binaries...'
 if ($LASTEXITCODE -ne 0) { throw 'A shipped binary is missing an exploit mitigation; see the table above.' }
 
 if ($SignThumbprint) {
-    # Signing only this outer image is required for direct reproducibility.
-    # Signing files inside the embedded MSI would change bytes that cannot be
-    # removed by stripping the outer PE certificate table.
-    if (((Get-Item $installerAsset).Length % 8) -ne 0) {
-        throw 'Unsigned installer length is not eight-byte aligned; Authenticode would insert non-certificate padding.'
-    }
-    $signtool = Get-Command signtool.exe -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source
-    if (-not $signtool) {
-        $signtool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\signtool.exe" -ErrorAction SilentlyContinue |
-            Sort-Object FullName -Descending | Select-Object -First 1 -ExpandProperty FullName
-    }
-    if (-not $signtool) { throw 'signtool.exe not found (Windows SDK). Needed to sign ThisIsMyPC-Installer.exe.' }
-    Write-Host "Signing $(Split-Path $installerAsset -Leaf)..."
-    & $signtool sign /fd sha256 /tr $TimestampUrl /td sha256 /sha1 $SignThumbprint $installerAsset
-    if ($LASTEXITCODE -ne 0) { throw 'signtool failed on the installer exe' }
+    # Only the outer image is signed so one terminal certificate table can be
+    # removed to recover the exact independently built unsigned installer.
+    & (Join-Path $PSScriptRoot 'sign-release-installer.ps1') `
+        -AssetDirectory $output `
+        -Version $Version `
+        -SignThumbprint $SignThumbprint `
+        -ESignerCredentialId $ESignerCredentialId `
+        -CodeSignToolArchive $CodeSignToolArchive `
+        -ESignerUsername $ESignerUsername `
+        -SigningDescription $SigningDescription `
+        -TimestampUrl $TimestampUrl
+} else {
+    Write-Host 'Writing SHA256SUMS...'
+    & (Join-Path $PSScriptRoot 'new-release-manifest.ps1') -AssetDirectory $output
 }
-
-if ($SignThumbprint) {
-    Write-Host 'Verifying the downloadable installer Authenticode signature...'
-    $signature = Get-AuthenticodeSignature $installerAsset
-    if ($signature.Status -ne 'Valid') {
-        throw "Installer signature status is $($signature.Status), not Valid."
-    }
-}
-
-Write-Host 'Writing SHA256SUMS...'
-& (Join-Path $PSScriptRoot 'new-release-manifest.ps1') -AssetDirectory $output
 
 Write-Host ''
 Write-Host "Release assets in $output. Next steps (docs/release/update-signing.md):"

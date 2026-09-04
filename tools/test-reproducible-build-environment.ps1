@@ -51,6 +51,12 @@ if ($actualMsvc -ne $expected.msvcToolsVersion) {
 if ($actualWindowsSdk -ne $expected.windowsSdkVersion) {
     throw "Expected Windows SDK $($expected.windowsSdkVersion); found $actualWindowsSdk."
 }
+$signToolPath = Join-Path ${env:ProgramFiles(x86)} "Windows Kits\10\bin\$actualWindowsSdk\x64\signtool.exe"
+if (-not (Test-Path $signToolPath -PathType Leaf)) { throw "signtool.exe is missing: $signToolPath" }
+$actualSignToolHash = (Get-FileHash -LiteralPath $signToolPath -Algorithm SHA256).Hash
+if ($actualSignToolHash -ne $expected.signToolSha256) {
+    throw "Expected pinned signtool.exe SHA256 $($expected.signToolSha256); found $actualSignToolHash."
+}
 $msiDbPath = Join-Path ${env:ProgramFiles(x86)} "Windows Kits\10\bin\$actualWindowsSdk\x86\MsiDb.exe"
 if (-not (Test-Path $msiDbPath -PathType Leaf)) { throw "MsiDb.exe is missing: $msiDbPath" }
 $actualMsiDbVersion = (Get-Item $msiDbPath).VersionInfo.FileVersion
@@ -71,4 +77,4 @@ Write-Host "  .NET SDK $actualDotnet"
 Write-Host "  Windows build $actualWindowsBuild, Windows Installer $actualWindowsInstaller"
 Write-Host "  Visual Studio $($installation.installationVersion)"
 Write-Host "  MSVC tools $actualMsvc, link.exe $actualLinker"
-Write-Host "  Windows SDK $actualWindowsSdk, MsiDb.exe $actualMsiDbVersion"
+Write-Host "  Windows SDK $actualWindowsSdk, pinned SignTool, MsiDb.exe $actualMsiDbVersion"

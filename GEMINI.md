@@ -32,9 +32,10 @@ Feature work is complete (all modules plus the UI/UX chapter; history in the
 backlog).
 
 1. **Release prep (current)**. Remaining hard blocker, Sam-gated: GPG
-   release-key ceremony (docs/release/update-signing.md). Process: OV cert
-   delivery (purchased 2026-09-01, token due about 2026-09-08), Defender
-   false-positive submission, VirusTotal CI canary, winget distribution.
+   release-key ceremony (docs/release/update-signing.md). SSL.com eSigner OV
+   signing and signed-to-unsigned reproducibility passed end to end on
+   2026-09-03. Then: Defender false-positive submission, VirusTotal CI canary,
+   winget distribution.
 2. **Post-release menu**: retired BMAD epics (ASUS/ATKACPI, OpenRGB, drivers,
    network/firewall, profiles, WU remainder) and install-engine leftovers
    (OneDrive/Edge removal, OEM tools, progress/cancel).
@@ -100,6 +101,11 @@ dotnet test --filter "Category!=Integration&Category!=Diagnostic"   # what CI ru
   Anything the user sees as an error is copyable from there.
 - New dependencies: version goes in `Directory.Packages.props`, versionless
   `PackageReference` in the csproj.
+- Avalonia's optional `Avalonia.BuildServices` telemetry is deliberately an
+  assetless direct dependency in every project whose dependency graph reaches
+  Avalonia. This suppresses its transitive task and collector at restore time.
+  Keep the exclusion until Avalonia stops depending on it; an
+  environment-variable opt-out is not an equivalent removal.
 - Tests: one project per module mirroring `src/`; fakes in
   `tests/ThisIsMyPC.Core.Tests/Fakes/`; `Category=Integration|Diagnostic` traits for anything
   touching the live system (excluded from CI).
@@ -143,6 +149,42 @@ compares the canonical bytes. The downloaded file is unchanged. A mismatch is
 not expected signing noise. Confirm the exact tag, version, clean clone, and
 environment; then report both canonical hashes. Full design and manual command
 details live in `docs/release/packaging.md`.
+
+## Sign a release with SSL.com eSigner
+
+Use CKA 1.1.2 in Automated Code Signing and Production mode. Keep SSL.com's
+malware blocker enabled. Download the unmodified CodeSignTool 1.3.3 Windows zip
+from SSL.com; do not run from a previously extracted directory. The release
+scripts hash-check the archive and the installed CKA runtime against
+`tools/esigner-signing-environment.json` before building.
+
+```powershell
+$env:ESIGNER_USERNAME = 'SSL.com account username'
+$env:ESIGNER_CREDENTIAL_ID = 'code-signing credential ID, not eSeal ID'
+$env:ESIGNER_CODESIGNTOOL_ARCHIVE = 'C:\path\to\CodeSignTool-v1.3.3-windows.zip'
+.\tools\build-release.ps1 -Version 1.0.0 `
+  -SignThumbprint '40-character certificate thumbprint'
+```
+
+For a local release, enter the account password only at the script's secure
+prompt. For CI, supply `ESIGNER_PASSWORD` only through the runner secret store
+and only to the signing step. Never print or commit the password, TOTP seed, or
+CKA master key. CodeSignTool passes the password to its Java process because the
+vendor offers no protected input channel, so release runners must not host
+untrusted same-user processes.
+
+CI builds unsigned without `ESIGNER_PASSWORD`, then starts a separate Windows
+signing step with the secret and calls `tools/sign-release-installer.ps1` over
+the completed release directory. That script removes the password from its
+environment before any child starts. `build-release.ps1` refuses to run when
+the password is present, so MSBuild, NuGet, and vpk cannot inherit it.
+
+The script requires the No More Secrets, LLC code-signing identity, scans the
+finished installer, gives SignTool the identical description, verifies the
+signature and RFC 3161 timestamp, and proves that stripping the certificate
+table recovers the preserved unsigned hash. Do not disable or bypass any of
+these gates. If a vendor tool changes, investigate it and deliberately update
+the committed pins; never edit the manifest merely to match the machine.
 
 ## UI work: use the sight harness, not Sam's eyes
 
