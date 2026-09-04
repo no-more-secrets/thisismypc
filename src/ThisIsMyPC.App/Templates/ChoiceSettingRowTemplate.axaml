@@ -2,53 +2,50 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:vm="using:ThisIsMyPC.App.ViewModels">
 
-    <!-- Multi-choice setting row: label/description left, combo right.
-         DataContext: ShellChoiceSettingViewModel. A pending selection tints
-         the card with the Modify color (there is no enable/disable
-         direction to a value change). The label sits in its own star column
-         and trims, so a long one never runs under the combo; the same
-         arrangement ToggleCard uses for its title. -->
+    <!-- Multi-choice setting row: label and (i) on top, combo full-width below.
+         DataContext: ShellChoiceSettingViewModel. A pending selection tints the
+         card with the Modify color (a value change has no enable/disable
+         direction). The label sits above the combo rather than beside it, so a
+         long label and a long selected value both show in full at the default
+         window size; a horizontal split cannot fit both in one column and one
+         or the other was truncating (Sam, 2026-09-04). The label wraps instead
+         of trimming. -->
     <DataTemplate x:Key="ChoiceSettingRowTemplate" DataType="vm:ShellChoiceSettingViewModel">
-        <Border Padding="14,6"
+        <Border Padding="14,10"
                 Margin="0,2"
                 CornerRadius="6"
                 Classes="card"
                 IsVisible="{Binding IsSearchVisible}"
                 Classes.pending-modify="{Binding HasPendingChange}">
-            <Grid ColumnDefinitions="*,Auto">
-                <Grid Grid.Column="0"
-                      ColumnDefinitions="*,Auto"
-                      HorizontalAlignment="Left"
-                      VerticalAlignment="Center">
+            <StackPanel Spacing="6">
+                <Grid ColumnDefinitions="*,Auto">
                     <TextBlock Grid.Column="0"
                                Text="{Binding Label}"
                                FontWeight="SemiBold"
                                FontSize="14"
-                               TextTrimming="CharacterEllipsis"
-                               ToolTip.Tip="{Binding Label}"
+                               TextWrapping="Wrap"
+                               VerticalAlignment="Center"
                                Foreground="{DynamicResource TextPrimaryBrush}" />
                     <Border Grid.Column="1"
                             Classes="info-icon"
                             Margin="6,0,0,0"
+                            VerticalAlignment="Center"
                             ToolTip.Tip="{Binding Description}"
                             IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                         <TextBlock Classes="info-icon-glyph" />
                     </Border>
                 </Grid>
 
-                <ComboBox Grid.Column="1"
+                <ComboBox HorizontalAlignment="Stretch"
                           ItemsSource="{Binding Options}"
-                          SelectedItem="{Binding SelectedOption}"
-                          MinWidth="180"
-                          VerticalAlignment="Center"
-                          Margin="16,0,0,0">
+                          SelectedItem="{Binding SelectedOption}">
                     <ComboBox.ItemTemplate>
                         <DataTemplate DataType="vm:ShellChoiceOption">
                             <TextBlock Text="{Binding DisplayName}" />
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
                 </ComboBox>
-            </Grid>
+            </StackPanel>
         </Border>
     </DataTemplate>
 
