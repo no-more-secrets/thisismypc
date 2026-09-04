@@ -59,8 +59,9 @@
             </Transitions>
         </Setter>
     </Style>
+    <!-- The one hover effect: the thumb grows (colours stay put, see Theme.axaml) -->
     <Style Selector="Slider:pointerover /template/ Thumb">
-        <Setter Property="RenderTransform" Value="scale(1.15)" />
+        <Setter Property="RenderTransform" Value="scale(1.3)" />
     </Style>
 
     <!-- A value that reads as text and edits on click: no box at rest, the
