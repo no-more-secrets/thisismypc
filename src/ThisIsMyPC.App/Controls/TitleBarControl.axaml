@@ -2,18 +2,20 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="ThisIsMyPC.App.Controls.TitleBarControl"
              x:Name="Root"
-             Height="80">
+             Height="64">
 
     <!-- Custom window frame. The Window extends its client area over the
          system title bar (ExtendClientAreaToDecorationsHint) and hides the
          stock caption buttons (NoChrome), so this control is the whole frame:
-         80px tall (about 2.5 stock title bars), app icon and name at the left,
+         64px tall (two stock title bars), a 48px app icon with the name and
+         a subtitle at the left,
          caption buttons at the right run the full bar height like Spotify's
          and Windows Terminal's, at the stock 46 width so the hand still lands
          where Windows trained it. Everything else is a drag
-         region; a double-click toggles maximize. The host fills two slots:
+         region; a double-click toggles maximize. The host fills three slots:
          LeadingContent sits left of the icon (the sidebar toggle),
-         CenterContent is centred on the whole bar (the settings search). -->
+         CenterContent is centred on the whole bar (the settings search),
+         TrailingContent sits just left of the caption buttons (shortcuts). -->
     <UserControl.Styles>
         <Style Selector="Button.caption">
             <Setter Property="Background" Value="Transparent" />
@@ -71,13 +73,18 @@
                    Width="48" Height="48"
                    VerticalAlignment="Center"
                    IsHitTestVisible="False" />
-            <TextBlock Text="ThisIsMyPC"
-                       FontFamily="{StaticResource DisplayFont}"
-                       FontSize="22"
-                       FontWeight="SemiBold"
-                       VerticalAlignment="Center"
-                       IsHitTestVisible="False"
-                       Foreground="{DynamicResource TextPrimaryBrush}" />
+            <StackPanel VerticalAlignment="Center" IsHitTestVisible="False">
+                <TextBlock Text="ThisIsMyPC"
+                           FontFamily="{StaticResource DisplayFont}"
+                           FontSize="20"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Text="{Binding #Root.Subtitle}"
+                           IsVisible="{Binding #Root.Subtitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                           FontSize="11"
+                           Margin="0,1,0,0"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+            </StackPanel>
         </StackPanel>
 
         <!-- Centre slot: the equal star columns either side keep it on the window's centre line -->
@@ -85,8 +92,12 @@
                           Content="{Binding #Root.CenterContent}"
                           VerticalAlignment="Center" />
 
-        <!-- Caption buttons, full height, right -->
+        <!-- Trailing slot, then the caption buttons, full height, right -->
         <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Stretch">
+            <ContentPresenter Content="{Binding #Root.TrailingContent}"
+                              IsVisible="{Binding #Root.TrailingContent, Converter={x:Static ObjectConverters.IsNotNull}}"
+                              VerticalAlignment="Center"
+                              Margin="0,0,12,0" />
             <Button Classes="caption" Click="OnMinimizeClick" ToolTip.Tip="Minimize"
                     AutomationProperties.Name="Minimize">
                 <PathIcon Data="M0,5H10V6H0Z" />

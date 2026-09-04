@@ -978,21 +978,46 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void OpenReleasesPage()
+    private void OpenReleasesPage() => OpenUrl(Core.AppConstants.UpdateUrl, "the releases page");
+
+    [RelayCommand]
+    private void OpenRepository() => OpenUrl(Core.AppConstants.RepositoryUrl, "the GitHub page");
+
+    [RelayCommand]
+    private void OpenBugReport() => OpenUrl(Core.AppConstants.BugReportUrl, "the bug report form");
+
+    private void OpenUrl(string url, string what)
     {
         try
         {
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
             {
-                FileName = Core.AppConstants.UpdateUrl,
+                FileName = url,
                 UseShellExecute = true,
             });
         }
         catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
         {
-            SetStatus($"Could not open the releases page: {Core.AppConstants.UpdateUrl}", StatusSeverity.Warning);
+            SetStatus($"Could not open {what}: {url}", StatusSeverity.Warning);
         }
     }
+
+    // --- Title bar identity and About ---
+
+    /// <summary>Three-part assembly version, e.g. 0.1.0.</summary>
+    public static string AppVersion { get; } =
+        typeof(MainWindowViewModel).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
+
+    public string VersionText => $"Version {AppVersion}";
+
+    public string PublisherText => Core.AppConstants.PublisherName;
+
+    /// <summary>The About card under the title bar; the window closes it on a click outside or Escape.</summary>
+    [ObservableProperty]
+    private bool _isAboutOpen;
+
+    [RelayCommand]
+    private void ToggleAbout() => IsAboutOpen = !IsAboutOpen;
 
     [ObservableProperty]
     private bool _isSettingsActive;
@@ -1016,7 +1041,7 @@ public partial class MainWindowViewModel : ViewModelBase
             _moduleSettingsContributors,
             applyTheme: Services.ThemeService.Apply,
             installedModuleIds: _navigationService.Modules.Select(m => m.Module.Info.Name).ToList(),
-            appVersion: typeof(MainWindowViewModel).Assembly.GetName().Version?.ToString(3) ?? "0.0.0",
+            appVersion: AppVersion,
             capabilityReport: _capabilityDetector?.GetCapabilityReport(),
             ownerMode: _ownerModeService is { } ownerMode ? new OwnerModeSectionViewModel(ownerMode) : null);
         IsSettingsActive = true;

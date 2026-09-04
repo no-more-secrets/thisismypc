@@ -16,7 +16,12 @@ public static class AppConstants
         Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
         "ThisIsMyPC");
 
-    public const string UpdateUrl = "https://github.com/No-More-Secrets/thisismypc/releases";
+    public const string RepositoryUrl = "https://github.com/No-More-Secrets/thisismypc";
+    public const string UpdateUrl = RepositoryUrl + "/releases";
+    public const string BugReportUrl = RepositoryUrl + "/issues/new?template=bug-report.md";
+
+    /// <summary>Legal publisher name, as shown in About and on the signing certificate.</summary>
+    public const string PublisherName = "No More Secrets, LLC";
 
     /// <summary>
     /// Short publisher name (No More Secrets, LLC): the MSI publisher line and

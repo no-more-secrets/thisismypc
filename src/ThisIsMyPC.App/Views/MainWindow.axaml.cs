@@ -39,27 +39,39 @@ public partial class MainWindow : Window
 
         var hitFocusable = false;
         var hitSearch = false;
+        var hitAbout = false;
         for (Visual? v = source; v is not null; v = Avalonia.VisualTree.VisualExtensions.GetVisualParent(v))
         {
             if (v is IInputElement { Focusable: true })
                 hitFocusable = true;
             if (v == SearchBox || v == SearchResultsPanel)
                 hitSearch = true;
+            // The info button toggles About itself; closing it here too would reopen it.
+            if (v == AboutPanel || v == AboutButton)
+                hitAbout = true;
         }
 
         if (!hitFocusable)
             FocusManager?.ClearFocus();
 
-        // A click anywhere but the search box or its dropdown closes the dropdown.
-        if (!hitSearch && DataContext is MainWindowViewModel vm)
-            vm.IsSearchOpen = false;
+        // A click anywhere but an overlay or its own button closes that overlay.
+        if (DataContext is MainWindowViewModel vm)
+        {
+            if (!hitSearch)
+                vm.IsSearchOpen = false;
+            if (!hitAbout)
+                vm.IsAboutOpen = false;
+        }
     }
 
     private void OnSearchKeyDown(object? sender, KeyEventArgs e)
     {
-        if (e.Key != Key.Escape || DataContext is not MainWindowViewModel { IsSearchOpen: true } vm)
+        if (e.Key != Key.Escape || DataContext is not MainWindowViewModel vm)
+            return;
+        if (!vm.IsSearchOpen && !vm.IsAboutOpen)
             return;
         vm.IsSearchOpen = false;
+        vm.IsAboutOpen = false;
         e.Handled = true;
     }
 

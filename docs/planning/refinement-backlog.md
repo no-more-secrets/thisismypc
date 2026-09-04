@@ -377,8 +377,9 @@ upgrade edition?" flow). Belongs with the install-engine chapter, not refinement
   Privacy, Windows Update), so the matched card is the page content on arrival.
   Pages without per-setting filters keep the status-bar fallback.
 - **Custom window frame (2026-09-04)**: MainWindow extends its client area over
-  the system title bar (NoChrome) and hosts TitleBarControl: an 80px bar
-  (about 2.5 stock title bars, Spotify-like) with the app icon and name at the
+  the system title bar (NoChrome) and hosts TitleBarControl: a 64px bar
+  (two stock title bars; 80 read as too tall live) with the 48px app icon,
+  the name and a "Version x.y.z" subtitle at the
   left (the sidebar toggle moved up beside them), the settings search as a
   440px pill on the bar's centre line with its results in an in-window
   overlay under it (no Popup, so the sight harness can click results), and
@@ -388,7 +389,13 @@ upgrade edition?" flow). Belongs with the install-engine chapter, not refinement
   a 1px OutlineBrush rim runs along the L (the sidebar's old right outline
   moved onto the panel), sidebar rows are inset rounded rows so the active
   highlight clears the fillet, the logo is 48px with a 22px name, and the
-  caption buttons run the full 80px like Spotify and Windows Terminal.
+  caption buttons run the full bar height like Spotify and Windows Terminal.
+  Right of the search, a TrailingContent slot holds four shortcuts: Settings
+  (gear), Report a bug (GitHub issue form, bug-report template), GitHub
+  (repository), and About (info), which opens an in-window card under the bar
+  with version, publisher, GPLv2 line, and GitHub / Releases / Report a bug
+  buttons; URLs live in Core.AppConstants. HeaderShotTests (Diagnostic)
+  covers About open/close and the gear.
   measure-edge-geometry starts its right-edge scan 3px in to skip the rim.
   Drag, double-click maximize,
   restore glyph swap, and Close through Window.Close (hide-to-tray keeps its

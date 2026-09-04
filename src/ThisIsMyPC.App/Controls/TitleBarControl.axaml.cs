@@ -21,6 +21,26 @@ public partial class TitleBarControl : UserControl
     public static readonly StyledProperty<object?> CenterContentProperty =
         AvaloniaProperty.Register<TitleBarControl, object?>(nameof(CenterContent));
 
+    /// <summary>Just left of the caption buttons; the host puts its shortcut buttons here.</summary>
+    public static readonly StyledProperty<object?> TrailingContentProperty =
+        AvaloniaProperty.Register<TitleBarControl, object?>(nameof(TrailingContent));
+
+    /// <summary>Small line under the product name (the version).</summary>
+    public static readonly StyledProperty<string?> SubtitleProperty =
+        AvaloniaProperty.Register<TitleBarControl, string?>(nameof(Subtitle));
+
+    public object? TrailingContent
+    {
+        get => GetValue(TrailingContentProperty);
+        set => SetValue(TrailingContentProperty, value);
+    }
+
+    public string? Subtitle
+    {
+        get => GetValue(SubtitleProperty);
+        set => SetValue(SubtitleProperty, value);
+    }
+
     public object? LeadingContent
     {
         get => GetValue(LeadingContentProperty);

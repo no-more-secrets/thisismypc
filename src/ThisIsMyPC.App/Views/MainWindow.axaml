@@ -16,10 +16,10 @@
         FontFamily="{DynamicResource BodyFont}"
         ExtendClientAreaToDecorationsHint="True"
         ExtendClientAreaChromeHints="NoChrome"
-        ExtendClientAreaTitleBarHeightHint="80">
+        ExtendClientAreaTitleBarHeightHint="64">
 
     <!-- Custom frame: the client area covers the system title bar, so the
-         first 80px row is our own TitleBarControl (drag, double-click
+         first 64px row is our own TitleBarControl (drag, double-click
          maximize, caption buttons). OffScreenMargin keeps content on screen
          when Windows parks the maximized frame edges off the monitor. -->
     <!-- Shell shape: the bar and the sidebar are one L-shaped block in the
@@ -28,7 +28,7 @@
     <Grid RowDefinitions="Auto,*"
           Background="{DynamicResource SidebarBackgroundBrush}"
           Margin="{Binding $parent[Window].OffScreenMargin}">
-    <controls:TitleBarControl Grid.Row="0">
+    <controls:TitleBarControl Grid.Row="0" Subtitle="{Binding VersionText}">
         <controls:TitleBarControl.LeadingContent>
             <Button Classes="bar-icon"
                     Command="{Binding ToggleSidebarCommand}"
@@ -54,6 +54,44 @@
                 </TextBox.InnerLeftContent>
             </TextBox>
         </controls:TitleBarControl.CenterContent>
+        <controls:TitleBarControl.TrailingContent>
+            <!-- Shortcuts: Settings, bug report, GitHub, About -->
+            <StackPanel Orientation="Horizontal" Spacing="2">
+                <Button Classes="bar-icon"
+                        Command="{Binding OpenSettingsCommand}"
+                        ToolTip.Tip="Settings"
+                        AutomationProperties.Name="Settings">
+                    <PathIcon Width="16" Height="16"
+                              Foreground="{DynamicResource TextSecondaryBrush}"
+                              Data="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z" />
+                </Button>
+                <Button Classes="bar-icon"
+                        Command="{Binding OpenBugReportCommand}"
+                        ToolTip.Tip="Report a bug"
+                        AutomationProperties.Name="Report a bug">
+                    <PathIcon Width="16" Height="16"
+                              Foreground="{DynamicResource TextSecondaryBrush}"
+                              Data="M14,12H10V10H14M14,16H10V14H14M20,8H17.19C16.74,7.22 16.12,6.55 15.37,6.04L17,4.41L15.59,3L13.42,5.17C12.96,5.06 12.5,5 12,5C11.5,5 11.04,5.06 10.59,5.17L8.41,3L7,4.41L8.62,6.04C7.88,6.55 7.26,7.22 6.81,8H4V10H6.09C6.04,10.33 6,10.66 6,11V12H4V14H6V15C6,15.34 6.04,15.67 6.09,16H4V18H6.81C7.85,19.79 9.78,21 12,21C14.22,21 16.15,19.79 17.19,18H20V16H17.91C17.96,15.67 18,15.34 18,15V14H20V12H18V11C18,10.66 17.96,10.33 17.91,10H20V8Z" />
+                </Button>
+                <Button Classes="bar-icon"
+                        Command="{Binding OpenRepositoryCommand}"
+                        ToolTip.Tip="GitHub"
+                        AutomationProperties.Name="GitHub">
+                    <PathIcon Width="16" Height="16"
+                              Foreground="{DynamicResource TextSecondaryBrush}"
+                              Data="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+                </Button>
+                <Button x:Name="AboutButton"
+                        Classes="bar-icon"
+                        Command="{Binding ToggleAboutCommand}"
+                        ToolTip.Tip="About"
+                        AutomationProperties.Name="About">
+                    <PathIcon Width="16" Height="16"
+                              Foreground="{DynamicResource TextSecondaryBrush}"
+                              Data="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z" />
+                </Button>
+            </StackPanel>
+        </controls:TitleBarControl.TrailingContent>
     </controls:TitleBarControl>
 
     <Panel Grid.Row="1">
@@ -480,7 +518,7 @@
             ZIndex="10"
             HorizontalAlignment="Center"
             VerticalAlignment="Top"
-            Margin="0,62,0,0"
+            Margin="0,54,0,0"
             Width="440"
             MaxHeight="420"
             Background="{DynamicResource RaisedBrush}"
@@ -513,6 +551,52 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
         </ScrollViewer>
+    </Border>
+
+    <!-- About: same in-window overlay pattern, hanging under the bar's info
+         button. Version, publisher, license, and the project links. -->
+    <Border x:Name="AboutPanel"
+            Grid.Row="0" Grid.RowSpan="2"
+            ZIndex="10"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Top"
+            Margin="0,54,150,0"
+            Width="340"
+            Background="{DynamicResource RaisedBrush}"
+            BorderBrush="{DynamicResource OutlineBrush}"
+            BorderThickness="1"
+            CornerRadius="8"
+            Padding="16"
+            IsVisible="{Binding IsAboutOpen}">
+        <StackPanel Spacing="12">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+                <Image Source="avares://ThisIsMyPC.App/Assets/ThisIsMyPC.ico" Width="48" Height="48" />
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="ThisIsMyPC"
+                               FontFamily="{StaticResource DisplayFont}"
+                               FontSize="18" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <TextBlock Text="{Binding VersionText}"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                </StackPanel>
+            </StackPanel>
+            <TextBlock Text="{Binding PublisherText}"
+                       FontSize="13"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+            <TextBlock Text="Free and open source under the GNU GPL v2. Every change is captured before it is made and can be undone."
+                       FontSize="12"
+                       TextWrapping="Wrap"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Classes="apply-bar-discard" Content="GitHub" Padding="10,6"
+                        Command="{Binding OpenRepositoryCommand}" />
+                <Button Classes="apply-bar-discard" Content="Releases" Padding="10,6"
+                        Command="{Binding OpenReleasesPageCommand}" />
+                <Button Classes="apply-bar-discard" Content="Report a bug" Padding="10,6"
+                        Command="{Binding OpenBugReportCommand}" />
+            </StackPanel>
+        </StackPanel>
     </Border>
     </Grid>
 </Window>
