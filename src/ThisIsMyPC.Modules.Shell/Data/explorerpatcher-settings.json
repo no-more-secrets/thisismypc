@@ -2196,7 +2196,7 @@
                          "id":  "ep:UpdatePolicy",
                          "name":  "Check for updates",
                          "description":  "What ExplorerPatcher\u0027s own updater does when File Explorer starts. Do not check keeps the installed version, which is the one these rows were written for.",
-                         "group":  "Updates",
+                         "group":  "ExplorerPatcher updates",
                          "page":  "Updates",
                          "section":  "General",
                          "key":  "HKCU\\Software\\ExplorerPatcher",

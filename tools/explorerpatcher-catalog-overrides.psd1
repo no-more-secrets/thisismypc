@@ -63,7 +63,7 @@
         'Spotlight'       = 'Windows Spotlight'
         'Other'           = ''
         'Advanced'        = ''
-        'Updates'         = 'Updates'
+        'Updates'         = 'ExplorerPatcher updates'
     }
 
     # Per-value group, overriding the page's. "Advanced" collects the niche
@@ -81,7 +81,7 @@
     # Order of groups within a tab; the empty group is always first, Advanced last.
     GroupOrder = @(
         '', 'System tray', 'Weather widget', 'Window switcher (Alt+Tab)',
-        'Windows Spotlight', 'Control Panel', 'Updates', 'Advanced'
+        'Windows Spotlight', 'Control Panel', 'ExplorerPatcher updates', 'Advanced'
     )
 
     # Relevance order within a tab and group: lower sorts earlier. A row with

@@ -127,7 +127,7 @@ public class ShellExplorerPatcherShotTests
 
         Assert.Equal(["", "System tray"], viewModel.TaskbarPatcherGroups.Select(g => g.Heading));
         Assert.Equal(["", "Window switcher (Alt+Tab)"], viewModel.DesktopPatcherGroups.Select(g => g.Heading));
-        Assert.Equal(["", "Control Panel", "Updates", "Advanced"], viewModel.GeneralPatcherGroups.Select(g => g.Heading));
+        Assert.Equal(["", "Control Panel", "ExplorerPatcher updates", "Advanced"], viewModel.GeneralPatcherGroups.Select(g => g.Heading));
         Assert.Equal([""], viewModel.FileExplorerPatcherGroups.Select(g => g.Heading));
         // Rows keep the manifest's order: the taskbar style choice opens the Taskbar run.
         Assert.IsType<ShellChoiceSettingViewModel>(viewModel.TaskbarPatcherGroups[0].Rows[0]);
@@ -156,7 +156,7 @@ public class ShellExplorerPatcherShotTests
         Assert.DoesNotContain(general, r => r is ShellSettingViewModel t && t.Label.Contains("console", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(general, r => r is ShellSettingViewModel t && t.Label.Contains("memory", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(general, r => r is ShellSettingViewModel t && t.Label.Contains("pre-release", StringComparison.OrdinalIgnoreCase));
-        Assert.Single(viewModel.GeneralPatcherGroups.First(g => g.Heading == "Updates").Rows);
+        Assert.Single(viewModel.GeneralPatcherGroups.First(g => g.Heading == "ExplorerPatcher updates").Rows);
     }
 
     [AvaloniaFact]
@@ -173,7 +173,7 @@ public class ShellExplorerPatcherShotTests
         Assert.False(general.First(g => g.Heading == "").IsSearchVisible);
         Assert.True(general.First(g => g.Heading == "Control Panel").IsSearchVisible);
         Assert.True(session.IsTextVisible("Control Panel"));
-        Assert.False(session.IsTextVisible("Updates"));
+        Assert.False(session.IsTextVisible("ExplorerPatcher updates"));
 
         viewModel.SearchText = string.Empty;
         Assert.All(general, g => Assert.True(g.IsSearchVisible));

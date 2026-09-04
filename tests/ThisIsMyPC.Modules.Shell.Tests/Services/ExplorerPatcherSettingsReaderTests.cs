@@ -248,7 +248,7 @@ public sealed class ExplorerPatcherSettingsReaderTests
         Assert.Equal(ExplorerPatcherSettingKind.Choice, policy.Kind);
         Assert.Contains(policy.Options, o => o.DisplayName.Contains("Do not check", StringComparison.Ordinal));
         Assert.Equal("Check for updates", policy.DisplayName);
-        Assert.Equal("Updates", policy.GroupHeading);
+        Assert.Equal("ExplorerPatcher updates", policy.GroupHeading);
         Assert.Contains("ExplorerPatcher", policy.Description, StringComparison.Ordinal);
     }
 
