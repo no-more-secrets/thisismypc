@@ -42,28 +42,16 @@
     <!-- Tab strips and headers: TabStripTheme.axaml (one definition, so a
          view writes Header="Name" and nothing else). -->
 
-    <!-- Sliders: hand cursor and a thumb that grows toward the pointer.
-         Wheel-to-adjust is wired per view (DisplayView) because it must win
-         over the page's ScrollViewer. The body carries a button-style
-         outline and hover wash (fills come from the SliderContainer*
-         resources in Theme.axaml). -->
+    <!-- Sliders: a bare track and thumb, no box around them (the
+         SliderContainer* fills in Theme.axaml are transparent). Hand cursor
+         and a thumb that grows toward the pointer. Wheel-to-adjust is wired
+         per view (DisplayView) because it must win over the page's
+         ScrollViewer. -->
     <Style Selector="Slider">
         <Setter Property="Cursor" Value="Hand" />
-        <Setter Property="BorderBrush" Value="{DynamicResource OutlineBrush}" />
-        <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="4" />
-        <Setter Property="Padding" Value="8,0" />
-    </Style>
-    <Style Selector="Slider:pointerover">
-        <Setter Property="BorderBrush" Value="{DynamicResource OutlineStrongBrush}" />
-    </Style>
-    <Style Selector="Slider:disabled">
-        <Setter Property="BorderBrush" Value="{DynamicResource OutlineBrush}" />
-    </Style>
-    <!-- The container grid has square corners; without clipping they poke
-         past the rounded border as light slivers at the edges. -->
-    <Style Selector="Slider /template/ Border">
-        <Setter Property="ClipToBounds" Value="True" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="MinHeight" Value="24" />
     </Style>
     <Style Selector="Slider /template/ Thumb">
         <Setter Property="Transitions">
@@ -74,6 +62,35 @@
     </Style>
     <Style Selector="Slider:pointerover /template/ Thumb">
         <Setter Property="RenderTransform" Value="scale(1.15)" />
+    </Style>
+
+    <!-- A value that reads as text and edits on click: no box at rest, the
+         control tier shows when hovered or focused. -->
+    <Style Selector="TextBox.plain-value">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <!-- Fluent's TextBox MinWidth is 64 and would win over Width -->
+        <Setter Property="MinWidth" Value="48" />
+        <Setter Property="Width" Value="48" />
+        <Setter Property="MinHeight" Value="28" />
+        <Setter Property="Height" Value="28" />
+        <Setter Property="Padding" Value="6,0" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="TextAlignment" Value="Right" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="CornerRadius" Value="4" />
+    </Style>
+    <Style Selector="TextBox.plain-value /template/ Border#PART_BorderElement">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="TextBox.plain-value:pointerover /template/ Border#PART_BorderElement">
+        <Setter Property="Background" Value="{DynamicResource OverlayBrush}" />
+    </Style>
+    <Style Selector="TextBox.plain-value:focus /template/ Border#PART_BorderElement">
+        <Setter Property="Background" Value="{DynamicResource OverlayBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
     </Style>
 
     <!-- Info icon: a small circled i whose tooltip carries the full

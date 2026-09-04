@@ -233,18 +233,15 @@
                 BorderThickness="1,1,1,0"
                 CornerRadius="16,0,0,0">
         <DockPanel Margin="23,15,23,16">
-            <!-- Module header -->
-            <StackPanel DockPanel.Dock="Top" Margin="0,0,0,24">
-                <TextBlock Text="{Binding ContentTitle}"
-                           FontFamily="{StaticResource DisplayFont}"
-                           FontSize="28"
-                           FontWeight="Bold"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
-                <TextBlock Text="{Binding ContentDescription}"
-                           FontSize="14"
-                           Foreground="{DynamicResource TextSecondaryBrush}"
-                           Margin="0,4,0,0" />
-            </StackPanel>
+            <!-- Module header: the title alone; the one-line description
+                 under it said nothing the page did not (Sam, 2026-09-04) -->
+            <TextBlock DockPanel.Dock="Top"
+                       Text="{Binding ContentTitle}"
+                       FontFamily="{StaticResource DisplayFont}"
+                       FontSize="28"
+                       FontWeight="Bold"
+                       Margin="0,0,0,20"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
 
             <!-- Restart notification bar -->
             <Border DockPanel.Dock="Bottom"

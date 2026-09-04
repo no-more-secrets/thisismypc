@@ -157,11 +157,10 @@
             <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="{StaticResource AccentColorLight}" />
             <SolidColorBrush x:Key="SliderThumbBackgroundPressed" Color="#3f68a8" />
 
-            <!-- Slider body styled like a button: solid fill at rest, full
-                 hover wash, solid grey when disabled (no ghost outlines) -->
-            <SolidColorBrush x:Key="SliderContainerBackground" Color="{StaticResource OverlayColor}" />
-            <SolidColorBrush x:Key="SliderContainerBackgroundPointerOver" Color="#42425e" />
-            <SolidColorBrush x:Key="SliderContainerBackgroundPressed" Color="#4c4c6a" />
+            <!-- Slider body is bare: no fill behind the track in any state -->
+            <SolidColorBrush x:Key="SliderContainerBackground" Color="Transparent" />
+            <SolidColorBrush x:Key="SliderContainerBackgroundPointerOver" Color="Transparent" />
+            <SolidColorBrush x:Key="SliderContainerBackgroundPressed" Color="Transparent" />
             <SolidColorBrush x:Key="SliderTrackFillDisabled" Color="#56567c" />
             <SolidColorBrush x:Key="SliderTrackValueFillDisabled" Color="#56567c" />
             <SolidColorBrush x:Key="SliderThumbBackgroundDisabled" Color="#56567c" />
@@ -360,11 +359,10 @@
             <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="{StaticResource AccentColorLight}" />
             <SolidColorBrush x:Key="SliderThumbBackgroundPressed" Color="#274b8f" />
 
-            <!-- Slider body styled like a button: solid fill at rest, full
-                 hover wash, solid grey when disabled (no ghost outlines) -->
-            <SolidColorBrush x:Key="SliderContainerBackground" Color="{StaticResource OverlayColor}" />
-            <SolidColorBrush x:Key="SliderContainerBackgroundPointerOver" Color="#d6dae6" />
-            <SolidColorBrush x:Key="SliderContainerBackgroundPressed" Color="#c9cedd" />
+            <!-- Slider body is bare: no fill behind the track in any state -->
+            <SolidColorBrush x:Key="SliderContainerBackground" Color="Transparent" />
+            <SolidColorBrush x:Key="SliderContainerBackgroundPointerOver" Color="Transparent" />
+            <SolidColorBrush x:Key="SliderContainerBackgroundPressed" Color="Transparent" />
             <SolidColorBrush x:Key="SliderTrackFillDisabled" Color="#b0b6c8" />
             <SolidColorBrush x:Key="SliderTrackValueFillDisabled" Color="#b0b6c8" />
             <SolidColorBrush x:Key="SliderThumbBackgroundDisabled" Color="#b0b6c8" />

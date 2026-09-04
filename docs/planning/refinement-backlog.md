@@ -747,6 +747,14 @@ no UI now; delete or resurface.
 
 ## Display module: v1 SHIPPED 2026-08-30 (first Hardware-group module)
 
+- **Card restyle (2026-09-04), Twinkle Tray register.** One surface per
+  monitor: display icon and name; rows of icon, label, bare slider (the
+  global Slider style lost its button-style box and the SliderContainer*
+  fills are transparent), plain value (TextBox.plain-value: no box at rest,
+  control tier on hover/focus, MinWidth 48 because Fluent's 64 would win);
+  a divider; a footer with Input, Switch, and Screen off; Advanced expander
+  under it. Cards MinWidth 560. Page titles across the app lost their
+  one-line description (Sam: useless); the header is the title alone.
 - **Instant open (2026-09-04).** Measured on Sam's PG27UCDM: every open ran a
   full DDC scan, 6.3 s cold (capabilities request plus 21 vendor probes) and
   1.5 s warm, longer live with Twinkle Tray polling the same bus. Now

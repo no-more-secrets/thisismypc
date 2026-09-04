@@ -260,6 +260,9 @@ public sealed partial class MonitorItemViewModel : ViewModelBase
 
     public bool CanTurnOffScreen => _device.PowerOffValue is not null && !_device.IsInternalPanel;
 
+    /// <summary>The card's action row: input switch and screen off; hidden when neither applies.</summary>
+    public bool HasFooter => HasInputSources || CanTurnOffScreen;
+
     partial void OnBrightnessChanged(double value)
     {
         // Typed values can land outside the range; re-set to the clamped

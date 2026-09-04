@@ -8,35 +8,57 @@
              x:Class="ThisIsMyPC.App.Views.DisplayView"
              x:DataType="vm:DisplayViewModel">
 
+    <!-- Monitor cards in the Twinkle Tray register: one surface, rows of
+         icon, label, bare slider, plain value; a divider; then a footer with
+         the input switch and screen-off. No boxes inside the card. -->
+    <UserControl.Styles>
+        <Style Selector="TextBlock.row-label">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+        </Style>
+        <Style Selector="PathIcon.row-icon">
+            <Setter Property="Width" Value="16" />
+            <Setter Property="Height" Value="16" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+        </Style>
+        <!-- Same footprint as the editable TextBox.plain-value (48 wide, 6 pad),
+             so slider ends and values line up across rows -->
+        <Style Selector="TextBlock.row-value">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Width" Value="48" />
+            <Setter Property="Padding" Value="0,0,6,0" />
+            <Setter Property="TextAlignment" Value="Right" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        </Style>
+    </UserControl.Styles>
+
     <UserControl.DataTemplates>
         <!-- One vendor feature row; picked up implicitly by both the named
              list and the Advanced expander. -->
         <DataTemplate DataType="{x:Type vm:VendorFeatureViewModel}">
-            <DockPanel Margin="0,0,0,8" ToolTip.Tip="{Binding Hint}">
-                <TextBlock DockPanel.Dock="Left" Text="{Binding Name}" Width="100"
-                           VerticalAlignment="Center" FontSize="12"
-                           TextWrapping="Wrap"
-                           Foreground="{DynamicResource TextSecondaryBrush}" />
-                <TextBlock DockPanel.Dock="Right" Width="48"
-                           Text="{Binding Value, StringFormat={}{0:0}}"
-                           VerticalAlignment="Center" FontSize="12"
-                           TextAlignment="Right"
-                           IsVisible="{Binding IsSlider}"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
-                <Panel Margin="8,0">
+            <Grid ColumnDefinitions="128,*,Auto" ToolTip.Tip="{Binding Hint}" MinHeight="32">
+                <TextBlock Grid.Column="0" Classes="row-label" Text="{Binding Name}" TextWrapping="Wrap" />
+                <Panel Grid.Column="1">
                     <Slider Minimum="{Binding Minimum}"
                             Maximum="{Binding Maximum}"
                             Value="{Binding Value}"
                             TickFrequency="1"
                             IsSnapToTickEnabled="True"
                             TickPlacement="BottomRight"
+                            VerticalAlignment="Center"
                             IsVisible="{Binding IsSlider}" />
                     <ComboBox ItemsSource="{Binding Values}"
                               SelectedItem="{Binding SelectedValue}"
                               IsVisible="{Binding IsCombo}"
                               HorizontalAlignment="Stretch" />
                 </Panel>
-            </DockPanel>
+                <TextBlock Grid.Column="2" Classes="row-value"
+                           Text="{Binding Value, StringFormat={}{0:0}}"
+                           IsVisible="{Binding IsSlider}" />
+            </Grid>
         </DataTemplate>
     </UserControl.DataTemplates>
 
@@ -71,18 +93,16 @@
             <ItemsControl ItemsSource="{Binding Monitors}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:MonitorItemViewModel">
-                        <Border Classes="card" CornerRadius="6" Padding="16,12" Margin="0,0,0,8">
-                            <StackPanel Spacing="8">
-                                <DockPanel>
-                                    <Button DockPanel.Dock="Right" Content="Screen off"
-                                            Command="{Binding TurnOffScreenCommand}"
-                                            Padding="10,2" FontSize="12"
-                                            VerticalAlignment="Center"
-                                            IsVisible="{Binding CanTurnOffScreen}"
-                                            ToolTip.Tip="Powers this monitor's screen off over DDC/CI. It wakes with its power button, or when the signal changes." />
-                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Border Classes="card" CornerRadius="8" Padding="0" Margin="0,0,0,10" MinWidth="560">
+                            <StackPanel>
+                                <!-- Body: name, then the slider rows -->
+                                <StackPanel Spacing="12" Margin="20,16,20,16">
+                                    <StackPanel Orientation="Horizontal" Spacing="12">
+                                        <PathIcon Width="20" Height="20" VerticalAlignment="Center"
+                                                  Foreground="{DynamicResource TextPrimaryBrush}"
+                                                  Data="M4 3C2.9 3 2 3.9 2 5V15C2 16.1 2.9 17 4 17H10V19H8C7.45 19 7 19.45 7 20C7 20.55 7.45 21 8 21H16C16.55 21 17 20.55 17 20C17 19.45 16.55 19 16 19H14V17H20C21.1 17 22 16.1 22 15V5C22 3.9 21.1 3 20 3H4ZM4 5H20V15H4V5Z" />
                                         <TextBlock Text="{Binding Name}"
-                                                   FontWeight="SemiBold" FontSize="14"
+                                                   FontWeight="SemiBold" FontSize="15"
                                                    VerticalAlignment="Center"
                                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                                         <Border Background="{DynamicResource InfoMutedBrush}"
@@ -93,124 +113,137 @@
                                                        Foreground="{DynamicResource InfoBrush}" />
                                         </Border>
                                     </StackPanel>
-                                </DockPanel>
 
-                                <TextBlock Text="{Binding DdcError}"
-                                           FontSize="12" TextWrapping="Wrap"
-                                           Foreground="{DynamicResource TextTertiaryBrush}"
-                                           IsVisible="{Binding HasDdcError}" />
+                                    <TextBlock Text="{Binding DdcError}"
+                                               FontSize="12" TextWrapping="Wrap"
+                                               Foreground="{DynamicResource TextTertiaryBrush}"
+                                               IsVisible="{Binding HasDdcError}" />
 
-                                <!-- Quick open: brightness is live already, the input and
-                                     feature rows arrive when the full scan finishes -->
-                                <TextBlock Text="Reading this monitor's features..."
-                                           FontSize="12"
-                                           Foreground="{DynamicResource TextTertiaryBrush}"
-                                           IsVisible="{Binding FeaturesPending}" />
+                                    <!-- Quick open: brightness is live already, the input and
+                                         feature rows arrive when the full scan finishes -->
+                                    <TextBlock Text="Reading this monitor's features..."
+                                               FontSize="12"
+                                               Foreground="{DynamicResource TextTertiaryBrush}"
+                                               IsVisible="{Binding FeaturesPending}" />
 
-                                <StackPanel Spacing="8" IsVisible="{Binding SupportsDdc}">
-                                    <!-- Brightness -->
-                                    <DockPanel>
-                                        <StackPanel DockPanel.Dock="Left" Orientation="Horizontal"
-                                                    Spacing="6" Width="100" VerticalAlignment="Center">
-                                            <Panel Width="14" Height="14" VerticalAlignment="Center">
-                                                <Ellipse Width="7" Height="7"
-                                                         Stroke="{DynamicResource TextSecondaryBrush}"
-                                                         StrokeThickness="1.5" />
-                                                <Path Data="M7 0v2.2M7 11.8V14M0 7h2.2M11.8 7H14M2 2l1.6 1.6M10.4 10.4 12 12M12 2l-1.6 1.6M3.6 10.4 2 12"
-                                                      Stroke="{DynamicResource TextSecondaryBrush}"
-                                                      StrokeThickness="1.3" />
-                                            </Panel>
-                                            <TextBlock Text="Brightness"
-                                                       VerticalAlignment="Center" FontSize="12"
-                                                       Foreground="{DynamicResource TextSecondaryBrush}" />
-                                        </StackPanel>
-                                        <TextBox DockPanel.Dock="Right" Width="48" MinHeight="26" Height="26"
-                                                 Text="{Binding Brightness, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
-                                                 VerticalAlignment="Center" VerticalContentAlignment="Center"
-                                                 FontSize="12" TextAlignment="Right" Padding="6,0"
-                                                 ToolTip.Tip="Type an exact value; Enter applies it." />
-                                        <Slider Minimum="0" Maximum="{Binding BrightnessMax}"
-                                                Value="{Binding Brightness}"
-                                                TickFrequency="1" IsSnapToTickEnabled="True"
-                                                Margin="8,0" />
-                                    </DockPanel>
-
-                                    <!-- Contrast -->
-                                    <DockPanel IsVisible="{Binding HasContrast}">
-                                        <StackPanel DockPanel.Dock="Left" Orientation="Horizontal"
-                                                    Spacing="6" Width="100" VerticalAlignment="Center">
-                                            <Panel Width="14" Height="14" VerticalAlignment="Center">
-                                                <Ellipse Stroke="{DynamicResource TextSecondaryBrush}"
-                                                         StrokeThickness="1.5" />
-                                                <Path Data="M7 2A5 5 0 0 1 7 12Z"
-                                                      Fill="{DynamicResource TextSecondaryBrush}" />
-                                            </Panel>
-                                            <TextBlock Text="Contrast"
-                                                       VerticalAlignment="Center" FontSize="12"
-                                                       Foreground="{DynamicResource TextSecondaryBrush}" />
-                                        </StackPanel>
-                                        <TextBox DockPanel.Dock="Right" Width="48" MinHeight="26" Height="26"
-                                                 Text="{Binding Contrast, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
-                                                 VerticalAlignment="Center" VerticalContentAlignment="Center"
-                                                 FontSize="12" TextAlignment="Right" Padding="6,0"
-                                                 ToolTip.Tip="Type an exact value; Enter applies it." />
-                                        <Slider Minimum="0" Maximum="{Binding ContrastMax}"
-                                                Value="{Binding Contrast}"
-                                                TickFrequency="1" IsSnapToTickEnabled="True"
-                                                Margin="8,0" />
-                                    </DockPanel>
-
-                                    <!-- Named vendor features (blue light filter etc.) -->
-                                    <ItemsControl ItemsSource="{Binding VendorFeatures}"
-                                                  IsVisible="{Binding HasVendorFeatures}" />
-
-                                    <!-- Input source -->
-                                    <DockPanel IsVisible="{Binding HasInputSources}">
-                                        <TextBlock DockPanel.Dock="Left" Text="Input" Width="100"
-                                                   VerticalAlignment="Center" FontSize="12"
-                                                   Foreground="{DynamicResource TextSecondaryBrush}" />
-                                        <Button DockPanel.Dock="Right" Content="Switch"
-                                                Command="{Binding SetInputCommand}"
-                                                Padding="12,4" Margin="8,0,0,0"
-                                                ToolTip.Tip="The monitor may go dark if the chosen input has no signal; use its physical buttons to come back." />
-                                        <ComboBox ItemsSource="{Binding InputSources}"
-                                                  SelectedItem="{Binding SelectedInput}"
-                                                  Margin="8,0,0,0"
-                                                  HorizontalAlignment="Stretch">
-                                            <ComboBox.ItemTemplate>
-                                                <DataTemplate x:DataType="core:MonitorInputSource">
-                                                    <TextBlock Text="{Binding Name}" />
-                                                </DataTemplate>
-                                            </ComboBox.ItemTemplate>
-                                        </ComboBox>
-                                    </DockPanel>
-                                    <!-- Unnamed vendor codes: real controls the monitor
-                                         declares, meaning unknown; kept out of the way -->
-                                    <Expander IsExpanded="False"
-                                              HorizontalAlignment="Stretch"
-                                              IsVisible="{Binding HasAdvancedVendorFeatures}">
-                                        <Expander.Header>
-                                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                                <TextBlock Text="Advanced"
-                                                           FontWeight="SemiBold" FontSize="12"
-                                                           Foreground="{DynamicResource TextSecondaryBrush}" />
-                                                <TextBlock Text="unnamed monitor features; effects vary"
-                                                           FontSize="11"
-                                                           Foreground="{DynamicResource TextTertiaryBrush}"
-                                                           VerticalAlignment="Center" />
+                                    <StackPanel Spacing="12" IsVisible="{Binding SupportsDdc}">
+                                        <!-- Brightness -->
+                                        <Grid ColumnDefinitions="128,*,Auto" MinHeight="32">
+                                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                                <PathIcon Classes="row-icon"
+                                                          Data="M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,2L14.39,5.42C13.65,5.15 12.84,5 12,5C11.16,5 10.35,5.15 9.61,5.42L12,2M3.34,7L7.5,6.65C6.9,7.16 6.36,7.78 5.94,8.5C5.5,9.24 5.25,10 5.11,10.79L3.34,7M3.36,17L5.12,13.23C5.26,14 5.53,14.78 5.95,15.5C6.37,16.24 6.91,16.86 7.5,17.37L3.36,17M20.65,7L18.88,10.79C18.74,10 18.47,9.23 18.05,8.5C17.63,7.78 17.1,7.15 16.5,6.64L20.65,7M20.64,17L16.5,17.36C17.09,16.85 17.62,16.22 18.04,15.5C18.46,14.77 18.73,14 18.87,13.21L20.64,17M12,22L9.59,18.56C10.33,18.83 11.14,19 12,19C12.82,19 13.63,18.83 14.37,18.56L12,22Z" />
+                                                <TextBlock Classes="row-label" Text="Brightness" />
                                             </StackPanel>
-                                        </Expander.Header>
-                                        <Border Padding="0,8,0,0" Margin="0,4,0,0"
-                                                BorderBrush="{DynamicResource OutlineBrush}"
-                                                BorderThickness="0,1,0,0">
-                                            <ItemsControl ItemsSource="{Binding AdvancedVendorFeatures}" />
-                                        </Border>
-                                    </Expander>
+                                            <Slider Grid.Column="1" Minimum="0" Maximum="{Binding BrightnessMax}"
+                                                    Value="{Binding Brightness}"
+                                                    TickFrequency="1" IsSnapToTickEnabled="True"
+                                                    VerticalAlignment="Center" />
+                                            <TextBox Grid.Column="2" Classes="plain-value"
+                                                     Text="{Binding Brightness, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                                     ToolTip.Tip="Type an exact value; Enter applies it." />
+                                        </Grid>
+
+                                        <!-- Contrast -->
+                                        <Grid ColumnDefinitions="128,*,Auto" MinHeight="32" IsVisible="{Binding HasContrast}">
+                                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                                <PathIcon Classes="row-icon"
+                                                          Data="M12,18V6A6,6 0 0,1 18,12A6,6 0 0,1 12,18M20,15.31L23.31,12L20,8.69V4H15.31L12,0.69L8.69,4H4V8.69L0.69,12L4,15.31V20H8.69L12,23.31L15.31,20H20V15.31M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20Z" />
+                                                <TextBlock Classes="row-label" Text="Contrast" />
+                                            </StackPanel>
+                                            <Slider Grid.Column="1" Minimum="0" Maximum="{Binding ContrastMax}"
+                                                    Value="{Binding Contrast}"
+                                                    TickFrequency="1" IsSnapToTickEnabled="True"
+                                                    VerticalAlignment="Center" />
+                                            <TextBox Grid.Column="2" Classes="plain-value"
+                                                     Text="{Binding Contrast, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                                     ToolTip.Tip="Type an exact value; Enter applies it." />
+                                        </Grid>
+
+                                        <!-- Named vendor features (blue light filter etc.) -->
+                                        <ItemsControl ItemsSource="{Binding VendorFeatures}"
+                                                      IsVisible="{Binding HasVendorFeatures}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <StackPanel Spacing="12" />
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                        </ItemsControl>
+                                    </StackPanel>
+
+                                    <TextBlock Text="{Binding LastError}"
+                                               Classes="status-error" FontSize="12" TextWrapping="Wrap"
+                                               IsVisible="{Binding HasError}" />
                                 </StackPanel>
 
-                                <TextBlock Text="{Binding LastError}"
-                                           Classes="status-error" FontSize="12" TextWrapping="Wrap"
-                                           IsVisible="{Binding HasError}" />
+                                <!-- Footer: input switch left, screen off right, on the
+                                     same divider line as Twinkle Tray's action row -->
+                                <Border BorderBrush="{DynamicResource OutlineBrush}"
+                                        BorderThickness="0,1,0,0"
+                                        Padding="20,10"
+                                        IsVisible="{Binding HasFooter}">
+                                    <DockPanel>
+                                        <Button DockPanel.Dock="Right"
+                                                Classes="apply-bar-discard"
+                                                Command="{Binding TurnOffScreenCommand}"
+                                                Padding="10,0" Height="32"
+                                                VerticalAlignment="Center"
+                                                IsVisible="{Binding CanTurnOffScreen}"
+                                                ToolTip.Tip="Powers this monitor's screen off over DDC/CI. It wakes with its power button, or when the signal changes.">
+                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                <PathIcon Width="14" Height="14" VerticalAlignment="Center"
+                                                          Foreground="{DynamicResource TextSecondaryBrush}"
+                                                          Data="M1.11,3L4.38,6.3L2,6.3V17.3H15.38L18.38,20.3H8V22.3H16V20.3H19.38L21.5,22.41L22.91,21L2.52,1.59L1.11,3M21,4H8.09L10.09,6H21V15.3H19.38L21.38,17.3H23V4.3C23,3.75 22.55,3.3 22,3.3L21,4Z" />
+                                                <TextBlock Text="Screen off" FontSize="12" VerticalAlignment="Center" />
+                                            </StackPanel>
+                                        </Button>
+                                        <StackPanel Orientation="Horizontal" Spacing="10"
+                                                    IsVisible="{Binding HasInputSources}">
+                                            <TextBlock Classes="row-label" Text="Input" />
+                                            <ComboBox ItemsSource="{Binding InputSources}"
+                                                      SelectedItem="{Binding SelectedInput}"
+                                                      MinWidth="150" Height="32"
+                                                      VerticalAlignment="Center">
+                                                <ComboBox.ItemTemplate>
+                                                    <DataTemplate x:DataType="core:MonitorInputSource">
+                                                        <TextBlock Text="{Binding Name}" />
+                                                    </DataTemplate>
+                                                </ComboBox.ItemTemplate>
+                                            </ComboBox>
+                                            <Button Content="Switch"
+                                                    Classes="apply-bar-discard"
+                                                    Command="{Binding SetInputCommand}"
+                                                    Padding="12,0" Height="32" FontSize="12"
+                                                    VerticalAlignment="Center"
+                                                    ToolTip.Tip="The monitor may go dark if the chosen input has no signal; use its physical buttons to come back." />
+                                        </StackPanel>
+                                    </DockPanel>
+                                </Border>
+
+                                <!-- Unnamed vendor codes: real controls the monitor
+                                     declares, meaning unknown; kept out of the way -->
+                                <Expander IsExpanded="False"
+                                          HorizontalAlignment="Stretch"
+                                          Margin="12,0,12,12"
+                                          IsVisible="{Binding HasAdvancedVendorFeatures}">
+                                    <Expander.Header>
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <TextBlock Text="Advanced"
+                                                       FontWeight="SemiBold" FontSize="12"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                                            <TextBlock Text="unnamed monitor features; effects vary"
+                                                       FontSize="11"
+                                                       Foreground="{DynamicResource TextTertiaryBrush}"
+                                                       VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Expander.Header>
+                                    <ItemsControl ItemsSource="{Binding AdvancedVendorFeatures}" Margin="8,8,8,0">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <StackPanel Spacing="12" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                    </ItemsControl>
+                                </Expander>
                             </StackPanel>
                         </Border>
                     </DataTemplate>
