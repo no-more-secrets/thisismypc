@@ -1,8 +1,6 @@
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
-using Avalonia.VisualTree;
 
 namespace ThisIsMyPC.App.Views;
 
@@ -12,30 +10,11 @@ public partial class DisplayView : UserControl
     {
         InitializeComponent();
 
-        // Tunneled so the wheel wins over the page ScrollViewer while the
-        // pointer sits on a slider; elsewhere the page scrolls as usual.
-        AddHandler(PointerWheelChangedEvent, OnPointerWheelChanged, RoutingStrategies.Tunnel);
+        // The wheel only scrolls the page. It never moves a slider: this is
+        // a page people scroll, the Advanced list especially, and a wheel
+        // notch landing on a slider would write to the monitor (Sam,
+        // 2026-09-04). Avalonia's Slider has no wheel handling of its own.
         AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Bubble);
-    }
-
-    private static void OnPointerWheelChanged(object? sender, PointerWheelEventArgs e)
-    {
-        if (e.Source is not Visual source
-            || source.FindAncestorOfType<Slider>(includeSelf: true) is not { } slider)
-        {
-            return;
-        }
-
-        // One notch is a visible change: 1/20 of range (5 on a 0-100
-        // monitor), never smaller than the tick so discrete sliders
-        // (blue light's 0-4) step exactly one level.
-        var step = Math.Max(
-            Math.Max(1, slider.TickFrequency),
-            Math.Round((slider.Maximum - slider.Minimum) / 20));
-
-        slider.Value = Math.Clamp(
-            slider.Value + Math.Sign(e.Delta.Y) * step, slider.Minimum, slider.Maximum);
-        e.Handled = true;
     }
 
     /// <summary>

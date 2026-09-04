@@ -344,4 +344,24 @@ public class DisplayViewShotTests
         Assert.Equal(30, card.Brightness);
         Assert.Empty(monitors.Writes);
     }
+
+    /// <summary>The wheel scrolls the page; a notch over a slider must not move it or write to the monitor.</summary>
+    [AvaloniaFact]
+    public void Wheel_OverASlider_DoesNotChangeItsValue()
+    {
+        var monitors = new StubMonitorService();
+        var viewModel = new DisplayViewModel(SampleData(), monitors, new UiFakePowerService());
+        using var session = UiSession.ForView(new DisplayView(), viewModel, "display-wheel");
+
+        var slider = session.FindAll<Slider>(_ => true).First();
+        var before = slider.Value;
+        var point = session.CenterOf(slider);
+        session.Window.MouseWheel(point, new Avalonia.Vector(0, 1));
+        session.Pump();
+        session.Window.MouseWheel(point, new Avalonia.Vector(0, -1));
+        session.Pump();
+
+        Assert.Equal(before, slider.Value);
+        Assert.Empty(monitors.Writes);
+    }
 }

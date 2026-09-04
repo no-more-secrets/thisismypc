@@ -44,9 +44,8 @@
 
     <!-- Sliders: a bare track and thumb, no box around them (the
          SliderContainer* fills in Theme.axaml are transparent). Hand cursor
-         and a thumb that grows toward the pointer. Wheel-to-adjust is wired
-         per view (DisplayView) because it must win over the page's
-         ScrollViewer. -->
+         and a thumb that grows toward the pointer. The wheel never moves a
+         slider; it scrolls the page. -->
     <Style Selector="Slider">
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="BorderThickness" Value="0" />
