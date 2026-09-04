@@ -325,9 +325,12 @@ foreach ($table in 'Exclude', 'Section', 'Group', 'Label', 'Description') {
 # Tab, then group order, then the manifest's own order.
 $index = 0
 foreach ($setting in $unique) { $setting._index = ($index++) }
+# Tab, then group, then relevance (RowOrder; unlisted rows fall to the end),
+# then the manifest's own order.
 $ordered = $unique | Sort-Object `
     @{ Expression = { [Array]::IndexOf($SectionOrder, [string]$_.section) } }, `
     @{ Expression = { [Array]::IndexOf($Overrides.GroupOrder, [string]$_.group) } }, `
+    @{ Expression = { if ($Overrides.RowOrder.ContainsKey($_.value)) { [int]$Overrides.RowOrder[$_.value] } else { 100000 } } }, `
     @{ Expression = { $_._index } }
 $unique = [System.Collections.Generic.List[object]]::new()
 foreach ($setting in $ordered) {

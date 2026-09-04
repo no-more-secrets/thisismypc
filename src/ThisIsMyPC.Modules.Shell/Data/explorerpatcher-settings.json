@@ -1,7 +1,7 @@
 {
     "_license":  "Settings definitions imported from ExplorerPatcher (https://github.com/valinet/ExplorerPatcher), GNU General Public License v2.0, Copyright (c) valinet. Regenerate with tools/import-explorerpatcher-settings.ps1; the pin moves only after a deliberate check.",
     "_version":  "26100.8457.70.3",
-    "_imported":  "2026-09-03",
+    "_imported":  "2026-09-04",
     "settings":  [
                      {
                          "id":  "ep:OldTaskbar",
@@ -988,6 +988,23 @@
                                      ]
                      },
                      {
+                         "id":  "ep:DisableImmersiveContextMenu",
+                         "name":  "Use immersive style for Windows 10 context menus",
+                         "description":  "Draw Windows 10 style right-click menus with the larger touch-friendly look. Off uses the compact classic menu. New windows only.",
+                         "group":  "",
+                         "page":  "File Explorer",
+                         "section":  "FileExplorer",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "DisableImmersiveContextMenu",
+                         "kind":  "invertedToggle",
+                         "default":  0,
+                         "restart":  true,
+                         "condition":  "",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
                          "id":  "ep:LegacyFileTransferDialog",
                          "name":  "Always use legacy file transfer dialog",
                          "description":  "Copy and move files with the Windows 7 progress dialog instead of the newer one with the speed graph.",
@@ -1016,57 +1033,6 @@
                          "kind":  "toggle",
                          "default":  0,
                          "restart":  false,
-                         "condition":  "",
-                         "options":  [
-
-                                     ]
-                     },
-                     {
-                         "id":  "ep:DisableImmersiveContextMenu",
-                         "name":  "Use immersive style for Windows 10 context menus",
-                         "description":  "Draw Windows 10 style right-click menus with the larger touch-friendly look. Off uses the compact classic menu. New windows only.",
-                         "group":  "",
-                         "page":  "File Explorer",
-                         "section":  "FileExplorer",
-                         "key":  "HKCU\\Software\\ExplorerPatcher",
-                         "value":  "DisableImmersiveContextMenu",
-                         "kind":  "invertedToggle",
-                         "default":  0,
-                         "restart":  true,
-                         "condition":  "",
-                         "options":  [
-
-                                     ]
-                     },
-                     {
-                         "id":  "ep:ShrinkExplorerAddressBar",
-                         "name":  "Shrink address bar height",
-                         "description":  "Make the address bar in File Explorer windows shorter. New windows only.",
-                         "group":  "",
-                         "page":  "File Explorer",
-                         "section":  "FileExplorer",
-                         "key":  "HKCU\\Software\\ExplorerPatcher",
-                         "value":  "ShrinkExplorerAddressBar",
-                         "kind":  "toggle",
-                         "default":  0,
-                         "restart":  true,
-                         "condition":  "",
-                         "options":  [
-
-                                     ]
-                     },
-                     {
-                         "id":  "ep:HideExplorerSearchBar",
-                         "name":  "Hide search bar completely",
-                         "description":  "Remove the search box from File Explorer windows. New windows only.",
-                         "group":  "",
-                         "page":  "File Explorer",
-                         "section":  "FileExplorer",
-                         "key":  "HKCU\\Software\\ExplorerPatcher",
-                         "value":  "HideExplorerSearchBar",
-                         "kind":  "toggle",
-                         "default":  0,
-                         "restart":  true,
                          "condition":  "",
                          "options":  [
 
@@ -1102,6 +1068,40 @@
                                              "value":  3,
                                              "name":  "Hide icon and title"
                                          }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:HideExplorerSearchBar",
+                         "name":  "Hide search bar completely",
+                         "description":  "Remove the search box from File Explorer windows. New windows only.",
+                         "group":  "",
+                         "page":  "File Explorer",
+                         "section":  "FileExplorer",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "HideExplorerSearchBar",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  true,
+                         "condition":  "",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:ShrinkExplorerAddressBar",
+                         "name":  "Shrink address bar height",
+                         "description":  "Make the address bar in File Explorer windows shorter. New windows only.",
+                         "group":  "",
+                         "page":  "File Explorer",
+                         "section":  "FileExplorer",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "ShrinkExplorerAddressBar",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  true,
+                         "condition":  "",
+                         "options":  [
+
                                      ]
                      },
                      {
@@ -2074,14 +2074,14 @@
                                      ]
                      },
                      {
-                         "id":  "ep:DisableOfficeHotkeys",
-                         "name":  "Disable Office hotkeys",
-                         "description":  "Stop the Ctrl+Alt+Shift+Windows key shortcuts from opening Office apps.",
+                         "id":  "ep:DisableWinFHotkey",
+                         "name":  "Disable Win+F (Feedback Hub) hotkey",
+                         "description":  "Stop Win+F from opening the Feedback Hub.",
                          "group":  "",
                          "page":  "Other",
                          "section":  "General",
                          "key":  "HKCU\\Software\\ExplorerPatcher",
-                         "value":  "DisableOfficeHotkeys",
+                         "value":  "DisableWinFHotkey",
                          "kind":  "toggle",
                          "default":  0,
                          "restart":  true,
@@ -2091,14 +2091,14 @@
                                      ]
                      },
                      {
-                         "id":  "ep:DisableWinFHotkey",
-                         "name":  "Disable Win+F (Feedback Hub) hotkey",
-                         "description":  "Stop Win+F from opening the Feedback Hub.",
+                         "id":  "ep:DisableOfficeHotkeys",
+                         "name":  "Disable Office hotkeys",
+                         "description":  "Stop the Ctrl+Alt+Shift+Windows key shortcuts from opening Office apps.",
                          "group":  "",
                          "page":  "Other",
                          "section":  "General",
                          "key":  "HKCU\\Software\\ExplorerPatcher",
-                         "value":  "DisableWinFHotkey",
+                         "value":  "DisableOfficeHotkeys",
                          "kind":  "toggle",
                          "default":  0,
                          "restart":  true,
@@ -2120,40 +2120,6 @@
                          "default":  0,
                          "restart":  true,
                          "condition":  "LogonLogoffShutdownSoundsAvailable",
-                         "options":  [
-
-                                     ]
-                     },
-                     {
-                         "id":  "ep:ClassicThemeMitigations",
-                         "name":  "Fix rendering under the classic theme",
-                         "description":  "Extra patches so the taskbar, tray, and folder views draw correctly when the Windows classic theme is forced on.",
-                         "group":  "",
-                         "page":  "Advanced",
-                         "section":  "General",
-                         "key":  "HKCU\\Software\\ExplorerPatcher",
-                         "value":  "ClassicThemeMitigations",
-                         "kind":  "toggle",
-                         "default":  0,
-                         "restart":  true,
-                         "condition":  "",
-                         "options":  [
-
-                                     ]
-                     },
-                     {
-                         "id":  "ep:XamlSounds",
-                         "name":  "Play UI sounds in Explorer\u0027s XAML views",
-                         "description":  "Enable the click and navigation sounds in the parts of Explorer built with XAML, such as the Start menu and taskbar flyouts.",
-                         "group":  "",
-                         "page":  "Advanced",
-                         "section":  "General",
-                         "key":  "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\ExplorerPatcher",
-                         "value":  "XamlSounds",
-                         "kind":  "toggle",
-                         "default":  0,
-                         "restart":  true,
-                         "condition":  "",
                          "options":  [
 
                                      ]
@@ -2252,6 +2218,40 @@
                                              "value":  2,
                                              "name":  "Do not check for updates"
                                          }
+                                     ]
+                     },
+                     {
+                         "id":  "ep:ClassicThemeMitigations",
+                         "name":  "Fix rendering under the classic theme",
+                         "description":  "Extra patches so the taskbar, tray, and folder views draw correctly when the Windows classic theme is forced on.",
+                         "group":  "Advanced",
+                         "page":  "Advanced",
+                         "section":  "General",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "ClassicThemeMitigations",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  true,
+                         "condition":  "",
+                         "options":  [
+
+                                     ]
+                     },
+                     {
+                         "id":  "ep:XamlSounds",
+                         "name":  "Play UI sounds in Explorer\u0027s XAML views",
+                         "description":  "Enable the click and navigation sounds in the parts of Explorer built with XAML, such as the Start menu and taskbar flyouts.",
+                         "group":  "Advanced",
+                         "page":  "Advanced",
+                         "section":  "General",
+                         "key":  "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\ExplorerPatcher",
+                         "value":  "XamlSounds",
+                         "kind":  "toggle",
+                         "default":  0,
+                         "restart":  true,
+                         "condition":  "",
+                         "options":  [
+
                                      ]
                      }
                  ]

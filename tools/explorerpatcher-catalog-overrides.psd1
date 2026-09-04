@@ -66,19 +66,41 @@
         'Updates'         = 'Updates'
     }
 
-    # Per-value group, overriding the page's.
+    # Per-value group, overriding the page's. "Advanced" collects the niche
+    # rendering and sound tweaks that ExplorerPatcher itself keeps on its
+    # Advanced page; they stay available but sit last, out of the way.
     Group = @{
         'DoNotRedirectSystemToSettingsApp'              = 'Control Panel'
         'DoNotRedirectProgramsAndFeaturesToSettingsApp' = 'Control Panel'
         'DoNotRedirectDateAndTimeToSettingsApp'         = 'Control Panel'
         'DoNotRedirectNotificationIconsToSettingsApp'   = 'Control Panel'
+        'ClassicThemeMitigations'                       = 'Advanced'
+        'XamlSounds'                                    = 'Advanced'
     }
 
-    # Order of groups within a tab; the empty group is always first.
+    # Order of groups within a tab; the empty group is always first, Advanced last.
     GroupOrder = @(
         '', 'System tray', 'Weather widget', 'Window switcher (Alt+Tab)',
-        'Windows Spotlight', 'Control Panel', 'Updates'
+        'Windows Spotlight', 'Control Panel', 'Updates', 'Advanced'
     )
+
+    # Relevance order within a tab and group: lower sorts earlier. A row with
+    # no entry falls to the end in ExplorerPatcher's own manifest order. This
+    # is the knob for "most useful first"; retune it freely.
+    RowOrder = @{
+        # File Explorer
+        'DisableImmersiveContextMenu' = 10   # pairs with the classic context menu
+        'LegacyFileTransferDialog'    = 20
+        'UseClassicDriveGrouping'     = 30
+        'HideIconAndTitleInExplorer'  = 40
+        'HideExplorerSearchBar'       = 50
+        'ShrinkExplorerAddressBar'    = 60
+        'MicaEffectOnTitlebar'        = 70
+        # General, main run: the keyboard and sound tweaks are all niche, ordered gently
+        'DisableWinFHotkey'           = 10
+        'DisableOfficeHotkeys'        = 20
+        'LogonLogoffShutdownSounds'   = 30
+    }
 
     # Labels rewritten where ExplorerPatcher's only reads under its own page
     # heading, or where a switch label should say what on does.

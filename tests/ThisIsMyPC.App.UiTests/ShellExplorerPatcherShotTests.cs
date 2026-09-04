@@ -127,7 +127,7 @@ public class ShellExplorerPatcherShotTests
 
         Assert.Equal(["", "System tray"], viewModel.TaskbarPatcherGroups.Select(g => g.Heading));
         Assert.Equal(["", "Window switcher (Alt+Tab)"], viewModel.DesktopPatcherGroups.Select(g => g.Heading));
-        Assert.Equal(["", "Control Panel", "Updates"], viewModel.GeneralPatcherGroups.Select(g => g.Heading));
+        Assert.Equal(["", "Control Panel", "Updates", "Advanced"], viewModel.GeneralPatcherGroups.Select(g => g.Heading));
         Assert.Equal([""], viewModel.FileExplorerPatcherGroups.Select(g => g.Heading));
         // Rows keep the manifest's order: the taskbar style choice opens the Taskbar run.
         Assert.IsType<ShellChoiceSettingViewModel>(viewModel.TaskbarPatcherGroups[0].Rows[0]);

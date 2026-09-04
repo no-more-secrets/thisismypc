@@ -279,7 +279,9 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, IDispos
                 return result.IsSuccess ? result.Value! : 0;
             }));
 
-        GeneralSettings.Add(new ShellSettingViewModel(
+        // Classic context menu is one of the most-wanted Windows 11 changes, so
+        // it leads the General tab rather than trailing the read preferences.
+        GeneralSettings.Insert(0, new ShellSettingViewModel(
             label: "Classic context menu",
             description: "Use Windows 10-style full context menu instead of the compact Windows 11 menu (requires Explorer restart)",
             systemPath: ClassicContextMenuKeyPath,

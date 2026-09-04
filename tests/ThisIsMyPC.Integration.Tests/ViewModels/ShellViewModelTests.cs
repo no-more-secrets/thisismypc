@@ -112,7 +112,9 @@ public sealed class ShellViewModelTests
         var scanData = MakeScanData(taskbar: new TaskbarSettings(1, true, true, false));
         var vm = new ShellViewModel(scanData, pendingService, registryService);
 
-        Assert.True(vm.GeneralSettings[^1].IsEnabled); // classic menu enabled; it sits on the General tab
+        // Classic context menu leads the General tab (one of the most-wanted Win11 changes).
+        Assert.Equal("Classic context menu", vm.GeneralSettings[0].Label);
+        Assert.True(vm.GeneralSettings[0].IsEnabled); // classic menu enabled
     }
 
     [Fact]
