@@ -29,13 +29,21 @@ public sealed class ExplorerRestartService : IExplorerRestartService
     {
         try
         {
-            // 1. Find the shell tray window (owned by the shell explorer.exe process)
+            var clock = Stopwatch.StartNew();
+
+            // 1. Find the shell tray window (owned by the shell explorer.exe process).
+            //    None means there is no shell: nothing to shut down, so start one.
             var trayHandle = PInvoke.FindWindow("Shell_TrayWnd", null);
             if (trayHandle.IsNull)
             {
-                return OperationResult<bool>.Failure(
-                    "Could not find the Explorer shell tray window (Shell_TrayWnd). Explorer may not be running.",
-                    ErrorCategory.ServiceUnavailable);
+                Log.Warn("No Shell_TrayWnd: no shell is running, so one is started rather than restarted");
+                using var borrowed = ShellLauncher.CaptureDesktopUserToken(preferred: null);
+                var startedFresh = ShellLauncher.StartExplorer(borrowed);
+                if (!startedFresh.IsSuccess)
+                    return startedFresh;
+                var fresh = await WaitForShellRecoveryAsync(ShellRecoveryTimeout).ConfigureAwait(false);
+                Log.Info("Explorer started in {Ms} ms (taskbar back: {Back})", clock.ElapsedMilliseconds, fresh);
+                return fresh ? OperationResult<bool>.Success(true) : ShellDidNotComeBack();
             }
 
             // 2. Identify the shell process before sending quit
@@ -47,11 +55,14 @@ public sealed class ExplorerRestartService : IExplorerRestartService
                     ErrorCategory.ServiceUnavailable);
             }
 
-            var clock = Stopwatch.StartNew();
+            // The new shell must run as the desktop user, and the old shell is
+            // the best source of that token; borrow it before it goes away.
+            using var token = ShellLauncher.CaptureDesktopUserToken(shellProcess);
+
             var managed = await Task.Run(() => ShutDownWithRestartManager(shellProcess)).ConfigureAwait(false);
             if (managed.IsSuccess)
             {
-                var started = ShellLauncher.StartExplorerAsDesktopUser();
+                var started = ShellLauncher.StartExplorer(token);
                 if (!started.IsSuccess)
                     return started;
                 var back = await WaitForShellRecoveryAsync(ShellRecoveryTimeout).ConfigureAwait(false);
@@ -81,7 +92,7 @@ public sealed class ExplorerRestartService : IExplorerRestartService
             }
 
             // 6. Start the new explorer.exe as the desktop user
-            var launched = ShellLauncher.StartExplorerAsDesktopUser();
+            var launched = ShellLauncher.StartExplorer(token);
             if (!launched.IsSuccess)
                 return launched;
 

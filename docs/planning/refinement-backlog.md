@@ -205,15 +205,23 @@ prep here.
   works. The difference is the caller: the app runs elevated, and a shell
   restarted by an elevated process (RmRestart or Process.Start alike) comes
   back elevated, where ExplorerPatcher's taskbar never appears; its window
-  runs as the plain user. `ShellLauncher` now starts explorer.exe with the
-  elevated token's linked (unelevated) token via CreateProcessWithTokenW on
-  both restart routes, which is also the correct shell for everything else
-  (an elevated shell would elevate every app opened from Start). RmShutdown
+  runs as the plain user. `ShellLauncher` now starts explorer.exe as the
+  desktop user via CreateProcessWithTokenW on both restart routes, which is
+  also the correct shell for everything else (an elevated shell would
+  elevate every app opened from Start). The token is borrowed from the old
+  shell before it is shut down, else from sihost, ctfmon, taskhostw, or
+  RuntimeBroker in this session; the elevated token's own linked token is
+  no use, since without the TCB privilege it comes back at identification
+  level and DuplicateTokenEx fails with 1346 (Sam's log, 2026-09-03
+  21:12). Without any borrowed token the shell is started plainly and the
+  log says it runs elevated, since no shell is worse. With no Shell_TrayWnd
+  at all, Restart Explorer starts a shell instead of refusing (it refused
+  five times in that log and Sam started explorer by hand). RmShutdown
   stays; RmRestart is no longer used. `ExplorerRestartService` also fails
   with guidance when Shell_TrayWnd does not return within its timeout,
   instead of reporting success with the taskbar gone. Owed: Sam's live pass
   choosing Windows 10 (ExplorerPatcher) from the app and seeing the taskbar
-  return.
+  return; the log names the process the token came from.
   Values the app already
   renders are excluded so no two rows write one value. `ExplorerPatcherSettingsReader`
   reads live values and evaluates the section conditions the way its GUI.c
