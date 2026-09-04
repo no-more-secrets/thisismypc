@@ -31,8 +31,9 @@ function Measure-Shot($path) {
             }
         }
         $rowY = $cardTop + 300
+        # Start 3px in: the page panel's 1px rim sits on the window's right edge.
         $cardRight = -1
-        for ($x = $w - 1; $x -gt 400; $x--) {
+        for ($x = $w - 4; $x -gt 400; $x--) {
             if (-not (Test-Base $bmp.GetPixel($x, $rowY))) { $cardRight = $x; break }
         }
         $cardLeft = -1

@@ -70,7 +70,7 @@
                         Classes="sidebar-item"
                         Classes.active="{Binding IsHomeActive}"
                         Command="{Binding OpenHomeCommand}"
-                        Margin="0,8,0,0"
+                        Margin="6,8,6,1"
                         ToolTip.Tip="System overview and recent activity">
                     <StackPanel Orientation="Horizontal" Spacing="10">
                         <PathIcon Width="18" Height="18"
@@ -180,13 +180,15 @@
             </DockPanel>
         </Border>
 
-        <!-- Page area: the inset panel. Its 24,16 inner margin is what every
-             page's edge geometry is measured against; the panel's own edges
-             sit where the sidebar and bar end. -->
+        <!-- Page area: the inset panel with a 1px rim along the L. Rim plus
+             margin add up to the 24,16 inner edge every page's geometry is
+             measured against. -->
         <Border Grid.Column="1"
                 Background="{DynamicResource BaseBrush}"
+                BorderBrush="{DynamicResource OutlineBrush}"
+                BorderThickness="1,1,1,0"
                 CornerRadius="16,16,0,0">
-        <DockPanel Margin="24,16">
+        <DockPanel Margin="23,15,23,16">
             <!-- Module header -->
             <StackPanel DockPanel.Dock="Top" Margin="0,0,0,24">
                 <TextBlock Text="{Binding ContentTitle}"
