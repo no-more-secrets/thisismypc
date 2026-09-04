@@ -22,7 +22,12 @@
          first 80px row is our own TitleBarControl (drag, double-click
          maximize, caption buttons). OffScreenMargin keeps content on screen
          when Windows parks the maximized frame edges off the monitor. -->
-    <Grid RowDefinitions="Auto,*" Margin="{Binding $parent[Window].OffScreenMargin}">
+    <!-- Shell shape: the bar and the sidebar are one L-shaped block in the
+         sidebar colour; the page area is an inset panel with rounded top
+         corners, so the bar reads as chrome and the page as the surface. -->
+    <Grid RowDefinitions="Auto,*"
+          Background="{DynamicResource SidebarBackgroundBrush}"
+          Margin="{Binding $parent[Window].OffScreenMargin}">
     <controls:TitleBarControl Grid.Row="0">
         <controls:TitleBarControl.LeadingContent>
             <Button Classes="bar-icon"
@@ -57,8 +62,6 @@
         <!-- Sidebar -->
         <Border Grid.Column="0"
                 Background="{DynamicResource SidebarBackgroundBrush}"
-                BorderBrush="{DynamicResource OutlineBrush}"
-                BorderThickness="0,0,1,0"
                 Width="{Binding IsSidebarCollapsed, Converter={x:Static vm:SidebarWidthConverter.Instance}}">
 
             <DockPanel>
@@ -177,8 +180,13 @@
             </DockPanel>
         </Border>
 
-        <!-- Content Area -->
-        <DockPanel Grid.Column="1" Margin="24,16">
+        <!-- Page area: the inset panel. Its 24,16 inner margin is what every
+             page's edge geometry is measured against; the panel's own edges
+             sit where the sidebar and bar end. -->
+        <Border Grid.Column="1"
+                Background="{DynamicResource BaseBrush}"
+                CornerRadius="16,16,0,0">
+        <DockPanel Margin="24,16">
             <!-- Module header -->
             <StackPanel DockPanel.Dock="Top" Margin="0,0,0,24">
                 <TextBlock Text="{Binding ContentTitle}"
@@ -452,6 +460,7 @@
                 </Panel>
             </Border>
         </DockPanel>
+        </Border>
     </Grid>
 
     <!-- Toast overlay: transient notifications, top-right over the content area -->

@@ -382,7 +382,10 @@ upgrade edition?" flow). Belongs with the install-engine chapter, not refinement
   left (the sidebar toggle moved up beside them), the settings search as a
   440px pill on the bar's centre line with its results in an in-window
   overlay under it (no Popup, so the sight harness can click results), and
-  stock-size caption buttons top-right. Drag, double-click maximize,
+  stock-size caption buttons top-right. Shell shape (Sam's website shell,
+  2026-09-04): bar and sidebar are one L-shaped block in the sidebar colour,
+  the page area is an inset BaseBrush panel with 16px rounded top corners;
+  the sidebar's right outline is gone. Drag, double-click maximize,
   restore glyph swap, and Close through Window.Close (hide-to-tray keeps its
   hook); OffScreenMargin keeps maximized content on screen. CI-safe shots in
   the title-bar suite. Deferred: Windows 11 snap layouts on maximize hover
