@@ -32,7 +32,7 @@ public sealed class DisplayModule : IModule
     public ModuleInfo Info { get; } = new(
         Name: "Display",
         Icon: "display",
-        Description: "Monitor brightness, contrast, and input over DDC/CI",
+        Description: "Monitor brightness, contrast, and input over DDC/CI. Changes apply immediately; the sliders are their own undo.",
         RequiredCapabilities: [SystemCapability.DdcCi],
         Group: ModuleGroup.Hardware,
         LoadOrder: 10);

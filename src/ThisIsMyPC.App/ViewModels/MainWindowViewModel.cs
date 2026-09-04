@@ -876,6 +876,28 @@ public partial class MainWindowViewModel : ViewModelBase
         _settingsService?.SetApp(FirstLaunchDismissedKey, "1");
     }
 
+    /// <summary>
+    /// The title row's refresh: rebuilds whatever page is showing. A module
+    /// page rescans (Display drops its snapshot first, so the rescan is real);
+    /// Home, Settings, Presets, and the Gallery rebuild the same way their
+    /// sidebar entries open them.
+    /// </summary>
+    [RelayCommand]
+    private void RefreshPage()
+    {
+        if (IsHomeActive) { OpenHome(); return; }
+        if (IsSettingsActive) { OpenSettings(); return; }
+        if (IsSetLoaderActive) { OpenSetLoader(); return; }
+        if (IsGalleryActive) { OpenGallery(); return; }
+        if (_navigationService.CurrentModule is not { } current)
+            return;
+
+        (current.Module as Modules.Display.DisplayModule)?.InvalidateSnapshot();
+        OnNavigationPropertyChanged(
+            _navigationService,
+            new PropertyChangedEventArgs(nameof(NavigationService.CurrentModule)));
+    }
+
     private void NavigateToModuleByName(string moduleName)
     {
         var item = SidebarGroups.SelectMany(g => g.Items)

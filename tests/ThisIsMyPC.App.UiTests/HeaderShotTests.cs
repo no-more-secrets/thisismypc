@@ -41,6 +41,29 @@ public class HeaderShotTests
         await session.WaitForAsync(() => vm.ContentTitle == "Settings", what: "Settings page");
         session.Screenshot("settings-from-gear");
     }
+
+    /// <summary>The title row's refresh rebuilds the page: Home stays Home, Display rescans into a fresh view model.</summary>
+    [AvaloniaFact(Timeout = 120_000)]
+    public async Task RefreshButton_RebuildsTheCurrentPage()
+    {
+        using var session = UiSession.ForMainWindow("header-refresh");
+        var vm = (MainWindowViewModel)session.Window.DataContext!;
+        await session.WaitForAsync(() => vm.SidebarGroups.Count > 0, timeoutMs: 30_000, what: "sidebar population");
+
+        var refresh = session.Find<Button>(b => AutomationProperties.GetName(b) == "Refresh this page");
+        var homeBefore = vm.CurrentContent;
+        session.Click(refresh);
+        session.Pump();
+        Assert.Equal("Home", vm.ContentTitle);
+        Assert.NotSame(homeBefore, vm.CurrentContent);
+
+        session.ClickText("Display");
+        await session.WaitForAsync(() => vm.CurrentContent is DisplayViewModel && !vm.IsModuleLoading, timeoutMs: 60_000, what: "Display");
+        var displayBefore = vm.CurrentContent;
+        session.Click(refresh);
+        await session.WaitForAsync(() => vm.CurrentContent is DisplayViewModel && !ReferenceEquals(vm.CurrentContent, displayBefore) && !vm.IsModuleLoading, timeoutMs: 60_000, what: "Display rescan");
+        session.Screenshot("display-after-refresh");
+    }
 }
 
 /// <summary>

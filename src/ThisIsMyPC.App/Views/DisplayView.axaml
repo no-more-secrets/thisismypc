@@ -65,10 +65,6 @@
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
         <StackPanel MaxWidth="760" HorizontalAlignment="Left" Spacing="10" Margin="0,4,16,24">
 
-            <TextBlock Text="Changes here apply immediately; sliders are their own undo."
-                       FontSize="12"
-                       Foreground="{DynamicResource TextTertiaryBrush}" />
-
             <TextBlock Text="{Binding ScanError}"
                        Classes="status-warning"
                        FontSize="12" TextWrapping="Wrap"

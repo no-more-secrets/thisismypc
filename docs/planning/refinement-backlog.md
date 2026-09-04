@@ -753,8 +753,16 @@ no UI now; delete or resurface.
   fills are transparent), plain value (TextBox.plain-value: no box at rest,
   control tier on hover/focus, MinWidth 48 because Fluent's 64 would win);
   a divider; a footer with Input, Switch, and Screen off; Advanced expander
-  under it. Cards MinWidth 560. Page titles across the app lost their
-  one-line description (Sam: useless); the header is the title alone.
+  under it. Cards MinWidth 560. The "Changes here apply immediately"
+  line at the top of the page is gone; that sentence moved into the
+  module description, which the title row's info button shows. Sliders
+  ignore the wheel (it scrolls the page), colours never change on hover,
+  the thumb grows 1.3x on hover and is 16px on the 4px track.
+- **Title row (2026-09-04).** Page titles across the app lost their one-line
+  description (Sam: not helpful); the row's right end carries a refresh
+  button (RefreshPageCommand rebuilds the page; a module page rescans, Display
+  drops its snapshot first) and an info button whose flyout shows the module
+  description. HeaderShotTests covers refresh on Home and Display.
 - **Instant open (2026-09-04).** Measured on Sam's PG27UCDM: every open ran a
   full DDC scan, 6.3 s cold (capabilities request plus 21 vendor probes) and
   1.5 s warm, longer live with Twinkle Tray polling the same bus. Now
