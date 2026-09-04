@@ -25,7 +25,7 @@ anything here; `planning/refinement-backlog.md` is the plan and status.
 | [release/packaging.md](release/packaging.md) | NativeAOT release signing, deterministic packaging, public source verification, per-machine MSI, and ProgramData store. |
 | [release/update-signing.md](release/update-signing.md) | GPG-signed release manifest: key ceremony, signing, verification. |
 | [release/hardening-checklist.md](release/hardening-checklist.md) | Binary and process hardening record: CFG, DLL search lockdown, IPC audit. |
-| [why-gplv2.md](why-gplv2.md) | Why every component, including the Session 0 service, is GPLv2. |
+| [why-gplv3.md](why-gplv3.md) | Why every component, including the Session 0 service, is GPLv3, and why the move from v2. |
 
 ## Windows reference
 

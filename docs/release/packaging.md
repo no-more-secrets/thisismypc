@@ -18,7 +18,7 @@ The app corresponds to the PC, not a user profile (CLAUDE.md). Packaging follows
   on a 4K display). The launcher carries `requireAdministrator`, so UAC is a
   normal modal before anything runs and msiexec then runs elevated with no
   desktop switch. And the Velopack wizard has no options; the launcher has
-  pages: Welcome, License (GPLv2 with an accept step), Options (install
+  pages: Welcome, License (GPLv3 with an accept step), Options (install
   folder with a Program Files warning, Desktop shortcut, start with Windows,
   automatic update checks), Installing, Done (launch when finished). When a
   copy is already installed (found through the Apps entry Update.exe

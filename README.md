@@ -2,7 +2,7 @@
 
 A Windows 11 system-control app that puts the scattered power-user utilities
 in one place and makes every change reversible. It covers the ground of
-Autoruns, ShellExView, O&O ShutUp10, winutil, and UniGetUI, with a state capture for every change and thorough undo options. It is GPLv2, it has no
+Autoruns, ShellExView, O&O ShutUp10, winutil, and UniGetUI, with a state capture for every change and thorough undo options. It is GPLv3, it has no
 telemetry and no account, and it covers an entire Windows install.
 
 This repository is developed by AI coding agents (Claude Code) under the human owner (Sam Boland). This file and everything under `docs/` are AI-written and checked
@@ -333,10 +333,11 @@ reviews enforce, in one place:
 
 ## License
 
-[GPLv2](LICENSE), version 2 only, for every component, including the Owner
-Mode service. It is v2-only rather than "v2 or later" because the repo
-includes code derived from ExplorerPatcher and OpenRGB, and both are GPLv2
-without the "or later" clause. Open source makes the code inspectable; it is
-not a substitute for an audit. See [docs/why-gplv2.md](docs/why-gplv2.md).
+[GPLv3](LICENSE), version 3 only, for every component, including the Owner
+Mode service. Version 3 so that Apache 2.0 code (Bulk Crap Uninstaller) and
+GPLv3 code (G-Helper) can be ported in; the "or later" option is not offered,
+so the terms stay the ones in LICENSE. Open source makes the code
+inspectable; it is not a substitute for an audit. See
+[docs/why-gplv3.md](docs/why-gplv3.md).
 
 Copyright (c) 2026 No More Secrets, LLC. See [NOTICE](NOTICE).

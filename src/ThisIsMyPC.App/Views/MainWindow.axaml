@@ -590,7 +590,7 @@
             <TextBlock Text="{Binding PublisherText}"
                        FontSize="13"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
-            <TextBlock Text="Free and open source under the GNU GPL v2. Every change is captured before it is made and can be undone."
+            <TextBlock Text="Free and open source under the GNU GPL v3. Every change is captured before it is made and can be undone."
                        FontSize="12"
                        TextWrapping="Wrap"
                        Foreground="{DynamicResource TextSecondaryBrush}" />

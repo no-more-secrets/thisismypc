@@ -440,15 +440,15 @@ The DXGI masquerade technique is clever but requires placing files in `C:\Window
 
 ### 4.1 License Compatibility
 
-**ExplorerPatcher:** GPLv2
-**ThisIsMyPC (public repo):** GPLv2
+**ExplorerPatcher:** GPLv2 (no "or later" statement anywhere in its tree)
+**ThisIsMyPC:** GPLv3-only since 2026-09-04 (GPLv2-only before)
 
 | Integration Approach | Permitted? | Notes |
 |---------------------|-----------|-------|
 | **Study and reimplement** | Yes | Clean-room or referenced reimplementation is fine. We're calling the same Windows APIs. |
-| **Direct code reuse (copy C into our repo)** | Yes, with GPLv2 compliance | Must maintain GPLv2 license, include copyright notice, provide source. Our public repo is already GPLv2. |
-| **Link to EP DLLs (P/Invoke)** | Yes | GPLv2 allows linking. Our GPLv2 code linking to GPLv2 code is straightforward. |
-| **Fork EP components as standalone DLLs** | Yes | Must remain GPLv2. |
+| **Direct code reuse (copy C into our repo)** | No | GPLv2-only code cannot be combined into a GPLv3 work. Study and reimplement instead; the same Win32 calls are not copyrightable. |
+| **Link to EP DLLs (P/Invoke)** | No | Linking combines the works, same v2-only versus v3 conflict. The shipped design writes its registry values instead; EP reacts on its own. |
+| **Fork EP components as standalone DLLs** | Only as a separate GPLv2 project | A fork stays GPLv2 in its own repo and talks to this app over a documented interface. |
 | **Use in private/proprietary repo** | No | GPLv2 code cannot be incorporated into proprietary code. Our security service (private repo) cannot use EP code. |
 
 **Bottom line:** Full compatibility for the public repo. Study-and-reimplement is the cleanest path since we're C#/.NET and EP is C, we'd be calling the same Win32 APIs through CsWin32 rather than copying C code.

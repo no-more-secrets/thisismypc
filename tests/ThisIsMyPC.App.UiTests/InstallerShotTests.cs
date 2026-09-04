@@ -34,7 +34,7 @@ public class InstallerShotTests
         public void Launch(string installFolder) { }
     }
 
-    /// <summary>The real GPLv2 text, so the widest lines (77 columns) are what the license box renders.</summary>
+    /// <summary>The real GPLv3 text, so its widest lines are what the license box renders.</summary>
     private static readonly string License = EmbeddedPackage.LoadLicenseText();
 
     private static UiSession Open(InstallerViewModel viewModel)
@@ -89,7 +89,7 @@ public class InstallerShotTests
         // The license renders as one text run, so look for the checkbox
         // label and the page caption instead.
         Assert.True(session.IsTextVisible("License"));
-        Assert.True(session.IsTextVisible("I accept the terms of the GNU General Public License, version 2"));
+        Assert.True(session.IsTextVisible("I accept the terms of the GNU General Public License, version 3"));
         Assert.False(viewModel.CanGoPrimary);
 
         // The box must hold the widest GPL line without a sideways scrollbar.
@@ -100,7 +100,7 @@ public class InstallerShotTests
         session.Pump();
         session.Screenshot("license-scrolled-to-end");
 
-        session.ClickText("I accept the terms of the GNU General Public License, version 2");
+        session.ClickText("I accept the terms of the GNU General Public License, version 3");
         Assert.True(viewModel.LicenseAccepted);
         session.ClickText(" Next >");
         session.Screenshot("options");

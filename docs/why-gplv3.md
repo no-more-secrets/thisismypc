@@ -1,19 +1,39 @@
-# Why ThisIsMyPC Is and Will Remain Fully GPLv2
+# Why ThisIsMyPC Is Fully GPLv3
 
-AI-written rationale, checked against the code as of 2026-09-01. It records
+AI-written rationale, checked against the code as of 2026-09-04. It records
 the licensing decision and the security reasoning behind it.
 
 ## The Decision
 
 Every component of ThisIsMyPC, the Avalonia UI, the Session 0 service, the
 IPC layer between them, and all security implementation logic, is licensed
-under the GNU General Public License v2, version 2 only. The "or any later
-version" option is not offered: the repo includes code derived from
-ExplorerPatcher and OpenRGB, and both are GPLv2 without that clause, so the
-combined work cannot be relicensed under a later version. This is not a
-provisional stance or a placeholder until the project matures. It is a
-permanent commitment, and the reasoning behind it is rooted in security
-engineering, not ideology.
+under the GNU General Public License v3, version 3 only. The project was
+GPLv2-only from publication on 2026-09-01 until 2026-09-04 and moved to v3
+for one reason: GPLv3 is compatible with the Apache License 2.0 and GPLv2 is
+not, and the post-release chapters port code from Apache 2.0 projects (Bulk
+Crap Uninstaller) and GPLv3 projects (G-Helper). Every commit was the
+publisher's own, so no contributor consent was needed, and no v2 release was
+ever published.
+
+The "or any later version" option is not offered. The terms of this repo are
+the terms in LICENSE, not whatever a future version says. The v2-only stance
+before the move was held for the same reason.
+
+Nothing upstream constrained the move. ExplorerPatcher (GPLv2, with no "or
+later" statement anywhere in its tree) is a separate program: the Explorer
+page writes registry values under its key and ExplorerPatcher's own DLL
+reacts to them. No ExplorerPatcher code is in this repo and none is linked.
+The settings catalog records which registry values it reads, with the app's
+own labels and descriptions; that describes an interface, it does not copy a
+program. OpenRGB is GPLv2-or-later and, when its module ships, is reached over
+its SDK socket protocol as a separate process. PawnIO is GPLv2-or-later and
+consumed as the upstream signed binary. G-Helper is GPLv3, so its ASUS
+protocol code became portable with this move.
+
+Ported Apache 2.0 code keeps its copyright line and a change note in the
+file, and the Apache 2.0 text ships next to LICENSE; the combined work is
+distributed under GPLv3. That the source is open at all is not provisional.
+The reasoning behind it is rooted in security engineering, not ideology.
 
 ## What the architecture is
 
@@ -160,38 +180,34 @@ CrowdStrike incident proved what happens when unconstrained capability is
 prioritized over systemic safety inside that model.
 
 ThisIsMyPC does not compete on opacity. It competes on transparency,
-correctness, and user sovereignty. Full GPLv2 licensing is not a vulnerability
+correctness, and user sovereignty. Full GPLv3 licensing is not a vulnerability
 in that position. It is the foundation of it.
 
 ## A Note on Apache 2.0 Compatibility
 
-GPLv2 and the Apache License 2.0 are incompatible. Apache 2.0 includes a patent
-retaliation clause that GPLv2 treats as an additional restriction under its
-Section 7, which means Apache 2.0 code cannot be combined with GPLv2 code into
-a single derivative work and legally distributed. GPLv3 resolved this conflict,
-but the project cannot move to GPLv3: the dependencies it derives code from are
-v2-only (see The Decision), so the combined work stays at v2.
+GPLv2 and the Apache License 2.0 are incompatible: Apache 2.0's patent
+termination clause is an additional restriction under GPLv2 Section 7. GPLv3
+Section 7 permits exactly that kind of term, which is why the project moved to
+v3 on 2026-09-04. Apache 2.0 code can be combined into this program. The
+combined work is GPLv3, and the Apache 2.0 obligations still apply to the
+copied parts: keep the copyright notice, ship the Apache 2.0 license text,
+mark modified files, and carry any NOTICE attributions.
 
-The priority order when an Apache 2.0 library looks useful:
-
-1. **Modular separation.** The GPL's copyleft obligations apply to derivative
-   works, not to separate works merely aggregated alongside GPL code. If the
-   Apache 2.0 dependency can exist as a discrete standalone binary talking
-   over a documented interface, it is not a derivative work.
-2. **Avoidance.** Otherwise find an alternative under MIT, BSD, or a GPL-
-   compatible license, or build the functionality in the repo.
+Modular separation still applies where a dependency is not GPL-compatible at
+all: a separate binary talking over a documented interface is not a
+derivative work. ExplorerPatcher and OpenRGB are reached that way.
 
 Package audit, 2026-09-01, from the nuspec license fields: Avalonia,
 CommunityToolkit.Mvvm, the Microsoft.Extensions packages, Microsoft.Data.Sqlite,
 CsWin32, BouncyCastle, and Velopack are MIT; NLog is BSD-3-Clause. The audit
 found Serilog and its three sinks were Apache-2.0 and linked into the shipped
-binaries, exactly the conflict this section describes; they were replaced by
-NLog the same day. xunit is Apache-2.0 too, but it is test-only and never
-distributed, so it does not combine with the program.
+binaries, a conflict under the v2 license of the time; they were replaced by
+NLog the same day, and NLog stays. xunit is Apache-2.0 too, but it is
+test-only and never distributed, so it does not combine with the program.
 
 ## The Commitment
 
-ThisIsMyPC is fully open-source under GPLv2. The app, the service, the IPC
+ThisIsMyPC is fully open-source under GPLv3. The app, the service, the IPC
 layer, and all security logic. No proprietary modules, no closed components,
 no split licensing. The architecture's security is provable, not secret.
 

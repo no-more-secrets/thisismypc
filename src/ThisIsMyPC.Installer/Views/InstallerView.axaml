@@ -171,7 +171,7 @@
                 <Border Classes="page">
                     <Grid RowDefinitions="Auto,*,Auto">
                         <TextBlock Grid.Row="0" Classes="body" Margin="0,0,0,12"
-                                   Text="ThisIsMyPC is free software under the GNU General Public License, version 2. You may use it, share it, and change it under these terms." />
+                                   Text="ThisIsMyPC is free software under the GNU General Public License, version 3. You may use it, share it, and change it under these terms." />
                         <!-- The GPL text centres its own headings with spaces for a
                              ~70-column line, so the block, not the lines, is centred
                              in the box; a TextBox would pin it to the left edge.
@@ -187,7 +187,7 @@
                             </ScrollViewer>
                         </Border>
                         <CheckBox Grid.Row="2" Margin="0,12,0,0" IsChecked="{Binding LicenseAccepted}"
-                                  Content="I accept the terms of the GNU General Public License, version 2" />
+                                  Content="I accept the terms of the GNU General Public License, version 3" />
                     </Grid>
                 </Border>
             </TabItem>

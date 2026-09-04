@@ -1,18 +1,21 @@
 ThisIsMyPC
 Copyright (c) 2026 No More Secrets, LLC
 
-This program is free software; you can redistribute it and/or modify it under
-the terms of the GNU General Public License version 2 as published by the Free
-Software Foundation, version 2 only, not any later version. See LICENSE for
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License version 3 as published by the Free
+Software Foundation, version 3 only, not any later version. See LICENSE for
 the full text.
 
-The license is v2-only because code derived from ExplorerPatcher and OpenRGB
-is included, and both are licensed GPLv2 without the "or any later version"
-clause.
+The license moved from GPLv2-only to GPLv3-only on 2026-09-04, before any
+release, so that code under the Apache License 2.0 and GPLv3 can be ported
+in. No upstream code in this tree is GPLv2-only: ExplorerPatcher and OpenRGB
+are separate programs this app talks to over their registry and socket
+interfaces. See docs/why-gplv3.md.
 
 This program is distributed in the hope that it will be useful, but WITHOUT
 ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
 Third-party data and code carry their own notices where they appear in the
-source tree.
+source tree. Ported Apache License 2.0 code keeps its copyright line and a
+change note in the file, with the Apache 2.0 text alongside LICENSE.

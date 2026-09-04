@@ -100,7 +100,7 @@ The app corresponds to the PC, not a profile. Implemented:
   `ThisIsMyPC-Installer.exe`, an elevated NativeAOT Avalonia launcher with the MSI
   inside. Reason: a bare per-machine MSI gets its UAC prompt parked in the
   taskbar and its follow-up dialog can land off screen (Sam, 4K display), and
-  the Velopack wizard has no options. Pages: Welcome, GPLv2 license with
+  the Velopack wizard has no options. Pages: Welcome, GPLv3 license with
   accept, Options (folder, Desktop shortcut, start with Windows, update
   checks), Installing, Done. Trusted files go under the hardened ProgramData
   folder, never %TEMP%. First end-to-end unsigned build ran the same day.
@@ -124,7 +124,19 @@ Debug builds only since 2026-08-31 (compile-time gate on the sidebar button);
 Release also drops the Debug-only log console window. Nothing left for release
 prep here.
 
-## Repo publication hygiene (public since 2026-09-01, GPLv2)
+## Repo publication hygiene (public since 2026-09-01; GPLv3 since 2026-09-04)
+
+- **Relicensed GPLv2-only to GPLv3-only, 2026-09-04.** Reason: GPLv3 is
+  compatible with Apache 2.0 and GPLv2 is not, and the post-release chapters
+  port code from Bulk Crap Uninstaller (Apache-2.0) and G-Helper (GPLv3).
+  Nothing upstream constrained it: ExplorerPatcher is a separate program
+  reached through its registry values (no code of it in the tree; its labels
+  are plain descriptions of Windows settings, not worth a rewrite), OpenRGB
+  and PawnIO are GPLv2-or-later, and every commit is the publisher's own.
+  No v2 release was ever published. Touched: LICENSE, the Copyright line in
+  Directory.Build.props, the About card, the installer license test, the
+  ExplorerPatcher catalog note (now a plain statement of what the file is,
+  no license claim), docs/why-gplv3.md (was why-gplv2.md), README, CLAUDE.md.
 
 - **Personal machine audit (TWEAKS.md)** lives outside the repo and is
   gitignored so it cannot come back.
@@ -134,7 +146,8 @@ prep here.
   by a clean build and the full CI suite before the first push.
 - **Serilog replaced by NLog 6.2 (BSD-3-Clause) 2026-09-01**: the nuspec
   audit found Serilog and its sinks are Apache-2.0, which FSF treats as
-  incompatible with GPLv2, and the project is v2-only. `LoggingSetup`
+  incompatible with GPLv2, and the project was v2-only at the time (moot
+  since the GPLv3 move; NLog stays). `LoggingSetup`
   (App/Services) builds the NLog config in code: daily JSON file under
   `%ProgramData%\ThisIsMyPC\logs` in the old CLEF shape (@t, @mt, @l, @x,
   properties at the root), 10 MB cap, 7 files kept, Interop loggers Warn+ in
@@ -402,7 +415,7 @@ upgrade edition?" flow). Belongs with the install-engine chapter, not refinement
   Right of the search, a TrailingContent slot holds four shortcuts: Settings
   (gear), Report a bug (GitHub issue form, bug-report template), GitHub
   (repository), and About (info), which opens an in-window card under the bar
-  with version, publisher, GPLv2 line, and GitHub / Releases / Report a bug
+  with version, publisher, GPLv3 line, and GitHub / Releases / Report a bug
   buttons; URLs live in Core.AppConstants. HeaderShotTests (Diagnostic)
   covers About open/close and the gear.
   measure-edge-geometry starts its right-edge scan 3px in to skip the rim.
@@ -771,13 +784,13 @@ layer picks the backend per machine. On a Strix laptop the ASUS ATKACPI/WMI
 platform serves all three (the G-Helper approach); on a ROG-parts desktop each
 capability needs its distinct generic service: DDC/CI (dxva2 VCP codes) for
 monitors, LibreHardwareMonitor (MPL-2.0; PawnIO driver, never blocklisted
-WinRing0) for fans, OpenRGB SDK server protocol (GPLv2, license match) for
+WinRing0) for fans, OpenRGB SDK server protocol (GPLv2-or-later; a separate process over its socket anyway) for
 lighting. CapabilityDetector's hardware probes are the seed; modules consume
 detection and select backends, never assume one.
 
-Licensing: G-Helper is GPL-3.0, incompatible with this GPLv2 repo for code
-porting; treat it as protocol documentation only. Twinkle Tray (MIT) and
-OpenRGB (GPLv2) are portable/compatible.
+Licensing: G-Helper is GPL-3.0, portable since the 2026-09-04 move to GPLv3
+(it was protocol documentation only under v2). Twinkle Tray (MIT) and
+OpenRGB (GPLv2-or-later) are portable/compatible.
 
 Ordering: DDC/CI ships pre-release (driverless Win32). Fans and RGB are
 post-release; fans last (kernel driver + AV reputation risk).
@@ -806,7 +819,7 @@ callout or retire the card.
 
 **Detected-tool integration (Sam, 2026-08-31): post-release candidate.**
 EP persists every setting as plain registry under HKCU\Software\
-ExplorerPatcher, and its GPLv2 source documents their meanings; that is
+ExplorerPatcher, and its source documents their meanings; that is
 inspectable state with a documented contract, so a curated EP settings
 section can ride the normal pending-changes pipeline (before-state, staged
 review, undo) with zero process control. Shape: detect EP installed, expose

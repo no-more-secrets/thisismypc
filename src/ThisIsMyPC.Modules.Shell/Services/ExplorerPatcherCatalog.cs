@@ -6,9 +6,10 @@ namespace ThisIsMyPC.Modules.Shell.Services;
 
 /// <summary>
 /// Loads the ExplorerPatcher settings catalog from the embedded
-/// <c>Data/explorerpatcher-settings.json</c>. The definitions are imported
-/// from ExplorerPatcher's own settings manifest (GPLv2, Copyright (c)
-/// valinet); regenerate with tools/import-explorerpatcher-settings.ps1.
+/// <c>Data/explorerpatcher-settings.json</c>: the registry values
+/// ExplorerPatcher reads (key, value, type, default, options), with the
+/// app's own labels and descriptions. Regenerate against a new pinned
+/// release with tools/import-explorerpatcher-settings.ps1.
 /// Parsed with JsonDocument, so NativeAOT has nothing to reflect over.
 /// </summary>
 public static class ExplorerPatcherCatalog

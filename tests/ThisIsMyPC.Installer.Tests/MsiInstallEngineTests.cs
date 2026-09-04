@@ -53,7 +53,7 @@ public class MsiInstallEngineTests
         var package = new EmbeddedPackage();
         Assert.False(package.IsPresent);
         Assert.Contains("GNU GENERAL PUBLIC LICENSE", EmbeddedPackage.LoadLicenseText());
-        Assert.Contains("Version 2, June 1991", EmbeddedPackage.LoadLicenseText());
+        Assert.Contains("Version 3, 29 June 2007", EmbeddedPackage.LoadLicenseText());
     }
 
     [Fact]

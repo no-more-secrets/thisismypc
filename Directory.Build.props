@@ -20,7 +20,7 @@
     <Company>NMS</Company>
     <Authors>NMS</Authors>
     <Product>ThisIsMyPC</Product>
-    <Copyright>Copyright (c) 2026 No More Secrets, LLC. GPLv2.</Copyright>
+    <Copyright>Copyright (c) 2026 No More Secrets, LLC. GPLv3.</Copyright>
     <!-- Version resource: English (United States) instead of Language Neutral,
          and a product version without the +commit suffix the SDK appends. -->
     <NeutralLanguage>en-US</NeutralLanguage>

@@ -303,8 +303,8 @@ even if it looks close.
   `App/App.axaml.cs` via `AddSingleton<IModule, X>()` (NativeAOT-safe, no reflection
   scanning). `Modules.Shell` is the reference implementation for custom-view modules;
   `Modules.Annoyances` is the reference card-renderer consumer.
-- **Session 0 service** (`ThisIsMyPC.Service` + `ThisIsMyPC.Ipc.Contracts`): GPLv2 in
-  this repo (docs/why-gplv2.md; one repo holds everything). IPC is the hardened named
+- **Session 0 service** (`ThisIsMyPC.Service` + `ThisIsMyPC.Ipc.Contracts`): GPLv3 in
+  this repo (docs/why-gplv3.md; one repo holds everything). IPC is the hardened named
   pipe from 28-1; new message types extend the envelope, never change it.
 - **Installer** (`ThisIsMyPC.Installer`, docs/release/packaging.md): elevated Avalonia
   launcher around the Velopack MSI; references Core and Interop.Win32 only, links the
