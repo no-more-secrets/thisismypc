@@ -232,11 +232,13 @@ dotnet test tests/ThisIsMyPC.App.UiTests --configuration Release --filter "Categ
 
 ### Shared region review (Debug builds)
 
-Ctrl+Shift+A opens the region review overlay. Sam drags a rectangle and describes
-it by voice or chat. Read the current capture with tools/read-region-selection.ps1;
-check active, then inspect imagePath as an image. The record includes bounds and
-capture time. Never infer the selected region from a stale record.
-Escape clears the selection. See docs/region-review.md for the prototype limits.
+Ctrl+Shift+A freezes the window for region review. Each drag adds a numbered figure.
+Sam references figures by voice or chat. Badge clicks select figures; N edits an
+optional note; Delete removes the selected figure without renumbering the others.
+Read tools/read-region-selection.ps1, check active, and inspect imagePath as an
+image. Schema 2 includes figures with stable numbers, bounds, and notes. Check the
+session and capture time before interpreting a reference. Never use a stale record.
+Escape cancels note editing first, then clears review. See docs/region-review.md.
 
 ### UI review checklist (learned the hard way, 2026-09-02)
 

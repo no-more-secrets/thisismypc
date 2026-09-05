@@ -1,59 +1,62 @@
-# Region review prototype
+# Region review
 
-This development tool lets Sam point to a visual region while talking to an agent.
-It is available in Debug builds only. It does not change Windows settings.
+This Debug-only tool lets Sam mark visual figures while talking to an agent.
+It freezes the current app view and records numbered rectangles and optional notes locally.
 
 ## Use
 
 1. Open the page you want to discuss.
 2. Press Ctrl+Shift+A.
-3. Drag a rectangle around the region.
-4. Describe the change by voice or in chat.
-5. Press Escape to clear the selection and return to the app.
+3. Drag a rectangle to create figure 1.
+4. Drag another rectangle to create figure 2.
+5. Refer to the figures by number in voice or chat.
 
-The review surface freezes the captured view. The rectangle identifies that frame, even if underlying data changes.
-Selection input does not activate controls behind the review surface.
-The agent reads the capture automatically; Sam does not need to copy or attach an image.
-This prototype covers the main window. Separate native windows and popup surfaces need separate review.
+Each new rectangle adds a figure. It does not replace the earlier figures.
+Click a figure's numbered badge to select it.
+Press N to edit its optional note. Click Save to keep the note or Cancel to discard the edit.
+Typing is optional; spoken instructions can refer directly to figure numbers.
+Press Delete to remove the selected figure when the note editor is closed.
+Remaining figures keep their numbers. Deleted numbers are not reused within that review.
+Press Escape to cancel an open note editor. Otherwise, Escape ends the review and clears its figures.
+A new review starts numbering at 1 with a new session identity.
+
+The frozen view stays unchanged while the underlying app updates.
+Switching to the conversation keeps completed figures available.
+Selection input does not activate controls in the underlying app.
+This version reviews one main-window view at a time. Separate windows and native popups need separate review.
 
 ## Agent access
 
-Run from the repository root:
+When Sam says a figure is selected or refers to figure numbers, retrieve the current record:
 
 ```powershell
 .\tools\read-region-selection.ps1
 ```
 
-The script returns a JSON selection record. Check `active` before using it.
-If active, inspect the PNG at `imagePath` with the agent's image tool.
-Use the record's capture time and bounds when interpreting the user's instruction.
-The script rejects a selection whose originating process has ended or whose image is missing.
-It does not open the image or execute anything from the record.
+Check `active` before using the record. Inspect the PNG at `imagePath` using the agent's image tool.
+Schema 2 includes a `figures` array with each figure's number, identifier, bounds, and note.
+Use `selectedFigureNumber` for the current selection. Figure numbers belong to the recorded review session.
+The top-level single-selection fields remain available for compatibility.
+The reader accepts schema 1 from an older running build as well as schema 2.
+Use the capture time and session identity to avoid confusing figures from different reviews.
+The reader rejects an ended process or a missing image. It does not execute anything from the record.
 
 Captures live under `artifacts/diagnostics/region-review/` and are gitignored.
-The current record is `latest.json`. Selection images have unique names.
-Images stay on disk after clearing; normal build-output cleanup can remove them.
-The capture contains the visible app content. No screenshot is sent over a network by this prototype.
+The current record is `latest.json`. Each exported image has a unique name.
+Images remain after clearing. Normal build-output cleanup can remove them.
+No image upload, network listener, or automatic conversation trigger is included.
+Sam marks the view and then speaks or writes here; the agent retrieves the figures during that turn.
+The record and PNG form the boundary for a later MCP adapter.
 
-## Scope
+## Display scaling
 
-There is no MCP server, background watcher, or automatic voice-turn trigger in this version.
-The agent reads the current record during a review turn using local tools.
-The JSON record and PNG form the boundary for a later MCP adapter.
-Source mapping, comments, and multiple simultaneous annotations are deferred.
+Bitmap source rectangles use physical pixels. Destination rectangles and figure bounds use logical coordinates.
+Use the full Bitmap.PixelSize as the image source; Bitmap.Size crops high-DPI captures.
+Regression tests check far-edge pixels in displayed and exported frames at 100%, 125%, 150%, 175%, and 200% capture DPI.
+The headless window remains at 100%, so changing between live monitors still needs native verification.
 
 ## Validation
 
-Release build passed. All 1,607 CI-safe Debug tests passed.
-Five targeted region tests also passed, including the MainWindow diagnostic and keyboard shortcut.
-Rendered screenshots were inspected. A separate review checked state and capture failure paths.
-Native interaction in the elevated executable, voice coordination, and mixed-monitor scaling remain untested.
-The prototype's fixed hint can cover a selection near the top edge.
-
-### Display scaling regression
-
-Bitmap source rectangles use physical pixels. The overlay destination and selection bounds use logical coordinates.
-Using Bitmap.Size as the source rectangle crops and enlarges the top-left portion above 100% scaling.
-Use the full Bitmap.PixelSize for the source rectangle.
-The regression test checks far-edge content in both the displayed and saved frames at 100%, 125%, 150%, 175%, and 200% capture DPI.
-The headless window itself remains at 100%; live monitor changes still need native verification.
+The CI-safe Debug suite passes all 1,607 tests. The Release solution build passes.
+Targeted headless tests cover multiple figures, notes, deletion, failure handling, and capture DPI.
+Headless screenshots were inspected. Native voice interaction and live monitor changes remain untested.

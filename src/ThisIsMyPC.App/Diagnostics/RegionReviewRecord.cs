@@ -3,7 +3,7 @@ namespace ThisIsMyPC.App.Diagnostics;
 
 internal sealed record RegionReviewRecord
 {
-    public int SchemaVersion { get; init; } = 1;
+    public int SchemaVersion { get; init; } = 2;
     public required string SessionId { get; init; }
     public required string SelectionId { get; init; }
     public required bool Active { get; init; }
@@ -17,6 +17,16 @@ internal sealed record RegionReviewRecord
     public required int ProcessId { get; init; }
     public required DateTime ProcessStartedAtUtc { get; init; }
     public required string BuildIdentity { get; init; }
+    public required int? SelectedFigureNumber { get; init; }
+    public required IReadOnlyList<RegionReviewFigure> Figures { get; init; }
+}
+
+internal sealed record RegionReviewFigure
+{
+    public required int Number { get; init; }
+    public required string Id { get; init; }
+    public required RegionReviewBounds Bounds { get; init; }
+    public string? Note { get; init; }
 }
 
 internal sealed record RegionReviewBounds

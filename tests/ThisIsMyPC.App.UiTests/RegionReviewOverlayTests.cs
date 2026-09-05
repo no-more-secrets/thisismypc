@@ -114,7 +114,7 @@ public sealed class RegionReviewOverlayTests
 
         using var document = JsonDocument.Parse(File.ReadAllText(Path.Combine(outputDirectory, "latest.json")));
         var rootElement = document.RootElement;
-        Assert.Equal(1, rootElement.GetProperty("schemaVersion").GetInt32());
+        Assert.Equal(2, rootElement.GetProperty("schemaVersion").GetInt32());
         Assert.True(rootElement.GetProperty("active").GetBoolean());
         Assert.NotEmpty(rootElement.GetProperty("sessionId").GetString()!);
         var selectionId = rootElement.GetProperty("selectionId").GetString()!;
@@ -136,6 +136,91 @@ public sealed class RegionReviewOverlayTests
         using var restored = JsonDocument.Parse(File.ReadAllText(Path.Combine(outputDirectory, "latest.json")));
         Assert.True(restored.RootElement.GetProperty("active").GetBoolean());
         Assert.Equal(selectionId, restored.RootElement.GetProperty("selectionId").GetString());
+    }
+
+    [AvaloniaFact]
+    [Trait("Category", "Diagnostic")]
+    public void MainWindow_AddsNotesSelectsAndDeletesStableNumberedFigures()
+    {
+        using var session = UiSession.ForMainWindow("region-review-multiple");
+        var mainWindow = Assert.IsType<Views.MainWindow>(session.Window);
+        var outputDirectory = Path.Combine(session.ShotDirectory, "records");
+        mainWindow.StartRegionReview(outputDirectory);
+        session.Pump();
+
+        Drag(session, new Point(100, 100), new Point(250, 220));
+        Drag(session, new Point(300, 180), new Point(500, 330));
+        var overlay = Assert.IsType<RegionReviewOverlay>(mainWindow.RegionReviewOverlay);
+        Assert.Equal(2, overlay.FigureCount);
+        Assert.Equal(2, overlay.SelectedFigureNumber);
+
+        session.Window.KeyPressQwerty(PhysicalKey.N, RawInputModifiers.None);
+        session.Pump();
+        Assert.True(overlay.IsEditingNote);
+        var editor = session.Find<TextBox>(box => box.Watermark as string == "Optional note for this figure");
+        session.Screenshot("note-editor");
+        session.Type(editor, "Tighten this spacing");
+        session.ClickText("Save");
+        Assert.False(overlay.IsEditingNote);
+
+        session.Window.KeyPressQwerty(PhysicalKey.N, RawInputModifiers.None);
+        session.Pump();
+        session.Type(editor, " but cancel this");
+        session.Window.MouseMove(new Point(88, 88));
+        session.Window.MouseDown(new Point(88, 88), MouseButton.Left);
+        session.Window.MouseUp(new Point(88, 88), MouseButton.Left);
+        session.Pump();
+        Assert.Equal(2, overlay.SelectedFigureNumber);
+        Assert.True(overlay.IsEditingNote);
+        session.Window.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
+        session.Pump();
+        Assert.False(overlay.IsEditingNote);
+        Assert.True(overlay.IsReviewActive);
+
+        using (var noted = ReadRecord(outputDirectory))
+        {
+            Assert.Equal(new[] { 1, 2 }, noted.RootElement.GetProperty("figures").EnumerateArray()
+                .Select(figure => figure.GetProperty("number").GetInt32()).ToArray());
+            Assert.Equal("Tighten this spacing", noted.RootElement.GetProperty("figures")[1].GetProperty("note").GetString());
+            using var image = SkiaSharp.SKBitmap.Decode(noted.RootElement.GetProperty("imagePath").GetString());
+            Assert.True(image.GetPixel(100, 100).Red > 200);
+            Assert.True(image.GetPixel(300, 180).Red > 200);
+        }
+
+        session.Window.MouseMove(new Point(88, 88));
+        session.Window.MouseDown(new Point(88, 88), MouseButton.Left);
+        session.Window.MouseUp(new Point(88, 88), MouseButton.Left);
+        session.Pump();
+        Assert.Equal(1, overlay.SelectedFigureNumber);
+        session.Window.KeyPressQwerty(PhysicalKey.Delete, RawInputModifiers.None);
+        session.Pump();
+        using (var afterDelete = ReadRecord(outputDirectory))
+        {
+            var remaining = Assert.Single(afterDelete.RootElement.GetProperty("figures").EnumerateArray());
+            Assert.Equal(2, remaining.GetProperty("number").GetInt32());
+        }
+
+        Drag(session, new Point(560, 350), new Point(760, 520));
+        using (var afterAdd = ReadRecord(outputDirectory))
+        {
+            Assert.Equal(new[] { 2, 3 }, afterAdd.RootElement.GetProperty("figures").EnumerateArray()
+                .Select(figure => figure.GetProperty("number").GetInt32()).ToArray());
+            session.Screenshot("figures-two-and-three");
+        }
+
+        session.Window.KeyPressQwerty(PhysicalKey.Delete, RawInputModifiers.None);
+        session.Pump();
+        session.Window.KeyPressQwerty(PhysicalKey.Delete, RawInputModifiers.None);
+        session.Pump();
+        using var inactive = ReadRecord(outputDirectory);
+        Assert.False(inactive.RootElement.GetProperty("active").GetBoolean());
+        Assert.Empty(inactive.RootElement.GetProperty("figures").EnumerateArray());
+
+        var oldSession = inactive.RootElement.GetProperty("sessionId").GetString();
+        overlay.Start();
+        session.Pump();
+        using var nextSession = ReadRecord(outputDirectory);
+        Assert.NotEqual(oldSession, nextSession.RootElement.GetProperty("sessionId").GetString());
     }
 
     [AvaloniaFact]
@@ -254,5 +339,17 @@ public sealed class RegionReviewOverlayTests
     }
     private static string Hash(string path) =>
         Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path)));
+
+    private static void Drag(UiSession session, Point from, Point to)
+    {
+        session.Window.MouseMove(from);
+        session.Window.MouseDown(from, MouseButton.Left);
+        session.Window.MouseMove(to);
+        session.Window.MouseUp(to, MouseButton.Left);
+        session.Pump();
+    }
+
+    private static JsonDocument ReadRecord(string outputDirectory) =>
+        JsonDocument.Parse(File.ReadAllText(Path.Combine(outputDirectory, "latest.json")));
 }
 #endif

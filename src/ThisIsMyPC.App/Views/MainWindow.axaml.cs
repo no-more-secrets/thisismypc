@@ -243,8 +243,22 @@ public partial class MainWindow : Window
         if (_regionReviewOverlay?.IsReviewActive != true)
             return;
 
+        if (_regionReviewOverlay.IsEditingNote)
+        {
+            if (e.Key == Key.Escape)
+            {
+                _regionReviewOverlay.CancelNote();
+                e.Handled = true;
+            }
+            return;
+        }
+
         if (e.Key == Key.Escape)
             _regionReviewOverlay.Clear();
+        else if (e.Key == Key.N)
+            _regionReviewOverlay.EditSelectedNote();
+        else if (e.Key == Key.Delete)
+            _regionReviewOverlay.DeleteSelectedFigure();
         e.Handled = true;
     }
 

@@ -12,7 +12,7 @@ if (-not (Test-Path -LiteralPath $recordPath -PathType Leaf)) {
 }
 
 $selection = Get-Content -LiteralPath $recordPath -Raw | ConvertFrom-Json
-if ($selection.schemaVersion -ne 1) {
+if ($selection.schemaVersion -notin @(1, 2)) {
     throw 'Unsupported region selection schema.'
 }
 

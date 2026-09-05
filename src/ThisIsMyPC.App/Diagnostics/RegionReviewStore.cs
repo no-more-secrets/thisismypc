@@ -8,7 +8,7 @@ namespace ThisIsMyPC.App.Diagnostics;
 internal class RegionReviewStore
 {
     private readonly string outputDirectory;
-    private readonly string sessionId = Guid.NewGuid().ToString("N");
+    private string sessionId = Guid.NewGuid().ToString("N");
     private readonly Process currentProcess = Process.GetCurrentProcess();
 
     internal RegionReviewStore(string? outputDirectory = null)
@@ -17,6 +17,7 @@ internal class RegionReviewStore
     }
 
     internal string OutputDirectory => outputDirectory;
+    internal void StartSession() => sessionId = Guid.NewGuid().ToString("N");
 
     internal RegionReviewRecord CreateRecord(
         bool active,
@@ -27,7 +28,9 @@ internal class RegionReviewStore
         double renderScale,
         int pixelWidth,
         int pixelHeight,
-        string imagePath) => new()
+        string imagePath,
+        int? selectedFigureNumber,
+        IReadOnlyList<RegionReviewFigure> figures) => new()
         {
             SessionId = sessionId,
             SelectionId = selectionId,
@@ -42,6 +45,8 @@ internal class RegionReviewStore
             ProcessId = currentProcess.Id,
             ProcessStartedAtUtc = currentProcess.StartTime.ToUniversalTime(),
             BuildIdentity = GetBuildIdentity(),
+            SelectedFigureNumber = selectedFigureNumber,
+            Figures = figures,
         };
 
     internal virtual void Write(RegionReviewRecord record)
