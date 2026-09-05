@@ -19,6 +19,7 @@ Windows Update 5, Power 1) + 5 built-in sets (59 entries) + the enumerative modu
 - No network listener or production feature. Native voice workflow validation remains pending.
 - Region review: removed the persistent instruction banner so it cannot cover app content.
 - Reopening annotation restores figures for the same route, client dimensions, display scale, and sidebar state.
+- Removed the floating sidebar chevron; the edge still supports click and drag.
 - Annotation toggles preserve sidebar state. A click on the sidebar edge expands or collapses it; dragging remains available.
 - The title bar keeps spacing between search and settings and shows all caption buttons at narrow window widths.
 - New window sizes capture their live layout separately; capture records include logical dimensions.

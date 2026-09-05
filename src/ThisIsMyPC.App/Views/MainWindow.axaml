@@ -226,14 +226,7 @@
                 PointerMoved="OnSidebarGripMoved"
                 PointerReleased="OnSidebarGripReleased"
                 PointerCaptureLost="OnSidebarGripCaptureLost"
-                KeyDown="OnSidebarGripKeyDown">
-            <TextBlock Text="›"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       Opacity="0.65"
-                       FontSize="16"
-                       IsHitTestVisible="False" />
-        </Border>
+                KeyDown="OnSidebarGripKeyDown" />
 
         <!-- Page area: the inset panel with a 1px rim along the L. Rim plus
              margin add up to the 24 side edge every page's geometry is
