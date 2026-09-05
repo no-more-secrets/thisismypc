@@ -13,8 +13,8 @@
          bar height like Spotify's and Windows Terminal's, at the stock 46
          width so the hand still lands where Windows trained it. Everything
          else is a drag region; a double-click toggles maximize. CenterContent
-         is centred on the whole bar (the settings search); TrailingContent
-         sits just left of the caption buttons (shortcuts). -->
+         uses the space between the identity and trailing controls. The search
+         shrinks before TrailingContent or the caption buttons move off-screen. -->
     <UserControl.Styles>
         <Style Selector="Button.caption">
             <Setter Property="Background" Value="Transparent" />
@@ -54,7 +54,7 @@
         </Style>
     </UserControl.Styles>
 
-    <Grid ColumnDefinitions="*,Auto,*"
+    <Grid ColumnDefinitions="Auto,*,Auto"
           Background="Transparent"
           PointerPressed="OnDragRegionPressed">
 
@@ -83,10 +83,17 @@
             </StackPanel>
         </StackPanel>
 
-        <!-- Centre slot: the equal star columns either side keep it on the window's centre line -->
-        <ContentPresenter Grid.Column="1"
+        <!-- Centre slot: the star column yields to the fixed identity and trailing controls. -->
+        <ContentPresenter x:Name="CenterPresenter"
+                          Grid.Column="1"
                           Content="{Binding #Root.CenterContent}"
-                          VerticalAlignment="Center" />
+                          MinWidth="0"
+                          Margin="16,0"
+                          HorizontalAlignment="Stretch"
+                          HorizontalContentAlignment="Center"
+                          VerticalAlignment="Center"
+                          ClipToBounds="True"
+                          SizeChanged="OnCenterPresenterSizeChanged" />
 
         <!-- Trailing slot, then the caption buttons, full height, right -->
         <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Stretch">

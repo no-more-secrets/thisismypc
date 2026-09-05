@@ -13,7 +13,7 @@ namespace ThisIsMyPC.App.Controls;
 /// </summary>
 public partial class TitleBarControl : UserControl
 {
-    /// <summary>Centred on the whole bar; the host puts the settings search here.</summary>
+    /// <summary>Uses the space between fixed side controls; the host puts the settings search here.</summary>
     public static readonly StyledProperty<object?> CenterContentProperty =
         AvaloniaProperty.Register<TitleBarControl, object?>(nameof(CenterContent));
 
@@ -74,6 +74,12 @@ public partial class TitleBarControl : UserControl
     {
         if (e.Property == Window.WindowStateProperty && e.NewValue is WindowState state)
             UpdateMaximizeGlyph(state);
+    }
+
+    private void OnCenterPresenterSizeChanged(object? sender, SizeChangedEventArgs e)
+    {
+        if (CenterContent is Control content)
+            content.MaxWidth = e.NewSize.Width;
     }
 
     private void UpdateMaximizeGlyph(WindowState state)

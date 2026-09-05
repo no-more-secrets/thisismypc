@@ -18,7 +18,9 @@ Windows Update 5, Power 1) + 5 built-in sets (59 entries) + the enumerative modu
 - Escape suspends review; Ctrl+Shift+Alt+A clears the session. tools/read-region-selection.ps1 retrieves all figures.
 - No network listener or production feature. Native voice workflow validation remains pending.
 - Region review: removed the persistent instruction banner so it cannot cover app content.
-- Reopening annotation restores figures for the same route, client dimensions, and display scale.
+- Reopening annotation restores figures for the same route, client dimensions, display scale, and sidebar state.
+- Annotation toggles preserve sidebar state. A click on the sidebar edge expands or collapses it; dragging remains available.
+- The title bar keeps spacing between search and settings and shows all caption buttons at narrow window widths.
 - New window sizes capture their live layout separately; capture records include logical dimensions.
 - Each highlight has a pencil icon that opens its text note editor.
 - Note editing leaves letter key events unhandled for native text generation; regression checks keyboard routing before text input.

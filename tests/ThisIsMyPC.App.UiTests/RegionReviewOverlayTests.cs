@@ -51,6 +51,47 @@ public sealed class RegionReviewOverlayTests
 
     [AvaloniaFact]
     [Trait("Category", "Diagnostic")]
+    public void AnnotationToggle_PreservesManualSidebarStateAndSeparatesSavedLayouts()
+    {
+        using var session = UiSession.ForMainWindow("region-review-sidebar-state");
+        var mainWindow = Assert.IsType<Views.MainWindow>(session.Window);
+        var viewModel = Assert.IsType<ViewModels.MainWindowViewModel>(mainWindow.DataContext);
+        var outputDirectory = Path.Combine(session.ShotDirectory, "records");
+        viewModel.IsSidebarCollapsed = true;
+
+        var grip = session.Find<Border>(border => border.Name == "SidebarGrip");
+        var gripCenter = session.CenterOf(grip);
+        session.Window.MouseMove(gripCenter);
+        session.Window.MouseDown(gripCenter, MouseButton.Left);
+        mainWindow.StartRegionReview(outputDirectory);
+        session.Pump();
+        session.Window.MouseMove(new Point(220, gripCenter.Y));
+        session.Window.MouseUp(new Point(220, gripCenter.Y), MouseButton.Left);
+        session.Pump();
+        Assert.True(viewModel.IsSidebarCollapsed);
+        Drag(session, new Point(100, 160), new Point(260, 280));
+        var overlay = Assert.IsType<RegionReviewOverlay>(mainWindow.RegionReviewOverlay);
+        Assert.Equal(1, overlay.SelectedFigureNumber);
+        session.Window.KeyPressQwerty(PhysicalKey.A, RawInputModifiers.Control | RawInputModifiers.Shift);
+        session.Pump();
+        Assert.True(viewModel.IsSidebarCollapsed);
+
+        viewModel.IsSidebarCollapsed = false;
+        session.Window.KeyPressQwerty(PhysicalKey.A, RawInputModifiers.Control | RawInputModifiers.Shift);
+        session.Pump();
+        Assert.False(viewModel.IsSidebarCollapsed);
+        Assert.Equal(default, overlay.SelectionBounds);
+        session.Window.KeyPressQwerty(PhysicalKey.A, RawInputModifiers.Control | RawInputModifiers.Shift);
+        viewModel.IsSidebarCollapsed = true;
+        session.Window.KeyPressQwerty(PhysicalKey.A, RawInputModifiers.Control | RawInputModifiers.Shift);
+        session.Pump();
+        Assert.True(viewModel.IsSidebarCollapsed);
+        Assert.Equal(new Rect(100, 160, 160, 120), overlay.SelectionBounds);
+        session.Screenshot("restored-collapsed-sidebar-annotation");
+    }
+
+    [AvaloniaFact]
+    [Trait("Category", "Diagnostic")]
     public void MainWindow_OverlaySpansBodyAndCapturesBodyDrag()
     {
         using var session = UiSession.ForMainWindow("region-review-main-window");

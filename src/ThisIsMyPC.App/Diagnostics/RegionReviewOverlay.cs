@@ -22,6 +22,7 @@ internal sealed class RegionReviewOverlay : Panel
     private readonly Window window;
     private readonly RegionReviewStore store;
     private readonly Func<string> pageRouteResolver;
+    private readonly Func<string> layoutStateResolver;
     private readonly List<FigureState> figures = [];
     private readonly List<CaptureState> captures = [];
     private readonly DrawingPresenter drawingPresenter;
@@ -40,14 +41,17 @@ internal sealed class RegionReviewOverlay : Panel
     private int? selectedFigureNumber;
     private CaptureState? currentCapture;
 
-    internal RegionReviewOverlay(Window window, string? outputDirectory = null, Func<string>? pageRouteResolver = null)
-        : this(window, new RegionReviewStore(outputDirectory), pageRouteResolver) { }
+    internal RegionReviewOverlay(Window window, string? outputDirectory = null, Func<string>? pageRouteResolver = null,
+        Func<string>? layoutStateResolver = null)
+        : this(window, new RegionReviewStore(outputDirectory), pageRouteResolver, layoutStateResolver) { }
 
-    internal RegionReviewOverlay(Window window, RegionReviewStore store, Func<string>? pageRouteResolver = null)
+    internal RegionReviewOverlay(Window window, RegionReviewStore store, Func<string>? pageRouteResolver = null,
+        Func<string>? layoutStateResolver = null)
     {
         this.window = window;
         this.store = store;
         this.pageRouteResolver = pageRouteResolver ?? (() => "window");
+        this.layoutStateResolver = layoutStateResolver ?? (() => "default");
         Focusable = true;
         IsVisible = false;
         drawingPresenter = new DrawingPresenter(this);
@@ -123,7 +127,9 @@ internal sealed class RegionReviewOverlay : Panel
 
         failureMessage = null;
         var route = pageRouteResolver();
+        var layoutState = layoutStateResolver();
         currentCapture = captures.LastOrDefault(capture => capture.PageRoute == route
+            && capture.LayoutState == layoutState
             && Math.Abs(capture.LogicalWidth - window.ClientSize.Width) < 0.01
             && Math.Abs(capture.LogicalHeight - window.ClientSize.Height) < 0.01
             && Math.Abs(capture.RenderScale - window.RenderScaling) < 0.001
@@ -149,6 +155,7 @@ internal sealed class RegionReviewOverlay : Panel
                 Math.Max(1, (int)Math.Ceiling(window.ClientSize.Width * window.RenderScaling)),
                 Math.Max(1, (int)Math.Ceiling(window.ClientSize.Height * window.RenderScaling)),
                 window.ClientSize.Width, window.ClientSize.Height, frozenFrame);
+            currentCapture.LayoutState = layoutState;
             captures.Add(currentCapture);
             selectedFigureNumber = null;
             if (figures.Count > 0)
@@ -833,6 +840,7 @@ internal sealed class RegionReviewOverlay : Panel
         PixelHeight = pixelHeight ?? capture.PixelHeight,
         LogicalWidth = capture.LogicalWidth,
         LogicalHeight = capture.LogicalHeight,
+        LayoutState = capture.LayoutState,
     };
 
     private static void DrawText(DrawingContext context, string text, Point origin)
@@ -897,6 +905,7 @@ internal sealed class RegionReviewOverlay : Panel
         internal double LogicalWidth { get; } = logicalWidth;
         internal double LogicalHeight { get; } = logicalHeight;
         internal RenderTargetBitmap Frame { get; } = frame;
+        internal string LayoutState { get; set; } = "default";
     }
 }
 #endif

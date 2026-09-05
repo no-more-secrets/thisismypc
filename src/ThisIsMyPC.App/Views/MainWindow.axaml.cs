@@ -24,13 +24,13 @@ public partial class MainWindow : Window
 
         PropertyChanged += OnWindowPropertyChanged;
         Loaded += OnLoaded;
+        Deactivated += OnWindowDeactivated;
         AddHandler(PointerPressedEvent, OnGlobalPointerPressed, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         AddHandler(KeyDownEvent, OnSearchKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         HookDisplayChanges();
 #if DEBUG
         AddHandler(KeyDownEvent, OnRegionReviewKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         KeyDown += OnDebugKeyDown;
-        Deactivated += OnRegionReviewDeactivated;
         ScalingChanged += OnRegionReviewScalingChanged;
         Closed += OnRegionReviewClosed;
 #endif
@@ -79,34 +79,76 @@ public partial class MainWindow : Window
 
     // --- Sidebar grip: drag the sidebar edge between its two widths ---
 
-    private bool _gripDragging;
+    private bool _gripPressed;
+    private bool _gripMoved;
+    private Point _gripStart;
+    private bool _gripStartCollapsed;
+    private IPointer? _gripPointer;
 
     private void OnSidebarGripPressed(object? sender, PointerPressedEventArgs e)
     {
         if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
             return;
-        _gripDragging = true;
+        if (DataContext is not MainWindowViewModel vm)
+            return;
+        _gripPressed = true;
+        _gripMoved = false;
+        _gripStart = e.GetPosition(this);
+        _gripStartCollapsed = vm.IsSidebarCollapsed;
+        _gripPointer = e.Pointer;
         e.Pointer.Capture(SidebarGrip);
         e.Handled = true;
     }
 
     private void OnSidebarGripMoved(object? sender, PointerEventArgs e)
     {
-        if (!_gripDragging || DataContext is not MainWindowViewModel vm)
+        if (!_gripPressed || DataContext is not MainWindowViewModel vm)
             return;
+        var point = e.GetPosition(this);
+        if (!_gripMoved && Math.Abs(point.X - _gripStart.X) < 4)
+            return;
+        _gripMoved = true;
         // Snap as the pointer crosses the midpoint between the two widths.
-        var x = e.GetPosition(this).X;
+        var x = point.X;
         var midpoint = (SidebarWidthConverter.CollapsedWidth + SidebarWidthConverter.ExpandedWidth) / 2;
         vm.IsSidebarCollapsed = x < midpoint;
     }
 
     private void OnSidebarGripReleased(object? sender, PointerReleasedEventArgs e)
     {
-        if (!_gripDragging)
+        if (!_gripPressed)
             return;
-        _gripDragging = false;
-        e.Pointer.Capture(null);
+        if (!_gripMoved && DataContext is MainWindowViewModel vm)
+            vm.IsSidebarCollapsed = !_gripStartCollapsed;
+        CancelSidebarGrip(e.Pointer);
         e.Handled = true;
+    }
+
+    private void OnSidebarGripCaptureLost(object? sender, PointerCaptureLostEventArgs e) => CancelSidebarGrip();
+
+    private void OnSidebarGripKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key is not (Key.Enter or Key.Space) || DataContext is not MainWindowViewModel vm)
+            return;
+        vm.IsSidebarCollapsed = !vm.IsSidebarCollapsed;
+        e.Handled = true;
+    }
+
+    private void CancelSidebarGrip(IPointer? pointer = null)
+    {
+        _gripPressed = false;
+        _gripMoved = false;
+        var capturedPointer = pointer ?? _gripPointer;
+        _gripPointer = null;
+        capturedPointer?.Capture(null);
+    }
+
+    private void OnWindowDeactivated(object? sender, EventArgs e)
+    {
+        CancelSidebarGrip();
+#if DEBUG
+        _regionReviewOverlay?.CancelDrag();
+#endif
     }
 
     private void OnSearchKeyDown(object? sender, KeyEventArgs e)
@@ -210,9 +252,15 @@ public partial class MainWindow : Window
 
     internal void StartRegionReview(string? outputDirectory = null)
     {
+        // A pointer can still belong to the sidebar grip when the shortcut is pressed.
+        // Release it before the overlay captures the frozen layout.
+        CancelSidebarGrip();
+
         if (_regionReviewOverlay is null)
         {
-            _regionReviewOverlay = new RegionReviewOverlay(this, outputDirectory, ResolveRegionReviewRoute);
+            _regionReviewOverlay = new RegionReviewOverlay(this, outputDirectory, ResolveRegionReviewRoute,
+                ResolveRegionReviewLayoutState);
+            var sidebarWasCollapsed = (DataContext as MainWindowViewModel)?.IsSidebarCollapsed;
             if (Content is not Control appContent)
                 throw new InvalidOperationException("MainWindow content must be a Control for region review.");
             var root = new Panel();
@@ -222,6 +270,11 @@ public partial class MainWindow : Window
             root.Children.Add(_regionReviewOverlay);
             Content = root;
             root.UpdateLayout();
+            if (sidebarWasCollapsed is bool collapsed && DataContext is MainWindowViewModel vm)
+            {
+                vm.IsSidebarCollapsed = collapsed;
+                root.UpdateLayout();
+            }
         }
 
         _regionReviewOverlay.Start();
@@ -270,7 +323,8 @@ public partial class MainWindow : Window
         e.Handled = true;
     }
 
-    internal void OnRegionReviewDeactivated(object? sender, EventArgs e) => _regionReviewOverlay?.CancelDrag();
+    internal void OnRegionReviewDeactivated(object? sender, EventArgs e)
+        => OnWindowDeactivated(sender, e);
 
     private void OnRegionReviewScalingChanged(object? sender, EventArgs e) => _regionReviewOverlay?.Suspend();
 
@@ -290,6 +344,10 @@ public partial class MainWindow : Window
             .FirstOrDefault(control => control.IsVisible && control.SelectedIndex >= 0);
         return tab is null ? route : $"{route}/tab/{tab.SelectedIndex}";
     }
+
+    private string ResolveRegionReviewLayoutState() => DataContext is MainWindowViewModel vm
+        ? vm.IsSidebarCollapsed ? "sidebar-collapsed" : "sidebar-expanded"
+        : "sidebar-unknown";
 
     private static string Slug(string value) => string.Join('-', value.Trim().ToLowerInvariant()
         .Split([' ', '/', '\\'], StringSplitOptions.RemoveEmptyEntries));

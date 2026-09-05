@@ -82,6 +82,20 @@ public class SidebarGripShotTests
         Assert.False(vm.IsSidebarCollapsed);
 
         var grip = session.Find<Border>(b => b.Name == "SidebarGrip");
+        session.Click(grip);
+        session.Pump();
+        Assert.True(vm.IsSidebarCollapsed);
+        session.Click(grip);
+        session.Pump();
+        Assert.False(vm.IsSidebarCollapsed);
+        grip.Focus();
+        session.Window.KeyPressQwerty(Avalonia.Input.PhysicalKey.Space, Avalonia.Input.RawInputModifiers.None);
+        session.Pump();
+        Assert.True(vm.IsSidebarCollapsed);
+        session.Window.KeyPressQwerty(Avalonia.Input.PhysicalKey.Space, Avalonia.Input.RawInputModifiers.None);
+        session.Pump();
+        Assert.False(vm.IsSidebarCollapsed);
+
         var start = session.CenterOf(grip);
         session.Window.MouseDown(start, Avalonia.Input.MouseButton.Left);
         session.Window.MouseMove(new Avalonia.Point(60, start.Y));

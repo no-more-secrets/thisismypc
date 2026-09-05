@@ -1,5 +1,7 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia.VisualTree;
 using ThisIsMyPC.App.Controls;
 
 namespace ThisIsMyPC.App.UiTests;
@@ -12,6 +14,37 @@ namespace ThisIsMyPC.App.UiTests;
 /// </summary>
 public class TitleBarShotTests
 {
+    [AvaloniaFact]
+    public void Frame_KeepsSearchSpacingAndCaptionButtonsInsideNarrowAndWideWindows()
+    {
+        var search = new TextBox { Name = "TestSearch", Width = 440, Watermark = "Search settings..." };
+        var shortcuts = new StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = 6 };
+        foreach (var name in new[] { "Settings", "Report a bug", "GitHub", "About" })
+            shortcuts.Children.Add(new Button { Name = name.Replace(" ", string.Empty), Width = 40, Height = 40 });
+
+        var bar = new TitleBarControl
+        {
+            Subtitle = "Version 1.0.0",
+            CenterContent = search,
+            TrailingContent = shortcuts,
+        };
+        using var session = UiSession.ForView(bar, new object(), "title-bar-responsive", width: 900, height: 300);
+
+        AssertResponsiveBounds(session, bar, search, shortcuts.Children[0]);
+        session.Screenshot("narrow-900");
+
+        session.Window.Width = 933.333333;
+        session.Pump();
+        AssertResponsiveBounds(session, bar, search, shortcuts.Children[0]);
+        session.Screenshot("reported-933");
+
+        session.Window.Width = 1200;
+        session.Pump();
+        AssertResponsiveBounds(session, bar, search, shortcuts.Children[0]);
+        Assert.Equal(440, search.Bounds.Width, precision: 1);
+        session.Screenshot("wide-1200");
+    }
+
     [AvaloniaFact]
     public void Frame_RendersAndCaptionButtonsWork()
     {
@@ -48,5 +81,26 @@ public class TitleBarShotTests
         session.Window.Closing += (_, e) => { closing = true; e.Cancel = true; };
         session.Click(close);
         Assert.True(closing);
+    }
+
+    private static void AssertResponsiveBounds(UiSession session, TitleBarControl bar, Visual search, Visual settings)
+    {
+        var close = bar.GetVisualDescendants().OfType<Button>().Single(b => b.Classes.Contains("close"));
+        var searchBounds = BoundsInWindow(session, search);
+        var settingsBounds = BoundsInWindow(session, settings);
+        var closeBounds = BoundsInWindow(session, close);
+
+        Assert.True(searchBounds.Width >= 200, $"Search width was {searchBounds.Width}.");
+        Assert.True(settingsBounds.Left - searchBounds.Right >= 12,
+            $"Search-to-settings gap was {settingsBounds.Left - searchBounds.Right}.");
+        Assert.True(closeBounds.Right <= Math.Ceiling(session.Window.ClientSize.Width),
+            $"Close ended at {closeBounds.Right}, outside client width {session.Window.ClientSize.Width}.");
+    }
+
+    private static Rect BoundsInWindow(UiSession session, Visual visual)
+    {
+        var origin = visual.TranslatePoint(default, session.Window)
+            ?? throw new InvalidOperationException("Control is not attached to the window.");
+        return new Rect(origin, visual.Bounds.Size);
     }
 }

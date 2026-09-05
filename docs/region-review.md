@@ -30,10 +30,10 @@ Figure numbers reset only when the review session is cleared.
 The frozen view stays unchanged while the underlying app updates.
 Switching to the conversation keeps completed figures available.
 Selection input does not activate controls in the underlying app.
-Returning to annotation restores the saved view for the same page, window dimensions, and display scale.
+Returning to annotation restores the saved view for the same page, window dimensions, display scale, and sidebar state.
 You can select, edit, or delete those figures. Visiting another page retains the earlier page's figures.
 Resizing pauses annotation. Reopening at new dimensions captures the live layout as a separate view.
-Returning to earlier dimensions and display scale restores that view's figures and notes.
+Returning to earlier dimensions, display scale, and sidebar state restores that view's figures and notes.
 Figure numbers remain unique across all views in the session. Dimensions describe the client area in logical pixels.
 A saved view stays frozen even if live content changes at the same size. Clear the session to refresh that view.
 Separate windows and native popups are outside this prototype.
@@ -52,6 +52,7 @@ Each figure also includes `captureId`, `capturedAtUtc`, and `imagePath` for its 
 Group figures by `captureId` and inspect every referenced image when reviewing multiple pages.
 The `captures` array includes `logicalWidth`, `logicalHeight`, PNG pixel dimensions, and `renderScale` for each capture.
 Use these dimensions when a figure describes behavior at a particular window size.
+Each capture also records `layoutState` to distinguish expanded and collapsed sidebar views.
 `active` means figures are available; `suspended` means the user can navigate the live app.
 Use `selectedFigureNumber` for the current selection. Figure numbers belong to the recorded review session.
 The top-level single-selection fields remain available for compatibility.
@@ -82,6 +83,6 @@ Each capture keeps its route even after the user navigates elsewhere.
 
 ## Validation
 
-The CI-safe Debug suite passes all 1,608 tests. The Release solution build passes.
+The CI-safe Debug suite passes all 1,609 tests. The Release solution build passes.
 All eight targeted headless tests pass, including distinct responsive layouts, original-size restoration, pencil clicks, and capture DPI.
 Headless screenshots were inspected. Native voice interaction and live monitor changes remain untested.

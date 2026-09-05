@@ -209,20 +209,31 @@
             </DockPanel>
         </Border>
 
-        <!-- Sidebar grip: drag the sidebar's edge to collapse or expand it. It
+        <!-- Sidebar grip: click to toggle or drag the edge to choose a state. It
              snaps to one of the two widths as the pointer crosses the midpoint;
              there is no in-between width. Straddles the edge by 4px each side. -->
         <Border x:Name="SidebarGrip"
                 Grid.Column="0"
                 HorizontalAlignment="Right"
-                Width="8"
-                Margin="0,0,-4,0"
+                Width="16"
+                Margin="0,0,-8,0"
                 ZIndex="3"
                 Background="Transparent"
                 Cursor="SizeWestEast"
+                Focusable="True"
+                ToolTip.Tip="Click to collapse or expand. Drag to choose a side."
                 PointerPressed="OnSidebarGripPressed"
                 PointerMoved="OnSidebarGripMoved"
-                PointerReleased="OnSidebarGripReleased" />
+                PointerReleased="OnSidebarGripReleased"
+                PointerCaptureLost="OnSidebarGripCaptureLost"
+                KeyDown="OnSidebarGripKeyDown">
+            <TextBlock Text="›"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Opacity="0.65"
+                       FontSize="16"
+                       IsHitTestVisible="False" />
+        </Border>
 
         <!-- Page area: the inset panel with a 1px rim along the L. Rim plus
              margin add up to the 24 side edge every page's geometry is

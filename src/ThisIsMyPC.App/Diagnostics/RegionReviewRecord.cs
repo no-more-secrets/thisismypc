@@ -46,6 +46,7 @@ internal sealed record RegionReviewCapture
     public required int PixelHeight { get; init; }
     public required double LogicalWidth { get; init; }
     public required double LogicalHeight { get; init; }
+    public required string LayoutState { get; init; }
 }
 
 internal sealed record RegionReviewBounds
