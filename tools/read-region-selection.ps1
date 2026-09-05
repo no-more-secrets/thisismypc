@@ -12,7 +12,7 @@ if (-not (Test-Path -LiteralPath $recordPath -PathType Leaf)) {
 }
 
 $selection = Get-Content -LiteralPath $recordPath -Raw | ConvertFrom-Json
-if ($selection.schemaVersion -notin @(1, 2)) {
+if ($selection.schemaVersion -notin @(1, 2, 3)) {
     throw 'Unsupported region selection schema.'
 }
 
@@ -24,12 +24,22 @@ if ($selection.active) {
         $selection | Add-Member -NotePropertyName reason -NotePropertyValue 'The captured app session has ended.' -Force
     } else {
         $captureDirectory = [IO.Path]::GetFullPath($Directory).TrimEnd([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar)
-        $imagePath = [IO.Path]::GetFullPath($selection.imagePath)
-        if (-not $imagePath.StartsWith($captureDirectory + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
-            throw 'The selection image is outside the capture directory.'
+        $imagePaths = @($selection.imagePath)
+        if ($selection.schemaVersion -eq 3) {
+            $imagePaths += @($selection.figures | ForEach-Object { $_.imagePath })
+            $imagePaths += @($selection.captures | ForEach-Object { $_.imagePath })
         }
-        if (-not (Test-Path -LiteralPath $imagePath -PathType Leaf)) {
-            throw 'The selection image is missing. Draw the region again.'
+        foreach ($recordedPath in ($imagePaths | Select-Object -Unique)) {
+            if ([string]::IsNullOrWhiteSpace($recordedPath)) {
+                throw 'A selection image path is missing.'
+            }
+            $imagePath = [IO.Path]::GetFullPath($recordedPath)
+            if (-not $imagePath.StartsWith($captureDirectory + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
+                throw 'The selection image is outside the capture directory.'
+            }
+            if (-not (Test-Path -LiteralPath $imagePath -PathType Leaf)) {
+                throw 'A selection image is missing. Capture that page again.'
+            }
         }
     }
 }

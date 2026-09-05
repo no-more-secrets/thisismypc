@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.VisualTree;
 using ThisIsMyPC.App.ViewModels;
 #if DEBUG
 using ThisIsMyPC.App.Diagnostics;
@@ -187,7 +188,7 @@ public partial class MainWindow : Window
     {
 #if DEBUG
         if (e.Property == BoundsProperty && _regionReviewOverlay?.IsReviewActive == true)
-            _regionReviewOverlay.Clear();
+            _regionReviewOverlay.Suspend();
 #endif
         if (e.Property != BoundsProperty || DataContext is not MainWindowViewModel vm)
             return;
@@ -210,7 +211,7 @@ public partial class MainWindow : Window
     {
         if (_regionReviewOverlay is null)
         {
-            _regionReviewOverlay = new RegionReviewOverlay(this, outputDirectory);
+            _regionReviewOverlay = new RegionReviewOverlay(this, outputDirectory, ResolveRegionReviewRoute);
             if (Content is not Control appContent)
                 throw new InvalidOperationException("MainWindow content must be a Control for region review.");
             var root = new Panel();
@@ -232,8 +233,14 @@ public partial class MainWindow : Window
             && e.KeyModifiers.HasFlag(KeyModifiers.Shift);
         if (isShortcut)
         {
+            if (e.KeyModifiers.HasFlag(KeyModifiers.Alt))
+            {
+                _regionReviewOverlay?.Reset();
+                e.Handled = true;
+                return;
+            }
             if (_regionReviewOverlay?.IsReviewActive == true)
-                _regionReviewOverlay.Clear();
+                _regionReviewOverlay.Suspend();
             else
                 StartRegionReview();
             e.Handled = true;
@@ -254,7 +261,7 @@ public partial class MainWindow : Window
         }
 
         if (e.Key == Key.Escape)
-            _regionReviewOverlay.Clear();
+            _regionReviewOverlay.Suspend();
         else if (e.Key == Key.N)
             _regionReviewOverlay.EditSelectedNote();
         else if (e.Key == Key.Delete)
@@ -264,7 +271,25 @@ public partial class MainWindow : Window
 
     internal void OnRegionReviewDeactivated(object? sender, EventArgs e) => _regionReviewOverlay?.CancelDrag();
 
-    private void OnRegionReviewClosed(object? sender, EventArgs e) => _regionReviewOverlay?.Clear();
+    private void OnRegionReviewClosed(object? sender, EventArgs e) => _regionReviewOverlay?.Close();
+
+    private string ResolveRegionReviewRoute()
+    {
+        if (DataContext is not MainWindowViewModel vm)
+            return "/unknown";
+        var route = vm.IsHomeActive ? "/home"
+            : vm.IsSettingsActive ? "/settings"
+            : vm.IsSetLoaderActive ? "/presets"
+            : vm.IsGalleryActive ? "/gallery"
+            : vm.SelectedModule is { } module ? $"/modules/{Slug(module.Name)}"
+            : "/unknown";
+        var tab = this.GetVisualDescendants().OfType<TabControl>()
+            .FirstOrDefault(control => control.IsVisible && control.SelectedIndex >= 0);
+        return tab is null ? route : $"{route}/tab/{tab.SelectedIndex}";
+    }
+
+    private static string Slug(string value) => string.Join('-', value.Trim().ToLowerInvariant()
+        .Split([' ', '/', '\\'], StringSplitOptions.RemoveEmptyEntries));
 
     private void OnDebugKeyDown(object? sender, KeyEventArgs e)
     {

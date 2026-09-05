@@ -20,7 +20,9 @@ internal sealed class RegionReviewOverlay : Panel
 
     private readonly Window window;
     private readonly RegionReviewStore store;
+    private readonly Func<string> pageRouteResolver;
     private readonly List<FigureState> figures = [];
+    private readonly List<CaptureState> captures = [];
     private readonly DrawingPresenter drawingPresenter;
     private readonly TextBox noteEditor;
     private readonly Border editorHost;
@@ -34,14 +36,16 @@ internal sealed class RegionReviewOverlay : Panel
     private string? failureMessage;
     private int nextFigureNumber = 1;
     private int? selectedFigureNumber;
+    private CaptureState? currentCapture;
 
-    internal RegionReviewOverlay(Window window, string? outputDirectory = null)
-        : this(window, new RegionReviewStore(outputDirectory)) { }
+    internal RegionReviewOverlay(Window window, string? outputDirectory = null, Func<string>? pageRouteResolver = null)
+        : this(window, new RegionReviewStore(outputDirectory), pageRouteResolver) { }
 
-    internal RegionReviewOverlay(Window window, RegionReviewStore store)
+    internal RegionReviewOverlay(Window window, RegionReviewStore store, Func<string>? pageRouteResolver = null)
     {
         this.window = window;
         this.store = store;
+        this.pageRouteResolver = pageRouteResolver ?? (() => "window");
         Focusable = true;
         IsVisible = false;
         drawingPresenter = new DrawingPresenter(this);
@@ -89,6 +93,8 @@ internal sealed class RegionReviewOverlay : Panel
     internal int? SelectedFigureNumber => selectedFigureNumber;
     internal string OutputDirectory => store.OutputDirectory;
 
+    private IEnumerable<FigureState> CurrentFigures => currentCapture is null
+        ? [] : figures.Where(figure => figure.CaptureId == currentCapture.Id);
     private FigureState? SelectedFigure => selectedFigureNumber is int number
         ? figures.FirstOrDefault(figure => figure.Number == number)
         : null;
@@ -97,17 +103,19 @@ internal sealed class RegionReviewOverlay : Panel
     {
         dragging = false;
         CancelNote();
-        store.StartSession();
         IsVisible = true;
-        figures.Clear();
-        selectedFigureNumber = null;
-        nextFigureNumber = 1;
-        activeRecord = null;
-        if (!WriteInactiveRecord())
+        if (figures.Count == 0 && captures.Count == 0)
         {
-            Focus();
-            InvalidateVisual();
-            return;
+            store.StartSession();
+            selectedFigureNumber = null;
+            nextFigureNumber = 1;
+            activeRecord = null;
+            if (!WriteInactiveRecord(suspended: false))
+            {
+                Focus();
+                InvalidateVisual();
+                return;
+            }
         }
 
         failureMessage = null;
@@ -118,6 +126,12 @@ internal sealed class RegionReviewOverlay : Panel
         {
             frozenFrame = CaptureOverride?.Invoke() ?? CaptureWindow();
             frozenCapturedAtUtc = DateTime.UtcNow;
+            currentCapture = new CaptureState(Guid.NewGuid().ToString("N"), pageRouteResolver(), frozenCapturedAtUtc,
+                string.Empty, window.RenderScaling, frozenFrame.PixelSize.Width, frozenFrame.PixelSize.Height);
+            captures.Add(currentCapture);
+            selectedFigureNumber = null;
+            if (figures.Count > 0)
+                WriteExistingRecord(suspended: false);
         }
         catch (Exception exception)
         {
@@ -128,9 +142,20 @@ internal sealed class RegionReviewOverlay : Panel
         InvalidateVisual();
     }
 
-    internal void Clear()
+    internal void Suspend()
     {
-        if (!IsVisible || !WriteInactiveRecord())
+        if (!IsVisible)
+            return;
+        CancelDrag();
+        if (IsEditingNote)
+        {
+            SaveNote();
+            if (IsEditingNote)
+                return;
+        }
+        if (figures.Count > 0 && !(CurrentFigures.Any()
+            ? SaveCurrentState(suspended: true)
+            : WriteExistingRecord(suspended: true)))
             return;
         dragging = false;
         activePointer?.Capture(null);
@@ -139,9 +164,44 @@ internal sealed class RegionReviewOverlay : Panel
         IsVisible = false;
         frozenFrame?.Dispose();
         frozenFrame = null;
-        figures.Clear();
         selectedFigureNumber = null;
+        currentCapture = null;
+    }
+
+    internal void Reset()
+    {
+        if (!WriteInactiveRecord())
+            return;
+        SuspendFrame();
+        figures.Clear();
+        captures.Clear();
+        nextFigureNumber = 1;
         activeRecord = null;
+    }
+
+    internal void Clear() => Reset();
+
+    internal void Close()
+    {
+        if (!WriteInactiveRecord())
+            return;
+        SuspendFrame();
+        figures.Clear();
+        captures.Clear();
+        activeRecord = null;
+    }
+
+    private void SuspendFrame()
+    {
+        dragging = false;
+        activePointer?.Capture(null);
+        activePointer = null;
+        CancelNote();
+        IsVisible = false;
+        frozenFrame?.Dispose();
+        frozenFrame = null;
+        selectedFigureNumber = null;
+        currentCapture = null;
     }
 
     internal void CancelNote()
@@ -194,7 +254,7 @@ internal sealed class RegionReviewOverlay : Panel
             return;
 
         var point = Clamp(e.GetPosition(this));
-        var hitFigure = figures.LastOrDefault(figure => BadgeBounds(figure).Contains(point));
+        var hitFigure = CurrentFigures.LastOrDefault(figure => BadgeBounds(figure).Contains(point));
         if (hitFigure is not null)
         {
             SelectFigure(hitFigure.Number);
@@ -235,7 +295,10 @@ internal sealed class RegionReviewOverlay : Panel
             return;
         }
 
-        var figure = new FigureState(nextFigureNumber++, Guid.NewGuid().ToString("N"), candidate, null);
+        if (currentCapture is null)
+            return;
+        var figure = new FigureState(nextFigureNumber++, Guid.NewGuid().ToString("N"), candidate, null,
+            currentCapture.Id, currentCapture.PageRoute, currentCapture.CapturedAtUtc, currentCapture.ImagePath);
         var previousSelection = selectedFigureNumber;
         figures.Add(figure);
         selectedFigureNumber = figure.Number;
@@ -258,7 +321,7 @@ internal sealed class RegionReviewOverlay : Panel
             if (IsEditingNote)
                 CancelNote();
             else
-                Clear();
+                Suspend();
         }
         else if (!IsEditingNote && e.Key == Key.N)
             EditSelectedNote();
@@ -275,9 +338,10 @@ internal sealed class RegionReviewOverlay : Panel
                 new Rect(0, 0, frozenFrame.PixelSize.Width, frozenFrame.PixelSize.Height),
                 new Rect(Bounds.Size));
         }
-        if (dragging || figures.Count == 0)
+        var currentFigures = CurrentFigures.ToArray();
+        if (dragging || currentFigures.Length == 0)
             context.FillRectangle(ShadeBrush, Bounds);
-        foreach (var figure in figures)
+        foreach (var figure in currentFigures)
             DrawFigure(context, figure);
         if (dragging)
         {
@@ -363,8 +427,11 @@ internal sealed class RegionReviewOverlay : Panel
         var index = figures.IndexOf(figure);
         var previousSelection = selectedFigureNumber;
         figures.RemoveAt(index);
-        selectedFigureNumber = figures.Count == 0 ? null : figures[Math.Min(index, figures.Count - 1)].Number;
-        var saved = figures.Count == 0 ? WriteInactiveRecord() : SaveCurrentState();
+        var remainingCurrent = CurrentFigures.ToArray();
+        selectedFigureNumber = remainingCurrent.Length == 0 ? null : remainingCurrent[^1].Number;
+        var saved = figures.Count == 0 ? WriteInactiveRecord(suspended: false)
+            : remainingCurrent.Length == 0 ? WriteExistingRecord(suspended: false)
+            : SaveCurrentState();
         if (!saved)
         {
             figures.Insert(index, figure);
@@ -376,11 +443,11 @@ internal sealed class RegionReviewOverlay : Panel
         InvalidateVisual();
     }
 
-    private bool SaveCurrentState()
+    private bool SaveCurrentState(bool suspended = false)
     {
-        var selected = SelectedFigure;
-        if (selected is null)
-            return false;
+        var selected = SelectedFigure ?? figures.LastOrDefault();
+        if (selected is null || currentCapture is null)
+            return figures.Count == 0;
         try
         {
             Directory.CreateDirectory(store.OutputDirectory);
@@ -390,6 +457,13 @@ internal sealed class RegionReviewOverlay : Panel
                 $"region-{DateTime.UtcNow:yyyyMMdd-HHmmssfff}-{Guid.NewGuid():N}.png"));
             using var annotatedFrame = CaptureOverlay();
             annotatedFrame.Save(imagePath);
+            var figureRecords = figures.Select(figure => figure.CaptureId == currentCapture.Id
+                ? ToRecord(figure, imagePath) : ToRecord(figure)).ToArray();
+            var referencedCaptureIds = figureRecords.Select(figure => figure.CaptureId).ToHashSet(StringComparer.Ordinal);
+            var captureRecords = captures.Where(capture => referencedCaptureIds.Contains(capture.Id))
+                .Select(capture => capture.Id == currentCapture.Id
+                    ? ToRecord(capture, imagePath, annotatedFrame.PixelSize.Width, annotatedFrame.PixelSize.Height)
+                    : ToRecord(capture)).ToArray();
             var record = store.CreateRecord(
                 true,
                 selected.Id,
@@ -400,15 +474,48 @@ internal sealed class RegionReviewOverlay : Panel
                 annotatedFrame.PixelSize.Width,
                 annotatedFrame.PixelSize.Height,
                 imagePath,
-                selected.Number,
-                figures.Select(ToRecord).ToArray());
+                selectedFigureNumber ?? selected.Number,
+                figureRecords,
+                captureRecords,
+                suspended);
             store.Write(record);
+            currentCapture.ImagePath = imagePath;
+            currentCapture.PixelWidth = annotatedFrame.PixelSize.Width;
+            currentCapture.PixelHeight = annotatedFrame.PixelSize.Height;
+            foreach (var figure in CurrentFigures)
+                figure.ImagePath = imagePath;
             activeRecord = record;
             return true;
         }
         catch (Exception exception)
         {
             failureMessage = $"Region capture failed: {exception.Message}";
+            return false;
+        }
+    }
+
+    private bool WriteExistingRecord(bool suspended)
+    {
+        var selected = SelectedFigure ?? figures.LastOrDefault();
+        var capture = selected is null ? null : captures.FirstOrDefault(item => item.Id == selected.CaptureId);
+        if (selected is null || capture is null)
+            return true;
+        try
+        {
+            var referencedCaptureIds = figures.Select(figure => figure.CaptureId).ToHashSet(StringComparer.Ordinal);
+            var record = store.CreateRecord(true, selected.Id, selected.CapturedAtUtc,
+                window.Title ?? string.Empty, ToBounds(selected.Bounds), capture.RenderScale,
+                capture.PixelWidth, capture.PixelHeight, selected.ImagePath, selected.Number,
+                figures.Select(figure => ToRecord(figure)).ToArray(),
+                captures.Where(item => referencedCaptureIds.Contains(item.Id))
+                    .Select(item => ToRecord(item)).ToArray(), suspended);
+            store.Write(record);
+            activeRecord = record;
+            return true;
+        }
+        catch (Exception exception)
+        {
+            failureMessage = $"Region review state failed: {exception.Message}";
             return false;
         }
     }
@@ -435,7 +542,7 @@ internal sealed class RegionReviewOverlay : Panel
         return bitmap;
     }
 
-    private bool WriteInactiveRecord()
+    private bool WriteInactiveRecord(bool suspended = true)
     {
         try
         {
@@ -450,7 +557,9 @@ internal sealed class RegionReviewOverlay : Panel
                 0,
                 string.Empty,
                 null,
-                []));
+                [],
+                [],
+                suspended));
             return true;
         }
         catch (Exception exception)
@@ -504,12 +613,28 @@ internal sealed class RegionReviewOverlay : Panel
         Height = bounds.Height,
     };
 
-    private static RegionReviewFigure ToRecord(FigureState figure) => new()
+    private static RegionReviewFigure ToRecord(FigureState figure, string? imagePath = null) => new()
     {
         Number = figure.Number,
         Id = figure.Id,
         Bounds = ToBounds(figure.Bounds),
         Note = figure.Note,
+        PageRoute = figure.PageRoute,
+        CaptureId = figure.CaptureId,
+        CapturedAtUtc = figure.CapturedAtUtc,
+        ImagePath = imagePath ?? figure.ImagePath,
+    };
+
+    private static RegionReviewCapture ToRecord(CaptureState capture, string? imagePath = null,
+        int? pixelWidth = null, int? pixelHeight = null) => new()
+    {
+        Id = capture.Id,
+        PageRoute = capture.PageRoute,
+        CapturedAtUtc = capture.CapturedAtUtc,
+        ImagePath = imagePath ?? capture.ImagePath,
+        RenderScale = capture.RenderScale,
+        PixelWidth = pixelWidth ?? capture.PixelWidth,
+        PixelHeight = pixelHeight ?? capture.PixelHeight,
     };
 
     private static void DrawText(DrawingContext context, string text, Point origin)
@@ -535,12 +660,29 @@ internal sealed class RegionReviewOverlay : Panel
         public override void Render(DrawingContext context) => owner.RenderOverlay(context);
     }
 
-    private sealed class FigureState(int number, string id, Rect bounds, string? note)
+    private sealed class FigureState(int number, string id, Rect bounds, string? note,
+        string captureId, string pageRoute, DateTime capturedAtUtc, string imagePath)
     {
         internal int Number { get; } = number;
         internal string Id { get; } = id;
         internal Rect Bounds { get; } = bounds;
         internal string? Note { get; set; } = note;
+        internal string CaptureId { get; } = captureId;
+        internal string PageRoute { get; } = pageRoute;
+        internal DateTime CapturedAtUtc { get; } = capturedAtUtc;
+        internal string ImagePath { get; set; } = imagePath;
+    }
+
+    private sealed class CaptureState(string id, string pageRoute, DateTime capturedAtUtc,
+        string imagePath, double renderScale, int pixelWidth, int pixelHeight)
+    {
+        internal string Id { get; } = id;
+        internal string PageRoute { get; } = pageRoute;
+        internal DateTime CapturedAtUtc { get; } = capturedAtUtc;
+        internal string ImagePath { get; set; } = imagePath;
+        internal double RenderScale { get; } = renderScale;
+        internal int PixelWidth { get; set; } = pixelWidth;
+        internal int PixelHeight { get; set; } = pixelHeight;
     }
 }
 #endif

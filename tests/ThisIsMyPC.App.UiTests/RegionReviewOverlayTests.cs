@@ -68,7 +68,86 @@ public sealed class RegionReviewOverlayTests
         session.Pump();
         Assert.False(overlay.IsReviewActive);
         using var cleared = JsonDocument.Parse(File.ReadAllText(Path.Combine(outputDirectory, "latest.json")));
-        Assert.False(cleared.RootElement.GetProperty("active").GetBoolean());
+        Assert.True(cleared.RootElement.GetProperty("active").GetBoolean());
+        Assert.True(cleared.RootElement.GetProperty("suspended").GetBoolean());
+    }
+
+    [AvaloniaFact]
+    [Trait("Category", "Diagnostic")]
+    public void MainWindow_PreservesFiguresAcrossHomeAndSettingsCaptures()
+    {
+        using var session = UiSession.ForMainWindow("region-review-pages");
+        var mainWindow = Assert.IsType<Views.MainWindow>(session.Window);
+        var viewModel = Assert.IsType<ViewModels.MainWindowViewModel>(mainWindow.DataContext);
+        var outputDirectory = Path.Combine(session.ShotDirectory, "records");
+
+        mainWindow.StartRegionReview(outputDirectory);
+        session.Pump();
+        Drag(session, new Point(120, 140), new Point(280, 260));
+        session.Window.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
+        session.Pump();
+
+        viewModel.OpenSettingsCommand.Execute(null);
+        session.Pump();
+        mainWindow.StartRegionReview(outputDirectory);
+        session.Pump();
+        // Reuse the first page coordinates. An archived badge must not intercept this drag.
+        Drag(session, new Point(120, 140), new Point(280, 260));
+        session.Screenshot("settings-figure-two");
+
+        using (var document = ReadRecord(outputDirectory))
+        {
+            var figures = document.RootElement.GetProperty("figures").EnumerateArray().ToArray();
+            Assert.Equal([1, 2], figures.Select(item => item.GetProperty("number").GetInt32()).ToArray());
+            Assert.StartsWith("/home", figures[0].GetProperty("pageRoute").GetString());
+            Assert.StartsWith("/settings", figures[1].GetProperty("pageRoute").GetString());
+            Assert.NotEqual(figures[0].GetProperty("captureId").GetString(), figures[1].GetProperty("captureId").GetString());
+            Assert.All(figures, figure => Assert.True(File.Exists(figure.GetProperty("imagePath").GetString())));
+            Assert.Equal(2, document.RootElement.GetProperty("captures").GetArrayLength());
+        }
+
+        session.Window.KeyPressQwerty(PhysicalKey.N, RawInputModifiers.None);
+        session.Pump();
+        var editor = session.Find<TextBox>(box => box.Watermark as string == "Optional note for this figure");
+        session.Type(editor, "Settings note");
+        session.Window.KeyPressQwerty(PhysicalKey.A, RawInputModifiers.Control | RawInputModifiers.Shift);
+        session.Pump();
+        using (var suspendedNote = ReadRecord(outputDirectory))
+        {
+            Assert.True(suspendedNote.RootElement.GetProperty("suspended").GetBoolean());
+            Assert.Equal("Settings note", suspendedNote.RootElement.GetProperty("figures")[1].GetProperty("note").GetString());
+        }
+
+        mainWindow.StartRegionReview(outputDirectory);
+        session.Pump();
+        session.Window.MouseDown(new Point(40, 80), MouseButton.Left);
+        session.Window.MouseMove(new Point(700, 500));
+        session.Window.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
+        session.Pump();
+        using (var canceledDrag = ReadRecord(outputDirectory))
+            Assert.Equal(2, canceledDrag.RootElement.GetProperty("figures").GetArrayLength());
+
+        mainWindow.StartRegionReview(outputDirectory);
+        session.Pump();
+        Drag(session, new Point(620, 180), new Point(760, 300));
+        session.Window.KeyPressQwerty(PhysicalKey.Delete, RawInputModifiers.None);
+        session.Pump();
+        using (var retainedPages = ReadRecord(outputDirectory))
+        {
+            Assert.Equal(2, retainedPages.RootElement.GetProperty("figures").GetArrayLength());
+            Assert.StartsWith("/settings",
+                retainedPages.RootElement.GetProperty("figures")[1].GetProperty("pageRoute").GetString());
+            Assert.Equal(retainedPages.RootElement.GetProperty("figures")[1].GetProperty("imagePath").GetString(),
+                retainedPages.RootElement.GetProperty("imagePath").GetString());
+            Assert.Equal(2, retainedPages.RootElement.GetProperty("captures").GetArrayLength());
+        }
+
+        session.Window.KeyPressQwerty(PhysicalKey.A,
+            RawInputModifiers.Control | RawInputModifiers.Shift | RawInputModifiers.Alt);
+        session.Pump();
+        using var reset = ReadRecord(outputDirectory);
+        Assert.False(reset.RootElement.GetProperty("active").GetBoolean());
+        Assert.Empty(reset.RootElement.GetProperty("figures").EnumerateArray());
     }
 
     [AvaloniaFact]
@@ -114,7 +193,7 @@ public sealed class RegionReviewOverlayTests
 
         using var document = JsonDocument.Parse(File.ReadAllText(Path.Combine(outputDirectory, "latest.json")));
         var rootElement = document.RootElement;
-        Assert.Equal(2, rootElement.GetProperty("schemaVersion").GetInt32());
+        Assert.Equal(3, rootElement.GetProperty("schemaVersion").GetInt32());
         Assert.True(rootElement.GetProperty("active").GetBoolean());
         Assert.NotEmpty(rootElement.GetProperty("sessionId").GetString()!);
         var selectionId = rootElement.GetProperty("selectionId").GetString()!;
@@ -220,7 +299,7 @@ public sealed class RegionReviewOverlayTests
         overlay.Start();
         session.Pump();
         using var nextSession = ReadRecord(outputDirectory);
-        Assert.NotEqual(oldSession, nextSession.RootElement.GetProperty("sessionId").GetString());
+        Assert.Equal(oldSession, nextSession.RootElement.GetProperty("sessionId").GetString());
     }
 
     [AvaloniaFact]

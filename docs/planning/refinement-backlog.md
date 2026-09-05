@@ -14,7 +14,8 @@ Windows Update 5, Power 1) + 5 built-in sets (59 entries) + the enumerative modu
 
 - Debug-only Ctrl+Shift+A region selection freezes the current window for shared visual review.
 - Each drag adds a stable numbered figure. Optional notes and figure deletion support voice references without renumbering.
-- Escape clears the record; tools/read-region-selection.ps1 retrieves the current selection for agents.
+- Ctrl+Shift+A toggles navigation while retaining figures across pages. Schema 3 records page routes and distinct capture images.
+- Escape suspends review; Ctrl+Shift+Alt+A clears the session. tools/read-region-selection.ps1 retrieves all figures.
 - No network listener or production feature. Native voice workflow validation remains pending.
 - Region review: removed the persistent instruction banner so it cannot cover app content.
 - Usage and limitations: docs/region-review.md.

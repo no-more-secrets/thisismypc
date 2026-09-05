@@ -232,13 +232,15 @@ dotnet test tests/ThisIsMyPC.App.UiTests --configuration Release --filter "Categ
 
 ### Shared region review (Debug builds)
 
-Ctrl+Shift+A freezes the window for region review. Each drag adds a numbered figure.
-Sam references figures by voice or chat. Badge clicks select figures; N edits an
-optional note; Delete removes the selected figure without renumbering the others.
-Read tools/read-region-selection.ps1, check active, and inspect imagePath as an
-image. Schema 2 includes figures with stable numbers, bounds, and notes. Check the
-session and capture time before interpreting a reference. Never use a stale record.
-Escape cancels note editing first, then clears review. See docs/region-review.md.
+Ctrl+Shift+A toggles frozen annotation and live navigation. Each drag adds a figure
+with a stable number across pages. Badge clicks select figures; N edits a note;
+Delete removes the selected figure. Escape cancels a note editor or suspends review.
+Ctrl+Shift+Alt+A clears the whole session. Switching pages does not clear figures.
+Read tools/read-region-selection.ps1 and check active. Schema 3 figures include
+pageRoute, captureId, imagePath, bounds, and notes. Group by captureId and inspect
+each image. A suspended review still contains valid figures. Never use a stale
+process record or assume earlier figures refer to the current live page.
+See docs/region-review.md for controls, route identifiers, and prototype limits.
 
 ### UI review checklist (learned the hard way, 2026-09-02)
 

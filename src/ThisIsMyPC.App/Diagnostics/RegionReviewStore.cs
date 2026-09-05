@@ -30,7 +30,9 @@ internal class RegionReviewStore
         int pixelHeight,
         string imagePath,
         int? selectedFigureNumber,
-        IReadOnlyList<RegionReviewFigure> figures) => new()
+        IReadOnlyList<RegionReviewFigure> figures,
+        IReadOnlyList<RegionReviewCapture> captures,
+        bool suspended = false) => new()
         {
             SessionId = sessionId,
             SelectionId = selectionId,
@@ -47,6 +49,8 @@ internal class RegionReviewStore
             BuildIdentity = GetBuildIdentity(),
             SelectedFigureNumber = selectedFigureNumber,
             Figures = figures,
+            Captures = captures,
+            Suspended = suspended,
         };
 
     internal virtual void Write(RegionReviewRecord record)
