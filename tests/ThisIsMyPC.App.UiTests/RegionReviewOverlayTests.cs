@@ -308,6 +308,50 @@ public sealed class RegionReviewOverlayTests
         Assert.Equal(2, overlay.SelectedFigureNumber);
         Assert.Equal(2, overlay.FigureCount);
         var editor = session.Find<TextBox>(box => box.Watermark as string == "Optional note for this figure");
+        Assert.True(editor.IsFocused);
+        var letterKey = new KeyEventArgs
+        {
+            RoutedEvent = InputElement.KeyDownEvent,
+            Key = Key.N,
+            Source = editor,
+        };
+        editor.RaiseEvent(letterKey);
+        Assert.False(letterKey.Handled);
+        if (!letterKey.Handled)
+        {
+            editor.RaiseEvent(new TextInputEventArgs
+            {
+                RoutedEvent = InputElement.TextInputEvent,
+                Text = "n",
+                Source = editor,
+            });
+        }
+        Assert.Equal("n", editor.Text);
+        editor.SelectAll();
+        var deleteKey = new KeyEventArgs
+        {
+            RoutedEvent = InputElement.KeyDownEvent,
+            Key = Key.Delete,
+            Source = editor,
+        };
+        editor.RaiseEvent(deleteKey);
+        Assert.Equal(string.Empty, editor.Text);
+        Assert.Equal(2, overlay.FigureCount);
+        var cancelButton = session.Find<Button>(button => button.IsVisible && Equals(button.Content, "Cancel"));
+        var saveButton = session.Find<Button>(button => button.IsVisible && Equals(button.Content, "Save"));
+        session.Window.KeyPressQwerty(PhysicalKey.Tab, RawInputModifiers.None);
+        session.Pump();
+        Assert.True(cancelButton.IsFocused);
+        session.Window.KeyPressQwerty(PhysicalKey.Tab, RawInputModifiers.None);
+        session.Pump();
+        Assert.True(saveButton.IsFocused);
+        session.Window.KeyPressQwerty(PhysicalKey.Tab, RawInputModifiers.None);
+        session.Pump();
+        Assert.True(editor.IsFocused);
+        session.Window.KeyPressQwerty(PhysicalKey.Tab, RawInputModifiers.Shift);
+        session.Pump();
+        Assert.True(saveButton.IsFocused);
+        editor.Focus();
         session.Screenshot("note-editor");
         session.Type(editor, "Tighten this spacing");
         session.ClickText("Save");

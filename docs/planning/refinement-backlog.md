@@ -21,6 +21,7 @@ Windows Update 5, Power 1) + 5 built-in sets (59 entries) + the enumerative modu
 - Reopening annotation restores figures for the same route, client dimensions, and display scale.
 - New window sizes capture their live layout separately; capture records include logical dimensions.
 - Each highlight has a pencil icon that opens its text note editor.
+- Note editing leaves letter key events unhandled for native text generation; regression checks keyboard routing before text input.
 - Usage and limitations: docs/region-review.md.
 - Fixed high-DPI top-left crop: source bounds now use physical bitmap pixels; regression coverage includes 100-200% capture scaling.
 

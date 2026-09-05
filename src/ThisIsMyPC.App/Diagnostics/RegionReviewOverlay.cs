@@ -82,6 +82,7 @@ internal sealed class RegionReviewOverlay : Panel
             IsVisible = false,
             Child = new StackPanel { Spacing = 8, Children = { noteEditor, actions } },
         };
+        KeyboardNavigation.SetTabNavigation(editorHost, KeyboardNavigationMode.Cycle);
         Children.Add(drawingPresenter);
         Children.Add(editorHost);
     }
@@ -397,16 +398,21 @@ internal sealed class RegionReviewOverlay : Panel
 
     protected override void OnKeyDown(KeyEventArgs e)
     {
-        if (e.Key == Key.Escape)
+        if (IsEditingNote)
         {
-            if (IsEditingNote)
+            if (e.Key == Key.Escape)
+            {
                 CancelNote();
-            else
-                Suspend();
+                e.Handled = true;
+            }
+            return;
         }
-        else if (!IsEditingNote && e.Key == Key.N)
+
+        if (e.Key == Key.Escape)
+            Suspend();
+        else if (e.Key == Key.N)
             EditSelectedNote();
-        else if (!IsEditingNote && e.Key == Key.Delete)
+        else if (e.Key == Key.Delete)
             DeleteSelectedFigure();
         e.Handled = true;
     }

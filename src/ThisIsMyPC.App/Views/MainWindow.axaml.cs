@@ -296,6 +296,8 @@ public partial class MainWindow : Window
 
     private void OnDebugKeyDown(object? sender, KeyEventArgs e)
     {
+        if (_regionReviewOverlay?.IsReviewActive == true)
+            return;
         if (DataContext is not MainWindowViewModel vm)
             return;
 
