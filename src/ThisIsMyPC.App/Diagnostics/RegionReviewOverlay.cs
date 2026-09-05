@@ -123,6 +123,9 @@ internal sealed class RegionReviewOverlay : Panel
         failureMessage = null;
         var route = pageRouteResolver();
         currentCapture = captures.LastOrDefault(capture => capture.PageRoute == route
+            && Math.Abs(capture.LogicalWidth - window.ClientSize.Width) < 0.01
+            && Math.Abs(capture.LogicalHeight - window.ClientSize.Height) < 0.01
+            && Math.Abs(capture.RenderScale - window.RenderScaling) < 0.001
             && figures.Any(figure => figure.CaptureId == capture.Id));
         if (currentCapture is not null)
         {
@@ -822,6 +825,8 @@ internal sealed class RegionReviewOverlay : Panel
         RenderScale = capture.RenderScale,
         PixelWidth = pixelWidth ?? capture.PixelWidth,
         PixelHeight = pixelHeight ?? capture.PixelHeight,
+        LogicalWidth = capture.LogicalWidth,
+        LogicalHeight = capture.LogicalHeight,
     };
 
     private static void DrawText(DrawingContext context, string text, Point origin)

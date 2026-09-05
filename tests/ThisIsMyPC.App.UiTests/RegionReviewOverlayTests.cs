@@ -55,6 +55,7 @@ public sealed class RegionReviewOverlayTests
     {
         using var session = UiSession.ForMainWindow("region-review-main-window");
         var mainWindow = Assert.IsType<Views.MainWindow>(session.Window);
+        var originalWidth = mainWindow.Width;
         var outputDirectory = Path.Combine(session.ShotDirectory, "records");
         mainWindow.StartRegionReview(outputDirectory);
         session.Pump();
@@ -89,7 +90,7 @@ public sealed class RegionReviewOverlayTests
         using (var preserved = JsonDocument.Parse(File.ReadAllText(Path.Combine(outputDirectory, "latest.json"))))
             Assert.True(preserved.RootElement.GetProperty("active").GetBoolean());
 
-        mainWindow.Width += 20;
+        mainWindow.Width = 1000;
         session.Pump();
         Assert.False(overlay.IsReviewActive);
         using var cleared = JsonDocument.Parse(File.ReadAllText(Path.Combine(outputDirectory, "latest.json")));
@@ -98,22 +99,41 @@ public sealed class RegionReviewOverlayTests
 
         mainWindow.StartRegionReview(outputDirectory);
         session.Pump();
+        Assert.Equal(default, overlay.SelectionBounds);
+        Drag(session, new Point(60, 180), new Point(220, 320));
+        Assert.Equal(2, overlay.SelectedFigureNumber);
+        var resizedPath = session.Screenshot("new-size-live-layout");
+        using (var resizedRecord = ReadRecord(outputDirectory))
+        {
+            var captures = resizedRecord.RootElement.GetProperty("captures").EnumerateArray().ToArray();
+            Assert.Equal(2, captures.Length);
+            Assert.NotEqual(captures[0].GetProperty("logicalWidth").GetDouble(),
+                captures[1].GetProperty("logicalWidth").GetDouble());
+            Assert.NotEqual(captures[0].GetProperty("imagePath").GetString(),
+                captures[1].GetProperty("imagePath").GetString());
+        }
+        Assert.True(File.Exists(resizedPath));
+        session.Window.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
+        mainWindow.Width = originalWidth;
+        session.Pump();
+        mainWindow.StartRegionReview(outputDirectory);
+        session.Pump();
         Assert.Equal(new Rect(340, 150, 600, 500), overlay.SelectionBounds);
-        var restoredPath = session.Screenshot("restored-after-resize");
+        var restoredPath = session.Screenshot("restored-original-size");
         using var restored = SkiaSharp.SKBitmap.Decode(restoredPath);
         Assert.True(restored.GetPixel(350, 150).Red > 200);
         var restoredPencil = session.Find<Button>(button => button.Name == "EditFigure1Note");
         session.Click(restoredPencil);
         session.Pump();
         Assert.True(overlay.IsEditingNote);
-        Assert.Equal(1, overlay.FigureCount);
+        Assert.Equal(2, overlay.FigureCount);
         session.Window.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
         session.Pump();
         session.Window.MouseDown(new Point(338, 138), MouseButton.Left);
         session.Window.MouseUp(new Point(338, 138), MouseButton.Left);
         session.Window.KeyPressQwerty(PhysicalKey.Delete, RawInputModifiers.None);
         session.Pump();
-        Assert.Equal(0, overlay.FigureCount);
+        Assert.Equal(1, overlay.FigureCount);
         var deletedPath = session.Screenshot("restored-after-delete");
         using var deleted = SkiaSharp.SKBitmap.Decode(deletedPath);
         Assert.True(deleted.GetPixel(600, 150).Red < 200);

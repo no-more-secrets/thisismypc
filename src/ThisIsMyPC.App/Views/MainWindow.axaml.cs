@@ -31,6 +31,7 @@ public partial class MainWindow : Window
         AddHandler(KeyDownEvent, OnRegionReviewKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         KeyDown += OnDebugKeyDown;
         Deactivated += OnRegionReviewDeactivated;
+        ScalingChanged += OnRegionReviewScalingChanged;
         Closed += OnRegionReviewClosed;
 #endif
     }
@@ -270,6 +271,8 @@ public partial class MainWindow : Window
     }
 
     internal void OnRegionReviewDeactivated(object? sender, EventArgs e) => _regionReviewOverlay?.CancelDrag();
+
+    private void OnRegionReviewScalingChanged(object? sender, EventArgs e) => _regionReviewOverlay?.Suspend();
 
     private void OnRegionReviewClosed(object? sender, EventArgs e) => _regionReviewOverlay?.Close();
 
