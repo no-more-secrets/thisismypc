@@ -16,15 +16,40 @@ public sealed class JustifiedWrapPanel : Panel
     public static readonly StyledProperty<double> GapProperty =
         AvaloniaProperty.Register<JustifiedWrapPanel, double>(nameof(Gap), 8);
 
+    public static readonly StyledProperty<double> RowGapProperty =
+        AvaloniaProperty.Register<JustifiedWrapPanel, double>(nameof(RowGap), double.NaN);
+
+    public static readonly StyledProperty<bool> PlaceSelectedRowLastProperty =
+        AvaloniaProperty.Register<JustifiedWrapPanel, bool>(nameof(PlaceSelectedRowLast));
+
     public double Gap
     {
         get => GetValue(GapProperty);
         set => SetValue(GapProperty, value);
     }
 
+    /// <summary>Gets or sets the vertical gap. NaN uses <see cref="Gap"/>.</summary>
+    public double RowGap
+    {
+        get => GetValue(RowGapProperty);
+        set => SetValue(RowGapProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets whether the row with the selected tab is arranged last.
+    /// Child order stays unchanged, so keyboard navigation keeps its source order.
+    /// </summary>
+    public bool PlaceSelectedRowLast
+    {
+        get => GetValue(PlaceSelectedRowLastProperty);
+        set => SetValue(PlaceSelectedRowLastProperty, value);
+    }
+
+    private double EffectiveRowGap => double.IsNaN(RowGap) ? Gap : RowGap;
+
     static JustifiedWrapPanel()
     {
-        AffectsMeasure<JustifiedWrapPanel>(GapProperty);
+        AffectsMeasure<JustifiedWrapPanel>(GapProperty, RowGapProperty, PlaceSelectedRowLastProperty);
     }
 
     protected override Size MeasureOverride(Size availableSize)
@@ -34,7 +59,7 @@ public sealed class JustifiedWrapPanel : Panel
         var width = 0.0;
         foreach (var row in rows)
         {
-            height += (height > 0 ? Gap : 0) + row.Height;
+            height += (height > 0 ? EffectiveRowGap : 0) + row.Height;
             width = Math.Max(width, row.Width);
         }
         return new Size(double.IsInfinity(availableSize.Width) ? width : availableSize.Width, height);
@@ -54,7 +79,7 @@ public sealed class JustifiedWrapPanel : Panel
                 child.Arrange(new Rect(x, y, width, row.Height));
                 x += width + Gap;
             }
-            y += row.Height + Gap;
+            y += row.Height + EffectiveRowGap;
         }
         return finalSize;
     }
@@ -105,6 +130,18 @@ public sealed class JustifiedWrapPanel : Panel
             rows.Add(row);
             from = to;
         }
+
+        if (PlaceSelectedRowLast && rows.Count > 1)
+        {
+            var selectedRow = rows.FindIndex(row => row.Children.OfType<TabItem>().Any(tab => tab.IsSelected));
+            if (selectedRow >= 0 && selectedRow != rows.Count - 1)
+            {
+                var row = rows[selectedRow];
+                rows.RemoveAt(selectedRow);
+                rows.Add(row);
+            }
+        }
+
         return rows;
     }
 

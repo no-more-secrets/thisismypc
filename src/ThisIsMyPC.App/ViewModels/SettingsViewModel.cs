@@ -41,6 +41,11 @@ public sealed partial class SettingToggleItemViewModel : ViewModelBase
             _settings.SetApp(_key, value ? "1" : "0");
         else
             _settings.SetModule(_moduleId, _key, value ? "1" : "0");
+        if (_moduleId is null && _key == AppSettingKeys.TrayMode)
+        {
+            _settings.SetApp(AppSettingKeys.CloseAction, value ? "tray" : "exit");
+            _settings.SetApp(AppSettingKeys.MinimizeAction, "taskbar");
+        }
     }
 }
 
@@ -159,6 +164,11 @@ public sealed partial class SettingsViewModel : ViewModelBase
     private SettingsImportPreview? _pendingImport;
 
     public ObservableCollection<SettingsSectionViewModel> Sections { get; } = [];
+    public SettingsSectionViewModel GeneralSection => Sections[0];
+    public SettingsSectionViewModel BackgroundSection => Sections[1];
+    public IReadOnlyList<SettingsSectionViewModel> GeneralSections => [GeneralSection];
+    public IReadOnlyList<SettingsSectionViewModel> BackgroundSections => [BackgroundSection];
+    public IReadOnlyList<SettingsSectionViewModel> ModuleSections => Sections.Skip(2).ToList();
 
     /// <summary>Owner Mode service lifecycle section; null when unavailable (tests).</summary>
     public OwnerModeSectionViewModel? OwnerMode { get; }
@@ -198,18 +208,6 @@ public sealed partial class SettingsViewModel : ViewModelBase
                     [new("dark", "Dark"), new("light", "Light"), new("system", "System")],
                     settings.GetApp(AppSettingKeys.Theme, "dark"),
                     applyTheme),
-                new SettingChoiceItemViewModel(
-                    settings, null, AppSettingKeys.CloseAction,
-                    "When I close the window",
-                    "Tray choice requires Tray mode below.",
-                    [new("exit", "Exit the app"), new("tray", "Keep running in the tray"), new("taskbar", "Minimize to taskbar")],
-                    settings.GetApp(AppSettingKeys.CloseAction, "exit")),
-                new SettingChoiceItemViewModel(
-                    settings, null, AppSettingKeys.MinimizeAction,
-                    "When I minimize the window",
-                    "Tray choice requires Tray mode below.",
-                    [new("taskbar", "Minimize to taskbar"), new("tray", "Minimize to tray")],
-                    settings.GetApp(AppSettingKeys.MinimizeAction, "taskbar")),
                 new SettingToggleItemViewModel(
                     settings, null, AppSettingKeys.DyslexiaFont,
                     "Dyslexia-friendly font",
@@ -226,7 +224,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
                 new SettingToggleItemViewModel(
                     settings, null, AppSettingKeys.TrayMode,
                     "Tray mode",
-                    "Shows a tray icon and unlocks the tray options above.",
+                    "Keep the app running in the tray when you close its window.",
                     settings.GetAppBool(AppSettingKeys.TrayMode, false)),
                 new SettingToggleItemViewModel(
                     settings, null, AppSettingKeys.AutoStart,

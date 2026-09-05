@@ -988,6 +988,38 @@
                                      ]
                      },
                      {
+                         "id":  "ep:FileExplorerCommandUI",
+                         "name":  "Control Interface",
+                         "description":  "Choose the toolbar and address bar that File Explorer uses. ExplorerPatcher offers all four choices on this release.",
+                         "group":  "",
+                         "page":  "File Explorer",
+                         "section":  "FileExplorer",
+                         "key":  "HKCU\\Software\\ExplorerPatcher",
+                         "value":  "FileExplorerCommandUI",
+                         "kind":  "choice",
+                         "default":  0,
+                         "restart":  true,
+                         "condition":  "",
+                         "options":  [
+                                         {
+                                             "value":  0,
+                                             "name":  "Windows 11 Command Bar (default)"
+                                         },
+                                         {
+                                             "value":  4,
+                                             "name":  "Windows 11 Command Bar (classic Address Bar)"
+                                         },
+                                         {
+                                             "value":  1,
+                                             "name":  "Windows 10 Ribbon"
+                                         },
+                                         {
+                                             "value":  2,
+                                             "name":  "Windows 7 Command Bar"
+                                         }
+                                     ]
+                     },
+                     {
                          "id":  "ep:DisableImmersiveContextMenu",
                          "name":  "Use immersive style for Windows 10 context menus",
                          "description":  "Draw Windows 10 style right-click menus with the larger touch-friendly look. Off uses the compact classic menu. New windows only.",

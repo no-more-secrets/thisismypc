@@ -1,6 +1,7 @@
 using ThisIsMyPC.App.ViewModels;
 using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Modules.Shell.Models;
+using ThisIsMyPC.Modules.Shell.Services;
 
 namespace ThisIsMyPC.Integration.Tests.ViewModels;
 
@@ -82,5 +83,33 @@ public sealed class ShellChoiceSettingViewModelTests
 
         Assert.False(combining.HasPendingChange);
         Assert.Equal(0, combining.SelectedOption?.Value);
+    }
+
+    [Fact]
+    public async Task ExplorerPatcher_choice_restores_its_staged_selection_after_navigation()
+    {
+        var pending = new PendingChangesService();
+        var registry = new Fakes.FakeRegistryService();
+        var setting = ExplorerPatcherCatalog.Entries.First(s => s.RegistryValueName == "FileExplorerCommandUI");
+        var scan = MakeScanData() with
+        {
+            ExplorerPatcherInstalled = true,
+            ExplorerPatcherSettings = [setting],
+        };
+        using var first = new ShellViewModel(scan, pending, registry);
+        var firstChoice = Assert.Single(first.FileExplorerPatcherGroups).Choices.Single();
+
+        firstChoice.SelectedOption = firstChoice.Options.First(option => option.Value == 2);
+        await WaitForStagingAsync(pending, 1);
+
+        using var revisited = new ShellViewModel(scan, pending, registry);
+        var restored = Assert.Single(revisited.FileExplorerPatcherGroups).Choices.Single();
+        Assert.Equal(2, restored.SelectedOption?.Value);
+        Assert.True(restored.HasPendingChange);
+        Assert.Single(pending.PendingGroups);
+
+        pending.DiscardAll();
+        Assert.Equal(0, restored.SelectedOption?.Value);
+        Assert.False(restored.HasPendingChange);
     }
 }

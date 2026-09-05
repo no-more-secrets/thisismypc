@@ -1,31 +1,36 @@
 using ThisIsMyPC.App.Services;
+using ThisIsMyPC.Core.Settings;
 
 namespace ThisIsMyPC.Integration.Tests.Services;
 
 public class WindowBehaviorPolicyTests
 {
     [Theory]
-    // Defaults: full terminate, zero background footprint
-    [InlineData(false, "exit", CloseDecision.Terminate)]
-    [InlineData(true, "exit", CloseDecision.Terminate)]
-    // Tray close only when tray mode is on — otherwise fall back to terminate
-    [InlineData(true, "tray", CloseDecision.HideToTray)]
-    [InlineData(false, "tray", CloseDecision.Terminate)]
-    // Taskbar close is tray-independent
-    [InlineData(false, "taskbar", CloseDecision.MinimizeToTaskbar)]
-    [InlineData(true, "taskbar", CloseDecision.MinimizeToTaskbar)]
-    // Unknown/corrupt value degrades to the safe default
-    [InlineData(true, "banana", CloseDecision.Terminate)]
-    public void DecideClose_Matrix(bool trayMode, string closeAction, CloseDecision expected)
-        => Assert.Equal(expected, WindowBehaviorPolicy.DecideClose(trayMode, closeAction));
+    [InlineData(false, CloseDecision.Terminate)]
+    [InlineData(true, CloseDecision.HideToTray)]
+    public void DecideClose_UsesTrayMode(bool trayMode, CloseDecision expected)
+        => Assert.Equal(expected, WindowBehaviorPolicy.DecideClose(trayMode));
 
-    [Theory]
-    [InlineData(false, "taskbar", MinimizeDecision.Taskbar)]
-    [InlineData(true, "taskbar", MinimizeDecision.Taskbar)]
-    [InlineData(true, "tray", MinimizeDecision.HideToTray)]
-    // Tray minimize without tray mode falls back to taskbar
-    [InlineData(false, "tray", MinimizeDecision.Taskbar)]
-    [InlineData(true, "banana", MinimizeDecision.Taskbar)]
-    public void DecideMinimize_Matrix(bool trayMode, string minimizeAction, MinimizeDecision expected)
-        => Assert.Equal(expected, WindowBehaviorPolicy.DecideMinimize(trayMode, minimizeAction));
+    [Fact]
+    public void NormalizeLegacySettings_MakesWindowActionsConsistent()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"tipc-window-{Guid.NewGuid():N}.json");
+        try
+        {
+            var settings = new SettingsService(path);
+            settings.Initialize();
+            settings.SetApp(AppSettingKeys.TrayMode, "1");
+            settings.SetApp(AppSettingKeys.CloseAction, "exit");
+            settings.SetApp(AppSettingKeys.MinimizeAction, "tray");
+
+            WindowBehaviorPolicy.NormalizeLegacySettings(settings);
+
+            Assert.Equal("tray", settings.GetApp(AppSettingKeys.CloseAction, ""));
+            Assert.Equal("taskbar", settings.GetApp(AppSettingKeys.MinimizeAction, ""));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
 }

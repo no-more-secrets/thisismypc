@@ -1,11 +1,12 @@
 using ThisIsMyPC.Core.Search;
 using ThisIsMyPC.Core.Services;
+using ThisIsMyPC.Modules.Shell.Changes;
 
 namespace ThisIsMyPC.Modules.Shell.Services;
 
 // Search inventories for the custom-view Shell-family modules (5-3). Explorer
-// preferences are derived from the live reader (like the card modules); the taskbar /
-// classic-shell toggles predate the reader catalog, so they stay listed by hand.
+// preferences are derived from the live reader (like the card modules); the taskbar
+// toggles and ExplorerPatcher control interface stay listed by hand.
 
 public sealed class ExplorerSearchContributor : ISearchSettingsContributor
 {
@@ -39,8 +40,8 @@ public sealed class ExplorerSearchContributor : ISearchSettingsContributor
             ModuleId, "classic-context-menu", "Classic context menu",
             "Restore the Windows 10 style full right-click menu.", ["InprocServer32", "context menu", "right click"]));
         entries.Add(new SearchEntry(
-            ModuleId, "classic-command-bar", "Use classic command bar",
-            "Restore the classic ribbon-style command bar.", ["command bar", "ribbon"]));
+            ModuleId, ExplorerPatcherChangeFactory.SettingIdPrefix + "FileExplorerCommandUI", "Control Interface",
+            "Choose the File Explorer toolbar and address bar.", ["command bar", "ribbon", "address bar"]));
 
         return entries;
     }

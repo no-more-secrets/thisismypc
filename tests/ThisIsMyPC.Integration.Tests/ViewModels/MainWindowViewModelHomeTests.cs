@@ -47,21 +47,6 @@ public sealed class MainWindowViewModelHomeTests
     }
 
     [Fact]
-    public async Task Home_QuickActions_ListAvailableModules()
-    {
-        var vm = CreateViewModel("ModuleA", "ModuleB");
-        await vm.InitializeAsync();
-
-        var home = Assert.IsType<HomeViewModel>(vm.CurrentContent);
-        Assert.Equal(["ModuleA", "ModuleB"], home.QuickActions.Select(a => a.Name).Order());
-        // Regression note (InvalidDataException "Invalid double value" at render):
-        // module Icon values are lookup KEYS, not path markup — quick-action geometry
-        // must resolve through SidebarItemViewModel.IconGeometry's key mapping.
-        // Cannot be asserted here: geometry parsing needs a render platform that
-        // headless tests lack, which is also why resolution is lazy.
-    }
-
-    [Fact]
     public async Task NavigateToModule_ClearsHomeActive()
     {
         var vm = CreateViewModel();
@@ -90,16 +75,4 @@ public sealed class MainWindowViewModelHomeTests
         Assert.IsType<HomeViewModel>(vm.CurrentContent);
     }
 
-    [Fact]
-    public async Task QuickAction_NavigatesToModule()
-    {
-        var vm = CreateViewModel();
-        await vm.InitializeAsync();
-        var home = Assert.IsType<HomeViewModel>(vm.CurrentContent);
-
-        home.QuickActions.Single().OpenCommand.Execute(null);
-
-        Assert.False(vm.IsHomeActive);
-        Assert.True(vm.SidebarGroups.SelectMany(g => g.Items).Single().IsActive);
-    }
 }

@@ -28,6 +28,15 @@ Windows Update 5, Power 1) + 5 built-in sets (59 entries) + the enumerative modu
 - Usage and limitations: docs/region-review.md.
 - Fixed high-DPI top-left crop: source bounds now use physical bitmap pixels; regression coverage includes 100-200% capture scaling.
 
+## Annotation feedback: DONE (2026-09-05)
+
+- Fig. 1: replace the classic command-bar boolean with the ExplorerPatcher command-interface choices and preserve pending-change behavior.
+- Fig. 2: shared tabs use a bright selected surface connected to content, with dimmer unselected tabs.
+- Fig. 3: Home uses the available width, improves system identity, removes redundant module shortcuts, and groups activity into informative cards.
+- Fig. 4: preset cards use shared selection styling and reserve space beside the scrollbar.
+- Validation: 1,613 CI-safe tests passed; Release build passed. Both themes and reported window geometry were inspected.
+- Fig. 6 replaces deleted fig. 5: Settings uses cards and shared tabs. Minimize goes to the taskbar; close exits unless tray mode is enabled.
+
 ## 0. Housekeeping: DONE 2026-08-29
 
 - `NotificationSettingsReader` deleted; its unique coverage migrated to Annoyances:

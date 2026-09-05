@@ -2,6 +2,7 @@ using ThisIsMyPC.App.ViewModels;
 using ThisIsMyPC.Core.Changes;
 using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Modules.Shell.Models;
+using ThisIsMyPC.Modules.Shell.Services;
 
 namespace ThisIsMyPC.Integration.Tests.ViewModels;
 
@@ -37,7 +38,7 @@ public sealed class ShellViewModelTests
         var registryService = new Fakes.FakeRegistryService();
         var vm = new ShellViewModel(MakeScanData(), pendingService, registryService);
 
-        Assert.Equal(3, vm.FileExplorerSettings.Count); // 2 preferences + command bar toggle
+        Assert.Equal(2, vm.FileExplorerSettings.Count);
     }
 
     [Fact]
@@ -118,48 +119,45 @@ public sealed class ShellViewModelTests
     }
 
     [Fact]
-    public void Empty_preferences_produces_command_bar_toggle_only()
+    public void Empty_preferences_produces_no_native_file_explorer_rows()
     {
         var pendingService = new PendingChangesService();
         var registryService = new Fakes.FakeRegistryService();
         var scanData = MakeScanData(prefs: []);
         var vm = new ShellViewModel(scanData, pendingService, registryService);
 
-        Assert.Single(vm.FileExplorerSettings); // command bar toggle is always present
-        Assert.Equal("Use classic command bar", vm.FileExplorerSettings[0].Label);
+        Assert.Empty(vm.FileExplorerSettings);
     }
 
     [Fact]
-    public void Command_bar_toggle_appears_in_explorer_settings()
+    public void Control_interface_choice_appears_with_ExplorerPatcher()
     {
         var pendingService = new PendingChangesService();
         var registryService = new Fakes.FakeRegistryService();
-        var vm = new ShellViewModel(MakeScanData(), pendingService, registryService);
+        var controlInterface = ExplorerPatcherCatalog.Entries.First(s => s.RegistryValueName == "FileExplorerCommandUI")
+            with { CurrentValue = 4 };
+        var scan = MakeScanData() with
+        {
+            ExplorerPatcherInstalled = true,
+            ExplorerPatcherSettings = [controlInterface],
+        };
+        var vm = new ShellViewModel(scan, pendingService, registryService);
 
-        var commandBarToggle = vm.FileExplorerSettings[^1]; // last explorer setting
-        Assert.Equal("Use classic command bar", commandBarToggle.Label);
-        Assert.Contains("classic", commandBarToggle.Description, StringComparison.OrdinalIgnoreCase);
+        var choice = Assert.Single(vm.FileExplorerPatcherGroups).Choices.Single();
+        Assert.Equal("Control Interface", choice.Label);
+        Assert.Equal([0, 4, 1, 2], choice.Options.Select(option => option.Value));
+        Assert.Equal(4, choice.SelectedOption?.Value);
     }
 
     [Fact]
-    public void Command_bar_toggle_reflects_scan_state_enabled()
+    public void Control_interface_choice_is_hidden_without_ExplorerPatcher()
     {
         var pendingService = new PendingChangesService();
         var registryService = new Fakes.FakeRegistryService();
-        var scanData = MakeScanData(taskbar: new TaskbarSettings(1, true, false, true));
+        var setting = ExplorerPatcherCatalog.Entries.First(s => s.RegistryValueName == "FileExplorerCommandUI");
+        var scanData = MakeScanData() with { ExplorerPatcherSettings = [setting] };
         var vm = new ShellViewModel(scanData, pendingService, registryService);
 
-        Assert.True(vm.FileExplorerSettings[^1].IsEnabled); // classic command bar enabled
-    }
-
-    [Fact]
-    public void Command_bar_toggle_reflects_scan_state_disabled()
-    {
-        var pendingService = new PendingChangesService();
-        var registryService = new Fakes.FakeRegistryService();
-        var scanData = MakeScanData(taskbar: new TaskbarSettings(1, true, false, false));
-        var vm = new ShellViewModel(scanData, pendingService, registryService);
-
-        Assert.False(vm.FileExplorerSettings[^1].IsEnabled); // modern command bar (default)
+        Assert.False(vm.ShowFileExplorerPatcher);
     }
 }

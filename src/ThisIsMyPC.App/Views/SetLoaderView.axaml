@@ -8,6 +8,9 @@
              x:DataType="vm:SetLoaderViewModel">
 
     <UserControl.Styles>
+        <!-- A preset card is a button whose only paint is the inner card
+             body: the stock button hover and press washes stay off the
+             square presenter, or they would peek past the rounded card. -->
         <Style Selector="Button.set-card">
             <Setter Property="Padding" Value="0" />
             <Setter Property="Background" Value="Transparent" />
@@ -16,15 +19,45 @@
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="Margin" Value="0,0,0,8" />
         </Style>
+        <Style Selector="Button.set-card /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+        <Style Selector="Button.set-card:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="Button.set-card:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <!-- The card body wears the shared clickable states: Surface at
+             rest, the control hover wash and strong outline under the
+             pointer, the pressed tint on click, and the same active tint
+             and accent ring the sidebar and dropdown rows use when chosen.
+             A chosen card keeps its tint under the pointer. -->
         <Style Selector="Border.set-card-body">
-            <Setter Property="Background" Value="{DynamicResource RaisedBrush}" />
+            <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource OutlineBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="8" />
             <Setter Property="Padding" Value="12" />
         </Style>
+        <Style Selector="Button.set-card:pointerover Border.set-card-body">
+            <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource OutlineStrongBrush}" />
+        </Style>
+        <Style Selector="Button.set-card:pressed Border.set-card-body">
+            <Setter Property="Background" Value="{DynamicResource ControlPressedBrush}" />
+        </Style>
         <Style Selector="Border.set-card-body.selected">
-            <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+            <Setter Property="Background" Value="{DynamicResource SidebarItemActiveBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentOutlineBrush}" />
+        </Style>
+        <Style Selector="Button.set-card:pointerover Border.set-card-body.selected">
+            <Setter Property="Background" Value="{DynamicResource SidebarItemActiveBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentOutlineBrush}" />
+        </Style>
+        <Style Selector="Button.set-card:pressed Border.set-card-body.selected">
+            <Setter Property="Background" Value="{DynamicResource SidebarItemActiveBrush}" />
         </Style>
     </UserControl.Styles>
 
@@ -58,11 +91,12 @@
 
     <Grid ColumnDefinitions="320,24,*">
 
-        <!-- Set browser -->
+        <!-- Set browser. The 16 right margin is the standard content edge
+             beside the overlay scrollbar, so the thumb never sits on a card. -->
         <ScrollViewer Grid.Column="0"
                       HorizontalScrollBarVisibility="Disabled"
                       VerticalScrollBarVisibility="Auto">
-            <StackPanel Spacing="4">
+            <StackPanel Spacing="4" Margin="0,0,16,0">
                 <TextBlock Text="No presets found. Built-in presets ship with the application; your own go in %ProgramData%\ThisIsMyPC\sets."
                            FontSize="13"
                            TextWrapping="Wrap"
@@ -116,7 +150,7 @@
                         BorderThickness="0,1,0,0"
                         Padding="12,10"
                         CornerRadius="8"
-                        Margin="0,12,0,0">
+                        Margin="0,12,16,0">
                     <DockPanel>
                         <Button DockPanel.Dock="Right"
                                 Classes="apply-bar-apply"
@@ -133,7 +167,7 @@
 
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                               VerticalScrollBarVisibility="Auto">
-                <ItemsControl ItemsSource="{Binding PreviewGroups}">
+                <ItemsControl ItemsSource="{Binding PreviewGroups}" Margin="0,0,16,0">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:SetPreviewGroupViewModel">
                             <StackPanel Spacing="6" Margin="0,0,0,16">

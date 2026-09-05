@@ -89,13 +89,14 @@
     # is the knob for "most useful first"; retune it freely.
     RowOrder = @{
         # File Explorer
-        'DisableImmersiveContextMenu' = 10   # pairs with the classic context menu
-        'LegacyFileTransferDialog'    = 20
-        'UseClassicDriveGrouping'     = 30
-        'HideIconAndTitleInExplorer'  = 40
-        'HideExplorerSearchBar'       = 50
-        'ShrinkExplorerAddressBar'    = 60
-        'MicaEffectOnTitlebar'        = 70
+        'FileExplorerCommandUI'       = 10
+        'DisableImmersiveContextMenu' = 20   # pairs with the classic context menu
+        'LegacyFileTransferDialog'    = 30
+        'UseClassicDriveGrouping'     = 40
+        'HideIconAndTitleInExplorer'  = 50
+        'HideExplorerSearchBar'       = 60
+        'ShrinkExplorerAddressBar'    = 70
+        'MicaEffectOnTitlebar'        = 80
         # General, main run: the keyboard and sound tweaks are all niche, ordered gently
         'DisableWinFHotkey'           = 10
         'DisableOfficeHotkeys'        = 20
@@ -186,6 +187,7 @@
         'WeatherContentsMode'             = 'One line, or two lines when the taskbar is tall enough.'
         'WeatherZoomFactor'               = 'Scale of the widget''s contents.'
         # File Explorer
+        'FileExplorerCommandUI'           = 'Choose the toolbar and address bar that File Explorer uses. ExplorerPatcher offers all four choices on this release.'
         'LegacyFileTransferDialog'        = 'Copy and move files with the Windows 7 progress dialog instead of the newer one with the speed graph.'
         'UseClassicDriveGrouping'         = 'Group drives in This PC the Windows 7 way (hard disks, removable drives, network locations) instead of one Devices and drives list.'
         'DisableImmersiveContextMenu'     = 'Draw Windows 10 style right-click menus with the larger touch-friendly look. Off uses the compact classic menu. New windows only.'

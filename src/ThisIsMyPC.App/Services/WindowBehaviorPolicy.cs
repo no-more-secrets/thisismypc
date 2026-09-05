@@ -2,34 +2,26 @@ using ThisIsMyPC.Core.Settings;
 
 namespace ThisIsMyPC.App.Services;
 
-public enum CloseDecision { Terminate, HideToTray, MinimizeToTaskbar }
-
-public enum MinimizeDecision { Taskbar, HideToTray }
+public enum CloseDecision { Terminate, HideToTray }
 
 /// <summary>
-/// Pure window-behavior decisions (9-1). Tray-dependent choices fall back to the
-/// non-tray behavior whenever tray mode is off; the app must never hide itself with
-/// no way back.
+/// Close hides the window only when tray mode is enabled. Minimize always uses the
+/// taskbar and is left to the window manager.
 /// </summary>
 public static class WindowBehaviorPolicy
 {
-    public static CloseDecision DecideClose(bool trayModeEnabled, string closeAction) => closeAction switch
+    public static CloseDecision DecideClose(bool trayModeEnabled) =>
+        trayModeEnabled ? CloseDecision.HideToTray : CloseDecision.Terminate;
+
+    public static CloseDecision DecideClose(ISettingsService settings) =>
+        DecideClose(settings.GetAppBool(AppSettingKeys.TrayMode, false));
+
+    public static void NormalizeLegacySettings(ISettingsService settings)
     {
-        "tray" when trayModeEnabled => CloseDecision.HideToTray,
-        "taskbar" => CloseDecision.MinimizeToTaskbar,
-        _ => CloseDecision.Terminate,
-    };
-
-    public static MinimizeDecision DecideMinimize(bool trayModeEnabled, string minimizeAction) =>
-        minimizeAction == "tray" && trayModeEnabled
-            ? MinimizeDecision.HideToTray
-            : MinimizeDecision.Taskbar;
-
-    public static CloseDecision DecideClose(ISettingsService settings) => DecideClose(
-        settings.GetAppBool(AppSettingKeys.TrayMode, false),
-        settings.GetApp(AppSettingKeys.CloseAction, "exit"));
-
-    public static MinimizeDecision DecideMinimize(ISettingsService settings) => DecideMinimize(
-        settings.GetAppBool(AppSettingKeys.TrayMode, false),
-        settings.GetApp(AppSettingKeys.MinimizeAction, "taskbar"));
+        var closeAction = settings.GetAppBool(AppSettingKeys.TrayMode, false) ? "tray" : "exit";
+        if (settings.GetApp(AppSettingKeys.CloseAction, "exit") != closeAction)
+            settings.SetApp(AppSettingKeys.CloseAction, closeAction);
+        if (settings.GetApp(AppSettingKeys.MinimizeAction, "taskbar") != "taskbar")
+            settings.SetApp(AppSettingKeys.MinimizeAction, "taskbar");
+    }
 }

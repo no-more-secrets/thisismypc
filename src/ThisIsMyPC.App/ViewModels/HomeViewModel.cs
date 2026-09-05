@@ -1,45 +1,34 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
-using Avalonia.Media;
 using CommunityToolkit.Mvvm.Input;
 using ThisIsMyPC.Core.Services;
 
 namespace ThisIsMyPC.App.ViewModels;
 
-/// <summary>One Quick Actions entry: an available module the user can jump to.</summary>
-public sealed partial class QuickActionViewModel : ViewModelBase
-{
-    private readonly Action _navigate;
-    private readonly Func<Geometry> _iconGeometryFactory;
-    private Geometry? _cachedGeometry;
-
-    public QuickActionViewModel(string name, Func<Geometry> iconGeometryFactory, Action navigate)
-    {
-        Name = name;
-        _iconGeometryFactory = iconGeometryFactory;
-        _navigate = navigate;
-    }
-
-    public string Name { get; }
-
-    /// <summary>
-    /// Geometry resolved through the sidebar item's icon-key mapping (raw
-    /// Module.Info.Icon is a KEY like "shell", not path markup). Resolved lazily:
-    /// Geometry parsing needs a rendering platform, which headless tests lack;
-    /// only real rendering may evaluate this.
-    /// </summary>
-    public Geometry IconGeometry => _cachedGeometry ??= _iconGeometryFactory();
-
-    [RelayCommand]
-    private void Open() => _navigate();
-}
-
-/// <summary>One Recent Activity row: an applied change batch from history.</summary>
+/// <summary>One recent activity card built from an applied change batch.</summary>
 public sealed class RecentActivityItemViewModel
 {
     public required string DisplayName { get; init; }
     public required string AppliedAtDisplay { get; init; }
+    public required string ModuleDisplay { get; init; }
+    public required string OperationCountDisplay { get; init; }
     public required bool IsReverted { get; init; }
+    public required IReadOnlyList<RecentActivityDetailViewModel> Details { get; init; }
+    public string StatusDisplay => IsReverted ? "Restored" : "Applied";
+}
+
+/// <summary>One setting transition inside a recent activity batch.</summary>
+public sealed class RecentActivityDetailViewModel
+{
+    public required string DisplayName { get; init; }
+    public required string ChangeDisplay { get; init; }
+}
+
+/// <summary>Recent activity cards applied on one calendar day.</summary>
+public sealed class RecentActivityGroupViewModel
+{
+    public required string DateHeader { get; init; }
+    public ObservableCollection<RecentActivityItemViewModel> Items { get; } = [];
 }
 
 /// <summary>
@@ -56,10 +45,9 @@ public sealed partial class HomeViewModel : ViewModelBase
     private readonly IChangeHistoryService _historyService;
 
     public SystemIdentity Identity { get; }
-    public IReadOnlyList<QuickActionViewModel> QuickActions { get; }
-    public ObservableCollection<RecentActivityItemViewModel> RecentActivity { get; } = [];
+    public ObservableCollection<RecentActivityGroupViewModel> RecentActivityGroups { get; } = [];
 
-    public bool HasRecentActivity => RecentActivity.Count > 0;
+    public bool HasRecentActivity => RecentActivityGroups.Count > 0;
 
     /// <summary>First-launch capability summary (5-2); null after dismissal.</summary>
     public FirstLaunchBannerViewModel? FirstLaunchBanner { get; }
@@ -69,14 +57,12 @@ public sealed partial class HomeViewModel : ViewModelBase
 
     public HomeViewModel(
         SystemIdentity identity,
-        IReadOnlyList<QuickActionViewModel> quickActions,
         IChangeHistoryService historyService,
         FirstLaunchBannerViewModel? firstLaunchBanner = null,
         MonitoringSectionViewModel? monitoringSection = null,
         DriftSectionViewModel? driftSection = null)
     {
         Identity = identity;
-        QuickActions = quickActions;
         _historyService = historyService;
         FirstLaunchBanner = firstLaunchBanner;
         MonitoringSection = monitoringSection;
@@ -94,22 +80,34 @@ public sealed partial class HomeViewModel : ViewModelBase
             var entries = await _historyService.GetRecentGroupedAsync(RecentActivityLimit)
                 .ConfigureAwait(true);
 
-            RecentActivity.Clear();
+            RecentActivityGroups.Clear();
             var batches = entries
                 .GroupBy(e => e.GroupId ?? e.Id.ToString(CultureInfo.InvariantCulture))
                 .Take(RecentActivityLimit);
 
-            foreach (var batch in batches)
+            foreach (var dateGroup in batches.GroupBy(batch => DateHeader(batch.First().AppliedAt)))
             {
-                var primary = batch.First();
-                var names = batch.Select(e => e.DisplayName).Distinct().ToList();
-                RecentActivity.Add(new RecentActivityItemViewModel
+                var group = new RecentActivityGroupViewModel { DateHeader = dateGroup.Key };
+                foreach (var batch in dateGroup)
                 {
-                    DisplayName = names.Count == 1 ? names[0] : string.Join(", ", names),
-                    AppliedAtDisplay = primary.AppliedAt.LocalDateTime
-                        .ToString("MMM d, HH:mm", CultureInfo.CurrentCulture),
-                    IsReverted = batch.All(e => e.RevertedAt.HasValue),
-                });
+                    var primary = batch.First();
+                    var names = batch.Select(e => e.DisplayName).Distinct().ToList();
+                    group.Items.Add(new RecentActivityItemViewModel
+                    {
+                        DisplayName = names.Count == 1 ? names[0] : string.Join(", ", names),
+                        AppliedAtDisplay = primary.AppliedAt.LocalDateTime.ToString("h:mm tt", CultureInfo.CurrentCulture),
+                        ModuleDisplay = FormatModule(primary.ModuleId),
+                        OperationCountDisplay = batch.Count() == 1 ? "1 operation" : $"{batch.Count()} operations",
+                        IsReverted = batch.All(e => e.RevertedAt.HasValue),
+                        Details = batch.Take(3).Select(entry => new RecentActivityDetailViewModel
+                        {
+                            DisplayName = entry.DisplayName,
+                            ChangeDisplay = FormatChange(entry),
+                        }).ToList(),
+                    });
+                }
+
+                RecentActivityGroups.Add(group);
             }
 
         }
@@ -122,5 +120,26 @@ public sealed partial class HomeViewModel : ViewModelBase
         {
             OnPropertyChanged(nameof(HasRecentActivity));
         }
+    }
+
+    private static string DateHeader(DateTimeOffset appliedAt)
+    {
+        var date = appliedAt.LocalDateTime.Date;
+        var today = DateTime.Today;
+        if (date == today) return "Today";
+        if (date == today.AddDays(-1)) return "Yesterday";
+        return date.ToString("MMMM d, yyyy", CultureInfo.CurrentCulture);
+    }
+
+    private static string FormatModule(string moduleId)
+        => string.IsNullOrWhiteSpace(moduleId) ? "System" : moduleId.Replace('_', ' ');
+
+    private static string FormatChange(Core.Changes.ChangeHistoryEntry entry)
+    {
+        var before = entry.BeforeDisplay ?? entry.BeforeValue;
+        var after = entry.AfterDisplay ?? entry.AfterValue;
+        return !string.IsNullOrWhiteSpace(before) && !string.IsNullOrWhiteSpace(after)
+            ? $"{before} to {after}"
+            : entry.Category.ToString();
     }
 }

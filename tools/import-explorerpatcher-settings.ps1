@@ -63,6 +63,10 @@ $AlreadyOurs = @(
     'TaskbarAl', 'TaskbarDa', 'SearchboxTaskbarMode', 'TaskbarGlomLevel'
 )
 
+# ExplorerPatcher marks pseudo-values with a Virtualized_ prefix. Its GUI
+# translates these to real values under HKCU\Software\ExplorerPatcher.
+$ImportedVirtualizedValues = @('FileExplorerCommandUI')
+
 # ExplorerPatcher pages that uninstall it or just show version text.
 $SkipPages = @('Settings and uninstall', 'About')
 
@@ -220,9 +224,19 @@ foreach ($rawLine in ($settingsReg -split "`r?`n")) {
     }
 
     # A value line closes whatever control was being described.
-    if ($line -match '^"([^"]+)"=(.*)$') {
+    $virtualized = $line -match '^;"Virtualized_\{[^}]+\}_(.+)"=(.*)$'
+    if ($virtualized -and $ImportedVirtualizedValues -notcontains $Matches[1]) {
+        $pendingKind = $null
+        $pendingOptions.Clear()
+        continue
+    }
+    if ($virtualized -or $line -match '^"([^"]+)"=(.*)$') {
         $valueName = $Matches[1]
         $data = $Matches[2].Trim()
+
+        if ($virtualized) {
+            $key = 'HKCU\Software\ExplorerPatcher'
+        }
 
         if (-not $pendingKind) { continue }
         $kind = $pendingKind

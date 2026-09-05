@@ -16,6 +16,9 @@ public sealed class HomeViewModelTests
         Cpu = "Test CPU",
         Gpu = "Test GPU",
         Ram = "32 GB",
+        Manufacturer = "Test Manufacturer",
+        Model = "Test Model",
+        SystemType = "64-bit operating system, x64-based processor",
     };
 
     private static ChangeHistoryEntry Entry(long id, string? groupId, string name, DateTimeOffset at) => new()
@@ -44,34 +47,28 @@ public sealed class HomeViewModelTests
         for (var i = 3; i <= 9; i++)
             entries.Add(Entry(i, null, $"Setting {i}", now.AddMinutes(-i)));
 
-        var vm = new HomeViewModel(Identity(), [], new FakeChangeHistoryServiceWithEntries(entries));
+        var vm = new HomeViewModel(Identity(), new FakeChangeHistoryServiceWithEntries(entries));
         await vm.LoadRecentActivityCommand.ExecuteAsync(null);
 
-        Assert.Equal(5, vm.RecentActivity.Count);
+        Assert.Equal(5, vm.RecentActivityGroups.SelectMany(group => group.Items).Count());
         Assert.True(vm.HasRecentActivity);
-        Assert.Equal("Copilot", vm.RecentActivity[0].DisplayName); // g1 collapsed to one row
+        var first = vm.RecentActivityGroups.SelectMany(group => group.Items).First();
+        Assert.Equal("Copilot", first.DisplayName);
+        Assert.Equal("Test", first.ModuleDisplay);
+        Assert.Equal("2 operations", first.OperationCountDisplay);
+        Assert.Equal("Applied", first.StatusDisplay);
+        Assert.Equal(2, first.Details.Count);
+        Assert.All(first.Details, detail => Assert.Equal("0 to 1", detail.ChangeDisplay));
     }
 
     [Fact]
     public async Task NoHistory_EmptyStateExposed()
     {
-        var vm = new HomeViewModel(Identity(), [], new FakeChangeHistoryService());
+        var vm = new HomeViewModel(Identity(), new FakeChangeHistoryService());
         await vm.LoadRecentActivityCommand.ExecuteAsync(null);
 
-        Assert.Empty(vm.RecentActivity);
+        Assert.Empty(vm.RecentActivityGroups);
         Assert.False(vm.HasRecentActivity);
     }
 
-    [Fact]
-    public void QuickAction_InvokesNavigateCallback()
-    {
-        var navigated = false;
-        // Geometry factory must stay unevaluated headless (needs a render platform).
-        var action = new QuickActionViewModel(
-            "Explorer", () => null!, () => navigated = true);
-
-        action.OpenCommand.Execute(null);
-
-        Assert.True(navigated);
-    }
 }

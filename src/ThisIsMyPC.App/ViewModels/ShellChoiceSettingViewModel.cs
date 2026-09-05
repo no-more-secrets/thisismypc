@@ -59,7 +59,8 @@ public sealed partial class ShellChoiceSettingViewModel : ViewModelBase, IDispos
         int currentValue,
         IPendingChangesService pendingChangesService,
         Func<int, ChangeDescriptor> changeFactory,
-        Func<int> readRegistryValue)
+        Func<int> readRegistryValue,
+        string? rehydrateSettingId = null)
     {
         _pendingChangesService = pendingChangesService;
         _changeFactory = changeFactory;
@@ -76,6 +77,36 @@ public sealed partial class ShellChoiceSettingViewModel : ViewModelBase, IDispos
         _suppressStaging = false;
 
         _pendingChangesService.PropertyChanged += OnPendingChangesPropertyChanged;
+
+        if (rehydrateSettingId is not null)
+            RehydrateStagedGroup(rehydrateSettingId);
+    }
+
+    private void RehydrateStagedGroup(string settingId)
+    {
+        var existing = _pendingChangesService.PendingGroups.FirstOrDefault(group =>
+            group.Changes.Count == 1 && group.Changes[0].SettingId == settingId);
+        if (existing is null)
+            return;
+
+        var change = existing.Changes[0];
+        if (!int.TryParse(change.AfterValue, System.Globalization.CultureInfo.InvariantCulture, out var pendingValue))
+            return;
+        if (pendingValue == _registryValue)
+        {
+            _pendingChangesService.Unstage(existing.GroupId);
+            return;
+        }
+
+        var pendingOption = Options.FirstOrDefault(option => option.Value == pendingValue);
+        if (pendingOption is null)
+            return;
+
+        _stagedGroupId = existing.GroupId;
+        _suppressStaging = true;
+        SelectedOption = pendingOption;
+        _suppressStaging = false;
+        UpdatePendingState();
     }
 
     partial void OnSelectedOptionChanged(ShellChoiceOption? value)

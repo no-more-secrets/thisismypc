@@ -129,6 +129,20 @@ public sealed class ExplorerPatcherSettingsReaderTests
         Assert.Equal([0, 2], on25H2.Options.Select(o => o.Value));
     }
 
+    [Theory]
+    [InlineData(Build23H2)]
+    [InlineData(Build25H2)]
+    public void Control_interface_matches_the_four_choices_in_the_pinned_release(int build)
+    {
+        var setting = ReaderFor(build).ReadAll().First(s => s.RegistryValueName == "FileExplorerCommandUI");
+
+        Assert.Equal("Control Interface", setting.DisplayName);
+        Assert.Equal([0, 4, 1, 2], setting.Options.Select(option => option.Value));
+        Assert.Equal(0, setting.DefaultValue);
+        Assert.True(setting.IsAvailable);
+        Assert.True(setting.RequiresExplorerRestart);
+    }
+
     [Fact]
     public void ExplorerPatchers_own_taskbar_is_not_offered_without_its_DLL_for_this_build()
     {

@@ -1189,15 +1189,11 @@ public partial class MainWindowViewModel : ViewModelBase
         ContentTitle = "Home";
         ContentDescription = "System overview and recent activity";
 
-        var quickActions = SidebarGroups
-            .SelectMany(g => g.Items)
-            .Where(i => i.IsAvailable)
-            .Select(i => new QuickActionViewModel(i.Name, () => i.IconGeometry, () => NavigateToModule(i)))
-            .ToList();
-
         var home = new HomeViewModel(
-            new SystemIdentityService(_registryService).Read(),
-            quickActions,
+            new SystemIdentityService(
+                _registryService,
+                new Interop.Win32.InstalledMemoryProvider(),
+                new Interop.Win32.Display.GpuIdentityProvider()).Read(),
             _changeHistoryService,
             BuildFirstLaunchBanner(),
             BuildMonitoringSection(),

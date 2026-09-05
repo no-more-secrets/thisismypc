@@ -73,6 +73,28 @@ public class ShellTaskbarShotTests
     }
 
     [AvaloniaFact]
+    public void FileExplorerSection_RendersExplorerPatcherControlInterface()
+    {
+        var queue = new PendingChangesService();
+        var setting = ExplorerPatcherCatalog.Entries.First(entry =>
+            entry.RegistryValueName == "FileExplorerCommandUI");
+        var scan = CreateScanData() with
+        {
+            ExplorerPatcherInstalled = true,
+            ExplorerPatcherSettings = [setting],
+        };
+        var viewModel = new ShellViewModel(scan, queue, Registry);
+        using var session = UiSession.ForView(new ShellView(), viewModel, "shell-file-explorer", height: 1100);
+
+        session.ClickText("File Explorer");
+        session.Screenshot("control-interface-choice");
+
+        Assert.True(session.IsTextVisible("Control Interface"));
+        var choice = Assert.Single(viewModel.FileExplorerPatcherGroups).Choices.Single();
+        Assert.Equal(4, choice.Options.Count);
+    }
+
+    [AvaloniaFact]
     public async Task ChoosingADifferentSearchMode_StagesAModifyChange()
     {
         var queue = new PendingChangesService();

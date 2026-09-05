@@ -151,6 +151,7 @@ public partial class App : Application
     private static void InitializeSettings(Core.Settings.ISettingsService settingsService)
     {
         settingsService.Initialize();
+        WindowBehaviorPolicy.NormalizeLegacySettings(settingsService);
         if (settingsService.LoadError is { } error)
             Log.Warn("Settings load: {Error}", error);
         if (settingsService.SettingsWereReset)

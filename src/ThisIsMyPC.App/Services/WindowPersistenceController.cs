@@ -12,32 +12,37 @@ namespace ThisIsMyPC.App.Services;
 public sealed class WindowPersistenceController : IDisposable
 {
     private readonly Window _window;
-    private readonly IClassicDesktopStyleApplicationLifetime _desktop;
+    private readonly Action _shutdown;
     private readonly ISettingsService _settings;
     private readonly Func<bool> _trayAvailable;
 
     private bool _exitRequested;
+    private bool _disposed;
 
     public WindowPersistenceController(
         Window window,
         IClassicDesktopStyleApplicationLifetime desktop,
         ISettingsService settings,
         Func<bool>? trayAvailable = null)
+        : this(window, () => desktop.Shutdown(), settings, trayAvailable) { }
+
+    internal WindowPersistenceController(Window window, Action shutdown, ISettingsService settings,
+        Func<bool>? trayAvailable = null)
     {
         _window = window;
-        _desktop = desktop;
+        _shutdown = shutdown;
         _settings = settings;
         _trayAvailable = trayAvailable ?? (() => true);
 
         _window.Closing += OnClosing;
-        _window.PropertyChanged += OnWindowPropertyChanged;
+        _settings.SettingChanged += OnSettingChanged;
     }
 
     /// <summary>Tray "Exit": bypass the hide-to-tray interception and really terminate.</summary>
     public void RequestExit()
     {
         _exitRequested = true;
-        _desktop.Shutdown();
+        _shutdown();
     }
 
     public void ShowWindow()
@@ -61,30 +66,27 @@ public sealed class WindowPersistenceController : IDisposable
                 break;
             case CloseDecision.HideToTray:
                 break; // fall through to terminate
-            case CloseDecision.MinimizeToTaskbar:
-                e.Cancel = true;
-                _window.WindowState = WindowState.Minimized;
-                break;
             case CloseDecision.Terminate:
             default:
                 break; // stock close; zero background footprint
         }
     }
 
-    private void OnWindowPropertyChanged(object? sender, Avalonia.AvaloniaPropertyChangedEventArgs e)
+    private void OnSettingChanged(object? sender, SettingChangedEventArgs e)
     {
-        if (e.Property != Window.WindowStateProperty)
+        if (e is not { Scope: SettingChangedEventArgs.AppScope, Key: AppSettingKeys.TrayMode, Value: "0" })
             return;
-        if (e.NewValue is not WindowState.Minimized)
-            return;
-
-        if (WindowBehaviorPolicy.DecideMinimize(_settings) == MinimizeDecision.HideToTray && _trayAvailable())
-            _window.Hide();
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            if (!_disposed && !_exitRequested && !_window.IsVisible)
+                ShowWindow();
+        });
     }
 
     public void Dispose()
     {
+        _disposed = true;
         _window.Closing -= OnClosing;
-        _window.PropertyChanged -= OnWindowPropertyChanged;
+        _settings.SettingChanged -= OnSettingChanged;
     }
 }

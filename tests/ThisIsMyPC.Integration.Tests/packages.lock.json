@@ -280,6 +280,7 @@
           "Microsoft.Extensions.DependencyInjection": "[10.0.0, )",
           "NLog": "[6.2.0, )",
           "ThisIsMyPC.Core": "[1.0.0, )",
+          "ThisIsMyPC.Interop.Win32": "[1.0.0, )",
           "ThisIsMyPC.Ipc.Contracts": "[1.0.0, )",
           "ThisIsMyPC.Modules.Annoyances": "[1.0.0, )",
           "ThisIsMyPC.Modules.Display": "[1.0.0, )",

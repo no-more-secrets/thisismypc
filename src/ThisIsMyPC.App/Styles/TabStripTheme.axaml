@@ -8,12 +8,24 @@
          the same edge a search box or toolbar above it uses; the selected
          content below keeps the full width (its scrollbar lane needs it).
          The well's top edge is the strip's first pixel, so a tab page's
-         TabControl still carries Margin="0,4,0,0" and nothing else. -->
+         TabControl still carries Margin="0,4,0,0" and nothing else.
+
+         Browser-style tabs: the well pads 6 above the chips and 0 below.
+         An unselected chip floats 6px clear of the well's floor (its own
+         bottom margin); the selected chip reaches 1px past the floor and
+         paints the page's own fill over the well's bottom line, so it
+         reads as part of the content below. Multi-row strips arrange the
+         selected tab's complete visual row last, without changing item order.
+         RowGap is zero because each floating tab already supplies 6px below it.
+         Height stays 42 for one row:
+         1 + 6 + 34 + 1 (the row is a 28 chip plus its 6 float). -->
     <ControlTheme x:Key="{x:Type TabControl}" TargetType="TabControl">
         <Setter Property="Padding" Value="0" />
         <Setter Property="ItemsPanel">
             <ItemsPanelTemplate>
-                <controls:JustifiedWrapPanel Gap="6" />
+                <controls:JustifiedWrapPanel Gap="6"
+                                               RowGap="0"
+                                               PlaceSelectedRowLast="True" />
             </ItemsPanelTemplate>
         </Setter>
         <Setter Property="Template">
@@ -25,7 +37,7 @@
                             BorderBrush="{DynamicResource OutlineBrush}"
                             BorderThickness="1"
                             CornerRadius="6"
-                            Padding="6"
+                            Padding="6,6,6,0"
                             Margin="0,0,16,0">
                         <ItemsPresenter Name="PART_ItemsPresenter"
                                         ItemsPanel="{TemplateBinding ItemsPanel}" />
@@ -41,20 +53,24 @@
         </Setter>
     </ControlTheme>
 
-    <!-- Tab header as a bordered chip: Surface fill and the shared outline,
-         13px secondary text; hover lifts to the control hover wash and
-         primary text; the selected chip carries the sidebar's active tint
-         with the accent outline. The panel spaces the chips; a chip has no
-         margin of its own. -->
+    <!-- Tab header as a browser tab. Unselected: a dim chip floating in the
+         well (no fill, the shared outline, 13px secondary text, 6px above
+         the floor); hover lifts it to the control hover wash and primary
+         text. Selected: the page's Raised fill with square bottom corners,
+         no bottom border, and a 1px overhang that covers the well's bottom
+         line, so the outline runs from the chip's sides straight into the
+         content. Its 7px bottom padding keeps the label level with the
+         floating chips. No accent anywhere: the connection is the cue.
+         The panel spaces the chips; a chip's only margin is its float. -->
     <ControlTheme x:Key="{x:Type TabItem}" TargetType="TabItem">
         <Setter Property="FontSize" Value="13" />
         <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
-        <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+        <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderBrush" Value="{DynamicResource OutlineBrush}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="4" />
         <Setter Property="Padding" Value="10,0" />
-        <Setter Property="Margin" Value="0" />
+        <Setter Property="Margin" Value="0,0,0,6" />
         <Setter Property="MinHeight" Value="28" />
         <Setter Property="HorizontalContentAlignment" Value="Center" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
@@ -83,11 +99,16 @@
         </Style>
         <Style Selector="^:selected">
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
-            <Setter Property="Background" Value="{DynamicResource SidebarItemActiveBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource AccentOutlineBrush}" />
+            <Setter Property="Background" Value="{DynamicResource RaisedBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource OutlineBrush}" />
+            <Setter Property="BorderThickness" Value="1,1,1,0" />
+            <Setter Property="CornerRadius" Value="4,4,0,0" />
+            <Setter Property="Padding" Value="10,0,10,7" />
+            <Setter Property="Margin" Value="0,0,0,-1" />
         </Style>
         <Style Selector="^:selected:pointerover">
-            <Setter Property="Background" Value="{DynamicResource SidebarItemActiveBrush}" />
+            <Setter Property="Background" Value="{DynamicResource RaisedBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource OutlineBrush}" />
         </Style>
         <Style Selector="^:disabled">
             <Setter Property="Foreground" Value="{DynamicResource TextDisabledBrush}" />

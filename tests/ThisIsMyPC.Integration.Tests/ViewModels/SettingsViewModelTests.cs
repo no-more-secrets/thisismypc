@@ -55,6 +55,12 @@ public sealed class SettingsViewModelTests : IDisposable
         tray.IsOn = true;
 
         Assert.True(_settings.GetAppBool(AppSettingKeys.TrayMode, fallback: false));
+        Assert.Equal("tray", _settings.GetApp(AppSettingKeys.CloseAction, ""));
+        Assert.Equal("taskbar", _settings.GetApp(AppSettingKeys.MinimizeAction, ""));
+
+        tray.IsOn = false;
+
+        Assert.Equal("exit", _settings.GetApp(AppSettingKeys.CloseAction, ""));
     }
 
     [Fact]
@@ -99,15 +105,12 @@ public sealed class SettingsViewModelTests : IDisposable
     }
 
     [Fact]
-    public void StoredPreferences_SeedTheInitialControlState()
+    public void LegacyWindowActions_AreNotShown()
     {
         _settings.SetApp(AppSettingKeys.CloseAction, "tray");
         var vm = new SettingsViewModel(_settings, []);
 
-        var close = vm.Sections.SelectMany(s => s.Items)
-            .OfType<SettingChoiceItemViewModel>()
-            .Single(c => c.DisplayName == "When I close the window");
-
-        Assert.Equal("tray", close.Selected!.Value);
+        Assert.DoesNotContain(vm.Sections.SelectMany(s => s.Items)
+            .OfType<SettingChoiceItemViewModel>(), c => c.DisplayName.StartsWith("When I", StringComparison.Ordinal));
     }
 }

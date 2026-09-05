@@ -13,7 +13,6 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, IDispos
 {
     private static readonly string AdvancedKeyPath = Modules.Shell.ShellRegistryPaths.AdvancedKeyPath;
     private static readonly string ClassicContextMenuKeyPath = Modules.Shell.ShellRegistryPaths.ClassicContextMenuKeyPath;
-    private static readonly string CommandBarKeyPath = Modules.Shell.ShellRegistryPaths.CommandBarKeyPath;
 
     /// <summary>Catalog id of the ExplorerPatcher installer card on the General tab.</summary>
     public const string ExplorerPatcherCatalogId = "explorerpatcher";
@@ -76,7 +75,8 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, IDispos
     private IEnumerable<ShellSettingViewModel> ToggleRows =>
         GeneralSettings.Concat(FileExplorerSettings).Concat(TaskbarSettings).Concat(DesktopSettings).Concat(StartMenuSettings);
 
-    private IEnumerable<ShellChoiceSettingViewModel> ChoiceRows => TaskbarChoiceSettings;
+    private IEnumerable<ShellChoiceSettingViewModel> ChoiceRows =>
+        TaskbarChoiceSettings.Concat(PatcherChoices);
 
     private ObservableCollection<ExplorerPatcherGroupViewModel> PatcherGroupsFor(ShellSection section) => section switch
     {
@@ -181,7 +181,8 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, IDispos
                     captured.EffectiveValue,
                     pendingChangesService,
                     changeFactory: newValue => ExplorerPatcherChangeFactory.Create(captured, ReadLive(), newValue),
-                    readRegistryValue: () => ReadLive() ?? captured.DefaultValue));
+                    readRegistryValue: () => ReadLive() ?? captured.DefaultValue,
+                    rehydrateSettingId: ExplorerPatcherChangeFactory.SettingIdPrefix + captured.RegistryValueName));
             }
             else
             {
@@ -202,21 +203,7 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, IDispos
             }
         }
 
-        // Command bar style (Explorer visual, not a DWord preference; CLSID override)
         var taskbar = scanData.Taskbar;
-        FileExplorerSettings.Add(new ShellSettingViewModel(
-            label: "Use classic command bar",
-            description: "Show the classic ribbon/command bar instead of the modern Windows 11 toolbar in File Explorer (requires Explorer restart)",
-            systemPath: CommandBarKeyPath,
-            isEnabled: taskbar.ClassicCommandBar,
-            pendingChangesService: pendingChangesService,
-            changeFactory: enable => TaskbarChangeFactory.CreateCommandBarToggle(taskbar, enable),
-            readRegistryState: () =>
-            {
-                var result = registryService.KeyExists(CommandBarKeyPath);
-                return result.IsSuccess && result.Value;
-            }));
-
         // Taskbar settings
 
         TaskbarSettings.Add(new ShellSettingViewModel(

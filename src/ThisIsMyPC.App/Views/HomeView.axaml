@@ -10,7 +10,7 @@
     <!-- Read-only dashboard (10.5): system identity, quick actions, recent activity -->
     <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                   VerticalScrollBarVisibility="Auto">
-        <StackPanel MaxWidth="800" HorizontalAlignment="Left" Margin="0,4,16,24" Spacing="16">
+        <StackPanel HorizontalAlignment="Stretch" Margin="0,4,16,24" Spacing="16">
 
             <!-- 5-2: first-launch capability summary (dismissible, once) -->
             <Border Classes="card" CornerRadius="8" Padding="20,16"
@@ -156,58 +156,44 @@
                 </StackPanel>
             </Border>
 
-            <!-- System Identity -->
-            <Border Classes="card" CornerRadius="8" Padding="20,16">
-                <StackPanel Spacing="8">
-                    <TextBlock Text="{Binding Identity.MachineName}"
-                               FontWeight="SemiBold" FontSize="18"
-                               Foreground="{DynamicResource TextPrimaryBrush}" />
-                    <Grid ColumnDefinitions="Auto,16,*" RowDefinitions="Auto,4,Auto,4,Auto,4,Auto">
-                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Windows" FontSize="13" Foreground="{DynamicResource TextTertiaryBrush}" />
-                        <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" Spacing="6">
-                            <TextBlock Text="{Binding Identity.WindowsEdition}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
-                            <TextBlock Text="{Binding Identity.WindowsVersion}" FontSize="13" Foreground="{DynamicResource TextTertiaryBrush}" />
+            <!-- System overview -->
+            <Grid ColumnDefinitions="*,16,*">
+                <Border Grid.Column="0" Classes="card" CornerRadius="8" Padding="20,16">
+                    <StackPanel Spacing="12">
+                        <StackPanel Spacing="2">
+                            <TextBlock Text="Device" FontSize="12" Foreground="{DynamicResource TextTertiaryBrush}" />
+                            <TextBlock Text="{Binding Identity.MachineName}" FontWeight="SemiBold" FontSize="20"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
                         </StackPanel>
-                        <TextBlock Grid.Row="2" Grid.Column="0" Text="CPU" FontSize="13" Foreground="{DynamicResource TextTertiaryBrush}" />
-                        <TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding Identity.Cpu}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
-                        <TextBlock Grid.Row="4" Grid.Column="0" Text="GPU" FontSize="13" Foreground="{DynamicResource TextTertiaryBrush}" />
-                        <TextBlock Grid.Row="4" Grid.Column="2" Text="{Binding Identity.Gpu}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" />
-                        <TextBlock Grid.Row="6" Grid.Column="0" Text="RAM" FontSize="13" Foreground="{DynamicResource TextTertiaryBrush}" />
-                        <TextBlock Grid.Row="6" Grid.Column="2" Text="{Binding Identity.Ram}" FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
-                    </Grid>
-                </StackPanel>
-            </Border>
-
-            <!-- Quick Actions -->
-            <Border Classes="card" CornerRadius="8" Padding="20,16">
-                <StackPanel Spacing="10">
-                    <TextBlock Text="Quick Actions"
-                               FontWeight="SemiBold" FontSize="16"
-                               Foreground="{DynamicResource TextPrimaryBrush}" />
-                    <ItemsControl ItemsSource="{Binding QuickActions}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="vm:QuickActionViewModel">
-                                <Button Classes="apply-bar-discard"
-                                        Command="{Binding OpenCommand}"
-                                        Margin="0,0,8,8"
-                                        Padding="12,8">
-                                    <StackPanel Orientation="Horizontal" Spacing="8">
-                                        <PathIcon Width="16" Height="16"
-                                                  Foreground="{DynamicResource TextSecondaryBrush}"
-                                                  Data="{Binding IconGeometry}" />
-                                        <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
-                                    </StackPanel>
-                                </Button>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
-            </Border>
+                        <Grid ColumnDefinitions="112,*" RowDefinitions="Auto,8,Auto,8,Auto,8,Auto,8,Auto">
+                            <TextBlock Text="Manufacturer" Foreground="{DynamicResource TextTertiaryBrush}" />
+                            <TextBlock Grid.Column="1" Text="{Binding Identity.Manufacturer}" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <TextBlock Grid.Row="2" Text="Model" Foreground="{DynamicResource TextTertiaryBrush}" />
+                            <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Identity.Model}" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <TextBlock Grid.Row="4" Text="Processor" Foreground="{DynamicResource TextTertiaryBrush}" />
+                            <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding Identity.Cpu}" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <TextBlock Grid.Row="6" Text="Installed RAM" Foreground="{DynamicResource TextTertiaryBrush}" />
+                            <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding Identity.Ram}" Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <TextBlock Grid.Row="8" Text="System type" Foreground="{DynamicResource TextTertiaryBrush}" />
+                            <TextBlock Grid.Row="8" Grid.Column="1" Text="{Binding Identity.SystemType}" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="2" Classes="card" CornerRadius="8" Padding="20,16">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="Windows specifications" FontWeight="SemiBold" FontSize="16"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <Grid ColumnDefinitions="88,*" RowDefinitions="Auto,8,Auto,8,Auto">
+                            <TextBlock Text="Edition" Foreground="{DynamicResource TextTertiaryBrush}" />
+                            <TextBlock Grid.Column="1" Text="{Binding Identity.WindowsEdition}" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <TextBlock Grid.Row="2" Text="Version" Foreground="{DynamicResource TextTertiaryBrush}" />
+                            <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Identity.WindowsVersion}" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <TextBlock Grid.Row="4" Text="Graphics" Foreground="{DynamicResource TextTertiaryBrush}" />
+                            <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding Identity.Gpu}" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </Grid>
 
             <!-- Recent Activity -->
             <Border Classes="card" CornerRadius="8" Padding="20,16">
@@ -219,26 +205,43 @@
                                FontSize="12"
                                Foreground="{DynamicResource TextTertiaryBrush}"
                                IsVisible="{Binding !HasRecentActivity}" />
-                    <ItemsControl ItemsSource="{Binding RecentActivity}">
+                    <ItemsControl ItemsSource="{Binding RecentActivityGroups}">
                         <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="vm:RecentActivityItemViewModel">
-                                <DockPanel Margin="0,2">
-                                    <TextBlock DockPanel.Dock="Right"
-                                               Text="{Binding AppliedAtDisplay}"
-                                               FontSize="12"
-                                               Foreground="{DynamicResource TextTertiaryBrush}"
-                                               Margin="8,0,0,0" />
-                                    <TextBlock DockPanel.Dock="Right"
-                                               Text="Restored"
-                                               FontSize="12"
-                                               Foreground="{DynamicResource WarningBrush}"
-                                               Margin="8,0,0,0"
-                                               IsVisible="{Binding IsReverted}" />
-                                    <TextBlock Text="{Binding DisplayName}"
-                                               FontSize="13"
-                                               Foreground="{DynamicResource TextSecondaryBrush}"
-                                               TextTrimming="CharacterEllipsis" />
-                                </DockPanel>
+                            <DataTemplate x:DataType="vm:RecentActivityGroupViewModel">
+                                <StackPanel Spacing="8" Margin="0,2,0,8">
+                                    <TextBlock Text="{Binding DateHeader}" FontSize="12" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource TextTertiaryBrush}" />
+                                    <ItemsControl ItemsSource="{Binding Items}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:RecentActivityItemViewModel">
+                                                <Border Classes="card" Padding="14,10" Margin="0,0,0,8">
+                                                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,5,Auto,6,Auto">
+                                                        <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold"
+                                                                   Foreground="{DynamicResource TextPrimaryBrush}" TextTrimming="CharacterEllipsis" />
+                                                        <TextBlock Grid.Column="1" Text="{Binding AppliedAtDisplay}" Margin="12,0,0,0"
+                                                                   FontSize="12" Foreground="{DynamicResource TextTertiaryBrush}" />
+                                                        <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8">
+                                                            <Border Classes="badge"><TextBlock Text="{Binding ModuleDisplay}" /></Border>
+                                                            <TextBlock Text="{Binding OperationCountDisplay}" Foreground="{DynamicResource TextTertiaryBrush}" />
+                                                        </StackPanel>
+                                                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding StatusDisplay}" Margin="12,0,0,0"
+                                                                   FontSize="12" Foreground="{DynamicResource SuccessBrush}" />
+                                                        <ItemsControl Grid.Row="4" Grid.ColumnSpan="2" ItemsSource="{Binding Details}">
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate x:DataType="vm:RecentActivityDetailViewModel">
+                                                                    <Grid ColumnDefinitions="*,Auto" Margin="0,2">
+                                                                        <TextBlock Text="{Binding DisplayName}" Foreground="{DynamicResource TextSecondaryBrush}" TextTrimming="CharacterEllipsis" />
+                                                                        <TextBlock Grid.Column="1" Text="{Binding ChangeDisplay}" Margin="16,0,0,0" Foreground="{DynamicResource TextTertiaryBrush}" />
+                                                                    </Grid>
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
