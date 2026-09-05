@@ -230,6 +230,14 @@ dotnet test tests/ThisIsMyPC.App.UiTests --configuration Release --filter "Categ
 - The harness evolves with the UI/UX chapter: as the visual feedback and
   interaction loop improves, update this section to match.
 
+### Shared region review (Debug builds)
+
+Ctrl+Shift+A opens the region review overlay. Sam drags a rectangle and describes
+it by voice or chat. Read the current capture with tools/read-region-selection.ps1;
+check active, then inspect imagePath as an image. The record includes bounds and
+capture time. Never infer the selected region from a stale record.
+Escape clears the selection. See docs/region-review.md for the prototype limits.
+
 ### UI review checklist (learned the hard way, 2026-09-02)
 
 Run over every page before showing it; each line cost a correction once.

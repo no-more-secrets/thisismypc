@@ -15,6 +15,7 @@ anything here; `planning/refinement-backlog.md` is the plan and status.
 | [sets-schema.md](sets-schema.md) | JSON schema for tweak set definitions, built-in and user. |
 | [testing/context-menu-diagnostics.md](testing/context-menu-diagnostics.md) | Diagnostic and integration tests that dump the real registry state for context menus. UI verification itself uses the headless sight harness in `tests/ThisIsMyPC.App.UiTests`. |
 | [agentic-tooling.md](agentic-tooling.md) | Claude Code skills, MCP servers, and IDE setup used on this codebase. |
+| [region-review.md](region-review.md) | Debug-only region selection for shared visual review, with automatic local capture. |
 
 ## Planning and release
 

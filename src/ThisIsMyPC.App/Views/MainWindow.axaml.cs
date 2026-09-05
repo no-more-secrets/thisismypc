@@ -2,6 +2,9 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using ThisIsMyPC.App.ViewModels;
+#if DEBUG
+using ThisIsMyPC.App.Diagnostics;
+#endif
 
 namespace ThisIsMyPC.App.Views;
 
@@ -11,6 +14,7 @@ public partial class MainWindow : Window
     private bool _wasAboveThreshold = true;
 #if DEBUG
     private int _debugChangeCounter;
+    private RegionReviewOverlay? _regionReviewOverlay;
 #endif
 
     public MainWindow()
@@ -23,7 +27,10 @@ public partial class MainWindow : Window
         AddHandler(KeyDownEvent, OnSearchKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         HookDisplayChanges();
 #if DEBUG
+        AddHandler(KeyDownEvent, OnRegionReviewKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         KeyDown += OnDebugKeyDown;
+        Deactivated += OnRegionReviewDeactivated;
+        Closed += OnRegionReviewClosed;
 #endif
     }
 
@@ -34,6 +41,10 @@ public partial class MainWindow : Window
     /// </summary>
     private void OnGlobalPointerPressed(object? sender, PointerPressedEventArgs e)
     {
+#if DEBUG
+        if (_regionReviewOverlay?.IsReviewActive == true)
+            return;
+#endif
         if (e.Source is not Visual source)
             return;
 
@@ -98,6 +109,10 @@ public partial class MainWindow : Window
 
     private void OnSearchKeyDown(object? sender, KeyEventArgs e)
     {
+#if DEBUG
+        if (_regionReviewOverlay?.IsReviewActive == true)
+            return;
+#endif
         if (e.Key != Key.Escape || DataContext is not MainWindowViewModel vm)
             return;
         if (!vm.IsSearchOpen && !vm.IsAboutOpen)
@@ -170,6 +185,10 @@ public partial class MainWindow : Window
 
     private void OnWindowPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
     {
+#if DEBUG
+        if (e.Property == BoundsProperty && _regionReviewOverlay?.IsReviewActive == true)
+            _regionReviewOverlay.Clear();
+#endif
         if (e.Property != BoundsProperty || DataContext is not MainWindowViewModel vm)
             return;
 
@@ -185,6 +204,54 @@ public partial class MainWindow : Window
     }
 
 #if DEBUG
+    internal RegionReviewOverlay? RegionReviewOverlay => _regionReviewOverlay;
+
+    internal void StartRegionReview(string? outputDirectory = null)
+    {
+        if (_regionReviewOverlay is null)
+        {
+            _regionReviewOverlay = new RegionReviewOverlay(this, outputDirectory);
+            if (Content is not Control appContent)
+                throw new InvalidOperationException("MainWindow content must be a Control for region review.");
+            var root = new Panel();
+            Content = null;
+            root.Children.Add(appContent);
+            _regionReviewOverlay.SetValue(Panel.ZIndexProperty, int.MaxValue);
+            root.Children.Add(_regionReviewOverlay);
+            Content = root;
+            root.UpdateLayout();
+        }
+
+        _regionReviewOverlay.Start();
+    }
+
+    private void OnRegionReviewKeyDown(object? sender, KeyEventArgs e)
+    {
+        var isShortcut = e.Key == Key.A
+            && e.KeyModifiers.HasFlag(KeyModifiers.Control)
+            && e.KeyModifiers.HasFlag(KeyModifiers.Shift);
+        if (isShortcut)
+        {
+            if (_regionReviewOverlay?.IsReviewActive == true)
+                _regionReviewOverlay.Clear();
+            else
+                StartRegionReview();
+            e.Handled = true;
+            return;
+        }
+
+        if (_regionReviewOverlay?.IsReviewActive != true)
+            return;
+
+        if (e.Key == Key.Escape)
+            _regionReviewOverlay.Clear();
+        e.Handled = true;
+    }
+
+    internal void OnRegionReviewDeactivated(object? sender, EventArgs e) => _regionReviewOverlay?.CancelDrag();
+
+    private void OnRegionReviewClosed(object? sender, EventArgs e) => _regionReviewOverlay?.Clear();
+
     private void OnDebugKeyDown(object? sender, KeyEventArgs e)
     {
         if (DataContext is not MainWindowViewModel vm)

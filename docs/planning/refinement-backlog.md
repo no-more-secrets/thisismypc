@@ -10,6 +10,14 @@ Current coverage baseline: ~40 fixed toggles (Explorer 13, Annoyances 21 cards,
 Windows Update 5, Power 1) + 5 built-in sets (59 entries) + the enumerative modules
 (Context Menus, Environment, Startup & Services, Power grid).
 
+## Development tooling: region review prototype (2026-09-05)
+
+- Debug-only Ctrl+Shift+A region selection freezes the current window for shared visual review.
+- A drag records bounds, capture time, process/build identity, and an annotated PNG locally.
+- Escape clears the record; tools/read-region-selection.ps1 retrieves the current selection for agents.
+- No network listener or production feature. Native voice workflow validation remains pending.
+- Usage and limitations: docs/region-review.md.
+
 ## 0. Housekeeping: DONE 2026-08-29
 
 - `NotificationSettingsReader` deleted; its unique coverage migrated to Annoyances:
