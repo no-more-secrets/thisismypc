@@ -208,6 +208,50 @@ public sealed class RegionReviewOverlayTests
         Assert.False(inactive.RootElement.GetProperty("active").GetBoolean());
     }
 
+    [AvaloniaFact]
+    public void HighDpiFrame_PreservesFarEdgeContentAndSelectionCoordinates()
+    {
+        foreach (var scale in new[] { 1.0, 1.25, 1.5, 1.75, 2.0 })
+        {
+            var canvas = new Canvas { Background = Avalonia.Media.Brushes.White };
+            var landmark = new Border
+            {
+                Width = 50, Height = 50, Background = Avalonia.Media.Brushes.Lime,
+            };
+            Canvas.SetLeft(landmark, 570);
+            Canvas.SetTop(landmark, 330);
+            canvas.Children.Add(landmark);
+            var root = new Grid();
+            root.Children.Add(canvas);
+            using var session = UiSession.ForView(root, new object(), $"region-review-dpi-{scale * 100:0}", 640, 420);
+            var outputDirectory = Path.Combine(session.ShotDirectory, "records");
+            var overlay = new RegionReviewOverlay(session.Window, outputDirectory);
+            root.Children.Add(overlay);
+            session.Pump();
+            overlay.CaptureOverride = () =>
+            {
+                var frame = new Avalonia.Media.Imaging.RenderTargetBitmap(
+                    new PixelSize((int)(640 * scale), (int)(420 * scale)), new Vector(96 * scale, 96 * scale));
+                frame.Render(session.Window);
+                return frame;
+            };
+            overlay.Start();
+            session.Pump();
+            session.Window.MouseDown(new Point(550, 310), MouseButton.Left);
+            session.Window.MouseMove(new Point(630, 395));
+            session.Window.MouseUp(new Point(630, 395), MouseButton.Left);
+            session.Pump();
+            var screenshot = session.Screenshot("far-edge-selection");
+            using var displayed = SkiaSharp.SKBitmap.Decode(screenshot);
+            Assert.Equal(SkiaSharp.SKColors.Lime, displayed.GetPixel(595, 355));
+            Assert.Equal(new Rect(550, 310, 80, 85), overlay.SelectionBounds);
+            using var record = JsonDocument.Parse(File.ReadAllText(Path.Combine(outputDirectory, "latest.json")));
+            using var saved = SkiaSharp.SKBitmap.Decode(record.RootElement.GetProperty("imagePath").GetString());
+            Assert.Equal(SkiaSharp.SKColors.Lime, saved.GetPixel(595, 355));
+            Assert.Equal(550, record.RootElement.GetProperty("bounds").GetProperty("x").GetDouble());
+            overlay.Clear();
+        }
+    }
     private static string Hash(string path) =>
         Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path)));
 }

@@ -44,8 +44,16 @@ Source mapping, comments, and multiple simultaneous annotations are deferred.
 
 ## Validation
 
-Release build passed. All 1,606 CI-safe Debug tests passed.
-Four targeted region tests also passed, including the MainWindow diagnostic and keyboard shortcut.
+Release build passed. All 1,607 CI-safe Debug tests passed.
+Five targeted region tests also passed, including the MainWindow diagnostic and keyboard shortcut.
 Rendered screenshots were inspected. A separate review checked state and capture failure paths.
 Native interaction in the elevated executable, voice coordination, and mixed-monitor scaling remain untested.
 The prototype's fixed hint can cover a selection near the top edge.
+
+### Display scaling regression
+
+Bitmap source rectangles use physical pixels. The overlay destination and selection bounds use logical coordinates.
+Using Bitmap.Size as the source rectangle crops and enlarges the top-left portion above 100% scaling.
+Use the full Bitmap.PixelSize for the source rectangle.
+The regression test checks far-edge content in both the displayed and saved frames at 100%, 125%, 150%, 175%, and 200% capture DPI.
+The headless window itself remains at 100%; live monitor changes still need native verification.

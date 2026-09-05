@@ -17,6 +17,7 @@ Windows Update 5, Power 1) + 5 built-in sets (59 entries) + the enumerative modu
 - Escape clears the record; tools/read-region-selection.ps1 retrieves the current selection for agents.
 - No network listener or production feature. Native voice workflow validation remains pending.
 - Usage and limitations: docs/region-review.md.
+- Fixed high-DPI top-left crop: source bounds now use physical bitmap pixels; regression coverage includes 100-200% capture scaling.
 
 ## 0. Housekeeping: DONE 2026-08-29
 

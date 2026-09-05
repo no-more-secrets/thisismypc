@@ -188,7 +188,13 @@ internal sealed class RegionReviewOverlay : Control
     public override void Render(DrawingContext context)
     {
         if (frozenFrame is not null)
-            context.DrawImage(frozenFrame, new Rect(frozenFrame.Size), Bounds);
+        {
+            // Bitmap source rectangles are pixels; the destination remains in control DIPs.
+            // Using Bitmap.Size crops the image at display scales above 100%.
+            context.DrawImage(frozenFrame,
+                new Rect(0, 0, frozenFrame.PixelSize.Width, frozenFrame.PixelSize.Height),
+                new Rect(Bounds.Size));
+        }
 
         if (dragging || savedSelection.Width == 0)
             context.FillRectangle(ShadeBrush, Bounds);
