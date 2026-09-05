@@ -236,6 +236,7 @@ Ctrl+Shift+A toggles frozen annotation and live navigation. Each drag adds a fig
 with a stable number across pages. Badge clicks select figures; N edits a note;
 Delete removes the selected figure. Escape cancels a note editor or suspends review.
 Ctrl+Shift+Alt+A clears the whole session. Switching pages does not clear figures.
+Reopening annotation restores the saved view and visible figures for that page.
 Read tools/read-region-selection.ps1 and check active. Schema 3 figures include
 pageRoute, captureId, imagePath, bounds, and notes. Group by captureId and inspect
 each image. A suspended review still contains valid figures. Never use a stale

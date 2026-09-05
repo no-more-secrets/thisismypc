@@ -16,7 +16,7 @@ internal sealed class RegionReviewOverlay : Panel
     private static readonly IBrush SelectedBrush = new SolidColorBrush(Color.FromRgb(255, 72, 72));
     private static readonly IBrush FigureBrush = new SolidColorBrush(Color.FromRgb(255, 170, 64));
     private static readonly IBrush ErrorBrush = new SolidColorBrush(Color.FromArgb(245, 126, 20, 28));
-    private static readonly IBrush HintBrush = new SolidColorBrush(Color.FromArgb(245, 20, 20, 34));
+    private static readonly IBrush HintBrush = new SolidColorBrush(Color.FromRgb(20, 20, 34));
 
     private readonly Window window;
     private readonly RegionReviewStore store;
@@ -119,15 +119,30 @@ internal sealed class RegionReviewOverlay : Panel
         }
 
         failureMessage = null;
-        frozenFrame?.Dispose();
+        var route = pageRouteResolver();
+        currentCapture = captures.LastOrDefault(capture => capture.PageRoute == route
+            && figures.Any(figure => figure.CaptureId == capture.Id));
+        if (currentCapture is not null)
+        {
+            frozenFrame = currentCapture.Frame;
+            frozenCapturedAtUtc = currentCapture.CapturedAtUtc;
+            selectedFigureNumber = CurrentFigures.LastOrDefault()?.Number;
+            WriteExistingRecord(suspended: false);
+            Focus();
+            InvalidateVisual();
+            return;
+        }
         frozenFrame = null;
         IsVisible = false;
         try
         {
             frozenFrame = CaptureOverride?.Invoke() ?? CaptureWindow();
             frozenCapturedAtUtc = DateTime.UtcNow;
-            currentCapture = new CaptureState(Guid.NewGuid().ToString("N"), pageRouteResolver(), frozenCapturedAtUtc,
-                string.Empty, window.RenderScaling, frozenFrame.PixelSize.Width, frozenFrame.PixelSize.Height);
+            currentCapture = new CaptureState(Guid.NewGuid().ToString("N"), route, frozenCapturedAtUtc,
+                string.Empty, window.RenderScaling,
+                Math.Max(1, (int)Math.Ceiling(window.ClientSize.Width * window.RenderScaling)),
+                Math.Max(1, (int)Math.Ceiling(window.ClientSize.Height * window.RenderScaling)),
+                window.ClientSize.Width, window.ClientSize.Height, frozenFrame);
             captures.Add(currentCapture);
             selectedFigureNumber = null;
             if (figures.Count > 0)
@@ -162,9 +177,13 @@ internal sealed class RegionReviewOverlay : Panel
         activePointer = null;
         CancelNote();
         IsVisible = false;
-        frozenFrame?.Dispose();
         frozenFrame = null;
         selectedFigureNumber = null;
+        if (currentCapture is not null && !figures.Any(figure => figure.CaptureId == currentCapture.Id))
+        {
+            currentCapture.Frame.Dispose();
+            captures.Remove(currentCapture);
+        }
         currentCapture = null;
     }
 
@@ -198,7 +217,8 @@ internal sealed class RegionReviewOverlay : Panel
         activePointer = null;
         CancelNote();
         IsVisible = false;
-        frozenFrame?.Dispose();
+        foreach (var capture in captures)
+            capture.Frame.Dispose();
         frozenFrame = null;
         selectedFigureNumber = null;
         currentCapture = null;
@@ -230,13 +250,14 @@ internal sealed class RegionReviewOverlay : Panel
         drawingPresenter.Arrange(new Rect(finalSize));
         if (editorHost.IsVisible && SelectedFigure is { } figure)
         {
+            var displayedBounds = ToDisplay(figure.Bounds);
             const double width = 360;
             const double height = 138;
-            var x = Math.Clamp(figure.Bounds.X, 12, Math.Max(12, finalSize.Width - width - 12));
-            var preferredY = figure.Bounds.Bottom + 12;
+            var x = Math.Clamp(displayedBounds.X, 12, Math.Max(12, finalSize.Width - width - 12));
+            var preferredY = displayedBounds.Bottom + 12;
             var y = preferredY + height <= finalSize.Height - 12
                 ? preferredY
-                : figure.Bounds.Y - height - 12;
+                : displayedBounds.Y - height - 12;
             y = Math.Clamp(y, 60, Math.Max(60, finalSize.Height - height - 12));
             editorHost.Arrange(new Rect(x, y, width, height));
         }
@@ -253,8 +274,11 @@ internal sealed class RegionReviewOverlay : Panel
             || frozenFrame is null)
             return;
 
-        var point = Clamp(e.GetPosition(this));
-        var hitFigure = CurrentFigures.LastOrDefault(figure => BadgeBounds(figure).Contains(point));
+        var displayPoint = e.GetPosition(this);
+        if (!Viewport.Contains(displayPoint))
+            return;
+        var point = ToCapture(displayPoint);
+        var hitFigure = CurrentFigures.LastOrDefault(figure => BadgeBounds(figure).Contains(displayPoint));
         if (hitFigure is not null)
         {
             SelectFigure(hitFigure.Number);
@@ -275,7 +299,7 @@ internal sealed class RegionReviewOverlay : Panel
         e.Handled = true;
         if (!dragging)
             return;
-        dragCurrent = Clamp(e.GetPosition(this));
+        dragCurrent = ToCapture(e.GetPosition(this));
         InvalidateVisual();
     }
 
@@ -284,7 +308,7 @@ internal sealed class RegionReviewOverlay : Panel
         e.Handled = true;
         if (!dragging)
             return;
-        dragCurrent = Clamp(e.GetPosition(this));
+        dragCurrent = ToCapture(e.GetPosition(this));
         var candidate = Normalize(dragStart, dragCurrent);
         dragging = false;
         e.Pointer.Capture(null);
@@ -332,11 +356,13 @@ internal sealed class RegionReviewOverlay : Panel
 
     private void RenderOverlay(DrawingContext context)
     {
+        var viewport = Viewport;
+        context.FillRectangle(HintBrush, Bounds);
         if (frozenFrame is not null)
         {
             context.DrawImage(frozenFrame,
                 new Rect(0, 0, frozenFrame.PixelSize.Width, frozenFrame.PixelSize.Height),
-                new Rect(Bounds.Size));
+                viewport);
         }
         var currentFigures = CurrentFigures.ToArray();
         if (dragging || currentFigures.Length == 0)
@@ -345,7 +371,7 @@ internal sealed class RegionReviewOverlay : Panel
             DrawFigure(context, figure);
         if (dragging)
         {
-            var selection = Normalize(dragStart, dragCurrent);
+            var selection = ToDisplay(Normalize(dragStart, dragCurrent));
             context.FillRectangle(FillBrush, selection);
             context.DrawRectangle(new Pen(SelectedBrush, 3), selection);
         }
@@ -361,8 +387,21 @@ internal sealed class RegionReviewOverlay : Panel
     {
         var isSelected = figure.Number == selectedFigureNumber;
         var brush = isSelected ? SelectedBrush : FigureBrush;
-        context.DrawRectangle(new Pen(brush, isSelected ? 3 : 2), figure.Bounds);
+        context.DrawRectangle(new Pen(brush, isSelected ? 3 : 2), ToDisplay(figure.Bounds));
         var badge = BadgeBounds(figure);
+        context.FillRectangle(brush, badge, 12);
+        DrawText(context, figure.Number.ToString(CultureInfo.InvariantCulture),
+            new Point(badge.X + (figure.Number < 10 ? 8 : 4), badge.Y + 3));
+    }
+
+    private void DrawFigureAt(DrawingContext context, FigureState figure, Rect bounds, Size size)
+    {
+        var isSelected = figure.Number == selectedFigureNumber;
+        var brush = isSelected ? SelectedBrush : FigureBrush;
+        context.DrawRectangle(new Pen(brush, isSelected ? 3 : 2), bounds);
+        var badge = new Rect(
+            Math.Clamp(bounds.X - 12, 4, Math.Max(4, size.Width - 28)),
+            Math.Clamp(bounds.Y - 12, 54, Math.Max(54, size.Height - 28)), 24, 24);
         context.FillRectangle(brush, badge, 12);
         DrawText(context, figure.Number.ToString(CultureInfo.InvariantCulture),
             new Point(badge.X + (figure.Number < 10 ? 8 : 4), badge.Y + 3));
@@ -470,7 +509,7 @@ internal sealed class RegionReviewOverlay : Panel
                 frozenCapturedAtUtc,
                 window.Title ?? string.Empty,
                 ToBounds(selected.Bounds),
-                window.RenderScaling,
+                currentCapture.RenderScale,
                 annotatedFrame.PixelSize.Width,
                 annotatedFrame.PixelSize.Height,
                 imagePath,
@@ -533,12 +572,16 @@ internal sealed class RegionReviewOverlay : Panel
 
     private RenderTargetBitmap CaptureOverlay()
     {
-        var scale = window.RenderScaling;
-        var pixelSize = new PixelSize(
-            Math.Max(1, (int)Math.Ceiling(Bounds.Width * scale)),
-            Math.Max(1, (int)Math.Ceiling(Bounds.Height * scale)));
-        var bitmap = new RenderTargetBitmap(pixelSize, new Vector(96 * scale, 96 * scale));
-        bitmap.Render(this);
+        if (currentCapture is null)
+            throw new InvalidOperationException("No region review capture is active.");
+        var size = new Size(currentCapture.LogicalWidth, currentCapture.LogicalHeight);
+        var presenter = new ExportPresenter(this, size);
+        presenter.Measure(size);
+        presenter.Arrange(new Rect(size));
+        var bitmap = new RenderTargetBitmap(
+            new PixelSize(currentCapture.PixelWidth, currentCapture.PixelHeight),
+            new Vector(96 * currentCapture.RenderScale, 96 * currentCapture.RenderScale));
+        bitmap.Render(presenter);
         return bitmap;
     }
 
@@ -590,14 +633,54 @@ internal sealed class RegionReviewOverlay : Panel
 
     private Rect BadgeBounds(FigureState figure)
     {
-        var x = Math.Clamp(figure.Bounds.X - 12, 4, Math.Max(4, Bounds.Width - 28));
-        var y = Math.Clamp(figure.Bounds.Y - 12, 54, Math.Max(54, Bounds.Height - 28));
+        var displayed = ToDisplay(figure.Bounds);
+        var x = Math.Clamp(displayed.X - 12, 4, Math.Max(4, Bounds.Width - 28));
+        var y = Math.Clamp(displayed.Y - 12, 54, Math.Max(54, Bounds.Height - 28));
         return new Rect(x, y, 24, 24);
     }
 
-    private Point Clamp(Point point) => new(
-        Math.Clamp(point.X, 0, Bounds.Width),
-        Math.Clamp(point.Y, 0, Bounds.Height));
+    private Rect Viewport
+    {
+        get
+        {
+            if (currentCapture is null)
+                return new Rect(Bounds.Size);
+            var scale = Math.Min(Bounds.Width / currentCapture.LogicalWidth,
+                Bounds.Height / currentCapture.LogicalHeight);
+            var width = currentCapture.LogicalWidth * scale;
+            var height = currentCapture.LogicalHeight * scale;
+            return new Rect((Bounds.Width - width) / 2, (Bounds.Height - height) / 2, width, height);
+        }
+    }
+
+    private Point ToCapture(Point point)
+    {
+        if (currentCapture is null)
+            return point;
+        var viewport = Viewport;
+        return new Point(
+            Math.Clamp((point.X - viewport.X) * currentCapture.LogicalWidth / viewport.Width, 0, currentCapture.LogicalWidth),
+            Math.Clamp((point.Y - viewport.Y) * currentCapture.LogicalHeight / viewport.Height, 0, currentCapture.LogicalHeight));
+    }
+
+    private Rect ToCapture(Rect rect)
+    {
+        var topLeft = ToCapture(rect.TopLeft);
+        var bottomRight = ToCapture(rect.BottomRight);
+        return new Rect(topLeft, bottomRight);
+    }
+
+    private Rect ToDisplay(Rect rect)
+    {
+        if (currentCapture is null)
+            return rect;
+        var viewport = Viewport;
+        return new Rect(
+            viewport.X + rect.X * viewport.Width / currentCapture.LogicalWidth,
+            viewport.Y + rect.Y * viewport.Height / currentCapture.LogicalHeight,
+            rect.Width * viewport.Width / currentCapture.LogicalWidth,
+            rect.Height * viewport.Height / currentCapture.LogicalHeight);
+    }
 
     private static Rect Normalize(Point first, Point second) => new(
         Math.Min(first.X, second.X),
@@ -660,6 +743,18 @@ internal sealed class RegionReviewOverlay : Panel
         public override void Render(DrawingContext context) => owner.RenderOverlay(context);
     }
 
+    private sealed class ExportPresenter(RegionReviewOverlay owner, Size size) : Control
+    {
+        public override void Render(DrawingContext context)
+        {
+            context.DrawImage(owner.frozenFrame!,
+                new Rect(0, 0, owner.frozenFrame!.PixelSize.Width, owner.frozenFrame.PixelSize.Height),
+                new Rect(size));
+            foreach (var figure in owner.CurrentFigures)
+                owner.DrawFigureAt(context, figure, figure.Bounds, size);
+        }
+    }
+
     private sealed class FigureState(int number, string id, Rect bounds, string? note,
         string captureId, string pageRoute, DateTime capturedAtUtc, string imagePath)
     {
@@ -674,7 +769,8 @@ internal sealed class RegionReviewOverlay : Panel
     }
 
     private sealed class CaptureState(string id, string pageRoute, DateTime capturedAtUtc,
-        string imagePath, double renderScale, int pixelWidth, int pixelHeight)
+        string imagePath, double renderScale, int pixelWidth, int pixelHeight,
+        double logicalWidth, double logicalHeight, RenderTargetBitmap frame)
     {
         internal string Id { get; } = id;
         internal string PageRoute { get; } = pageRoute;
@@ -683,6 +779,9 @@ internal sealed class RegionReviewOverlay : Panel
         internal double RenderScale { get; } = renderScale;
         internal int PixelWidth { get; set; } = pixelWidth;
         internal int PixelHeight { get; set; } = pixelHeight;
+        internal double LogicalWidth { get; } = logicalWidth;
+        internal double LogicalHeight { get; } = logicalHeight;
+        internal RenderTargetBitmap Frame { get; } = frame;
     }
 }
 #endif

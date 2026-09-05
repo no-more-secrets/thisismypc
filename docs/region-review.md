@@ -29,8 +29,10 @@ Figure numbers reset only when the review session is cleared.
 The frozen view stays unchanged while the underlying app updates.
 Switching to the conversation keeps completed figures available.
 Selection input does not activate controls in the underlying app.
-Each return to annotation captures a fresh view. Figures from earlier captures remain in the session record.
-Only figures from the current capture appear on the frozen view. Earlier captures retain their own images.
+Returning to annotation restores the saved frozen view for that page, including its existing figures.
+You can select, edit, or delete those figures. Visiting another page retains the earlier page's figures.
+Saved views fit inside the current window after a resize. Figure coordinates remain tied to the original capture.
+The saved view stays frozen even if live content changes. Clear the session to capture updated content on that page.
 Separate windows and native popups are outside this prototype.
 
 ## Agent access
@@ -77,5 +79,5 @@ Each capture keeps its route even after the user navigates elsewhere.
 ## Validation
 
 The CI-safe Debug suite passes all 1,607 tests. The Release solution build passes.
-All seven targeted headless tests pass, including page changes, note saving on toggle, deletion, and capture DPI.
+All seven targeted headless tests pass, including visible restoration, resized views, deletion without ghost outlines, and capture DPI.
 Headless screenshots were inspected. Native voice interaction and live monitor changes remain untested.

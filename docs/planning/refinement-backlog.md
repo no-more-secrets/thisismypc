@@ -18,6 +18,7 @@ Windows Update 5, Power 1) + 5 built-in sets (59 entries) + the enumerative modu
 - Escape suspends review; Ctrl+Shift+Alt+A clears the session. tools/read-region-selection.ps1 retrieves all figures.
 - No network listener or production feature. Native voice workflow validation remains pending.
 - Region review: removed the persistent instruction banner so it cannot cover app content.
+- Reopening annotation restores the saved page image and visible figures, including editable notes.
 - Usage and limitations: docs/region-review.md.
 - Fixed high-DPI top-left crop: source bounds now use physical bitmap pixels; regression coverage includes 100-200% capture scaling.
 

@@ -70,6 +70,21 @@ public sealed class RegionReviewOverlayTests
         using var cleared = JsonDocument.Parse(File.ReadAllText(Path.Combine(outputDirectory, "latest.json")));
         Assert.True(cleared.RootElement.GetProperty("active").GetBoolean());
         Assert.True(cleared.RootElement.GetProperty("suspended").GetBoolean());
+
+        mainWindow.StartRegionReview(outputDirectory);
+        session.Pump();
+        Assert.Equal(new Rect(340, 150, 600, 500), overlay.SelectionBounds);
+        var restoredPath = session.Screenshot("restored-after-resize");
+        using var restored = SkiaSharp.SKBitmap.Decode(restoredPath);
+        Assert.True(restored.GetPixel(350, 150).Red > 200);
+        session.Window.MouseDown(new Point(338, 138), MouseButton.Left);
+        session.Window.MouseUp(new Point(338, 138), MouseButton.Left);
+        session.Window.KeyPressQwerty(PhysicalKey.Delete, RawInputModifiers.None);
+        session.Pump();
+        Assert.Equal(0, overlay.FigureCount);
+        var deletedPath = session.Screenshot("restored-after-delete");
+        using var deleted = SkiaSharp.SKBitmap.Decode(deletedPath);
+        Assert.True(deleted.GetPixel(600, 150).Red < 200);
     }
 
     [AvaloniaFact]
@@ -412,6 +427,7 @@ public sealed class RegionReviewOverlayTests
             using var record = JsonDocument.Parse(File.ReadAllText(Path.Combine(outputDirectory, "latest.json")));
             using var saved = SkiaSharp.SKBitmap.Decode(record.RootElement.GetProperty("imagePath").GetString());
             Assert.Equal(SkiaSharp.SKColors.Lime, saved.GetPixel(595, 355));
+            Assert.Equal((int)Math.Ceiling(640 * session.Window.RenderScaling), saved.Width);
             Assert.Equal(550, record.RootElement.GetProperty("bounds").GetProperty("x").GetDouble());
             overlay.Clear();
         }
