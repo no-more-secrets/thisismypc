@@ -25,6 +25,31 @@ public sealed class RegionReviewOverlayTests
     }
 
     [AvaloniaFact]
+    public void BottomRightPencil_AvoidsBadgeAndOpensEditor()
+    {
+        var root = new Grid();
+        using var session = UiSession.ForView(root, new object(), "region-review-pencil-edge", 640, 420);
+        var overlay = new RegionReviewOverlay(session.Window,
+            Path.Combine(session.ShotDirectory, "records"));
+        root.Children.Add(overlay);
+        session.Pump();
+        overlay.Start();
+        session.Pump();
+
+        Drag(session, new Point(619, 399), new Point(639, 419));
+        var pencil = session.Find<Button>(button => button.Name == "EditFigure1Note");
+        var badge = new Rect(607, 387, 24, 24);
+        Assert.False(pencil.Bounds.Intersects(badge));
+        session.Screenshot("bottom-right-pencil");
+        session.Click(pencil);
+        session.Pump();
+
+        Assert.True(overlay.IsEditingNote);
+        Assert.Equal(1, overlay.SelectedFigureNumber);
+        Assert.Equal(1, overlay.FigureCount);
+    }
+
+    [AvaloniaFact]
     [Trait("Category", "Diagnostic")]
     public void MainWindow_OverlaySpansBodyAndCapturesBodyDrag()
     {
@@ -77,6 +102,13 @@ public sealed class RegionReviewOverlayTests
         var restoredPath = session.Screenshot("restored-after-resize");
         using var restored = SkiaSharp.SKBitmap.Decode(restoredPath);
         Assert.True(restored.GetPixel(350, 150).Red > 200);
+        var restoredPencil = session.Find<Button>(button => button.Name == "EditFigure1Note");
+        session.Click(restoredPencil);
+        session.Pump();
+        Assert.True(overlay.IsEditingNote);
+        Assert.Equal(1, overlay.FigureCount);
+        session.Window.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
+        session.Pump();
         session.Window.MouseDown(new Point(338, 138), MouseButton.Left);
         session.Window.MouseUp(new Point(338, 138), MouseButton.Left);
         session.Window.KeyPressQwerty(PhysicalKey.Delete, RawInputModifiers.None);
@@ -248,16 +280,20 @@ public sealed class RegionReviewOverlayTests
         Assert.Equal(2, overlay.FigureCount);
         Assert.Equal(2, overlay.SelectedFigureNumber);
 
-        session.Window.KeyPressQwerty(PhysicalKey.N, RawInputModifiers.None);
+        var pencil = session.Find<Button>(button => button.Name == "EditFigure2Note");
+        session.Screenshot("pencil-affordances");
+        session.Click(pencil);
         session.Pump();
         Assert.True(overlay.IsEditingNote);
+        Assert.Equal(2, overlay.SelectedFigureNumber);
+        Assert.Equal(2, overlay.FigureCount);
         var editor = session.Find<TextBox>(box => box.Watermark as string == "Optional note for this figure");
         session.Screenshot("note-editor");
         session.Type(editor, "Tighten this spacing");
         session.ClickText("Save");
         Assert.False(overlay.IsEditingNote);
 
-        session.Window.KeyPressQwerty(PhysicalKey.N, RawInputModifiers.None);
+        session.Click(pencil);
         session.Pump();
         session.Type(editor, " but cancel this");
         session.Window.MouseMove(new Point(88, 88));

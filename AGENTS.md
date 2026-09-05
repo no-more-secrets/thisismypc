@@ -233,7 +233,7 @@ dotnet test tests/ThisIsMyPC.App.UiTests --configuration Release --filter "Categ
 ### Shared region review (Debug builds)
 
 Ctrl+Shift+A toggles frozen annotation and live navigation. Each drag adds a figure
-with a stable number across pages. Badge clicks select figures; N edits a note;
+with a stable number across pages. Badge clicks select figures; pencil clicks edit notes;
 Delete removes the selected figure. Escape cancels a note editor or suspends review.
 Ctrl+Shift+Alt+A clears the whole session. Switching pages does not clear figures.
 Reopening annotation restores the saved view and visible figures for that page.

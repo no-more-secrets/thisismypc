@@ -16,7 +16,8 @@ It freezes the current app view and records numbered rectangles, optional notes,
 
 Each new rectangle adds a figure. It does not replace the earlier figures.
 Click a figure's numbered badge to select it.
-Press N to edit its optional note. Click Save to keep the note or Cancel to discard the edit.
+Click the pencil icon on a highlight to write or edit its text note.
+Click Save to keep the note or Cancel to discard the edit. N also opens the selected figure's note.
 Typing is optional; spoken instructions can refer directly to figure numbers.
 Press Delete to remove the selected figure when the note editor is closed.
 Remaining figures keep their numbers. Deleted numbers are not reused within that review.
@@ -78,6 +79,6 @@ Each capture keeps its route even after the user navigates elsewhere.
 
 ## Validation
 
-The CI-safe Debug suite passes all 1,607 tests. The Release solution build passes.
-All seven targeted headless tests pass, including visible restoration, resized views, deletion without ghost outlines, and capture DPI.
+The CI-safe Debug suite passes all 1,608 tests. The Release solution build passes.
+All eight targeted headless tests pass, including pencil clicks, edge placement, note saving, restored figures, and capture DPI.
 Headless screenshots were inspected. Native voice interaction and live monitor changes remain untested.

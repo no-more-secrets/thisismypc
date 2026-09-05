@@ -1,6 +1,7 @@
 #if DEBUG
 using System.Globalization;
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
@@ -26,6 +27,7 @@ internal sealed class RegionReviewOverlay : Panel
     private readonly DrawingPresenter drawingPresenter;
     private readonly TextBox noteEditor;
     private readonly Border editorHost;
+    private readonly Dictionary<int, Button> pencilButtons = [];
     private RenderTargetBitmap? frozenFrame;
     private Point dragStart;
     private Point dragCurrent;
@@ -192,6 +194,7 @@ internal sealed class RegionReviewOverlay : Panel
         if (!WriteInactiveRecord())
             return;
         SuspendFrame();
+        ClearPencilButtons();
         figures.Clear();
         captures.Clear();
         nextFigureNumber = 1;
@@ -205,6 +208,7 @@ internal sealed class RegionReviewOverlay : Panel
         if (!WriteInactiveRecord())
             return;
         SuspendFrame();
+        ClearPencilButtons();
         figures.Clear();
         captures.Clear();
         activeRecord = null;
@@ -242,12 +246,57 @@ internal sealed class RegionReviewOverlay : Panel
         dragging = false;
         activePointer?.Capture(null);
         activePointer = null;
+        InvalidateArrange();
         InvalidateVisual();
     }
 
     protected override Size ArrangeOverride(Size finalSize)
     {
         drawingPresenter.Arrange(new Rect(finalSize));
+        var viewport = Viewport;
+        foreach (var (number, button) in pencilButtons)
+        {
+            var buttonFigure = CurrentFigures.FirstOrDefault(item => item.Number == number);
+            button.IsVisible = buttonFigure is not null && !IsEditingNote && !dragging;
+            if (buttonFigure is null)
+                continue;
+            var displayed = ToDisplay(buttonFigure.Bounds);
+            var x = displayed.Right - 32;
+            var y = displayed.Y + 4;
+            var badge = BadgeBounds(buttonFigure);
+            if (new Rect(x, y, 28, 28).Intersects(badge))
+            {
+                x = badge.Right + 4;
+                y = displayed.Y;
+                if (x + 28 > viewport.Right - 4)
+                {
+                    x = badge.X;
+                    y = badge.Bottom + 4;
+                }
+            }
+            x = Math.Clamp(x, viewport.X + 4, Math.Max(viewport.X + 4, viewport.Right - 32));
+            y = Math.Clamp(y, viewport.Y + 4, Math.Max(viewport.Y + 4, viewport.Bottom - 32));
+            if (new Rect(x, y, 28, 28).Intersects(badge))
+            {
+                var candidates = new[]
+                {
+                    new Point(badge.X, badge.Y - 32),
+                    new Point(badge.X - 32, badge.Y),
+                    new Point(badge.Right + 4, badge.Y),
+                    new Point(badge.X, badge.Bottom + 4),
+                };
+                var fallback = candidates.FirstOrDefault(candidate =>
+                    candidate.X >= viewport.X + 4 && candidate.Y >= viewport.Y + 4
+                    && candidate.X + 28 <= viewport.Right - 4 && candidate.Y + 28 <= viewport.Bottom - 4
+                    && !new Rect(candidate, new Size(28, 28)).Intersects(badge));
+                if (fallback != default)
+                {
+                    x = fallback.X;
+                    y = fallback.Y;
+                }
+            }
+            button.Arrange(new Rect(x, y, 28, 28));
+        }
         if (editorHost.IsVisible && SelectedFigure is { } figure)
         {
             var displayedBounds = ToDisplay(figure.Bounds);
@@ -269,6 +318,7 @@ internal sealed class RegionReviewOverlay : Panel
         e.Handled = true;
         var isFromEditor = IsFromEditor(e.Source);
         if (isFromEditor
+            || IsFromPencil(e.Source)
             || IsEditingNote
             || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed
             || frozenFrame is null)
@@ -291,6 +341,7 @@ internal sealed class RegionReviewOverlay : Panel
         activePointer = e.Pointer;
         failureMessage = null;
         e.Pointer.Capture(this);
+        InvalidateArrange();
         InvalidateVisual();
     }
 
@@ -313,6 +364,7 @@ internal sealed class RegionReviewOverlay : Panel
         dragging = false;
         e.Pointer.Capture(null);
         activePointer = null;
+        InvalidateArrange();
         if (candidate.Width < 2 || candidate.Height < 2)
         {
             InvalidateVisual();
@@ -325,10 +377,12 @@ internal sealed class RegionReviewOverlay : Panel
             currentCapture.Id, currentCapture.PageRoute, currentCapture.CapturedAtUtc, currentCapture.ImagePath);
         var previousSelection = selectedFigureNumber;
         figures.Add(figure);
+        AddPencilButton(figure);
         selectedFigureNumber = figure.Number;
         if (!SaveCurrentState())
         {
             figures.Remove(figure);
+            RemovePencilButton(figure.Number);
             selectedFigureNumber = previousSelection;
             nextFigureNumber--;
             RestoreActiveRecord();
@@ -466,6 +520,7 @@ internal sealed class RegionReviewOverlay : Panel
         var index = figures.IndexOf(figure);
         var previousSelection = selectedFigureNumber;
         figures.RemoveAt(index);
+        RemovePencilButton(figure.Number);
         var remainingCurrent = CurrentFigures.ToArray();
         selectedFigureNumber = remainingCurrent.Length == 0 ? null : remainingCurrent[^1].Number;
         var saved = figures.Count == 0 ? WriteInactiveRecord(suspended: false)
@@ -474,6 +529,7 @@ internal sealed class RegionReviewOverlay : Panel
         if (!saved)
         {
             figures.Insert(index, figure);
+            AddPencilButton(figure);
             selectedFigureNumber = previousSelection;
             RestoreActiveRecord();
         }
@@ -630,6 +686,54 @@ internal sealed class RegionReviewOverlay : Panel
 
     private bool IsFromEditor(object? source) => source is Visual visual
         && (ReferenceEquals(visual, editorHost) || visual.GetVisualAncestors().Contains(editorHost));
+
+    private bool IsFromPencil(object? source) => source is Visual visual
+        && pencilButtons.Values.Any(button => ReferenceEquals(visual, button)
+            || visual.GetVisualAncestors().Contains(button));
+
+    private void AddPencilButton(FigureState figure)
+    {
+        var button = new Button
+        {
+            Name = $"EditFigure{figure.Number}Note",
+            Width = 28,
+            Height = 28,
+            Padding = new Thickness(5),
+            Content = new PathIcon
+            {
+                Data = Geometry.Parse("M3,17.25V21h3.75L17.81,9.94l-3.75-3.75L3,17.25M20.71,7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41,0l-1.83,1.83 3.75,3.75 1.83-1.83Z"),
+            },
+        };
+        AutomationProperties.SetName(button, $"Edit note for figure {figure.Number}");
+        ToolTip.SetTip(button, $"Edit note for figure {figure.Number}");
+        button.Click += (_, _) =>
+        {
+            if (IsEditingNote || currentCapture?.Id != figure.CaptureId)
+                return;
+            SelectFigure(figure.Number);
+            if (selectedFigureNumber != figure.Number)
+                return;
+            EditSelectedNote();
+        };
+        pencilButtons.Add(figure.Number, button);
+        Children.Insert(Math.Max(1, Children.Count - 1), button);
+        InvalidateArrange();
+    }
+
+    private void RemovePencilButton(int number)
+    {
+        if (!pencilButtons.Remove(number, out var button))
+            return;
+        Children.Remove(button);
+        InvalidateArrange();
+    }
+
+    private void ClearPencilButtons()
+    {
+        foreach (var button in pencilButtons.Values)
+            Children.Remove(button);
+        pencilButtons.Clear();
+    }
 
     private Rect BadgeBounds(FigureState figure)
     {
