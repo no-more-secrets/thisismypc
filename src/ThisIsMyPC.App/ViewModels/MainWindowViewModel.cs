@@ -236,7 +236,11 @@ public partial class MainWindowViewModel : ViewModelBase
     private string _contentDescription = string.Empty;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(UsesEdgeTabs))]
     private object? _currentContent;
+
+    /// <summary>Whether the current page owns its card edge and content padding.</summary>
+    public bool UsesEdgeTabs => CurrentContent is ShellViewModel;
 
     [ObservableProperty]
     private bool _isSidebarCollapsed;

@@ -5,6 +5,15 @@
 # Expected on every page: ContentL 25, ContentR 23, LaneFrom 10, ContentT 17 (+/-3 for glyphs);
 # ContentR minus LaneTo is the content-to-thumb gap, ~10px by design.
 # Base #1a1a2e window bg, Raised #242438 card bg, Outline #3f3f5a border.
+param(
+    [Parameter(Position = 0, ValueFromRemainingArguments = $true)]
+    [string[]]$ImagePaths,
+    [ValidateRange(0, 1000)]
+    [int]$SkipHeaderPixels = 0
+)
+
+# SkipHeaderPixels excludes an intentional full-width header from content measurements.
+# ContentT remains relative to the outer card, including the skipped header height.
 Add-Type -AssemblyName System.Drawing
 
 function Test-Bg($c) {
@@ -50,7 +59,7 @@ function Measure-Shot($path) {
         # tracked separately, so a scrollbar thumb never poses as content (content sits at
         # 23 from the border by design, safely outside the zone).
         $minX = -1; $maxX = -1; $laneMin = -1; $laneMax = -1
-        for ($y = $cardTop + 14; $y -lt $cardBottom - 14; $y += 2) {
+        for ($y = $cardTop + [Math]::Max(14, $SkipHeaderPixels); $y -lt $cardBottom - 14; $y += 2) {
             for ($x = $cardLeft + 3; $x -lt $cardRight - 2; $x++) {
                 if (Test-Bg $bmp.GetPixel($x, $y)) { continue }
                 if ($x -ge $cardRight - 18) {
@@ -64,7 +73,7 @@ function Measure-Shot($path) {
         }
         # Y extremes: columns clear of the corners.
         $minY = -1; $maxY = -1
-        for ($y = $cardTop + 3; $y -lt $cardBottom - 2; $y++) {
+        for ($y = $cardTop + [Math]::Max(3, $SkipHeaderPixels); $y -lt $cardBottom - 2; $y++) {
             for ($x = $cardLeft + 14; $x -lt $cardRight - 14; $x += 2) {
                 if (Test-Bg $bmp.GetPixel($x, $y)) { continue }
                 if ($minY -lt 0) { $minY = $y }
@@ -88,4 +97,4 @@ function Measure-Shot($path) {
 }
 
 # Flatten: an array passed as one positional argument measures per element.
-foreach ($s in @($args | ForEach-Object { $_ })) { Measure-Shot $s }
+foreach ($s in $ImagePaths) { Measure-Shot $s }

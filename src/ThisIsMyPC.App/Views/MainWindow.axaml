@@ -18,6 +18,15 @@
         ExtendClientAreaChromeHints="NoChrome"
         ExtendClientAreaTitleBarHeightHint="64">
 
+    <Window.Styles>
+        <Style Selector="Border.module-content">
+            <Setter Property="Padding" Value="24,12,6,24" />
+        </Style>
+        <Style Selector="Border.module-content.edge-tabs">
+            <Setter Property="Padding" Value="0" />
+        </Style>
+    </Window.Styles>
+
     <!-- Custom frame: the client area covers the system title bar, so the
          first 64px row is our own TitleBarControl (drag, double-click
          maximize, caption buttons). OffScreenMargin keeps content on screen
@@ -446,15 +455,15 @@
                 </Popup>
             </Panel>
 
-            <!-- Module content area. Right padding is 6, not 24: shared
-                 geometry puts the scrollbar lane (10px) plus the views' 8px
-                 content margin inside the remaining 18, so bg-to-content is
-                 24 on both sides on every tab. -->
-            <Border Background="{DynamicResource RaisedBrush}"
+            <!-- Most pages use host padding. Explorer owns the whole card edge
+                 and restores content padding in EdgeTabControlTheme instead.
+                 Both paths retain the 16px right margin beside the scrollbar. -->
+            <Border x:Name="ModuleContentHost" Classes="module-content"
+                    Classes.edge-tabs="{Binding UsesEdgeTabs}"
+                    Background="{DynamicResource RaisedBrush}"
                     BorderBrush="{DynamicResource OutlineBrush}"
                     BorderThickness="1"
-                    CornerRadius="8"
-                    Padding="24,12,6,24">
+                    CornerRadius="8">
                 <Panel>
                     <ContentControl Content="{Binding CurrentContent}">
                         <ContentControl.DataTemplates>

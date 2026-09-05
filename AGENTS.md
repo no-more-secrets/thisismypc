@@ -270,7 +270,7 @@ Run over every page before showing it; each line cost a correction once.
   the last commit: Visual Studio runs the last successful build when the
   app was still running and locked the output.
 
-### Edge-geometry contract (every module page, no exceptions)
+### Edge-geometry contract
 
 The MainWindow host Border pads 24 left and bottom, 12 top, and 6 right. Every view
 gives its scroll content a 16px right margin: the scrollbar overlays the
@@ -288,6 +288,12 @@ and nothing else; a panel that holds a TabControl carries no right margin of
 its own, each fixed row above the strip keeps 16 (see PowerView's settings
 panel).
 
+Explorer opts into EdgeTabControlTheme: the host has zero padding and the strip
+spans the card's top edge. The selected content restores 24px left, 16px top,
+6px right, and 24px bottom padding; its scroller retains 16px right and 24px bottom margins.
+Search belongs inside each tab and shares the same query. Other pages retain
+the existing inset strip until explicitly migrated.
+
 After touching any page layout, verify parity in pixels, not by eye and never
 from XAML: screenshot the pages (walkthrough or `EdgeGeometryShotTests`), then
 run `tools/measure-edge-geometry.ps1` over the PNGs. Every page must read
@@ -295,7 +301,10 @@ ContentL 25 and LaneFrom 10; ContentR 23 except width-capped pages (
 Display and Gallery cap content width, so their ContentR is large);
 ContentT 17 give or take 4, tab pages included (the strip's well starts
 where any other first element does). Any page off those numbers is the bug,
-even if it looks close.
+even if it looks close. For Explorer, pass -SkipHeaderPixels 42 at a one-row width
+to exclude the full-width strip. ContentL/ContentR/LaneFrom stay 25/23/10;
+ContentT includes the strip and reads 59. Use the actual strip height for wrapped tabs.
+ExplorerEdgeTabShotTests also checks the strip against the card bounds and verifies search alignment.
 
 ## Architecture must-rules (violations get caught in review)
 

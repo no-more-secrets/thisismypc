@@ -28,6 +28,15 @@ Windows Update 5, Power 1) + 5 built-in sets (59 entries) + the enumerative modu
 - Usage and limitations: docs/region-review.md.
 - Fixed high-DPI top-left crop: source bounds now use physical bitmap pixels; regression coverage includes 100-200% capture scaling.
 
+## Explorer card-edge tab trial: DONE (2026-09-05)
+
+- Session 3ad820e808c14c178f498f75421ee468, fig. 1: Explorer tabs span the content card's top edge.
+- Search moves inside each tab and keeps its query when changing tabs. Global search remains in the title bar.
+- The shared opt-in theme retains connected selection and wrapped rows. Other pages keep their current layout.
+- Headless checks cover dark/light themes, narrow wrapping, search persistence, and MainWindow host padding restoration.
+- Validation: 1,614 Debug and 1,609 Release CI-safe tests passed, plus 15 final targeted checks. Release build passed.
+- Pixel measurements below the one-row strip: ContentL 25, ContentR 23, ContentT 59, LaneFrom 10. Fresh-context review found no issues.
+
 ## Annotation feedback: DONE (2026-09-05)
 
 - Fig. 1: replace the classic command-bar boolean with the ExplorerPatcher command-interface choices and preserve pending-change behavior.
