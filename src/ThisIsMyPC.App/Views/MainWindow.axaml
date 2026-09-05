@@ -225,18 +225,18 @@
                 PointerReleased="OnSidebarGripReleased" />
 
         <!-- Page area: the inset panel with a 1px rim along the L. Rim plus
-             margin add up to the 24,16 inner edge every page's geometry is
-             measured against. -->
+             margin add up to the 24 side edge every page's geometry is
+             measured against; the top is 10 to a tight title row. -->
         <Border Grid.Column="1"
                 Background="{DynamicResource BaseBrush}"
                 BorderBrush="{DynamicResource OutlineBrush}"
                 BorderThickness="1,1,1,0"
                 CornerRadius="16,0,0,0">
-        <DockPanel Margin="23,15,23,16">
+        <DockPanel Margin="23,9,23,16">
             <!-- Page header: the title, and at the right end of its row a
                  refresh button and a page-info button whose flyout carries the
                  one-line description that used to sit under the title. -->
-            <DockPanel DockPanel.Dock="Top" Margin="0,0,0,20">
+            <DockPanel DockPanel.Dock="Top" Margin="0,0,0,10">
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6"
                             VerticalAlignment="Center">
                     <Button Classes="bar-icon"
@@ -266,7 +266,7 @@
                 </StackPanel>
                 <TextBlock Text="{Binding ContentTitle}"
                            FontFamily="{StaticResource DisplayFont}"
-                           FontSize="28"
+                           FontSize="24"
                            FontWeight="Bold"
                            VerticalAlignment="Center"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
