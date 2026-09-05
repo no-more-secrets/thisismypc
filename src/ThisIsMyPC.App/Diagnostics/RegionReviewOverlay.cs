@@ -291,14 +291,6 @@ internal sealed class RegionReviewOverlay : Panel
             context.FillRectangle(ErrorBrush, new Rect(0, 0, Bounds.Width, 44));
             DrawText(context, failureMessage, new Point(14, 12));
         }
-        else
-        {
-            var hint = figures.Count == 0
-                ? "Drag to add fig.1. Escape exits review."
-                : $"{figures.Count} figure(s). Drag to add. N adds a note. Delete removes the selected figure.";
-            context.FillRectangle(HintBrush, new Rect(12, 12, Math.Min(650, Bounds.Width - 24), 38), 8);
-            DrawText(context, hint, new Point(24, 22));
-        }
     }
 
     private void DrawFigure(DrawingContext context, FigureState figure)

@@ -16,6 +16,7 @@ Windows Update 5, Power 1) + 5 built-in sets (59 entries) + the enumerative modu
 - Each drag adds a stable numbered figure. Optional notes and figure deletion support voice references without renumbering.
 - Escape clears the record; tools/read-region-selection.ps1 retrieves the current selection for agents.
 - No network listener or production feature. Native voice workflow validation remains pending.
+- Region review: removed the persistent instruction banner so it cannot cover app content.
 - Usage and limitations: docs/region-review.md.
 - Fixed high-DPI top-left crop: source bounds now use physical bitmap pixels; regression coverage includes 100-200% capture scaling.
 
