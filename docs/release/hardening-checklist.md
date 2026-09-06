@@ -151,7 +151,11 @@ The non-elevated Release suite passed 2,359 tests. The numbered acg-04
 NativeAOT build contains the App, Service, and installer launcher. All twelve
 PE images passed the strengthened mitigation gate. The installer screenshot
 suite confirmed that an outside-Program-Files path shows an error and disables
-installation. UAC-only runtime checks remain pending.
+installation. Elevated loader-time checks passed for the App and Service.
+ACG was active before each process resumed, remained active after startup, and
+both processes stayed alive. A Debug NativeAOT installer, which skipped only
+the release signature check, passed the same test and opened its main window.
+The elevated security project also passed all 69 tests.
 
 `ChildProcessGateTests` covers the winget launch gate directly, including a
 live Integration case that resolves the real winget alias and verifies its
