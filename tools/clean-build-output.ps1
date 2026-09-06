@@ -4,7 +4,7 @@
 
 .DESCRIPTION
     All build and test output lives under one gitignored root, artifacts\,
-    as artifacts\<type>\<build>\ (see the Build & test section of CLAUDE.md):
+    as artifacts\<type>\<build>\ (see the Build & test section of AGENTS.md):
 
       releases\<version>       shippable release outputs
       staging\<version>        intermediate publish staging for a release build

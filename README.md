@@ -7,9 +7,8 @@ telemetry and no account, and it covers an entire Windows install.
 
 This repository is developed by AI coding agents (Claude Code) under the human owner (Sam Boland). This file and everything under `docs/` are AI-written and checked
 against the code. The operating rules an agent needs are in
-[CLAUDE.md](CLAUDE.md), the master copy; Codex reads the same rules from
-[AGENTS.md](AGENTS.md) and Antigravity from [GEMINI.md](GEMINI.md), both
-generated from the master with a vendor appendix. The doc index with what
+[AGENTS.md](AGENTS.md), the shared source. [CLAUDE.md](CLAUDE.md) and
+[GEMINI.md](GEMINI.md) are one-line imports for clients using native filenames. The doc index with what
 each file is for is [docs/README.md](docs/README.md).
 
 ## What it does
@@ -159,7 +158,7 @@ for verifying a public release.
 This project is built with Claude Code and expects contributors to work the
 same way: a person sets direction and reviews, their agent does the work. The
 sections below are written so the agent can follow them directly. Everything
-here is also in [CLAUDE.md](CLAUDE.md), which the agent loads on its own when
+here is also in [AGENTS.md](AGENTS.md), which the agent loads on its own when
 it opens the repo; that file is the authority if the two ever differ.
 
 Avalonia's optional build telemetry package is explicitly excluded from all
@@ -187,11 +186,11 @@ git clone https://github.com/No-More-Secrets/thisismypc.git   # read-only
 ```
 
 `Setup.ps1` checks the prerequisites, installs the git hooks, verifies the
-agent guide twins, reports whether this clone is an owner or contributor
+agent instruction loaders, reports whether this clone is an owner or contributor
 session, then builds and runs the CI-safe tests. `-SkipBuild` stops after
 the checks. The hooks point git at `tools/git-hooks`; the pre-commit hook
-keeps `AGENTS.md` and `GEMINI.md` generated from `CLAUDE.md`, and CI rejects
-a stale twin, so skipping the hook only moves the failure later.
+keeps `CLAUDE.md` and `GEMINI.md` as imports of `AGENTS.md`, and CI rejects
+an invalid loader, so skipping the hook only moves the failure later.
 
 ### Build and test
 
@@ -233,7 +232,7 @@ needs a human to launch the app.
 
 ### The work cycle
 
-1. The agent reads `CLAUDE.md` and determines its role with
+1. The agent reads `AGENTS.md` and determines its role with
    `gh repo view No-More-Secrets/thisismypc --json viewerPermission`. Write
    access means it works for the owner and commits to `main`. Anything else
    means it works for a contributor: branch, then PR.

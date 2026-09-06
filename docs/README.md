@@ -3,7 +3,7 @@
 This folder was written by AI models (Claude Code during development, Gemini
 for the deep research) and checked against the code. It is design rationale
 and reference, not a spec: where a document and the code disagree, the code
-wins. If an agent is working on the repo, it needs the root `CLAUDE.md`
+wins. If an agent is working on the repo, it needs the root `AGENTS.md`
 (operating rules, build and test commands, UI verification loop) before
 anything here; `planning/refinement-backlog.md` is the plan and status.
 
@@ -55,5 +55,5 @@ audits) were used for the research and are kept outside the repo. The BMAD
 planning framework and its artifacts (PRD, architecture document, epics,
 story files) drove the first development chapter and were removed before
 publication; the decisions they produced are encoded in the code, in
-`CLAUDE.md`, and in `planning/refinement-backlog.md`. Where a research doc
+`AGENTS.md`, and in `planning/refinement-backlog.md`. Where a research doc
 here still cites an "Epic" or "Story" number, it refers to that retired plan.

@@ -1,5 +1,5 @@
 #!/bin/sh
-# Keeps AGENTS.md and GEMINI.md in parity with CLAUDE.md on every commit that
+# Keeps CLAUDE.md and GEMINI.md as imports of AGENTS.md on every commit that
 # touches any of the three. Enable once per clone:
 #   git config core.hooksPath tools/git-hooks
 # (tools/install-git-hooks.ps1 does the same.)
@@ -17,4 +17,4 @@ else
 fi
 
 "$ps" -NoProfile -ExecutionPolicy Bypass -File tools/sync-agent-guides.ps1 || exit 1
-git add AGENTS.md GEMINI.md
+git add CLAUDE.md GEMINI.md

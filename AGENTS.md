@@ -1,8 +1,6 @@
-<!-- GENERATED from CLAUDE.md by tools/sync-agent-guides.ps1. Do not edit above the marker; edit CLAUDE.md and rerun the script. -->
-
 # AGENTS.md
 
-Operating guidance for Claude Code in this repo. **How to DO things only.** Detailed plans
+Shared operating guidance for coding agents in this repo. **How to DO things only.** Detailed plans
 and status live in `docs/planning/` (`refinement-backlog.md` is the master list); design
 rationale in `docs/` (index: `docs/README.md`). Never append history here; replace stale
 text.
@@ -70,14 +68,10 @@ anything substantial, commit. Don't ask "proceed?" between tasks. Stop only for
 irreversible things and naming/branding; those are the owner's decisions, and a
 contributor session raises them in the issue.
 
-**This file is the master copy.** `AGENTS.md` (Codex) and `GEMINI.md`
-(Antigravity) are generated twins: the same body, plus a vendor-specific
-appendix below a marker line. Edit only this file. The pre-commit hook in
-`tools/git-hooks` regenerates the twins on any commit that touches one of the
-three files; enable it once per clone with `tools/install-git-hooks.ps1`
-(it sets `core.hooksPath`). Without the hook, run
-`tools/sync-agent-guides.ps1` by hand; CI fails on a stale twin either way.
-Vendor-specific notes go below the marker in the twin, never above it.
+**AGENTS.md is the sole instruction source.** Edit shared and agent-specific rules here.
+CLAUDE.md and GEMINI.md contain only an @AGENTS.md import. Do not duplicate instructions in them.
+The pre-commit hook in tools/git-hooks maintains these loaders; CI checks them.
+Enable the hook with tools/install-git-hooks.ps1, or repair loaders with tools/sync-agent-guides.ps1.
 
 ## Build & test
 
@@ -340,12 +334,9 @@ ExplorerEdgeTabShotTests also checks the strip against the card bounds and verif
   Anything it writes and then trusts goes under the hardened ProgramData folder,
   never %TEMP%.
 
-<!-- vendor-specific: everything below this line is kept by tools/sync-agent-guides.ps1; everything above is generated from CLAUDE.md -->
+## Agent compatibility
 
-## Codex notes
-
-- Where the master says `/code-review`, run a fresh-context review with a new
-  session or a review sub-task; the bar is the same: findings fixed before commit.
-- Where the master says to read screenshots as images, open the PNGs under
-  `artifacts/ui-shots/` with your image input; never verify UI from the XAML.
-- The `gh` role check in "How work runs here" applies unchanged.
+- When /code-review is unavailable, use a fresh-context review session or review agent.
+  Fix findings before committing, with the same review standard.
+- Open screenshots under artifacts/ui-shots/ as images. Never verify UI from XAML alone.
+- The gh role check in "How work runs here" applies to every agent.

@@ -127,7 +127,7 @@ dotnet test tests/ThisIsMyPC.App.UiTests --configuration Release --filter "Categ
 dotnet test tests/ThisIsMyPC.App.UiTests --configuration Release --filter "Category=Diagnostic"   # full-app walkthrough
 ```
 
-`UiSession` is the driver: `ForView` hosts one view on fake data, `ForMainWindow` boots the real window on the real service graph with test-safe swaps. Full rules, including the edge-geometry contract, are in `CLAUDE.md`.
+`UiSession` is the driver: `ForView` hosts one view on fake data, `ForMainWindow` boots the real window on the real service graph with test-safe swaps. Full rules, including the edge-geometry contract, are in `AGENTS.md`.
 
 ### Agent parallelization
 

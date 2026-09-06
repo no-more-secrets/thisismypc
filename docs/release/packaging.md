@@ -1,6 +1,6 @@
 # Release packaging: machine scope
 
-The app corresponds to the PC, not a user profile (CLAUDE.md). Packaging follows:
+The app corresponds to the PC, not a user profile (AGENTS.md). Packaging follows:
 
 - **Binaries in `C:\Program Files\`** (admin-only write; deep-research
   DLL-sideloading rule). Velopack's default per-user `%LocalAppData%` Setup.exe

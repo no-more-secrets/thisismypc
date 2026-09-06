@@ -1,6 +1,5 @@
 # Points this clone at the tracked hooks in tools/git-hooks (one-time setup).
-# The pre-commit hook regenerates AGENTS.md and GEMINI.md whenever a commit
-# touches CLAUDE.md or either twin, so the twins never drift from the master.
+# The pre-commit hook maintains one-line CLAUDE.md and GEMINI.md imports of AGENTS.md.
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path $PSScriptRoot -Parent
 git -C $repoRoot config core.hooksPath tools/git-hooks

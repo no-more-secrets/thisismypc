@@ -68,7 +68,7 @@ else { Warn 'Not elevated. Fine for setup and CI-safe tests; the app and the Int
 Step 'Git hooks'
 & (Join-Path $repoRoot 'tools\install-git-hooks.ps1')
 
-Step 'Agent guide parity (AGENTS.md, GEMINI.md from CLAUDE.md)'
+Step 'Agent instruction loaders (CLAUDE.md and GEMINI.md import AGENTS.md)'
 & (Join-Path $repoRoot 'tools\sync-agent-guides.ps1') -Check
 if ($LASTEXITCODE -ne 0) {
     Warn 'Twins were stale; regenerating.'
@@ -108,7 +108,7 @@ if (-not $SkipBuild) {
 }
 
 Step 'Next'
-Write-Host '   Rules for agents:     CLAUDE.md (master), AGENTS.md (Codex), GEMINI.md (Antigravity)'
+Write-Host '   Rules for agents:     AGENTS.md (shared source); CLAUDE.md and GEMINI.md (loaders)'
 Write-Host '   Docs:                 docs/README.md'
 Write-Host '   Work list:            docs/planning/refinement-backlog.md (owner) or a GitHub issue (contributor)'
 Write-Host '   UI verification:      dotnet test tests/ThisIsMyPC.App.UiTests --configuration Release --filter "Category!=Diagnostic"'
