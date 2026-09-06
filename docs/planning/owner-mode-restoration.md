@@ -413,7 +413,7 @@ it. It is listed here so it is not done by accident.
 
 Each step depends on the ones above it. Step 1 shipped as described above,
 and the batch contract for step 2's disable path shipped with it; the
-cross-process lock itself is not started.
+native lock foundation passed all 20 isolated tests with Windows elevation on 2026-09-06. Production routing remains pending. Journal, eligibility, history import, and consent storage now have separate foundation documents in this directory.
 
 1. **Shared reversible execution contract.** Done (2026-09-06, above).
 2. **Thread-correct cross-process coordination.** A Windows mutex is
