@@ -139,6 +139,14 @@ public class ExplorerEdgeTabShotTests
             var x = (int)((origin.X + selected.Bounds.Width / 2) * scale);
             var seam = (int)Math.Round((session.TopOf(strip) + strip.Bounds.Height) * scale);
             var fill = pixels.GetPixel(x, seam + 4);
+            if (scale == 1.0)
+            {
+                var neighbor = session.FindAll<TabItem>(t => !t.IsSelected).First();
+                var neighborOrigin = neighbor.TranslatePoint(default, session.Window)!.Value;
+                var rimX = (int)(neighborOrigin.X + neighbor.Bounds.Width / 2);
+                var outline = ((Avalonia.Media.ISolidColorBrush)strip.BorderBrush!).Color;
+                Assert.Equal(new SkiaSharp.SKColor(outline.R, outline.G, outline.B, outline.A), pixels.GetPixel(rimX, seam - 1));
+            }
             for (var sampleX = (int)((origin.X + 10) * scale); sampleX < (origin.X + selected.Bounds.Width - 10) * scale; sampleX++)
             for (var y = seam - 4; y <= seam + 4; y++)
             {

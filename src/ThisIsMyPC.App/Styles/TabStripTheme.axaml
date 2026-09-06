@@ -10,7 +10,7 @@
          The well's top edge is the strip's first pixel, so a tab page's
          TabControl still carries Margin="0,4,0,0" and nothing else.
 
-         Browser-style tabs: the well keeps its floor unruled.
+         Browser-style tabs: the well has a bottom rim, covered only by the selected tab.
          An unselected chip floats 6px clear of the well's floor (its own
          bottom margin); the selected chip reaches 1px past the floor and
          paints the page's own fill over the well's floor, so it
@@ -19,7 +19,7 @@
          selected chrome extends below that unchanged layout, and rows
          are never reordered, so only the selection look changes.
          RowGap is zero because each floating tab already supplies 6px below it.
-         A padding pixel replaces the removed bottom rule. Height stays 42:
+         The bottom rim occupies one pixel. Height stays 42:
          1 + 6 + 34 + 1 (the row is a 28 chip plus its 6 float). -->
     <ControlTheme x:Key="{x:Type TabControl}" TargetType="TabControl">
         <Setter Property="Padding" Value="0" />
@@ -37,9 +37,9 @@
                             DockPanel.Dock="Top"
                             Background="{DynamicResource SunkenBrush}"
                             BorderBrush="{DynamicResource OutlineBrush}"
-                            BorderThickness="1,1,1,0"
-                            CornerRadius="6,6,0,0"
-                            Padding="6,6,6,1"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="6,6,6,0"
                             Margin="0,0,16,0">
                         <ItemsPresenter Name="PART_ItemsPresenter"
                                         ItemsPanel="{TemplateBinding ItemsPanel}" />
@@ -66,8 +66,8 @@
                     <Border Name="PART_Strip" DockPanel.Dock="Top"
                             Background="{DynamicResource SunkenBrush}"
                             BorderBrush="{DynamicResource OutlineBrush}"
-                            BorderThickness="0" CornerRadius="8,8,0,0"
-                            Padding="6,7,6,1">
+                            BorderThickness="0,0,0,1" CornerRadius="8,8,0,0"
+                            Padding="6,7,6,0">
                         <ItemsPresenter Name="PART_ItemsPresenter"
                                         ItemsPanel="{TemplateBinding ItemsPanel}" />
                     </Border>
@@ -93,8 +93,8 @@
                     <Border Name="PART_Strip" DockPanel.Dock="Top" IsVisible="{TemplateBinding ShowTabs}"
                             Background="{DynamicResource SunkenBrush}"
                             BorderBrush="{DynamicResource OutlineBrush}"
-                            BorderThickness="0" CornerRadius="8,8,0,0"
-                            Padding="6,7,6,1">
+                            BorderThickness="0,0,0,1" CornerRadius="8,8,0,0"
+                            Padding="6,7,6,0">
                         <ItemsPresenter Name="PART_ItemsPresenter"
                                         ItemsPanel="{TemplateBinding ItemsPanel}" />
                     </Border>
