@@ -5,6 +5,7 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 ## Annotation follow-up: toolbar and tabs (2026-09-06)
 
 - Fixed fractional-scale antialiasing at the selected-tab/content join. Pixel tests cover both themes at 100%, 125%, 150%, 175%, and 200%.
+- Selected-tab endpoint strokes overlap the rim to prevent rare one-pixel gaps. Pixel coverage checks every join column across sixteen DPI/zoom combinations.
 - Selected-tab curves share the actual rim baseline and DPI-rounded thickness. Coverage includes combined desktop DPI and app zoom.
 - Selected-tab outlines draw after the seam fill so curved rim joins retain their final pixels. Endpoint regression coverage checks both corners.
 - Restored the tab-bar bottom rim outside the selected tab. The selected tab alone covers the rim, with no dark seam. Pixel tests verify both conditions.

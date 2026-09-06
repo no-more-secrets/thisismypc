@@ -72,6 +72,12 @@ public sealed class SelectedTabChrome : Control
             context.DrawRectangle(Background, null, new Rect(-6, bottom - thickness, size.Width + 12, thickness + 1));
         // Paint the outline last so the floor fill cannot erase the curved joins.
         if (BorderBrush is { } brush)
-            context.DrawGeometry(null, new Pen(brush, thickness), outline);
+        {
+            var pen = new Pen(brush, thickness);
+            context.DrawGeometry(null, pen, outline);
+            // Overlap strokes only. Extending the fill would erase the rim again.
+            context.DrawLine(pen, new Point(-7, baseline), new Point(-5.5, baseline));
+            context.DrawLine(pen, new Point(size.Width + 5.5, baseline), new Point(size.Width + 7, baseline));
+        }
     }
 }

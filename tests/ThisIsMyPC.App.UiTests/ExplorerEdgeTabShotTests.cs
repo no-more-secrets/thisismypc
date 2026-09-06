@@ -197,6 +197,13 @@ public class ExplorerEdgeTabShotTests
                 var curveX = (int)Math.Floor(endpoint + direction * 0.5 * dpi * zoom);
                 var rim = StrokeColumn(pixels, rimX, floor);
                 var curve = StrokeColumn(pixels, curveX, floor);
+                // Sample every column through the overlap, not just either side of the join.
+                for (var joinX = (int)Math.Floor(endpoint - dpi * zoom); joinX <= Math.Ceiling(endpoint + dpi * zoom); joinX++)
+                {
+                    var join = StrokeColumn(pixels, joinX, floor);
+                    Assert.True(join.Ink >= rim.Ink * 0.8,
+                        $"Gap at {joinX}: dpi {dpi}, zoom {zoom}, right {rightSide}, ink {join.Ink}, rim {rim.Ink}.");
+                }
                 Assert.True(Math.Abs(rim.Center - curve.Center) < 0.5,
                     $"dpi {dpi}, zoom {zoom}, right {rightSide}: rim center {rim.Center}, curve {curve.Center}.");
                 Assert.True(Math.Abs(rim.Ink - curve.Ink) < 0.5,
