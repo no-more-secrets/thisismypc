@@ -104,18 +104,138 @@ Parity: RestorationCatalogParityTests in Modules.Annoyances.Tests compares
 all catalog entries with the real reader, card provider, change factory, and
 baseline store. It checks both desired values, identity, enforcement, restart
 requirements, and rejection of changed output without copying a value table.
+
+## Shipped: shared reversible execution contract (2026-09-06)
+
+Core only. No service worker, no live write, no consent, no App DI change.
+
+- `IReversibleChangeExecutor` and `ReversibleChangeExecutor`
+  (`src/ThisIsMyPC.Core/Changes`): one descriptor in the apply or revert
+  direction. `Enforcement != null` goes through `IEnforcementExecutor`
+  (`ExecuteAsync` or `RevertAsync`, the caller's delegate passed along);
+  `null` calls the supplied module delegate directly. Nothing else is
+  inferred: no module lookup, no registry writer. An enforced descriptor
+  with no enforcement executor returns a failed result and never calls the
+  delegate; `CanExecute` lets a batch refuse up front. Exceptions from the
+  delegate or the enforcement executor propagate unchanged. The contract has
+  no cancellation token on purpose: the pending pipeline has none, and a
+  token here would reach only enforced changes, never a bare delegate. The
+  enforcement executor is called without a token, exactly as before the
+  extraction; a test pins that.
+- `PendingChangesService` keeps its public API and constructor and routes
+  every apply and rollback through the contract. Group order, mid-group
+  rollback with Before/After-swapped descriptors, and queue bookkeeping did
+  not change. `PendingChangesService.Create(IReversibleChangeExecutor)`
+  builds a second queue on the same executor; restoration must use its own
+  instance, never the app's shared queue. It is a static factory on purpose:
+  MS DI resolves `IPendingChangesService` by constructor, and two
+  satisfiable single-parameter constructors would be ambiguous. App DI stays
+  `AddSingleton<IPendingChangesService, PendingChangesService>()`.
+- `ChangeHistoryService` undo and redo route through the same contract. The
+  only observable difference: an enforcement revert that fails without a
+  message now reads "Enforcement revert failed" (the pending queue's wording)
+  instead of "Enforcement execution failed".
+- `RestorationBatchFactory` (`src/ThisIsMyPC.Core/Drift`):
+  `Prepare(candidate, observedSnapshot)` builds the descriptor restoration
+  runs. `RestorationCandidate` is a record, so a caller can rebuild it with
+  `with` after validation; preparation therefore trusts nothing on it. The
+  target must be `RestorationCatalog.Default`'s own instance at that key and
+  value name (a structural copy, a custom catalog, or a `with` copy fails),
+  the desired value must be canonical DWORD data in that target's allowed
+  list, the SID must pass the account-SID shape test, and the resolved path
+  must equal the path derived from the target and SID. Any miss is
+  `UntrustedCandidate`, checked before the snapshot is looked at. The
+  descriptor's `SystemLocation` is derived from the catalog target and the
+  checked SID (`HKU\{sid}\...` plus value name), never copied from the
+  candidate; that is the only key a SYSTEM process can address, and the
+  HKCU form is the interactive app's view of the same key. The before value
+  is the canonical observed data; `AfterValue` is the desired value;
+  enforcement is null (validation already refused anything but reversion
+  vectors); restart requirement is None. Other outcomes: `AlreadyMatches`
+  (no write), `ObservedKindMismatch` (present but not DWORD data, or data
+  that does not canonicalize), and `ObservedAbsent`.
+  `RestorationPreparation` is a sealed class, not a record: private
+  constructor, get-only properties, no public static members, creation only
+  through internal methods the factory calls. Core has no
+  `InternalsVisibleTo`, so the Core assembly is the trust boundary and no
+  outside code can wrap an unchecked descriptor in a Ready preparation. A
+  reflection test pins that surface. `CreateGroup(preparations)` accepts
+  only ready preparations, throws on any other outcome or a null entry, and
+  copies the descriptors into a read-only list. Ordinary app groups are
+  still built by hand; this is the validated restoration boundary only.
+- Tests: `ReversibleChangeExecutorTests`, `PendingChangesSharedExecutorTests`
+  (two-queue isolation, shared executor, rollback order and swapped values,
+  rollback failure, exception path, IsApplying), `RestorationBatchFactoryTests`
+  (descriptor shape, canonicalization, no-op, absent and kind refusals;
+  forged candidates: altered path, altered SID, non-account SIDs with a
+  matching path, target rebuilt with another key, value name, identity, or
+  wider allowed list, desired value of the wrong kind, non-canonical, or off
+  the list, custom-catalog candidate, and a custom-catalog copy of a shipped
+  target; group rules; stage and apply through an isolated queue; rollback
+  writes the observed value back). Existing `PendingChangesServiceTests`,
+  `PendingChangesEnforcementTests` and `ChangeHistoryEnforcementTests` pass
+  unchanged.
+
+What this step does not prove: the shared contract guarantees one routing
+path, not one registry writer. The app writes through module delegates
+(`AnnoyancesModule.ApplyChangeAsync` over the app's `IRegistryService`); the
+service has no module and its delegate does not exist yet. Until the worker
+step supplies that delegate and a test runs a prepared descriptor through
+it, "same code as the app" means same routing, rollback, and before-state
+contract only.
+
+The existing history path is not ready for restoration descriptors as is.
+`DriftBaselineStore.RecordApplied` keys entries by `SystemLocation` and
+stamps the document with the one `_userSid` it was built with. A
+restoration descriptor carries the `HKU\{sid}\...` location, so feeding it
+through ordinary history recording would add a parallel HKU entry beside the
+HKCU one, and `RestorationCatalog.Validate` rejects HKU locations, so the
+next boot would skip it. Restoration outcomes therefore need their own
+identity: the canonical HKCU location (module id, setting id, catalog key
+path, value name) plus the target SID, kept as two fields in the journal
+(step 3), the import (step 5), and any undo entry. Mapping back to the HKCU
+form must happen before anything touches `RecordApplied` or the app's
+history, and only for the profile the store's SID names; other profiles'
+outcomes stay in the journal until the machine-scoped baseline exists.
+None of that is wired; no service caller exists yet, so the work belongs to
+history integration, not to this step.
+
+### Exact dependencies left by this step
+
+- **Absent before-state.** `ChangeDescriptor.BeforeValue` is a required
+  string with no absent state. The Annoyances module treats an empty
+  `AfterValue` as "delete the value" and the drift report shows `__absent__`;
+  both are sentinels. `Prepare` therefore refuses an absent observation
+  (`ObservedAbsent`) instead of writing "" or "__absent__" into a descriptor.
+  Restoring a value Windows deleted needs an explicit absent representation
+  on the descriptor (or a parallel typed field) that the module delegate,
+  history, and the baseline all honor. That is its own step; until then a
+  deleted catalog value is reported, not restored.
+- **The delegate the service supplies.** `ThisIsMyPC.Service` references
+  Core and Interop.Win32 only, so no module `ApplyChangeAsync` exists there.
+  The service worker (step 9 below) must supply a delegate for the shared
+  executor that writes exactly the descriptor's `SystemLocation`,
+  `ValueType`, and `AfterValue` through `IRegistryService` under the resolved
+  `HKU\{sid}` path, and nothing else. Writing that delegate is part of the
+  worker step, gated by steps 2 through 8; it is not a second execution path
+  because routing, rollback, and before-state stay in the shared contract.
+- **Batch cancellation (existing flaw, separately scoped).**
+  `IPendingChangesService.ApplyAllAsync` takes no `CancellationToken`, and an
+  exception thrown by a delegate or the enforcement executor mid-batch is not
+  a failed result: no rollback runs, no applied group is removed from the
+  queue, and only `IsApplying` resets. `PendingChangesSharedExecutorTests`
+  pins this so a change to it is deliberate. Restoration needs a
+  cancellation-aware batch (disable waits for the running operation, step 2)
+  and that means adding a token to the pipeline and defining whether a
+  cancelled batch rolls the current group back. Do that as its own change
+  with the app's Apply flow in view; do not change it silently.
+
 ## Remaining work, in dependency order
 
-Each step depends on the ones above it. Nothing below is started.
+Each step depends on the ones above it. Step 1 shipped as described above;
+nothing below is started.
 
-1. **Shared reversible execution contract.** Move the apply-one-descriptor
-   path the app uses (`PendingChangesService` plus `IEnforcementExecutor`
-   routing) behind a contract Core owns, so the service restores through the
-   same code that applies and reverts in the app. A second direct-write
-   helper with parity tests does not satisfy the architecture. Restoration
-   builds a `ChangeDescriptor` from the candidate (`DriftReapplyFactory`
-   shape) and runs it through that contract; the before value is the typed
-   snapshot, never a fabricated default.
+1. **Shared reversible execution contract.** Done (2026-09-06, above).
 2. **Thread-correct cross-process coordination.** A Windows mutex is
    thread-affine; do not hold one across async continuations. Use one
    dedicated owning thread, or a hardened lock with an explicit lifetime
@@ -156,8 +276,11 @@ Each step depends on the ones above it. Nothing below is started.
    after the drift scan: load baseline (trust check as today), validate each
    entry through `RestorationCatalog.Default.Validate`, snapshot the value
    through `RegistryValueSnapshot.FromRead` against the `HKU\{sid}` path,
-   skip matches, and hand mismatches to steps 1 through 8. Off unless
-   consent says on. The IPC envelope gains new message types for consent
+   skip matches, build descriptors with `RestorationBatchFactory.Prepare`,
+   stage them as one group on the service's own `PendingChangesService`
+   (`Create` over a `ReversibleChangeExecutor`), and apply with the
+   registry-writing delegate described above under steps 2 through 8. Off
+   unless consent says on. The IPC envelope gains new message types for consent
    state and restoration outcomes; existing types do not change.
 10. **UI wiring.** Settings > Owner Mode gains the consent switch (off by
     default, machine-scoped wording), a per-target retry reset, and the

@@ -184,7 +184,7 @@ public sealed class RestorationCatalog
                     $"'{userSid}' is not a user account SID.");
             }
 
-            resolvedKeyPath = $@"HKU\{userSid}\{target.KeyPath[UserHiveRoot.Length..]}";
+            resolvedKeyPath = ResolveUserHivePath(target.KeyPath, userSid);
         }
         else
         {
@@ -204,6 +204,10 @@ public sealed class RestorationCatalog
             },
         };
     }
+
+    /// <summary>The HKU\{sid}\... path a SYSTEM process uses for an HKCU catalog key. Pure string work.</summary>
+    internal static string ResolveUserHivePath(string hkcuKeyPath, string userSid)
+        => $@"HKU\{userSid}\{hkcuKeyPath[UserHiveRoot.Length..]}";
 
     /// <summary>
     /// Only informational enforcement is compatible with background restoration:

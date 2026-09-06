@@ -5,16 +5,39 @@ using ThisIsMyPC.Core.Results;
 
 namespace ThisIsMyPC.Core.Services;
 
+/// <summary>
+/// One staging queue of reversible change groups. Each instance owns its own
+/// queue: the app's shared queue is one instance, and Owner Mode restoration
+/// gets its own through <see cref="Create"/>, so a background restore never
+/// mixes with what the person has staged. Every descriptor executes through
+/// <see cref="IReversibleChangeExecutor"/>; this class owns group order,
+/// mid-group rollback, and queue bookkeeping, nothing about routing.
+/// </summary>
 public sealed class PendingChangesService : IPendingChangesService
 {
     private readonly List<ChangeGroup> _pendingGroups = [];
     private readonly object _lock = new();
-    private readonly IEnforcementExecutor? _enforcementExecutor;
+    private readonly IReversibleChangeExecutor _executor;
 
     public PendingChangesService(IEnforcementExecutor? enforcementExecutor = null)
+        : this(new ReversibleChangeExecutor(enforcementExecutor))
     {
-        _enforcementExecutor = enforcementExecutor;
     }
+
+    private PendingChangesService(IReversibleChangeExecutor executor)
+    {
+        ArgumentNullException.ThrowIfNull(executor);
+        _executor = executor;
+    }
+
+    /// <summary>
+    /// A queue that executes through an already-built executor, so two queues
+    /// (the app's and restoration's) share exactly one routing path. A static
+    /// factory rather than a second one-argument constructor: MS DI resolves
+    /// <see cref="IPendingChangesService"/> by constructor and two satisfiable
+    /// single-parameter constructors would be ambiguous.
+    /// </summary>
+    public static PendingChangesService Create(IReversibleChangeExecutor executor) => new(executor);
 
     public int PendingCount
     {
@@ -128,16 +151,13 @@ public sealed class PendingChangesService : IPendingChangesService
 
         // An enforced change with no executor is a DI misconfiguration; fail before
         // any change is applied, not mid-batch.
-        if (_enforcementExecutor is null)
+        var unroutable = snapshot
+            .SelectMany(g => g.Changes)
+            .FirstOrDefault(c => !_executor.CanExecute(c));
+        if (unroutable is not null)
         {
-            var enforced = snapshot
-                .SelectMany(g => g.Changes)
-                .FirstOrDefault(c => c.Enforcement is not null);
-            if (enforced is not null)
-            {
-                throw new InvalidOperationException(
-                    $"Change '{enforced.SettingId}' requires enforcement but no IEnforcementExecutor is configured.");
-            }
+            throw new InvalidOperationException(
+                $"Change '{unroutable.SettingId}' requires enforcement but no IEnforcementExecutor is configured.");
         }
 
         IsApplying = true;
@@ -154,14 +174,9 @@ public sealed class PendingChangesService : IPendingChangesService
 
             foreach (var change in group.Changes)
             {
-                // Enforcement != null routes through the executor; null goes directly to
-                // the module. No other heuristics (architecture.md L913/L973). The executor
-                // is guaranteed non-null here by the pre-validation above.
-                var result = change.Enforcement is not null
-                    ? ToOperationResult(
-                        await _enforcementExecutor!.ExecuteAsync(change, applyFunc).ConfigureAwait(false),
-                        "Enforcement execution failed")
-                    : await applyFunc(change).ConfigureAwait(false);
+                // Routing (Enforcement != null through the enforcement executor, null
+                // directly to the module delegate) lives in the shared executor.
+                var result = await _executor.ApplyAsync(change, applyFunc).ConfigureAwait(false);
 
                 if (result.IsSuccess)
                 {
@@ -186,14 +201,10 @@ public sealed class PendingChangesService : IPendingChangesService
                             AfterDisplay = original.BeforeDisplay,
                         };
 
-                        // Mirrors the apply routing exactly; an enforced change must never
-                        // silently degrade to a bare revert (companion services/tasks/GPCache
-                        // would stay mutated).
-                        var rollbackResult = swapped.Enforcement is not null
-                            ? ToOperationResult(
-                                await _enforcementExecutor!.RevertAsync(swapped, revertFunc).ConfigureAwait(false),
-                                "Enforcement revert failed")
-                            : await revertFunc(swapped).ConfigureAwait(false);
+                        // Same routing as apply; an enforced change must never silently
+                        // degrade to a bare revert (companion services/tasks/GPCache would
+                        // stay mutated).
+                        var rollbackResult = await _executor.RevertAsync(swapped, revertFunc).ConfigureAwait(false);
                         if (rollbackResult.IsSuccess)
                         {
                             rolledBack.Add(groupApplied[i]);
@@ -270,14 +281,6 @@ public sealed class PendingChangesService : IPendingChangesService
             OnPropertyChanged(nameof(IsApplying));
         }
     }
-
-    private static OperationResult<bool> ToOperationResult(
-        Enforcement.EnforcementResult enforcement, string fallbackMessage) =>
-        enforcement.IsSuccess
-            ? OperationResult<bool>.Success(true)
-            : OperationResult<bool>.Failure(
-                enforcement.ErrorMessage ?? fallbackMessage,
-                enforcement.ErrorCategory ?? Results.ErrorCategory.ServiceUnavailable);
 
     private void OnPropertyChanged(string propertyName)
     {
