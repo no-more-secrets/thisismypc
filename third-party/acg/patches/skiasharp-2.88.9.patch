@@ -1,0 +1,428 @@
+diff --git a/binding/Binding/SKAbstractManagedStream.cs b/binding/Binding/SKAbstractManagedStream.cs
+index 717e3c146..f1cb891d9 100644
+--- a/binding/Binding/SKAbstractManagedStream.cs
++++ b/binding/Binding/SKAbstractManagedStream.cs
+@@ -1,4 +1,5 @@
+ ﻿using System;
++using System.Runtime.CompilerServices;
+ using System.Runtime.InteropServices;
+ using System.Threading;
+
+@@ -13,19 +14,19 @@ namespace SkiaSharp
+ 		static SKAbstractManagedStream ()
+ 		{
+ 			delegates = new SKManagedStreamDelegates {
+-				fRead = ReadInternal,
+-				fPeek = PeekInternal,
+-				fIsAtEnd = IsAtEndInternal,
+-				fHasPosition = HasPositionInternal,
+-				fHasLength = HasLengthInternal,
+-				fRewind = RewindInternal,
+-				fGetPosition = GetPositionInternal,
+-				fSeek = SeekInternal,
+-				fMove = MoveInternal,
+-				fGetLength = GetLengthInternal,
+-				fDuplicate = DuplicateInternal,
+-				fFork = ForkInternal,
+-				fDestroy = DestroyInternal,
++				fRead = (IntPtr)(delegate* unmanaged[Cdecl]<IntPtr, void*, void*, IntPtr, IntPtr>)&ReadInternal,
++				fPeek = (IntPtr)(delegate* unmanaged[Cdecl]<IntPtr, void*, void*, IntPtr, IntPtr>)&PeekInternal,
++				fIsAtEnd = (IntPtr)(delegate* unmanaged[Cdecl]<IntPtr, void*, byte>)&IsAtEndInternal,
++				fHasPosition = (IntPtr)(delegate* unmanaged[Cdecl]<IntPtr, void*, byte>)&HasPositionInternal,
++				fHasLength = (IntPtr)(delegate* unmanaged[Cdecl]<IntPtr, void*, byte>)&HasLengthInternal,
++				fRewind = (IntPtr)(delegate* unmanaged[Cdecl]<IntPtr, void*, byte>)&RewindInternal,
++				fGetPosition = (IntPtr)(delegate* unmanaged[Cdecl]<IntPtr, void*, IntPtr>)&GetPositionInternal,
++				fSeek = (IntPtr)(delegate* unmanaged[Cdecl]<IntPtr, void*, IntPtr, byte>)&SeekInternal,
++				fMove = (IntPtr)(delegate* unmanaged[Cdecl]<IntPtr, void*, int, byte>)&MoveInternal,
++				fGetLength = (IntPtr)(delegate* unmanaged[Cdecl]<IntPtr, void*, IntPtr>)&GetLengthInternal,
++				fDuplicate = (IntPtr)(delegate* unmanaged[Cdecl]<IntPtr, void*, IntPtr>)&DuplicateInternal,
++				fFork = (IntPtr)(delegate* unmanaged[Cdecl]<IntPtr, void*, IntPtr>)&ForkInternal,
++				fDestroy = (IntPtr)(delegate* unmanaged[Cdecl]<IntPtr, void*, void>)&DestroyInternal,
+ 			};
+ 			SkiaApi.sk_managedstream_set_procs (delegates);
+ 		}
+@@ -83,6 +84,7 @@ namespace SkiaSharp
+ 		protected virtual IntPtr OnDuplicate () => OnCreateNew ();
+
+ 		[MonoPInvokeCallback (typeof (SKManagedStreamReadProxyDelegate))]
++		[UnmanagedCallersOnly (CallConvs = new[] { typeof (CallConvCdecl) })]
+ 		private static IntPtr ReadInternal (IntPtr s, void* context, void* buffer, IntPtr size)
+ 		{
+ 			var stream = DelegateProxies.GetUserData<SKAbstractManagedStream> ((IntPtr)context, out _);
+@@ -90,6 +92,7 @@ namespace SkiaSharp
+ 		}
+
+ 		[MonoPInvokeCallback (typeof (SKManagedStreamPeekProxyDelegate))]
++		[UnmanagedCallersOnly (CallConvs = new[] { typeof (CallConvCdecl) })]
+ 		private static IntPtr PeekInternal (IntPtr s, void* context, void* buffer, IntPtr size)
+ 		{
+ 			var stream = DelegateProxies.GetUserData<SKAbstractManagedStream> ((IntPtr)context, out _);
+@@ -97,34 +100,39 @@ namespace SkiaSharp
+ 		}
+
+ 		[MonoPInvokeCallback (typeof (SKManagedStreamIsAtEndProxyDelegate))]
+-		private static bool IsAtEndInternal (IntPtr s, void* context)
++		[UnmanagedCallersOnly (CallConvs = new[] { typeof (CallConvCdecl) })]
++		private static byte IsAtEndInternal (IntPtr s, void* context)
+ 		{
+ 			var stream = DelegateProxies.GetUserData<SKAbstractManagedStream> ((IntPtr)context, out _);
+-			return stream.OnIsAtEnd ();
++			return stream.OnIsAtEnd () ? (byte)1 : (byte)0;
+ 		}
+
+ 		[MonoPInvokeCallback (typeof (SKManagedStreamHasPositionProxyDelegate))]
+-		private static bool HasPositionInternal (IntPtr s, void* context)
++		[UnmanagedCallersOnly (CallConvs = new[] { typeof (CallConvCdecl) })]
++		private static byte HasPositionInternal (IntPtr s, void* context)
+ 		{
+ 			var stream = DelegateProxies.GetUserData<SKAbstractManagedStream> ((IntPtr)context, out _);
+-			return stream.OnHasPosition ();
++			return stream.OnHasPosition () ? (byte)1 : (byte)0;
+ 		}
+
+ 		[MonoPInvokeCallback (typeof (SKManagedStreamHasLengthProxyDelegate))]
+-		private static bool HasLengthInternal (IntPtr s, void* context)
++		[UnmanagedCallersOnly (CallConvs = new[] { typeof (CallConvCdecl) })]
++		private static byte HasLengthInternal (IntPtr s, void* context)
+ 		{
+ 			var stream = DelegateProxies.GetUserData<SKAbstractManagedStream> ((IntPtr)context, out _);
+-			return stream.OnHasLength ();
++			return stream.OnHasLength () ? (byte)1 : (byte)0;
+ 		}
+
+ 		[MonoPInvokeCallback (typeof (SKManagedStreamRewindProxyDelegate))]
+-		private static bool RewindInternal (IntPtr s, void* context)
++		[UnmanagedCallersOnly (CallConvs = new[] { typeof (CallConvCdecl) })]
++		private static byte RewindInternal (IntPtr s, void* context)
+ 		{
+ 			var stream = DelegateProxies.GetUserData<SKAbstractManagedStream> ((IntPtr)context, out _);
+-			return stream.OnRewind ();
++			return stream.OnRewind () ? (byte)1 : (byte)0;
+ 		}
+
+ 		[MonoPInvokeCallback (typeof (SKManagedStreamGetPositionProxyDelegate))]
++		[UnmanagedCallersOnly (CallConvs = new[] { typeof (CallConvCdecl) })]
+ 		private static IntPtr GetPositionInternal (IntPtr s, void* context)
+ 		{
+ 			var stream = DelegateProxies.GetUserData<SKAbstractManagedStream> ((IntPtr)context, out _);
+@@ -132,20 +140,23 @@ namespace SkiaSharp
+ 		}
+
+ 		[MonoPInvokeCallback (typeof (SKManagedStreamSeekProxyDelegate))]
+-		private static bool SeekInternal (IntPtr s, void* context, IntPtr position)
++		[UnmanagedCallersOnly (CallConvs = new[] { typeof (CallConvCdecl) })]
++		private static byte SeekInternal (IntPtr s, void* context, IntPtr position)
+ 		{
+ 			var stream = DelegateProxies.GetUserData<SKAbstractManagedStream> ((IntPtr)context, out _);
+-			return stream.OnSeek (position);
++			return stream.OnSeek (position) ? (byte)1 : (byte)0;
+ 		}
+
+ 		[MonoPInvokeCallback (typeof (SKManagedStreamMoveProxyDelegate))]
+-		private static bool MoveInternal (IntPtr s, void* context, int offset)
++		[UnmanagedCallersOnly (CallConvs = new[] { typeof (CallConvCdecl) })]
++		private static byte MoveInternal (IntPtr s, void* context, int offset)
+ 		{
+ 			var stream = DelegateProxies.GetUserData<SKAbstractManagedStream> ((IntPtr)context, out _);
+-			return stream.OnMove (offset);
++			return stream.OnMove (offset) ? (byte)1 : (byte)0;
+ 		}
+
+ 		[MonoPInvokeCallback (typeof (SKManagedStreamGetLengthProxyDelegate))]
++		[UnmanagedCallersOnly (CallConvs = new[] { typeof (CallConvCdecl) })]
+ 		private static IntPtr GetLengthInternal (IntPtr s, void* context)
+ 		{
+ 			var stream = DelegateProxies.GetUserData<SKAbstractManagedStream> ((IntPtr)context, out _);
+@@ -153,6 +164,7 @@ namespace SkiaSharp
+ 		}
+
+ 		[MonoPInvokeCallback (typeof (SKManagedStreamDuplicateProxyDelegate))]
++		[UnmanagedCallersOnly (CallConvs = new[] { typeof (CallConvCdecl) })]
+ 		private static IntPtr DuplicateInternal (IntPtr s, void* context)
+ 		{
+ 			var stream = DelegateProxies.GetUserData<SKAbstractManagedStream> ((IntPtr)context, out _);
+@@ -160,6 +172,7 @@ namespace SkiaSharp
+ 		}
+
+ 		[MonoPInvokeCallback (typeof (SKManagedStreamForkProxyDelegate))]
++		[UnmanagedCallersOnly (CallConvs = new[] { typeof (CallConvCdecl) })]
+ 		private static IntPtr ForkInternal (IntPtr s, void* context)
+ 		{
+ 			var stream = DelegateProxies.GetUserData<SKAbstractManagedStream> ((IntPtr)context, out _);
+@@ -167,6 +180,7 @@ namespace SkiaSharp
+ 		}
+
+ 		[MonoPInvokeCallback (typeof (SKManagedStreamDestroyProxyDelegate))]
++		[UnmanagedCallersOnly (CallConvs = new[] { typeof (CallConvCdecl) })]
+ 		private static void DestroyInternal (IntPtr s, void* context)
+ 		{
+ 			var stream = DelegateProxies.GetUserData<SKAbstractManagedStream> ((IntPtr)context, out var gch);
+diff --git a/binding/Binding/SKAbstractManagedWStream.cs b/binding/Binding/SKAbstractManagedWStream.cs
+index ef564f5b3..c6744c275 100644
+--- a/binding/Binding/SKAbstractManagedWStream.cs
++++ b/binding/Binding/SKAbstractManagedWStream.cs
+@@ -1,4 +1,5 @@
+ ﻿using System;
++using System.Runtime.CompilerServices;
+ using System.Runtime.InteropServices;
+ using System.Threading;
+
+@@ -13,10 +14,10 @@ namespace SkiaSharp
+ 		static SKAbstractManagedWStream ()
+ 		{
+ 			delegates = new SKManagedWStreamDelegates {
+-				fWrite = WriteInternal,
+-				fFlush = FlushInternal,
+-				fBytesWritten = BytesWrittenInternal,
+-				fDestroy = DestroyInternal,
++				fWrite = (IntPtr)(delegate* unmanaged[Cdecl]<IntPtr, void*, void*, IntPtr, byte>)&WriteInternal,
++				fFlush = (IntPtr)(delegate* unmanaged[Cdecl]<IntPtr, void*, void>)&FlushInternal,
++				fBytesWritten = (IntPtr)(delegate* unmanaged[Cdecl]<IntPtr, void*, IntPtr>)&BytesWrittenInternal,
++				fDestroy = (IntPtr)(delegate* unmanaged[Cdecl]<IntPtr, void*, void>)&DestroyInternal,
+ 			};
+
+ 			SkiaApi.sk_managedwstream_set_procs (delegates);
+@@ -50,13 +51,15 @@ namespace SkiaSharp
+ 		protected abstract IntPtr OnBytesWritten ();
+
+ 		[MonoPInvokeCallback (typeof (SKManagedWStreamWriteProxyDelegate))]
+-		private static bool WriteInternal (IntPtr s, void* context, void* buffer, IntPtr size)
++		[UnmanagedCallersOnly (CallConvs = new[] { typeof (CallConvCdecl) })]
++		private static byte WriteInternal (IntPtr s, void* context, void* buffer, IntPtr size)
+ 		{
+ 			var stream = DelegateProxies.GetUserData<SKAbstractManagedWStream> ((IntPtr)context, out _);
+-			return stream.OnWrite ((IntPtr)buffer, size);
++			return stream.OnWrite ((IntPtr)buffer, size) ? (byte)1 : (byte)0;
+ 		}
+
+ 		[MonoPInvokeCallback (typeof (SKManagedWStreamFlushProxyDelegate))]
++		[UnmanagedCallersOnly (CallConvs = new[] { typeof (CallConvCdecl) })]
+ 		private static void FlushInternal (IntPtr s, void* context)
+ 		{
+ 			var stream = DelegateProxies.GetUserData<SKAbstractManagedWStream> ((IntPtr)context, out _);
+@@ -64,6 +67,7 @@ namespace SkiaSharp
+ 		}
+
+ 		[MonoPInvokeCallback (typeof (SKManagedWStreamBytesWrittenProxyDelegate))]
++		[UnmanagedCallersOnly (CallConvs = new[] { typeof (CallConvCdecl) })]
+ 		private static IntPtr BytesWrittenInternal (IntPtr s, void* context)
+ 		{
+ 			var stream = DelegateProxies.GetUserData<SKAbstractManagedWStream> ((IntPtr)context, out _);
+@@ -71,6 +75,7 @@ namespace SkiaSharp
+ 		}
+
+ 		[MonoPInvokeCallback (typeof (SKManagedWStreamDestroyProxyDelegate))]
++		[UnmanagedCallersOnly (CallConvs = new[] { typeof (CallConvCdecl) })]
+ 		private static void DestroyInternal (IntPtr s, void* context)
+ 		{
+ 			var stream = DelegateProxies.GetUserData<SKAbstractManagedWStream> ((IntPtr)context, out var gch);
+diff --git a/binding/Binding/SKDrawable.cs b/binding/Binding/SKDrawable.cs
+index dca406086..9c8826662 100644
+--- a/binding/Binding/SKDrawable.cs
++++ b/binding/Binding/SKDrawable.cs
+@@ -1,4 +1,5 @@
+ ﻿using System;
++using System.Runtime.CompilerServices;
+ using System.Runtime.InteropServices;
+ using System.Threading;
+
+@@ -13,10 +14,10 @@ namespace SkiaSharp
+ 		static SKDrawable ()
+ 		{
+ 			delegates = new SKManagedDrawableDelegates {
+-				fDraw = DrawInternal,
+-				fGetBounds = GetBoundsInternal,
+-				fNewPictureSnapshot = NewPictureSnapshotInternal,
+-				fDestroy = DestroyInternal,
++				fDraw = (IntPtr)(delegate* unmanaged[Cdecl]<IntPtr, void*, IntPtr, void>)&DrawInternal,
++				fGetBounds = (IntPtr)(delegate* unmanaged[Cdecl]<IntPtr, void*, SKRect*, void>)&GetBoundsInternal,
++				fNewPictureSnapshot = (IntPtr)(delegate* unmanaged[Cdecl]<IntPtr, void*, IntPtr>)&NewPictureSnapshotInternal,
++				fDestroy = (IntPtr)(delegate* unmanaged[Cdecl]<IntPtr, void*, void>)&DestroyInternal,
+ 			};
+
+ 			SkiaApi.sk_manageddrawable_set_procs (delegates);
+@@ -97,6 +98,7 @@ namespace SkiaSharp
+ 		}
+
+ 		[MonoPInvokeCallback (typeof (SKManagedDrawableDrawProxyDelegate))]
++		[UnmanagedCallersOnly (CallConvs = new[] { typeof (CallConvCdecl) })]
+ 		private static void DrawInternal (IntPtr d, void* context, IntPtr canvas)
+ 		{
+ 			var drawable = DelegateProxies.GetUserData<SKDrawable> ((IntPtr)context, out _);
+@@ -104,6 +106,7 @@ namespace SkiaSharp
+ 		}
+
+ 		[MonoPInvokeCallback (typeof (SKManagedDrawableGetBoundsProxyDelegate))]
++		[UnmanagedCallersOnly (CallConvs = new[] { typeof (CallConvCdecl) })]
+ 		private static void GetBoundsInternal (IntPtr d, void* context, SKRect* rect)
+ 		{
+ 			var drawable = DelegateProxies.GetUserData<SKDrawable> ((IntPtr)context, out _);
+@@ -112,6 +115,7 @@ namespace SkiaSharp
+ 		}
+
+ 		[MonoPInvokeCallback (typeof (SKManagedDrawableNewPictureSnapshotProxyDelegate))]
++		[UnmanagedCallersOnly (CallConvs = new[] { typeof (CallConvCdecl) })]
+ 		private static IntPtr NewPictureSnapshotInternal (IntPtr d, void* context)
+ 		{
+ 			var drawable = DelegateProxies.GetUserData<SKDrawable> ((IntPtr)context, out _);
+@@ -119,6 +123,7 @@ namespace SkiaSharp
+ 		}
+
+ 		[MonoPInvokeCallback (typeof (SKManagedDrawableDestroyProxyDelegate))]
++		[UnmanagedCallersOnly (CallConvs = new[] { typeof (CallConvCdecl) })]
+ 		private static void DestroyInternal (IntPtr d, void* context)
+ 		{
+ 			var drawable = DelegateProxies.GetUserData<SKDrawable> ((IntPtr)context, out var gch);
+diff --git a/binding/Binding/SKTraceMemoryDump.cs b/binding/Binding/SKTraceMemoryDump.cs
+index 697cef1fa..73fd93daf 100644
+--- a/binding/Binding/SKTraceMemoryDump.cs
++++ b/binding/Binding/SKTraceMemoryDump.cs
+@@ -1,4 +1,5 @@
+ ﻿using System;
++using System.Runtime.CompilerServices;
+ using System.Runtime.InteropServices;
+
+ namespace SkiaSharp
+@@ -11,8 +12,8 @@ namespace SkiaSharp
+ 		static SKTraceMemoryDump ()
+ 		{
+ 			delegates = new SKManagedTraceMemoryDumpDelegates {
+-				fDumpNumericValue = DumpNumericValueInternal,
+-				fDumpStringValue = DumpStringValueInternal,
++				fDumpNumericValue = (IntPtr)(delegate* unmanaged[Cdecl]<IntPtr, void*, void*, void*, void*, ulong, void>)&DumpNumericValueInternal,
++				fDumpStringValue = (IntPtr)(delegate* unmanaged[Cdecl]<IntPtr, void*, void*, void*, void*, void>)&DumpStringValueInternal,
+ 			};
+
+ 			SkiaApi.sk_managedtracememorydump_set_procs (delegates);
+@@ -48,6 +49,7 @@ namespace SkiaSharp
+ 		// impl
+
+ 		[MonoPInvokeCallback (typeof (SKManagedTraceMemoryDumpDumpNumericValueProxyDelegate))]
++		[UnmanagedCallersOnly (CallConvs = new[] { typeof (CallConvCdecl) })]
+ 		private static void DumpNumericValueInternal (IntPtr d, void* context, void* dumpName, void* valueName, void* units, ulong value)
+ 		{
+ 			var dump = DelegateProxies.GetUserData<SKTraceMemoryDump> ((IntPtr)context, out _);
+@@ -59,6 +61,7 @@ namespace SkiaSharp
+ 		}
+
+ 		[MonoPInvokeCallback (typeof (SKManagedTraceMemoryDumpDumpStringValueProxyDelegate))]
++		[UnmanagedCallersOnly (CallConvs = new[] { typeof (CallConvCdecl) })]
+ 		private static void DumpStringValueInternal (IntPtr d, void* context, void* dumpName, void* valueName, void* value)
+ 		{
+ 			var dump = DelegateProxies.GetUserData<SKTraceMemoryDump> ((IntPtr)context, out _);
+diff --git a/binding/Binding/SkiaApi.generated.cs b/binding/Binding/SkiaApi.generated.cs
+index 910f5a142..2396c349e 100644
+--- a/binding/Binding/SkiaApi.generated.cs
++++ b/binding/Binding/SkiaApi.generated.cs
+@@ -14888,16 +14888,16 @@ namespace SkiaSharp {
+ 	[StructLayout (LayoutKind.Sequential)]
+ 	internal unsafe partial struct SKManagedDrawableDelegates : IEquatable<SKManagedDrawableDelegates> {
+ 		// public sk_manageddrawable_draw_proc fDraw
+-		public SKManagedDrawableDrawProxyDelegate fDraw;
++		public IntPtr fDraw;
+
+ 		// public sk_manageddrawable_getBounds_proc fGetBounds
+-		public SKManagedDrawableGetBoundsProxyDelegate fGetBounds;
++		public IntPtr fGetBounds;
+
+ 		// public sk_manageddrawable_newPictureSnapshot_proc fNewPictureSnapshot
+-		public SKManagedDrawableNewPictureSnapshotProxyDelegate fNewPictureSnapshot;
++		public IntPtr fNewPictureSnapshot;
+
+ 		// public sk_manageddrawable_destroy_proc fDestroy
+-		public SKManagedDrawableDestroyProxyDelegate fDestroy;
++		public IntPtr fDestroy;
+
+ 		public readonly bool Equals (SKManagedDrawableDelegates obj) =>
+ 			fDraw == obj.fDraw && fGetBounds == obj.fGetBounds && fNewPictureSnapshot == obj.fNewPictureSnapshot && fDestroy == obj.fDestroy;
+@@ -14927,43 +14927,43 @@ namespace SkiaSharp {
+ 	[StructLayout (LayoutKind.Sequential)]
+ 	internal unsafe partial struct SKManagedStreamDelegates : IEquatable<SKManagedStreamDelegates> {
+ 		// public sk_managedstream_read_proc fRead
+-		public SKManagedStreamReadProxyDelegate fRead;
++		public IntPtr fRead;
+
+ 		// public sk_managedstream_peek_proc fPeek
+-		public SKManagedStreamPeekProxyDelegate fPeek;
++		public IntPtr fPeek;
+
+ 		// public sk_managedstream_isAtEnd_proc fIsAtEnd
+-		public SKManagedStreamIsAtEndProxyDelegate fIsAtEnd;
++		public IntPtr fIsAtEnd;
+
+ 		// public sk_managedstream_hasPosition_proc fHasPosition
+-		public SKManagedStreamHasPositionProxyDelegate fHasPosition;
++		public IntPtr fHasPosition;
+
+ 		// public sk_managedstream_hasLength_proc fHasLength
+-		public SKManagedStreamHasLengthProxyDelegate fHasLength;
++		public IntPtr fHasLength;
+
+ 		// public sk_managedstream_rewind_proc fRewind
+-		public SKManagedStreamRewindProxyDelegate fRewind;
++		public IntPtr fRewind;
+
+ 		// public sk_managedstream_getPosition_proc fGetPosition
+-		public SKManagedStreamGetPositionProxyDelegate fGetPosition;
++		public IntPtr fGetPosition;
+
+ 		// public sk_managedstream_seek_proc fSeek
+-		public SKManagedStreamSeekProxyDelegate fSeek;
++		public IntPtr fSeek;
+
+ 		// public sk_managedstream_move_proc fMove
+-		public SKManagedStreamMoveProxyDelegate fMove;
++		public IntPtr fMove;
+
+ 		// public sk_managedstream_getLength_proc fGetLength
+-		public SKManagedStreamGetLengthProxyDelegate fGetLength;
++		public IntPtr fGetLength;
+
+ 		// public sk_managedstream_duplicate_proc fDuplicate
+-		public SKManagedStreamDuplicateProxyDelegate fDuplicate;
++		public IntPtr fDuplicate;
+
+ 		// public sk_managedstream_fork_proc fFork
+-		public SKManagedStreamForkProxyDelegate fFork;
++		public IntPtr fFork;
+
+ 		// public sk_managedstream_destroy_proc fDestroy
+-		public SKManagedStreamDestroyProxyDelegate fDestroy;
++		public IntPtr fDestroy;
+
+ 		public readonly bool Equals (SKManagedStreamDelegates obj) =>
+ 			fRead == obj.fRead && fPeek == obj.fPeek && fIsAtEnd == obj.fIsAtEnd && fHasPosition == obj.fHasPosition && fHasLength == obj.fHasLength && fRewind == obj.fRewind && fGetPosition == obj.fGetPosition && fSeek == obj.fSeek && fMove == obj.fMove && fGetLength == obj.fGetLength && fDuplicate == obj.fDuplicate && fFork == obj.fFork && fDestroy == obj.fDestroy;
+@@ -15002,10 +15002,10 @@ namespace SkiaSharp {
+ 	[StructLayout (LayoutKind.Sequential)]
+ 	internal unsafe partial struct SKManagedTraceMemoryDumpDelegates : IEquatable<SKManagedTraceMemoryDumpDelegates> {
+ 		// public sk_managedtraceMemoryDump_dumpNumericValue_proc fDumpNumericValue
+-		public SKManagedTraceMemoryDumpDumpNumericValueProxyDelegate fDumpNumericValue;
++		public IntPtr fDumpNumericValue;
+
+ 		// public sk_managedtraceMemoryDump_dumpStringValue_proc fDumpStringValue
+-		public SKManagedTraceMemoryDumpDumpStringValueProxyDelegate fDumpStringValue;
++		public IntPtr fDumpStringValue;
+
+ 		public readonly bool Equals (SKManagedTraceMemoryDumpDelegates obj) =>
+ 			fDumpNumericValue == obj.fDumpNumericValue && fDumpStringValue == obj.fDumpStringValue;
+@@ -15033,16 +15033,16 @@ namespace SkiaSharp {
+ 	[StructLayout (LayoutKind.Sequential)]
+ 	internal unsafe partial struct SKManagedWStreamDelegates : IEquatable<SKManagedWStreamDelegates> {
+ 		// public sk_managedwstream_write_proc fWrite
+-		public SKManagedWStreamWriteProxyDelegate fWrite;
++		public IntPtr fWrite;
+
+ 		// public sk_managedwstream_flush_proc fFlush
+-		public SKManagedWStreamFlushProxyDelegate fFlush;
++		public IntPtr fFlush;
+
+ 		// public sk_managedwstream_bytesWritten_proc fBytesWritten
+-		public SKManagedWStreamBytesWrittenProxyDelegate fBytesWritten;
++		public IntPtr fBytesWritten;
+
+ 		// public sk_managedwstream_destroy_proc fDestroy
+-		public SKManagedWStreamDestroyProxyDelegate fDestroy;
++		public IntPtr fDestroy;
+
+ 		public readonly bool Equals (SKManagedWStreamDelegates obj) =>
+ 			fWrite == obj.fWrite && fFlush == obj.fFlush && fBytesWritten == obj.fBytesWritten && fDestroy == obj.fDestroy;

@@ -8,6 +8,14 @@ using ThisIsMyPC.Service;
 // debugging (`ThisIsMyPC.Service.exe` from a terminal); UseWindowsService is a
 // no-op outside the SCM.
 
+#if ACG_ENABLED
+if (!ThisIsMyPC.Interop.Win32.Security.DynamicCodeHardening.Apply() ||
+    !ThisIsMyPC.Interop.Win32.Security.DynamicCodeHardening.IsEnabled())
+{
+    Environment.FailFast("Arbitrary Code Guard could not be enabled.");
+}
+#endif
+
 // First: System32 + application dir only for every DLL resolution; a SYSTEM
 // process must never resolve libraries through PATH or the working directory.
 ThisIsMyPC.Interop.Win32.Security.DllSearchHardening.Apply();

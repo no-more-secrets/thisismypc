@@ -21,6 +21,7 @@
          native exe around the MSI); dev builds stay CoreCLR unless asked. -->
     <PublishAot Condition="'$(AotPublish)' == 'true'">true</PublishAot>
     <ControlFlowGuard Condition="'$(AotPublish)' == 'true'">Guard</ControlFlowGuard>
+    <DefineConstants Condition="'$(AotPublish)' == 'true'">$(DefineConstants);ACG_ENABLED</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

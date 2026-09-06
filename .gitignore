@@ -15,6 +15,8 @@ publish/
 # NuGet (root-level packages folder only; source dirs named Packages/ are code)
 *.nupkg
 *.snupkg
+!third-party/acg/packages/avalonia.win32.11.3.12.2.nupkg
+!third-party/acg/packages/skiasharp.2.88.9.2.nupkg
 /[Pp]ackages/*
 !/[Pp]ackages/build/
 

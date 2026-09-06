@@ -1,0 +1,592 @@
+diff --git a/src/Windows/Avalonia.Win32/EmbeddedWindowImpl.cs b/src/Windows/Avalonia.Win32/EmbeddedWindowImpl.cs
+index a039d568c..6fd2efed4 100644
+--- a/src/Windows/Avalonia.Win32/EmbeddedWindowImpl.cs
++++ b/src/Windows/Avalonia.Win32/EmbeddedWindowImpl.cs
+@@ -18,7 +18,7 @@ public EmbeddedWindowImpl()
+             };
+         }
+ 
+-        protected override IntPtr CreateWindowOverride(ushort atom)
++        protected override IntPtr CreateWindowOverride(ushort atom, IntPtr createParameter)
+         {
+             var hWnd = UnmanagedMethods.CreateWindowEx(
+                 0,
+@@ -32,7 +32,7 @@ protected override IntPtr CreateWindowOverride(ushort atom)
+                 OffscreenParentWindow.Handle,
+                 IntPtr.Zero,
+                 IntPtr.Zero,
+-                IntPtr.Zero);
++                createParameter);
+             return hWnd;
+         }
+ 
+diff --git a/src/Windows/Avalonia.Win32/Interop/UnmanagedMethods.cs b/src/Windows/Avalonia.Win32/Interop/UnmanagedMethods.cs
+index f41603b22..1b8d9097b 100644
+--- a/src/Windows/Avalonia.Win32/Interop/UnmanagedMethods.cs
++++ b/src/Windows/Avalonia.Win32/Interop/UnmanagedMethods.cs
+@@ -1330,7 +1330,14 @@ public static extern IntPtr CreateWindowEx(
+         public static extern int GetSystemMetrics(SystemMetric smIndex);
+ 
+         [DllImport("user32.dll", SetLastError = true)]
++#if NET6_0_OR_GREATER
++        public static extern bool EnumChildWindows(
++            IntPtr parentHwnd,
++            delegate* unmanaged[Stdcall]<IntPtr, IntPtr, int> enumFunc,
++            IntPtr lParam);
++#else
+         public static extern bool EnumChildWindows(IntPtr parentHwnd, EnumWindowsProc enumFunc, IntPtr lParam);
++#endif
+ 
+         public delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
+ 
+@@ -2438,11 +2445,15 @@ public static WINDOWPLACEMENT Default
+         }
+ 
+         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+-        public struct WNDCLASSEX
++        public unsafe struct WNDCLASSEX
+         {
+             public int cbSize;
+             public int style;
++#if NET6_0_OR_GREATER
++            public delegate* unmanaged[Stdcall]<IntPtr, uint, IntPtr, IntPtr, IntPtr> lpfnWndProc;
++#else
+             public WndProc lpfnWndProc;
++#endif
+             public int cbClsExtra;
+             public int cbWndExtra;
+             public IntPtr hInstance;
+diff --git a/src/Windows/Avalonia.Win32/OpenGl/WglDisplay.cs b/src/Windows/Avalonia.Win32/OpenGl/WglDisplay.cs
+index 798c8e784..8fac0dec3 100644
+--- a/src/Windows/Avalonia.Win32/OpenGl/WglDisplay.cs
++++ b/src/Windows/Avalonia.Win32/OpenGl/WglDisplay.cs
+@@ -1,5 +1,6 @@
+ using System;
+ using System.Diagnostics.CodeAnalysis;
++using System.Runtime.CompilerServices;
+ using System.Runtime.InteropServices;
+ using Avalonia.OpenGL;
+ using Avalonia.Threading;
+@@ -11,8 +12,6 @@ namespace Avalonia.Win32.OpenGl
+     internal class WglDisplay
+     {
+         private static bool? _initialized;
+-        private static readonly DebugCallbackDelegate _debugCallback = DebugCallback;
+-
+         private static IntPtr _bootstrapContext;
+         private static IntPtr _bootstrapWindow;
+         private static IntPtr _bootstrapDc;
+@@ -33,9 +32,6 @@ private delegate bool WglChoosePixelFormatARBDelegate(IntPtr hdc, int[]? piAttri
+ 
+         private static GlDebugMessageCallbackDelegate? s_glDebugMessageCallback;
+ 
+-        private delegate void DebugCallbackDelegate(int source, int type, int id, int severity, int len, IntPtr message,
+-            IntPtr userParam);
+-
+         [MemberNotNullWhen(true, nameof(s_wglChoosePixelFormatArb))]
+         [MemberNotNullWhen(true, nameof(s_wglCreateContextAttribsArb))]
+         private static bool Initialize() => _initialized ??= InitializeCore();
+@@ -101,13 +97,14 @@ private static bool InitializeCore()
+             return true;
+         }
+ 
++        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
+         private static void DebugCallback(int source, int type, int id, int severity, int len, IntPtr message, IntPtr userparam)
+         {
+             var err = Marshal.PtrToStringAnsi(message, len);
+             Console.Error.WriteLine(err);
+         }
+         
+-        public static WglContext? CreateContext(GlVersion[] versions, IGlContext? share)
++        public static unsafe WglContext? CreateContext(GlVersion[] versions, IGlContext? share)
+         {
+             if (!Initialize())
+                 return null;
+@@ -150,7 +147,9 @@ private static void DebugCallback(int source, int type, int id, int severity, in
+                     if (s_glDebugMessageCallback is not null)
+                     {
+                         using (new WglRestoreContext(dc, context, null))
+-                            s_glDebugMessageCallback(Marshal.GetFunctionPointerForDelegate(_debugCallback), IntPtr.Zero);
++                            s_glDebugMessageCallback(
++                                (IntPtr)(delegate* unmanaged[Stdcall]<int, int, int, int, int, IntPtr, IntPtr, void>)&DebugCallback,
++                                IntPtr.Zero);
+                     }
+ 
+                     if (context != IntPtr.Zero)
+diff --git a/src/Windows/Avalonia.Win32/OpenGl/WglGdiResourceManager.cs b/src/Windows/Avalonia.Win32/OpenGl/WglGdiResourceManager.cs
+index 86143d078..1c384c4a8 100644
+--- a/src/Windows/Avalonia.Win32/OpenGl/WglGdiResourceManager.cs
++++ b/src/Windows/Avalonia.Win32/OpenGl/WglGdiResourceManager.cs
+@@ -1,5 +1,6 @@
+ using System;
+ using System.Collections.Generic;
++using System.Runtime.CompilerServices;
+ using System.Runtime.InteropServices;
+ using System.Threading;
+ using System.Threading.Tasks;
+@@ -68,7 +69,6 @@ public DestroyWindowOp(IntPtr window, TaskCompletionSource<object?> result)
+     private static readonly Queue<object> s_queue = new();
+     private static readonly AutoResetEvent s_event = new(false);
+     private static readonly ushort s_windowClass;
+-    private static readonly UnmanagedMethods.WndProc s_wndProcDelegate = WndProc;
+ 
+     private static void Worker()
+     {
+@@ -110,13 +110,13 @@ private static void Worker()
+         }
+     }
+ 
+-    static WglGdiResourceManager()
++    static unsafe WglGdiResourceManager()
+     {
+         var wndClassEx = new UnmanagedMethods.WNDCLASSEX
+         {
+             cbSize = Marshal.SizeOf<UnmanagedMethods.WNDCLASSEX>(),
+             hInstance = UnmanagedMethods.GetModuleHandle(null),
+-            lpfnWndProc = s_wndProcDelegate,
++            lpfnWndProc = &WndProc,
+             lpszClassName = "AvaloniaGlWindow-" + Guid.NewGuid(),
+             style = (int)UnmanagedMethods.ClassStyles.CS_OWNDC
+         };
+@@ -129,6 +129,7 @@ static WglGdiResourceManager()
+     }
+ 
+ 
++    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
+     private static IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
+     {
+         return UnmanagedMethods.DefWindowProc(hWnd, msg, wParam, lParam);
+diff --git a/src/Windows/Avalonia.Win32/PopupImpl.cs b/src/Windows/Avalonia.Win32/PopupImpl.cs
+index 8a8450443..29d5d706b 100644
+--- a/src/Windows/Avalonia.Win32/PopupImpl.cs
++++ b/src/Windows/Avalonia.Win32/PopupImpl.cs
+@@ -45,7 +45,7 @@ public override Size MaxAutoSizeHint
+             }
+         }
+ 
+-        protected override IntPtr CreateWindowOverride(ushort atom)
++        protected override IntPtr CreateWindowOverride(ushort atom, IntPtr createParameter)
+         {
+             UnmanagedMethods.WindowStyles style =
+                 UnmanagedMethods.WindowStyles.WS_POPUP |
+@@ -68,7 +68,7 @@ protected override IntPtr CreateWindowOverride(ushort atom)
+                 s_parentHandle,
+                 IntPtr.Zero,
+                 IntPtr.Zero,
+-                IntPtr.Zero);
++                createParameter);
+             s_parentHandle = IntPtr.Zero;
+ 
+             EnableBoxShadow(result, _dropShadowHint);
+diff --git a/src/Windows/Avalonia.Win32/ScreenImpl.cs b/src/Windows/Avalonia.Win32/ScreenImpl.cs
+index b4bff3da3..c332042fb 100644
+--- a/src/Windows/Avalonia.Win32/ScreenImpl.cs
++++ b/src/Windows/Avalonia.Win32/ScreenImpl.cs
+@@ -10,8 +10,31 @@
+ 
+ namespace Avalonia.Win32;
+ 
+-internal unsafe class ScreenImpl : ScreensBase<nint, WinScreen>
++internal unsafe partial class ScreenImpl : ScreensBase<nint, WinScreen>
+ {
++    [LibraryImport("user32.dll", EntryPoint = "EnumDisplayMonitors")]
++    private static partial int EnumDisplayMonitors(
++        IntPtr hdc,
++        void* clip,
++        delegate* unmanaged[Stdcall]<IntPtr, IntPtr, void*, IntPtr, int> callback,
++        IntPtr context);
++
++    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
++    private static int EnumDisplayMonitorsCallback(
++        IntPtr monitor,
++        IntPtr hdcMonitor,
++        void* monitorRect,
++        IntPtr context)
++    {
++        if (GCHandle.FromIntPtr(context).Target is List<nint> screens)
++        {
++            screens.Add(monitor);
++            return 1;
++        }
++
++        return 0;
++    }
++
+     protected override int GetScreenCount() => GetSystemMetrics(SystemMetric.SM_CMONITORS);
+ 
+     protected override IReadOnlyList<nint> GetAllScreenKeys()
+@@ -25,7 +48,7 @@ public static List<nint> GetAllDisplayMonitorHandlers()
+         var gcHandle = GCHandle.Alloc(screens);
+         try
+         {
+-            PInvoke.EnumDisplayMonitors(default, default(Win32Interop.Foundation.RECT*), EnumDisplayMonitorsCallback, (IntPtr)gcHandle);
++            EnumDisplayMonitors(IntPtr.Zero, null, &EnumDisplayMonitorsCallback, GCHandle.ToIntPtr(gcHandle));
+         }
+         finally
+         {
+@@ -33,20 +56,6 @@ public static List<nint> GetAllDisplayMonitorHandlers()
+         }
+ 
+         return screens;
+-
+-        static Win32Interop.Foundation.BOOL EnumDisplayMonitorsCallback(
+-            Win32Interop.Graphics.Gdi.HMONITOR monitor,
+-            Win32Interop.Graphics.Gdi.HDC hdcMonitor,
+-            Win32Interop.Foundation.RECT* lprcMonitor,
+-            Win32Interop.Foundation.LPARAM dwData)
+-        {
+-            if (GCHandle.FromIntPtr(dwData).Target is List<nint> screens)
+-            {
+-                screens.Add(monitor);
+-                return true;
+-            }
+-            return false;
+-        }
+     }
+ 
+     protected override WinScreen CreateScreenFromKey(nint key) => new(key);
+diff --git a/src/Windows/Avalonia.Win32/SimpleWindow.cs b/src/Windows/Avalonia.Win32/SimpleWindow.cs
+index df1f3df68..cc5c0447d 100644
+--- a/src/Windows/Avalonia.Win32/SimpleWindow.cs
++++ b/src/Windows/Avalonia.Win32/SimpleWindow.cs
+@@ -1,6 +1,7 @@
+ ﻿using System;
+ using System.Collections.Concurrent;
+ using System.ComponentModel;
++using System.Runtime.CompilerServices;
+ using System.Runtime.InteropServices;
+ using Avalonia.Win32.Interop;
+ 
+@@ -9,20 +10,18 @@ namespace Avalonia.Win32;
+ internal class SimpleWindow : IDisposable
+ {
+     private readonly UnmanagedMethods.WndProc? _wndProc;
+-    private static UnmanagedMethods.WndProc s_wndProcDelegate;
+     public IntPtr Handle { get; private set; }
+     private static string s_className;
+     private static uint s_classAtom;
+     private static ConcurrentDictionary<IntPtr, SimpleWindow> s_Instances = new();
+ 
+-    static SimpleWindow()
++    static unsafe SimpleWindow()
+     {
+-        s_wndProcDelegate = WndProc;
+         var wndClassEx = new UnmanagedMethods.WNDCLASSEX
+         {
+             cbSize = Marshal.SizeOf<UnmanagedMethods.WNDCLASSEX>(),
+             hInstance = UnmanagedMethods.GetModuleHandle(null),
+-            lpfnWndProc = s_wndProcDelegate,
++            lpfnWndProc = &WndProc,
+             lpszClassName = s_className = "AvaloniaSimpleWindow-" + Guid.NewGuid(),
+         };
+ 
+@@ -61,6 +60,7 @@ public SimpleWindow(UnmanagedMethods.WndProc? wndProc)
+         }
+     }
+ 
++    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
+     private static IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
+     {
+         SimpleWindow? window;
+diff --git a/src/Windows/Avalonia.Win32/Win32NativeControlHost.cs b/src/Windows/Avalonia.Win32/Win32NativeControlHost.cs
+index a04e52f41..d9ac98097 100644
+--- a/src/Windows/Avalonia.Win32/Win32NativeControlHost.cs
++++ b/src/Windows/Avalonia.Win32/Win32NativeControlHost.cs
+@@ -1,5 +1,6 @@
+ using System;
+ using System.Diagnostics.CodeAnalysis;
++using System.Runtime.CompilerServices;
+ using System.Runtime.InteropServices;
+ using Avalonia.Controls.Platform;
+ using Avalonia.Platform;
+@@ -66,17 +67,15 @@ private class DumbWindow : IDisposable, INativeControlHostDestroyableControlHand
+             public string HandleDescriptor => "HWND";
+             public void Destroy() => Dispose();
+ 
+-            private readonly UnmanagedMethods.WndProc _wndProcDelegate;
+             private readonly string _className;
+ 
+-            public DumbWindow(bool layered = false, IntPtr? parent = null)
++            public unsafe DumbWindow(bool layered = false, IntPtr? parent = null)
+             {
+-                _wndProcDelegate = WndProc;
+                 var wndClassEx = new UnmanagedMethods.WNDCLASSEX
+                 {
+                     cbSize = Marshal.SizeOf<UnmanagedMethods.WNDCLASSEX>(),
+                     hInstance = UnmanagedMethods.GetModuleHandle(null),
+-                    lpfnWndProc = _wndProcDelegate,
++                    lpfnWndProc = &WndProc,
+                     lpszClassName = _className = "AvaloniaDumbWindow-" + Guid.NewGuid(),
+                 };
+ 
+@@ -103,6 +102,7 @@ public DumbWindow(bool layered = false, IntPtr? parent = null)
+                         UnmanagedMethods.LayeredWindowFlags.LWA_ALPHA);
+             }
+ 
++            [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
+             private static IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
+             {
+                 return UnmanagedMethods.DefWindowProc(hWnd, msg, wParam, lParam);
+diff --git a/src/Windows/Avalonia.Win32/Win32Platform.cs b/src/Windows/Avalonia.Win32/Win32Platform.cs
+index 6996dd8e3..2174045a9 100644
+--- a/src/Windows/Avalonia.Win32/Win32Platform.cs
++++ b/src/Windows/Avalonia.Win32/Win32Platform.cs
+@@ -1,9 +1,11 @@
+ using System;
++using System.Collections.Concurrent;
+ using System.ComponentModel;
+ using System.Diagnostics.CodeAnalysis;
+ using System.IO;
+ using System.Linq;
+ using Avalonia.Reactive;
++using System.Runtime.CompilerServices;
+ using System.Runtime.InteropServices;
+ using System.Threading;
+ using Avalonia.Controls.ApplicationLifetimes;
+@@ -40,12 +42,12 @@ namespace Avalonia.Win32
+ {
+     internal class Win32Platform : IWindowingPlatform, IPlatformIconLoader, IPlatformLifetimeEventsImpl
+     {
++        private static readonly ConcurrentDictionary<IntPtr, Win32Platform> s_messageWindows = new();
+         private static readonly Win32Platform s_instance = new();
+         private static Win32PlatformOptions? s_options;
+         private static Compositor? s_compositor;
+         internal const int TIMERID_DISPATCHER = 1;
+ 
+-        private WndProc? _wndProcDelegate;
+         private IntPtr _hwnd;
+         private Win32DispatcherImpl _dispatcher;
+ 
+@@ -184,15 +186,32 @@ private IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
+             return DefWindowProc(hWnd, msg, wParam, lParam);
+         }
+ 
+-        private void CreateMessageWindow()
++        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
++        private static IntPtr StaticWndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
+         {
+-            // Ensure that the delegate doesn't get garbage collected by storing it as a field.
+-            _wndProcDelegate = WndProc;
++            if (msg == (uint)WindowsMessage.WM_NCCREATE)
++            {
++                var handle = Marshal.ReadIntPtr(lParam);
++                if (GCHandle.FromIntPtr(handle).Target is Win32Platform platform)
++                    s_messageWindows[hWnd] = platform;
++            }
++
++            var result = s_messageWindows.TryGetValue(hWnd, out var instance)
++                ? instance.WndProc(hWnd, msg, wParam, lParam)
++                : DefWindowProc(hWnd, msg, wParam, lParam);
++
++            if (msg == (uint)WindowsMessage.WM_NCDESTROY)
++                s_messageWindows.TryRemove(hWnd, out _);
++
++            return result;
++        }
+ 
++        private unsafe void CreateMessageWindow()
++        {
+             WNDCLASSEX wndClassEx = new WNDCLASSEX
+             {
+                 cbSize = Marshal.SizeOf<WNDCLASSEX>(),
+-                lpfnWndProc = _wndProcDelegate,
++                lpfnWndProc = &StaticWndProc,
+                 hInstance = GetModuleHandle(null),
+                 lpszClassName = "AvaloniaMessageWindow " + Guid.NewGuid(),
+             };
+@@ -204,7 +223,17 @@ private void CreateMessageWindow()
+                 throw new Win32Exception();
+             }
+ 
+-            _hwnd = CreateWindowEx(0, atom, null, 0, 0, 0, 0, 0, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
++            var handle = GCHandle.Alloc(this);
++            try
++            {
++                _hwnd = CreateWindowEx(
++                    0, atom, null, 0, 0, 0, 0, 0,
++                    IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, GCHandle.ToIntPtr(handle));
++            }
++            finally
++            {
++                handle.Free();
++            }
+ 
+             if (_hwnd == IntPtr.Zero)
+             {
+diff --git a/src/Windows/Avalonia.Win32/WindowImpl.cs b/src/Windows/Avalonia.Win32/WindowImpl.cs
+index b1b1bb08e..44561f42f 100644
+--- a/src/Windows/Avalonia.Win32/WindowImpl.cs
++++ b/src/Windows/Avalonia.Win32/WindowImpl.cs
+@@ -1,8 +1,10 @@
+ ﻿using System;
++using System.Collections.Concurrent;
+ using System.Collections.Generic;
+ using System.ComponentModel;
+ using System.Diagnostics.CodeAnalysis;
+ using System.Linq;
++using System.Runtime.CompilerServices;
+ using System.Runtime.InteropServices;
+ using Avalonia.Collections.Pooled;
+ using Avalonia.Controls;
+@@ -35,6 +37,7 @@ namespace Avalonia.Win32
+     internal partial class WindowImpl : IWindowImpl, EglGlPlatformSurface.IEglWindowGlPlatformSurfaceInfo, IWin32OptionsTopLevelImpl
+     {
+         private static readonly List<WindowImpl> s_instances = new();
++        private static readonly ConcurrentDictionary<IntPtr, WindowImpl> s_windows = new();
+ 
+         private static readonly IntPtr s_defaultCursor = LoadCursor(
+             IntPtr.Zero, new IntPtr((int)UnmanagedMethods.Cursor.IDC_ARROW));
+@@ -81,7 +84,6 @@ internal partial class WindowImpl : IWindowImpl, EglGlPlatformSurface.IEglWindow
+         private readonly Win32NativeControlHost _nativeControlHost;
+         private readonly IStorageProvider _storageProvider;
+         private WindowsInputPane? _inputPane;
+-        private WndProc _wndProcDelegate;
+         private string? _className;
+         private IntPtr _hwnd;
+         private IInputRoot? _owner;
+@@ -936,7 +938,7 @@ public unsafe void SetFrameThemeVariant(PlatformThemeVariant themeVariant)
+             }
+         }
+ 
+-        protected virtual IntPtr CreateWindowOverride(ushort atom)
++        protected virtual IntPtr CreateWindowOverride(ushort atom, IntPtr createParameter)
+         {
+             return CreateWindowEx(
+                 UseRedirectionBitmap ? 0 : (int)WindowStyles.WS_EX_NOREDIRECTIONBITMAP,
+@@ -950,17 +952,13 @@ protected virtual IntPtr CreateWindowOverride(ushort atom)
+                 IntPtr.Zero,
+                 IntPtr.Zero,
+                 IntPtr.Zero,
+-                IntPtr.Zero);
++                createParameter);
+         }
+ 
+-        [MemberNotNull(nameof(_wndProcDelegate))]
+         [MemberNotNull(nameof(_className))]
+         [MemberNotNull(nameof(Handle))]
+-        private void CreateWindow()
++        private unsafe void CreateWindow()
+         {
+-            // Ensure that the delegate doesn't get garbage collected by storing it as a field.
+-            _wndProcDelegate = WndProcMessageHandler;
+-
+             _className = $"Avalonia-{Guid.NewGuid().ToString()}";
+ 
+             // Unique DC helps with performance when using Gpu based rendering
+@@ -970,7 +968,7 @@ private void CreateWindow()
+             {
+                 cbSize = Marshal.SizeOf<WNDCLASSEX>(),
+                 style = (int)windowClassStyle,
+-                lpfnWndProc = _wndProcDelegate,
++                lpfnWndProc = &StaticWndProc,
+                 hInstance = GetModuleHandle(null),
+                 hCursor = s_defaultCursor,
+                 hbrBackground = IntPtr.Zero,
+@@ -984,7 +982,15 @@ private void CreateWindow()
+                 throw new Win32Exception();
+             }
+ 
+-            _hwnd = CreateWindowOverride(atom);
++            var handle = GCHandle.Alloc(this);
++            try
++            {
++                _hwnd = CreateWindowOverride(atom, GCHandle.ToIntPtr(handle));
++            }
++            finally
++            {
++                handle.Free();
++            }
+ 
+             if (_hwnd == IntPtr.Zero)
+             {
+@@ -1026,6 +1032,26 @@ private IntPtr WndProcMessageHandler(IntPtr hWnd, uint msg, IntPtr wParam, IntPt
+             return WndProc(hWnd, msg, wParam, lParam);
+         }
+ 
++        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
++        private static IntPtr StaticWndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
++        {
++            if (msg == (uint)WindowsMessage.WM_NCCREATE)
++            {
++                var handle = Marshal.ReadIntPtr(lParam);
++                if (GCHandle.FromIntPtr(handle).Target is WindowImpl window)
++                    s_windows[hWnd] = window;
++            }
++
++            var result = s_windows.TryGetValue(hWnd, out var instance)
++                ? instance.WndProcMessageHandler(hWnd, msg, wParam, lParam)
++                : DefWindowProc(hWnd, msg, wParam, lParam);
++
++            if (msg == (uint)WindowsMessage.WM_NCDESTROY)
++                s_windows.TryRemove(hWnd, out _);
++
++            return result;
++        }
++
+         private void CreateDropTarget(IInputRoot inputRoot)
+         {
+             if (AvaloniaLocator.Current.GetService<IDragDropDevice>() is { } dragDropDevice)
+@@ -1637,7 +1663,30 @@ public void SetExtendClientAreaTitleBarHeightHint(double titleBarHeight)
+         }
+ 
+         /// <inheritdoc/>
+-        public void GetWindowsZOrder(Span<Window> windows, Span<long> zOrder)
++        private sealed class ZOrderEnumerationState
++        {
++            public required Dictionary<IntPtr, int> HandlesToIndex { get; init; }
++            public required long[] Output { get; init; }
++            public long Next;
++        }
++
++        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
++        private static int EnumerateWindow(IntPtr hWnd, IntPtr lParam)
++        {
++            var state = (ZOrderEnumerationState?)GCHandle.FromIntPtr(lParam).Target;
++            if (state is null)
++                return 0;
++
++            if (state.HandlesToIndex.TryGetValue(hWnd, out var index))
++            {
++                state.Output[index] = -state.Next;
++                state.Next++;
++            }
++
++            return state.Next < state.Output.Length ? 1 : 0;
++        }
++
++        public unsafe void GetWindowsZOrder(Span<Window> windows, Span<long> zOrder)
+         {
+             var handlesToIndex = new Dictionary<IntPtr, int>(windows.Length);
+             var outputArray = new long[windows.Length];
+@@ -1648,19 +1697,20 @@ public void GetWindowsZOrder(Span<Window> windows, Span<long> zOrder)
+                     handlesToIndex.Add(platformImpl.Handle.Handle, i);
+             }
+ 
+-            long nextZOrder = 0;
+-            bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam)
++            var state = new ZOrderEnumerationState
+             {
+-                if (handlesToIndex.TryGetValue(hWnd, out var index))
+-                {
+-                    // We negate the z-order so that the topmost window has the highest number.
+-                    outputArray[index] = -nextZOrder;
+-                    nextZOrder++;
+-                }
+-                return nextZOrder < outputArray.Length;
++                HandlesToIndex = handlesToIndex,
++                Output = outputArray,
++            };
++            var handle = GCHandle.Alloc(state);
++            try
++            {
++                EnumChildWindows(IntPtr.Zero, &EnumerateWindow, GCHandle.ToIntPtr(handle));
++            }
++            finally
++            {
++                handle.Free();
+             }
+-
+-            EnumChildWindows(IntPtr.Zero, EnumWindowsProc, IntPtr.Zero);
+ 
+             for (int i = 0; i < windows.Length; i++)
+             {

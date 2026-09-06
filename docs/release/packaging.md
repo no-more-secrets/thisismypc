@@ -90,6 +90,12 @@ service exe must sit next to the app exe for Owner Mode enable), packs the MSI,
 and writes `SHA256SUMS`. Then follow
 `update-signing.md` for signing and upload.
 
+All three NativeAOT executables enable Arbitrary Code Guard before application
+startup. The local Avalonia.Win32 and SkiaSharp packages under
+`third-party/acg` replace runtime-generated native callback thunks with static
+unmanaged callbacks. Rebuild them with `tools/build-acg-dependencies.ps1`.
+Run `tools/AcgLauncher` from an elevated terminal to test loader-time ACG.
+
 ### Signing with SSL.com eSigner
 
 Releases use SSL.com eSigner CKA in Automated Code Signing and Production mode.

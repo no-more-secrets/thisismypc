@@ -5,6 +5,7 @@ using ThisIsMyPC.App.Services;
 using ThisIsMyPC.Core;
 using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Interop.Win32;
+using ThisIsMyPC.Interop.Win32.Security;
 using Velopack;
 
 namespace ThisIsMyPC.App;
@@ -16,10 +17,17 @@ sealed class Program
     [STAThread]
     public static void Main(string[] args)
     {
+#if ACG_ENABLED
+        // NativeAOT releases forbid new executable memory before UI startup.
+        // Patched Avalonia and SkiaSharp use static unmanaged callbacks.
+        if (!DynamicCodeHardening.Apply() || !DynamicCodeHardening.IsEnabled())
+            Environment.FailFast("Arbitrary Code Guard could not be enabled.");
+#endif
+
         // First: drop working directory and PATH from every DLL resolution in
         // the process (System32 + application dir only). Must precede any code
         // that could fault in a library.
-        Interop.Win32.Security.DllSearchHardening.Apply();
+        DllSearchHardening.Apply();
 
 #if DEBUG
         // Debug builds get a separate console window streaming verbose logs.

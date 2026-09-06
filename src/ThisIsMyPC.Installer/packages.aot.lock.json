@@ -86,15 +86,6 @@
         "resolved": "11.3.12",
         "contentHash": "zaWTPaBKxGfHxqQfPh1WP+vWy3iVAwYWW/7FGlz63/wT1b+3b7Wn37H6c9C2E/M3cgllrW5/cirye516QUDZiA=="
       },
-      "Avalonia.Win32": {
-        "type": "Transitive",
-        "resolved": "11.3.12",
-        "contentHash": "3Z8gSpWMU0NWR0fI/m8d9b6d9fms1MJ6eZJ7IU4CdU/zCrPiFTjtPfc2VRaRD/0H4tsR3VgP+iTMGZn5nBWljg==",
-        "dependencies": {
-          "Avalonia": "11.3.12",
-          "Avalonia.Angle.Windows.Natives": "2.1.25547.20250602"
-        }
-      },
       "Avalonia.X11": {
         "type": "Transitive",
         "resolved": "11.3.12",
@@ -139,15 +130,6 @@
         "contentHash": "hubA20AGenQ4Sx0ElWaPpB8DISjXpdx463+1zOGRslsT0e/t/06ITv+pHsop8CcJ0d8PZLfgnT7juCDVD79Dkw==",
         "dependencies": {
           "SQLitePCLRaw.core": "2.1.12"
-        }
-      },
-      "SkiaSharp": {
-        "type": "Transitive",
-        "resolved": "2.88.9",
-        "contentHash": "3MD5VHjXXieSHCleRLuaTXmL2pD0mB7CcOB1x2kA1I4bhptf4e3R27iM93264ZYuAq6mkUyX5XbcxnZvMJYc1Q==",
-        "dependencies": {
-          "SkiaSharp.NativeAssets.Win32": "2.88.9",
-          "SkiaSharp.NativeAssets.macOS": "2.88.9"
         }
       },
       "SkiaSharp.NativeAssets.Linux": {
@@ -228,6 +210,16 @@
           "SkiaSharp.NativeAssets.WebAssembly": "2.88.9"
         }
       },
+      "Avalonia.Win32": {
+        "type": "CentralTransitive",
+        "requested": "[11.3.12.2, 11.3.12.2]",
+        "resolved": "11.3.12.2",
+        "contentHash": "sD534gOnKOawkJtogtFpWI7UkVxflI9yZFMurFGVVte/z1M97Qu0wZWcs37Ag/xLOx6mXFy/JJYwjVyGgp5xuQ==",
+        "dependencies": {
+          "Avalonia": "11.3.12",
+          "Avalonia.Angle.Windows.Natives": "2.1.25547.20250602"
+        }
+      },
       "Microsoft.Data.Sqlite": {
         "type": "CentralTransitive",
         "requested": "[10.0.11, )",
@@ -244,6 +236,16 @@
         "requested": "[6.2.0, )",
         "resolved": "6.2.0",
         "contentHash": "CxK6AjM1Wy3hM8YeBpLJJuB/JdoeIVvX0/fMTWeIXD917UozCtzv6cZDamevugeEaBBF0TIatfcNX2iJHI0Cew=="
+      },
+      "SkiaSharp": {
+        "type": "CentralTransitive",
+        "requested": "[2.88.9.2, 2.88.9.2]",
+        "resolved": "2.88.9.2",
+        "contentHash": "6xHlMZCNsot3I5Wmf1V3Ooqqhpsf8YUtx5jydrOwNv0c8VcR/IKppb9JoFW7gKCrpvfe2fR5Md4HsduOk0NkBA==",
+        "dependencies": {
+          "SkiaSharp.NativeAssets.Win32": "2.88.9",
+          "SkiaSharp.NativeAssets.macOS": "2.88.9"
+        }
       },
       "Tmds.DBus.Protocol": {
         "type": "CentralTransitive",

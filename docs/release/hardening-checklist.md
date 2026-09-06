@@ -27,10 +27,19 @@ EH Continuation table present.
 
 ## Process and loading hardening
 
+- **Arbitrary Code Guard: DONE.** Every NativeAOT App, Service, and Installer
+  enables `ProcessDynamicCodePolicy` before Avalonia or host startup and fails closed
+  if Windows does not confirm it. Avalonia.Win32 11.3.12 and SkiaSharp 2.88.9
+  used managed delegate thunks that ACG blocks. Pinned local rebuilds replace
+  those thunks with static unmanaged function pointers. A strict process
+  creation test kept ACG active before resume and after the main window opened.
+  `tools/AcgLauncher` preserves this loader-time release test in the repository.
+  The shipped self-enable path still starts at managed `Main`. Loader-time ACG
+  needs a trusted launcher or machine policy as a separate hardening step.
 - **Safe DLL search: IMPL.** New `DllSearchHardening.Apply()`
   (SetDefaultDllDirectories: SYSTEM32 + application dir only, PATH and CWD
-  removed process-wide) called first thing in both entry points (App
-  Program.Main, Service Program). Complements the existing per-assembly
+  removed process-wide) called before framework startup in the App, Service,
+  and Installer. Complements the existing per-assembly
   `DefaultDllImportSearchPaths(System32)` attributes (NFR30), which cannot
   reach delay-loaded or dependency-pulled DLLs.
 - **Delay-load hardening: covered by the above.** Delay-load thunks resolve

@@ -13,6 +13,9 @@
     <PackageVersion Include="Avalonia.Diagnostics" Version="11.3.12" />
     <PackageVersion Include="Avalonia.Headless.XUnit" Version="11.3.12" />
     <PackageVersion Include="Avalonia.Skia" Version="11.3.12" />
+    <!-- Local rebuilds replace runtime-generated interop thunks with static callbacks for ACG. -->
+    <PackageVersion Include="Avalonia.Win32" Version="[11.3.12.2]" />
+    <PackageVersion Include="SkiaSharp" Version="[2.88.9.2]" />
     <!-- Transitive of Avalonia.Desktop (FreeDesktop backend); 0.21.2 carries GHSA-xrw6-gwf8-vvr9. Pinned to the patched 0.21.x. -->
     <PackageVersion Include="Tmds.DBus.Protocol" Version="0.21.3" />
   </ItemGroup>

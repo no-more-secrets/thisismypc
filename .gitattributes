@@ -1,2 +1,3 @@
 * text=auto eol=crlf
 tools/git-hooks/* text eol=lf
+*.patch text eol=lf whitespace=-space-before-tab,-blank-at-eol

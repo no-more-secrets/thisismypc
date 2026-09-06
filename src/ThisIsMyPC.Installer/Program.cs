@@ -8,6 +8,11 @@ sealed class Program
     [STAThread]
     public static int Main(string[] args)
     {
+#if ACG_ENABLED
+        if (!DynamicCodeHardening.Apply() || !DynamicCodeHardening.IsEnabled())
+            Environment.FailFast("Arbitrary Code Guard could not be enabled.");
+#endif
+
         // Same first step as the app: no working-directory or PATH DLL
         // resolution in an elevated process.
         DllSearchHardening.Apply();

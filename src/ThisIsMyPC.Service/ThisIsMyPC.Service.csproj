@@ -7,6 +7,7 @@
          the AOT toolchain leaves it off by default. -->
     <PublishAot Condition="'$(AotPublish)' == 'true'">true</PublishAot>
     <ControlFlowGuard Condition="'$(AotPublish)' == 'true'">Guard</ControlFlowGuard>
+    <DefineConstants Condition="'$(AotPublish)' == 'true'">$(DefineConstants);ACG_ENABLED</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
