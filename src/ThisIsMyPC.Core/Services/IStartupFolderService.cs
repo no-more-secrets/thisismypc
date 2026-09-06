@@ -9,8 +9,8 @@ public enum StartupFolderScope
 }
 
 /// <summary>
-/// A file discovered in a startup folder. ResolvedTarget is the shortcut target
-/// for .lnk files (null when resolution fails or the file is not a shortcut).
+/// A file discovered in a startup folder. ResolvedTarget is optional metadata
+/// supplied only when a caller can resolve shortcuts outside an elevated process.
 /// </summary>
 public sealed record StartupFolderItem(string FilePath, string? ResolvedTarget);
 

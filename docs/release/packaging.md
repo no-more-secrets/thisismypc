@@ -44,20 +44,13 @@ The app corresponds to the PC, not a user profile (AGENTS.md). Packaging follows
   in the packed exe before signing. "Type: Application" is Explorer's label for
   every .exe and cannot be changed.
 - **Exploit mitigations are a release gate.** `tools/check-binary-hardening.ps1`
-  reads the PE headers of the files about to ship and build-release.ps1 fails
-  if App, Service, or the installer lacks any of: ASLR with high-entropy VA,
-  DEP, Control Flow Guard (GUARD_CF plus the CF function table), the /GS
-  stack cookie, and table-based x64 unwinding. It also reports CET shadow
-  stack compatibility (all three first-party exes have it) and the bundled
-  native libraries: Skia and HarfBuzz ship without CFG and CET, which is
-  upstream's build and noted here rather than hidden. Accepted (Sam,
-  2026-09-01) because the app feeds them only text and its own fonts: no
-  images, icons, or third-party fonts are decoded, and text shaping is a far
-  smaller bug surface than the image and font parsers where those libraries
-  have had CVEs. Revisit the day the app renders third-party images, icons,
-  or fonts (publisher icons in the Software catalog, for example): then
-  either CFG-built natives or decoding outside the elevated process. Stack
-  guard pages are not a file property; Windows places one below every
+  reads the PE headers of the files about to ship. The release fails if the App,
+  Service, or installer lacks ASLR with a real relocation table, high-entropy
+  VA, DEP, CFG with a populated target table, the /GS stack cookie, CET, or
+  table-based x64 unwinding. It also rejects any writable executable section.
+  Pinned source builds give Skia, HarfBuzz, and SQLite the same mitigations.
+  ANGLE remains upstream because its shipped binary passes the complete gate.
+  Stack guard pages are not a file property. Windows places one below every
   thread stack.
 - **Nothing trusted goes through %TEMP%.** The installer hardens
   `%ProgramData%\ThisIsMyPC` (Administrators/SYSTEM, the app's own

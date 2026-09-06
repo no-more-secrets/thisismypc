@@ -219,8 +219,9 @@ $installerAsset = Join-Path $output "ThisIsMyPC-Installer-$Version.exe"
 Import-Module (Join-Path $PSScriptRoot 'InstallerBundle.psm1') -Force
 Add-InstallerPayload -StubPath $installerExe -PayloadPath $msiPath -OutputPath $installerAsset | Out-Null
 
-# Gate: every first-party binary carries ASLR, high-entropy VA, DEP, CFG,
-# the /GS cookie, and table-based unwinding, read from the PE headers of the
+# Gate: every first-party binary carries ASLR with relocations, high-entropy VA,
+# DEP, CFG with a populated target table, the /GS cookie, CET, table-based
+# unwinding, and no writable executable section, read from the PE headers of the
 # files about to ship (tools/check-binary-hardening.ps1 exits 1 otherwise).
 Write-Host 'Checking exploit mitigations on the shipped binaries...'
 & (Join-Path $PSScriptRoot 'check-binary-hardening.ps1') `

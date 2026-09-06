@@ -489,16 +489,21 @@ prep here.
 - **PUBLISHED 2026-09-01** at `github.com/No-More-Secrets/thisismypc`;
   `AppConstants.UpdateUrl` points there.
 
-## Binary hardening: DONE 2026-08-31
+## Binary hardening: DONE 2026-09-06
 
 Full item-by-item record: `docs/release/hardening-checklist.md`. CFG/DEP/ASLR/CET/
 EHCONT verified on both CoreCLR and AOT exes. Pinned source builds now harden
 Skia, HarfBuzz, and SQLite with the same PE mitigations and exact export parity.
 The IPC boundary was audited against tm1. SetDefaultDllDirectories protects
-all entry points, and WinVerifyTrust gates winget.
-All built, tested (ChildProcessGateTests incl. a live Integration case), and
-committed; ultra review over the batch (044a4ad..f1d3739) returned zero findings
-on 2026-09-01.
+all entry points and now fails closed. WinVerifyTrust gates winget and installer
+child processes. The PE release gate now requires real relocation and CFG tables
+and rejects writable executable sections. Elevated inventory code no longer
+parses shortcut, icon, version, or signature data from registered target files.
+It does not activate third-party shell extensions. Startup file operations are
+path-contained. The portable installer hashes its extracted native cache,
+rejects reparse points, ignores HKCU uninstall entries, and requires Program
+Files for installed code. Full details and remaining privilege separation work
+are in the hardening checklist.
 
 ## AV / SmartScreen readiness (release-readiness chunk, pre-first-release)
 

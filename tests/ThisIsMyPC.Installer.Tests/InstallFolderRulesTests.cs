@@ -37,12 +37,12 @@ public class InstallFolderRulesTests
     }
 
     [Fact]
-    public void Check_WarnsOutsideProgramFiles()
+    public void Check_RejectsOutsideProgramFiles()
     {
         var check = InstallFolderRules.Check(@"D:\Apps\ThisIsMyPC");
-        Assert.True(check.IsValid);
-        Assert.Null(check.Error);
-        Assert.Contains("outside Program Files", check.Warning);
+        Assert.False(check.IsValid);
+        Assert.Contains("Program Files", check.Error);
+        Assert.Null(check.Warning);
     }
 
     [Fact]
@@ -51,5 +51,6 @@ public class InstallFolderRulesTests
         var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
         Assert.True(InstallFolderRules.IsUnderProgramFiles(Path.Combine(programFiles, "X")));
         Assert.False(InstallFolderRules.IsUnderProgramFiles(programFiles + "Fake\\X"));
+        Assert.False(InstallFolderRules.IsUnderProgramFiles(Path.Combine(programFiles, "..", "Users", "X")));
     }
 }

@@ -134,9 +134,9 @@ public class InstallerViewModelTests
         Assert.True(vm.HasFolderError);
 
         vm.InstallFolder = @"D:\Apps\ThisIsMyPC";
-        Assert.True(vm.CanGoPrimary);
-        Assert.False(vm.HasFolderError);
-        Assert.True(vm.HasFolderWarning);
+        Assert.False(vm.CanGoPrimary);
+        Assert.True(vm.HasFolderError);
+        Assert.False(vm.HasFolderWarning);
     }
 
     [Fact]

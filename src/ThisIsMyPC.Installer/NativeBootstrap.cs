@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using ThisIsMyPC.Installer.Services;
 
 namespace ThisIsMyPC.Installer;
@@ -24,26 +25,14 @@ internal static partial class NativeBootstrap
             return;
 
         var version = assembly.GetName().Version?.ToString() ?? "0";
-        var dir = Path.Combine(HardenedDataDirectory.Ensure(), "installer", "native-" + version);
-        Directory.CreateDirectory(dir);
+        var dir = HardenedDataDirectory.EnsureChildDirectory("installer", "native-" + version);
 
         foreach (var name in Libraries)
         {
             using var source = assembly.GetManifestResourceStream(ResourceName(name))
                 ?? throw new InvalidOperationException($"{name}.dll is missing from this build.");
             var target = Path.Combine(dir, name + ".dll");
-            if (File.Exists(target) && new FileInfo(target).Length == source.Length)
-                continue;
-            // A second installer instance may hold the file open; the copy
-            // already there is the same version, so keep it.
-            try
-            {
-                using var file = File.Create(target);
-                source.CopyTo(file);
-            }
-            catch (IOException) when (File.Exists(target))
-            {
-            }
+            EnsureResourceFile(source, target);
         }
 
         _directory = dir;
@@ -58,6 +47,40 @@ internal static partial class NativeBootstrap
     }
 
     private static string ResourceName(string library) => "native/" + library + ".dll";
+
+    internal static void EnsureResourceFile(Stream source, string target)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentException.ThrowIfNullOrWhiteSpace(target);
+        if (!source.CanSeek)
+            throw new InvalidOperationException("The embedded native library stream must support seeking.");
+
+        source.Position = 0;
+        var expectedHash = SHA256.HashData(source);
+        var temporary = target + "." + Guid.NewGuid().ToString("N") + ".tmp";
+        try
+        {
+            source.Position = 0;
+            using (var output = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            {
+                source.CopyTo(output);
+                output.Flush(flushToDisk: true);
+            }
+
+            using (var written = File.Open(temporary, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                if (!CryptographicOperations.FixedTimeEquals(SHA256.HashData(written), expectedHash))
+                    throw new InvalidDataException("The extracted native library hash is invalid.");
+            }
+
+            File.Move(temporary, target, overwrite: true);
+        }
+        finally
+        {
+            if (File.Exists(temporary))
+                File.Delete(temporary);
+        }
+    }
 
     private static IntPtr Resolve(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
     {

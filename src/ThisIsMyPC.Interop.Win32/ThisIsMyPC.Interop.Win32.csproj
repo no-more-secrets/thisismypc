@@ -1,4 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <InternalsVisibleTo Include="ThisIsMyPC.Integration.Tests" />
+  </ItemGroup>
   <PropertyGroup>
     <!-- Blittable fixed-buffer structs passed by pointer (srclient.dll restore point API) -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

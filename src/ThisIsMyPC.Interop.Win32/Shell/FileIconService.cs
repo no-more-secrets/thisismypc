@@ -5,10 +5,10 @@ using ThisIsMyPC.Core.Services;
 namespace ThisIsMyPC.Interop.Win32.Shell;
 
 /// <summary>
-/// The shell's small icon for a file, read into BGRA pixels with GDI:
+/// The shell's small icon for a file type, read into BGRA pixels with GDI:
 /// SHGetFileInfoW for the HICON, GetIconInfo for its color and mask
-/// bitmaps, GetDIBits for the bytes. A missing file gets the icon for its
-/// extension (SHGFI_USEFILEATTRIBUTES), the way Explorer shows a dead link.
+/// bitmaps, GetDIBits for the bytes. SHGFI_USEFILEATTRIBUTES prevents the
+/// elevated process from parsing icon resources in an attacker-controlled file.
 /// </summary>
 public sealed partial class FileIconService : IFileIconService
 {
@@ -19,6 +19,9 @@ public sealed partial class FileIconService : IFileIconService
     private const uint DIB_RGB_COLORS = 0;
     private const uint BI_RGB = 0;
     private const uint COINIT_APARTMENTTHREADED = 0x2;
+    private const int MaxIconDimension = 256;
+
+    internal static uint FileTypeIconFlags => SHGFI_ICON | SHGFI_SMALLICON | SHGFI_USEFILEATTRIBUTES;
 
     public OperationResult<FileIcon> GetSmallIcon(string path)
     {
@@ -28,12 +31,13 @@ public sealed partial class FileIconService : IFileIconService
         var comInit = CoInitializeEx(0, COINIT_APARTMENTTHREADED);
         try
         {
-            var flags = SHGFI_ICON | SHGFI_SMALLICON;
-            if (!File.Exists(path))
-                flags |= SHGFI_USEFILEATTRIBUTES;
-
             var info = new SHFILEINFOW();
-            var got = SHGetFileInfoW(path, FILE_ATTRIBUTE_NORMAL, ref info, (uint)Marshal.SizeOf<SHFILEINFOW>(), flags);
+            var got = SHGetFileInfoW(
+                path,
+                FILE_ATTRIBUTE_NORMAL,
+                ref info,
+                (uint)Marshal.SizeOf<SHFILEINFOW>(),
+                FileTypeIconFlags);
             hIcon = info.hIcon;
             if (got == 0 || hIcon == 0)
                 return OperationResult<FileIcon>.Failure($"No icon for {path}", ErrorCategory.NotFound);
@@ -66,7 +70,9 @@ public sealed partial class FileIconService : IFileIconService
                 return null; // monochrome icon; not worth a special path
 
             var bitmap = new BITMAP();
-            if (GetObjectW(iconInfo.hbmColor, sizeof(BITMAP), &bitmap) == 0 || bitmap.bmWidth <= 0 || bitmap.bmHeight <= 0)
+            if (GetObjectW(iconInfo.hbmColor, sizeof(BITMAP), &bitmap) == 0 ||
+                bitmap.bmWidth <= 0 || bitmap.bmHeight <= 0 ||
+                bitmap.bmWidth > MaxIconDimension || bitmap.bmHeight > MaxIconDimension)
                 return null;
 
             var width = bitmap.bmWidth;
@@ -126,7 +132,7 @@ public sealed partial class FileIconService : IFileIconService
                 biBitCount = 32,
                 biCompression = BI_RGB,
             };
-            var pixels = new byte[width * height * 4];
+            var pixels = new byte[checked(width * height * 4)];
             fixed (byte* pixelPtr = pixels)
             {
                 var lines = GetDIBits(hdc, hBitmap, 0, (uint)height, pixelPtr, &header, DIB_RGB_COLORS);

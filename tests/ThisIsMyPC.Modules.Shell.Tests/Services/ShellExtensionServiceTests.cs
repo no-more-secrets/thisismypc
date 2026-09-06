@@ -113,6 +113,32 @@ public class ShellExtensionServiceTests
         Assert.Single(result.Value!);
         Assert.Equal(@"C:\Windows\System32\test.dll", result.Value![0].DllPath);
         Assert.Equal(clsid, result.Value![0].Clsid);
+        Assert.Null(result.Value![0].Publisher);
+    }
+
+    [Fact]
+    public void EnumerateContextMenuHandlers_DoesNotParseRegisteredDll()
+    {
+        var basePath = @"HKCR\*\shellex\ContextMenuHandlers";
+        var clsid = "{BAD0BAD0-CAFE-BABE-FEED-FACE12345678}";
+        var malformedDll = Path.Combine(Path.GetTempPath(), $"tipc-malformed-{Guid.NewGuid():N}.dll");
+        File.WriteAllBytes(malformedDll, [0xff, 0x00, 0x13, 0x37]);
+        try
+        {
+            _registry.AddSubKeys(basePath, "MalformedHandler");
+            _registry.SetString($@"{basePath}\MalformedHandler", string.Empty, clsid);
+            _registry.SetString($@"HKCR\CLSID\{clsid}\InprocServer32", string.Empty, malformedDll);
+
+            var handler = Assert.Single(_sut.EnumerateContextMenuHandlers().Value!);
+
+            Assert.Equal(malformedDll, handler.DllPath);
+            Assert.Null(handler.Publisher);
+            Assert.Equal([0xff, 0x00, 0x13, 0x37], File.ReadAllBytes(malformedDll));
+        }
+        finally
+        {
+            File.Delete(malformedDll);
+        }
     }
 
     [Fact]
@@ -212,7 +238,7 @@ public class ShellExtensionServiceTests
 
         Assert.True(result.IsSuccess);
         Assert.Single(result.Value!);
-        // IsEnabled reflects dash-prefix state only — no dash prefix, so enabled
+        // IsEnabled reflects dash-prefix state only. No dash prefix means enabled.
         Assert.True(result.Value![0].IsEnabled);
         Assert.Equal(clsid, result.Value![0].Clsid);
         // Blocked list detection is separate

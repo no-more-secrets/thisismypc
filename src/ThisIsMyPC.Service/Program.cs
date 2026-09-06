@@ -18,7 +18,8 @@ if (!ThisIsMyPC.Interop.Win32.Security.DynamicCodeHardening.Apply() ||
 
 // First: System32 + application dir only for every DLL resolution; a SYSTEM
 // process must never resolve libraries through PATH or the working directory.
-ThisIsMyPC.Interop.Win32.Security.DllSearchHardening.Apply();
+if (!ThisIsMyPC.Interop.Win32.Security.DllSearchHardening.Apply())
+    Environment.FailFast("Safe DLL search policy could not be enabled.");
 
 var builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddWindowsService(options => options.ServiceName = "ThisIsMyPC");

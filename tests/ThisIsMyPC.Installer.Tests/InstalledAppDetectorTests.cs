@@ -1,9 +1,19 @@
+using Microsoft.Win32;
 using ThisIsMyPC.Installer.Services;
 
 namespace ThisIsMyPC.Installer.Tests;
 
 public class InstalledAppDetectorTests
 {
+    [Fact]
+    public void RegistryLocations_AreMachineScopedOnly()
+    {
+        var locations = InstalledAppDetector.RegistryLocations().ToArray();
+
+        Assert.Equal(2, locations.Length);
+        Assert.All(locations, location => Assert.Equal(RegistryHive.LocalMachine, location.Hive));
+    }
+
     private const string SqVersion = """
         <?xml version="1.0" encoding="utf-8"?>
         <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
@@ -64,5 +74,43 @@ public class InstalledAppDetectorTests
     {
         Assert.Null(InstalledAppDetector.FromFolder(null));
         Assert.Null(InstalledAppDetector.FromFolder("  "));
+    }
+
+    [Fact]
+    public void FromFolder_DoesNotParseExecutableVersionResources()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "tipc-detector-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(root, "current"));
+            File.WriteAllBytes(Path.Combine(root, "Update.exe"), [0xff, 0x00, 0x13, 0x37]);
+            File.WriteAllBytes(Path.Combine(root, "current", "ThisIsMyPC.App.exe"), [0xff, 0x00, 0x13, 0x37]);
+
+            Assert.Null(InstalledAppDetector.FromFolder(root));
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void FromFolder_RejectsOversizedVersionFile()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "tipc-detector-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(root, "current"));
+            File.WriteAllText(Path.Combine(root, "Update.exe"), "stub");
+            File.WriteAllText(Path.Combine(root, "current", "sq.version"), new string('x', 65 * 1024));
+
+            Assert.Null(InstalledAppDetector.FromFolder(root));
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
     }
 }

@@ -29,6 +29,10 @@ public sealed class MsiInstallEngine : IInstallEngine
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(progress);
 
+        var folderCheck = InstallFolderRules.Check(options.InstallFolder);
+        if (!folderCheck.IsValid)
+            return new InstallOutcome(false, false, folderCheck.Error, null);
+
         // The data directory is the app's; hardening it first means the
         // unpacked MSI, the install log, and settings.json are
         // Administrators/SYSTEM-only from the first byte. The app re-verifies
@@ -39,8 +43,7 @@ public sealed class MsiInstallEngine : IInstallEngine
         try
         {
             dataDir = HardenedDataDirectory.Ensure();
-            var logDir = Path.Combine(dataDir, "logs");
-            Directory.CreateDirectory(logDir);
+            var logDir = HardenedDataDirectory.EnsureChildDirectory("logs");
             logPath = Path.Combine(logDir, $"install-{DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture)}.log");
             scratch = HardenedDataDirectory.NewScratch("msi");
         }
@@ -96,10 +99,32 @@ public sealed class MsiInstallEngine : IInstallEngine
         ArgumentNullException.ThrowIfNull(installed);
         ArgumentNullException.ThrowIfNull(progress);
 
+        if (!IsExpectedUninstaller(installed))
+        {
+            return new InstallOutcome(
+                false,
+                false,
+                "The install location is not protected. Remove ThisIsMyPC from Settings, Apps, Installed apps.",
+                null);
+        }
+
         try
         {
             if (!File.Exists(installed.UninstallerPath))
                 return new InstallOutcome(false, false, "The uninstaller (Update.exe) is no longer in the install folder. Remove ThisIsMyPC from Settings, Apps, Installed apps.", null);
+
+            var trust = AuthenticodeVerifier.VerifyTrusted(
+                installed.UninstallerPath,
+                "No More Secrets, LLC",
+                exactSignerName: true);
+            if (!trust.IsSuccess)
+            {
+                return new InstallOutcome(
+                    false,
+                    false,
+                    "The installed uninstaller signature is invalid. Remove ThisIsMyPC from Settings, Apps, Installed apps. " + trust.ErrorMessage,
+                    null);
+            }
 
             progress.Report("Removing ThisIsMyPC...");
             // Velopack's own uninstall: shortcuts, the install folder, the
@@ -108,7 +133,7 @@ public sealed class MsiInstallEngine : IInstallEngine
             {
                 FileName = installed.UninstallerPath,
                 Arguments = "uninstall --silent",
-                WorkingDirectory = Path.GetTempPath(),
+                WorkingDirectory = installed.InstallFolder,
                 UseShellExecute = false,
                 CreateNoWindow = true,
             };
@@ -131,9 +156,14 @@ public sealed class MsiInstallEngine : IInstallEngine
     public void Launch(string installFolder)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(installFolder);
+        if (!InstallFolderRules.IsUnderProgramFiles(installFolder))
+            return;
         // ThisIsMyPC.exe is the Velopack stub that starts current\ThisIsMyPC.App.exe.
         var stub = Path.Combine(installFolder, "ThisIsMyPC.exe");
         if (!File.Exists(stub))
+            return;
+        var trust = AuthenticodeVerifier.VerifyTrusted(stub, "No More Secrets, LLC", exactSignerName: true);
+        if (!trust.IsSuccess)
             return;
         using var process = Process.Start(new ProcessStartInfo(stub) { UseShellExecute = true, WorkingDirectory = installFolder });
     }
@@ -156,12 +186,28 @@ public sealed class MsiInstallEngine : IInstallEngine
         return $"/i \"{msiPath}\" /qn /norestart VELOPACK_INSTALLDIR=\"{folder}\"{reinstallArgs} /l*v \"{logPath}\"";
     }
 
+    internal static bool IsExpectedUninstaller(InstalledApp installed)
+    {
+        try
+        {
+            return InstallFolderRules.IsUnderProgramFiles(installed.InstallFolder) &&
+                Path.GetFullPath(installed.UninstallerPath).Equals(
+                    Path.Combine(Path.GetFullPath(installed.InstallFolder), "Update.exe"),
+                    StringComparison.OrdinalIgnoreCase);
+        }
+        catch (Exception ex) when (ex is ArgumentException or IOException or NotSupportedException)
+        {
+            return false;
+        }
+    }
+
     private static async Task<int> RunMsiExecAsync(string msiPath, string installFolder, string logPath, bool reinstall, CancellationToken cancellationToken)
     {
         var start = new ProcessStartInfo
         {
             FileName = Path.Combine(Environment.SystemDirectory, "msiexec.exe"),
             Arguments = BuildMsiExecArguments(msiPath, installFolder, logPath, reinstall),
+            WorkingDirectory = Environment.SystemDirectory,
             UseShellExecute = false,
             CreateNoWindow = true,
         };

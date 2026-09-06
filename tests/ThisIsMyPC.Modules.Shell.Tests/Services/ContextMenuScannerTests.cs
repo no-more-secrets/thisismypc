@@ -8,6 +8,17 @@ namespace ThisIsMyPC.Modules.Shell.Tests.Services;
 
 public sealed class ContextMenuScannerTests
 {
+    [Fact]
+    public void Production_probe_refuses_in_process_shell_extension_activation()
+    {
+        var result = new ContextMenuProbe().HandlerAppearsOnSurface(
+            "{23170F69-40C1-278A-1000-000100020000}",
+            ContextMenuSurface.FolderBackground);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorCategory.ProtectedByPolicy, result.ErrorCategory);
+    }
+
     private sealed class FakeShellExtensionService : IShellExtensionService
     {
         private readonly List<ShellExtensionInfo> _handlers = [];

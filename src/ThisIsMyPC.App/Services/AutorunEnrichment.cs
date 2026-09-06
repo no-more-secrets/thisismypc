@@ -3,12 +3,10 @@ using ThisIsMyPC.Core.Services;
 namespace ThisIsMyPC.App.Services;
 
 /// <summary>
-/// The slow facts about an autostart image, fetched after the page is up:
-/// its shell icon and who signed it. Results are cached per path for the
-/// life of the app (hundreds of rows share a few dozen files), and at most
-/// two verifications run at once so WinVerifyTrust never floods the disk.
-/// Either service may be absent (tests, or a platform without it), in which
-/// case that fact stays null.
+/// Optional slow facts about an autostart image. Production leaves both
+/// services absent because the application runs elevated. A future
+/// non-elevated helper can supply them. Tests use fakes for rendered examples.
+/// Results are cached per path, with at most two operations running at once.
 /// </summary>
 public sealed class AutorunEnrichment
 {

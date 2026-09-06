@@ -91,9 +91,10 @@ public sealed unsafe class DesktopUserContext : IInteractiveUserContext
         var handle = CaptureUserToken(preferred: null, out var source);
         if (handle == 0)
         {
-            Log.Warn("No user token to launch {App} as the desktop user; starting it elevated as a last resort", applicationPath);
-            Process.Start(new ProcessStartInfo { FileName = applicationPath, Arguments = arguments ?? string.Empty, UseShellExecute = false });
-            return OperationResult<bool>.Success(true);
+            Log.Warn("No user token to launch {App} as the desktop user; refusing an elevated fallback", applicationPath);
+            return OperationResult<bool>.Failure(
+                $"Could not start {Path.GetFileName(applicationPath)} without elevation.",
+                ErrorCategory.ServiceUnavailable);
         }
         try
         {

@@ -51,6 +51,22 @@ public class InstallPathValidationTests
     }
 
     [Fact]
+    public void ProgramFilesPrefixWithoutSeparatorIsNotProtected()
+    {
+        var guard = new InstallationGuard(@"C:\Program FilesFake\ThisIsMyPC\");
+
+        Assert.False(guard.IsProtectedLocation);
+    }
+
+    [Fact]
+    public void ProgramFilesTraversalIsNotProtected()
+    {
+        var guard = new InstallationGuard(@"C:\Program Files\..\Users\Sam\ThisIsMyPC\");
+
+        Assert.False(guard.IsProtectedLocation);
+    }
+
+    [Fact]
     public void WarningMessage_ContainsDllPlantingReference()
     {
         var guard = new InstallationGuard(@"C:\Users\user\Desktop\ThisIsMyPC\");

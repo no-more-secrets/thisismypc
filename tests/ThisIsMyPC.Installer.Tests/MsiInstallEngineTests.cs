@@ -6,6 +6,19 @@ namespace ThisIsMyPC.Installer.Tests;
 public class MsiInstallEngineTests
 {
     [Fact]
+    public void IsExpectedUninstaller_RejectsPathSubstitution()
+    {
+        var folder = InstallFolderRules.DefaultFolder;
+
+        Assert.True(MsiInstallEngine.IsExpectedUninstaller(
+            new InstalledApp("1.0.0", folder, Path.Combine(folder, "Update.exe"))));
+        Assert.False(MsiInstallEngine.IsExpectedUninstaller(
+            new InstalledApp("1.0.0", folder, Path.Combine(folder, "current", "Update.exe"))));
+        Assert.False(MsiInstallEngine.IsExpectedUninstaller(
+            new InstalledApp("1.0.0", @"C:\Users\Sam\ThisIsMyPC", @"C:\Users\Sam\ThisIsMyPC\Update.exe")));
+    }
+
+    [Fact]
     public void BuildMsiExecArguments_QuietNoRestartFolderAndLog()
     {
         var args = MsiInstallEngine.BuildMsiExecArguments(

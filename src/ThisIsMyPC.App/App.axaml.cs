@@ -179,9 +179,7 @@ public partial class App : Application
         services.AddSingleton<ISecurityApi, SecurityApi>();
         services.AddSingleton<IDataDirectoryGuard, DataDirectoryGuard>();
         services.AddSingleton<IRegistryService, RegistryService>();
-        services.AddSingleton<IFileIconService, ThisIsMyPC.Interop.Win32.Shell.FileIconService>();
-        services.AddSingleton<IAuthenticodeService, AuthenticodeService>();
-        services.AddSingleton<Services.AutorunEnrichment>();
+        services.AddSingleton(_ => new Services.AutorunEnrichment());
         services.AddSingleton<IShellExtensionService, ShellExtensionService>();
         services.AddSingleton<IContextMenuProbe, ContextMenuProbe>();
         services.AddSingleton<IInteractiveUserContext, DesktopUserContext>();

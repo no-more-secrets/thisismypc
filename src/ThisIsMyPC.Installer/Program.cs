@@ -15,7 +15,12 @@ sealed class Program
 
         // Same first step as the app: no working-directory or PATH DLL
         // resolution in an elevated process.
-        DllSearchHardening.Apply();
+#if ACG_ENABLED
+        if (!DllSearchHardening.Apply(includeApplicationDirectory: false))
+#else
+        if (!DllSearchHardening.Apply())
+#endif
+            Environment.FailFast("Safe DLL search policy could not be enabled.");
 
 #pragma warning disable CA1031 // Last resort: a crash must show words, not vanish (NativeAOT fail-fasts silently).
         try

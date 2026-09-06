@@ -34,14 +34,14 @@ public sealed class ContextMenuHandlerClassifierTests
     }
 
     [Fact]
-    public void Classify_Microsoft_system_DLL_returns_System()
+    public void Classify_SystemPathWithoutTrustedPublisherIsConservativelyThirdParty()
     {
         // shell32.dll in System32 with a non-critical CLSID
         var result = ContextMenuHandlerClassifier.Classify(
             "{11111111-1111-1111-1111-111111111111}",
             @"C:\Windows\System32\shell32.dll");
 
-        Assert.Equal(HandlerClassification.System, result);
+        Assert.Equal(HandlerClassification.ThirdParty, result);
     }
 
     [Fact]

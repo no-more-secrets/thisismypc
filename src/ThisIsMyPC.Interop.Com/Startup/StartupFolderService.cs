@@ -1,32 +1,34 @@
-using System.Runtime.InteropServices;
 using ThisIsMyPC.Core.Results;
 using ThisIsMyPC.Core.Services;
 
 namespace ThisIsMyPC.Interop.Com.Startup;
 
 /// <summary>
-/// Enumerates startup folder contents and resolves .lnk shortcut targets via
-/// IShellLinkW/IPersistFile (raw vtable calls; NativeAOT-safe, no COM wrappers).
+/// Enumerates startup folder contents without loading or parsing file contents.
+/// Shortcut resolution belongs in a non-elevated process.
 /// </summary>
-public sealed partial class StartupFolderService : IStartupFolderService
+public sealed class StartupFolderService : IStartupFolderService
 {
-    private const int VtblQueryInterface = 0;
-    private const int VtblRelease = 2;
-    private const int VtblShellLinkGetPath = 3;   // IShellLinkW: first method after IUnknown
-    private const int VtblPersistFileLoad = 5;    // IPersist(3=GetClassID) + IsDirty(4) + Load(5)
+    private readonly string _currentUserFolder;
+    private readonly string _allUsersFolder;
 
-    private const uint CLSCTX_INPROC_SERVER = 1;
-    private const uint COINIT_APARTMENTTHREADED = 0x2;
-    private const int TargetBufferChars = 1024; // GetPath fills what fits; generous for long paths
+    public StartupFolderService()
+        : this(
+            Environment.GetFolderPath(Environment.SpecialFolder.Startup),
+            Environment.GetFolderPath(Environment.SpecialFolder.CommonStartup))
+    {
+    }
 
-    private static readonly Guid CLSID_ShellLink = new("00021401-0000-0000-C000-000000000046");
-    private static readonly Guid IID_IShellLinkW = new("000214F9-0000-0000-C000-000000000046");
-    private static readonly Guid IID_IPersistFile = new("0000010b-0000-0000-C000-000000000046");
+    internal StartupFolderService(string currentUserFolder, string allUsersFolder)
+    {
+        _currentUserFolder = currentUserFolder;
+        _allUsersFolder = allUsersFolder;
+    }
 
     public OperationResult<IReadOnlyList<StartupFolderItem>> Enumerate(StartupFolderScope scope)
         => EnumerateFolder(GetFolder(scope), scope);
 
-    /// <summary>The AutorunsDisabled subfolder, where Autoruns (and this app) park disabled files.</summary>
+    /// <summary>The AutorunsDisabled subfolder, where Autoruns and this app park disabled files.</summary>
     public OperationResult<IReadOnlyList<StartupFolderItem>> EnumerateDisabled(StartupFolderScope scope)
     {
         var folder = GetFolder(scope);
@@ -35,43 +37,212 @@ public sealed partial class StartupFolderService : IStartupFolderService
             : EnumerateFolder(Path.Combine(folder, IStartupFolderService.DisabledSubfolder), scope);
     }
 
-    private static string GetFolder(StartupFolderScope scope) => scope == StartupFolderScope.CurrentUser
-        ? Environment.GetFolderPath(Environment.SpecialFolder.Startup)
-        : Environment.GetFolderPath(Environment.SpecialFolder.CommonStartup);
+    public OperationResult<byte[]> ReadAllBytes(string path, int maxBytes)
+    {
+        if (!IsManagedFile(path))
+            return Refused<byte[]>(path);
+
+        try
+        {
+            using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.SequentialScan);
+            if (stream.Length > maxBytes)
+                return OperationResult<byte[]>.Failure($"{path} is too large to snapshot.", ErrorCategory.ServiceUnavailable);
+
+            var bytes = new byte[checked((int)stream.Length)];
+            stream.ReadExactly(bytes);
+            return OperationResult<byte[]>.Success(bytes);
+        }
+        catch (FileNotFoundException ex)
+        {
+            return OperationResult<byte[]>.Failure($"File not found: {path}", ErrorCategory.NotFound, ex);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or OverflowException)
+        {
+            return OperationResult<byte[]>.Failure($"Could not read {path}: {ex.Message}", ErrorCategory.AccessDenied, ex);
+        }
+    }
+
+    public OperationResult<bool> Delete(string path)
+    {
+        if (!IsManagedFile(path))
+            return Refused<bool>(path);
+
+        try
+        {
+            if (File.Exists(path))
+                File.Delete(path);
+            return OperationResult<bool>.Success(true);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return OperationResult<bool>.Failure($"Could not delete {path}: {ex.Message}", ErrorCategory.AccessDenied, ex);
+        }
+    }
+
+    public OperationResult<bool> Restore(string path, byte[] contents)
+    {
+        ArgumentNullException.ThrowIfNull(contents);
+        if (!IsManagedFile(path, allowMissingDisabledFolder: true))
+            return Refused<bool>(path);
+
+        try
+        {
+            if (File.Exists(path))
+                return OperationResult<bool>.Success(true);
+
+            var directory = Path.GetDirectoryName(path)!;
+            Directory.CreateDirectory(directory);
+            if (!IsManagedFile(path))
+                return Refused<bool>(path);
+
+            using var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+            stream.Write(contents);
+            return OperationResult<bool>.Success(true);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return OperationResult<bool>.Failure($"Could not restore {path}: {ex.Message}", ErrorCategory.AccessDenied, ex);
+        }
+    }
+
+    public OperationResult<bool> Move(string fromPath, string toPath)
+    {
+        if (!IsManagedFile(fromPath, allowMissingDisabledFolder: true) ||
+            !IsManagedFile(toPath, allowMissingDisabledFolder: true) ||
+            !HaveSameManagedRoot(fromPath, toPath))
+        {
+            return OperationResult<bool>.Failure(
+                "Startup file move escaped its managed folder.", ErrorCategory.ProtectedByPolicy);
+        }
+
+        try
+        {
+            var atDestination = File.Exists(toPath);
+            if (!File.Exists(fromPath))
+            {
+                return atDestination
+                    ? OperationResult<bool>.Success(true)
+                    : OperationResult<bool>.Failure($"File not found: {fromPath}", ErrorCategory.NotFound);
+            }
+            if (atDestination)
+            {
+                return OperationResult<bool>.Failure(
+                    $"{toPath} already exists, so the move would overwrite it. Remove or rename that copy first.",
+                    ErrorCategory.ServiceUnavailable);
+            }
+
+            Directory.CreateDirectory(Path.GetDirectoryName(toPath)!);
+            if (!IsManagedFile(fromPath) || !IsManagedFile(toPath))
+            {
+                return OperationResult<bool>.Failure(
+                    "Startup file move encountered a reparse point.", ErrorCategory.ProtectedByPolicy);
+            }
+
+            File.Move(fromPath, toPath, overwrite: false);
+            return OperationResult<bool>.Success(true);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return OperationResult<bool>.Failure($"Access denied moving {fromPath}", ErrorCategory.AccessDenied, ex);
+        }
+        catch (IOException ex)
+        {
+            return OperationResult<bool>.Failure($"Could not move {fromPath}: {ex.Message}", ErrorCategory.ServiceUnavailable, ex);
+        }
+    }
+
+    private string GetFolder(StartupFolderScope scope) => scope == StartupFolderScope.CurrentUser
+        ? _currentUserFolder
+        : _allUsersFolder;
+
+    private bool IsManagedFile(string path, bool allowMissingDisabledFolder = false)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            return false;
+
+        try
+        {
+            var fullPath = Path.GetFullPath(path);
+            var parent = Path.GetDirectoryName(fullPath);
+            var name = Path.GetFileName(fullPath);
+            if (string.IsNullOrEmpty(parent) || string.IsNullOrEmpty(name) || name is "." or "..")
+                return false;
+            if (!fullPath.Equals(Path.Combine(parent, name), StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            foreach (var root in ManagedRoots())
+            {
+                var fullRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(root));
+                var disabled = Path.Combine(fullRoot, IStartupFolderService.DisabledSubfolder);
+                if (!parent.Equals(fullRoot, StringComparison.OrdinalIgnoreCase) &&
+                    !parent.Equals(disabled, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (IsReparsePoint(fullRoot))
+                    return false;
+                if (Directory.Exists(parent) && IsReparsePoint(parent))
+                    return false;
+                if (!Directory.Exists(parent) && !allowMissingDisabledFolder)
+                    return false;
+                if (File.Exists(fullPath) && IsReparsePoint(fullPath))
+                    return false;
+                return true;
+            }
+        }
+        catch (Exception ex) when (ex is ArgumentException or IOException or NotSupportedException or UnauthorizedAccessException)
+        {
+        }
+
+        return false;
+    }
+
+    private bool HaveSameManagedRoot(string left, string right)
+    {
+        var leftFull = Path.GetFullPath(left);
+        var rightFull = Path.GetFullPath(right);
+        return ManagedRoots().Any(root =>
+        {
+            var fullRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(root));
+            return IsDirectManagedChild(leftFull, fullRoot) && IsDirectManagedChild(rightFull, fullRoot);
+        });
+    }
+
+    private IEnumerable<string> ManagedRoots()
+    {
+        if (!string.IsNullOrWhiteSpace(_currentUserFolder))
+            yield return _currentUserFolder;
+        if (!string.IsNullOrWhiteSpace(_allUsersFolder))
+            yield return _allUsersFolder;
+    }
+
+    private static bool IsDirectManagedChild(string path, string root)
+    {
+        var parent = Path.GetDirectoryName(path);
+        return parent is not null &&
+            (parent.Equals(root, StringComparison.OrdinalIgnoreCase) ||
+             parent.Equals(Path.Combine(root, IStartupFolderService.DisabledSubfolder), StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static bool IsReparsePoint(string path)
+        => (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0;
+
+    private static OperationResult<T> Refused<T>(string path)
+        => OperationResult<T>.Failure(
+            $"Refused startup file path outside a managed folder: {path}", ErrorCategory.ProtectedByPolicy);
 
     private static OperationResult<IReadOnlyList<StartupFolderItem>> EnumerateFolder(string folder, StartupFolderScope scope)
     {
         try
         {
             if (string.IsNullOrEmpty(folder) || !Directory.Exists(folder))
-                return OperationResult<IReadOnlyList<StartupFolderItem>>.Success(Array.Empty<StartupFolderItem>());
+                return OperationResult<IReadOnlyList<StartupFolderItem>>.Success([]);
 
-            var items = new List<StartupFolderItem>();
-            var needUninit = false;
-            try
-            {
-                // S_OK/S_FALSE must be balanced with CoUninitialize; RPC_E_CHANGED_MODE
-                // means the thread is already MTA; proceed without balancing.
-                needUninit = CoInitializeEx(0, COINIT_APARTMENTTHREADED) >= 0;
-
-                foreach (var file in Directory.EnumerateFiles(folder))
-                {
-                    var fileName = Path.GetFileName(file);
-                    if (fileName.Equals("desktop.ini", StringComparison.OrdinalIgnoreCase))
-                        continue;
-
-                    string? target = null;
-                    if (Path.GetExtension(file).Equals(".lnk", StringComparison.OrdinalIgnoreCase))
-                        target = ResolveShortcutTarget(file);
-
-                    items.Add(new StartupFolderItem(file, target));
-                }
-            }
-            finally
-            {
-                if (needUninit)
-                    CoUninitialize();
-            }
+            var items = Directory.EnumerateFiles(folder)
+                .Where(file => !Path.GetFileName(file).Equals("desktop.ini", StringComparison.OrdinalIgnoreCase))
+                .Select(file => new StartupFolderItem(file, ResolvedTarget: null))
+                .ToArray();
 
             return OperationResult<IReadOnlyList<StartupFolderItem>>.Success(items);
         }
@@ -86,82 +257,4 @@ public sealed partial class StartupFolderService : IStartupFolderService
                 $"Failed to enumerate startup folder ({scope}): {ex.Message}", ErrorCategory.ServiceUnavailable, ex);
         }
     }
-
-    private static unsafe string? ResolveShortcutTarget(string lnkPath)
-    {
-        nint pShellLink = 0;
-        nint pPersistFile = 0;
-
-        try
-        {
-            var iid = IID_IShellLinkW;
-            var hr = CoCreateInstance(in CLSID_ShellLink, 0, CLSCTX_INPROC_SERVER, in iid, out pShellLink);
-            if (hr < 0)
-                return null;
-
-            var vtable = *(nint**)pShellLink;
-            var iidPersistFile = IID_IPersistFile;
-            var qiFn = (delegate* unmanaged[Stdcall]<nint, Guid*, nint*, int>)vtable[VtblQueryInterface];
-            nint persistFile;
-            hr = qiFn(pShellLink, &iidPersistFile, &persistFile);
-            if (hr < 0)
-                return null;
-            pPersistFile = persistFile;
-
-            var persistVtable = *(nint**)pPersistFile;
-            var loadFn = (delegate* unmanaged[Stdcall]<nint, char*, uint, int>)persistVtable[VtblPersistFileLoad];
-            fixed (char* pathPtr = lnkPath)
-            {
-                hr = loadFn(pPersistFile, pathPtr, 0 /* STGM_READ */);
-            }
-            if (hr < 0)
-                return null;
-
-            var buffer = stackalloc char[TargetBufferChars];
-            var getPathFn = (delegate* unmanaged[Stdcall]<nint, char*, int, nint, uint, int>)vtable[VtblShellLinkGetPath];
-            hr = getPathFn(pShellLink, buffer, TargetBufferChars, 0, 0);
-            if (hr != 0) // S_OK only; S_FALSE means no path (e.g., MSI or URL target)
-                return null;
-
-            var target = new string(buffer);
-            return target.Length == 0 ? null : target;
-        }
-        catch
-        {
-            return null; // resolution is best-effort; caller falls back to the .lnk path
-        }
-        finally
-        {
-            if (pPersistFile != 0)
-                ReleaseComObject(pPersistFile);
-            if (pShellLink != 0)
-                ReleaseComObject(pShellLink);
-        }
-    }
-
-    private static unsafe void ReleaseComObject(nint pUnk)
-    {
-        try
-        {
-            var vtable = *(nint**)pUnk;
-            var releaseFn = (delegate* unmanaged[Stdcall]<nint, uint>)vtable[VtblRelease];
-            releaseFn(pUnk);
-        }
-        catch
-        {
-            // Swallow release failures during cleanup
-        }
-    }
-
-    [LibraryImport("ole32.dll")]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    private static partial int CoInitializeEx(nint pvReserved, uint dwCoInit);
-
-    [LibraryImport("ole32.dll")]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    private static partial void CoUninitialize();
-
-    [LibraryImport("ole32.dll")]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    private static partial int CoCreateInstance(in Guid rclsid, nint pUnkOuter, uint dwClsContext, in Guid riid, out nint ppv);
 }

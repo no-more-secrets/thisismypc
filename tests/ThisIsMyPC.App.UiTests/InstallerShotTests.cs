@@ -147,7 +147,8 @@ public class InstallerShotTests
         viewModel.InstallFolder = @"D:\Apps\ThisIsMyPC";
         session.Pump();
         session.Screenshot("options-outside-program-files");
-        Assert.True(session.IsTextVisible("This folder is outside Program Files, so other programs on this PC can change the files in it. ThisIsMyPC will warn about that every time it starts."));
+        Assert.True(session.IsTextVisible("Install inside Program Files so standard-user processes cannot replace elevated app files."));
+        Assert.False(viewModel.CanGoPrimary);
 
         viewModel.InstallFolder = @"C:\";
         session.Pump();

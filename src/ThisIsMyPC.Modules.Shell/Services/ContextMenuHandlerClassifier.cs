@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using ThisIsMyPC.Modules.Shell.Models;
 
 namespace ThisIsMyPC.Modules.Shell.Services;
@@ -32,26 +31,8 @@ public static class ContextMenuHandlerClassifier
         if (string.IsNullOrEmpty(dllPath))
             return HandlerClassification.ThirdParty;
 
-        // Use provided publisher or attempt to read from DLL version info
-        var companyName = publisher;
-        if (companyName is null)
-        {
-            try
-            {
-                if (File.Exists(dllPath))
-                {
-                    var versionInfo = FileVersionInfo.GetVersionInfo(dllPath);
-                    companyName = versionInfo.CompanyName;
-                }
-            }
-            catch
-            {
-                // Fall through to path-based heuristic
-            }
-        }
-
-        if (companyName is not null &&
-            companyName.Contains("Microsoft", StringComparison.OrdinalIgnoreCase))
+        if (publisher is not null &&
+            publisher.Contains("Microsoft", StringComparison.OrdinalIgnoreCase))
         {
             if (dllPath.Contains("PowerToys", StringComparison.OrdinalIgnoreCase))
                 return HandlerClassification.Optional;
@@ -60,7 +41,7 @@ public static class ContextMenuHandlerClassifier
         }
 
         // Path-based fallback when version info is unavailable
-        if (companyName is null && dllPath.Contains("PowerToys", StringComparison.OrdinalIgnoreCase))
+        if (publisher is null && dllPath.Contains("PowerToys", StringComparison.OrdinalIgnoreCase))
             return HandlerClassification.Optional;
 
         return HandlerClassification.ThirdParty;

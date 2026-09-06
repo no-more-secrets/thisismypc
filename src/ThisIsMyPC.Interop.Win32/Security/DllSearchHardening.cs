@@ -16,9 +16,13 @@ public static partial class DllSearchHardening
     private const uint LOAD_LIBRARY_SEARCH_APPLICATION_DIR = 0x00000200;
     private const uint LOAD_LIBRARY_SEARCH_SYSTEM32 = 0x00000800;
 
-    /// <summary>Best-effort: a failure must never stop startup, only lose hardening.</summary>
-    public static bool Apply() =>
-        SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_APPLICATION_DIR | LOAD_LIBRARY_SEARCH_SYSTEM32);
+    public static bool Apply(bool includeApplicationDirectory = true)
+    {
+        var flags = LOAD_LIBRARY_SEARCH_SYSTEM32;
+        if (includeApplicationDirectory)
+            flags |= LOAD_LIBRARY_SEARCH_APPLICATION_DIR;
+        return SetDefaultDllDirectories(flags);
+    }
 
     [LibraryImport("kernel32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]

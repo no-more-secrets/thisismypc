@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Modules.Startup.Models;
 
@@ -39,7 +38,7 @@ public sealed class StartupScanner
     {
         _registry = registry;
         _startupFolders = startupFolders;
-        _fileMetadataReader = fileMetadataReader ?? ReadFileMetadata;
+        _fileMetadataReader = fileMetadataReader ?? NoFileMetadata;
         _scheduledTaskSource = scheduledTaskSource;
     }
 
@@ -185,21 +184,6 @@ public sealed class StartupScanner
         return metadata;
     }
 
-    internal static StartupFileMetadata ReadFileMetadata(string executablePath)
-    {
-        try
-        {
-            if (!File.Exists(executablePath))
-                return new StartupFileMetadata(null, null);
-
-            var versionInfo = FileVersionInfo.GetVersionInfo(executablePath);
-            return new StartupFileMetadata(
-                string.IsNullOrWhiteSpace(versionInfo.CompanyName) ? null : versionInfo.CompanyName,
-                string.IsNullOrWhiteSpace(versionInfo.FileDescription) ? null : versionInfo.FileDescription);
-        }
-        catch
-        {
-            return new StartupFileMetadata(null, null);
-        }
-    }
+    private static StartupFileMetadata NoFileMetadata(string _)
+        => new(null, null);
 }

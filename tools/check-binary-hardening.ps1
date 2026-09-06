@@ -9,6 +9,7 @@
 #   CET       shadow stack compatible (IMAGE_DEBUG_TYPE_EX_DLLCHARACTERISTICS
 #             CET_COMPAT), the modern return-address protection
 #   SEH       NO_SEH or x64 (table-based unwinding; no SEH handler chain)
+#   W^X       no section is both writable and executable
 # Stack guard pages are not a file property: Windows places one below every
 # thread stack regardless. Exit code 1 when any first-party file misses a
 # required mitigation.
@@ -64,11 +65,15 @@ function Read-Pe([string]$file) {
     $sectionTable = $opt + $optSize
     for ($i = 0; $i -lt $sectionCount; $i++) {
         $s = $sectionTable + $i * 40
+        $nameLength = 0
+        while ($nameLength -lt 8 -and $b[$s + $nameLength] -ne 0) { $nameLength++ }
         $sections += [pscustomobject]@{
+            Name           = [Text.Encoding]::ASCII.GetString($b, $s, $nameLength)
             VirtualAddress = [BitConverter]::ToUInt32($b, $s + 12)
             VirtualSize    = [BitConverter]::ToUInt32($b, $s + 8)
             RawPointer     = [BitConverter]::ToUInt32($b, $s + 20)
             RawSize        = [BitConverter]::ToUInt32($b, $s + 16)
+            Characteristics = [BitConverter]::ToUInt32($b, $s + 36)
         }
     }
     function RvaToOffset([uint32]$rva) {
@@ -81,7 +86,7 @@ function Read-Pe([string]$file) {
     }
 
     # Load config (directory 10): SecurityCookie and GuardFlags.
-    $securityCookie = 0; $guardFlags = 0
+    $securityCookie = 0; $guardFlags = 0; $guardCfTable = 0; $guardCfCount = 0
     $lc = Get-DataDir 10
     if ($lc.Rva -ne 0) {
         $o = RvaToOffset $lc.Rva
@@ -89,9 +94,17 @@ function Read-Pe([string]$file) {
             $lcSize = [BitConverter]::ToUInt32($b, $o)
             if ($pe32Plus) {
                 if ($lcSize -ge 0x60) { $securityCookie = [BitConverter]::ToUInt64($b, $o + 0x58) }
+                if ($lcSize -ge 0x90) {
+                    $guardCfTable = [BitConverter]::ToUInt64($b, $o + 0x80)
+                    $guardCfCount = [BitConverter]::ToUInt64($b, $o + 0x88)
+                }
                 if ($lcSize -ge 0x94) { $guardFlags = [BitConverter]::ToUInt32($b, $o + 0x90) }
             } else {
                 if ($lcSize -ge 0x44) { $securityCookie = [BitConverter]::ToUInt32($b, $o + 0x3C) }
+                if ($lcSize -ge 0x58) {
+                    $guardCfTable = [BitConverter]::ToUInt32($b, $o + 0x50)
+                    $guardCfCount = [BitConverter]::ToUInt32($b, $o + 0x54)
+                }
                 if ($lcSize -ge 0x5C) { $guardFlags = [BitConverter]::ToUInt32($b, $o + 0x58) }
             }
         }
@@ -114,16 +127,28 @@ function Read-Pe([string]$file) {
         }
     }
 
+    $relocations = Get-DataDir 5
+    $writableExecutableSections = @(
+        $sections | Where-Object {
+            ($_.Characteristics -band 0x20000000) -ne 0 -and
+            ($_.Characteristics -band 0x80000000) -ne 0
+        }
+    )
+
     [pscustomobject]@{
         File    = Split-Path $file -Leaf
         x64     = ($machine -eq 0x8664)
-        ASLR    = [bool]($dllChars -band 0x0040)
+        ASLR    = [bool]($dllChars -band 0x0040) -and
+                  $relocations.Rva -ne 0 -and $relocations.Size -ne 0
         HighEnt = [bool]($dllChars -band 0x0020)
         DEP     = [bool]($dllChars -band 0x0100)
-        CFG     = ([bool]($dllChars -band 0x4000)) -and ([bool]($guardFlags -band 0x0400))
+        CFG     = ([bool]($dllChars -band 0x4000)) -and
+                  ([bool]($guardFlags -band 0x0400)) -and
+                  $guardCfTable -ne 0 -and $guardCfCount -ne 0
         GS      = ($securityCookie -ne 0)
         CET     = [bool]($exChars -band 0x01)
         SEH     = ([bool]($dllChars -band 0x0400)) -or ($machine -eq 0x8664)
+        'W^X'   = ($writableExecutableSections.Count -eq 0)
     }
 }
 
@@ -144,12 +169,12 @@ $rows | Format-Table -AutoSize | Out-String -Width 200 | Write-Host
 $failed = @()
 foreach ($r in $rows) {
     if ($Require -notcontains $r.File) { continue }
-    $missing = @('ASLR', 'HighEnt', 'DEP', 'CFG', 'GS', 'CET', 'SEH') | Where-Object { -not $r.$_ }
+    $missing = @('ASLR', 'HighEnt', 'DEP', 'CFG', 'GS', 'CET', 'SEH', 'W^X') | Where-Object { -not $r.$_ }
     if ($missing) { $failed += "$($r.File): missing $($missing -join ', ')" }
 }
 if ($failed) {
     $failed | ForEach-Object { Write-Host "FAIL $_" }
     exit 1
 }
-Write-Host 'All first-party binaries carry ASLR, high-entropy VA, DEP, CFG, /GS, CET, and table-based unwinding.'
+Write-Host 'All first-party binaries carry ASLR, high-entropy VA, DEP, CFG, /GS, CET, table-based unwinding, and W^X sections.'
 exit 0

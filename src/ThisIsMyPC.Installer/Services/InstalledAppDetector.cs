@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Microsoft.Win32;
 
@@ -18,6 +17,7 @@ public static partial class InstalledAppDetector
     private const string UninstallKeyPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall";
     private const string DisplayName = "ThisIsMyPC";
     private const string UpdaterFileName = "Update.exe";
+    private const int MaxVersionFileBytes = 64 * 1024;
 
     public static InstalledApp? Detect() => FromRegistry() ?? FromFolder(InstallFolderRules.DefaultFolder);
 
@@ -30,19 +30,13 @@ public static partial class InstalledAppDetector
         if (!File.Exists(updater))
             return null;
 
-        var version = ReadVersionFile(Path.Combine(folder, "current", "sq.version"))
-            ?? ReadExeVersion(Path.Combine(folder, "current", "ThisIsMyPC.App.exe"));
+        var version = ReadVersionFile(Path.Combine(folder, "current", "sq.version"));
         return version is null ? null : new InstalledApp(version, folder, updater);
     }
 
     private static InstalledApp? FromRegistry()
     {
-        foreach (var (hive, view) in new[]
-                 {
-                     (RegistryHive.LocalMachine, RegistryView.Registry64),
-                     (RegistryHive.LocalMachine, RegistryView.Registry32),
-                     (RegistryHive.CurrentUser, RegistryView.Registry64),
-                 })
+        foreach (var (hive, view) in RegistryLocations())
         {
             try
             {
@@ -81,6 +75,12 @@ public static partial class InstalledAppDetector
         return null;
     }
 
+    internal static IEnumerable<(RegistryHive Hive, RegistryView View)> RegistryLocations()
+    {
+        yield return (RegistryHive.LocalMachine, RegistryView.Registry64);
+        yield return (RegistryHive.LocalMachine, RegistryView.Registry32);
+    }
+
     /// <summary>Velopack's UninstallString is the quoted Update.exe path plus arguments.</summary>
     public static string? FolderFromUninstallString(string? uninstallString)
     {
@@ -103,20 +103,15 @@ public static partial class InstalledAppDetector
     {
         try
         {
-            return File.Exists(path) ? ParseVersionFile(File.ReadAllText(path)) : null;
+            var info = new FileInfo(path);
+            return info.Exists && info.Length <= MaxVersionFileBytes
+                ? ParseVersionFile(File.ReadAllText(path))
+                : null;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             return null;
         }
-    }
-
-    private static string? ReadExeVersion(string path)
-    {
-        if (!File.Exists(path))
-            return null;
-        var info = FileVersionInfo.GetVersionInfo(path);
-        return string.IsNullOrWhiteSpace(info.ProductVersion) ? info.FileVersion : info.ProductVersion;
     }
 
     [GeneratedRegex("\"?(?<path>[^\"]*?\\\\Update\\.exe)\"?", RegexOptions.IgnoreCase)]

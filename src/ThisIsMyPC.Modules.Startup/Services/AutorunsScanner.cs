@@ -33,7 +33,7 @@ public sealed class AutorunsScanner
     {
         _registry = registry;
         _folders = folders;
-        _fileMetadataReader = fileMetadataReader ?? StartupScanner.ReadFileMetadata;
+        _fileMetadataReader = fileMetadataReader ?? NoFileMetadata;
         var windows = windowsDirectory ?? Environment.GetFolderPath(Environment.SpecialFolder.Windows);
         _system32 = Path.Combine(windows, "System32");
         _sysWow64 = Path.Combine(windows, "SysWOW64");
@@ -604,4 +604,7 @@ public sealed class AutorunsScanner
         _metadataCache[path] = metadata;
         return metadata;
     }
+
+    private static StartupFileMetadata NoFileMetadata(string _)
+        => new(null, null);
 }

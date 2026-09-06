@@ -47,8 +47,15 @@ public static class InstallFolderRules
         if (string.Equals(Path.TrimEndingDirectorySeparator(folder), Path.TrimEndingDirectorySeparator(root ?? ""), StringComparison.OrdinalIgnoreCase))
             return new FolderCheck(false, "Pick a folder, not the whole drive.", null);
 
-        return new FolderCheck(true, null, IsUnderProgramFiles(folder) ? null :
-            "This folder is outside Program Files, so other programs on this PC can change the files in it. ThisIsMyPC will warn about that every time it starts.");
+        if (!IsUnderProgramFiles(folder))
+        {
+            return new FolderCheck(
+                false,
+                "Install inside Program Files so standard-user processes cannot replace elevated app files.",
+                null);
+        }
+
+        return new FolderCheck(true, null, null);
     }
 
     /// <summary>Mirrors the app's InstallationGuard: Program Files or Program Files (x86).</summary>
@@ -64,7 +71,15 @@ public static class InstallFolderRules
     {
         if (string.IsNullOrEmpty(parent))
             return false;
-        var normalizedParent = Path.TrimEndingDirectorySeparator(parent) + Path.DirectorySeparatorChar;
-        return folder.StartsWith(normalizedParent, StringComparison.OrdinalIgnoreCase);
+        try
+        {
+            var normalizedFolder = Path.GetFullPath(folder);
+            var normalizedParent = Path.TrimEndingDirectorySeparator(Path.GetFullPath(parent)) + Path.DirectorySeparatorChar;
+            return normalizedFolder.StartsWith(normalizedParent, StringComparison.OrdinalIgnoreCase);
+        }
+        catch (Exception ex) when (ex is ArgumentException or IOException or NotSupportedException)
+        {
+            return false;
+        }
     }
 }

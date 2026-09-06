@@ -42,12 +42,16 @@ EH Continuation table present.
   `tools/AcgLauncher` preserves this loader-time release test in the repository.
   The shipped self-enable path still starts at managed `Main`. Loader-time ACG
   needs a trusted launcher or machine policy as a separate hardening step.
-- **Safe DLL search: IMPL.** New `DllSearchHardening.Apply()`
+- **Safe DLL search: DONE.** New `DllSearchHardening.Apply()`
   (SetDefaultDllDirectories: SYSTEM32 + application dir only, PATH and CWD
   removed process-wide) called before framework startup in the App, Service,
   and Installer. Complements the existing per-assembly
   `DefaultDllImportSearchPaths(System32)` attributes (NFR30), which cannot
   reach delay-loaded or dependency-pulled DLLs.
+- **Safe DLL search failure: DONE.** App, Service, and Installer now stop when
+  SetDefaultDllDirectories fails. The portable release installer excludes its
+  download directory and permits only System32. Its Avalonia native libraries
+  load by absolute path from protected ProgramData storage.
 - **Delay-load hardening: covered by the above.** Delay-load thunks resolve
   through LoadLibrary, which SetDefaultDllDirectories constrains. No custom
   delay-load handlers exist in the codebase.
@@ -110,11 +114,45 @@ EH Continuation table present.
   deliberately KEPT (`StackTraceSupport` default): NLog crash logs need
   frames, and the metadata discloses nothing an open-source repo does not.
 
-## Verification (paid 2026-08-31, follow-up session)
+## Elevated content and child execution
 
-Every IMPL item above is now built, tested, and committed: solution build
-clean, full CI suite green (1,382 tests), Diagnostic UI walkthrough green.
-`ChildProcessGateTests` covers the new gate directly, including a live
-Integration case that resolves the real winget alias and verifies its
-packaged executable as Microsoft-signed: the exact path the launch gate
-takes in production.
+- **Untrusted file parsing: DONE.** The elevated UI no longer resolves shortcut
+  contents, reads PE version resources, inspects autorun signatures, or asks
+  the shell to extract icons from target files. Icons, publishers, and
+  descriptions stay unknown until this work moves to a non-elevated helper.
+- **Third-party shell code: DONE.** Context-menu discovery reads registry
+  metadata only. It never creates or calls a registered in-process shell
+  extension. Surface classification falls back conservatively.
+- **Startup folder containment: DONE.** Startup file reads, restores, deletes,
+  and moves accept only direct children of the two Windows Startup folders and
+  their AutorunsDisabled folders. Cross-scope moves, traversal, nested paths,
+  and reparse points are refused.
+- **Portable installer cache: DONE.** Embedded native libraries are compared by
+  SHA-256. A same-length poisoned cache entry is replaced. Private extraction
+  paths reject reparse points.
+- **Installer child execution: DONE.** Per-machine detection ignores HKCU
+  uninstall records. Install, update, launch, and uninstall paths must be under
+  Program Files. Update.exe must occupy the exact expected path and carry a
+  trusted No More Secrets, LLC signature before execution.
+- **Elevation fallback: DONE.** Failure to obtain an interactive user token no
+  longer starts the requested process with the app's elevated token.
+- **Protected app directory: DONE.** Release builds stop before framework
+  startup outside Program Files. Canonical path checks reject traversal and
+  prefix lookalikes.
+
+The main remaining architectural risk is the always-elevated Avalonia process.
+ACG starts at managed Main, after the Windows image loader. A future split must
+run the UI without elevation and expose a small authenticated mutation broker.
+PPL is unavailable to a normal OV-signed desktop product.
+
+## Verification (2026-09-06)
+
+The non-elevated Release suite passed 2,359 tests. The numbered acg-04
+NativeAOT build contains the App, Service, and installer launcher. All twelve
+PE images passed the strengthened mitigation gate. The installer screenshot
+suite confirmed that an outside-Program-Files path shows an error and disables
+installation. UAC-only runtime checks remain pending.
+
+`ChildProcessGateTests` covers the winget launch gate directly, including a
+live Integration case that resolves the real winget alias and verifies its
+packaged executable as Microsoft-signed.

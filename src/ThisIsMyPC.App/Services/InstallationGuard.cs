@@ -26,6 +26,19 @@ public sealed class InstallationGuard : IInstallationGuard
     }
 
     private static bool IsUnderPath(string directory, string parentPath)
-        => !string.IsNullOrEmpty(parentPath) &&
-           directory.StartsWith(parentPath, StringComparison.OrdinalIgnoreCase);
+    {
+        if (string.IsNullOrEmpty(parentPath))
+            return false;
+
+        try
+        {
+            var directoryPath = Path.GetFullPath(directory);
+            var parent = Path.TrimEndingDirectorySeparator(Path.GetFullPath(parentPath));
+            return directoryPath.StartsWith(parent + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+        }
+        catch (Exception ex) when (ex is ArgumentException or IOException or NotSupportedException)
+        {
+            return false;
+        }
+    }
 }

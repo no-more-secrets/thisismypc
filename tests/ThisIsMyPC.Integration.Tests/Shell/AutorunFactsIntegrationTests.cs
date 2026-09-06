@@ -43,6 +43,14 @@ public sealed class AutorunFactsIntegrationTests
     }
 
     [Fact]
+    public void GetSmallIcon_AlwaysUsesFileAttributesWithoutAccessingTarget()
+    {
+        const uint useFileAttributes = 0x000000010;
+
+        Assert.NotEqual(0u, FileIconService.FileTypeIconFlags & useFileAttributes);
+    }
+
+    [Fact]
     public void Check_CatalogSignedSystemFile_VerifiesAsMicrosoftWindows()
     {
         var info = new AuthenticodeService().Check(System32("svchost.exe"));

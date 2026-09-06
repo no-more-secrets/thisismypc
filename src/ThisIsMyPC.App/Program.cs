@@ -27,7 +27,14 @@ sealed class Program
         // First: drop working directory and PATH from every DLL resolution in
         // the process (System32 + application dir only). Must precede any code
         // that could fault in a library.
-        DllSearchHardening.Apply();
+        if (!DllSearchHardening.Apply())
+            Environment.FailFast("Safe DLL search policy could not be enabled.");
+
+        var installGuard = new InstallationGuard(AppContext.BaseDirectory);
+#if !DEBUG
+        if (!installGuard.IsProtectedLocation)
+            Environment.FailFast(installGuard.WarningMessage ?? "The application directory is not protected.");
+#endif
 
 #if DEBUG
         // Debug builds get a separate console window streaming verbose logs.
@@ -69,7 +76,6 @@ sealed class Program
         {
             log.Info("ThisIsMyPC starting");
 
-            var installGuard = new InstallationGuard(AppContext.BaseDirectory);
             InstallGuard = installGuard;
             if (installGuard.IsProtectedLocation)
                 log.Info("Installation path verified: {Path}", AppContext.BaseDirectory);

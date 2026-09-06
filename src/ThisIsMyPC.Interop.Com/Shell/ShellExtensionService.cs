@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using ThisIsMyPC.Core.Results;
 using ThisIsMyPC.Core.Services;
 
@@ -37,7 +36,6 @@ public sealed class ShellExtensionService : IShellExtensionService
         {
             var handlers = new List<ShellExtensionInfo>();
             var dllPathCache = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
-            var publisherCache = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var (basePath, appliesTo) in HandlerRegistrations)
             {
@@ -79,21 +77,13 @@ public sealed class ShellExtensionService : IShellExtensionService
                         dllPathCache[cleanClsid] = dllPath;
                     }
 
-                    // Cache publisher per DLL path to avoid redundant FileVersionInfo reads
-                    string? publisher = null;
-                    if (dllPath is not null && !publisherCache.TryGetValue(dllPath, out publisher))
-                    {
-                        publisher = ResolvePublisher(dllPath);
-                        publisherCache[dllPath] = publisher;
-                    }
-
                     handlers.Add(new ShellExtensionInfo(
                         HandlerName: resolvedName,
                         Clsid: cleanClsid,
                         RegistryPath: handlerKeyPath,
                         AppliesTo: appliesTo,
                         DllPath: dllPath,
-                        Publisher: publisher,
+                        Publisher: null,
                         IsEnabled: isEnabled,
                         RegistryKeyName: registryKeyName));
                 }
@@ -142,7 +132,6 @@ public sealed class ShellExtensionService : IShellExtensionService
         {
             var handlers = new List<DragDropHandlerInfo>();
             var dllPathCache = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
-            var publisherCache = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var (basePath, appliesTo) in DragDropRegistrations)
             {
@@ -179,20 +168,13 @@ public sealed class ShellExtensionService : IShellExtensionService
                         dllPathCache[cleanClsid] = dllPath;
                     }
 
-                    string? publisher = null;
-                    if (dllPath is not null && !publisherCache.TryGetValue(dllPath, out publisher))
-                    {
-                        publisher = ResolvePublisher(dllPath);
-                        publisherCache[dllPath] = publisher;
-                    }
-
                     handlers.Add(new DragDropHandlerInfo(
                         Name: resolvedName,
                         Clsid: cleanClsid,
                         RegistryPath: handlerKeyPath,
                         AppliesTo: appliesTo,
                         DllPath: dllPath,
-                        Publisher: publisher,
+                        Publisher: null,
                         RegistryKeyName: registryKeyName));
                 }
             }
@@ -233,19 +215,4 @@ public sealed class ShellExtensionService : IShellExtensionService
     private static bool LooksLikeClsid(string value) =>
         value.Length > 2 && value[0] == '{' && value[^1] == '}';
 
-    private static string? ResolvePublisher(string? dllPath)
-    {
-        if (string.IsNullOrEmpty(dllPath) || !File.Exists(dllPath))
-            return null;
-
-        try
-        {
-            var versionInfo = FileVersionInfo.GetVersionInfo(dllPath);
-            return versionInfo.CompanyName;
-        }
-        catch (Exception)
-        {
-            return null;
-        }
-    }
 }
