@@ -42,7 +42,7 @@ public abstract partial class SettingCardPageViewModel
     [ObservableProperty]
     private bool _showRegistryData;
 
-    /// <summary>Compact display mode: cards collapse to one line, descriptions move to the (i) tooltip.</summary>
+    /// <summary>Compact display mode: cards collapse to one line; the informational badge lines move into the (i) tooltip.</summary>
     [ObservableProperty]
     private bool _isCompact;
 
@@ -123,11 +123,11 @@ public abstract partial class SettingCardPageViewModel
         return -1;
     }
 
-    // Each switch touches only its own card flag, and mutates the existing card
-    // VMs in place: the list is never rebuilt, so scroll position, pending tint,
-    // and a card's own open or closed details survive the other switch.
+    // Each box touches only its own card flag, and mutates the existing card
+    // VMs in place: the list is never rebuilt, so scroll position and pending
+    // tint survive the other box.
 
-    /// <summary>The page toggle sets every card's details panel; a card's own link can still change it afterwards.</summary>
+    /// <summary>The page box sets every card's details panel.</summary>
     partial void OnShowRegistryDataChanged(bool value)
     {
         foreach (var card in AllCards())
@@ -138,7 +138,7 @@ public abstract partial class SettingCardPageViewModel
     partial void OnIsCompactChanged(bool value)
     {
         foreach (var card in AllCards())
-            card.IsDescriptionVisible = !value;
+            card.IsCompact = value;
         PersistDisplayMode();
     }
 

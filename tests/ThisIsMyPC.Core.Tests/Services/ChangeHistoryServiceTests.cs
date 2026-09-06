@@ -60,6 +60,54 @@ public class ChangeHistoryServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task RecordChangesAsync_RecordsAppliedGroupsOfAFailedBatch_AndNothingElse()
+    {
+        await _service.InitializeAsync();
+        var committed = CreateChange("committed");
+        var failed = CreateChange("failed");
+        var rolledBack = CreateChange("rolled-back");
+        var notReverted = CreateChange("not-reverted");
+
+        await _service.RecordChangesAsync(new MutationResult
+        {
+            IsSuccess = false,
+            FailureKind = MutationFailureKind.ChangeThrew,
+            Applied = [committed],
+            Failed = failed,
+            RolledBack = [rolledBack],
+            RollbackFailures = [new RollbackFailure(notReverted, "stuck", null)],
+            Uncertain = [notReverted, failed],
+            ErrorMessage = "boom",
+        });
+
+        var history = await _service.GetHistoryAsync();
+        var entry = Assert.Single(history);
+        Assert.Equal("committed", entry.SettingId);
+    }
+
+    [Theory]
+    [InlineData(MutationFailureKind.ChangeFailed)]
+    [InlineData(MutationFailureKind.Cancelled)]
+    [InlineData(MutationFailureKind.ReconciliationRequired)]
+    public async Task RecordChangesAsync_FailedBatchWithNothingApplied_RecordsNothing(MutationFailureKind kind)
+    {
+        await _service.InitializeAsync();
+        var failed = CreateChange("failed");
+
+        await _service.RecordChangesAsync(new MutationResult
+        {
+            IsSuccess = false,
+            FailureKind = kind,
+            Applied = [],
+            Failed = failed,
+            RolledBack = [],
+            Uncertain = [failed],
+        });
+
+        Assert.Equal(0, await _service.GetEntryCountAsync());
+    }
+
+    [Fact]
     public async Task GetHistoryAsync_ReturnsEntriesInReverseChronologicalOrder()
     {
         await _service.InitializeAsync();

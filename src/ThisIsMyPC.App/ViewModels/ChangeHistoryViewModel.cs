@@ -55,16 +55,23 @@ public partial class ChangeHistoryViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isConfirmingClear;
 
+    // Taken before the history service routes an undo or redo: the service can
+    // write through enforcement before the module delegate ever runs, so the
+    // gate has to sit in front of the service call, not inside the delegates.
+    private readonly Func<Services.MutationLease> _beginMutation;
+
     public ChangeHistoryViewModel(
         IChangeHistoryService historyService,
         Func<ChangeDescriptor, Task<OperationResult<bool>>> revertFunc,
         Func<ChangeDescriptor, Task<OperationResult<bool>>> applyFunc,
-        ICustomSetWriter customSetWriter)
+        ICustomSetWriter customSetWriter,
+        Func<Services.MutationLease>? beginMutation = null)
     {
         _historyService = historyService;
         _revertFunc = revertFunc;
         _applyFunc = applyFunc;
         _customSetWriter = customSetWriter;
+        _beginMutation = beginMutation ?? Services.MutationLease.Open;
         SaveSetForm = new SaveSetFormViewModel(CreateSetFromSelection);
     }
 
@@ -182,6 +189,12 @@ public partial class ChangeHistoryViewModel : ViewModelBase
     private async Task RestoreAsync(ChangeHistoryEntryViewModel entry)
     {
         ErrorMessage = null;
+        using var lease = _beginMutation();
+        if (lease.Refusal is { } refusal)
+        {
+            ErrorMessage = refusal;
+            return;
+        }
 
         var result = await _historyService.RevertChangeAsync(entry.Id, _revertFunc)
             .ConfigureAwait(true);
@@ -201,6 +214,12 @@ public partial class ChangeHistoryViewModel : ViewModelBase
     private async Task RedoAsync(ChangeHistoryEntryViewModel entry)
     {
         ErrorMessage = null;
+        using var lease = _beginMutation();
+        if (lease.Refusal is { } refusal)
+        {
+            ErrorMessage = refusal;
+            return;
+        }
 
         var result = await _historyService.RedoChangeAsync(entry.Id, _applyFunc)
             .ConfigureAwait(true);

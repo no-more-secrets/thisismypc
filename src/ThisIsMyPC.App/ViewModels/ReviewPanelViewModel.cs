@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using Avalonia.Threading;
+using ThisIsMyPC.Core.Changes;
 using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Core.Sets;
 
@@ -18,6 +19,31 @@ public partial class ReviewPanelViewModel : ViewModelBase, IDisposable
     public bool HasActions => ReviewActions.Count > 0;
 
     public bool IsEmpty => ReviewGroups.Count == 0 && ReviewActions.Count == 0;
+
+    /// <summary>At least one staged group was left in an unknown state by an earlier apply.</summary>
+    public bool HasUnresolvedGroups => ReviewGroups.Any(g => g.NeedsReview);
+
+    /// <summary>
+    /// The recovery instructions shown above the list while
+    /// <see cref="HasUnresolvedGroups"/>. Discarding clears the queue only; it
+    /// does not undo anything on the PC, and the text says so.
+    /// </summary>
+    public string UnresolvedNotice
+    {
+        get
+        {
+            var count = ReviewGroups.Count(g => g.NeedsReview);
+            if (count == 0)
+                return string.Empty;
+
+            var what = count == 1
+                ? "One change below did not finish, so its current setting is unknown."
+                : $"{count} changes below did not finish, so their current settings are unknown.";
+            return what
+                + " Nothing can be applied until it is cleared. Click Discard All: the page reloads and shows what Windows has now."
+                + " Then set the change again if you still want it. Discard All does not undo anything that already happened.";
+        }
+    }
 
     public string HeaderCountText
     {
@@ -51,7 +77,8 @@ public partial class ReviewPanelViewModel : ViewModelBase, IDisposable
 
     private void OnPendingChangesPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName is nameof(IPendingChangesService.PendingGroups))
+        if (e.PropertyName is nameof(IPendingChangesService.PendingGroups)
+            or nameof(IPendingChangesService.ReconciliationRequired))
         {
             if (Dispatcher.UIThread.CheckAccess())
                 RefreshItems();
@@ -104,10 +131,17 @@ public partial class ReviewPanelViewModel : ViewModelBase, IDisposable
     {
         ReviewGroups.Clear();
 
+        // Records are keyed by group instance in the queue; match the same way so
+        // a fresh group staged under an old id never inherits the old mark.
+        var unresolved = _pendingChangesService.ReconciliationRequired
+            .ToDictionary(r => r.Group, r => r, ReferenceEqualityComparer.Instance);
+
         foreach (var group in _pendingChangesService.PendingGroups)
         {
             if (group.Changes.Count == 0)
                 continue;
+
+            var record = unresolved.GetValueOrDefault(group);
 
             var details = group.Changes.Select(change => new ReviewItemViewModel
             {
@@ -131,11 +165,42 @@ public partial class ReviewPanelViewModel : ViewModelBase, IDisposable
                 Category = primary.Category,
                 GroupId = group.GroupId,
                 Details = details,
+                NeedsReview = record is not null,
+                ReviewNote = record is null ? string.Empty : DescribeUnresolved(record),
             });
         }
 
         OnPropertyChanged(nameof(IsEmpty));
         OnPropertyChanged(nameof(HeaderCountText));
+        OnPropertyChanged(nameof(HasUnresolvedGroups));
+        OnPropertyChanged(nameof(UnresolvedNotice));
+    }
+
+    /// <summary>One line under the group: what stopped it and which values are unknown.</summary>
+    public static string DescribeUnresolved(GroupReconciliation record)
+    {
+        var names = MainWindowViewModel.NameList(record.Uncertain);
+        var unknown = record.Uncertain.Count == 1
+            ? $"Current value of {names} is unknown."
+            : $"Current values of {names} are unknown.";
+
+        switch (record.Kind)
+        {
+            case MutationFailureKind.Cancelled:
+                return $"Cancelled, but {names} could not be put back. {unknown}";
+
+            case MutationFailureKind.ChangeFailed:
+            case MutationFailureKind.ChangeThrew:
+            default:
+            {
+                var at = record.Failed?.DisplayName ?? record.Uncertain[0].DisplayName;
+                var reason = record.ErrorMessage is { Length: > 0 } text ? $": {text.TrimEnd('.')}" : "";
+                var stuck = record.RollbackFailures.Count == 0
+                    ? ""
+                    : $" {MainWindowViewModel.NameList(record.RollbackFailures.Select(f => f.Change).ToList())} could not be put back.";
+                return $"Did not finish at \"{at}\"{reason}.{stuck} {unknown}";
+            }
+        }
     }
 
     public void Dispose()

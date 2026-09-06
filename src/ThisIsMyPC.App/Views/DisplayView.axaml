@@ -24,11 +24,12 @@
             <Setter Property="VerticalAlignment" Value="Center" />
             <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
         </Style>
-        <!-- Same footprint as the editable TextBox.plain-value (48 wide, 6 pad),
-             so slider ends and values line up across rows -->
+        <!-- Same footprint as the editable TextBox.plain-value (48 wide, 6 pad,
+             8 clear of the slider), so slider ends and values line up across rows -->
         <Style Selector="TextBlock.row-value">
             <Setter Property="FontSize" Value="14" />
             <Setter Property="Width" Value="48" />
+            <Setter Property="Margin" Value="8,0,0,0" />
             <Setter Property="Padding" Value="0,0,6,0" />
             <Setter Property="TextAlignment" Value="Right" />
             <Setter Property="VerticalAlignment" Value="Center" />

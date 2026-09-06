@@ -29,9 +29,17 @@ public sealed class ChangeHistoryService : IChangeHistoryService
         await _repository.InitializeDatabaseAsync(_dbPath).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Records <see cref="MutationResult.Applied"/>, the changes from groups that
+    /// completed. A failed, thrown, or cancelled batch still commits the groups
+    /// that finished before it stopped (they left the queue), so they are recorded
+    /// too; otherwise they would be applied with no undo entry. Nothing else on
+    /// the result is recorded: the failed change, rollback failures, and
+    /// <see cref="MutationResult.Uncertain"/> never become history.
+    /// </summary>
     public async Task RecordChangesAsync(MutationResult result)
     {
-        if (!result.IsSuccess || result.Applied.Count == 0)
+        if (result.Applied.Count == 0)
             return;
 
         var now = DateTimeOffset.UtcNow;

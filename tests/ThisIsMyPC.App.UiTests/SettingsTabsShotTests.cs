@@ -132,6 +132,45 @@ public class SettingsTabsShotTests
     }
 
     [AvaloniaFact]
+    public void NotificationsTab_MasterOff_GreysOutTheEventSwitches_WithoutMovingThem()
+    {
+        foreach (var theme in new[] { ThemeVariant.Dark, ThemeVariant.Light })
+        foreach (var width in new[] { 1200, 800 })
+        {
+            var vm = Model(withModules: false);
+            using var session = UiSession.ForView(Card(new SettingsView()), vm, "settings-tabs", width: width, height: 800);
+            session.SetTheme(theme);
+            session.ClickText("Notifications");
+            var switches = session.FindAll<ToggleSwitch>(_ => true).ToList();
+            Assert.Equal(3, switches.Count);
+            var master = switches[0];
+            var before = switches.Select(s => (Top: session.TopOf(s), s.IsEffectivelyEnabled)).ToList();
+            Assert.All(before, b => Assert.True(b.IsEffectivelyEnabled));
+
+            session.Click(master);
+            session.Pump();
+            var after = switches.Select(s => (Top: session.TopOf(s), s.IsEffectivelyEnabled)).ToList();
+            Assert.False(master.IsChecked);
+            Assert.True(after[0].IsEffectivelyEnabled);
+            Assert.False(after[1].IsEffectivelyEnabled);
+            Assert.False(after[2].IsEffectivelyEnabled);
+            // Greyed out in place: nothing moved, and the saved positions stay on.
+            for (var i = 0; i < 3; i++)
+                Assert.Equal(before[i].Top, after[i].Top, 0.01);
+            Assert.True(switches[1].IsChecked);
+            Assert.True(switches[2].IsChecked);
+            session.Screenshot($"notifications-master-off-{theme.Key}-{width}");
+
+            session.Click(master);
+            session.Pump();
+            Assert.True(switches[1].IsEffectivelyEnabled);
+            Assert.True(switches[2].IsEffectivelyEnabled);
+            Assert.True(switches[1].IsChecked);
+            Assert.True(switches[2].IsChecked);
+        }
+    }
+
+    [AvaloniaFact]
     public async Task OwnerModeTab_RendersServiceStates_WithAFakeService()
     {
         foreach (var theme in new[] { ThemeVariant.Dark, ThemeVariant.Light })

@@ -22,11 +22,17 @@ internal sealed class FakeModule : IModule
 
     public ModuleInfo Info { get; }
 
+    /// <summary>How many times the page asked this module for its live state.</summary>
+    public int ScanCount { get; private set; }
+
     public Task<ModuleAvailability> CheckAvailabilityAsync()
         => Task.FromResult(new ModuleAvailability(IsAvailable: true));
 
     public Task<OperationResult<object>> ScanSystemStateAsync()
-        => Task.FromResult(OperationResult<object>.Success(new object()));
+    {
+        ScanCount++;
+        return Task.FromResult(OperationResult<object>.Success(new object()));
+    }
 
     public Task<OperationResult<bool>> ApplyChangeAsync(ChangeDescriptor change)
         => _applyOverride?.Invoke(change) ?? Task.FromResult(OperationResult<bool>.Success(true));

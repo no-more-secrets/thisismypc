@@ -32,7 +32,9 @@
     </UserControl.Styles>
 
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-        <StackPanel MaxWidth="860" HorizontalAlignment="Left" Margin="0,4,16,24">
+        <!-- Hosted inside the Debug page's edge tab, whose content padding already
+             supplies the 16px top; no first-element margin of its own. -->
+        <StackPanel MaxWidth="860" HorizontalAlignment="Left" Margin="0,0,16,24">
 
             <!-- Type scale -->
             <TextBlock Classes="gallery-section" Text="Type scale" Margin="0,0,0,10" />

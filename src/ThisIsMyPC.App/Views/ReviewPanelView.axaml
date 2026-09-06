@@ -9,6 +9,15 @@
              x:Class="ThisIsMyPC.App.Views.ReviewPanelView"
              x:DataType="vm:ReviewPanelViewModel">
 
+    <UserControl.Styles>
+        <!-- An unresolved group keeps its category tint and gains the danger rim,
+             so it reads as "stopped here" next to its clean neighbours. -->
+        <Style Selector="Border.review-unresolved">
+            <Setter Property="BorderBrush" Value="{DynamicResource DangerOutlineBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+    </UserControl.Styles>
+
     <Border Background="{DynamicResource RaisedBrush}"
             BorderBrush="{DynamicResource OutlineBrush}"
             BorderThickness="1"
@@ -63,7 +72,7 @@
                                 Content="Apply All"
                                 HorizontalAlignment="Right"
                                 Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ApplyAllCommand}"
-                                IsEnabled="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).CanModifyPending}" />
+                                IsEnabled="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).CanApplyPending}" />
                     </DockPanel>
                 </StackPanel>
             </Border>
@@ -90,6 +99,26 @@
                               VerticalScrollBarVisibility="Auto"
                               IsVisible="{Binding !IsEmpty}">
                   <StackPanel>
+                    <!-- A group left in an unknown state blocks the queue; say what to click. -->
+                    <Border IsVisible="{Binding HasUnresolvedGroups}"
+                            Margin="8,8,16,0"
+                            Padding="12,8"
+                            CornerRadius="4"
+                            BorderThickness="1"
+                            BorderBrush="{DynamicResource DangerOutlineBrush}"
+                            Background="{DynamicResource DangerMutedBrush}">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Needs your attention"
+                                       FontWeight="SemiBold"
+                                       FontSize="13"
+                                       Foreground="{DynamicResource DangerBrush}" />
+                            <TextBlock Text="{Binding UnresolvedNotice}"
+                                       FontSize="12"
+                                       TextWrapping="Wrap"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                        </StackPanel>
+                    </Border>
+
                     <ItemsControl ItemsSource="{Binding ReviewGroups}" Margin="8,8,16,8"
                                   IsVisible="{Binding !!ReviewGroups.Count}">
                         <ItemsControl.ItemTemplate>
@@ -99,7 +128,8 @@
                                         CornerRadius="4"
                                         Classes.pending-enable="{Binding IsEnableOrCreate}"
                                         Classes.pending-disable="{Binding IsDisableOrDelete}"
-                                        Classes.pending-modify="{Binding IsModifyCategory}">
+                                        Classes.pending-modify="{Binding IsModifyCategory}"
+                                        Classes.review-unresolved="{Binding NeedsReview}">
                                     <StackPanel Spacing="2">
                                         <!-- Group display name -->
                                         <TextBlock Text="{Binding DisplayName}"
@@ -107,6 +137,13 @@
                                                    FontSize="14"
                                                    TextWrapping="Wrap"
                                                    Foreground="{DynamicResource TextPrimaryBrush}" />
+
+                                        <!-- Unknown-state note: only for a group an apply stopped inside -->
+                                        <TextBlock Text="{Binding ReviewNote}"
+                                                   IsVisible="{Binding NeedsReview}"
+                                                   FontSize="12"
+                                                   TextWrapping="Wrap"
+                                                   Foreground="{DynamicResource DangerBrush}" />
 
                                         <!-- Before -> After -->
                                         <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2,0,0">

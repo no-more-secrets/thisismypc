@@ -24,22 +24,23 @@
                                ItemsSource="{Binding CardGroups}"
                                ShowTabs="{Binding !IsSearching}">
         <controls:ModuleTabControl.Toolbar>
+            <!-- Two stacked boxes beside the search box, as on Startup &
+                 Services. The stack sets the row height and the box fills it,
+                 so the two edges line up with no height mismatch. -->
             <DockPanel Margin="0,0,16,8">
-                <StackPanel DockPanel.Dock="Right"
-                            Orientation="Horizontal"
-                            Spacing="8"
-                            Margin="12,0,0,0">
-                    <ToggleButton Classes="toolbar-toggle" Content="Technical details"
-                                  IsChecked="{Binding ShowRegistryData}"
-                                  FontSize="12"
-                                  Padding="10,4" />
-                    <ToggleButton Classes="toolbar-toggle" Content="Compact"
-                                  IsChecked="{Binding IsCompact}"
-                                  FontSize="12"
-                                  Padding="10,4" />
+                <StackPanel x:Name="DisplayToggles"
+                            DockPanel.Dock="Right"
+                            Spacing="4"
+                            Margin="16,0,0,0"
+                            VerticalAlignment="Center">
+                    <CheckBox Content="Technical details" IsChecked="{Binding ShowRegistryData}" />
+                    <CheckBox Content="Compact" IsChecked="{Binding IsCompact}" />
                 </StackPanel>
                 <TextBox Text="{Binding SearchText}"
-                         Watermark="Search settings" />
+                         Watermark="Search settings"
+                         MinHeight="40"
+                         VerticalAlignment="Stretch"
+                         VerticalContentAlignment="Center" />
             </DockPanel>
         </controls:ModuleTabControl.Toolbar>
         <controls:ModuleTabControl.ItemTemplate>

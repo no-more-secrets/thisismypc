@@ -219,10 +219,15 @@ public partial class App : Application
             sp.GetRequiredService<IServiceInstaller>(),
             sp.GetRequiredService<IServiceControlService>()));
 
-        // Core Services
-        services.AddSingleton<ICapabilityDetector>(sp => new CapabilityDetector(
-            sp.GetRequiredService<IRegistryService>(),
-            ownerModeProbe: () => sp.GetRequiredService<OwnerModeService>().IsRunning));
+        // Core Services. The capability detector is wrapped by the Debug page's
+        // simulation seam: a pass-through until the Debug page (Debug builds only)
+        // sets an override, held in memory only, never persisted.
+        services.AddSingleton<Services.DebugSimulation>();
+        services.AddSingleton<ICapabilityDetector>(sp => new Services.SimulatedCapabilityDetector(
+            new CapabilityDetector(
+                sp.GetRequiredService<IRegistryService>(),
+                ownerModeProbe: () => sp.GetRequiredService<OwnerModeService>().IsRunning),
+            sp.GetRequiredService<Services.DebugSimulation>()));
         // PendingChangesService's optional ctor param resolves this because it is registered.
         services.AddSingleton<IEnforcementExecutor, EnforcementExecutor>();
         services.AddSingleton<IPendingChangesService, PendingChangesService>();

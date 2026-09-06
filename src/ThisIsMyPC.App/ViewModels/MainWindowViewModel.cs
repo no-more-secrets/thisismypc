@@ -70,6 +70,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private void DisableDetection(DetectionRowViewModel row)
     {
+        if (RefuseStagingWhileUnresolved())
+            return;
         var inspector = _setEntryInspectors.FirstOrDefault(i => i.ModuleId == "Startup & Services");
         if (inspector is null)
         {
@@ -159,6 +161,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private void ReapplyDriftItem(DriftRowViewModel row)
     {
+        if (RefuseStagingWhileUnresolved())
+            return;
         if (!Enum.TryParse<ChangeValueType>(row.Item.ValueType, out var valueType))
         {
             SetStatus($"\"{row.Item.DisplayName}\" has an unrecognized value type and cannot be restaged.", StatusSeverity.Warning);
@@ -241,7 +245,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
     /// <summary>Whether the current page owns its card edge and content padding.</summary>
     public bool UsesEdgeTabs => CurrentContent is ShellViewModel or EnvironmentViewModel or SettingsViewModel
-        or SoftwareViewModel or ContextMenuViewModel or StartupViewModel or PowerViewModel or SettingCardPageViewModel;
+        or SoftwareViewModel or ContextMenuViewModel or StartupViewModel or PowerViewModel or SettingCardPageViewModel
+        or DebugViewModel;
 
     [ObservableProperty]
     private bool _isSidebarCollapsed;
@@ -251,6 +256,7 @@ public partial class MainWindowViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(PendingCountText))]
     [NotifyPropertyChangedFor(nameof(TotalPendingCount))]
     [NotifyPropertyChangedFor(nameof(CanModifyPending))]
+    [NotifyPropertyChangedFor(nameof(CanApplyPending))]
     private int _pendingCount;
 
     [ObservableProperty]
@@ -258,6 +264,7 @@ public partial class MainWindowViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(PendingCountText))]
     [NotifyPropertyChangedFor(nameof(TotalPendingCount))]
     [NotifyPropertyChangedFor(nameof(CanModifyPending))]
+    [NotifyPropertyChangedFor(nameof(CanApplyPending))]
     private int _actionCount;
 
     /// <summary>Changes plus one-way actions: what the Apply badge shows.</summary>
@@ -283,6 +290,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanModifyPending))]
+    [NotifyPropertyChangedFor(nameof(CanApplyPending))]
     [NotifyPropertyChangedFor(nameof(CanCreateRestorePoint))]
     private bool _isApplying;
 
@@ -337,12 +345,19 @@ public partial class MainWindowViewModel : ViewModelBase
         Ipc.Contracts.IIpcClient? ipcClient = null,
         IPendingActionsService? pendingActionsService = null,
         Core.Packages.IWingetService? wingetService = null,
-        Services.AutorunEnrichment? autorunEnrichment = null)
+        Services.AutorunEnrichment? autorunEnrichment = null,
+        Services.DebugSimulation? debugSimulation = null)
     {
         _wingetService = wingetService;
         _autorunEnrichment = autorunEnrichment;
         _pendingActionsService = pendingActionsService;
         _ownerModeService = ownerModeService;
+        _debugSimulation = debugSimulation;
+        _ownerModeControl = ownerModeService is null ? null
+            : debugSimulation is null ? ownerModeService
+            : new Services.SimulatedOwnerModeControl(ownerModeService, debugSimulation);
+        if (_debugSimulation is not null)
+            _debugSimulation.Changed += OnSimulationChanged;
         _ipcClient = ipcClient;
         _displayModeStore = displayModeStore;
         _powerService = powerService;
@@ -376,11 +391,13 @@ public partial class MainWindowViewModel : ViewModelBase
             changeHistoryService,
             RevertChangeOnModule,
             ApplyChangeToModule,
-            customSetWriter);
+            customSetWriter,
+            BeginMutation);
 
         _pendingChangesService.PropertyChanged += OnPendingChangesPropertyChanged;
         _navigationService.PropertyChanged += OnNavigationPropertyChanged;
         PendingCount = _pendingChangesService.PendingCount;
+        RefreshUnresolvedGroups();
         if (_pendingActionsService is not null)
         {
             _pendingActionsService.PropertyChanged += OnPendingActionsPropertyChanged;
@@ -408,13 +425,53 @@ public partial class MainWindowViewModel : ViewModelBase
             else
                 Dispatcher.UIThread.Post(() => PendingCount = _pendingChangesService.PendingCount);
         }
+        else if (e.PropertyName is nameof(IPendingChangesService.ReconciliationRequired)
+            or nameof(IPendingChangesService.PendingGroups))
+        {
+            if (Dispatcher.UIThread.CheckAccess())
+                RefreshUnresolvedGroups();
+            else
+                Dispatcher.UIThread.Post(RefreshUnresolvedGroups);
+        }
     }
+
+    private void RefreshUnresolvedGroups()
+    {
+        HasUnresolvedGroups = _pendingChangesService.ReconciliationRequired.Count > 0;
+    }
+
+    /// <summary>
+    /// True while a staged group was left in an unknown state by an earlier
+    /// apply. The queue refuses every batch until that group is discarded, so
+    /// Apply All is off and the review panel says what to do instead.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanApplyPending))]
+    private bool _hasUnresolvedGroups;
+
+    /// <summary>Apply All is available: something is staged, nothing is running, nothing is unresolved.</summary>
+    public bool CanApplyPending => CanModifyPending && !HasUnresolvedGroups;
+
+    // Modules whose page must be scanned again before it stages anything: a
+    // change in one of them was left with an unknown live value, so the before
+    // values its cards read at load may no longer describe the machine.
+    private readonly HashSet<string> _modulesNeedingRescan = new(StringComparer.Ordinal);
 
     private async void OnNavigationPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName is not nameof(NavigationService.CurrentModule))
             return;
 
+        await LoadCurrentModuleAsync().ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Scans the current module and rebuilds its page from the result. Every
+    /// card on the new page reads its before value from this scan, so this is
+    /// also the reset after a group was discarded in an unknown state.
+    /// </summary>
+    private async Task LoadCurrentModuleAsync()
+    {
         var epoch = 0;
         try
         {
@@ -496,7 +553,7 @@ public partial class MainWindowViewModel : ViewModelBase
                         ContentDescription = current.Module.Info.Description;
                         CurrentContent = new WindowsUpdateViewModel(
                             updateData, _pendingChangesService, _registryService,
-                            _displayModeStore, _capabilityDetector, _ownerModeService);
+                            _displayModeStore, _capabilityDetector, _ownerModeControl);
                     }
                     else
                     {
@@ -518,7 +575,7 @@ public partial class MainWindowViewModel : ViewModelBase
                         ContentDescription = current.Module.Info.Description;
                         CurrentContent = new PrivacyViewModel(
                             privacyData, _pendingChangesService, _registryService,
-                            _displayModeStore, _capabilityDetector, _ownerModeService);
+                            _displayModeStore, _capabilityDetector, _ownerModeControl);
                     }
                     else
                     {
@@ -540,7 +597,7 @@ public partial class MainWindowViewModel : ViewModelBase
                         ContentDescription = current.Module.Info.Description;
                         CurrentContent = new AnnoyancesViewModel(
                             annoyancesData, _pendingChangesService, _registryService,
-                            _displayModeStore, _capabilityDetector, _ownerModeService);
+                            _displayModeStore, _capabilityDetector, _ownerModeControl);
                     }
                     else
                     {
@@ -707,8 +764,47 @@ public partial class MainWindowViewModel : ViewModelBase
         ZoomPercent = direction == 0 ? 100 : Math.Clamp(ZoomPercent + Math.Sign(direction) * 10, 50, 150);
         _settingsService?.SetApp(Core.Settings.AppSettingKeys.UiZoom,
             ZoomPercent.ToString(System.Globalization.CultureInfo.InvariantCulture));
-        SetStatus($"Zoom: {ZoomPercent}%", StatusSeverity.Success);
+        Log.Info("Zoom: {Percent}%", ZoomPercent);
+        ShowZoomOverlay();
     }
+
+    // --- Zoom overlay: a pill over the page for a moment after each zoom change.
+    // It floats over the content, so it takes no layout space (the status line
+    // used to gain a row for it). Each change restarts the hide delay; a stale
+    // timer from an earlier change is recognised by its generation and ignored.
+
+    private static readonly TimeSpan DefaultZoomOverlayLifetime = TimeSpan.FromSeconds(2);
+    private int _zoomOverlayGeneration;
+
+    /// <summary>How long the pill stays; TimeSpan.Zero keeps it up (screenshot suites).</summary>
+    public TimeSpan ZoomOverlayLifetime { get; set; } = DefaultZoomOverlayLifetime;
+
+    [ObservableProperty]
+    private bool _isZoomOverlayVisible;
+
+    [ObservableProperty]
+    private string _zoomOverlayText = string.Empty;
+
+    private void ShowZoomOverlay()
+    {
+        ZoomOverlayText = $"Zoom {ZoomPercent}%";
+        IsZoomOverlayVisible = true;
+        var generation = ++_zoomOverlayGeneration;
+        if (ZoomOverlayLifetime <= TimeSpan.Zero)
+            return;
+
+        DispatcherTimer.RunOnce(() => HideZoomOverlay(generation), ZoomOverlayLifetime);
+    }
+
+    /// <summary>Hides the pill only when no newer zoom change has restarted the delay.</summary>
+    public void HideZoomOverlay(int generation)
+    {
+        if (generation == _zoomOverlayGeneration)
+            IsZoomOverlayVisible = false;
+    }
+
+    /// <summary>The generation the next hide must match; tests use it to replay the timer by hand.</summary>
+    public int ZoomOverlayGeneration => _zoomOverlayGeneration;
 
     public async Task InitializeAsync()
     {
@@ -946,7 +1042,7 @@ public partial class MainWindowViewModel : ViewModelBase
         if (IsHomeActive) { OpenHome(); return; }
         if (IsSettingsActive) { OpenSettings(); return; }
         if (IsSetLoaderActive) { OpenSetLoader(); return; }
-        if (IsGalleryActive) { OpenGallery(); return; }
+        if (IsDebugActive) { OpenDebug(); return; }
         if (_navigationService.CurrentModule is not { } current)
             return;
 
@@ -982,7 +1078,7 @@ public partial class MainWindowViewModel : ViewModelBase
         // PropertyChanged event already fired for that case).
         var previousModule = _navigationService.CurrentModule?.Module;
         (CurrentContent as SetLoaderViewModel)?.Dispose();
-        IsGalleryActive = false;
+        IsDebugActive = false;
         IsSetLoaderActive = false;
         IsHomeActive = false;
         IsSettingsActive = false;
@@ -1089,9 +1185,9 @@ public partial class MainWindowViewModel : ViewModelBase
             installedModuleIds: _navigationService.Modules.Select(m => m.Module.Info.Name).ToList(),
             appVersion: AppVersion,
             capabilityReport: _capabilityDetector?.GetCapabilityReport(),
-            ownerMode: _ownerModeService is { } ownerMode ? new OwnerModeSectionViewModel(ownerMode) : null);
+            ownerMode: _ownerModeControl is { } ownerMode ? new OwnerModeSectionViewModel(ownerMode) : null);
         IsSettingsActive = true;
-        IsGalleryActive = false;
+        IsDebugActive = false;
         IsSetLoaderActive = false;
         IsHomeActive = false;
         SelectedModule = null;
@@ -1163,32 +1259,140 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     [ObservableProperty]
-    private bool _isGalleryActive;
+    private bool _isDebugActive;
 
-    /// <summary>The UI Gallery is a dev-facing style reference; Release builds hide it.</summary>
+    /// <summary>The Debug page (gallery, test controls, state simulation) is dev-facing; Release builds hide it.</summary>
 #if DEBUG
-    public static bool IsGalleryVisible => true;
+    public static bool IsDebugVisible => true;
 #else
-    public static bool IsGalleryVisible => false;
+    public static bool IsDebugVisible => false;
 #endif
 
-    /// <summary>Dev-facing style reference (UI Gallery); Debug builds only.</summary>
+    /// <summary>Dev-facing Debug page; Debug builds only.</summary>
     [RelayCommand]
-    private void OpenGallery()
+    private void OpenDebug()
     {
         _contentEpoch++;
         IsModuleLoading = false;
         (CurrentContent as IDisposable)?.Dispose();
 
-        ContentTitle = "UI Gallery";
-        ContentDescription = "Every standardized style and token on one page";
-        CurrentContent = new GalleryViewModel();
-        IsGalleryActive = true;
+        ContentTitle = DebugViewModel.Title;
+        ContentDescription = "Style reference, test controls, and state simulation for development";
+        CurrentContent = new DebugViewModel(
+            _debugSimulation ?? new Services.DebugSimulation(),
+            _explorerRestartService,
+            _notificationService,
+            showToast: (title, message, severity) => ToastStack.Show(title, message, severity),
+            showRestartBanner: requirement => ShowRestartNotice([requirement]),
+            stageSampleChange: StageDebugChange);
+        IsDebugActive = true;
         IsSettingsActive = false;
         IsSetLoaderActive = false;
         IsHomeActive = false;
         SelectedModule = null;
         ClearSidebarActives();
+    }
+
+    // --- Debug simulation: what the app believes about the PC, overridden in memory.
+
+    private readonly Services.DebugSimulation? _debugSimulation;
+
+    // The Owner Mode control every consumer sees: the real service, or the
+    // simulated wrapper over it when a simulation seam is registered. Cards, the
+    // Settings service card, and the capability probe all read through it.
+    private readonly Services.IOwnerModeServiceControl? _ownerModeControl;
+
+    /// <summary>True while any simulation override is set; the banner and the Apply guard read it.</summary>
+    [ObservableProperty]
+    private bool _isSimulationActive;
+
+    [ObservableProperty]
+    private string _simulationBannerText = string.Empty;
+
+    private void OnSimulationChanged(object? sender, EventArgs e)
+    {
+        if (Dispatcher.UIThread.CheckAccess())
+            ApplySimulationChange();
+        else
+            Dispatcher.UIThread.Post(ApplySimulationChange);
+    }
+
+    private void ApplySimulationChange()
+    {
+        var active = _debugSimulation?.IsActive == true;
+        IsSimulationActive = active;
+        SimulationBannerText = active
+            ? $"Simulated mode: {_debugSimulation!.Summary}. Apply, installs, and service actions are off."
+            : string.Empty;
+        Log.Info("Simulation: {State}", active ? _debugSimulation!.Summary : "off");
+
+        // Pages read the detector when they are built; rebuild the open one so its
+        // cards and callouts show the simulated state. The Debug page itself keeps
+        // its dropdowns (it is the page being edited).
+        if (CurrentContent is not DebugViewModel && !IsModuleLoading)
+            RefreshPage();
+    }
+
+    [RelayCommand]
+    private void ResetSimulation() => _debugSimulation?.Reset();
+
+    /// <summary>
+    /// Every real mutation starts here: apply, undo, redo, Explorer restart. The
+    /// lease refuses while simulation is active and locks the simulation out
+    /// until disposed. With no simulation seam it is always open.
+    /// </summary>
+    private Services.MutationLease BeginMutation() =>
+        _debugSimulation?.BeginMutation() ?? Services.MutationLease.Open();
+
+    /// <summary>
+    /// False while a staged group is unresolved: the page's controls are
+    /// disabled and nothing new is staged, because a card would stage from the
+    /// values it scanned before the failed apply. Discard All clears it and
+    /// reloads the page.
+    /// </summary>
+    public bool IsContentInteractive => !HasUnresolvedGroups;
+
+    /// <summary>The line every refused staging shows.</summary>
+    public const string StagingBlockedMessage =
+        "A change from an earlier apply is in an unknown state. Click Discard All in the review panel first; the page reloads, then set changes again.";
+
+    private bool RefuseStagingWhileUnresolved()
+    {
+        if (!HasUnresolvedGroups)
+            return false;
+        SetStatus(StagingBlockedMessage, StatusSeverity.Error);
+        return true;
+    }
+
+    partial void OnHasUnresolvedGroupsChanged(bool value) => OnPropertyChanged(nameof(IsContentInteractive));
+
+    private int _debugChangeCounter;
+
+    /// <summary>
+    /// Stages a sample change against a module that does not exist, so the
+    /// apply bar, badge, and review panel can be exercised and an Apply fails
+    /// harmlessly. F5 to F7 and the Debug page both come here.
+    /// </summary>
+    public void StageDebugChange(ChangeCategory category)
+    {
+        if (RefuseStagingWhileUnresolved())
+            return;
+        _debugChangeCounter++;
+        var enable = category == ChangeCategory.Enable;
+        var disable = category == ChangeCategory.Disable;
+        _pendingChangesService.Stage(new ChangeDescriptor
+        {
+            ModuleId = "DebugModule",
+            SettingId = $"debug-setting-{_debugChangeCounter}",
+            DisplayName = $"Test Setting {_debugChangeCounter}",
+            SystemLocation = @$"HKLM\SOFTWARE\Debug\Setting{_debugChangeCounter}",
+            BeforeValue = "0",
+            AfterValue = "1",
+            BeforeDisplay = enable ? "Disabled" : disable ? "Enabled" : "Value A",
+            AfterDisplay = enable ? "Enabled" : disable ? "Disabled" : "Value B",
+            ValueType = ChangeValueType.Registry_DWord,
+            Category = category,
+        });
     }
 
     [ObservableProperty]
@@ -1206,18 +1410,35 @@ public partial class MainWindowViewModel : ViewModelBase
         ContentTitle = "Home";
         ContentDescription = "System overview and recent activity";
 
+        var identity = new SystemIdentityService(
+            _registryService,
+            new Interop.Win32.InstalledMemoryProvider(),
+            new Interop.Win32.Display.GpuIdentityProvider()).Read();
+        if (_debugSimulation is { IsActive: true } simulation)
+        {
+            // Presentation only: the identity card says what is being simulated.
+            if (simulation.Device is { } device)
+            {
+                identity = identity with
+                {
+                    Manufacturer = device.Manufacturer,
+                    Model = device.Model,
+                    SystemType = device.SystemType,
+                };
+            }
+            if (simulation.Sku is { } sku)
+                identity = identity with { WindowsEdition = $"Windows 11 {Services.DebugSimulation.SkuName(sku)} (simulated)" };
+        }
+
         var home = new HomeViewModel(
-            new SystemIdentityService(
-                _registryService,
-                new Interop.Win32.InstalledMemoryProvider(),
-                new Interop.Win32.Display.GpuIdentityProvider()).Read(),
+            identity,
             _changeHistoryService,
             BuildFirstLaunchBanner(),
             BuildMonitoringSection(),
             _driftSection);
         CurrentContent = home;
         IsHomeActive = true;
-        IsGalleryActive = false;
+        IsDebugActive = false;
         IsSetLoaderActive = false;
         IsSettingsActive = false;
         SelectedModule = null;
@@ -1280,6 +1501,13 @@ public partial class MainWindowViewModel : ViewModelBase
         if (IsRestartingExplorer)
             return;
 
+        using var lease = BeginMutation();
+        if (lease.Refusal is { } refusal)
+        {
+            SetStatus(refusal, StatusSeverity.Error);
+            return;
+        }
+
         IsRestartingExplorer = true;
         SetStatus("Restarting Explorer...", StatusSeverity.Warning);
 
@@ -1310,13 +1538,50 @@ public partial class MainWindowViewModel : ViewModelBase
         IsRestartNotificationVisible = false;
     }
 
+    /// <summary>
+    /// Drops everything staged. Discarding does not touch the PC: a change that
+    /// was left in an unknown state stays however Windows left it. What discard
+    /// does is clear the block on the queue and, when the open page belongs to a
+    /// module with such a change, scan that module again so its cards show what
+    /// Windows has now and stage from that, never from the values read earlier.
+    /// </summary>
     [RelayCommand]
-    private void DiscardAll()
+    private async Task DiscardAllAsync()
     {
+        foreach (var record in _pendingChangesService.ReconciliationRequired)
+        {
+            foreach (var change in record.Uncertain)
+                _modulesNeedingRescan.Add(change.ModuleId);
+        }
+
         _pendingChangesService.DiscardAll();
         _pendingActionsService?.DiscardAll();
         _applyWithoutRestorePoint = false;
         IsReviewPanelOpen = false;
+        // The block is lifted with the queue; a refusal or failure line from before
+        // the discard would now describe a state that no longer exists.
+        if (StatusSeverity == StatusSeverity.Error)
+            SetStatus(string.Empty, StatusSeverity.Success);
+
+        if (_modulesNeedingRescan.Count == 0)
+            return;
+
+        var current = _navigationService.CurrentModule?.Module.Info.Name;
+        var rescanCurrent = current is not null
+            && SelectedModule is not null
+            && _modulesNeedingRescan.Contains(current);
+
+        // Pages are rebuilt from a fresh scan on every navigation, so a module
+        // that is not on screen has no stale cards to reset. Only the open page
+        // needs an explicit reload.
+        _modulesNeedingRescan.Clear();
+        if (!rescanCurrent)
+            return;
+
+        SetStatus($"Reading current {current} settings...", StatusSeverity.Warning);
+        await LoadCurrentModuleAsync().ConfigureAwait(true);
+        if (CurrentContent is not null)
+            SetStatus($"{current} settings reloaded. Set the change again if you still want it.", StatusSeverity.Success);
     }
 
     [ObservableProperty]
@@ -1394,6 +1659,16 @@ public partial class MainWindowViewModel : ViewModelBase
         if (!HasPendingChanges || IsApplying || IsCreatingRestorePoint)
             return;
 
+        // A simulated edition or capability must never authorize a real write,
+        // and the lease keeps the simulation from switching on while the batch
+        // (restore point, every module call, rollback, one-way actions) runs.
+        using var lease = BeginMutation();
+        if (lease.Refusal is { } refusal)
+        {
+            SetStatus(refusal, StatusSeverity.Error);
+            return;
+        }
+
         IsApplying = true;
         StatusMessage = string.Empty;
 
@@ -1430,11 +1705,6 @@ public partial class MainWindowViewModel : ViewModelBase
                 _pendingChangesService.PendingGroups.Sum(g => g.Changes.Count),
                 _pendingActionsService?.PendingCount ?? 0);
 
-            Log.Info("Apply: {Groups} group(s), {Changes} change(s), {Actions} action(s)",
-                _pendingChangesService.PendingGroups.Count,
-                _pendingChangesService.PendingGroups.Sum(g => g.Changes.Count),
-                _pendingActionsService?.PendingCount ?? 0);
-
             var result = await _pendingChangesService.ApplyAllAsync(
                 ApplyChangeToModule,
                 RevertChangeOnModule).ConfigureAwait(true);
@@ -1446,73 +1716,54 @@ public partial class MainWindowViewModel : ViewModelBase
             }
             else
             {
-                Log.Error("Apply stopped at {Module}/{Setting} ({Location}) [{Category}]: {Error}; {Applied} applied before it, {RolledBack} rolled back",
-                    result.Failed?.ModuleId, result.Failed?.SettingId, result.Failed?.SystemLocation,
-                    result.ErrorCategory, result.ErrorMessage, result.Applied.Count, result.RolledBack.Count);
+                Log.Error(result.Exception,
+                    "Apply stopped ({Kind}) at {Module}/{Setting} ({Location}) [{Category}]: {Error}; {Applied} applied before it, {RolledBack} rolled back, {NotRolledBack} not rolled back, {Uncertain} uncertain",
+                    result.FailureKind, result.Failed?.ModuleId, result.Failed?.SettingId, result.Failed?.SystemLocation,
+                    result.ErrorCategory, result.ErrorMessage, result.Applied.Count, result.RolledBack.Count,
+                    result.RollbackFailures.Count, result.Uncertain.Count);
+                foreach (var uncertain in result.Uncertain)
+                    Log.Warn("Apply: live value unknown for {Module}/{Setting} at {Location}", uncertain.ModuleId, uncertain.SettingId, uncertain.SystemLocation);
             }
 
-            if (result.IsSuccess)
-            {
-                Log.Info("Apply: {Count} change(s) applied; restarts needed: {Restarts}",
-                    result.Applied.Count, string.Join(", ", result.RequiredRestarts));
-            }
-            else
-            {
-                Log.Error("Apply stopped at {Module}/{Setting} ({Location}) [{Category}]: {Error}; {Applied} applied before it, {RolledBack} rolled back",
-                    result.Failed?.ModuleId, result.Failed?.SettingId, result.Failed?.SystemLocation,
-                    result.ErrorCategory, result.ErrorMessage, result.Applied.Count, result.RolledBack.Count);
-            }
+            // Applied holds only changes from groups that finished and left the queue,
+            // on every exit: success, failure, throw, or cancellation. Record it once,
+            // here, so a group that completed before a later one failed still has its
+            // undo entry. The failed change, rollback failures, and the uncertain list
+            // are not on Applied and never reach history.
+            if (result.Applied.Count > 0)
+                await _changeHistoryService.RecordChangesAsync(result).ConfigureAwait(true);
+
+            // Cards on a page whose change ended in an unknown state read their
+            // before values at load; those may be stale now. Remember the module so
+            // Discard All scans it again before anything is staged from it.
+            foreach (var uncertain in result.Uncertain)
+                _modulesNeedingRescan.Add(uncertain.ModuleId);
+
+            var restartNote = ShowRestartNotice(result.RequiredRestarts);
 
             if (result.IsSuccess)
             {
                 _applyWithoutRestorePoint = false;
-                await _changeHistoryService.RecordChangesAsync(result).ConfigureAwait(true);
                 IsReviewPanelOpen = false;
-
-                if (result.RequiredRestarts.Contains(RestartRequirement.Reboot))
-                {
-                    // Keep the Explorer-restart action when the batch also needs it, so
-                    // deferring the reboot doesn't leave Explorer-bound changes inactive.
-                    var alsoExplorer = result.RequiredRestarts.Contains(RestartRequirement.ExplorerRestart);
-                    RestartNotificationMessage = alsoExplorer
-                        ? "A reboot is required for some changes; others take effect after an Explorer restart."
-                        : "A reboot is required for some changes to take effect.";
-                    IsRestartActionAvailable = alsoExplorer;
-                    IsRestartNotificationVisible = true;
-                    SetStatus("Changes applied. Reboot required", StatusSeverity.Warning);
-                }
-                else if (result.RequiredRestarts.Contains(RestartRequirement.SignOut))
-                {
-                    RestartNotificationMessage = "Sign out and back in for some changes to take effect.";
-                    IsRestartActionAvailable = false;
-                    IsRestartNotificationVisible = true;
-                    SetStatus("Changes applied. Sign-out required", StatusSeverity.Warning);
-                }
-                else if (result.RequiredRestarts.Contains(RestartRequirement.ExplorerRestart))
-                {
-                    RestartNotificationMessage = "Explorer restart required for changes to take effect. Open file explorer windows may close.";
-                    IsRestartActionAvailable = true;
-                    IsRestartNotificationVisible = true;
-                    SetStatus("Changes applied. Explorer restart needed", StatusSeverity.Warning);
-                }
-                else if (result.RequiredRestarts.Contains(RestartRequirement.ExplorerRefresh))
-                {
-                    // Fire-and-forget: trigger SHChangeNotify to refresh Explorer views
-                    _ = _explorerRestartService.RefreshExplorerViewsAsync();
-
-                    RestartNotificationMessage = "Explorer preferences updated. Open windows may need F5 to refresh";
-                    IsRestartActionAvailable = false;
-                    IsRestartNotificationVisible = true;
-                    SetStatus("Changes applied. Explorer refresh may be needed", StatusSeverity.Success);
-                }
-                else
-                {
-                    SetStatus("Changes applied successfully", StatusSeverity.Success);
-                }
+                SetStatus(
+                    restartNote is null ? "Changes applied successfully" : $"Changes applied. {restartNote}",
+                    restartNote is null || result.RequiredRestarts.Contains(RestartRequirement.ExplorerRefresh)
+                        ? StatusSeverity.Success
+                        : StatusSeverity.Warning);
             }
             else
             {
-                SetStatus(FormatApplyError(result), StatusSeverity.Error);
+                var unresolvedGroups = _pendingChangesService.ReconciliationRequired
+                    .Select(r => r.Group.DisplayName)
+                    .ToList();
+                var message = FormatApplyError(result, unresolvedGroups);
+                if (restartNote is not null)
+                    message += $" Completed changes: {restartNote.ToLowerInvariant()}.";
+                // A clean cancellation is not an error: everything is either done or put back.
+                var severity = result.WasCancelled && !result.HasUncertainState
+                    ? StatusSeverity.Warning
+                    : StatusSeverity.Error;
+                SetStatus(message, severity);
             }
 
             // One-way actions run after the reversible batch, and only when it
@@ -1665,29 +1916,154 @@ public partial class MainWindowViewModel : ViewModelBase
                 : Task.FromResult(OperationResult<bool>.Failure(
                     $"Module '{action.ModuleId}' not found or cannot execute actions", ErrorCategory.NotFound)));
 
-    private static string FormatApplyError(MutationResult result)
+    /// <summary>
+    /// Shows the restart banner for the changes that completed (on every exit,
+    /// not only success: a group that finished before a later one failed still
+    /// needs its restart). Returns the short status phrase, or null when nothing
+    /// completed needs one.
+    /// </summary>
+    private string? ShowRestartNotice(IReadOnlyList<RestartRequirement> restarts)
     {
-        var parts = new List<string>();
+        if (restarts.Contains(RestartRequirement.Reboot))
+        {
+            // Keep the Explorer-restart action when the batch also needs it, so
+            // deferring the reboot doesn't leave Explorer-bound changes inactive.
+            var alsoExplorer = restarts.Contains(RestartRequirement.ExplorerRestart);
+            RestartNotificationMessage = alsoExplorer
+                ? "A reboot is required for some changes; others take effect after an Explorer restart."
+                : "A reboot is required for some changes to take effect.";
+            IsRestartActionAvailable = alsoExplorer;
+            IsRestartNotificationVisible = true;
+            return "Reboot required";
+        }
 
-        if (result.Failed is not null)
-            parts.Add($"Failed: {result.Failed.DisplayName} ({result.Failed.SystemLocation})");
+        if (restarts.Contains(RestartRequirement.SignOut))
+        {
+            RestartNotificationMessage = "Sign out and back in for some changes to take effect.";
+            IsRestartActionAvailable = false;
+            IsRestartNotificationVisible = true;
+            return "Sign-out required";
+        }
 
-        if (result.ErrorMessage is not null)
-            parts.Add(result.ErrorMessage);
+        if (restarts.Contains(RestartRequirement.ExplorerRestart))
+        {
+            RestartNotificationMessage = "Explorer restart required for changes to take effect. Open file explorer windows may close.";
+            IsRestartActionAvailable = true;
+            IsRestartNotificationVisible = true;
+            return "Explorer restart needed";
+        }
 
-        if (result.ErrorCategory is not null)
-            parts.Add(Helpers.ErrorCategoryExtensions.ToGuidance(result.ErrorCategory.Value));
+        if (restarts.Contains(RestartRequirement.ExplorerRefresh))
+        {
+            // Fire-and-forget: trigger SHChangeNotify to refresh Explorer views
+            _ = _explorerRestartService.RefreshExplorerViewsAsync();
 
-        return parts.Count > 0
-            ? string.Join(" - ", parts)
-            : "An unknown error occurred while applying changes.";
+            RestartNotificationMessage = "Explorer preferences updated. Open windows may need F5 to refresh";
+            IsRestartActionAvailable = false;
+            IsRestartNotificationVisible = true;
+            return "Explorer refresh may be needed";
+        }
+
+        return null;
     }
 
-    [System.Diagnostics.Conditional("DEBUG")]
-    public void StageDebugChange(ChangeDescriptor change)
+    /// <summary>
+    /// The status line for a batch that did not finish, written for the person
+    /// at the screen: what completed, what is in an unknown state, and what to
+    /// click next. Branches on <see cref="MutationResult.FailureKind"/>;
+    /// <see cref="MutationResult.Failed"/> is null on cancellation and may be
+    /// null on a refusal, so nothing here assumes it.
+    /// </summary>
+    public static string FormatApplyError(MutationResult result, IReadOnlyList<string> unresolvedGroupNames)
     {
-        _pendingChangesService.Stage(change);
+        var completed = result.Applied.Count switch
+        {
+            0 => "Nothing else was changed.",
+            1 => "1 change before it completed and is in History.",
+            var n => $"{n} changes before it completed and are in History.",
+        };
+
+        switch (result.FailureKind)
+        {
+            case MutationFailureKind.Cancelled:
+            {
+                var done = result.Applied.Count switch
+                {
+                    0 => "Nothing was changed",
+                    1 => "1 change completed and is in History",
+                    var n => $"{n} changes completed and are in History",
+                };
+                var putBack = result.RolledBack.Count switch
+                {
+                    0 => "",
+                    1 => "; 1 change was put back",
+                    var n => $"; {n} changes were put back",
+                };
+                if (!result.HasUncertainState)
+                    return $"Apply cancelled. {done}{putBack}.";
+
+                return $"Apply cancelled, but {NameList(result.Uncertain)} could not be put back and may be half-changed. "
+                    + $"{done}{putBack}. Open the review panel for what to do next.";
+            }
+
+            case MutationFailureKind.ReconciliationRequired:
+            {
+                var groups = unresolvedGroupNames.Count > 0
+                    ? Quote(unresolvedGroupNames)
+                    : result.Uncertain.Count > 0 ? NameList(result.Uncertain) : "A staged change";
+                return $"{groups} did not finish last time and is in an unknown state, so nothing was applied. "
+                    + "Click Discard All, then set the change again from the reloaded page.";
+            }
+
+            case MutationFailureKind.ChangeFailed:
+            case MutationFailureKind.ChangeThrew:
+            {
+                var name = result.Failed?.DisplayName
+                    ?? (result.Uncertain.Count > 0 ? result.Uncertain[0].DisplayName : null);
+                var head = name is null ? "A change could not be applied" : $"\"{name}\" could not be applied";
+                var reason = result.ErrorMessage is { Length: > 0 } text ? $": {text.TrimEnd('.')}." : ".";
+                var guidance = result.ErrorCategory is { } category
+                    ? " " + Helpers.ErrorCategoryExtensions.ToGuidance(category)
+                    : "";
+                var putBack = result.RolledBack.Count switch
+                {
+                    0 => "",
+                    1 => " 1 change in the same group was put back.",
+                    var n => $" {n} changes in the same group were put back.",
+                };
+                var stuck = result.RollbackFailures.Count == 0
+                    ? ""
+                    : $" {NameList(result.RollbackFailures.Select(f => f.Change).ToList())} could not be put back.";
+                return $"{head}{reason}{guidance} Its current value is unknown.{putBack}{stuck} {completed} "
+                    + "Open the review panel, click Discard All, then set it again from the reloaded page.";
+            }
+
+            default:
+            {
+                var parts = new List<string>();
+                if (result.Failed is not null)
+                    parts.Add($"\"{result.Failed.DisplayName}\" could not be applied");
+                if (result.ErrorMessage is not null)
+                    parts.Add(result.ErrorMessage);
+                if (result.ErrorCategory is not null)
+                    parts.Add(Helpers.ErrorCategoryExtensions.ToGuidance(result.ErrorCategory.Value));
+                parts.Add(completed);
+                return string.Join(" ", parts);
+            }
+        }
     }
+
+    /// <summary>"A", "A and B", or "A, B, and 2 more"; always quoted display names.</summary>
+    public static string NameList(IReadOnlyList<ChangeDescriptor> changes)
+        => Quote(changes.Select(c => c.DisplayName).ToList());
+
+    private static string Quote(IReadOnlyList<string> names) => names.Count switch
+    {
+        0 => "",
+        1 => $"\"{names[0]}\"",
+        2 => $"\"{names[0]}\" and \"{names[1]}\"",
+        _ => $"\"{names[0]}\", \"{names[1]}\", and {names.Count - 2} more",
+    };
 
     private void SyncSelectedModule()
     {

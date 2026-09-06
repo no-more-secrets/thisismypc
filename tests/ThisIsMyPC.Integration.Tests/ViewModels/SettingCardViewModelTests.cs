@@ -65,7 +65,8 @@ public sealed class SettingCardViewModelTests
         Assert.True(vm.IsToggle);
         Assert.False(vm.IsEnabled);
         Assert.Equal(0, _pendingService.PendingCount);
-        Assert.True(vm.IsDescriptionVisible);
+        Assert.False(vm.IsCompact);
+        Assert.Equal("A test setting.", vm.TooltipText);
         Assert.False(vm.IsRegistryDataVisible);
     }
 

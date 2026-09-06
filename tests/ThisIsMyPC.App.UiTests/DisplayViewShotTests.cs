@@ -119,6 +119,42 @@ public class DisplayViewShotTests
         }
     }
 
+    /// <summary>
+    /// The value box sits clear of its slider: focused, its fill starts 8px after
+    /// the track ends, so the highlight never touches the end thumb; the read-only
+    /// value of a vendor row keeps the same footprint so the columns line up.
+    /// </summary>
+    [AvaloniaFact]
+    public void ValueBox_KeepsAGapFromTheSliderEnd_WhenFocused()
+    {
+        var monitors = new StubMonitorService();
+        var viewModel = new DisplayViewModel(SampleData(), monitors, new UiFakePowerService());
+        using var session = UiSession.ForView(new DisplayView(), viewModel, "display-view");
+        var external = viewModel.Monitors[1];
+        var box = session.Window.GetVisualDescendants().OfType<TextBox>()
+            .First(t => ReferenceEquals(t.DataContext, external));
+        var slider = session.Window.GetVisualDescendants().OfType<Slider>()
+            .First(s => ReferenceEquals(s.DataContext, external));
+
+        session.Click(box);
+        session.Pump();
+        Assert.True(box.IsFocused);
+        var sliderRight = slider.TranslatePoint(new Point(slider.Bounds.Width, 0), session.Window)!.Value.X;
+        var boxLeft = box.TranslatePoint(default, session.Window)!.Value.X;
+        Assert.True(boxLeft - sliderRight >= 8, $"box starts {boxLeft - sliderRight:F1}px after the slider; needs 8");
+        Assert.Equal(48, box.Bounds.Width, 0.5);
+
+        // Vendor rows show a plain value with the same left edge, so values line up down the card.
+        var plain = session.FindAll<TextBlock>(t => t.Classes.Contains("row-value")).First();
+        Assert.Equal(boxLeft, plain.TranslatePoint(default, session.Window)!.Value.X, 0.5);
+        foreach (var theme in new[] { ThemeVariant.Dark, ThemeVariant.Light })
+        {
+            session.SetTheme(theme);
+            session.Screenshot($"value-box-focused-{theme.Key}");
+        }
+        session.SetTheme(ThemeVariant.Dark);
+    }
+
     [AvaloniaFact]
     public void MovingTheBrightnessSlider_WritesThroughTheService()
     {

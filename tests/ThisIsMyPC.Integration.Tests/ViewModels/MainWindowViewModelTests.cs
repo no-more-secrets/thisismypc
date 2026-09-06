@@ -57,6 +57,34 @@ public class MainWindowViewModelTests
         Assert.Equal("100", settings.GetApp(Core.Settings.AppSettingKeys.UiZoom, ""));
     }
 
+    [Fact]
+    public void ZoomChange_ShowsTheOverlayNotTheStatusLine_AndOnlyTheLatestTimerHidesIt()
+    {
+        var vm = CreateViewModel(out _);
+        vm.ZoomOverlayLifetime = TimeSpan.Zero; // no real timer; replay it by generation below
+        Assert.False(vm.IsZoomOverlayVisible);
+
+        vm.ChangeZoom(1);
+        var first = vm.ZoomOverlayGeneration;
+        Assert.True(vm.IsZoomOverlayVisible);
+        Assert.Equal("Zoom 110%", vm.ZoomOverlayText);
+        Assert.Equal(string.Empty, vm.StatusMessage);
+
+        // A second change before the first delay elapsed: the first timer must
+        // not hide the pill the second change is showing.
+        vm.ChangeZoom(1);
+        Assert.Equal("Zoom 120%", vm.ZoomOverlayText);
+        vm.HideZoomOverlay(first);
+        Assert.True(vm.IsZoomOverlayVisible);
+
+        vm.HideZoomOverlay(vm.ZoomOverlayGeneration);
+        Assert.False(vm.IsZoomOverlayVisible);
+
+        vm.ChangeZoom(0);
+        Assert.True(vm.IsZoomOverlayVisible);
+        Assert.Equal("Zoom 100%", vm.ZoomOverlayText);
+    }
+
     private static ChangeDescriptor CreateTestChange(string moduleId = "test", string settingId = "setting1") => new()
     {
         ModuleId = moduleId,

@@ -1,6 +1,8 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Styling;
+using Avalonia.VisualTree;
 using ThisIsMyPC.App.ViewModels;
 using ThisIsMyPC.App.Views;
 using ThisIsMyPC.Core.Services;
@@ -119,7 +121,7 @@ public class TabStripShotTests
     }
 
     [AvaloniaFact]
-    public void MultirowStrip_PlacesSelectedRowAgainstContent_AfterSelectionChanges()
+    public void MultirowStrip_KeepsItsRowsInPlace_AfterSelectionChanges()
     {
         using var session = OpenNarrow(out var tabControl);
         var tabs = session.FindAll<TabItem>(_ => true).ToList();
@@ -127,17 +129,66 @@ public class TabStripShotTests
 
         session.Screenshot("appearance-selected");
         Assert.Equal(3, tabs.Select(tab => Math.Round(session.TopOf(tab))).Distinct().Count());
-        Assert.Equal(tabs.Max(tab => session.TopOf(tab)), session.TopOf(tabs[1]), 0.5);
         Assert.Equal(StripHeight + 2 * (ChipHeight + Float), strip.Bounds.Height, 0.5);
         Assert.All(tabs, tab => Assert.True(BottomOf(session, tab) <= BottomOf(session, strip) + 0.5));
+        var before = tabs.Select(tab => Math.Round(session.TopOf(tab), 1)).ToList();
 
         session.Click(tabs[6]);
         tabs = session.FindAll<TabItem>(_ => true).ToList();
         session.Screenshot("network-selected");
 
+        // Rows never reorder: the row that held the selected tab stays where it was.
         Assert.Equal(6, tabControl.SelectedIndex);
-        Assert.Equal(tabs.Max(tab => session.TopOf(tab)), session.TopOf(tabs[6]), 0.5);
-        Assert.Equal(BottomOf(session, strip), BottomOf(session, tabs[6]), 0.5);
+        Assert.Equal(before, tabs.Select(tab => Math.Round(session.TopOf(tab), 1)).ToList());
         Assert.All(tabs.Where(tab => !tab.IsSelected), tab => Assert.Equal(ChipHeight, tab.Bounds.Height, 0.5));
+    }
+
+    /// <summary>Every chip and its label, in window pixels, for the whole strip.</summary>
+    private static List<(string Header, double Left, double Top, double Width, double TextLeft, double TextTop)> Layout(UiSession session) =>
+        session.FindAll<TabItem>(_ => true)
+            .Select(tab =>
+            {
+                var origin = tab.TranslatePoint(default, session.Window)!.Value;
+                var text = tab.GetVisualDescendants().OfType<TextBlock>().First();
+                var textOrigin = text.TranslatePoint(default, session.Window)!.Value;
+                return ((string)tab.Header!, Math.Round(origin.X, 1), Math.Round(origin.Y, 1), Math.Round(tab.Bounds.Width, 1),
+                    Math.Round(textOrigin.X, 1), Math.Round(textOrigin.Y, 1));
+            })
+            .ToList();
+
+    /// <summary>
+    /// Selecting a tab changes only how it looks. Every chip and every label
+    /// keeps its exact place and width through every selection, on a
+    /// one-row strip and on a wrapped three-row strip alike.
+    /// </summary>
+    [AvaloniaFact]
+    public void SelectingAnyTab_MovesNoChipAndNoLabel_OneRowAndWrapped()
+    {
+        using (var session = Open("tab-strip-immobile"))
+        {
+            var baseline = Layout(session);
+            Assert.Equal(3, baseline.Count);
+            foreach (var header in baseline.Select(b => b.Header))
+            {
+                session.Click(Tab(session, header));
+                session.Screenshot($"one-row-{header.ToLowerInvariant()}");
+                Assert.Equal(baseline, Layout(session));
+            }
+        }
+
+        using (var session = OpenNarrow(out var tabControl))
+        {
+            var baseline = Layout(session);
+            Assert.Equal(8, baseline.Count);
+            Assert.Equal(3, baseline.Select(b => b.Top).Distinct().Count());
+            for (var i = 0; i < baseline.Count; i++)
+            {
+                session.Click(session.FindAll<TabItem>(_ => true).ElementAt(i));
+                Assert.Equal(i, tabControl.SelectedIndex);
+                if (i is 0 or 4 or 7)
+                    session.Screenshot($"wrapped-{i}");
+                Assert.Equal(baseline, Layout(session));
+            }
+        }
     }
 }

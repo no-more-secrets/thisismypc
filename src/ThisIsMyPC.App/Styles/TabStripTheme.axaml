@@ -14,8 +14,10 @@
          An unselected chip floats 6px clear of the well's floor (its own
          bottom margin); the selected chip reaches 1px past the floor and
          paints the page's own fill over the well's bottom line, so it
-         reads as part of the content below. Multi-row strips arrange the
-         selected tab's complete visual row last, without changing item order.
+         reads as part of the content below. Selecting a tab moves nothing:
+         every chip keeps its size and place (the selected template pads
+         where the unselected one has its border, and rows are never
+         reordered), so only the selection look changes.
          RowGap is zero because each floating tab already supplies 6px below it.
          Height stays 42 for one row:
          1 + 6 + 34 + 1 (the row is a 28 chip plus its 6 float). -->
@@ -25,7 +27,7 @@
             <ItemsPanelTemplate>
                 <controls:JustifiedWrapPanel Gap="6"
                                                RowGap="0"
-                                               PlaceSelectedRowLast="True" />
+                                               PlaceSelectedRowLast="False" />
             </ItemsPanelTemplate>
         </Setter>
         <Setter Property="Template">
@@ -180,7 +182,10 @@
             <Setter Property="BorderBrush" Value="{DynamicResource OutlineBrush}" />
             <Setter Property="BorderThickness" Value="1,1,1,0" />
             <Setter Property="CornerRadius" Value="4,4,0,0" />
-            <Setter Property="Padding" Value="10,0,10,7" />
+            <!-- 11 not 10: the chrome draws its own outline, so this padding
+                 stands in for the 1px border the unselected chip has. Same
+                 desired width either way, so nothing in the row moves. -->
+            <Setter Property="Padding" Value="11,0,11,7" />
             <Setter Property="Margin" Value="0,0,0,-1" />
         </Style>
         <Style Selector="^:selected:pointerover">

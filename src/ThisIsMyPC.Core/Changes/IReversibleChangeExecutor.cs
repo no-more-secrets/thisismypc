@@ -11,9 +11,9 @@ namespace ThisIsMyPC.Core.Changes;
 /// registry writer on its own. The pending-changes queue, history undo and
 /// redo, and Owner Mode restoration all execute through this contract so a
 /// value written by the service is written by the same routing the app uses.
-/// There is no cancellation token on purpose: the pending pipeline has none
-/// today, and a token here would only reach enforced changes, never a bare
-/// delegate. Cancellation arrives with the pipeline-wide change.
+/// There is no cancellation token on purpose: the batch checks its token between
+/// changes and never hands it down, so a change in flight always completes and a
+/// token here would only reach enforced changes, never a bare delegate.
 /// </summary>
 public interface IReversibleChangeExecutor
 {

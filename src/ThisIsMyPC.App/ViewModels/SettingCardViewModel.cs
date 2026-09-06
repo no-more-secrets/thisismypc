@@ -13,7 +13,7 @@ namespace ThisIsMyPC.App.ViewModels;
 /// mechanics follow the proven ShellSettingViewModel pattern: 250 ms debounce, live
 /// baseline re-read at stage time, unstage-then-stage, stage only when the desired
 /// state differs from registry truth, revert-on-discard / baseline-adopt-on-apply.
-/// Display-mode flags (description/registry visibility) are set by the owning tab VM.
+/// Display-mode flags (compact, registry visibility) are set by the owning tab VM.
 /// </summary>
 public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
 {
@@ -40,20 +40,35 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
         : Model.ValueName is null ? Model.RegistryPath : $@"{Model.RegistryPath}\{Model.ValueName}";
 
     /// <summary>
-    /// The (i) tooltip carries the description only while the card is compact;
-    /// otherwise the description is on the card and the icon would repeat it.
+    /// The (i) tooltip: the description, like every other module's card. In
+    /// Compact mode the informational lines the card no longer shows (how the
+    /// setting is applied, what may revert it) follow it, so nothing is lost.
     /// </summary>
-    public string? TooltipDescription => IsDescriptionVisible ? null : Description;
+    public string TooltipText
+    {
+        get
+        {
+            if (!IsCompact)
+                return Description;
+            var lines = new List<string> { Description };
+            if (EnforcementSummary is { Length: > 0 } summary)
+                lines.Add(summary);
+            if (ReversionRisksText is { } risks)
+                lines.Add(risks);
+            return string.Join(Environment.NewLine, lines);
+        }
+    }
 
     // --- Technical details: registry path, value type, and the reading at scan
-    // time. Hidden by default; the card's own link or the page toggle opens them. ---
-
-    public bool HasTechnicalDetails => Model.RegistryPath is not null;
+    // time. Hidden by default; the page's Technical details box opens them on every card. ---
 
     /// <summary>The path with a break opportunity after each separator, so a long key wraps between names instead of inside one.</summary>
     public string WrappableSystemPath => SystemPath.Replace("\\", "\\​", StringComparison.Ordinal);
 
-    public string DetailsLinkText => IsRegistryDataVisible ? "Hide technical details" : "Show technical details";
+    /// <summary>The content slot has something to show; hidden otherwise so a compact card stays one line tall.</summary>
+    public bool HasVisibleContent =>
+        ShowEnforcementBadge || ShowReversionRisks || HasSkuNotice || IsOwnerModeDegraded
+        || ShowOwnerModeBadge || IsRegistryDataVisible;
 
     /// <summary>"DWord value, read as Suppressed at the last scan".</summary>
     public string TechnicalStateText
@@ -68,9 +83,6 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
         }
     }
 
-    [RelayCommand]
-    private void ToggleTechnicalDetails() => IsRegistryDataVisible = !IsRegistryDataVisible;
-
     /// <summary>Card templates bind their root visibility here; the owning tab's search sets it.</summary>
     [ObservableProperty]
     private bool _isSearchVisible = true;
@@ -81,8 +93,10 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
             || Description.Contains(query, StringComparison.OrdinalIgnoreCase)
             || SystemPath.Contains(query, StringComparison.OrdinalIgnoreCase);
 
-    // --- Badges & callouts (10-3). Visible in every display mode; safety-critical
-    // information is never hidden by a display preference. ---
+    // --- Badges & callouts (10-3). The safety-critical ones (SKU restriction,
+    // Owner Mode degradation) show in every display mode. The informational
+    // ones (how the setting is applied, what may revert it) leave the card in
+    // Compact mode and move into the (i) tooltip instead. ---
 
     /// <summary>Enforcement badge: the profile's summary, e.g. "Windows is known to revert this setting".</summary>
     public bool HasEnforcementBadge => Model.Enforcement is not null;
@@ -92,6 +106,9 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
             ? $"May revert via: {string.Join(", ", risks)}"
             : null;
     public bool HasReversionRisks => ReversionRisksText is not null;
+
+    public bool ShowEnforcementBadge => HasEnforcementBadge && !IsCompact;
+    public bool ShowReversionRisks => HasReversionRisks && !IsCompact;
 
     /// <summary>
     /// SKU callout: informational only; the setting stays toggleable (8-4 rule).
@@ -107,12 +124,13 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
     [NotifyPropertyChangedFor(nameof(IsControlEnabled))]
     [NotifyPropertyChangedFor(nameof(CanTurnOnOwnerMode))]
     [NotifyPropertyChangedFor(nameof(ShowOwnerModeBadge))]
+    [NotifyPropertyChangedFor(nameof(HasVisibleContent))]
     private bool _isOwnerModeDegraded;
 
     public string? OwnerModeCallout { get; private set; }
 
-    /// <summary>Subtle badge when Owner Mode is required AND available.</summary>
-    public bool ShowOwnerModeBadge => Model.OwnerModeRequired && !IsOwnerModeDegraded;
+    /// <summary>Subtle badge when Owner Mode is required AND available; informational, so Compact folds it away.</summary>
+    public bool ShowOwnerModeBadge => Model.OwnerModeRequired && !IsOwnerModeDegraded && !IsCompact;
 
     /// <summary>The only thing degradation disables is the control itself.</summary>
     public bool IsControlEnabled => !IsOwnerModeDegraded;
@@ -181,14 +199,22 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private bool _isPendingDisable;
 
-    /// <summary>The description sits on the card; Compact mode moves it into the (i) tooltip.</summary>
+    /// <summary>
+    /// Compact display: the card keeps its title, (i), switch, and the
+    /// safety callouts; the informational badge lines move into the tooltip.
+    /// Set by the owning page.
+    /// </summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(TooltipDescription))]
-    private bool _isDescriptionVisible = true;
+    [NotifyPropertyChangedFor(nameof(TooltipText))]
+    [NotifyPropertyChangedFor(nameof(ShowEnforcementBadge))]
+    [NotifyPropertyChangedFor(nameof(ShowReversionRisks))]
+    [NotifyPropertyChangedFor(nameof(ShowOwnerModeBadge))]
+    [NotifyPropertyChangedFor(nameof(HasVisibleContent))]
+    private bool _isCompact;
 
-    /// <summary>The technical details panel; closed by default, opened per card or by the page toggle.</summary>
+    /// <summary>The technical details panel; closed by default, opened by the page's Technical details box.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(DetailsLinkText))]
+    [NotifyPropertyChangedFor(nameof(HasVisibleContent))]
     private bool _isRegistryDataVisible;
 
     public SettingCardViewModel(

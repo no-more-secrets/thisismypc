@@ -144,18 +144,17 @@
 
                 <!-- Settings alone at the bottom -->
                 <StackPanel DockPanel.Dock="Bottom" Margin="0,8,0,8">
-                    <!-- Dev-facing style reference; Debug builds only -->
+                    <!-- Dev-facing Debug page (gallery, test controls, simulation); Debug builds only -->
                     <Button Classes="sidebar-item"
-                            Classes.active="{Binding IsGalleryActive}"
-                            Command="{Binding OpenGalleryCommand}"
-                            IsVisible="{x:Static vm:MainWindowViewModel.IsGalleryVisible}"
-                            ToolTip.Tip="Standardized styles and tokens (dev)">
+                            Classes.active="{Binding IsDebugActive}"
+                            Command="{Binding OpenDebugCommand}"
+                            IsVisible="{x:Static vm:MainWindowViewModel.IsDebugVisible}"
+                            ToolTip.Tip="Developer tools: style gallery, test controls, state simulation (Debug builds)">
                         <StackPanel Orientation="Horizontal" Spacing="10">
-                            <!-- Palette swatch icon -->
                             <icons:FluentIcon Width="22" Height="22"
                                       Foreground="{DynamicResource TextSecondaryBrush}"
-                                      Symbol="Color" IsFilled="{Binding IsGalleryActive}" />
-                            <TextBlock Text="UI Gallery"
+                                      Symbol="Wrench" IsFilled="{Binding IsDebugActive}" />
+                            <TextBlock Text="Debug"
                                        VerticalAlignment="Center"
                                        Foreground="{DynamicResource TextPrimaryBrush}"
                                        IsVisible="{Binding !IsSidebarCollapsed}" />
@@ -328,6 +327,29 @@
                 </DockPanel>
             </Border>
 
+            <!-- Simulated mode bar (Debug page): loud, with the way out on it -->
+            <Border DockPanel.Dock="Bottom"
+                    Margin="0,16,0,0"
+                    Padding="16,10"
+                    CornerRadius="8"
+                    Background="{DynamicResource DangerMutedBrush}"
+                    BorderBrush="{DynamicResource DangerOutlineBrush}"
+                    BorderThickness="1"
+                    IsVisible="{Binding IsSimulationActive}">
+                <DockPanel>
+                    <Button DockPanel.Dock="Right"
+                            Classes="apply-bar-discard"
+                            Content="Reset"
+                            Command="{Binding ResetSimulationCommand}" />
+                    <TextBlock Text="{Binding SimulationBannerText}"
+                               VerticalAlignment="Center"
+                               Margin="0,0,12,0"
+                               FontSize="13"
+                               TextWrapping="Wrap"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                </DockPanel>
+            </Border>
+
             <!-- Apply bar with review panel popup -->
             <Panel DockPanel.Dock="Bottom" Margin="0,16,0,0">
                 <Border x:Name="ApplyBar"
@@ -463,7 +485,11 @@
                     BorderThickness="1"
                     CornerRadius="8">
                 <Panel>
-                    <ContentControl Content="{Binding CurrentContent}">
+                    <!-- Greyed out while a staged group is unresolved: its cards hold
+                         values from before the failed apply, so nothing may stage
+                         until Discard All reloads the page. -->
+                    <ContentControl Content="{Binding CurrentContent}"
+                                    IsEnabled="{Binding IsContentInteractive}">
                         <ContentControl.DataTemplates>
                             <DataTemplate DataType="{x:Type vm:ShellViewModel}">
                                 <views:ShellView />
@@ -481,8 +507,8 @@
                             <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
                                 <views:SettingsView />
                             </DataTemplate>
-                            <DataTemplate DataType="{x:Type vm:GalleryViewModel}">
-                                <views:GalleryView />
+                            <DataTemplate DataType="{x:Type vm:DebugViewModel}">
+                                <views:DebugView />
                             </DataTemplate>
                             <DataTemplate DataType="{x:Type vm:DisplayViewModel}">
                                 <views:DisplayView />
@@ -546,6 +572,26 @@
                                HorizontalAlignment="Right"
                                VerticalAlignment="Top"
                                Margin="0,64,24,0" />
+
+    <!-- Zoom pill: floats over the page for a moment after Ctrl+plus/minus/0,
+         so the zoom level costs no layout space. Not hit-testable: clicks go
+         through to whatever is under it. -->
+    <Border x:Name="ZoomOverlay"
+            IsVisible="{Binding IsZoomOverlayVisible}"
+            IsHitTestVisible="False"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Top"
+            Margin="0,84,0,0"
+            Padding="14,6"
+            CornerRadius="14"
+            Background="{DynamicResource RaisedBrush}"
+            BorderBrush="{DynamicResource AccentOutlineBrush}"
+            BorderThickness="1">
+        <TextBlock Text="{Binding ZoomOverlayText}"
+                   FontSize="13"
+                   FontWeight="SemiBold"
+                   Foreground="{DynamicResource TextPrimaryBrush}" />
+    </Border>
     </Panel>
 
     <!-- Search results: an in-window overlay (not a Popup) hanging from the

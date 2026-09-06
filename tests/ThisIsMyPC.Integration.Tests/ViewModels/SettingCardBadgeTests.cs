@@ -267,15 +267,21 @@ public sealed class SettingCardBadgeTests
             ownerModeRequired: true,
             detector: new StubDetector { Sku = WindowsSku.Home, OwnerMode = false });
 
-        // Flip through all four display modes — badge state never changes.
+        // Flip through all four display modes: the facts never change, and the
+        // safety callouts (SKU, Owner Mode degradation) stay on the card. Only
+        // the informational enforcement badge leaves the card in Compact, and
+        // then the tooltip carries its text.
         foreach (var (registry, compact) in new[] { (false, false), (true, false), (false, true), (true, true) })
         {
             vm.IsRegistryDataVisible = registry;
-            vm.IsDescriptionVisible = !compact;
+            vm.IsCompact = compact;
 
             Assert.True(vm.HasEnforcementBadge);
             Assert.True(vm.HasSkuNotice);
             Assert.True(vm.IsOwnerModeDegraded);
+            Assert.True(vm.HasVisibleContent);
+            Assert.Equal(!compact, vm.ShowEnforcementBadge);
+            Assert.Equal(compact, vm.TooltipText.Contains("s", StringComparison.Ordinal) && vm.TooltipText.EndsWith("s", StringComparison.Ordinal));
         }
     }
 }

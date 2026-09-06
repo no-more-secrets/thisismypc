@@ -36,6 +36,44 @@ public sealed class SettingsViewModelTests : IDisposable
     }
 
     [Fact]
+    public void NotificationMasterSwitch_GreysOutTheEventSwitches_AndKeepsTheirValues()
+    {
+        _settings.SetApp(AppSettingKeys.NotifyMonitoring, "0");
+        var vm = new SettingsViewModel(_settings, []);
+        var toggles = vm.NotificationsSection.Items.OfType<SettingToggleItemViewModel>().ToList();
+        var master = toggles.Single(t => t.DisplayName == "Notifications");
+        var monitoring = toggles.Single(t => t.DisplayName == "Notify: monitoring alerts");
+        var updates = toggles.Single(t => t.DisplayName == "Notify: update available");
+        Assert.True(master.IsEnabled);
+        Assert.True(monitoring.IsEnabled);
+        Assert.True(updates.IsEnabled);
+
+        master.IsOn = false;
+
+        // Disabled, not changed: the saved choices survive the master being off.
+        Assert.False(monitoring.IsEnabled);
+        Assert.False(updates.IsEnabled);
+        Assert.False(monitoring.IsOn);
+        Assert.True(updates.IsOn);
+        Assert.Equal("0", _settings.GetApp(AppSettingKeys.NotifyMonitoring, "1"));
+        Assert.Equal("1", _settings.GetApp(AppSettingKeys.NotifyUpdates, "1"));
+
+        master.IsOn = true;
+        Assert.True(monitoring.IsEnabled);
+        Assert.True(updates.IsEnabled);
+        Assert.False(monitoring.IsOn);
+        Assert.True(updates.IsOn);
+
+        // A saved master-off starts the page with the event switches greyed out.
+        _settings.SetApp(AppSettingKeys.Notifications, "0");
+        var reloaded = new SettingsViewModel(_settings, []);
+        var reloadedToggles = reloaded.NotificationsSection.Items.OfType<SettingToggleItemViewModel>().ToList();
+        Assert.True(reloadedToggles.Single(t => t.DisplayName == "Notifications").IsEnabled);
+        Assert.False(reloadedToggles.Single(t => t.DisplayName == "Notify: monitoring alerts").IsEnabled);
+        Assert.False(reloadedToggles.Single(t => t.DisplayName == "Notify: update available").IsEnabled);
+    }
+
+    [Fact]
     public void LogonChoicesPersistAndAutomaticDownloadsFollowUpdateChecking()
     {
         _settings.SetApp(AppSettingKeys.AutoStart, "1");

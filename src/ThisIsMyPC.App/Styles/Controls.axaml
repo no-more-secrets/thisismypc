@@ -86,6 +86,9 @@
         <Setter Property="MinHeight" Value="28" />
         <Setter Property="Height" Value="28" />
         <Setter Property="Padding" Value="6,0" />
+        <!-- Clear of the slider: the hover and focus fill starts 8px after the
+             track ends, so it never touches the end thumb. -->
+        <Setter Property="Margin" Value="8,0,0,0" />
         <Setter Property="FontSize" Value="14" />
         <Setter Property="TextAlignment" Value="Right" />
         <Setter Property="VerticalAlignment" Value="Center" />

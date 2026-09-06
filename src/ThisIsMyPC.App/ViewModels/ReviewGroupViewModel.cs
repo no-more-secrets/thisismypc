@@ -12,6 +12,16 @@ public partial class ReviewGroupViewModel : ViewModelBase
     public required string GroupId { get; init; }
     public required IReadOnlyList<ReviewItemViewModel> Details { get; init; }
 
+    /// <summary>
+    /// True when an earlier apply stopped inside this group and left at least
+    /// one of its values unknown. The group is still staged, but the queue will
+    /// not apply anything until it is discarded.
+    /// </summary>
+    public bool NeedsReview { get; init; }
+
+    /// <summary>What went wrong, in the person's words; empty unless <see cref="NeedsReview"/>.</summary>
+    public string ReviewNote { get; init; } = string.Empty;
+
     [ObservableProperty]
     private bool _isExpanded;
 

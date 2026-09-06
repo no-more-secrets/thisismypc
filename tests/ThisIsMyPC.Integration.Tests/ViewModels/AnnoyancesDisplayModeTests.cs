@@ -31,14 +31,40 @@ public sealed class AnnoyancesDisplayModeTests : IDisposable
         => vm.CardGroups.SelectMany(g => g.Cards);
 
     [Fact]
-    public async Task DefaultMode_DescriptionsExpanded_RegistryDataHidden()
+    public async Task DefaultMode_DescriptionInTheTooltip_RegistryDataHidden()
     {
         var vm = await CreateVmAsync();
 
         Assert.False(vm.ShowRegistryData);
         Assert.False(vm.IsCompact);
-        Assert.All(AllCards(vm), c => Assert.True(c.IsDescriptionVisible));
+        Assert.All(AllCards(vm), c => Assert.False(c.IsCompact));
         Assert.All(AllCards(vm), c => Assert.False(c.IsRegistryDataVisible));
+        // The description lives in the (i) tooltip in every mode, like other modules' cards.
+        Assert.All(AllCards(vm), c => Assert.Equal(c.Description, c.TooltipText));
+    }
+
+    [Fact]
+    public async Task CompactMode_FoldsInformationalBadgesIntoTheTooltip_KeepsSafetyCallouts()
+    {
+        var vm = await CreateVmAsync();
+        var enforced = AllCards(vm).First(c => c.HasEnforcementBadge);
+        Assert.True(enforced.ShowEnforcementBadge);
+        Assert.Equal(enforced.Description, enforced.TooltipText);
+
+        vm.IsCompact = true;
+
+        Assert.False(enforced.ShowEnforcementBadge);
+        Assert.False(enforced.ShowReversionRisks);
+        Assert.StartsWith(enforced.Description, enforced.TooltipText, StringComparison.Ordinal);
+        Assert.Contains(enforced.EnforcementSummary!, enforced.TooltipText, StringComparison.Ordinal);
+        if (enforced.HasReversionRisks)
+            Assert.Contains(enforced.ReversionRisksText!, enforced.TooltipText, StringComparison.Ordinal);
+        // Safety callouts are not display preferences: the flags that drive them do not move.
+        Assert.All(AllCards(vm), c => Assert.Equal(c.HasSkuNotice, c.HasSkuNotice));
+
+        vm.IsCompact = false;
+        Assert.True(enforced.ShowEnforcementBadge);
+        Assert.Equal(enforced.Description, enforced.TooltipText);
     }
 
     [Fact]
@@ -49,17 +75,17 @@ public sealed class AnnoyancesDisplayModeTests : IDisposable
         vm.ShowRegistryData = true;
 
         Assert.All(AllCards(vm), c => Assert.True(c.IsRegistryDataVisible));
-        Assert.All(AllCards(vm), c => Assert.True(c.IsDescriptionVisible));
+        Assert.All(AllCards(vm), c => Assert.False(c.IsCompact));
     }
 
     [Fact]
-    public async Task CompactMode_CollapsesDescriptions()
+    public async Task CompactMode_SetsEveryCardCompact()
     {
         var vm = await CreateVmAsync();
 
         vm.IsCompact = true;
 
-        Assert.All(AllCards(vm), c => Assert.False(c.IsDescriptionVisible));
+        Assert.All(AllCards(vm), c => Assert.True(c.IsCompact));
         Assert.All(AllCards(vm), c => Assert.False(c.IsRegistryDataVisible));
     }
 
@@ -71,7 +97,7 @@ public sealed class AnnoyancesDisplayModeTests : IDisposable
         vm.ShowRegistryData = true;
         vm.IsCompact = true;
 
-        Assert.All(AllCards(vm), c => Assert.False(c.IsDescriptionVisible));
+        Assert.All(AllCards(vm), c => Assert.True(c.IsCompact));
         Assert.All(AllCards(vm), c => Assert.True(c.IsRegistryDataVisible));
     }
 
@@ -81,7 +107,7 @@ public sealed class AnnoyancesDisplayModeTests : IDisposable
         var vm = await CreateVmAsync();
         var cards = AllCards(vm).ToList();
 
-        // Page toggle off, one card opened by its own link.
+        // Page box off, one card's panel opened directly (search focus does this).
         cards[0].IsRegistryDataVisible = true;
         vm.IsCompact = true;
         Assert.True(cards[0].IsRegistryDataVisible);
@@ -89,16 +115,16 @@ public sealed class AnnoyancesDisplayModeTests : IDisposable
         vm.IsCompact = false;
         Assert.True(cards[0].IsRegistryDataVisible);
 
-        // Page toggle on, one card closed by its own link.
+        // Page box on, one card's panel closed directly.
         vm.ShowRegistryData = true;
         cards[1].IsRegistryDataVisible = false;
         vm.IsCompact = true;
         Assert.False(cards[1].IsRegistryDataVisible);
         Assert.All(cards.Where(c => c != cards[1]), c => Assert.True(c.IsRegistryDataVisible));
-        Assert.All(cards, c => Assert.False(c.IsDescriptionVisible));
+        Assert.All(cards, c => Assert.True(c.IsCompact));
         vm.IsCompact = false;
         Assert.False(cards[1].IsRegistryDataVisible);
-        Assert.All(cards, c => Assert.True(c.IsDescriptionVisible));
+        Assert.All(cards, c => Assert.False(c.IsCompact));
     }
 
     [Fact]
@@ -108,9 +134,9 @@ public sealed class AnnoyancesDisplayModeTests : IDisposable
         vm.IsCompact = true;
 
         vm.ShowRegistryData = true;
-        Assert.All(AllCards(vm), c => Assert.False(c.IsDescriptionVisible));
+        Assert.All(AllCards(vm), c => Assert.True(c.IsCompact));
         vm.ShowRegistryData = false;
-        Assert.All(AllCards(vm), c => Assert.False(c.IsDescriptionVisible));
+        Assert.All(AllCards(vm), c => Assert.True(c.IsCompact));
     }
 
     [Fact]
@@ -143,7 +169,7 @@ public sealed class AnnoyancesDisplayModeTests : IDisposable
 
         Assert.True(restored.ShowRegistryData);
         Assert.True(restored.IsCompact);
-        Assert.All(AllCards(restored), c => Assert.False(c.IsDescriptionVisible));
+        Assert.All(AllCards(restored), c => Assert.True(c.IsCompact));
         Assert.All(AllCards(restored), c => Assert.True(c.IsRegistryDataVisible));
     }
 

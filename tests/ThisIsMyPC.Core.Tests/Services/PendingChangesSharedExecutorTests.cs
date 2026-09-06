@@ -8,9 +8,8 @@ namespace ThisIsMyPC.Core.Tests.Services;
 
 /// <summary>
 /// PendingChangesService on the shared executor: two queues are isolated, both
-/// route through one executor, group rollback swaps descriptors, and the
-/// current exception and cancellation behavior is pinned so a later change to
-/// it is deliberate.
+/// route through one executor, group rollback swaps descriptors, and a thrown
+/// delegate is a reported failure rather than a propagated exception.
 /// </summary>
 public sealed class PendingChangesSharedExecutorTests
 {
@@ -173,30 +172,45 @@ public sealed class PendingChangesSharedExecutorTests
 
         Assert.False(result.IsSuccess);
         Assert.Equal(["a"], result.RolledBack.Select(c => c.SettingId));
+        var stuck = Assert.Single(result.RollbackFailures);
+        Assert.Equal("b", stuck.Change.SettingId);
+        Assert.Equal("stuck", stuck.ErrorMessage);
+        Assert.Null(stuck.Exception);
+        Assert.True(result.HasUncertainState);
+        Assert.Equal(["b", "fail"], result.Uncertain.Select(c => c.SettingId));
         Assert.Equal(1, queue.PendingCount);
+        Assert.Single(queue.ReconciliationRequired);
     }
 
     [Fact]
-    public async Task Delegate_exception_mid_batch_propagates_and_leaves_the_queue_as_it_was()
+    public async Task Delegate_exception_mid_batch_is_an_uncertain_failure_that_commits_finished_groups()
     {
-        // Pins current behavior: an exception (including cancellation raised inside a
-        // delegate) is not a failed result, so no rollback runs and no group is
-        // removed. IsApplying still resets. A cancellation-aware batch is a separate,
-        // deliberate change; see the restoration plan.
+        // A throw (including OperationCanceledException raised inside a delegate) is a
+        // failed result, not a propagated exception: finished groups leave the queue,
+        // the thrown change is reported as uncertain and never reverted, and its group
+        // stays staged. PendingChangesBatchSafetyTests covers the full contract.
         var queue = PendingChangesService.Create(new ReversibleChangeExecutor());
         queue.Stage(Group("g1", Change("first")));
         queue.Stage(Group("g2", Change("boom")));
         var reverted = new List<ChangeDescriptor>();
 
-        await Assert.ThrowsAsync<OperationCanceledException>(() => queue.ApplyAllAsync(
+        var result = await queue.ApplyAllAsync(
             c => c.SettingId == "boom"
                 ? throw new OperationCanceledException()
                 : Task.FromResult(OperationResult<bool>.Success(true)),
-            Recording(reverted)));
+            Recording(reverted));
 
-        Assert.False(queue.IsApplying);
+        Assert.False(result.IsSuccess);
+        Assert.Equal(MutationFailureKind.ChangeThrew, result.FailureKind);
+        Assert.True(result.HasUncertainState);
+        Assert.False(result.WasCancelled);
+        Assert.Equal("boom", result.Failed?.SettingId);
+        Assert.IsType<OperationCanceledException>(result.Exception);
+        Assert.Equal(["first"], result.Applied.Select(c => c.SettingId));
         Assert.Empty(reverted);
-        Assert.Equal(2, queue.PendingCount);
+        Assert.Empty(result.RolledBack);
+        Assert.False(queue.IsApplying);
+        Assert.Equal(["g2"], queue.PendingGroups.Select(g => g.GroupId));
     }
 
     [Fact]

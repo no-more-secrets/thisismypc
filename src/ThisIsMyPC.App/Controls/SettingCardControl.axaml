@@ -5,32 +5,27 @@
              x:Class="ThisIsMyPC.App.Controls.SettingCardControl"
              x:DataType="vm:SettingCardViewModel">
 
-    <!-- Card renderer: a ToggleCard whose content carries the description,
-         the badges and callouts, and the technical details. What the setting
-         does and the switch are always on the card; the registry path, value
-         type, and last reading sit behind the card's own link, which the
-         page's Technical details toggle opens on every card at once. Badges
-         show in every mode: safety information is never hidden by a display
-         preference. Owner Mode degradation disables only the switch. -->
+    <!-- Card renderer: a ToggleCard whose (i) carries the description, like
+         every other module's card, with the badges, callouts, and technical
+         details in the content slot. The safety callouts (SKU, Owner Mode
+         degradation) show in every mode. Compact folds the informational
+         lines (how it is applied, what may revert it) into the tooltip;
+         Technical details is a page-wide box, with no per-card link. Owner
+         Mode degradation disables only the switch. -->
     <controls:ToggleCard Title="{Binding DisplayName}"
-                         Description="{Binding TooltipDescription}"
+                         Description="{Binding TooltipText}"
                          IsOn="{Binding IsEnabled}"
                          IsSwitchVisible="{Binding IsToggle}"
                          IsSwitchEnabled="{Binding IsControlEnabled}"
                          Classes.pending-enable="{Binding IsPendingEnable}"
                          Classes.pending-disable="{Binding IsPendingDisable}">
-        <StackPanel Spacing="2">
-            <TextBlock Text="{Binding Description}"
-                       FontSize="12"
-                       TextWrapping="Wrap"
-                       Foreground="{DynamicResource TextSecondaryBrush}"
-                       IsVisible="{Binding IsDescriptionVisible}" />
+        <StackPanel Spacing="2" IsVisible="{Binding HasVisibleContent}">
             <Border Background="{DynamicResource WarningMutedBrush}"
                     CornerRadius="3"
                     Padding="6,1"
                     Margin="0,2,0,0"
                     HorizontalAlignment="Left"
-                    IsVisible="{Binding HasEnforcementBadge}">
+                    IsVisible="{Binding ShowEnforcementBadge}">
                 <TextBlock Text="{Binding EnforcementSummary}"
                            FontSize="11"
                            TextWrapping="Wrap"
@@ -40,7 +35,7 @@
                        FontSize="11"
                        Foreground="{DynamicResource WarningBrush}"
                        TextWrapping="Wrap"
-                       IsVisible="{Binding HasReversionRisks}" />
+                       IsVisible="{Binding ShowReversionRisks}" />
             <TextBlock Text="{Binding SkuNotice}"
                        FontSize="11"
                        Foreground="{DynamicResource InfoBrush}"
@@ -86,10 +81,6 @@
                            TextWrapping="Wrap"
                            Foreground="{DynamicResource TextTertiaryBrush}" />
             </StackPanel>
-            <Button Classes="card-link"
-                    Content="{Binding DetailsLinkText}"
-                    Command="{Binding ToggleTechnicalDetailsCommand}"
-                    IsVisible="{Binding HasTechnicalDetails}" />
         </StackPanel>
     </controls:ToggleCard>
 </UserControl>

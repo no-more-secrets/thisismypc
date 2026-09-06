@@ -15,7 +15,6 @@ public partial class MainWindow : Window
     private bool _wasAboveThreshold = true;
     private MainWindowViewModel? _zoomViewModel;
 #if DEBUG
-    private int _debugChangeCounter;
     private RegionReviewOverlay? _regionReviewOverlay;
 #endif
 
@@ -390,7 +389,7 @@ public partial class MainWindow : Window
         var route = vm.IsHomeActive ? "/home"
             : vm.IsSettingsActive ? "/settings"
             : vm.IsSetLoaderActive ? "/presets"
-            : vm.IsGalleryActive ? "/gallery"
+            : vm.IsDebugActive ? "/debug"
             : vm.SelectedModule is { } module ? $"/modules/{Slug(module.Name)}"
             : "/unknown";
         var tab = this.GetVisualDescendants().OfType<TabControl>()
@@ -437,22 +436,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        _debugChangeCounter++;
-        var change = new Core.Changes.ChangeDescriptor
-        {
-            ModuleId = "DebugModule",
-            SettingId = $"debug-setting-{_debugChangeCounter}",
-            DisplayName = $"Test Setting {_debugChangeCounter}",
-            SystemLocation = @$"HKLM\SOFTWARE\Debug\Setting{_debugChangeCounter}",
-            BeforeValue = "0",
-            AfterValue = "1",
-            BeforeDisplay = category == Core.Changes.ChangeCategory.Enable ? "Disabled" : category == Core.Changes.ChangeCategory.Disable ? "Enabled" : "Value A",
-            AfterDisplay = category == Core.Changes.ChangeCategory.Enable ? "Enabled" : category == Core.Changes.ChangeCategory.Disable ? "Disabled" : "Value B",
-            ValueType = Core.Changes.ChangeValueType.Registry_DWord,
-            Category = category!.Value,
-        };
-
-        vm.StageDebugChange(change);
+        vm.StageDebugChange(category!.Value);
     }
 #endif
 }

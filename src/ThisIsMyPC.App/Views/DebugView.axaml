@@ -1,0 +1,167 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ThisIsMyPC.App.ViewModels"
+             xmlns:views="using:ThisIsMyPC.App.Views"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="700"
+             x:Class="ThisIsMyPC.App.Views.DebugView"
+             x:DataType="vm:DebugViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="TextBlock.debug-section">
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        </Style>
+        <Style Selector="TextBlock.debug-hint">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Foreground" Value="{DynamicResource TextTertiaryBrush}" />
+            <Setter Property="Margin" Value="0,2,0,10" />
+        </Style>
+        <Style Selector="TextBlock.debug-label">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        </Style>
+        <Style Selector="Border.debug-card">
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="14" />
+            <Setter Property="Margin" Value="0,0,0,12" />
+            <Setter Property="Background" Value="{DynamicResource OverlayBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource OutlineBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        <Style Selector="Button.debug-action">
+            <Setter Property="Padding" Value="12,6" />
+        </Style>
+        <Style Selector="ComboBox.debug-choice">
+            <Setter Property="Width" Value="260" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+        </Style>
+    </UserControl.Styles>
+
+    <TabControl Theme="{StaticResource EdgeTabControlTheme}" SelectedIndex="{Binding SelectedTabIndex}">
+      <TabItem Header="UI Gallery">
+        <views:GalleryView DataContext="{Binding Gallery}" />
+      </TabItem>
+
+      <TabItem Header="Test Controls">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+          <StackPanel MaxWidth="860" HorizontalAlignment="Left" Margin="0,0,16,24">
+            <TextBlock Text="Every button here does the real thing through the same service the app uses. Nothing runs until you click."
+                       Classes="debug-hint" Margin="0,0,0,12" />
+
+            <Border Classes="debug-card">
+              <StackPanel>
+                <TextBlock Classes="debug-section" Text="Notifications" />
+                <TextBlock Classes="debug-hint"
+                           Text="Goes through the notification service, so the switches under Settings, Notifications decide whether it shows." />
+                <WrapPanel>
+                  <Button Classes="debug-action" Content="Send test notification" Command="{Binding SendTestNotificationCommand}" Margin="0,0,8,8" />
+                  <Button Classes="debug-action" Content="Show info toast" Command="{Binding ShowInfoToastCommand}" Margin="0,0,8,8" />
+                  <Button Classes="debug-action" Content="Show warning toast" Command="{Binding ShowWarningToastCommand}" Margin="0,0,8,8" />
+                </WrapPanel>
+              </StackPanel>
+            </Border>
+
+            <Border Classes="debug-card">
+              <StackPanel>
+                <TextBlock Classes="debug-section" Text="Explorer and restart banners" />
+                <TextBlock Classes="debug-hint"
+                           Text="Restart Explorer now closes and reopens the Windows desktop shell. Open File Explorer windows close. The banner buttons only show the bar the apply flow shows." />
+                <WrapPanel>
+                  <Button Classes="debug-action apply-bar-apply" Content="Restart Explorer now"
+                          Command="{Binding RestartExplorerCommand}"
+                          IsEnabled="{Binding !IsRestartingExplorer}" Margin="0,0,8,8" />
+                  <Button Classes="debug-action" Content="Show Explorer restart banner" Command="{Binding ShowExplorerRestartBannerCommand}" Margin="0,0,8,8" />
+                  <Button Classes="debug-action" Content="Show reboot banner" Command="{Binding ShowRebootBannerCommand}" Margin="0,0,8,8" />
+                  <Button Classes="debug-action" Content="Show sign-out banner" Command="{Binding ShowSignOutBannerCommand}" Margin="0,0,8,8" />
+                </WrapPanel>
+              </StackPanel>
+            </Border>
+
+            <Border Classes="debug-card">
+              <StackPanel>
+                <TextBlock Classes="debug-section" Text="Pending changes" />
+                <TextBlock Classes="debug-hint"
+                           Text="Stages a sample change so the apply bar, badge, and review panel can be checked. F5, F6, F7, and F8 do the same from any page." />
+                <WrapPanel>
+                  <Button Classes="debug-action" Content="Stage sample enable" Command="{Binding StageSampleEnableCommand}" Margin="0,0,8,8" />
+                  <Button Classes="debug-action" Content="Stage sample disable" Command="{Binding StageSampleDisableCommand}" Margin="0,0,8,8" />
+                  <Button Classes="debug-action" Content="Stage sample modify" Command="{Binding StageSampleModifyCommand}" Margin="0,0,8,8" />
+                </WrapPanel>
+              </StackPanel>
+            </Border>
+
+            <TextBlock Text="{Binding TestControlsResult}"
+                       FontSize="12" TextWrapping="Wrap"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       IsVisible="{Binding TestControlsResult, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <TabItem Header="State Simulation">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+          <StackPanel MaxWidth="860" HorizontalAlignment="Left" Margin="0,0,16,24">
+            <!-- Loud while on: the same danger tint the review panel uses for an unresolved group. -->
+            <Border CornerRadius="8" Padding="14" Margin="0,0,0,12" BorderThickness="1"
+                    Classes.pending-disable="{Binding IsSimulationActive}"
+                    BorderBrush="{DynamicResource OutlineBrush}">
+              <DockPanel>
+                <Button DockPanel.Dock="Right" Classes="debug-action" Content="Reset"
+                        Command="{Binding ResetSimulationCommand}"
+                        IsEnabled="{Binding IsSimulationActive}"
+                        VerticalAlignment="Top" Margin="12,0,0,0" />
+                <StackPanel>
+                  <TextBlock Text="{Binding SimulationSummary}" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                  <TextBlock Text="{x:Static vm:DebugViewModel.SimulationNote}" Classes="debug-hint" Margin="0,4,0,0" />
+                </StackPanel>
+              </DockPanel>
+            </Border>
+
+            <Border Classes="debug-card">
+              <StackPanel Spacing="10">
+                <TextBlock Classes="debug-section" Text="Windows and device" />
+                <Grid ColumnDefinitions="180,*" RowDefinitions="Auto,Auto,Auto" >
+                  <TextBlock Classes="debug-label" Text="Windows edition" />
+                  <ComboBox Grid.Column="1" Classes="debug-choice" Margin="0,0,0,8"
+                            ItemsSource="{Binding SkuOptions}" SelectedItem="{Binding SelectedSku}" />
+                  <TextBlock Grid.Row="1" Classes="debug-label" Text="Device" />
+                  <ComboBox Grid.Row="1" Grid.Column="1" Classes="debug-choice" Margin="0,0,0,8"
+                            ItemsSource="{Binding DeviceOptions}" SelectedItem="{Binding SelectedDevice}" />
+                  <TextBlock Grid.Row="2" Classes="debug-label" Text="Owner Mode service" />
+                  <ComboBox Grid.Row="2" Grid.Column="1" Classes="debug-choice"
+                            ItemsSource="{Binding OwnerModeOptions}" SelectedItem="{Binding SelectedOwnerMode}" />
+                </Grid>
+                <TextBlock Classes="debug-hint" Margin="0,0,0,0"
+                           Text="Edition drives the SKU callouts on policy cards. Device changes the Home page identity. The service state drives Owner Mode callouts and the Settings service card; the real service is not touched." />
+              </StackPanel>
+            </Border>
+
+            <Border Classes="debug-card">
+              <StackPanel Spacing="10">
+                <TextBlock Classes="debug-section" Text="Hardware ecosystems" />
+                <TextBlock Classes="debug-hint" Text="What the capability summary and hardware modules believe is installed." Margin="0,0,0,0" />
+                <ItemsControl ItemsSource="{Binding Capabilities}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:CapabilitySimulationViewModel">
+                      <Grid ColumnDefinitions="180,*" Margin="0,0,0,8">
+                        <TextBlock Classes="debug-label" Text="{Binding DisplayName}" />
+                        <ComboBox Grid.Column="1" Classes="debug-choice"
+                                  ItemsSource="{Binding Options}" SelectedItem="{Binding Selected}" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+    </TabControl>
+</UserControl>

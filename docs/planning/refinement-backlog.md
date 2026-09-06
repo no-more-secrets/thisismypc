@@ -2,6 +2,14 @@
 
 Current release scope: [v1 completion plan](v1-completion-plan.md), approved 2026-09-06. It supersedes older post-release hardware assumptions below.
 
+## Reviewed v1 foundations and Debug tools (2026-09-06)
+
+- DONE: Partial apply records confirmed changes once. Uncertain groups block further applies and cannot be removed by queued edits. Discard All clears the queue and reloads the page.
+- DONE: Debug replaces UI Gallery in Debug builds, with gallery, test controls, and transient state simulation. Mutation leases block live actions during simulation and block simulation changes during actions.
+- DONE: Annotation fixes cover transient zoom, dependent notification switches, page-level technical details, stacked toolbar checkboxes, description tooltips, fixed tab positions, and Display value spacing.
+- DONE: Pure hardware compatibility decisions distinguish unobserved evidence, verified support, companion actions, sensor reads, and device writes. Live detection and module integration remain pending.
+- DONE: Native cross-process lease foundation requires recovery clearance for every acquisition. Production wiring and durable recovery remain pending. Eleven elevated Windows tests remain unverified; this is not release-ready coordination.
+- Verified: Full Release build, CI-safe suite, fresh review, and rendered UI inspection. Isolated Debug window tests verify tabs, simulation banner, and edge geometry. No live applies or hardware control tested.
 ## Owner Mode restoration foundations (2026-09-06)
 
 - DONE: Typed present/absent snapshots and an immutable exact-target catalog for eleven non-policy Annoyances settings. Invalid value data, account SID syntax, and incompatible enforcement are rejected.

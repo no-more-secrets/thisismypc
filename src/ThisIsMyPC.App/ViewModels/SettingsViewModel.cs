@@ -266,6 +266,26 @@ public sealed partial class SettingsViewModel : ViewModelBase, ITabbedPage
             ],
         };
 
+        // The master switch greys the per-event switches out while it is off. Their
+        // saved values stay untouched, so turning the master back on restores the
+        // same choices; only IsEnabled moves, never IsOn.
+        var notificationsOn = settings.GetAppBool(AppSettingKeys.Notifications, true);
+        var notifyMonitoring = new SettingToggleItemViewModel(
+            settings, null, AppSettingKeys.NotifyMonitoring,
+            "Notify: monitoring alerts",
+            "New startup entries or services were detected.",
+            settings.GetAppBool(AppSettingKeys.NotifyMonitoring, true))
+        {
+            IsEnabled = notificationsOn,
+        };
+        var notifyUpdates = new SettingToggleItemViewModel(
+            settings, null, AppSettingKeys.NotifyUpdates,
+            "Notify: update available",
+            "A newer release was found at launch.",
+            settings.GetAppBool(AppSettingKeys.NotifyUpdates, true))
+        {
+            IsEnabled = notificationsOn,
+        };
         NotificationsSection = new SettingsSectionViewModel
         {
             Header = NotificationsHeader,
@@ -277,17 +297,14 @@ public sealed partial class SettingsViewModel : ViewModelBase, ITabbedPage
                     settings, null, AppSettingKeys.Notifications,
                     "Notifications",
                     "Master switch for every notification below.",
-                    settings.GetAppBool(AppSettingKeys.Notifications, true)),
-                new SettingToggleItemViewModel(
-                    settings, null, AppSettingKeys.NotifyMonitoring,
-                    "Notify: monitoring alerts",
-                    "New startup entries or services were detected.",
-                    settings.GetAppBool(AppSettingKeys.NotifyMonitoring, true)),
-                new SettingToggleItemViewModel(
-                    settings, null, AppSettingKeys.NotifyUpdates,
-                    "Notify: update available",
-                    "A newer release was found at launch.",
-                    settings.GetAppBool(AppSettingKeys.NotifyUpdates, true)),
+                    notificationsOn,
+                    enabled =>
+                    {
+                        notifyMonitoring.IsEnabled = enabled;
+                        notifyUpdates.IsEnabled = enabled;
+                    }),
+                notifyMonitoring,
+                notifyUpdates,
             ],
         };
 
