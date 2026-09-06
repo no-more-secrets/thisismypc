@@ -1,5 +1,7 @@
 # Module Refinement Backlog
 
+Current release scope: [v1 completion plan](v1-completion-plan.md), approved 2026-09-06. It supersedes older post-release hardware assumptions below.
+
 Gap analysis (2026-08-29) of shipped modules vs. the open-source recipe sources
 (Sophia Script 7.2.0 [MIT], CTT winutil [MIT], Melody [CC0], ExplorerPatcher [GPLv2]).
 Scope rule for this chapter: **refine existing modules first**: absorb recipes that fit
