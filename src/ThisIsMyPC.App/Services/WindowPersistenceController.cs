@@ -24,7 +24,7 @@ public sealed class WindowPersistenceController : IDisposable
         IClassicDesktopStyleApplicationLifetime desktop,
         ISettingsService settings,
         Func<bool>? trayAvailable = null)
-        : this(window, () => desktop.Shutdown(), settings, trayAvailable) { }
+        : this(window, () => desktop.TryShutdown(), settings, trayAvailable) { }
 
     internal WindowPersistenceController(Window window, Action shutdown, ISettingsService settings,
         Func<bool>? trayAvailable = null)

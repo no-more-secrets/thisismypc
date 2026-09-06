@@ -1,3 +1,5 @@
+using ThisIsMyPC.Core.Coordination;
+using ThisIsMyPC.Core.Drift.Consent;
 using ThisIsMyPC.Core.Results;
 using ThisIsMyPC.Core.Services;
 
@@ -31,12 +33,19 @@ public sealed class OwnerModeService : IOwnerModeServiceControl
     private readonly IServiceInstaller _installer;
     private readonly IServiceControlService _serviceControl;
     private readonly string _binaryPath;
+    private readonly IMutationLeaseProvider? _mutationLeaseProvider;
+    private readonly IMachineConsentStore? _consentStore;
 
     public OwnerModeService(
-        IServiceInstaller installer, IServiceControlService serviceControl, string? binaryPath = null)
+        IServiceInstaller installer, IServiceControlService serviceControl, string? binaryPath = null,
+        IMutationLeaseProvider? mutationLeaseProvider = null, IMachineConsentStore? consentStore = null)
     {
         ArgumentNullException.ThrowIfNull(installer);
         ArgumentNullException.ThrowIfNull(serviceControl);
+        if ((mutationLeaseProvider is null) != (consentStore is null))
+            throw new ArgumentException("Pause requires both a mutation lease provider and a consent store.");
+        _mutationLeaseProvider = mutationLeaseProvider;
+        _consentStore = consentStore;
         _installer = installer;
         _serviceControl = serviceControl;
         _binaryPath = binaryPath ?? Path.Combine(AppContext.BaseDirectory, "ThisIsMyPC.Service.exe");
@@ -118,6 +127,21 @@ public sealed class OwnerModeService : IOwnerModeServiceControl
 
     public async Task<OperationResult<bool>> DisableAsync(CancellationToken cancellationToken = default)
     {
+        if (_mutationLeaseProvider is not null)
+        {
+            // Opt-out does not need journal recovery. It remains possible when recovery is corrupt.
+            var acquisition = await _mutationLeaseProvider.AcquireAsync(ControlTimeout, cancellationToken).ConfigureAwait(false);
+            if (!acquisition.IsAcquired)
+                return OperationResult<bool>.Failure("Owner Mode could not acquire the lease to pause.", ErrorCategory.ServiceUnavailable);
+            await using (var lease = acquisition.Lease!)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var off = _consentStore!.SetEnabled(false, lease);
+                if (!off.IsSuccess || off.State.Status != MachineConsentStatus.Loaded || off.State.Enabled)
+                    return OperationResult<bool>.Failure("Owner Mode could not save paused consent: " + off.State.Detail, ErrorCategory.ServiceUnavailable);
+            }
+        }
+        // SCM stop must happen after release, so a service waiting for the lease can shut down.
         var state = GetState();
         if (state == OwnerModeState.NotInstalled)
             return OperationResult<bool>.Success(true);

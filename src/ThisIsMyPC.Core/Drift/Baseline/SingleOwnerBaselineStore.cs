@@ -77,7 +77,22 @@ public sealed class SingleOwnerBaselineStore
         var merged = Validate(Read(lease));
         foreach (var pair in updates) merged[pair.Key] = pair.Value;
         if (merged.Count > MaximumEntries) throw new InvalidDataException("Baseline entry limit exceeded.");
-        var document = new SingleOwnerBaselineDocument(1, _primaryUserSid, merged.Values
+        Persist(merged.Values, lease);
+    }
+
+    /// <summary>Durably removes affected choices before deliberate writes. Other choices remain unchanged.</summary>
+    public void Remove(IReadOnlyCollection<string> canonicalLocations, IMutationLease lease)
+    {
+        ArgumentNullException.ThrowIfNull(canonicalLocations);
+        CheckLease(lease, true);
+        var entries = Validate(Read(lease));
+        var locations = new HashSet<string>(canonicalLocations, StringComparer.OrdinalIgnoreCase);
+        Persist(entries.Values.Where(entry => !locations.Contains(entry.CanonicalLocation)), lease);
+    }
+
+    private void Persist(IEnumerable<SingleOwnerBaselineEntry> entries, IMutationLease lease)
+    {
+        var document = new SingleOwnerBaselineDocument(1, _primaryUserSid, entries
             .OrderBy(e => e.CanonicalLocation, StringComparer.Ordinal).ToArray());
         var bytes = JsonSerializer.SerializeToUtf8Bytes(document, SingleOwnerBaselineJsonContext.Default.SingleOwnerBaselineDocument);
         if (bytes.Length > MaximumBytes) throw new InvalidDataException("Baseline exceeds storage limit.");

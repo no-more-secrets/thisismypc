@@ -201,11 +201,20 @@ public sealed class PendingChangesService : IPendingChangesService
     /// UI-bound consumers must marshal to the UI thread.
     /// </para>
     /// </remarks>
-    public async Task<MutationResult> ApplyAllAsync(
+    public Task<MutationResult> ApplyAllAsync(
         Func<ChangeDescriptor, Task<OperationResult<bool>>> applyFunc,
         Func<ChangeDescriptor, Task<OperationResult<bool>>> revertFunc,
         CancellationToken cancellationToken)
+        => ApplyAllAsync(applyFunc, revertFunc, _ => { }, cancellationToken);
+
+    /// <summary>Prepares the exact immutable batch snapshot before executing it.</summary>
+    public async Task<MutationResult> ApplyAllAsync(
+        Func<ChangeDescriptor, Task<OperationResult<bool>>> applyFunc,
+        Func<ChangeDescriptor, Task<OperationResult<bool>>> revertFunc,
+        Action<IReadOnlyList<ChangeDescriptor>> prepare,
+        CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(prepare);
         ArgumentNullException.ThrowIfNull(applyFunc);
         ArgumentNullException.ThrowIfNull(revertFunc);
 
@@ -267,6 +276,7 @@ public sealed class PendingChangesService : IPendingChangesService
 
         try
         {
+            prepare(snapshot.SelectMany(group => group.Changes).ToArray());
             foreach (var group in snapshot)
             {
                 var groupApplied = new List<ChangeDescriptor>();

@@ -73,6 +73,22 @@ public sealed class RestorationCatalogParityTests : IDisposable
 
     [Theory]
     [MemberData(nameof(CatalogSettingIds))]
+    public async Task MissingCatalogValue_StagesAbsenceAndUndoDeletesTheCreatedValue(string settingId)
+    {
+        var change = Emit(settingId, suppress: true);
+        Assert.Equal(string.Empty, change.BeforeValue);
+        var module = new AnnoyancesModule(_registry);
+        Assert.True((await module.ApplyChangeAsync(change)).IsSuccess);
+        Assert.True((await module.RevertChangeAsync(change with
+        {
+            BeforeValue = change.AfterValue!, AfterValue = change.BeforeValue,
+        })).IsSuccess);
+        var target = Target(settingId);
+        Assert.Equal(Core.Results.ErrorCategory.NotFound, _registry.ReadDWord(target.KeyPath, target.ValueName).ErrorCategory);
+    }
+
+    [Theory]
+    [MemberData(nameof(CatalogSettingIds))]
     public void Catalog_identity_matches_the_change_the_module_emits(string settingId)
     {
         var target = Target(settingId);

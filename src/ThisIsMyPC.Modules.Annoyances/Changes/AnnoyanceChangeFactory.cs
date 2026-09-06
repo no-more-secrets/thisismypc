@@ -53,8 +53,8 @@ public static class AnnoyanceChangeFactory
     /// <summary>
     /// Creates a toggle change. <paramref name="suppress"/> true writes the suppressing
     /// value; false restores the Windows default. BeforeValue is the preference's live
-    /// CurrentValue (a missing registry value scans as the default), preserving true
-    /// before-state fidelity for revert. SettingEnforcement stays null per FR139,
+    /// CurrentValue. Catalog DWORD preferences preserve a missing value as empty,
+    /// so undo deletes the value. Other preferences keep their existing reader conventions. SettingEnforcement stays null per FR139,
     /// except TierRestrictedSingles ids, which carry the minimum-tier tag on suppress (26-9).
     /// </summary>
     public static ChangeDescriptor CreateToggle(AnnoyancePreference pref, bool suppress)

@@ -29,6 +29,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private readonly NavigationService _navigationService;
     private readonly IPendingChangesService _pendingChangesService;
+    private readonly Core.Drift.DeliberateChangeCoordinator? _deliberateChanges;
     private readonly IPendingActionsService? _pendingActionsService;
     private readonly Core.Packages.IWingetService? _wingetService;
     private readonly Services.AutorunEnrichment? _autorunEnrichment;
@@ -346,8 +347,10 @@ public partial class MainWindowViewModel : ViewModelBase
         IPendingActionsService? pendingActionsService = null,
         Core.Packages.IWingetService? wingetService = null,
         Services.AutorunEnrichment? autorunEnrichment = null,
-        Services.DebugSimulation? debugSimulation = null)
+        Services.DebugSimulation? debugSimulation = null,
+        Core.Drift.DeliberateChangeCoordinator? deliberateChanges = null)
     {
+        _deliberateChanges = deliberateChanges;
         _wingetService = wingetService;
         _autorunEnrichment = autorunEnrichment;
         _pendingActionsService = pendingActionsService;
@@ -389,8 +392,8 @@ public partial class MainWindowViewModel : ViewModelBase
         ReviewPanel = reviewPanel;
         ChangeHistory = new ChangeHistoryViewModel(
             changeHistoryService,
-            RevertChangeOnModule,
-            ApplyChangeToModule,
+            change => Dispatcher.UIThread.InvokeAsync(() => RevertChangeOnModule(change)),
+            change => Dispatcher.UIThread.InvokeAsync(() => ApplyChangeToModule(change)),
             customSetWriter,
             BeginMutation);
 
@@ -1341,8 +1344,21 @@ public partial class MainWindowViewModel : ViewModelBase
     /// lease refuses while simulation is active and locks the simulation out
     /// until disposed. With no simulation seam it is always open.
     /// </summary>
-    private Services.MutationLease BeginMutation() =>
-        _debugSimulation?.BeginMutation() ?? Services.MutationLease.Open();
+    private bool _shutdownRequested;
+
+    private Services.MutationLease BeginMutation() => _shutdownRequested
+        ? Services.MutationLease.Refused("The app is closing. New changes cannot start.")
+        : _debugSimulation?.BeginMutation() ?? Services.MutationLease.Open();
+
+    /// <summary>Cancels pending acquisition and waits for active reversible operations before service disposal.</summary>
+    public async Task PrepareForShutdownAsync()
+    {
+        _shutdownRequested = true;
+        _deliberateChanges?.StopAcceptingChanges();
+        ApplyAllCommand.Cancel();
+        var tasks = new[] { ApplyAllCommand.ExecutionTask, ChangeHistory.RestoreCommand.ExecutionTask, ChangeHistory.RedoCommand.ExecutionTask };
+        await Task.WhenAll(tasks.OfType<Task>()).ConfigureAwait(true);
+    }
 
     /// <summary>
     /// False while a staged group is unresolved: the page's controls are
@@ -1654,7 +1670,7 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private async Task ApplyAllAsync()
+    private async Task ApplyAllAsync(CancellationToken cancellationToken)
     {
         if (!HasPendingChanges || IsApplying || IsCreatingRestorePoint)
             return;
@@ -1705,9 +1721,14 @@ public partial class MainWindowViewModel : ViewModelBase
                 _pendingChangesService.PendingGroups.Sum(g => g.Changes.Count),
                 _pendingActionsService?.PendingCount ?? 0);
 
-            var result = await _pendingChangesService.ApplyAllAsync(
-                ApplyChangeToModule,
-                RevertChangeOnModule).ConfigureAwait(true);
+            cancellationToken.ThrowIfCancellationRequested();
+            // Each module callback enters through the dispatcher, including calls after lease waits or rollback awaits.
+            var result = _deliberateChanges is null
+                ? await _pendingChangesService.ApplyAllAsync(ApplyChangeToModule, RevertChangeOnModule).ConfigureAwait(true)
+                : await _deliberateChanges.ApplyAsync(_pendingChangesService, _changeHistoryService,
+                    change => Dispatcher.UIThread.InvokeAsync(() => ApplyChangeToModule(change)),
+                    change => Dispatcher.UIThread.InvokeAsync(() => RevertChangeOnModule(change)),
+                    dispatch: operation => Dispatcher.UIThread.InvokeAsync(operation), cancellationToken: cancellationToken).ConfigureAwait(true);
 
             if (result.IsSuccess)
             {
@@ -1730,7 +1751,7 @@ public partial class MainWindowViewModel : ViewModelBase
             // here, so a group that completed before a later one failed still has its
             // undo entry. The failed change, rollback failures, and the uncertain list
             // are not on Applied and never reach history.
-            if (result.Applied.Count > 0)
+            if (_deliberateChanges is null && result.Applied.Count > 0)
                 await _changeHistoryService.RecordChangesAsync(result).ConfigureAwait(true);
 
             // Cards on a page whose change ended in an unknown state read their
@@ -1768,7 +1789,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
             // One-way actions run after the reversible batch, and only when it
             // succeeded; a failed change batch should not be followed by installs.
-            if (result.IsSuccess && _pendingActionsService is { PendingCount: > 0 })
+            if (result.IsSuccess && !cancellationToken.IsCancellationRequested && _pendingActionsService is { PendingCount: > 0 })
             {
                 var actionCount = _pendingActionsService.PendingCount;
                 SetStatus(
@@ -1828,6 +1849,15 @@ public partial class MainWindowViewModel : ViewModelBase
                         StatusSeverity.Success);
                 }
             }
+        }
+        catch (OperationCanceledException)
+        {
+            SetStatus("Changes stopped before the next write.", StatusSeverity.Warning);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Apply could not complete coordination or persistence");
+            SetStatus("Changes stopped. " + ex.Message, StatusSeverity.Error);
         }
         finally
         {

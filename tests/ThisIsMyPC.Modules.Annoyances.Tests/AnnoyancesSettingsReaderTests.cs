@@ -42,13 +42,14 @@ public sealed class AnnoyancesSettingsReaderTests
     }
 
     [Fact]
-    public void MissingValues_ScanAsWindowsDefault_NotSuppressed()
+    public void MissingCatalogValues_PreserveAbsenceAndRemainNotSuppressed()
     {
         var prefs = ReadAll();
 
         Assert.All(prefs, p =>
         {
-            Assert.Equal(p.DefaultValue, p.CurrentValue);
+            var target = Core.Drift.RestorationCatalog.Default.FindByLocation(p.RegistryKeyPath, p.RegistryValueName);
+            Assert.Equal(target is null ? p.DefaultValue : string.Empty, p.CurrentValue);
             Assert.False(p.IsSuppressed);
         });
     }

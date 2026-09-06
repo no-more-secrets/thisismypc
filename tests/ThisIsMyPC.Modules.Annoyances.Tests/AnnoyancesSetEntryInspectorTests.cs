@@ -32,7 +32,7 @@ public sealed class AnnoyancesSetEntryInspectorTests
 
         Assert.NotNull(state);
         Assert.Equal("Disable the Advertising ID", state!.SettingDisplayName);
-        Assert.Equal("1", state.CurrentValue);
+        Assert.Equal(string.Empty, state.CurrentValue);
         Assert.Equal("Windows default", state.CurrentDisplay);
         Assert.False(state.IsApplied);
     }
@@ -49,17 +49,18 @@ public sealed class AnnoyancesSetEntryInspectorTests
     }
 
     [Fact]
-    public void Single_RestoreDirectionEntry_AppliedOnDefaultState()
+    public void Single_RestoreDirectionEntry_RequiresTheExplicitValue()
     {
-        var state = Inspector.Inspect(Entry("advertising-id", "1"));
-
-        Assert.True(state!.IsApplied);
+        var absent = Inspector.Inspect(Entry("advertising-id", "1"));
+        Assert.False(absent!.IsApplied);
+        _registry.SetDWord(AnnoyancesRegistryPaths.AdvertisingInfoKeyPath, "Enabled", 1);
+        Assert.True(Inspector.Inspect(Entry("advertising-id", "1"))!.IsApplied);
     }
 
     [Fact]
     public void LockScreenAdsGroup_InspectsAndStagesBothCdmValues()
     {
-        // Not a ReadAll single anymore — the switch case must route it to the group
+        // Not a ReadAll single anymore. The switch case must route it to the group
         // reader, else the Privacy Baseline entry silently dies.
         var state = Inspector.Inspect(Entry("lock-screen-ads", "0"));
         Assert.NotNull(state);

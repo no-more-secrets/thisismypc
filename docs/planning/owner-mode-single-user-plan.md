@@ -21,13 +21,13 @@ Changes made through ThisIsMyPC update the chosen value. Changes outside the app
 
 These foundations are not a working automatic restoration feature. The production service only scans at startup. It does not register the consent store, journal, or coordinator.
 
-Uncommitted ProfileBaselineStore files remain experimental. Do not commit or expand their multi-profile merge behavior. Extract useful validation only if needed for the single-owner storage change.
+The single-owner store replaced the experimental multi-profile baseline. Production automatic restoration remains disabled.
 
 ## Delegation and spending boundaries
 
 One implementation worker per step, followed by a short independent review. The coordinator integrates and verifies. A second agent runs only for an independent test/review task. No manager agents or nested delegation.
 Each completed batch gets a commit and a checkpoint: observable behavior, tests, unresolved blockers, and measured usage if available. No unsupported cost or time estimate.
-Step 1 authorizes an audit and documentation only. Stop after this plan is committed. Recommend Step 2 as the next bounded batch; do not start it automatically.
+Each new step requires the next batch authorization. Steps 1 through 4 are complete. Stop at the Step 4 checkpoint before service activation and status work.
 
 ## 1. Scope audit and plan
 
@@ -105,7 +105,7 @@ Exit: verified subset restores correctly, pause works, history is truthful, and 
 
 Steps 1 and 2 are complete. Step 3 implements one fake-backed catalog target through the coordinator, strict baseline, eligibility, durable intent, pending changes, verification, and history import. Production registration stays disabled.
 
-The initial loop also caps total attempts at three per seven days. This conservative ceiling includes successful attempts; it does not classify an external edit as a Windows reversion. Uncertain outcomes and unmatched intents block further writes. The next checkpoint is Step 4: coordinate deliberate app changes and pause.
+The initial loop also caps total attempts at three per seven days. This conservative ceiling includes successful attempts; it does not classify an external edit as a Windows reversion. Uncertain outcomes and unmatched intents block further writes. Step 4 is complete: [deliberate changes and Pause](../owner-mode-deliberate-changes.md). Production app-only recovery saves consent-off and does not reconcile the restoration journal. Step 5 must connect trusted recovery, consent, service behavior, and status before automatic restoration can run.
 
 ## Deferred
 

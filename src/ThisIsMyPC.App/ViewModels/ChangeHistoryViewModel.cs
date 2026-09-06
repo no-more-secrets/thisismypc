@@ -215,18 +215,26 @@ public partial class ChangeHistoryViewModel : ViewModelBase
             return;
         }
 
-        var result = await _historyService.RevertChangeAsync(entry.Id, _revertFunc)
-            .ConfigureAwait(true);
-
-        if (!result.IsSuccess)
+        try
         {
-            ErrorMessage = result.ErrorCategory.HasValue
-                ? ErrorCategoryExtensions.ToGuidance(result.ErrorCategory.Value)
-                : result.ErrorMessage ?? "Restore failed.";
-            return;
-        }
+            var result = await _historyService.RevertChangeAsync(entry.Id, _revertFunc)
+                .ConfigureAwait(true);
 
-        await LoadHistoryAsync().ConfigureAwait(true);
+            if (!result.IsSuccess)
+            {
+                ErrorMessage = result.ErrorCategory.HasValue
+                    ? ErrorCategoryExtensions.ToGuidance(result.ErrorCategory.Value)
+                    : result.ErrorMessage ?? "Restore failed.";
+                return;
+            }
+
+            await LoadHistoryAsync().ConfigureAwait(true);
+        }
+        catch (Exception ex)
+        {
+            NLog.LogManager.GetCurrentClassLogger().Error(ex, "Restore could not complete coordination or persistence");
+            ErrorMessage = "Restore stopped. " + ex.Message;
+        }
     }
 
     [RelayCommand]
@@ -245,18 +253,26 @@ public partial class ChangeHistoryViewModel : ViewModelBase
             return;
         }
 
-        var result = await _historyService.RedoChangeAsync(entry.Id, _applyFunc)
-            .ConfigureAwait(true);
-
-        if (!result.IsSuccess)
+        try
         {
-            ErrorMessage = result.ErrorCategory.HasValue
-                ? ErrorCategoryExtensions.ToGuidance(result.ErrorCategory.Value)
-                : result.ErrorMessage ?? "Redo failed.";
-            return;
-        }
+            var result = await _historyService.RedoChangeAsync(entry.Id, _applyFunc)
+                .ConfigureAwait(true);
 
-        await LoadHistoryAsync().ConfigureAwait(true);
+            if (!result.IsSuccess)
+            {
+                ErrorMessage = result.ErrorCategory.HasValue
+                    ? ErrorCategoryExtensions.ToGuidance(result.ErrorCategory.Value)
+                    : result.ErrorMessage ?? "Redo failed.";
+                return;
+            }
+
+            await LoadHistoryAsync().ConfigureAwait(true);
+        }
+        catch (Exception ex)
+        {
+            NLog.LogManager.GetCurrentClassLogger().Error(ex, "Redo could not complete coordination or persistence");
+            ErrorMessage = "Redo stopped. " + ex.Message;
+        }
     }
 
     [RelayCommand]

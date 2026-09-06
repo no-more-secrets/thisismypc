@@ -11,17 +11,20 @@ public sealed class ChangeHistoryService : IChangeHistoryService
     private readonly string _dbPath;
     private readonly ReversibleChangeExecutor _executor;
     private readonly Drift.IDriftBaselineStore? _driftBaseline;
+    private readonly Drift.DeliberateChangeCoordinator? _deliberateChanges;
 
     public ChangeHistoryService(
         ChangeHistoryRepository repository,
         string? dbPath = null,
         IEnforcementExecutor? enforcementExecutor = null,
-        Drift.IDriftBaselineStore? driftBaseline = null)
+        Drift.IDriftBaselineStore? driftBaseline = null,
+        Drift.DeliberateChangeCoordinator? deliberateChanges = null)
     {
         _repository = repository;
         _dbPath = dbPath ?? Path.Combine(AppConstants.DataDirectoryPath, "history.db");
         _executor = new ReversibleChangeExecutor(enforcementExecutor);
         _driftBaseline = driftBaseline;
+        _deliberateChanges = deliberateChanges;
     }
 
     public async Task InitializeAsync()
@@ -84,9 +87,15 @@ public sealed class ChangeHistoryService : IChangeHistoryService
         return await _repository.GetAllAsync(limit, offset).ConfigureAwait(false);
     }
 
-    public async Task<OperationResult<bool>> RevertChangeAsync(
+    public Task<OperationResult<bool>> RevertChangeAsync(
         long historyId,
         Func<ChangeDescriptor, Task<OperationResult<bool>>> revertFunc)
+        => _deliberateChanges is null
+            ? RevertHeldAsync(historyId, revertFunc, null)
+            : _deliberateChanges.RunAsync((session, _) => RevertHeldAsync(historyId, revertFunc, session));
+
+    private async Task<OperationResult<bool>> RevertHeldAsync(long historyId,
+        Func<ChangeDescriptor, Task<OperationResult<bool>>> revertFunc, Drift.DeliberateChangeSession? session)
     {
         var entry = await _repository.GetByIdAsync(historyId).ConfigureAwait(false);
 
@@ -125,6 +134,7 @@ public sealed class ChangeHistoryService : IChangeHistoryService
         // Same routing rule as PendingChangesService: Enforcement != null goes through
         // the executor (revert direction; GPCache cleared after the primary revert so
         // e.g. the WU orchestrator can't keep enforcing the undone policy).
+        session?.Prepare([revertDescriptor]);
         var result = await RouteAsync(revertDescriptor, revertFunc, revert: true).ConfigureAwait(false);
 
         if (!result.IsSuccess)
@@ -160,13 +170,20 @@ public sealed class ChangeHistoryService : IChangeHistoryService
         // Undo changes the expected state too; a stale expectation would report the
         // user's own undo as drift at next boot.
         _driftBaseline?.RecordApplied([revertDescriptor]);
+        session?.RecordApplied([revertDescriptor]);
 
         return OperationResult<bool>.Success(true);
     }
 
-    public async Task<OperationResult<bool>> RedoChangeAsync(
+    public Task<OperationResult<bool>> RedoChangeAsync(
         long historyId,
         Func<ChangeDescriptor, Task<OperationResult<bool>>> applyFunc)
+        => _deliberateChanges is null
+            ? RedoHeldAsync(historyId, applyFunc, null)
+            : _deliberateChanges.RunAsync((session, _) => RedoHeldAsync(historyId, applyFunc, session));
+
+    private async Task<OperationResult<bool>> RedoHeldAsync(long historyId,
+        Func<ChangeDescriptor, Task<OperationResult<bool>>> applyFunc, Drift.DeliberateChangeSession? session)
     {
         var entry = await _repository.GetByIdAsync(historyId).ConfigureAwait(false);
 
@@ -209,6 +226,7 @@ public sealed class ChangeHistoryService : IChangeHistoryService
             Enforcement = entry.Enforcement,
         };
 
+        session?.Prepare([redoDescriptor]);
         var result = await RouteAsync(redoDescriptor, applyFunc, revert: false).ConfigureAwait(false);
 
         if (!result.IsSuccess)
@@ -240,6 +258,7 @@ public sealed class ChangeHistoryService : IChangeHistoryService
         await _repository.ClearRevertedAtAsync(historyId).ConfigureAwait(false);
 
         _driftBaseline?.RecordApplied([redoDescriptor]);
+        session?.RecordApplied([redoDescriptor]);
 
         return OperationResult<bool>.Success(true);
     }

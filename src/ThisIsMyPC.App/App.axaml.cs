@@ -39,6 +39,8 @@ public partial class App : Application
     private TrayService? _trayService;
     private AutoStartService? _autoStartService;
     private AccessibilityFontService? _fontService;
+    private bool _shutdownStarted;
+    private bool _shutdownReady;
 
     public override void Initialize()
     {
@@ -128,6 +130,13 @@ public partial class App : Application
                 }
             }
 
+            // Run after the tray close guard. A normal close must wait for active mutations too.
+            desktop.MainWindow.Closing += (_, e) =>
+            {
+                if (e.Cancel || _shutdownReady) return;
+                e.Cancel = true;
+                desktop.TryShutdown();
+            };
             desktop.ShutdownRequested += OnShutdownRequested;
         }
 
@@ -213,11 +222,40 @@ public partial class App : Application
         // degrades to ServiceUnavailable, never an error dialog.
         services.AddSingleton<ThisIsMyPC.Ipc.Contracts.IIpcClient>(_ => new ThisIsMyPC.Ipc.Contracts.IpcClient());
 
+        // Step 4 registers deliberate app writes only. No restoration loop is registered.
+        services.AddSingleton<Core.Coordination.IMutationLeaseProvider>(_ =>
+            new Interop.Win32.Coordination.NamedMutexMutationLeaseProvider(Core.Coordination.MutationLeaseNames.Production, "app"));
+        services.AddSingleton<Core.Drift.Consent.IMachineConsentStore>(_ =>
+            new Interop.Win32.Drift.Consent.MachineConsentStore());
+        services.AddSingleton(sp => new Core.Coordination.MutationCoordinator(
+            sp.GetRequiredService<Core.Coordination.IMutationLeaseProvider>(), (lease, token) =>
+            {
+                token.ThrowIfCancellationRequested();
+                // App-only recovery disables restoration durably. It does not reconcile the restoration journal.
+                // Never reuse this callback to enable or authorize the automatic restoration loop.
+                var off = sp.GetRequiredService<Core.Drift.Consent.IMachineConsentStore>().SetEnabled(false, lease);
+                return Task.FromResult(off.IsSuccess && off.State.Status == Core.Drift.Consent.MachineConsentStatus.Loaded && !off.State.Enabled
+                    ? Core.Results.OperationResult<bool>.Success(true)
+                    : Core.Results.OperationResult<bool>.Failure("Could not inhibit Owner Mode before the app change: " + off.State.Detail,
+                        Core.Results.ErrorCategory.ServiceUnavailable));
+            }));
+        services.AddSingleton(sp => new Core.Drift.Baseline.SingleOwnerBaselineStore(
+            new Interop.Win32.Drift.Baseline.MachineBaselineStorage(),
+            sp.GetRequiredService<Core.Coordination.IMutationLeaseProvider>().Name,
+            System.Security.Principal.WindowsIdentity.GetCurrent().User?.Value
+                ?? throw new InvalidOperationException("The primary Windows account SID is unavailable.")));
+        services.AddSingleton(sp => new Core.Drift.DeliberateChangeCoordinator(
+            sp.GetRequiredService<Core.Coordination.MutationCoordinator>(),
+            sp.GetRequiredService<Core.Drift.Baseline.SingleOwnerBaselineStore>(),
+            sp.GetRequiredService<IRegistryService>(), TimeProvider.System));
+
         // Owner Mode lifecycle (28-2): SCM registration + live capability probe.
         services.AddSingleton<IServiceInstaller, ServiceInstaller>();
         services.AddSingleton(sp => new OwnerModeService(
             sp.GetRequiredService<IServiceInstaller>(),
-            sp.GetRequiredService<IServiceControlService>()));
+            sp.GetRequiredService<IServiceControlService>(),
+            mutationLeaseProvider: sp.GetRequiredService<Core.Coordination.IMutationLeaseProvider>(),
+            consentStore: sp.GetRequiredService<Core.Drift.Consent.IMachineConsentStore>()));
 
         // Core Services. The capability detector is wrapped by the Debug page's
         // simulation seam: a pass-through until the Debug page (Debug builds only)
@@ -278,8 +316,14 @@ public partial class App : Application
 
     private async void OnShutdownRequested(object? sender, ShutdownRequestedEventArgs e)
     {
+        if (_shutdownReady) return;
+        e.Cancel = true;
+        if (_shutdownStarted) return;
+        _shutdownStarted = true;
         try
         {
+            if (_serviceProvider is not null)
+                await _serviceProvider.GetRequiredService<MainWindowViewModel>().PrepareForShutdownAsync().ConfigureAwait(true);
             _trayService?.Dispose();
             _trayService = null;
             _autoStartService?.Dispose();
@@ -290,13 +334,20 @@ public partial class App : Application
             _windowController = null;
             if (_serviceProvider is not null)
             {
-                await _serviceProvider.DisposeAsync().ConfigureAwait(false);
+                await _serviceProvider.DisposeAsync().ConfigureAwait(true);
                 _serviceProvider = null;
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Swallow shutdown cleanup failures to prevent crash during exit
+            Log.Error(ex, "Shutdown cleanup failed after waiting for active changes");
+        }
+        finally
+        {
+            _shutdownReady = true;
+            // Post after the cancelled request returns, avoiding recursive lifetime shutdown.
+            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => desktop.Shutdown());
         }
     }
 

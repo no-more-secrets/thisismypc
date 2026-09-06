@@ -513,7 +513,11 @@ public sealed class AnnoyancesSettingsReader
         else
         {
             var read = _registryService.ReadDWord(keyPath, valueName);
-            currentValue = read.IsSuccess ? read.Value!.ToString() : defaultValue;
+            var protectedTarget = Core.Drift.RestorationCatalog.Default.FindByLocation(keyPath, valueName);
+            // Catalog staging must preserve absence, so undo deletes the value instead of inventing a default.
+            currentValue = read.IsSuccess ? read.Value!.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                : protectedTarget is not null && read.ErrorCategory == Core.Results.ErrorCategory.NotFound
+                    ? string.Empty : defaultValue;
         }
 
         return new AnnoyancePreference(

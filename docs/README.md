@@ -12,6 +12,7 @@ anything here; `planning/refinement-backlog.md` is the plan and status.
 | Document | What it is |
 |---|---|
 | [avalonia-guide.md](avalonia-guide.md) | Avalonia patterns this app relies on: compiled bindings, Popup limits, command binding inside templates, thread marshaling, NativeAOT constraints, theme and font setup. |
+| [owner-mode-deliberate-changes.md](owner-mode-deliberate-changes.md) | Shared mutation boundary, baseline invalidation, and durable Pause behavior. |
 | [sets-schema.md](sets-schema.md) | JSON schema for tweak set definitions, built-in and user. |
 | [testing/context-menu-diagnostics.md](testing/context-menu-diagnostics.md) | Diagnostic and integration tests that dump the real registry state for context menus. UI verification itself uses the headless sight harness in `tests/ThisIsMyPC.App.UiTests`. |
 | [agentic-tooling.md](agentic-tooling.md) | Claude Code skills, MCP servers, and IDE setup used on this codebase. |

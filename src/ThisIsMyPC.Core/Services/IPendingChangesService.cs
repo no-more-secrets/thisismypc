@@ -63,4 +63,11 @@ public interface IPendingChangesService : INotifyPropertyChanged
 
         return ApplyAllAsync(applyFunc, revertFunc);
     }
+    /// <summary>Runs preparation against the exact batch snapshot before any writer. Unsupported queues refuse it.</summary>
+    Task<MutationResult> ApplyAllAsync(
+        Func<ChangeDescriptor, Task<OperationResult<bool>>> applyFunc,
+        Func<ChangeDescriptor, Task<OperationResult<bool>>> revertFunc,
+        Action<IReadOnlyList<ChangeDescriptor>> prepare,
+        CancellationToken cancellationToken)
+        => throw new NotSupportedException("This queue does not support coordinated preparation.");
 }
