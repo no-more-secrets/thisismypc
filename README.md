@@ -1,9 +1,15 @@
 # ThisIsMyPC
 
-A Windows 11 system-control app that puts the scattered power-user utilities
-in one place and makes every change reversible. It covers the ground of
-Autoruns, ShellExView, O&O ShutUp10, winutil, and UniGetUI, with a state capture for every change and thorough undo options. It is GPLv3, it has no
-telemetry and no account, and it covers an entire Windows install.
+**Your PC. Your rules.**
+
+You paid for it. Maybe you even built it yourself. Controlling it should not take a dozen apps and a digital sparring match with a multibillion dollar corporation.
+
+ThisIsMyPC brings together years of effort by like-minded developers and Windows users with one goal in mind: Actually owning your hardware, inside-out.
+
+Open source, free and yours forever. No accounts, no telemetry. Only the things you ask for. Set it up your way, and it'll stay that way.
+
+Say it with me.<br>
+**This is MY PC.**
 
 This repository is developed by AI coding agents (Claude Code) under the human owner (Sam Boland). This file and everything under `docs/` are AI-written and checked
 against the code. The operating rules an agent needs are in
