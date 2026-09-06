@@ -36,6 +36,8 @@ Windows Update 5, Power 1) + 5 built-in sets (59 entries) + the enumerative modu
 
 ## Collapsed sidebar spacing (2026-09-06)
 
+- DONE: Collapsed navigation centers the larger icons inside selection highlights. Verified icon centers at 90%, 100%, and 150% zoom in both themes. GitHub retains its original brand logo.
+
 - DONE: Collapsed sidebar icons keep the expanded sidebar's group spacing while group titles remain hidden. Verified matching group gaps at 90% zoom in both themes. Full tests and Release build passed.
 
 ## App zoom (2026-09-06)

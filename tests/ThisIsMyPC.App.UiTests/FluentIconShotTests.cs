@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.VisualTree;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Layout;
@@ -61,7 +62,20 @@ public class FluentIconShotTests
             session.Screenshot($"module-{theme.Key}");
             vm.IsSidebarCollapsed = true;
             session.Pump();
-            session.Screenshot($"collapsed-{theme.Key}");
+            foreach (var zoom in new[] { 90, 100, 150 })
+            {
+                vm.ZoomPercent = zoom;
+                session.Pump();
+                foreach (var button in session.FindAll<Button>(b => b.Classes.Contains("sidebar-item")))
+                {
+                    var icon = button.GetVisualDescendants().OfType<FluentIcon>().Single();
+                    var center = icon.TranslatePoint(new Point(icon.Bounds.Width / 2, icon.Bounds.Height / 2), button)!.Value;
+                    Assert.Equal(button.Bounds.Width / 2, center.X, 0.6);
+                    Assert.Equal(button.Bounds.Height / 2, center.Y, 0.6);
+                }
+                session.Screenshot($"collapsed-{theme.Key}-{zoom}");
+            }
+            vm.ZoomPercent = 100;
             vm.IsSidebarCollapsed = false;
         }
     }

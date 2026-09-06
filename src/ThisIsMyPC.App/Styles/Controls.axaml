@@ -139,7 +139,7 @@
     <!-- Sidebar module item button: an inset rounded row (6px off the sidebar
          edges), so the active highlight never butts against the page panel's
          fillet. Icon x stays at 15 (6 margin + 9 padding), matching the group
-         header. Collapsed sidebar (48) leaves exactly 18 for the icon. -->
+         header. Collapsed items center their icons within the highlight. -->
     <Style Selector="Button.sidebar-item">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderThickness" Value="0" />
@@ -149,6 +149,11 @@
         <Setter Property="Padding" Value="9,8" />
         <Setter Property="CornerRadius" Value="8" />
         <Setter Property="Cursor" Value="Hand" />
+    </Style>
+
+    <Style Selector="Border.sidebar.collapsed Button.sidebar-item">
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="Padding" Value="0,8" />
     </Style>
 
     <Style Selector="Button.sidebar-item:pointerover /template/ ContentPresenter">
