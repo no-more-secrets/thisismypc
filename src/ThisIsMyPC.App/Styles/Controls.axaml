@@ -188,6 +188,12 @@
         <Setter Property="LetterSpacing" Value="1.5" />
     </Style>
 
+    <!-- Keep the group header footprint when only icons are shown. -->
+    <Style Selector="TextBlock.sidebar-group-header.collapsed">
+        <Setter Property="Opacity" Value="0" />
+        <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+
     <!-- Sidebar toggle button -->
     <!-- Title bar icon buttons (shortcuts): the app's discrete rimmed
          surface, as a 28px circle hugging a 16px glyph. -->

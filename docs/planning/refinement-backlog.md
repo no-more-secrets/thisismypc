@@ -10,6 +10,10 @@ Current coverage baseline: ~40 fixed toggles (Explorer 13, Annoyances 21 cards,
 Windows Update 5, Power 1) + 5 built-in sets (59 entries) + the enumerative modules
 (Context Menus, Environment, Startup & Services, Power grid).
 
+## Collapsed sidebar spacing (2026-09-06)
+
+- DONE: Collapsed sidebar icons keep the expanded sidebar's group spacing while group titles remain hidden. Verified matching group gaps at 90% zoom in both themes. Full tests and Release build passed.
+
 ## App zoom (2026-09-06)
 
 - DONE: Ctrl+= and Ctrl+- zoom the entire app in 10% steps from 50% to 150%. Ctrl+0 resets to 100%; numpad shortcuts also work.

@@ -187,7 +187,7 @@
                                     <!-- Group header -->
                                     <TextBlock Text="{Binding GroupName}"
                                                Classes="sidebar-group-header"
-                                               IsVisible="{Binding !$parent[Window].((vm:MainWindowViewModel)DataContext).IsSidebarCollapsed}" />
+                                               Classes.collapsed="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).IsSidebarCollapsed}" />
 
                                     <!-- Module items -->
                                     <ItemsControl ItemsSource="{Binding Items}">
