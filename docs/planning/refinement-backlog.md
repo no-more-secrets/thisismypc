@@ -26,7 +26,8 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 - DONE: Typed present/absent snapshots and an immutable exact-target catalog for eleven non-policy Annoyances settings. Invalid value data, account SID syntax, and incompatible enforcement are rejected.
 - Verified: 163 Drift tests, full CI-safe suite, Release build, and review corrections. Reader values checked against the module source. Executable provider parity coverage adds 67 cases; the Annoyances suite passes 142 tests.
 - DONE: Shared reversible execution now routes apply, rollback, undo, and redo consistently. Restoration preparation validates shipped targets and issues immutable preparations. Scoped tests, full suite, Release build, and review fixes passed.
-- Pending: cross-process coordination, durable journal/history, management checks, consent, and service/UI wiring. No automatic restoration is enabled.
+- DONE: Pure eligibility gates require explicit consent, loaded-profile evidence, exact unmanaged-target evidence, and a bounded retry history. Append-only journal contracts flush intents before issuing permits and preserve recovery evidence without granting undo.
+- Pending: native coordination validation, production trust adapters, transactional history import, management/profile probing, consent persistence, and service/UI wiring. No automatic restoration is enabled.
 - Design: [Owner Mode restoration](owner-mode-restoration.md).
 ## System pages and Settings organization (2026-09-06)
 
