@@ -20,12 +20,15 @@ Click the pencil icon on a highlight to write or edit its text note.
 Click Save to keep the note or Cancel to discard the edit. N also opens the selected figure's note.
 Typing is optional; spoken instructions can refer directly to figure numbers.
 Press Delete to remove the selected figure when the note editor is closed.
-Remaining figures keep their numbers. Deleted numbers are not reused within that review.
+Remaining figures keep their numbers. Deleted numbers are not reused, including after an app restart.
 Press Escape to cancel an open note editor. Otherwise, Escape returns to navigation and keeps the figures.
 Ctrl+Shift+A toggles between annotation and navigation. Saved figures remain available in both modes.
 Toggling out saves an open note. If saving fails, annotation stays open so you can retry.
-Press Ctrl+Shift+Alt+A to clear all figures and start a new review session.
-Figure numbers reset only when the review session is cleared.
+Click Resolve in the note editor to finish a note. It moves to history.
+Click Notes, or press H, to list notes from every page and window size.
+Enable Show resolved notes to read history, view its captures, or reopen a note.
+Escape closes the Notes panel before returning to navigation.
+Press Ctrl+Shift+Alt+A to delete all open notes. Resolved history and the next figure number remain.
 
 The frozen view stays unchanged while the underlying app updates.
 Switching to the conversation keeps completed figures available.
@@ -35,7 +38,8 @@ You can select, edit, or delete those figures. Visiting another page retains the
 Resizing pauses annotation. Reopening at new dimensions captures the live layout as a separate view.
 Returning to earlier dimensions, display scale, and sidebar state restores that view's figures and notes.
 Figure numbers remain unique across all views in the session. Dimensions describe the client area in logical pixels.
-A saved view stays frozen even if live content changes at the same size. Clear the session to refresh that view.
+A saved view stays frozen even if live content changes at the same size.
+Resolve or delete its open notes, then toggle annotation to capture the updated page.
 Separate windows and native popups are outside this prototype.
 
 ## Agent access
@@ -47,7 +51,7 @@ When Sam says a figure is selected or refers to figure numbers, retrieve the cur
 ```
 
 Check `active` before using the record. Inspect the PNG at `imagePath` using the agent's image tool.
-Schema 3 includes a `figures` array with each figure's number, identifier, bounds, note, and `pageRoute`.
+Schema 4 includes a `figures` array with each figure's number, identifier, bounds, note, and `pageRoute`.
 Each figure also includes `captureId`, `capturedAtUtc`, and `imagePath` for its exact frozen view.
 Group figures by `captureId` and inspect every referenced image when reviewing multiple pages.
 The `captures` array includes `logicalWidth`, `logicalHeight`, PNG pixel dimensions, and `renderScale` for each capture.
@@ -56,13 +60,37 @@ Each capture also records `layoutState` to distinguish expanded and collapsed si
 `active` means figures are available; `suspended` means the user can navigate the live app.
 Use `selectedFigureNumber` for the current selection. Figure numbers belong to the recorded review session.
 The top-level single-selection fields remain available for compatibility.
-The reader accepts schemas 1 and 2 from older running builds, plus schema 3.
+The reader accepts schemas 1 through 4. Schema 4 keeps open notes in `figures` and history in `resolvedFigures`.
+History records `resolvedAtUtc` and `resolutionNote`. `nextFigureNumber` preserves numbering after deletion.
 Use the capture time and session identity to avoid confusing figures from different reviews.
-The reader rejects an ended process or any missing capture image. It does not execute anything from the record.
+Schema 4 notes remain valid after the app exits. `processActive` reports whether the recorded process still runs.
+Missing PNGs appear in `missingImages`; text feedback remains available. Legacy records still require a running process.
+The reader rejects image paths outside the review directory. It does not execute anything from the record.
 
-Captures live under `artifacts/diagnostics/region-review/` and are gitignored.
+Captures live under `.region-review/` at the repository root and are gitignored.
+Build-output cleanup does not remove this directory. It is local data and does not sync through Git.
 The current record is `latest.json`. Each exported image has a unique name.
-Images remain after clearing. Normal build-output cleanup can remove them.
+A separate `rawImagePath` keeps a clean frame so resolved or deleted boxes cannot reappear inside a restored image.
+Completed figures and saved notes persist immediately. Closing the app saves an open note editor when storage is available.
+If storage fails, the last successful record remains. Unsaved editor text cannot survive a forced process exit.
+
+The first updated run imports the previous `artifacts/diagnostics/region-review/latest.json` when no durable record exists.
+Legacy captures lack a clean frame. Their notes remain in Notes as reference captures, with Resolve and View capture actions.
+Missing or corrupt clean frames do not erase text notes. The tool reports the problem or provides a reference capture.
+Notes already erased by an older build cannot be recovered automatically.
+
+After implementing and verifying feedback, resolve the exact figure:
+
+```powershell
+.\tools\set-region-review-status.ps1 -SessionId <recorded-session-id> -FigureNumber 1 -ResolutionNote "Implemented and verified"
+```
+
+Use `-Status open` to reopen it. Check `applied` before reporting success.
+The script queues commands while the app owns the review, then waits briefly for a receipt.
+An open text editor defers commands until editing finishes. `pending: true` is not a confirmed resolution.
+With the app closed, the script locks and updates the durable record directly.
+Session and figure identity checks prevent changes to another review. A second app cannot overwrite an owned review.
+Both scripts accept `-Directory` for an explicit review directory.
 No image upload, network listener, or automatic conversation trigger is included.
 Sam marks the view and then speaks or writes here; the agent retrieves the figures during that turn.
 The record and PNG form the boundary for a later MCP adapter.
@@ -83,6 +111,6 @@ Each capture keeps its route even after the user navigates elsewhere.
 
 ## Validation
 
-The CI-safe Debug suite passes all 1,609 tests. The Release solution build passes.
-All eight targeted headless tests pass, including distinct responsive layouts, original-size restoration, pencil clicks, and capture DPI.
-Headless screenshots were inspected. Native voice interaction and live monitor changes remain untested.
+Regression tests cover restart restoration, notes across routes and dimensions, stable numbers, resolve/reopen, clean frames,
+failed writes, a second instance, missing frames, corrupt records, and deferred agent commands.
+Headless screenshots cover Notes in both themes. Native voice interaction and live monitor changes still need manual verification.

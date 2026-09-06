@@ -304,6 +304,11 @@ public partial class MainWindow : Window
         if (_regionReviewOverlay?.IsReviewActive != true)
             return;
 
+        if (_regionReviewOverlay.IsNotesOpen)
+        {
+            if (e.Key == Key.Escape) { _regionReviewOverlay.HideNotes(); e.Handled = true; }
+            return;
+        }
         if (_regionReviewOverlay.IsEditingNote)
         {
             if (e.Key == Key.Escape)
@@ -316,6 +321,8 @@ public partial class MainWindow : Window
 
         if (e.Key == Key.Escape)
             _regionReviewOverlay.Suspend();
+        else if (e.Key == Key.H)
+            _regionReviewOverlay.ShowNotes();
         else if (e.Key == Key.N)
             _regionReviewOverlay.EditSelectedNote();
         else if (e.Key == Key.Delete)

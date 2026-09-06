@@ -235,14 +235,18 @@ dotnet test tests/ThisIsMyPC.App.UiTests --configuration Release --filter "Categ
 Ctrl+Shift+A toggles frozen annotation and live navigation. Each drag adds a figure
 with a stable number across pages. Badge clicks select figures; pencil clicks edit notes;
 Delete removes the selected figure. Escape cancels a note editor or suspends review.
-Ctrl+Shift+Alt+A clears the whole session. Switching pages does not clear figures.
+Ctrl+Shift+Alt+A deletes open notes. Resolved history and numbering remain.
+Notes persist across app restarts in .region-review/, outside build artifacts.
+Use Notes (H) to resolve or reopen notes across pages. Switching pages does not clear figures.
 Saved views are keyed by page route, client dimensions, display scale, and sidebar state. New sizes
 capture the live layout; returning to an earlier size restores its visible figures.
 Read captures[].logicalWidth/logicalHeight and renderScale for dimension-specific reports.
-Read tools/read-region-selection.ps1 and check active. Schema 3 figures include
+Read tools/read-region-selection.ps1 and check active. Schema 4 figures include
 pageRoute, captureId, imagePath, bounds, and notes. Group by captureId and inspect
-each image. A suspended review still contains valid figures. Never use a stale
-process record or assume earlier figures refer to the current live page.
+each image. Suspended and stopped schema 4 reviews still contain valid feedback.
+After implementing and verifying a note, use tools/set-region-review-status.ps1
+with its exact session and figure number. Confirm applied before reporting resolution.
+Never assume earlier figures refer to the current live page.
 See docs/region-review.md for controls, route identifiers, and prototype limits.
 
 ### UI review checklist (learned the hard way, 2026-09-02)

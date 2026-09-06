@@ -70,3 +70,6 @@ $RECYCLE.BIN/
 # Cloned repos are ignored to prevent gitlink/submodule references.
 deps/*/
 
+
+# Persistent local annotations and private captures
+.region-review/

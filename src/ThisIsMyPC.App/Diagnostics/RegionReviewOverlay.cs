@@ -1,5 +1,7 @@
 #if DEBUG
 using System.Globalization;
+using System.Text.Json;
+using Avalonia.Threading;
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
@@ -10,7 +12,7 @@ using Avalonia.VisualTree;
 
 namespace ThisIsMyPC.App.Diagnostics;
 
-internal sealed class RegionReviewOverlay : Panel
+internal sealed partial class RegionReviewOverlay : Panel
 {
     private static readonly IBrush ShadeBrush = new SolidColorBrush(Color.FromArgb(80, 0, 0, 0));
     private static readonly IBrush FillBrush = new SolidColorBrush(Color.FromArgb(48, 255, 72, 72));
@@ -24,12 +26,21 @@ internal sealed class RegionReviewOverlay : Panel
     private readonly Func<string> pageRouteResolver;
     private readonly Func<string> layoutStateResolver;
     private readonly List<FigureState> figures = [];
+    private readonly List<FigureState> resolvedFigures = [];
+    private readonly Button notesButton;
+    private readonly Border notesHost;
+    private readonly StackPanel notesList;
+    private readonly CheckBox showResolved;
+    private readonly List<Bitmap> previews = [];
+    private readonly DispatcherTimer commandTimer;
+    private bool loaded;
+    private bool closed;
     private readonly List<CaptureState> captures = [];
     private readonly DrawingPresenter drawingPresenter;
     private readonly TextBox noteEditor;
     private readonly Border editorHost;
     private readonly Dictionary<int, Button> pencilButtons = [];
-    private RenderTargetBitmap? frozenFrame;
+    private Bitmap? frozenFrame;
     private Point dragStart;
     private Point dragCurrent;
     private DateTime frozenCapturedAtUtc;
@@ -64,6 +75,12 @@ internal sealed class RegionReviewOverlay : Panel
             MinHeight = 72,
         };
         var saveButton = new Button { Content = "Save", MinWidth = 72 };
+        var resolveButton = new Button { Content = "Resolve", MinWidth = 72 };
+        resolveButton.Click += (_, _) =>
+        {
+            SaveNote();
+            if (!IsEditingNote && SelectedFigure is { } figure) SetResolved(figure.Id, true, "Resolved in app");
+        };
         var cancelButton = new Button { Content = "Cancel", MinWidth = 72 };
         saveButton.Click += (_, _) => SaveNote();
         cancelButton.Click += (_, _) => CancelNote();
@@ -72,7 +89,7 @@ internal sealed class RegionReviewOverlay : Panel
             Orientation = Avalonia.Layout.Orientation.Horizontal,
             Spacing = 8,
             HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right,
-            Children = { cancelButton, saveButton },
+            Children = { resolveButton, cancelButton, saveButton },
         };
         editorHost = new Border
         {
@@ -89,9 +106,32 @@ internal sealed class RegionReviewOverlay : Panel
         KeyboardNavigation.SetTabNavigation(editorHost, KeyboardNavigationMode.Cycle);
         Children.Add(drawingPresenter);
         Children.Add(editorHost);
+        notesButton = new Button { Content = "Notes", Padding = new Thickness(12, 6) };
+        AutomationProperties.SetName(notesButton, "Review notes and resolved history");
+        notesButton.Click += (_, _) => ShowNotes();
+        notesList = new StackPanel { Spacing = 10 };
+        showResolved = new CheckBox { Content = "Show resolved notes" };
+        showResolved.IsCheckedChanged += (_, _) => RefreshNotes();
+        var closeNotes = new Button { Content = "Close notes" };
+        closeNotes.Click += (_, _) => HideNotes();
+        var notesLayout = new DockPanel { LastChildFill = true };
+        var notesHeader = new StackPanel { Spacing = 8,
+            Children = { new TextBlock { Text = "Review notes", FontSize = 18 }, showResolved, closeNotes } };
+        DockPanel.SetDock(notesHeader, Dock.Top);
+        notesLayout.Children.Add(notesHeader);
+        notesLayout.Children.Add(new ScrollViewer { Content = notesList, Margin = new Thickness(0, 12, 0, 0) });
+        notesHost = new Border { Background = HintBrush, Padding = new Thickness(16), CornerRadius = new CornerRadius(8),
+            BorderBrush = FigureBrush, BorderThickness = new Thickness(1), Child = notesLayout, IsVisible = false };
+        notesHost.Bind(Border.BackgroundProperty, this.GetResourceObservable("RaisedBrush"));
+        Children.Add(notesButton);
+        Children.Add(notesHost);
+        commandTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        commandTimer.Tick += (_, _) => ProcessCommands();
     }
 
     internal bool IsReviewActive => IsVisible;
+    internal bool IsNotesOpen => notesHost.IsVisible;
+    internal int ResolvedFigureCount => resolvedFigures.Count;
     internal bool IsEditingNote => editorHost.IsVisible;
     internal bool CanSelect => frozenFrame is not null;
     internal Func<RenderTargetBitmap>? CaptureOverride { get; set; }
@@ -108,14 +148,26 @@ internal sealed class RegionReviewOverlay : Panel
 
     internal void Start()
     {
+        if (closed) return;
+        HideNotes();
         dragging = false;
         CancelNote();
         IsVisible = true;
-        if (figures.Count == 0 && captures.Count == 0)
+        if (!loaded)
+        {
+            try { LoadSavedReview(); }
+            catch (Exception exception)
+            {
+                failureMessage = $"Cannot restore review: {exception.Message}";
+                Focus(); InvalidateVisual(); return;
+            }
+        }
+        ProcessCommands();
+        if (figures.Count == 0 && resolvedFigures.Count == 0 && captures.Count == 0 && activeRecord is null)
         {
             store.StartSession();
             selectedFigureNumber = null;
-            nextFigureNumber = 1;
+            // Number allocation survives deleting the last open note.
             activeRecord = null;
             if (!WriteInactiveRecord(suspended: false))
             {
@@ -133,9 +185,18 @@ internal sealed class RegionReviewOverlay : Panel
             && Math.Abs(capture.LogicalWidth - window.ClientSize.Width) < 0.01
             && Math.Abs(capture.LogicalHeight - window.ClientSize.Height) < 0.01
             && Math.Abs(capture.RenderScale - window.RenderScaling) < 0.001
+            && !string.IsNullOrEmpty(capture.RawImagePath) && File.Exists(capture.RawImagePath)
             && figures.Any(figure => figure.CaptureId == capture.Id));
         if (currentCapture is not null)
         {
+            try { currentCapture.Frame ??= new Bitmap(currentCapture.RawImagePath!); }
+            catch (Exception exception)
+            {
+                frozenFrame = null;
+                failureMessage = $"Saved capture unavailable: {exception.Message}. Open Notes to read the preserved feedback.";
+                currentCapture = null;
+                Focus(); InvalidateVisual(); return;
+            }
             frozenFrame = currentCapture.Frame;
             frozenCapturedAtUtc = currentCapture.CapturedAtUtc;
             selectedFigureNumber = CurrentFigures.LastOrDefault()?.Number;
@@ -174,6 +235,7 @@ internal sealed class RegionReviewOverlay : Panel
     {
         if (!IsVisible)
             return;
+        HideNotes();
         CancelDrag();
         if (IsEditingNote)
         {
@@ -192,9 +254,9 @@ internal sealed class RegionReviewOverlay : Panel
         IsVisible = false;
         frozenFrame = null;
         selectedFigureNumber = null;
-        if (currentCapture is not null && !figures.Any(figure => figure.CaptureId == currentCapture.Id))
+        if (currentCapture is not null && !figures.Concat(resolvedFigures).Any(figure => figure.CaptureId == currentCapture.Id))
         {
-            currentCapture.Frame.Dispose();
+            currentCapture.Frame?.Dispose();
             captures.Remove(currentCapture);
         }
         currentCapture = null;
@@ -202,13 +264,15 @@ internal sealed class RegionReviewOverlay : Panel
 
     internal void Reset()
     {
+        if (!loaded || closed) return;
         if (!WriteInactiveRecord())
             return;
+        HideNotes();
         SuspendFrame();
         ClearPencilButtons();
         figures.Clear();
-        captures.Clear();
-        nextFigureNumber = 1;
+        captures.RemoveAll(c => !resolvedFigures.Any(f => f.CaptureId == c.Id));
+        // Clear removes open notes only; resolved history and numbering remain.
         activeRecord = null;
     }
 
@@ -216,13 +280,21 @@ internal sealed class RegionReviewOverlay : Panel
 
     internal void Close()
     {
-        if (!WriteInactiveRecord())
-            return;
+        if (closed) return;
+        closed = true;
+        commandTimer.Stop();
+        if (loaded)
+        {
+            if (IsEditingNote) SaveNote();
+            WriteExistingRecord(suspended: true);
+        }
         SuspendFrame();
         ClearPencilButtons();
+        HideNotes();
         figures.Clear();
+        resolvedFigures.Clear();
         captures.Clear();
-        activeRecord = null;
+        store.Dispose();
     }
 
     private void SuspendFrame()
@@ -233,7 +305,8 @@ internal sealed class RegionReviewOverlay : Panel
         CancelNote();
         IsVisible = false;
         foreach (var capture in captures)
-            capture.Frame.Dispose();
+            capture.Frame?.Dispose();
+        foreach (var capture in captures) capture.Frame = null;
         frozenFrame = null;
         selectedFigureNumber = null;
         currentCapture = null;
@@ -264,6 +337,10 @@ internal sealed class RegionReviewOverlay : Panel
     protected override Size ArrangeOverride(Size finalSize)
     {
         drawingPresenter.Arrange(new Rect(finalSize));
+        notesButton.Arrange(new Rect(Math.Max(8, finalSize.Width - 110), Math.Max(8, finalSize.Height - 44), 100, 36));
+        if (notesHost.IsVisible)
+            notesHost.Arrange(new Rect(Math.Max(8, finalSize.Width - 448), 52,
+                Math.Min(432, Math.Max(100, finalSize.Width - 16)), Math.Max(100, finalSize.Height - 108)));
         var viewport = Viewport;
         foreach (var (number, button) in pencilButtons)
         {
@@ -330,6 +407,7 @@ internal sealed class RegionReviewOverlay : Panel
         var isFromEditor = IsFromEditor(e.Source);
         if (isFromEditor
             || IsFromPencil(e.Source)
+            || IsFromNotes(e.Source) || IsNotesOpen
             || IsEditingNote
             || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed
             || frozenFrame is null)
@@ -405,6 +483,7 @@ internal sealed class RegionReviewOverlay : Panel
 
     protected override void OnKeyDown(KeyEventArgs e)
     {
+        if (IsNotesOpen) { if (e.Key == Key.Escape) { HideNotes(); e.Handled = true; } return; }
         if (IsEditingNote)
         {
             if (e.Key == Key.Escape)
@@ -417,6 +496,8 @@ internal sealed class RegionReviewOverlay : Panel
 
         if (e.Key == Key.Escape)
             Suspend();
+        else if (e.Key == Key.H)
+            ShowNotes();
         else if (e.Key == Key.N)
             EditSelectedNote();
         else if (e.Key == Key.Delete)
@@ -556,13 +637,19 @@ internal sealed class RegionReviewOverlay : Panel
 
     private bool SaveCurrentState(bool suspended = false)
     {
-        var selected = SelectedFigure ?? figures.LastOrDefault();
+        var selected = SelectedFigure ?? CurrentFigures.LastOrDefault() ?? resolvedFigures.LastOrDefault(f => f.CaptureId == currentCapture?.Id) ?? figures.LastOrDefault() ?? resolvedFigures.LastOrDefault();
         if (selected is null || currentCapture is null)
             return figures.Count == 0;
         try
         {
             Directory.CreateDirectory(store.OutputDirectory);
             failureMessage = null;
+            if (string.IsNullOrEmpty(currentCapture.RawImagePath))
+            {
+                var rawPath = Path.Combine(store.OutputDirectory, $"base-{currentCapture.Id}.png");
+                frozenFrame!.Save(rawPath);
+                currentCapture.RawImagePath = rawPath;
+            }
             var imagePath = Path.GetFullPath(Path.Combine(
                 store.OutputDirectory,
                 $"region-{DateTime.UtcNow:yyyyMMdd-HHmmssfff}-{Guid.NewGuid():N}.png"));
@@ -570,13 +657,13 @@ internal sealed class RegionReviewOverlay : Panel
             annotatedFrame.Save(imagePath);
             var figureRecords = figures.Select(figure => figure.CaptureId == currentCapture.Id
                 ? ToRecord(figure, imagePath) : ToRecord(figure)).ToArray();
-            var referencedCaptureIds = figureRecords.Select(figure => figure.CaptureId).ToHashSet(StringComparer.Ordinal);
+            var referencedCaptureIds = figureRecords.Concat(resolvedFigures.Select(f => ToRecord(f))).Select(figure => figure.CaptureId).ToHashSet(StringComparer.Ordinal);
             var captureRecords = captures.Where(capture => referencedCaptureIds.Contains(capture.Id))
                 .Select(capture => capture.Id == currentCapture.Id
                     ? ToRecord(capture, imagePath, annotatedFrame.PixelSize.Width, annotatedFrame.PixelSize.Height)
                     : ToRecord(capture)).ToArray();
             var record = store.CreateRecord(
-                true,
+                figures.Count > 0,
                 selected.Id,
                 frozenCapturedAtUtc,
                 window.Title ?? string.Empty,
@@ -589,6 +676,7 @@ internal sealed class RegionReviewOverlay : Panel
                 figureRecords,
                 captureRecords,
                 suspended);
+            record = record with { NextFigureNumber = nextFigureNumber, ResolvedFigures = resolvedFigures.Select(f => ToRecord(f)).ToArray() };
             store.Write(record);
             currentCapture.ImagePath = imagePath;
             currentCapture.PixelWidth = annotatedFrame.PixelSize.Width;
@@ -610,16 +698,17 @@ internal sealed class RegionReviewOverlay : Panel
         var selected = SelectedFigure ?? figures.LastOrDefault();
         var capture = selected is null ? null : captures.FirstOrDefault(item => item.Id == selected.CaptureId);
         if (selected is null || capture is null)
-            return true;
+            return WriteInactiveRecord(suspended);
         try
         {
-            var referencedCaptureIds = figures.Select(figure => figure.CaptureId).ToHashSet(StringComparer.Ordinal);
-            var record = store.CreateRecord(true, selected.Id, selected.CapturedAtUtc,
+            var referencedCaptureIds = figures.Concat(resolvedFigures).Select(figure => figure.CaptureId).ToHashSet(StringComparer.Ordinal);
+            var record = store.CreateRecord(figures.Count > 0, selected.Id, selected.CapturedAtUtc,
                 window.Title ?? string.Empty, ToBounds(selected.Bounds), capture.RenderScale,
                 capture.PixelWidth, capture.PixelHeight, selected.ImagePath, selected.Number,
                 figures.Select(figure => ToRecord(figure)).ToArray(),
                 captures.Where(item => referencedCaptureIds.Contains(item.Id))
-                    .Select(item => ToRecord(item)).ToArray(), suspended);
+                    .Select(item => ToRecord(item)).ToArray(), suspended) with
+            { NextFigureNumber = nextFigureNumber, ResolvedFigures = resolvedFigures.Select(f => ToRecord(f)).ToArray() };
             store.Write(record);
             activeRecord = record;
             return true;
@@ -674,7 +763,8 @@ internal sealed class RegionReviewOverlay : Panel
                 null,
                 [],
                 [],
-                suspended));
+                suspended) with { NextFigureNumber = nextFigureNumber, ResolvedFigures = resolvedFigures.Select(f => ToRecord(f)).ToArray(),
+                    Captures = captures.Where(c => resolvedFigures.Any(f => f.CaptureId == c.Id)).Select(c => ToRecord(c)).ToArray() });
             return true;
         }
         catch (Exception exception)
@@ -822,6 +912,8 @@ internal sealed class RegionReviewOverlay : Panel
         Id = figure.Id,
         Bounds = ToBounds(figure.Bounds),
         Note = figure.Note,
+        ResolvedAtUtc = figure.ResolvedAtUtc,
+        ResolutionNote = figure.ResolutionNote,
         PageRoute = figure.PageRoute,
         CaptureId = figure.CaptureId,
         CapturedAtUtc = figure.CapturedAtUtc,
@@ -841,6 +933,7 @@ internal sealed class RegionReviewOverlay : Panel
         LogicalWidth = capture.LogicalWidth,
         LogicalHeight = capture.LogicalHeight,
         LayoutState = capture.LayoutState,
+        RawImagePath = capture.RawImagePath,
     };
 
     private static void DrawText(DrawingContext context, string text, Point origin)
@@ -885,6 +978,8 @@ internal sealed class RegionReviewOverlay : Panel
         internal string Id { get; } = id;
         internal Rect Bounds { get; } = bounds;
         internal string? Note { get; set; } = note;
+        internal DateTime? ResolvedAtUtc { get; set; }
+        internal string? ResolutionNote { get; set; }
         internal string CaptureId { get; } = captureId;
         internal string PageRoute { get; } = pageRoute;
         internal DateTime CapturedAtUtc { get; } = capturedAtUtc;
@@ -893,7 +988,7 @@ internal sealed class RegionReviewOverlay : Panel
 
     private sealed class CaptureState(string id, string pageRoute, DateTime capturedAtUtc,
         string imagePath, double renderScale, int pixelWidth, int pixelHeight,
-        double logicalWidth, double logicalHeight, RenderTargetBitmap frame)
+        double logicalWidth, double logicalHeight, Bitmap? frame)
     {
         internal string Id { get; } = id;
         internal string PageRoute { get; } = pageRoute;
@@ -904,7 +999,8 @@ internal sealed class RegionReviewOverlay : Panel
         internal int PixelHeight { get; set; } = pixelHeight;
         internal double LogicalWidth { get; } = logicalWidth;
         internal double LogicalHeight { get; } = logicalHeight;
-        internal RenderTargetBitmap Frame { get; } = frame;
+        internal Bitmap? Frame { get; set; } = frame;
+        internal string? RawImagePath { get; set; }
         internal string LayoutState { get; set; } = "default";
     }
 }

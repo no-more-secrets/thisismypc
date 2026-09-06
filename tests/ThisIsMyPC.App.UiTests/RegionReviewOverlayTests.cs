@@ -30,7 +30,7 @@ public sealed class RegionReviewOverlayTests
         var root = new Grid();
         using var session = UiSession.ForView(root, new object(), "region-review-pencil-edge", 640, 420);
         var overlay = new RegionReviewOverlay(session.Window,
-            Path.Combine(session.ShotDirectory, "records"));
+            Path.Combine(session.ShotDirectory, "records", Guid.NewGuid().ToString("N")));
         root.Children.Add(overlay);
         session.Pump();
         overlay.Start();
@@ -56,7 +56,7 @@ public sealed class RegionReviewOverlayTests
         using var session = UiSession.ForMainWindow("region-review-sidebar-state");
         var mainWindow = Assert.IsType<Views.MainWindow>(session.Window);
         var viewModel = Assert.IsType<ViewModels.MainWindowViewModel>(mainWindow.DataContext);
-        var outputDirectory = Path.Combine(session.ShotDirectory, "records");
+        var outputDirectory = Path.Combine(session.ShotDirectory, "records", Guid.NewGuid().ToString("N"));
         viewModel.IsSidebarCollapsed = true;
 
         var grip = session.Find<Border>(border => border.Name == "SidebarGrip");
@@ -97,7 +97,7 @@ public sealed class RegionReviewOverlayTests
         using var session = UiSession.ForMainWindow("region-review-main-window");
         var mainWindow = Assert.IsType<Views.MainWindow>(session.Window);
         var originalWidth = mainWindow.Width;
-        var outputDirectory = Path.Combine(session.ShotDirectory, "records");
+        var outputDirectory = Path.Combine(session.ShotDirectory, "records", Guid.NewGuid().ToString("N"));
         mainWindow.StartRegionReview(outputDirectory);
         session.Pump();
 
@@ -187,7 +187,7 @@ public sealed class RegionReviewOverlayTests
         using var session = UiSession.ForMainWindow("region-review-pages");
         var mainWindow = Assert.IsType<Views.MainWindow>(session.Window);
         var viewModel = Assert.IsType<ViewModels.MainWindowViewModel>(mainWindow.DataContext);
-        var outputDirectory = Path.Combine(session.ShotDirectory, "records");
+        var outputDirectory = Path.Combine(session.ShotDirectory, "records", Guid.NewGuid().ToString("N"));
 
         mainWindow.StartRegionReview(outputDirectory);
         session.Pump();
@@ -273,7 +273,7 @@ public sealed class RegionReviewOverlayTests
         root.Children.Add(button);
 
         using var session = UiSession.ForView(root, new object(), "region-review", 640, 420);
-        var outputDirectory = Path.Combine(session.ShotDirectory, "records");
+        var outputDirectory = Path.Combine(session.ShotDirectory, "records", Guid.NewGuid().ToString("N"));
         var overlay = new RegionReviewOverlay(session.Window, outputDirectory);
         overlay.SetValue(Panel.ZIndexProperty, int.MaxValue);
         root.Children.Add(overlay);
@@ -301,7 +301,7 @@ public sealed class RegionReviewOverlayTests
 
         using var document = JsonDocument.Parse(File.ReadAllText(Path.Combine(outputDirectory, "latest.json")));
         var rootElement = document.RootElement;
-        Assert.Equal(3, rootElement.GetProperty("schemaVersion").GetInt32());
+        Assert.Equal(4, rootElement.GetProperty("schemaVersion").GetInt32());
         Assert.True(rootElement.GetProperty("active").GetBoolean());
         Assert.NotEmpty(rootElement.GetProperty("sessionId").GetString()!);
         var selectionId = rootElement.GetProperty("selectionId").GetString()!;
@@ -331,7 +331,7 @@ public sealed class RegionReviewOverlayTests
     {
         using var session = UiSession.ForMainWindow("region-review-multiple");
         var mainWindow = Assert.IsType<Views.MainWindow>(session.Window);
-        var outputDirectory = Path.Combine(session.ShotDirectory, "records");
+        var outputDirectory = Path.Combine(session.ShotDirectory, "records", Guid.NewGuid().ToString("N"));
         mainWindow.StartRegionReview(outputDirectory);
         session.Pump();
 
@@ -380,6 +380,9 @@ public sealed class RegionReviewOverlayTests
         Assert.Equal(2, overlay.FigureCount);
         var cancelButton = session.Find<Button>(button => button.IsVisible && Equals(button.Content, "Cancel"));
         var saveButton = session.Find<Button>(button => button.IsVisible && Equals(button.Content, "Save"));
+        session.Window.KeyPressQwerty(PhysicalKey.Tab, RawInputModifiers.None);
+        session.Pump();
+        Assert.True(session.Find<Button>(button => button.IsVisible && Equals(button.Content, "Resolve")).IsFocused);
         session.Window.KeyPressQwerty(PhysicalKey.Tab, RawInputModifiers.None);
         session.Pump();
         Assert.True(cancelButton.IsFocused);
@@ -463,7 +466,7 @@ public sealed class RegionReviewOverlayTests
     {
         var root = new Grid();
         using var session = UiSession.ForView(root, new object(), "region-review-clear", 500, 300);
-        var outputDirectory = Path.Combine(session.ShotDirectory, "records");
+        var outputDirectory = Path.Combine(session.ShotDirectory, "records", Guid.NewGuid().ToString("N"));
         var overlay = new RegionReviewOverlay(session.Window, outputDirectory);
         overlay.SetValue(Panel.ZIndexProperty, int.MaxValue);
         root.Children.Add(overlay);
@@ -485,7 +488,7 @@ public sealed class RegionReviewOverlayTests
     {
         var root = new Grid();
         using var session = UiSession.ForView(root, new object(), "region-review-failures", 500, 300);
-        var outputDirectory = Path.Combine(session.ShotDirectory, "records");
+        var outputDirectory = Path.Combine(session.ShotDirectory, "records", Guid.NewGuid().ToString("N"));
         var store = new FaultingRegionReviewStore(outputDirectory);
         var overlay = new RegionReviewOverlay(session.Window, store);
         overlay.SetValue(Panel.ZIndexProperty, int.MaxValue);
@@ -544,7 +547,7 @@ public sealed class RegionReviewOverlayTests
             var root = new Grid();
             root.Children.Add(canvas);
             using var session = UiSession.ForView(root, new object(), $"region-review-dpi-{scale * 100:0}", 640, 420);
-            var outputDirectory = Path.Combine(session.ShotDirectory, "records");
+            var outputDirectory = Path.Combine(session.ShotDirectory, "records", Guid.NewGuid().ToString("N"));
             var overlay = new RegionReviewOverlay(session.Window, outputDirectory);
             root.Children.Add(overlay);
             session.Pump();
