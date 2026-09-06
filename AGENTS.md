@@ -112,6 +112,7 @@ dotnet test --filter "Category!=Integration&Category!=Diagnostic"   # what CI ru
   (one-off logs, dumps, audits, probes). Build here, never in the scratchpad,
   the repo root, or a project folder; a throwaway AOT publish goes to
   `artifacts/aot/<name>/`, not the scratchpad. `builds/` is retired.
+- Run `tools/prune-diagnostics.ps1` at the start and end of each coding task. It removes diagnostic bin/obj copies after 24 hours without writes. Reports and screenshots stay. Reuse diagnostic build paths instead of creating a full copy for each check.
 - Output piles up (a full reproducible-build run is gigabytes).
   `tools/clean-build-output.ps1` empties `artifacts/` (add `-IncludeBinObj` to
   also clear every `bin`/`obj`, `-WhatIf` to preview). It never touches tracked
