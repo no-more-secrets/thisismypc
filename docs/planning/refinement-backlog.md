@@ -36,6 +36,7 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 - DONE: Transactional journal import retains immutable receipts through history clearing. Imported records preserve profile identity and cannot use generic restore, redo, or custom-set export. History displays outcome restrictions.
 - Verified: full CI-safe suite, Release build, fresh review, and dark/light history screenshots. All 20 native lock tests passed with elevation.
 - DONE: Machine consent storage verifies native handles, refuses unsafe paths, and durably replaces explicit consent. Disabling remains possible before journal recovery. Five isolated elevated tests and fourteen parser tests passed, with fresh review.
+- DONE: Pure mutation coordinator acquires once, requires recovery clearance, rejects nested acquisition, and releases after operation completion. All 48 coordination tests and fresh review passed.
 - Pending: production journal/database trust, management/profile probing, consent integration, and service/UI wiring. No automatic restoration is enabled.
 - Design: [Owner Mode restoration](owner-mode-restoration.md).
 ## System pages and Settings organization (2026-09-06)
