@@ -10,7 +10,7 @@ using ThisIsMyPC.Modules.Shell.Services;
 
 namespace ThisIsMyPC.App.ViewModels;
 
-public partial class ContextMenuViewModel : ViewModelBase, ISearchNavigationTarget, IDisposable
+public partial class ContextMenuViewModel : ViewModelBase, ISearchNavigationTarget, IDisposable, ITabbedPage
 {
     [ObservableProperty]
     private int _selectedTabIndex;

@@ -157,6 +157,12 @@ public partial class MainWindow : Window
         if (_regionReviewOverlay?.IsReviewActive == true)
             return;
 #endif
+        if (e.Key == Key.R && e.KeyModifiers == KeyModifiers.Control && DataContext is MainWindowViewModel refreshVm)
+        {
+            refreshVm.RefreshPageCommand.Execute(null);
+            e.Handled = true;
+            return;
+        }
         if (e.Key != Key.Escape || DataContext is not MainWindowViewModel vm)
             return;
         if (!vm.IsSearchOpen && !vm.IsAboutOpen)

@@ -255,7 +255,7 @@
                     <Button Classes="bar-icon"
                             Command="{Binding RefreshPageCommand}"
                             IsEnabled="{Binding !IsModuleLoading}"
-                            ToolTip.Tip="Refresh this page"
+                            ToolTip.Tip="Refresh this page (Ctrl+R)"
                             AutomationProperties.Name="Refresh this page">
                         <PathIcon Width="16" Height="16"
                                   Foreground="{DynamicResource TextSecondaryBrush}"

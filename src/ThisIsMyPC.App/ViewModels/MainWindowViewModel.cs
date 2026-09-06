@@ -814,6 +814,21 @@ public partial class MainWindowViewModel : ViewModelBase
 
     partial void OnCurrentContentChanged(object? value)
     {
+        if (_refreshTabState is { } refresh)
+        {
+            if (refresh.Epoch != _contentEpoch)
+                _refreshTabState = null;
+            else if (value is not null)
+            {
+                _refreshTabState = null;
+                if (value.GetType() == refresh.PageType && value is ITabbedPage page)
+                {
+                    page.SelectedTabIndex = refresh.TabIndex;
+                    if (value is PowerViewModel power && refresh.PlanId is { } planId)
+                        _ = power.RestoreSettingsAfterRefreshAsync(planId, refresh.GroupId);
+                }
+            }
+        }
         if (_pendingSearchResult is null)
             return;
         if (_contentEpoch != _pendingSearchFocusEpoch)
@@ -896,9 +911,18 @@ public partial class MainWindowViewModel : ViewModelBase
     /// Home, Settings, Presets, and the Gallery rebuild the same way their
     /// sidebar entries open them.
     /// </summary>
+    private sealed record RefreshTabState(int Epoch, Type PageType, int TabIndex, Guid? PlanId, Guid? GroupId);
+    private RefreshTabState? _refreshTabState;
+
     [RelayCommand]
     private void RefreshPage()
     {
+        if (IsModuleLoading) return;
+        _refreshTabState = CurrentContent is ITabbedPage page
+            ? new RefreshTabState(_contentEpoch + 1, CurrentContent.GetType(), page.SelectedTabIndex,
+                (CurrentContent as PowerViewModel)?.SettingsPlan?.Plan.PlanGuid,
+                (CurrentContent as PowerViewModel)?.SelectedSettingsGroupId)
+            : null;
         if (IsHomeActive) { OpenHome(); return; }
         if (IsSettingsActive) { OpenSettings(); return; }
         if (IsSetLoaderActive) { OpenSetLoader(); return; }

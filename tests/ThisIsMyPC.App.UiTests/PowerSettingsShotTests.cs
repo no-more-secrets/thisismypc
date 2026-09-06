@@ -80,4 +80,21 @@ public class PowerSettingsShotTests
         session.ClickText("← Back to plans");
         Assert.False(viewModel.IsSettingsView);
     }
+
+    [AvaloniaFact]
+    public async Task ReloadRestoresTheSamePowerGroup_WhenGroupOrderChanges()
+    {
+        var planId = ScanData().Plans[0].PlanGuid;
+        using var viewModel = new PowerViewModel(ScanData(), new PendingChangesService(),
+            powerService: new UiFakePowerService(SampleSettings().Reverse().ToArray()));
+        using var session = UiSession.ForView(new PowerView(), viewModel, "power-settings-reload", height: 800);
+        await viewModel.RestoreSettingsAfterRefreshAsync(planId, Sleep);
+        session.Pump();
+        Assert.True(viewModel.IsSettingsView);
+        Assert.Equal(planId, viewModel.SettingsPlan!.Plan.PlanGuid);
+        Assert.Equal(Sleep, viewModel.SelectedSettingsGroupId);
+        Assert.Equal(2, session.Find<TabControl>(_ => true).SelectedIndex);
+        Assert.True(session.IsTextVisible("Sleep after"));
+        session.Screenshot("restored-sleep-group");
+    }
 }

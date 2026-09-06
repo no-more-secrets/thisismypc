@@ -6,7 +6,7 @@ using ThisIsMyPC.Modules.Shell.Models;
 
 namespace ThisIsMyPC.App.ViewModels;
 
-public partial class EnvironmentViewModel : ViewModelBase, ISearchNavigationTarget
+public partial class EnvironmentViewModel : ViewModelBase, ISearchNavigationTarget, ITabbedPage
 {
     [ObservableProperty]
     private int _selectedTabIndex;

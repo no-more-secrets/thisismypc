@@ -30,6 +30,14 @@ Windows Update 5, Power 1) + 5 built-in sets (59 entries) + the enumerative modu
 - Usage and limitations: docs/region-review.md.
 - Fixed high-DPI top-left crop: source bounds now use physical bitmap pixels; regression coverage includes 100-200% capture scaling.
 
+## Reload navigation and unpackaged updates: DONE (2026-09-05)
+
+- Reload retains the selected tab across all tabbed pages. Power also restores the open plan and setting group by ID.
+- Ctrl+R invokes the page reload command while the app is focused, including from a search field.
+- A loading guard ignores repeated reloads. Superseding navigation drops the saved reload destination.
+- Velopack update checks return no update for unpackaged runs without contacting the feed or logging NotInstalledException.
+- Validation covers reload buttons and Ctrl+R, Power group reordering, stale navigation, and an unpackaged update service.
+
 ## Selected tab fillets: DONE (2026-09-05)
 
 - Region review session 3ad820e808c14c178f498f75421ee468, figure 1: selected tabs have curved bottom joins into the content area.

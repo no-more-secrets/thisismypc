@@ -19,14 +19,30 @@ namespace ThisIsMyPC.App.ViewModels;
 /// switch as a single pending change; per-plan settings load on demand into a
 /// detail panel with simplified and registry display modes.
 /// </summary>
-public sealed partial class PowerViewModel : ObservableObject, ISearchNavigationTarget, IDisposable
+public sealed partial class PowerViewModel : ObservableObject, ISearchNavigationTarget, IDisposable, ITabbedPage
 {
+    [ObservableProperty]
+    private int _selectedTabIndex;
+
     public void NavigateToSearchResult(string settingId, string displayName)
     {
         if (settingId is "plan-settings" or "modern-standby")
             OpenSettingsCommand.Execute(Plans.FirstOrDefault(plan => plan.IsActive) ?? Plans.FirstOrDefault());
         else
             CloseSettingsCommand.Execute(null);
+    }
+
+    internal Guid? SelectedSettingsGroupId => SelectedTabIndex >= 0 && SelectedTabIndex < SettingsGroups.Count
+        ? SettingsGroups[SelectedTabIndex].Settings.FirstOrDefault()?.Setting.SubgroupGuid : null;
+
+    internal async Task RestoreSettingsAfterRefreshAsync(Guid planId, Guid? groupId)
+    {
+        var plan = Plans.FirstOrDefault(p => p.Plan.PlanGuid == planId);
+        if (plan is null) return;
+        await OpenSettingsAsync(plan);
+        if (_disposed || !IsSettingsView || SettingsPlan != plan) return;
+        SelectedTabIndex = Math.Max(0, SettingsGroups.ToList().FindIndex(
+            group => group.Settings.FirstOrDefault()?.Setting.SubgroupGuid == groupId));
     }
 
     private readonly IPendingChangesService _pendingChangesService;

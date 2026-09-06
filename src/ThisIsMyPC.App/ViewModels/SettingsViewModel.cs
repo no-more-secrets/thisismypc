@@ -156,8 +156,11 @@ public sealed class SettingsSectionViewModel
 /// every change. Export/import lives here too; file dialogs are handled by the
 /// view's code-behind, the VM works on JSON strings so it stays testable.
 /// </summary>
-public sealed partial class SettingsViewModel : ViewModelBase
+public sealed partial class SettingsViewModel : ViewModelBase, ITabbedPage
 {
+    [ObservableProperty]
+    private int _selectedTabIndex;
+
     private readonly ISettingsService _settings;
     private readonly IReadOnlyCollection<string> _installedModuleIds;
     private readonly string _appVersion;

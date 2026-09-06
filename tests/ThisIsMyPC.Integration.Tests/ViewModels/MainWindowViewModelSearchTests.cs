@@ -170,4 +170,26 @@ public sealed class MainWindowViewModelSearchTests
         vm.CurrentContent = page;
         Assert.Equal("s1", page.Destination);
     }
+
+    private sealed class RefreshablePage : ITabbedPage
+    {
+        public int SelectedTabIndex { get; set; }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task RefreshRestoresSelection_UnlessNavigationSupersedesIt(bool leavePage)
+    {
+        var vm = CreateViewModel();
+        await vm.InitializeAsync();
+        vm.SearchQuery = "TaskbarAl";
+        vm.SelectSearchResultCommand.Execute(Assert.Single(vm.SearchResults));
+        vm.CurrentContent = new RefreshablePage { SelectedTabIndex = 3 };
+        vm.RefreshPageCommand.Execute(null);
+        if (leavePage) vm.OpenHomeCommand.Execute(null);
+        var next = new RefreshablePage();
+        vm.CurrentContent = next;
+        Assert.Equal(leavePage ? 0 : 3, next.SelectedTabIndex);
+    }
 }

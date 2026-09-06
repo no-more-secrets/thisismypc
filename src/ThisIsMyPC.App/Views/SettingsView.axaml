@@ -85,7 +85,7 @@
         </DataTemplate>
     </UserControl.DataTemplates>
 
-    <TabControl Theme="{StaticResource EdgeTabControlTheme}">
+    <TabControl Theme="{StaticResource EdgeTabControlTheme}" SelectedIndex="{Binding SelectedTabIndex}">
       <TabItem Header="General">
     <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                   VerticalScrollBarVisibility="Auto">

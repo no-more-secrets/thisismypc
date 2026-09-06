@@ -13,14 +13,20 @@ public sealed class VelopackUpdateService : IUpdateService, IDisposable
     private UpdateInfo? _pendingUpdate;
 
     public VelopackUpdateService(string updateUrl, IUpdateVerifier? verifier = null, ILogger? logger = null)
+        : this(new UpdateManager(updateUrl), verifier, logger) { }
+
+    internal VelopackUpdateService(UpdateManager manager, IUpdateVerifier? verifier = null, ILogger? logger = null)
     {
-        _manager = new UpdateManager(updateUrl);
+        _manager = manager;
         _verifier = verifier;
         _logger = logger ?? LogManager.GetLogger("ThisIsMyPC.App.Services.VelopackUpdateService");
     }
 
     public async Task<OperationResult<UpdateCheckResult>> CheckForUpdateAsync()
     {
+        // Development and other unpackaged runs have no Velopack installation to update.
+        if (!_manager.IsInstalled)
+            return OperationResult<UpdateCheckResult>.Success(new UpdateCheckResult(false, null, null));
         try
         {
             var update = await _manager.CheckForUpdatesAsync().ConfigureAwait(false);

@@ -14,8 +14,11 @@ namespace ThisIsMyPC.App.ViewModels;
 /// background after the page is up; the Windows filter is re-applied once
 /// they are known.
 /// </summary>
-public sealed partial class StartupViewModel : ObservableObject, IDisposable
+public sealed partial class StartupViewModel : ObservableObject, IDisposable, ITabbedPage
 {
+    [ObservableProperty]
+    private int _selectedTabIndex;
+
     private readonly List<AutorunItemViewModel> _allAutoruns = [];
     private readonly CancellationTokenSource _enrichment = new();
 

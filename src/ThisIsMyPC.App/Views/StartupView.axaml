@@ -167,7 +167,7 @@
         </DataTemplate>
     </UserControl.DataTemplates>
 
-    <controls:ModuleTabControl Theme="{StaticResource ModuleTabControlTheme}" ItemsSource="{Binding Tabs}"
+    <controls:ModuleTabControl SelectedIndex="{Binding SelectedTabIndex}" Theme="{StaticResource ModuleTabControlTheme}" ItemsSource="{Binding Tabs}"
                                ShowTabs="{Binding !IsSearching}">
         <controls:ModuleTabControl.Toolbar>
             <StackPanel Margin="0,0,0,8">

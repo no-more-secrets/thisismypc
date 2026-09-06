@@ -260,7 +260,7 @@
             </StackPanel>
 
             </ScrollViewer>
-            <controls:ModuleTabControl Theme="{StaticResource ModuleTabControlTheme}"
+            <controls:ModuleTabControl SelectedIndex="{Binding SelectedTabIndex}" Theme="{StaticResource ModuleTabControlTheme}"
                                        ItemsSource="{Binding SettingsGroups}" IsVisible="{Binding IsSettingsView}"
                                        ShowTabs="{Binding !!SettingsGroups.Count}">
                 <controls:ModuleTabControl.Toolbar>

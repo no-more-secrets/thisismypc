@@ -9,7 +9,7 @@ using ThisIsMyPC.Modules.Software.Services;
 
 namespace ThisIsMyPC.App.ViewModels;
 
-public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, ISearchNavigationTarget, IDisposable
+public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, ISearchNavigationTarget, IDisposable, ITabbedPage
 {
     private static readonly string AdvancedKeyPath = Modules.Shell.ShellRegistryPaths.AdvancedKeyPath;
     private static readonly string ClassicContextMenuKeyPath = Modules.Shell.ShellRegistryPaths.ClassicContextMenuKeyPath;

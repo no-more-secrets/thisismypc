@@ -9,8 +9,11 @@ using ThisIsMyPC.Modules.Software.Models;
 
 namespace ThisIsMyPC.App.ViewModels;
 
-public sealed partial class SoftwareViewModel : ViewModelBase, IDisposable
+public sealed partial class SoftwareViewModel : ViewModelBase, IDisposable, ITabbedPage
 {
+    [ObservableProperty]
+    private int _selectedTabIndex;
+
     public const string AllCategories = "All categories";
 
     private readonly IPendingActionsService _pendingActionsService;

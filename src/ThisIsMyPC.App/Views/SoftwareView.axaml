@@ -7,7 +7,7 @@
              x:Class="ThisIsMyPC.App.Views.SoftwareView"
              x:DataType="vm:SoftwareViewModel">
 
-    <TabControl Theme="{StaticResource EdgeTabControlTheme}">
+    <TabControl Theme="{StaticResource EdgeTabControlTheme}" SelectedIndex="{Binding SelectedTabIndex}">
         <!-- App Catalog tab -->
         <TabItem Header="App Catalog">
             <DockPanel>
