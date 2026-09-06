@@ -22,7 +22,7 @@ public class TabStripShotTests
     private const double StripHeight = 42;
     private const double ChipHeight = 28;
     private const double Float = 6;
-    private const double Overhang = 1;
+
 
     private static EnvironmentScanData ScanData() => new(
         UserVariables:
@@ -75,8 +75,9 @@ public class TabStripShotTests
         Assert.False(floating.IsSelected);
         Assert.Equal(StripHeight, strip.Bounds.Height, 0.5);
         // The selected chip stands on the floor: its bottom is the well's bottom.
-        Assert.Equal(ChipHeight + Float + Overhang, selected.Bounds.Height, 0.5);
-        Assert.Equal(floor, BottomOf(session, selected), 0.5);
+        Assert.Equal(ChipHeight, selected.Bounds.Height, 0.5);
+        var chrome = selected.GetVisualDescendants().OfType<ThisIsMyPC.App.Controls.SelectedTabChrome>().Single();
+        Assert.Equal(floor, BottomOf(session, chrome), 0.5);
         // A floating chip stops short of the floor by its float and the well's border.
         Assert.Equal(ChipHeight, floating.Bounds.Height, 0.5);
         Assert.Equal(floor - Float - 1, BottomOf(session, floating), 0.5);

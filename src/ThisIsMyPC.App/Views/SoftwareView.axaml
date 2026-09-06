@@ -15,11 +15,11 @@
                 <!-- Toolbar: search + category filter + installed-state note -->
                 <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,0,16,8">
                     <DockPanel>
-                        <ComboBox DockPanel.Dock="Right"
+                        <ComboBox DockPanel.Dock="Right" VerticalAlignment="Stretch"
                                   MinWidth="180"
                                   ItemsSource="{Binding Categories}"
                                   SelectedItem="{Binding SelectedCategory}" />
-                        <ComboBox DockPanel.Dock="Right"
+                        <ComboBox DockPanel.Dock="Right" VerticalAlignment="Stretch"
                                   MinWidth="130"
                                   Margin="0,0,8,0"
                                   ItemsSource="{Binding InstallStateFilters}"

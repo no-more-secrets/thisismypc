@@ -34,6 +34,31 @@ public class SoftwareViewShotTests
     }
 
     [AvaloniaFact]
+    public void CatalogFilters_MatchSearchHeight()
+    {
+        var (session, _, _) = CreateSession();
+        using (session)
+        {
+            foreach (var theme in new[] { Avalonia.Styling.ThemeVariant.Dark, Avalonia.Styling.ThemeVariant.Light })
+            foreach (var width in new[] { 1200, 800 })
+            {
+                session.SetTheme(theme);
+                session.Window.Width = width;
+                session.Pump();
+                var search = session.Find<Avalonia.Controls.TextBox>(box => box.Watermark == "Search apps");
+                var filters = session.FindAll<Avalonia.Controls.ComboBox>(box => box.IsVisible);
+                Assert.Equal(2, filters.Count());
+                foreach (var filter in filters)
+                {
+                    Assert.Equal(search.Bounds.Height, filter.Bounds.Height, 0.1);
+                    Assert.Equal(search.Bounds.Top, filter.Bounds.Top, 0.1);
+                }
+                session.Screenshot($"toolbar-parity-{theme.Key}-{width}");
+            }
+        }
+    }
+
+    [AvaloniaFact]
     public void CatalogTab_RendersGroupedGrid()
     {
         var (session, viewModel, _) = CreateSession();

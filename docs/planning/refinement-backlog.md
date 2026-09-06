@@ -2,6 +2,12 @@
 
 Current release scope: [v1 completion plan](v1-completion-plan.md), approved 2026-09-06. It supersedes older post-release hardware assumptions below.
 
+## Annotation follow-up: toolbar and tabs (2026-09-06)
+
+- Software catalog dropdowns stretch to the search field height.
+- Shared tabs retain one header layout across selection, avoiding label movement from template replacement and border rounding.
+- Verification: regression tests, rendered dark/light toolbar screenshots, and Explorer tab position checks.
+
 ## Reviewed v1 foundations and Debug tools (2026-09-06)
 
 - DONE: Partial apply records confirmed changes once. Uncertain groups block further applies and cannot be removed by queued edits. Discard All clears the queue and reloads the page.

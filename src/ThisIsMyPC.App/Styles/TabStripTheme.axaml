@@ -15,9 +15,9 @@
          bottom margin); the selected chip reaches 1px past the floor and
          paints the page's own fill over the well's bottom line, so it
          reads as part of the content below. Selecting a tab moves nothing:
-         every chip keeps its size and place (the selected template pads
-         where the unselected one has its border, and rows are never
-         reordered), so only the selection look changes.
+         every chip keeps its size, place, border, and presenter. The
+         selected chrome extends below that unchanged layout, and rows
+         are never reordered, so only the selection look changes.
          RowGap is zero because each floating tab already supplies 6px below it.
          Height stays 42 for one row:
          1 + 6 + 34 + 1 (the row is a 28 chip plus its 6 float). -->
@@ -122,8 +122,8 @@
          text. Selected: the page's Raised fill with curved bottom joins,
          no bottom border, and a 1px overhang that covers the well's bottom
          line, so the outline runs from the chip's sides straight into the
-         content. Its 7px bottom padding keeps the label level with the
-         floating chips. No accent anywhere: the connection is the cue.
+         content. The chrome extends 7px below the unchanged header layout.
+         No accent anywhere: the connection is the cue.
          The panel spaces the chips; a chip's only margin is its float. -->
     <ControlTheme x:Key="{x:Type TabItem}" TargetType="TabItem">
         <Setter Property="FontSize" Value="13" />
@@ -135,23 +135,31 @@
         <Setter Property="Padding" Value="10,0" />
         <Setter Property="Margin" Value="0,0,0,6" />
         <Setter Property="MinHeight" Value="28" />
+        <Setter Property="ClipToBounds" Value="False" />
         <Setter Property="HorizontalContentAlignment" Value="Center" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Template">
             <ControlTemplate>
-                <Border Name="PART_LayoutRoot"
-                        Background="{TemplateBinding Background}"
-                        BorderBrush="{TemplateBinding BorderBrush}"
-                        BorderThickness="{TemplateBinding BorderThickness}"
-                        CornerRadius="{TemplateBinding CornerRadius}"
-                        Padding="{TemplateBinding Padding}">
-                    <ContentPresenter Name="PART_ContentPresenter"
-                                      Content="{TemplateBinding Header}"
-                                      ContentTemplate="{TemplateBinding HeaderTemplate}"
-                                      HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
-                </Border>
+                <Grid ClipToBounds="False">
+                    <controls:SelectedTabChrome Background="{TemplateBinding Background}"
+                                                BorderBrush="{TemplateBinding BorderBrush}"
+                                                Margin="0,0,0,-7"
+                                                IsVisible="{TemplateBinding IsSelected}"
+                                                IsHitTestVisible="False" />
+                    <Border Name="PART_LayoutRoot"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter Name="PART_ContentPresenter"
+                                          Content="{TemplateBinding Header}"
+                                          ContentTemplate="{TemplateBinding HeaderTemplate}"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                    </Border>
+                </Grid>
             </ControlTemplate>
         </Setter>
 
@@ -162,31 +170,15 @@
         </Style>
         <Style Selector="^:selected">
             <Setter Property="ClipToBounds" Value="False" />
-            <Setter Property="Template">
-                <ControlTemplate>
-                    <Grid>
-                        <controls:SelectedTabChrome Background="{TemplateBinding Background}"
-                                                    BorderBrush="{TemplateBinding BorderBrush}"
-                                                    IsHitTestVisible="False" />
-                        <ContentPresenter Name="PART_ContentPresenter"
-                                          Margin="{TemplateBinding Padding}"
-                                          Content="{TemplateBinding Header}"
-                                          ContentTemplate="{TemplateBinding HeaderTemplate}"
-                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
-                    </Grid>
-                </ControlTemplate>
-            </Setter>
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
             <Setter Property="Background" Value="{DynamicResource RaisedBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource OutlineBrush}" />
-            <Setter Property="BorderThickness" Value="1,1,1,0" />
-            <Setter Property="CornerRadius" Value="4,4,0,0" />
-            <!-- 11 not 10: the chrome draws its own outline, so this padding
-                 stands in for the 1px border the unselected chip has. Same
-                 desired width either way, so nothing in the row moves. -->
-            <Setter Property="Padding" Value="11,0,11,7" />
-            <Setter Property="Margin" Value="0,0,0,-1" />
+        </Style>
+        <!-- One border and presenter geometry in both states. Changing templates
+             made fractional-DPI border rounding move every label in the row. -->
+        <Style Selector="^:selected /template/ Border#PART_LayoutRoot">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
         </Style>
         <Style Selector="^:selected:pointerover">
             <Setter Property="Background" Value="{DynamicResource RaisedBrush}" />

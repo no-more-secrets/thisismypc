@@ -59,6 +59,84 @@ public class ExplorerEdgeTabShotTests
         session.Screenshot("search-preserved-taskbar");
     }
 
+    [AvaloniaFact]
+    public async Task SelectingExplorerTabs_KeepsRenderedHeadersStableAt150Percent()
+    {
+        var vm = new ShellViewModel(new ShellScanData([], new TaskbarSettings(1, true, false, false)),
+            new PendingChangesService(), new UiFakeRegistryService());
+        using var session = UiSession.ForView(new ShellView(), vm, "explorer-tab-text-150", width: 980, height: 600);
+        // Headless exposes no DPI setter. Set its backing field, then deliver
+        // the same callback a native window uses when its monitor DPI changes.
+        var platform = session.Window.PlatformImpl!;
+        var scaling = platform.GetType().GetField("<RenderScaling>k__BackingField",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        Assert.NotNull(scaling);
+        scaling.SetValue(platform, 1.5);
+        var changed = (Action<double>)platform.GetType().GetProperty("ScalingChanged")!.GetValue(platform)!;
+        changed(1.5);
+        session.Pump();
+        Assert.Equal(1.5, session.Window.RenderScaling);
+        foreach (var width in new[] { 980, 440 })
+        {
+            session.Window.Width = width;
+            session.Pump();
+            var tabs = session.FindAll<TabItem>(_ => true).ToArray();
+            var labels = tabs.Select(t => t.GetVisualDescendants().OfType<TextBlock>().First()).ToArray();
+            var positions = labels.Select(t => t.TranslatePoint(default, session.Window)!.Value).ToArray();
+            Avalonia.PixelRect[]? inkBaseline = null;
+            for (var i = 0; i < tabs.Length; i++)
+            {
+                session.Click(tabs[i]);
+                await Task.Delay(150);
+                session.Pump();
+                for (var j = 0; j < tabs.Length; j++)
+                {
+                    // The label itself survives selection. A new template must not
+                    // replace it and take a different fractional-pixel layout path.
+                    Assert.Same(labels[j], tabs[j].GetVisualDescendants().OfType<TextBlock>().First());
+                    Assert.Equal(positions[j], labels[j].TranslatePoint(default, session.Window)!.Value);
+                    Assert.True(labels[j].RenderTransform is null || labels[j].RenderTransform!.Value.IsIdentity);
+                }
+                using var frame = new Avalonia.Media.Imaging.RenderTargetBitmap(
+                    new PixelSize((int)(width * 1.5), 900), new Vector(144, 144));
+                frame.Render(session.Window);
+                var path = Path.Combine(session.ShotDirectory, $"{width}-selected-{i}-150.png");
+                frame.Save(path);
+                using var pixels = SkiaSharp.SKBitmap.Decode(path);
+                var ink = labels.Select(label => TextInkBounds(pixels, label, session.Window)).ToArray();
+                inkBaseline ??= ink;
+                Assert.Equal(inkBaseline, ink);
+            }
+        }
+    }
+    private static PixelRect TextInkBounds(SkiaSharp.SKBitmap pixels, TextBlock label, Window window)
+    {
+        var origin = label.TranslatePoint(default, window)!.Value;
+        const double scale = 1.5;
+        var left = (int)Math.Floor(origin.X * scale);
+        var top = (int)Math.Floor(origin.Y * scale);
+        var right = (int)Math.Ceiling((origin.X + label.Bounds.Width) * scale);
+        var bottom = (int)Math.Ceiling((origin.Y + label.Bounds.Height) * scale);
+        var background = pixels.GetPixel(left, top - 2).Red;
+        var foreground = ((Avalonia.Media.ISolidColorBrush)label.Foreground!).Color.R;
+        var minX = right;
+        var minY = bottom;
+        var maxX = left;
+        var maxY = top;
+        for (var y = top; y < bottom; y++)
+        for (var x = left; x < right; x++)
+        {
+            // Normalize selected and unselected foregrounds to glyph coverage.
+            if ((pixels.GetPixel(x, y).Red - background) / (double)(foreground - background) < 0.5)
+                continue;
+            minX = Math.Min(minX, x);
+            minY = Math.Min(minY, y);
+            maxX = Math.Max(maxX, x);
+            maxY = Math.Max(maxY, y);
+        }
+        Assert.True(maxX >= minX && maxY >= minY);
+        return new PixelRect(minX, minY, maxX - minX + 1, maxY - minY + 1);
+    }
     [AvaloniaFact(Timeout = 300_000)]
     [Trait("Category", "Diagnostic")]
     public async Task MainWindow_HostsExplorerAtCardEdgeAndRestoresOtherPagePadding()
