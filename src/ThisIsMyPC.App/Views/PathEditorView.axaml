@@ -51,7 +51,7 @@
                                                 VerticalAlignment="Center">
                                         <icons:FluentIcon Symbol="ReOrderDotsVertical"
                                                    Foreground="{DynamicResource TextTertiaryBrush}"
-                                                   VerticalAlignment="Center" Width="14" Height="14" />
+                                                   VerticalAlignment="Center" Width="18" Height="18" />
                                         <TextBlock Text="{Binding Index}"
                                                    Width="22" FontSize="12"
                                                    TextAlignment="Right"
@@ -84,7 +84,7 @@
                                         HorizontalContentAlignment="Center">
                                     <icons:FluentIcon Symbol="Dismiss"
                                                Foreground="{DynamicResource DangerBrush}"
-                                               Margin="0,-1,0,0" Width="14" Height="14" VerticalAlignment="Center" />
+                                               Margin="0,-1,0,0" Width="18" Height="18" VerticalAlignment="Center" />
                                 </Button>
                             </Grid>
                         </Border>

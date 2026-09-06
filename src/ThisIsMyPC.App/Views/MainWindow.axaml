@@ -52,7 +52,7 @@
                      Width="440">
                 <TextBox.InnerLeftContent>
                     <icons:FluentIcon Symbol="Search"
-                              Width="16" Height="16"
+                              Width="20" Height="20"
                               Margin="12,0,0,0"
                               Foreground="{DynamicResource TextSecondaryBrush}" />
                 </TextBox.InnerLeftContent>
@@ -65,7 +65,7 @@
                         Command="{Binding OpenSettingsCommand}"
                         ToolTip.Tip="Settings"
                         AutomationProperties.Name="Settings">
-                    <icons:FluentIcon Width="16" Height="16"
+                    <icons:FluentIcon Width="20" Height="20"
                               Foreground="{DynamicResource TextSecondaryBrush}"
                               Symbol="Settings" />
                 </Button>
@@ -73,7 +73,7 @@
                         Command="{Binding OpenBugReportCommand}"
                         ToolTip.Tip="Report a bug"
                         AutomationProperties.Name="Report a bug">
-                    <icons:FluentIcon Width="16" Height="16"
+                    <icons:FluentIcon Width="20" Height="20"
                               Foreground="{DynamicResource TextSecondaryBrush}"
                               Symbol="Bug" />
                 </Button>
@@ -81,7 +81,7 @@
                         Command="{Binding OpenRepositoryCommand}"
                         ToolTip.Tip="GitHub"
                         AutomationProperties.Name="GitHub">
-                    <icons:FluentIcon Width="16" Height="16"
+                    <icons:FluentIcon Width="20" Height="20"
                               Foreground="{DynamicResource TextSecondaryBrush}"
                               Symbol="CodeCircle" />
                 </Button>
@@ -90,7 +90,7 @@
                         Command="{Binding ToggleAboutCommand}"
                         ToolTip.Tip="About"
                         AutomationProperties.Name="About">
-                    <icons:FluentIcon Width="16" Height="16"
+                    <icons:FluentIcon Width="20" Height="20"
                               Foreground="{DynamicResource TextSecondaryBrush}"
                               Symbol="Info" />
                 </Button>
@@ -115,7 +115,7 @@
                         Margin="6,8,6,1"
                         ToolTip.Tip="System overview and recent activity">
                     <StackPanel Orientation="Horizontal" Spacing="10">
-                        <icons:FluentIcon Width="18" Height="18"
+                        <icons:FluentIcon Width="22" Height="22"
                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                   Symbol="Home" IsFilled="{Binding IsHomeActive}" />
                         <TextBlock Text="Home"
@@ -132,7 +132,7 @@
                         Command="{Binding OpenSetLoaderCommand}"
                         ToolTip.Tip="Browse and preview tweak presets">
                     <StackPanel Orientation="Horizontal" Spacing="10">
-                        <icons:FluentIcon Width="18" Height="18"
+                        <icons:FluentIcon Width="22" Height="22"
                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                   Symbol="Layer" IsFilled="{Binding IsSetLoaderActive}" />
                         <TextBlock Text="Presets"
@@ -152,7 +152,7 @@
                             ToolTip.Tip="Standardized styles and tokens (dev)">
                         <StackPanel Orientation="Horizontal" Spacing="10">
                             <!-- Palette swatch icon -->
-                            <icons:FluentIcon Width="18" Height="18"
+                            <icons:FluentIcon Width="22" Height="22"
                                       Foreground="{DynamicResource TextSecondaryBrush}"
                                       Symbol="Color" IsFilled="{Binding IsGalleryActive}" />
                             <TextBlock Text="UI Gallery"
@@ -167,7 +167,7 @@
                             ToolTip.Tip="Application preferences">
                         <StackPanel Orientation="Horizontal" Spacing="10">
                             <!-- Application settings -->
-                            <icons:FluentIcon Width="18" Height="18"
+                            <icons:FluentIcon Width="22" Height="22"
                                       Foreground="{DynamicResource TextSecondaryBrush}"
                                       Symbol="Settings" IsFilled="{Binding IsSettingsActive}" />
                             <TextBlock Text="Settings"
@@ -202,7 +202,7 @@
                                                         IsEnabled="{Binding IsAvailable}"
                                                         ToolTip.Tip="{Binding TooltipText}">
                                                     <StackPanel Orientation="Horizontal" Spacing="10">
-                                                        <icons:FluentIcon Width="18" Height="18"
+                                                        <icons:FluentIcon Width="22" Height="22"
                                                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                                                   Symbol="{Binding IconSymbol}" IsFilled="{Binding IsActive}" />
                                                         <TextBlock Text="{Binding Name}"
@@ -261,7 +261,7 @@
                             IsEnabled="{Binding !IsModuleLoading}"
                             ToolTip.Tip="Refresh this page (Ctrl+R)"
                             AutomationProperties.Name="Refresh this page">
-                        <icons:FluentIcon Width="16" Height="16"
+                        <icons:FluentIcon Width="20" Height="20"
                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                   Symbol="ArrowClockwise" />
                     </Button>
@@ -276,7 +276,7 @@
                                            Foreground="{DynamicResource TextPrimaryBrush}" />
                             </Flyout>
                         </Button.Flyout>
-                        <icons:FluentIcon Width="16" Height="16"
+                        <icons:FluentIcon Width="20" Height="20"
                                   Foreground="{DynamicResource TextSecondaryBrush}"
                                   Symbol="QuestionCircle" />
                     </Button>
@@ -374,7 +374,7 @@
                                 <StackPanel Orientation="Horizontal" Spacing="6">
                                     <!-- Change history -->
                                     <icons:FluentIcon Symbol="History"
-                                              Width="14" Height="14"
+                                              Width="18" Height="18"
                                               Foreground="{DynamicResource TextSecondaryBrush}" />
                                     <TextBlock Text="History"
                                                VerticalAlignment="Center"
@@ -391,7 +391,7 @@
                                 <StackPanel Orientation="Horizontal" Spacing="6">
                                     <!-- Restore point -->
                                     <icons:FluentIcon Symbol="ArrowCounterclockwise"
-                                              Width="14" Height="14"
+                                              Width="18" Height="18"
                                               Foreground="{DynamicResource TextSecondaryBrush}" />
                                     <TextBlock Text="Restore point"
                                                Foreground="{DynamicResource TextSecondaryBrush}"

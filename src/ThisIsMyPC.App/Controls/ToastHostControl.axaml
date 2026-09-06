@@ -53,7 +53,7 @@
                                 VerticalAlignment="Top"
                                 ToolTip.Tip="Dismiss">
                             <icons:FluentIcon Symbol="Dismiss"
-                                      Width="10" Height="10"
+                                      Width="14" Height="14"
                                       Foreground="{DynamicResource TextTertiaryBrush}" />
                         </Button>
                     </Grid>

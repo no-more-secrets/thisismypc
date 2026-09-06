@@ -42,7 +42,7 @@
                             IsVisible="{Binding !IsCreatingPlan}">
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <TextBlock Text="Add plan" />
-                            <icons:FluentIcon Symbol="ChevronDown"  VerticalAlignment="Center" Width="14" Height="14" />
+                            <icons:FluentIcon Symbol="ChevronDown"  VerticalAlignment="Center" Width="18" Height="18" />
                         </StackPanel>
                         <Button.Flyout>
                             <Flyout Placement="BottomEdgeAlignedRight">

@@ -17,8 +17,8 @@ public sealed class FluentIcon : Control
 
     static FluentIcon()
     {
-        WidthProperty.OverrideDefaultValue<FluentIcon>(20);
-        HeightProperty.OverrideDefaultValue<FluentIcon>(20);
+        WidthProperty.OverrideDefaultValue<FluentIcon>(22);
+        HeightProperty.OverrideDefaultValue<FluentIcon>(22);
         AffectsRender<FluentIcon>(SymbolProperty, IsFilledProperty, ForegroundProperty);
     }
 
@@ -46,7 +46,12 @@ public sealed class FluentIcon : Control
         var size = Math.Min(Bounds.Width, Bounds.Height);
         var transform = Matrix.CreateScale(size / 20, size / 20)
             * Matrix.CreateTranslation((Bounds.Width - size) / 2, (Bounds.Height - size) / 2);
+        // A small outline gives Regular icons enough weight at desktop UI sizes.
+        // Keep it in source units so it scales with the icon and app zoom.
+        var outline = !IsFilled && Foreground is { } brush
+            ? new Pen(brush, 0.35, lineJoin: PenLineJoin.Round)
+            : null;
         using (context.PushTransform(transform))
-            context.DrawGeometry(Foreground, null, FluentIconData.Get(Symbol, IsFilled));
+            context.DrawGeometry(Foreground, outline, FluentIconData.Get(Symbol, IsFilled));
     }
 }

@@ -205,7 +205,7 @@
                                                                    FontSize="12"
                                                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                                                         <icons:FluentIcon Symbol="ArrowRight"
-                                                                   Foreground="{DynamicResource TextTertiaryBrush}" Width="14" Height="14" VerticalAlignment="Center" />
+                                                                   Foreground="{DynamicResource TextTertiaryBrush}" Width="18" Height="18" VerticalAlignment="Center" />
                                                         <TextBlock Text="{Binding ProposedDisplay}"
                                                                    FontSize="12"
                                                                    FontWeight="SemiBold"

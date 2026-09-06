@@ -106,16 +106,16 @@
 
     <!-- Shared Fluent information icon; the host retains its tooltip target. -->
     <Style Selector="Border.info-icon">
-        <Setter Property="Width" Value="15" />
-        <Setter Property="Height" Value="15" />
+        <Setter Property="Width" Value="16" />
+        <Setter Property="Height" Value="16" />
         <Setter Property="VerticalAlignment" Value="Center" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="Cursor" Value="Help" />
         <Setter Property="ToolTip.ShowDelay" Value="150" />
     </Style>
     <Style Selector="icons|FluentIcon.info-icon-glyph">
-        <Setter Property="Width" Value="15" />
-        <Setter Property="Height" Value="15" />
+        <Setter Property="Width" Value="16" />
+        <Setter Property="Height" Value="16" />
         <Setter Property="HorizontalAlignment" Value="Center" />
         <Setter Property="VerticalAlignment" Value="Center" />
         <Setter Property="Foreground" Value="{DynamicResource TextTertiaryBrush}" />

@@ -67,7 +67,7 @@
                                                                 Content="{Binding ActionButtonText}"
                                                                 Command="{Binding ToggleQueueCommand}" />
                                                         <icons:FluentIcon DockPanel.Dock="Left"
-                                                                  Width="16" Height="16"
+                                                                  Width="20" Height="20"
                                                                   Margin="0,0,9,0"
                                                                   VerticalAlignment="Center"
                                                                   Foreground="{DynamicResource TextTertiaryBrush}"

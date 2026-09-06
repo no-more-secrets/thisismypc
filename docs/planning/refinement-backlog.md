@@ -21,6 +21,8 @@ Windows Update 5, Power 1) + 5 built-in sets (59 entries) + the enumerative modu
 
 ## Shared Fluent icons (2026-09-06)
 
+- DONE: Increased navigation icons to 22px and toolbar icons to 20px. Regular icons use a 0.35-unit round outline for stronger visual weight. Both themes, sidebar spacing, full tests, and Release build verified.
+
 - DONE: App navigation, actions, category symbols, information hints, caption buttons, and annotation pencils use Microsoft Fluent UI System Icons.
 - Regular is the default; selected navigation uses Filled. The shared control preserves each official 20px canvas during scaling.
 - Pinned SVG sources, generator, MIT license, and notices are checked in. Build and publish outputs include the license and notices.
