@@ -180,21 +180,25 @@
         <Setter Property="Cursor" Value="Arrow" />
     </Style>
 
-    <!-- Sidebar group header -->
+    <!-- Group controls keep the same hit target in either sidebar width. -->
+    <Style Selector="Button.sidebar-group-toggle">
+        <Setter Property="Margin" Value="6,10,6,4" />
+        <Setter Property="Padding" Value="9,5" />
+        <Setter Property="MinHeight" Value="28" />
+        <Setter Property="Foreground" Value="{DynamicResource SidebarGroupHeaderBrush}" />
+    </Style>
+
+    <Style Selector="Border.sidebar.collapsed Button.sidebar-group-toggle">
+        <Setter Property="Padding" Value="0,5" />
+    </Style>
+
     <Style Selector="TextBlock.sidebar-group-header">
         <Setter Property="FontSize" Value="11" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="Foreground" Value="{DynamicResource SidebarGroupHeaderBrush}" />
-        <Setter Property="Margin" Value="15,16,0,4" />
+        <Setter Property="VerticalAlignment" Value="Center" />
         <Setter Property="LetterSpacing" Value="1.5" />
     </Style>
-
-    <!-- Keep the group header footprint when only icons are shown. -->
-    <Style Selector="TextBlock.sidebar-group-header.collapsed">
-        <Setter Property="Opacity" Value="0" />
-        <Setter Property="IsHitTestVisible" Value="False" />
-    </Style>
-
     <!-- Sidebar toggle button -->
     <!-- Title bar icon buttons (shortcuts): the app's discrete rimmed
          surface, as a 28px circle hugging a 16px glyph. -->

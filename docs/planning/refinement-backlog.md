@@ -2,6 +2,12 @@
 
 Current release scope: [v1 completion plan](v1-completion-plan.md), approved 2026-09-06. It supersedes older post-release hardware assumptions below.
 
+## Sidebar module groups (2026-09-06)
+
+- Module groups collapse independently in both sidebar widths. Headers support mouse and keyboard input, with named tooltips in the narrow sidebar.
+- Group state survives sidebar width changes within the session. Closing the active group keeps its page open. Scrolling remains available when open groups exceed the window height.
+- Verified: full CI-safe suite, Release build, and dark/light rendered interactions including short windows.
+
 ## Annotation follow-up: toolbar and tabs (2026-09-06)
 
 - Fixed fractional-scale antialiasing at the selected-tab/content join. Pixel tests cover both themes at 100%, 125%, 150%, 175%, and 200%.

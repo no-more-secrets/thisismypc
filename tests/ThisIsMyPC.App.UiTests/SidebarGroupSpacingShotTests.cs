@@ -36,11 +36,9 @@ public class SidebarGroupSpacingShotTests
                 Assert.Equal(expanded[first].Top - expanded[last].Bottom,
                     collapsed[first].Top - collapsed[last].Bottom, 0.01);
             }
-            foreach (var header in session.FindAll<TextBlock>(t => t.Classes.Contains("sidebar-group-header")))
-            {
-                Assert.Equal(0, header.Opacity);
-                Assert.True(header.Bounds.Height > 0);
-            }
+            Assert.Empty(session.FindAll<TextBlock>(t => t.Classes.Contains("sidebar-group-header")));
+            Assert.Equal(vm.SidebarGroups.Count,
+                session.FindAll<Button>(b => b.Classes.Contains("sidebar-group-toggle")).Count());
             session.Screenshot($"{theme.Key}-collapsed");
         }
     }

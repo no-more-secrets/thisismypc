@@ -184,13 +184,24 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:SidebarGroupViewModel">
                                 <StackPanel>
-                                    <!-- Group header -->
-                                    <TextBlock Text="{Binding GroupName}"
-                                               Classes="sidebar-group-header"
-                                               Classes.collapsed="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).IsSidebarCollapsed}" />
+                                    <!-- Group state belongs to the group, independent of sidebar width. -->
+                                    <Button Classes="sidebar-item sidebar-group-toggle"
+                                            Command="{Binding ToggleExpansionCommand}"
+                                            ToolTip.Tip="{Binding ToggleDescription}"
+                                            AutomationProperties.Name="{Binding ToggleDescription}">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <icons:FluentIcon Symbol="ChevronDown" Width="12" Height="12"
+                                                              IsVisible="{Binding IsExpanded}" />
+                                            <icons:FluentIcon Symbol="ChevronDown" RenderTransform="rotate(-90deg)" Width="12" Height="12"
+                                                              IsVisible="{Binding !IsExpanded}" />
+                                            <TextBlock Text="{Binding GroupName}"
+                                                       Classes="sidebar-group-header"
+                                                       IsVisible="{Binding !$parent[Window].((vm:MainWindowViewModel)DataContext).IsSidebarCollapsed}" />
+                                        </StackPanel>
+                                    </Button>
 
                                     <!-- Module items -->
-                                    <ItemsControl ItemsSource="{Binding Items}">
+                                    <ItemsControl ItemsSource="{Binding Items}" IsVisible="{Binding IsExpanded}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate x:DataType="vm:SidebarItemViewModel">
                                                 <Button Classes="sidebar-item"
