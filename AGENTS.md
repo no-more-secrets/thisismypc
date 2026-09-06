@@ -229,7 +229,7 @@ dotnet test tests/ThisIsMyPC.App.UiTests --configuration Release --filter "Categ
 Ctrl+Shift+A toggles frozen annotation and live navigation. Each drag adds a figure
 with a stable number across pages. Badge clicks select figures; pencil clicks edit notes;
 Delete removes the selected figure. Escape cancels a note editor or suspends review.
-Ctrl+Shift+Alt+A deletes open notes. Resolved history and numbering remain.
+Ctrl+Shift+Alt+A deletes open notes. Resolved history remains. Active numbering restarts at 1 when no open notes remain.
 Notes persist across app restarts in .region-review/, outside build artifacts.
 Use Notes (H) to resolve or reopen notes across pages. Switching pages does not clear figures.
 Saved views are keyed by page route, client dimensions, display scale, and sidebar state. New sizes

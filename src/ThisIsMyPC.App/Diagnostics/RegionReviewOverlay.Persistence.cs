@@ -24,11 +24,12 @@ internal sealed partial class RegionReviewOverlay
             FigureState Restore(RegionReviewFigure figure) => new(figure.Number, figure.Id,
                 new Rect(figure.Bounds.X, figure.Bounds.Y, figure.Bounds.Width, figure.Bounds.Height),
                 figure.Note, figure.CaptureId, figure.PageRoute, figure.CapturedAtUtc, figure.ImagePath)
-            { ResolvedAtUtc = figure.ResolvedAtUtc, ResolutionNote = figure.ResolutionNote };
+            { ResolvedAtUtc = figure.ResolvedAtUtc, ResolutionNote = figure.ResolutionNote,
+                ImageFigureNumber = figure.ImageFigureNumber ?? figure.Number };
             figures.AddRange(record.Figures.Select(Restore));
             resolvedFigures.AddRange(record.ResolvedFigures.Select(Restore));
-            nextFigureNumber = Math.Max(record.NextFigureNumber,
-                figures.Concat(resolvedFigures).Select(f => f.Number).DefaultIfEmpty(0).Max() + 1);
+            nextFigureNumber = figures.Count == 0 ? 1 : Math.Max(record.NextFigureNumber,
+                figures.Select(f => f.Number).DefaultIfEmpty(0).Max() + 1);
             foreach (var figure in figures) AddPencilButton(figure);
             activeRecord = record;
         }
@@ -46,8 +47,12 @@ internal sealed partial class RegionReviewOverlay
         var previousTime = figure.ResolvedAtUtc;
         var previousNote = figure.ResolutionNote;
         var previousSelection = selectedFigureNumber;
+        var previousNumber = figure.Number;
+        var previousNextNumber = nextFigureNumber;
+        if (!resolved) figure.Number = nextFigureNumber++;
         source.Remove(figure);
         target.Add(figure);
+        if (figures.Count == 0) nextFigureNumber = 1;
         figure.ResolvedAtUtc = resolved ? DateTime.UtcNow : null;
         figure.ResolutionNote = resolved ? resolutionNote : null;
         if (resolved) RemovePencilButton(figure.Number); else AddPencilButton(figure);
@@ -61,7 +66,10 @@ internal sealed partial class RegionReviewOverlay
             figure.ResolvedAtUtc = previousTime;
             figure.ResolutionNote = previousNote;
             selectedFigureNumber = previousSelection;
-            if (resolved) AddPencilButton(figure); else RemovePencilButton(figure.Number);
+            if (!resolved) RemovePencilButton(figure.Number);
+            figure.Number = previousNumber;
+            nextFigureNumber = previousNextNumber;
+            if (resolved) AddPencilButton(figure);
             RestoreActiveRecord();
         }
         if (IsNotesOpen) RefreshNotes();
@@ -109,10 +117,12 @@ internal sealed partial class RegionReviewOverlay
             rows.Children.Add(new TextBlock { Text = $"{figure.PageRoute} | {capture.LogicalWidth:0} x {capture.LogicalHeight:0} | {capture.RenderScale:0.##}x",
                 TextWrapping = TextWrapping.Wrap, FontSize = 12 });
             rows.Children.Add(new TextBlock { Text = figure.Note ?? "No text note", TextWrapping = TextWrapping.Wrap });
+            if (figure.ImageFigureNumber != figure.Number)
+                rows.Children.Add(new TextBlock { Text = $"Saved capture shows Fig. {figure.ImageFigureNumber}.", TextWrapping = TextWrapping.Wrap, FontSize = 12 });
             if (isResolved)
                 rows.Children.Add(new TextBlock { Text = $"{figure.ResolvedAtUtc:yyyy-MM-dd HH:mm} UTC. {figure.ResolutionNote}", TextWrapping = TextWrapping.Wrap, FontSize = 12 });
             var actions = new StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = 8 };
-            var change = new Button { Content = isResolved ? "Reopen" : "Resolve", Name = $"StatusFigure{figure.Number}" };
+            var change = new Button { Content = isResolved ? "Reopen" : "Resolve", Name = isResolved ? $"ArchivedFigure{figure.Id}" : $"StatusFigure{figure.Number}" };
             change.Click += (_, _) => SetResolved(figure.Id, !isResolved, "Resolved in app");
             var preview = new Image { MaxHeight = 220, Stretch = Stretch.Uniform, IsVisible = false };
             var view = new Button { Content = "View capture" };

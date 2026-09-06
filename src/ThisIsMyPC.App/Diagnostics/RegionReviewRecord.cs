@@ -34,6 +34,7 @@ internal sealed record RegionReviewRecord
 internal sealed record RegionReviewFigure
 {
     public required int Number { get; init; }
+    public int? ImageFigureNumber { get; init; }
     public required string Id { get; init; }
     public required RegionReviewBounds Bounds { get; init; }
     public string? Note { get; init; }

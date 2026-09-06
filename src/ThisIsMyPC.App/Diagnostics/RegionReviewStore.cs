@@ -47,7 +47,7 @@ internal class RegionReviewStore : IDisposable
         if (record.SchemaVersion is not (3 or 4)) throw new InvalidDataException("Unsupported review schema.");
         var all = record.Figures.Concat(record.ResolvedFigures).ToArray();
         if (all.Any(f => f.Number < 1) || all.Select(f => f.Id).Distinct().Count() != all.Length
-            || all.Select(f => f.Number).Distinct().Count() != all.Length)
+            || record.Figures.Select(f => f.Number).Distinct().Count() != record.Figures.Count)
             throw new InvalidDataException("Review figure identities are invalid.");
         foreach (var capture in record.Captures)
         {

@@ -167,7 +167,7 @@ internal sealed partial class RegionReviewOverlay : Panel
         {
             store.StartSession();
             selectedFigureNumber = null;
-            // Number allocation survives deleting the last open note.
+            // An empty active round starts numbering at one.
             activeRecord = null;
             if (!WriteInactiveRecord(suspended: false))
             {
@@ -272,7 +272,7 @@ internal sealed partial class RegionReviewOverlay : Panel
         ClearPencilButtons();
         figures.Clear();
         captures.RemoveAll(c => !resolvedFigures.Any(f => f.CaptureId == c.Id));
-        // Clear removes open notes only; resolved history and numbering remain.
+        // Clear removes open notes only; resolved history remains and active numbering restarts.
         activeRecord = null;
     }
 
@@ -682,7 +682,10 @@ internal sealed partial class RegionReviewOverlay : Panel
             currentCapture.PixelWidth = annotatedFrame.PixelSize.Width;
             currentCapture.PixelHeight = annotatedFrame.PixelSize.Height;
             foreach (var figure in CurrentFigures)
+            {
                 figure.ImagePath = imagePath;
+                figure.ImageFigureNumber = figure.Number;
+            }
             activeRecord = record;
             return true;
         }
@@ -748,6 +751,8 @@ internal sealed partial class RegionReviewOverlay : Panel
 
     private bool WriteInactiveRecord(bool suspended = true)
     {
+        var previousNextNumber = nextFigureNumber;
+        nextFigureNumber = 1;
         try
         {
             store.Write(store.CreateRecord(
@@ -769,6 +774,7 @@ internal sealed partial class RegionReviewOverlay : Panel
         }
         catch (Exception exception)
         {
+            nextFigureNumber = previousNextNumber;
             failureMessage = $"Region review state failed: {exception.Message}";
             IsVisible = true;
             InvalidateVisual();
@@ -909,6 +915,7 @@ internal sealed partial class RegionReviewOverlay : Panel
     private static RegionReviewFigure ToRecord(FigureState figure, string? imagePath = null) => new()
     {
         Number = figure.Number,
+        ImageFigureNumber = imagePath is null ? figure.ImageFigureNumber : figure.Number,
         Id = figure.Id,
         Bounds = ToBounds(figure.Bounds),
         Note = figure.Note,
@@ -974,7 +981,8 @@ internal sealed partial class RegionReviewOverlay : Panel
     private sealed class FigureState(int number, string id, Rect bounds, string? note,
         string captureId, string pageRoute, DateTime capturedAtUtc, string imagePath)
     {
-        internal int Number { get; } = number;
+        internal int Number { get; set; } = number;
+        internal int ImageFigureNumber { get; set; } = number;
         internal string Id { get; } = id;
         internal Rect Bounds { get; } = bounds;
         internal string? Note { get; set; } = note;

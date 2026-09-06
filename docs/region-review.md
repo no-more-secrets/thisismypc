@@ -20,7 +20,7 @@ Click the pencil icon on a highlight to write or edit its text note.
 Click Save to keep the note or Cancel to discard the edit. N also opens the selected figure's note.
 Typing is optional; spoken instructions can refer directly to figure numbers.
 Press Delete to remove the selected figure when the note editor is closed.
-Remaining figures keep their numbers. Deleted numbers are not reused, including after an app restart.
+Remaining open figures keep their numbers. When no open notes remain, the next figure starts at 1.
 Press Escape to cancel an open note editor. Otherwise, Escape returns to navigation and keeps the figures.
 Ctrl+Shift+A toggles between annotation and navigation. Saved figures remain available in both modes.
 Toggling out saves an open note. If saving fails, annotation stays open so you can retry.
@@ -28,7 +28,7 @@ Click Resolve in the note editor to finish a note. It moves to history.
 Click Notes, or press H, to list notes from every page and window size.
 Enable Show resolved notes to read history, view its captures, or reopen a note.
 Escape closes the Notes panel before returning to navigation.
-Press Ctrl+Shift+Alt+A to delete all open notes. Resolved history and the next figure number remain.
+Press Ctrl+Shift+Alt+A to delete all open notes. Resolved history remains; active numbering restarts at 1.
 
 The frozen view stays unchanged while the underlying app updates.
 Switching to the conversation keeps completed figures available.
@@ -37,7 +37,7 @@ Returning to annotation restores the saved view for the same page, window dimens
 You can select, edit, or delete those figures. Visiting another page retains the earlier page's figures.
 Resizing pauses annotation. Reopening at new dimensions captures the live layout as a separate view.
 Returning to earlier dimensions, display scale, and sidebar state restores that view's figures and notes.
-Figure numbers remain unique across all views in the session. Dimensions describe the client area in logical pixels.
+Open figure numbers remain unique across all views. Archived numbers belong to earlier rounds and can repeat. Dimensions describe the client area in logical pixels.
 A saved view stays frozen even if live content changes at the same size.
 Resolve or delete its open notes, then toggle annotation to capture the updated page.
 Separate windows and native popups are outside this prototype.
@@ -58,10 +58,11 @@ The `captures` array includes `logicalWidth`, `logicalHeight`, PNG pixel dimensi
 Use these dimensions when a figure describes behavior at a particular window size.
 Each capture also records `layoutState` to distinguish expanded and collapsed sidebar views.
 `active` means figures are available; `suspended` means the user can navigate the live app.
+When `imageFigureNumber` differs from `number`, the saved PNG shows the earlier badge. Use the figure bounds and ID to map it. A new export updates the badge.
 Use `selectedFigureNumber` for the current selection. Figure numbers belong to the recorded review session.
 The top-level single-selection fields remain available for compatibility.
 The reader accepts schemas 1 through 4. Schema 4 keeps open notes in `figures` and history in `resolvedFigures`.
-History records `resolvedAtUtc` and `resolutionNote`. `nextFigureNumber` preserves numbering after deletion.
+History records `resolvedAtUtc` and `resolutionNote`. `nextFigureNumber` tracks the open round; it resets to 1 when no open figures remain.
 Use the capture time and session identity to avoid confusing figures from different reviews.
 Schema 4 notes remain valid after the app exits. `processActive` reports whether the recorded process still runs.
 Missing PNGs appear in `missingImages`; text feedback remains available. Legacy records still require a running process.
@@ -85,7 +86,7 @@ After implementing and verifying feedback, resolve the exact figure:
 .\tools\set-region-review-status.ps1 -SessionId <recorded-session-id> -FigureNumber 1 -ResolutionNote "Implemented and verified"
 ```
 
-Use `-Status open` to reopen it. Check `applied` before reporting success.
+Use `-Status open` to reopen it with a new active number. For repeated archived numbers, use `-FigureId <id>` instead of `-FigureNumber`. Check `applied` before reporting success.
 The script queues commands while the app owns the review, then waits briefly for a receipt.
 An open text editor defers commands until editing finishes. `pending: true` is not a confirmed resolution.
 With the app closed, the script locks and updates the durable record directly.

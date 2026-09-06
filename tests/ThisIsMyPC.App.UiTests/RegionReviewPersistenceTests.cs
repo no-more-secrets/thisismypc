@@ -23,6 +23,44 @@ public sealed class RegionReviewPersistenceTests
         }
     }
 
+    [AvaloniaFact]
+    public void ArchivedNumbersDoNotAdvanceNewNotes_AndReopenAllocatesAnOpenNumber()
+    {
+        var root = new Grid { Background = Brushes.White };
+        using var session = UiSession.ForView(root, new object(), "region-review-archive-numbering", 700, 500);
+        var directory = Path.Combine(session.ShotDirectory, Guid.NewGuid().ToString("N"));
+        var route = "/home";
+        var overlay = new RegionReviewOverlay(session.Window, directory, () => route);
+        root.Children.Add(overlay); overlay.Start(); session.Pump();
+        Drag(session, 50, 80, 250, 200);
+        var first = Assert.Single(Read(directory).Figures);
+        Assert.True(overlay.SetResolved(first.Id, true));
+        Assert.Equal(1, Read(directory).NextFigureNumber);
+        Drag(session, 300, 80, 500, 200);
+        Assert.Equal(1, overlay.SelectedFigureNumber);
+        var second = Assert.Single(Read(directory).Figures);
+        Assert.True(overlay.SetResolved(second.Id, true));
+        overlay.Close(); root.Children.Remove(overlay);
+
+        route = "/settings";
+        overlay = new RegionReviewOverlay(session.Window, directory, () => route);
+        root.Children.Add(overlay); overlay.Start(); session.Pump();
+        Assert.Equal(2, overlay.ResolvedFigureCount);
+        Drag(session, 50, 250, 250, 350);
+        Assert.Equal(1, overlay.SelectedFigureNumber);
+        Assert.True(overlay.SetResolved(first.Id, false));
+        Assert.Equal(2, Read(directory).Figures.Single(f => f.Id == first.Id).Number);
+        Assert.Equal(1, Read(directory).Figures.Single(f => f.Id == first.Id).ImageFigureNumber);
+        overlay.ShowNotes(); session.Pump();
+        session.Click(session.Find<CheckBox>(c => Equals(c.Content, "Show resolved notes")));
+        session.Screenshot("open-and-archived-numbers");
+        overlay.Close();
+        using var store = new RegionReviewStore(directory);
+        var restored = store.Read()!;
+        Assert.Equal(2, restored.Figures.Count);
+        Assert.Single(restored.ResolvedFigures);
+    }
+
     [AvaloniaTheory]
     [InlineData(false, false)]
     [InlineData(false, true)]
@@ -108,7 +146,7 @@ public sealed class RegionReviewPersistenceTests
         session.Screenshot("history-dark");
         session.SetTheme(ThemeVariant.Light);
         session.Screenshot("history-light");
-        session.Click(session.Find<Button>(b => b.Name == "StatusFigure1"));
+        session.Click(session.Find<Button>(b => b.Name == $"ArchivedFigure{first.Id}"));
         Assert.Equal(2, overlay.FigureCount);
         overlay.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Escape });
         Assert.False(overlay.IsNotesOpen);
@@ -127,7 +165,7 @@ public sealed class RegionReviewPersistenceTests
         overlay = new RegionReviewOverlay(session.Window, directory, () => route);
         root.Children.Add(overlay); overlay.Start(); session.Pump();
         Drag(session, 40, 80, 150, 160);
-        Assert.Equal(3, overlay.SelectedFigureNumber);
+        Assert.Equal(1, overlay.SelectedFigureNumber);
         Assert.Single(Read(directory).ResolvedFigures);
         overlay.Close();
     }
@@ -156,7 +194,7 @@ public sealed class RegionReviewPersistenceTests
         overlay.Clear();
         Assert.Single(Read(directory).ResolvedFigures);
         Assert.Empty(Read(directory).Figures);
-        Assert.Equal(3, Read(directory).NextFigureNumber);
+        Assert.Equal(1, Read(directory).NextFigureNumber);
         overlay.Close();
     }
 

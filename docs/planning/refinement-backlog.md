@@ -30,6 +30,12 @@ Windows Update 5, Power 1) + 5 built-in sets (59 entries) + the enumerative modu
 - Usage and limitations: docs/region-review.md.
 - Fixed high-DPI top-left crop: source bounds now use physical bitmap pixels; regression coverage includes 100-200% capture scaling.
 
+## Archive numbering: DONE (2026-09-05)
+
+- When no open annotations remain, new notes start at figure 1. Archived notes retain their history and stable IDs.
+- Open figures keep their numbers. Reopening an archived note assigns the next active number.
+- Agent commands resolve active numbers; FigureId selects an exact archived note when old numbers repeat.
+
 ## Reload navigation and unpackaged updates: DONE (2026-09-05)
 
 - Reload retains the selected tab across all tabbed pages. Power also restores the open plan and setting group by ID.
