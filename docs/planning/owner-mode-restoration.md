@@ -96,12 +96,14 @@ edge-debloat, bing-search), and anything with a restart requirement
 (game-dvr, copilot-button, hags, sticky and filter keys), because a
 background restore cannot restart Explorer, sign out, or reboot.
 
-Parity: `RestorationCatalogTests` pins every identity above. It cannot
-compile against `AnnoyancesSettingsReader` because `ThisIsMyPC.Core.Tests`
-references Core only. A compile-checked parity test belongs in
-`ThisIsMyPC.Modules.Annoyances.Tests` (reader output vs `RestorationCatalog.Default`);
-that project was outside this batch's file scope.
+The first catalog also defers auto-game-mode and xbox-game-tips. They meet
+these structural rules, but automatic gaming changes remain outside the
+initial eleven-target batch. They are explicit exclusions in the parity test.
 
+Parity: RestorationCatalogParityTests in Modules.Annoyances.Tests compares
+all catalog entries with the real reader, card provider, change factory, and
+baseline store. It checks both desired values, identity, enforcement, restart
+requirements, and rejection of changed output without copying a value table.
 ## Remaining work, in dependency order
 
 Each step depends on the ones above it. Nothing below is started.
