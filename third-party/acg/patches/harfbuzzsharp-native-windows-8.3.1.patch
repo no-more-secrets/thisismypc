@@ -1,0 +1,45 @@
+diff --git a/native/windows/libHarfBuzzSharp/libHarfBuzzSharp.vcxproj b/native/windows/libHarfBuzzSharp/libHarfBuzzSharp.vcxproj
+index bd752caa1..a650d57ed 100644
+--- a/native/windows/libHarfBuzzSharp/libHarfBuzzSharp.vcxproj
++++ b/native/windows/libHarfBuzzSharp/libHarfBuzzSharp.vcxproj
+@@ -195,12 +195,15 @@
+       <AdditionalIncludeDirectories>$(HarfBuzzIncludes);$(ProjectDir);$(GeneratedFilesDir);$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+       <DisableSpecificWarnings>4267;4244</DisableSpecificWarnings>
+       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
++      <AdditionalOptions>/guard:cf %(AdditionalOptions)</AdditionalOptions>
++      <DebugInformationFormat>None</DebugInformationFormat>
+     </ClCompile>
+     <Link>
+       <SubSystem>Windows</SubSystem>
+       <EnableCOMDATFolding>true</EnableCOMDATFolding>
+       <OptimizeReferences>true</OptimizeReferences>
+-      <AdditionalOptions>/DEBUGTYPE:CV,FIXUP</AdditionalOptions>
++      <AdditionalOptions>/Brepro /guard:cf /CETCOMPAT %(AdditionalOptions)</AdditionalOptions>
++      <GenerateDebugInformation>false</GenerateDebugInformation>
+     </Link>
+   </ItemDefinitionGroup>
+   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+@@ -215,12 +218,15 @@
+       <AdditionalIncludeDirectories>$(HarfBuzzIncludes);$(ProjectDir);$(GeneratedFilesDir);$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+       <DisableSpecificWarnings>4267;4244</DisableSpecificWarnings>
+       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
++      <AdditionalOptions>/guard:cf %(AdditionalOptions)</AdditionalOptions>
++      <DebugInformationFormat>None</DebugInformationFormat>
+     </ClCompile>
+     <Link>
+       <SubSystem>Windows</SubSystem>
+       <EnableCOMDATFolding>true</EnableCOMDATFolding>
+       <OptimizeReferences>true</OptimizeReferences>
+-      <AdditionalOptions>/DEBUGTYPE:CV,FIXUP</AdditionalOptions>
++      <AdditionalOptions>/Brepro /guard:cf /CETCOMPAT %(AdditionalOptions)</AdditionalOptions>
++      <GenerateDebugInformation>false</GenerateDebugInformation>
+     </Link>
+   </ItemDefinitionGroup>
+   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
+@@ -248,4 +254,4 @@
+   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+   <ImportGroup Label="ExtensionTargets">
+   </ImportGroup>
+-</Project>
+\ No newline at end of file
++</Project>

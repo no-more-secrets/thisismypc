@@ -14,8 +14,11 @@
     <PackageVersion Include="Avalonia.Headless.XUnit" Version="11.3.12" />
     <PackageVersion Include="Avalonia.Skia" Version="11.3.12" />
     <!-- Local rebuilds replace runtime-generated interop thunks with static callbacks for ACG. -->
-    <PackageVersion Include="Avalonia.Win32" Version="[11.3.12.2]" />
-    <PackageVersion Include="SkiaSharp" Version="[2.88.9.2]" />
+    <PackageVersion Include="Avalonia.Win32" Version="[11.3.12.3]" />
+    <PackageVersion Include="SkiaSharp" Version="[2.88.9.3]" />
+    <!-- Local x64 native builds add CFG and CET. Skia also omits unused Vulkan support. -->
+    <PackageVersion Include="SkiaSharp.NativeAssets.Win32" Version="[2.88.9.1]" />
+    <PackageVersion Include="HarfBuzzSharp.NativeAssets.Win32" Version="[8.3.1.2]" />
     <!-- Transitive of Avalonia.Desktop (FreeDesktop backend); 0.21.2 carries GHSA-xrw6-gwf8-vvr9. Pinned to the patched 0.21.x. -->
     <PackageVersion Include="Tmds.DBus.Protocol" Version="0.21.3" />
   </ItemGroup>
@@ -32,6 +35,7 @@
 
   <ItemGroup Label="Data">
     <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.11" />
+    <PackageVersion Include="SQLitePCLRaw.lib.e_sqlite3" Version="[2.1.12.2]" />
   </ItemGroup>
 
   <ItemGroup Label="Interop">

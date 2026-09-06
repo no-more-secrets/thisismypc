@@ -144,12 +144,12 @@ $rows | Format-Table -AutoSize | Out-String -Width 200 | Write-Host
 $failed = @()
 foreach ($r in $rows) {
     if ($Require -notcontains $r.File) { continue }
-    $missing = @('ASLR', 'HighEnt', 'DEP', 'CFG', 'GS', 'SEH') | Where-Object { -not $r.$_ }
+    $missing = @('ASLR', 'HighEnt', 'DEP', 'CFG', 'GS', 'CET', 'SEH') | Where-Object { -not $r.$_ }
     if ($missing) { $failed += "$($r.File): missing $($missing -join ', ')" }
 }
 if ($failed) {
     $failed | ForEach-Object { Write-Host "FAIL $_" }
     exit 1
 }
-Write-Host 'All first-party binaries carry ASLR, high-entropy VA, DEP, CFG, /GS, and table-based unwinding.'
+Write-Host 'All first-party binaries carry ASLR, high-entropy VA, DEP, CFG, /GS, CET, and table-based unwinding.'
 exit 0

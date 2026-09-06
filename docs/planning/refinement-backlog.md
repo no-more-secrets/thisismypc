@@ -492,8 +492,10 @@ prep here.
 ## Binary hardening: DONE 2026-08-31
 
 Full item-by-item record: `docs/release/hardening-checklist.md`. CFG/DEP/ASLR/CET/
-EHCONT verified on both CoreCLR and AOT exes, IPC boundary audited against tm1,
-SetDefaultDllDirectories at both entry points, WinVerifyTrust gate on winget.
+EHCONT verified on both CoreCLR and AOT exes. Pinned source builds now harden
+Skia, HarfBuzz, and SQLite with the same PE mitigations and exact export parity.
+The IPC boundary was audited against tm1. SetDefaultDllDirectories protects
+all entry points, and WinVerifyTrust gates winget.
 All built, tested (ChildProcessGateTests incl. a live Integration case), and
 committed; ultra review over the batch (044a4ad..f1d3739) returned zero findings
 on 2026-09-01.

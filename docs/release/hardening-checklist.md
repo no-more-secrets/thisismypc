@@ -19,6 +19,11 @@ satisfied, verified this session), N/A (does not apply, reason given).
 - **CET / shadow stack: OK.** "CET compatible" extended characteristic verified
   on both exes (default since .NET 9 era toolchains). Hardware without shadow
   stacks ignores the bit; nothing further to do.
+- **Native dependency mitigations: DONE.** Pinned source builds replace the
+  Windows x64 Skia, HarfBuzz, and SQLite libraries. Each has CFG, CET, ASLR,
+  high-entropy VA, DEP, `/GS`, and table-based unwinding. Export lists match
+  the official packages exactly. The custom Skia build removes unused Vulkan
+  support. The remaining ANGLE library already has every checked mitigation.
 
 Re-verify any release binary with:
 `dumpbin /headers /loadconfig <exe>` (VS MSVC tools). Expect: Dynamic base,
@@ -33,6 +38,7 @@ EH Continuation table present.
   used managed delegate thunks that ACG blocks. Pinned local rebuilds replace
   those thunks with static unmanaged function pointers. A strict process
   creation test kept ACG active before resume and after the main window opened.
+  The rebuilt Skia, HarfBuzz, and SQLite libraries load under the same strict policy.
   `tools/AcgLauncher` preserves this loader-time release test in the repository.
   The shipped self-enable path still starts at managed `Main`. Loader-time ACG
   needs a trusted launcher or machine policy as a separate hardening step.

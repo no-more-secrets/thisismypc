@@ -81,11 +81,6 @@
         "resolved": "2.1.12",
         "contentHash": "ETpNw9DY3ckWLgRRAeCHj+GKOuPi61aeczkXhgHexUvqoZBAYg8RYESE2J7O1M7+o6QbdSEZwrw9bfqztUVWXg=="
       },
-      "SQLitePCLRaw.lib.e_sqlite3": {
-        "type": "Transitive",
-        "resolved": "2.1.12",
-        "contentHash": "fWi8Dbknuhgg72fWinIdjXVaqO1hHL4YBBwVLnr7e1c9TAZwJ0QE38j9syW1hwx6HaqEVTwI+O07WPdZn8Rp0w=="
-      },
       "SQLitePCLRaw.provider.e_sqlite3": {
         "type": "Transitive",
         "resolved": "2.1.12",
@@ -156,13 +151,20 @@
           "SQLitePCLRaw.bundle_e_sqlite3": "2.1.12",
           "SQLitePCLRaw.core": "2.1.12"
         }
+      },
+      "SQLitePCLRaw.lib.e_sqlite3": {
+        "type": "CentralTransitive",
+        "requested": "[2.1.12.2, 2.1.12.2]",
+        "resolved": "2.1.12.2",
+        "contentHash": "5SWyDipnBIoF5xX3Crmt4Dxx2K9z4qbV595dIGJICAIOqT/tDSWGJBrP0rQVuo+GeLVA1rx5EBpQHdHDbzp2Yw=="
       }
     },
     "net10.0-windows10.0.22621/win-x64": {
       "SQLitePCLRaw.lib.e_sqlite3": {
-        "type": "Transitive",
-        "resolved": "2.1.12",
-        "contentHash": "fWi8Dbknuhgg72fWinIdjXVaqO1hHL4YBBwVLnr7e1c9TAZwJ0QE38j9syW1hwx6HaqEVTwI+O07WPdZn8Rp0w=="
+        "type": "CentralTransitive",
+        "requested": "[2.1.12.2, 2.1.12.2]",
+        "resolved": "2.1.12.2",
+        "contentHash": "5SWyDipnBIoF5xX3Crmt4Dxx2K9z4qbV595dIGJICAIOqT/tDSWGJBrP0rQVuo+GeLVA1rx5EBpQHdHDbzp2Yw=="
       }
     }
   }
