@@ -13,13 +13,35 @@ public sealed class IpcRequestHandler
     private readonly IDriftReportSource _driftSource;
     private readonly DateTimeOffset _startedAtUtc;
     private readonly string _serviceVersion;
+    private readonly IRestorationServiceController? _restoration;
 
-    public IpcRequestHandler(IDriftReportSource driftSource, DateTimeOffset startedAtUtc, string serviceVersion)
+    public IpcRequestHandler(IDriftReportSource driftSource, DateTimeOffset startedAtUtc, string serviceVersion,
+        IRestorationServiceController? restoration = null)
     {
         ArgumentNullException.ThrowIfNull(driftSource);
         _driftSource = driftSource;
         _startedAtUtc = startedAtUtc;
         _serviceVersion = serviceVersion;
+        _restoration = restoration;
+    }
+
+    public async Task<IpcEnvelope> HandleAsync(IpcEnvelope request, CancellationToken token = default)
+    {
+        try
+        {
+        if (request.Type is not (IpcMessageTypes.EnableRestoration or IpcMessageTypes.PauseRestoration))
+            return Handle(request);
+        var status = _restoration is null ? new RestorationStatusResponse() :
+            request.Type == IpcMessageTypes.EnableRestoration
+                ? await _restoration.EnableAsync(token).ConfigureAwait(false)
+                : await _restoration.PauseAsync(token).ConfigureAwait(false);
+        return new() { Type = request.Type, Nonce = request.Nonce,
+            PayloadJson = JsonSerializer.Serialize(status, IpcJsonContext.Default.RestorationStatusResponse) };
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            return MakeError(request.Nonce, "Restoration request failed: " + ex.Message);
+        }
     }
 
     public IpcEnvelope Handle(IpcEnvelope request)
@@ -59,5 +81,6 @@ public sealed class IpcRequestHandler
         StartedAtUtc = _startedAtUtc,
         BaselinePresent = _driftSource.BaselinePresent,
         LastDriftScanUtc = _driftSource.LastScanUtc,
+        Restoration = _restoration?.GetStatus() ?? new(),
     };
 }

@@ -26,12 +26,13 @@ public sealed class PipeServerWorker : BackgroundService
     private readonly string _pipeName;
 
     public PipeServerWorker(
-        IDriftReportSource driftSource, ILogger<PipeServerWorker> logger, string? pipeName = null)
+        IDriftReportSource driftSource, ILogger<PipeServerWorker> logger, string? pipeName = null,
+        IRestorationServiceController? restoration = null)
     {
         _handler = new IpcRequestHandler(
             driftSource,
             DateTimeOffset.UtcNow,
-            typeof(PipeServerWorker).Assembly.GetName().Version?.ToString() ?? "0.0.0");
+            typeof(PipeServerWorker).Assembly.GetName().Version?.ToString() ?? "0.0.0", restoration);
         _logger = logger;
         _pipeName = pipeName ?? IpcProtocol.PipeName;
     }
@@ -92,7 +93,7 @@ public sealed class PipeServerWorker : BackgroundService
             var request = IpcSerializer.DeserializeEnvelope(frame);
             var response = request is null
                 ? IpcRequestHandler.MakeError(string.Empty, "Unreadable request")
-                : _handler.Handle(request);
+                : await _handler.HandleAsync(request, token).ConfigureAwait(false);
 
             await IpcProtocol.WriteFrameAsync(pipe, IpcSerializer.SerializeEnvelope(response), token)
                 .ConfigureAwait(false);

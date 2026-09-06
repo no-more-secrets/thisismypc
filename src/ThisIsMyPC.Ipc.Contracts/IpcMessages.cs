@@ -23,6 +23,19 @@ public static class IpcMessageTypes
     public const string ServiceStatus = "service-status";
     public const string DriftReport = "drift-report";
     public const string Error = "error";
+    public const string EnableRestoration = "enable-restoration";
+    public const string PauseRestoration = "pause-restoration";
+}
+
+/// <summary>Restoration authorization is separate from the service process state.</summary>
+public enum RestorationServiceState { Unavailable, Paused, Enabled, Conflict }
+
+public sealed record RestorationStatusResponse
+{
+    public RestorationServiceState State { get; init; } = RestorationServiceState.Unavailable;
+    public bool ConsentGranted { get; init; }
+    public string Detail { get; init; } = "Trusted restoration is unavailable in this build.";
+    public DateTimeOffset? LastScanUtc { get; init; }
 }
 
 public sealed record ServiceStatusResponse
@@ -32,6 +45,7 @@ public sealed record ServiceStatusResponse
     public required DateTimeOffset StartedAtUtc { get; init; }
     public required bool BaselinePresent { get; init; }
     public DateTimeOffset? LastDriftScanUtc { get; init; }
+    public RestorationStatusResponse Restoration { get; init; } = new();
 }
 
 /// <summary>One reverted setting in a drift report (28-3).</summary>
@@ -69,6 +83,7 @@ public sealed record IpcErrorResponse
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
 [JsonSerializable(typeof(IpcEnvelope))]
 [JsonSerializable(typeof(ServiceStatusResponse))]
+[JsonSerializable(typeof(RestorationStatusResponse))]
 [JsonSerializable(typeof(DriftReportResponse))]
 [JsonSerializable(typeof(IpcErrorResponse))]
 public sealed partial class IpcJsonContext : JsonSerializerContext;

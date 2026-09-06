@@ -255,7 +255,8 @@ public partial class App : Application
             sp.GetRequiredService<IServiceInstaller>(),
             sp.GetRequiredService<IServiceControlService>(),
             mutationLeaseProvider: sp.GetRequiredService<Core.Coordination.IMutationLeaseProvider>(),
-            consentStore: sp.GetRequiredService<Core.Drift.Consent.IMachineConsentStore>()));
+            consentStore: sp.GetRequiredService<Core.Drift.Consent.IMachineConsentStore>(),
+            ipc: sp.GetRequiredService<ThisIsMyPC.Ipc.Contracts.IIpcClient>()));
 
         // Core Services. The capability detector is wrapped by the Debug page's
         // simulation seam: a pass-through until the Debug page (Debug builds only)
@@ -264,7 +265,7 @@ public partial class App : Application
         services.AddSingleton<ICapabilityDetector>(sp => new Services.SimulatedCapabilityDetector(
             new CapabilityDetector(
                 sp.GetRequiredService<IRegistryService>(),
-                ownerModeProbe: () => sp.GetRequiredService<OwnerModeService>().IsRunning),
+                ownerModeProbe: () => sp.GetRequiredService<OwnerModeService>().IsRestorationEnabled),
             sp.GetRequiredService<Services.DebugSimulation>()));
         // PendingChangesService's optional ctor param resolves this because it is registered.
         services.AddSingleton<IEnforcementExecutor, EnforcementExecutor>();

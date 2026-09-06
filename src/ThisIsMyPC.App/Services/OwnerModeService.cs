@@ -2,6 +2,7 @@ using ThisIsMyPC.Core.Coordination;
 using ThisIsMyPC.Core.Drift.Consent;
 using ThisIsMyPC.Core.Results;
 using ThisIsMyPC.Core.Services;
+using ThisIsMyPC.Ipc.Contracts;
 
 namespace ThisIsMyPC.App.Services;
 
@@ -16,17 +17,16 @@ public enum OwnerModeState
 }
 
 /// <summary>
-/// Owner Mode service lifecycle (28-2). Enable = register with the SCM
-/// (SERVICE_AUTO_START, LocalSystem) + start; disable = stop + start type Disabled
-/// (registration stays so re-enabling is one click). State is queried live from the
-/// SCM; the service can be managed externally and the UI must not drift from it.
+/// SCM lifecycle and explicit restoration consent remain separate.
+/// Enable requires a service acknowledgement; Pause saves consent-off before SCM shutdown.
+/// The service process alone never grants the restoration capability.
 /// </summary>
 public sealed class OwnerModeService : IOwnerModeServiceControl
 {
     public const string ServiceName = "ThisIsMyPC";
     public const string ServiceDisplayName = "ThisIsMyPC Owner Mode Service";
     public const string ServiceDescription =
-        "Detects when Windows reverts ThisIsMyPC-applied settings after updates (drift watchdog).";
+        "Reports changes to saved settings and supports explicitly authorized restoration.";
 
     private static readonly TimeSpan ControlTimeout = TimeSpan.FromSeconds(30);
 
@@ -35,10 +35,14 @@ public sealed class OwnerModeService : IOwnerModeServiceControl
     private readonly string _binaryPath;
     private readonly IMutationLeaseProvider? _mutationLeaseProvider;
     private readonly IMachineConsentStore? _consentStore;
+    private readonly IIpcClient? _ipc;
+    private bool _restorationEnabled;
+    public bool IsRestorationEnabled => Volatile.Read(ref _restorationEnabled) && IsRunning;
 
     public OwnerModeService(
         IServiceInstaller installer, IServiceControlService serviceControl, string? binaryPath = null,
-        IMutationLeaseProvider? mutationLeaseProvider = null, IMachineConsentStore? consentStore = null)
+        IMutationLeaseProvider? mutationLeaseProvider = null, IMachineConsentStore? consentStore = null,
+        IIpcClient? ipc = null)
     {
         ArgumentNullException.ThrowIfNull(installer);
         ArgumentNullException.ThrowIfNull(serviceControl);
@@ -46,6 +50,7 @@ public sealed class OwnerModeService : IOwnerModeServiceControl
             throw new ArgumentException("Pause requires both a mutation lease provider and a consent store.");
         _mutationLeaseProvider = mutationLeaseProvider;
         _consentStore = consentStore;
+        _ipc = ipc;
         _installer = installer;
         _serviceControl = serviceControl;
         _binaryPath = binaryPath ?? Path.Combine(AppContext.BaseDirectory, "ThisIsMyPC.Service.exe");
@@ -101,6 +106,9 @@ public sealed class OwnerModeService : IOwnerModeServiceControl
 
     public async Task<OperationResult<bool>> EnableAsync(CancellationToken cancellationToken = default)
     {
+        Volatile.Write(ref _restorationEnabled, false);
+        if (_ipc is null)
+            return OperationResult<bool>.Failure("Trusted restoration is unavailable in this build.", ErrorCategory.ServiceUnavailable);
         if (!File.Exists(_binaryPath))
         {
             return OperationResult<bool>.Failure(
@@ -120,13 +128,46 @@ public sealed class OwnerModeService : IOwnerModeServiceControl
         var start = await _serviceControl.StartAsync(ServiceName, ControlTimeout, cancellationToken)
             .ConfigureAwait(false);
         InvalidateProbe();
-        if (start.IsSuccess)
-            StateChanged?.Invoke(this, EventArgs.Empty);
-        return start;
+        if (!start.IsSuccess) return start;
+        var enabled = await _ipc.EnableRestorationAsync(cancellationToken).ConfigureAwait(false);
+        Volatile.Write(ref _restorationEnabled, enabled.IsSuccess && enabled.Value is { State: RestorationServiceState.Enabled, ConsentGranted: true });
+        StateChanged?.Invoke(this, EventArgs.Empty);
+        return enabled.IsSuccess && enabled.Value is { State: RestorationServiceState.Enabled, ConsentGranted: true }
+            ? OperationResult<bool>.Success(true)
+            : OperationResult<bool>.Failure(enabled.Value?.Detail ?? enabled.ErrorMessage ?? "Restoration was not enabled.", ErrorCategory.ServiceUnavailable);
+    }
+
+    public async Task<RestorationStatusResponse> GetRestorationStatusAsync(CancellationToken cancellationToken = default)
+    {
+        if (_ipc is null || GetState() != OwnerModeState.Running)
+        {
+            Volatile.Write(ref _restorationEnabled, false);
+            return ReadLocalConsentStatus();
+        }
+        var result = await _ipc.GetStatusAsync(cancellationToken).ConfigureAwait(false);
+        var status = result.IsSuccess && result.Value?.ProtocolVersion == IpcProtocol.ProtocolVersion
+            ? result.Value.Restoration ?? new() : ReadLocalConsentStatus() with { Detail = result.ErrorMessage ?? "Service status is unavailable or incompatible." };
+        Volatile.Write(ref _restorationEnabled, status is { State: RestorationServiceState.Enabled, ConsentGranted: true });
+        return status;
+    }
+
+    private RestorationStatusResponse ReadLocalConsentStatus()
+    {
+        var consent = _consentStore?.Read();
+        return consent is { Status: MachineConsentStatus.Loaded, Enabled: false }
+            ? new() { State = RestorationServiceState.Paused, Detail = "Restoration is paused." }
+            : new() { ConsentGranted = consent?.IsGranted == true };
     }
 
     public async Task<OperationResult<bool>> DisableAsync(CancellationToken cancellationToken = default)
     {
+        Volatile.Write(ref _restorationEnabled, false);
+        if (_mutationLeaseProvider is null && _ipc is not null)
+        {
+            var paused = await _ipc.PauseRestorationAsync(cancellationToken).ConfigureAwait(false);
+            if (!paused.IsSuccess || paused.Value is not { State: RestorationServiceState.Paused, ConsentGranted: false })
+                return OperationResult<bool>.Failure(paused.Value?.Detail ?? paused.ErrorMessage ?? "Pause was not confirmed.", ErrorCategory.ServiceUnavailable);
+        }
         if (_mutationLeaseProvider is not null)
         {
             // Opt-out does not need journal recovery. It remains possible when recovery is corrupt.

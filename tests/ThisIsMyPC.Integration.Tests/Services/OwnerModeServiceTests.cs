@@ -22,7 +22,7 @@ public sealed class OwnerModeServiceTests : IDisposable
         catch (IOException) { }
     }
 
-    private OwnerModeService Create() => new(_installer, _serviceControl, _binaryPath);
+    private OwnerModeService Create() => new(_installer, _serviceControl, _binaryPath, ipc: new EnabledIpc());
 
     private void WriteBinary()
     {
@@ -123,6 +123,68 @@ public sealed class OwnerModeServiceTests : IDisposable
         Assert.Equal(OwnerModeState.Unknown, Create().GetState());
     }
 
+    [Theory]
+    [InlineData(ThisIsMyPC.Ipc.Contracts.RestorationServiceState.Enabled, false)]
+    [InlineData(ThisIsMyPC.Ipc.Contracts.RestorationServiceState.Unavailable, true)]
+    [InlineData(ThisIsMyPC.Ipc.Contracts.RestorationServiceState.Paused, true)]
+    public async Task ScmStartWithoutConfirmedRestorationDoesNotEnable(ThisIsMyPC.Ipc.Contracts.RestorationServiceState state, bool consent)
+    {
+        WriteBinary();
+        var ipc = new EnabledIpc { Restoration = new() { State = state, ConsentGranted = consent } };
+        var service = new OwnerModeService(_installer, _serviceControl, _binaryPath, ipc: ipc);
+        Assert.False((await service.EnableAsync()).IsSuccess);
+        Assert.Equal(OwnerModeState.Running, service.GetState());
+    }
+
+    [Fact]
+    public async Task IncompatibleProtocolCannotReportRestorationEnabled()
+    {
+        _serviceControl.State = ServiceState.Running;
+        var service = new OwnerModeService(_installer, _serviceControl, _binaryPath, ipc: new EnabledIpc { ProtocolVersion = 999 });
+        Assert.Equal(ThisIsMyPC.Ipc.Contracts.RestorationServiceState.Unavailable, (await service.GetRestorationStatusAsync()).State);
+    }
+    [Fact]
+    public async Task StoppedServiceWithSavedConsentStillOffersPause()
+    {
+        _serviceControl.State = ServiceState.Stopped;
+        var service = new OwnerModeService(_installer, _serviceControl, _binaryPath,
+            mutationLeaseProvider: new UnusedLeases(), consentStore: new SavedConsent(), ipc: new EnabledIpc());
+        var status = await service.GetRestorationStatusAsync();
+        Assert.Equal(ThisIsMyPC.Ipc.Contracts.RestorationServiceState.Unavailable, status.State);
+        Assert.True(status.ConsentGranted);
+        var vm = new ThisIsMyPC.App.ViewModels.OwnerModeSectionViewModel(service);
+        await vm.Initialization;
+        Assert.True(vm.DisableCommand.CanExecute(null));
+    }
+
+    private sealed class UnusedLeases : Core.Coordination.IMutationLeaseProvider
+    {
+        public string Name => "test";
+        public Task<Core.Coordination.MutationLeaseResult> AcquireAsync(TimeSpan maxWait, CancellationToken cancellationToken = default)
+            => throw new InvalidOperationException("Status must not acquire a mutation lease.");
+    }
+    private sealed class SavedConsent : Core.Drift.Consent.IMachineConsentStore
+    {
+        public Core.Drift.Consent.MachineConsentState Read() => new(Core.Drift.Consent.MachineConsentStatus.Loaded, true, "saved consent");
+        public Core.Drift.Consent.MachineConsentWriteResult SetEnabled(bool enabled, Core.Coordination.IMutationLease lease)
+            => throw new InvalidOperationException("Status must not write consent.");
+    }
+    private sealed class EnabledIpc : ThisIsMyPC.Ipc.Contracts.IIpcClient
+    {
+        public ThisIsMyPC.Ipc.Contracts.RestorationStatusResponse Restoration { get; set; } = new() { State = ThisIsMyPC.Ipc.Contracts.RestorationServiceState.Enabled, ConsentGranted = true };
+        public int ProtocolVersion { get; set; } = ThisIsMyPC.Ipc.Contracts.IpcProtocol.ProtocolVersion;
+        public Task<OperationResult<ThisIsMyPC.Ipc.Contracts.ServiceStatusResponse>> GetStatusAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult(OperationResult<ThisIsMyPC.Ipc.Contracts.ServiceStatusResponse>.Success(new() { ProtocolVersion = ProtocolVersion, ServiceVersion = "test", StartedAtUtc = DateTimeOffset.UtcNow, BaselinePresent = true, Restoration = Restoration }));
+        public Task<OperationResult<ThisIsMyPC.Ipc.Contracts.DriftReportResponse>> GetDriftReportAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult(OperationResult<ThisIsMyPC.Ipc.Contracts.DriftReportResponse>.Failure("unused", ErrorCategory.ServiceUnavailable));
+        public Task<OperationResult<ThisIsMyPC.Ipc.Contracts.RestorationStatusResponse>> PauseRestorationAsync(CancellationToken cancellationToken = default)
+        {
+            Restoration = new() { State = ThisIsMyPC.Ipc.Contracts.RestorationServiceState.Paused, ConsentGranted = false };
+            return Task.FromResult(OperationResult<ThisIsMyPC.Ipc.Contracts.RestorationStatusResponse>.Success(Restoration));
+        }
+        public Task<OperationResult<ThisIsMyPC.Ipc.Contracts.RestorationStatusResponse>> EnableRestorationAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult(OperationResult<ThisIsMyPC.Ipc.Contracts.RestorationStatusResponse>.Success(Restoration));
+    }
     private sealed class FakeInstaller : IServiceInstaller
     {
         public bool Installed { get; set; }

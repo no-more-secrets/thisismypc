@@ -27,7 +27,7 @@ The single-owner store replaced the experimental multi-profile baseline. Product
 
 One implementation worker per step, followed by a short independent review. The coordinator integrates and verifies. A second agent runs only for an independent test/review task. No manager agents or nested delegation.
 Each completed batch gets a commit and a checkpoint: observable behavior, tests, unresolved blockers, and measured usage if available. No unsupported cost or time estimate.
-Each new step requires the next batch authorization. Steps 1 through 4 are complete. Stop at the Step 4 checkpoint before service activation and status work.
+Each new step requires the next batch authorization. Steps 1 through 5 are complete. Stop at the Step 5 checkpoint before native activation.
 
 ## 1. Scope audit and plan
 
@@ -91,9 +91,11 @@ Tests: `App.UiTests/ToastAndOwnerModeShotTests.cs`, IPC tests, lifecycle tests. 
 
 Exit: enable/pause and status work through the complete fake-backed service path.
 
-## 6. Validate the existing catalog and live behavior
+## 6. Connect native trust and validate live behavior
 
 Assignment: one test/review agent; coordinator fixes integration findings and prepares the owner's click-through check.
+
+Supply trusted journal/database access, bound-account loading from the trusted baseline, and native loaded-profile/management evidence. Replace the temporary app-only consent-off recovery with shared recovery before registering automatic restoration. Step 5 deliberately leaves this native graph unavailable.
 
 Run the existing eleven-target parity suite, full CI-safe suite, Release build, and isolated elevated coordination/storage tests. Expand the worker's supported subset only as target tests pass.
 
@@ -105,7 +107,7 @@ Exit: verified subset restores correctly, pause works, history is truthful, and 
 
 Steps 1 and 2 are complete. Step 3 implements one fake-backed catalog target through the coordinator, strict baseline, eligibility, durable intent, pending changes, verification, and history import. Production registration stays disabled.
 
-The initial loop also caps total attempts at three per seven days. This conservative ceiling includes successful attempts; it does not classify an external edit as a Windows reversion. Uncertain outcomes and unmatched intents block further writes. Step 4 is complete: [deliberate changes and Pause](../owner-mode-deliberate-changes.md). Production app-only recovery saves consent-off and does not reconcile the restoration journal. Step 5 must connect trusted recovery, consent, service behavior, and status before automatic restoration can run.
+The initial loop also caps total attempts at three per seven days. This conservative ceiling includes successful attempts; it does not classify an external edit as a Windows reversion. Uncertain outcomes and unmatched intents block further writes. Step 4 is complete: [deliberate changes and Pause](../owner-mode-deliberate-changes.md). Production app-only recovery saves consent-off and does not reconcile the restoration journal. Step 5 is complete for the fake-backed service path: [controls and status](../owner-mode-service-controls.md). Native journal/database/profile/management adapters remain absent. Step 6 must supply them and shared recovery before production restoration can run.
 
 ## Deferred
 

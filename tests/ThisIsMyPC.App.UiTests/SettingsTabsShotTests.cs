@@ -7,6 +7,7 @@ using ThisIsMyPC.App.Views;
 using ThisIsMyPC.Core.Modules;
 using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Core.Settings;
+using ThisIsMyPC.Ipc.Contracts;
 
 namespace ThisIsMyPC.App.UiTests;
 
@@ -33,6 +34,8 @@ public class SettingsTabsShotTests
     private sealed class FakeServiceControl : ThisIsMyPC.App.Services.IOwnerModeServiceControl
     {
         public ThisIsMyPC.App.Services.OwnerModeState State { get; set; } = ThisIsMyPC.App.Services.OwnerModeState.Stopped;
+        public RestorationServiceState Restoration { get; set; } = RestorationServiceState.Unavailable;
+        public Task<RestorationStatusResponse> GetRestorationStatusAsync(CancellationToken cancellationToken = default) => Task.FromResult(new RestorationStatusResponse { State = Restoration, ConsentGranted = Restoration == RestorationServiceState.Enabled, Detail = Restoration switch { RestorationServiceState.Conflict => "A previous attempt requires reconciliation.", RestorationServiceState.Paused => "Restoration is paused.", RestorationServiceState.Enabled => "Restoration is enabled.", _ => "Trusted restoration is unavailable in this build." } });
         public TaskCompletionSource<Core.Results.OperationResult<bool>>? Pending { get; set; }
         public event EventHandler? StateChanged;
 
@@ -44,6 +47,7 @@ public class SettingsTabsShotTests
             if (result.IsSuccess)
             {
                 State = ThisIsMyPC.App.Services.OwnerModeState.Running;
+                Restoration = RestorationServiceState.Enabled;
                 StateChanged?.Invoke(this, EventArgs.Empty);
             }
             return result;
@@ -52,6 +56,7 @@ public class SettingsTabsShotTests
         public Task<Core.Results.OperationResult<bool>> DisableAsync(CancellationToken cancellationToken = default)
         {
             State = ThisIsMyPC.App.Services.OwnerModeState.Disabled;
+            Restoration = RestorationServiceState.Paused;
             StateChanged?.Invoke(this, EventArgs.Empty);
             return Task.FromResult(Core.Results.OperationResult<bool>.Success(true));
         }
@@ -181,21 +186,25 @@ public class SettingsTabsShotTests
             using var session = UiSession.ForView(Card(new SettingsView()), vm, "settings-tabs", width: 1200, height: 800);
             session.SetTheme(theme);
             session.ClickText("Owner Mode");
-            Assert.True(session.IsTextVisible("Owner Mode Service"));
-            Assert.True(session.IsTextVisible("Running"));
+            Assert.Equal("Unavailable", section.StateText);
+            Assert.True(session.IsTextVisible("Service running"));
             Assert.True(session.IsTextVisible("Startup & service monitoring"));
             Assert.False(session.IsTextVisible("The Owner Mode service is not available in this build."));
             session.Screenshot($"owner-mode-running-{theme.Key}");
+            service.Restoration = RestorationServiceState.Conflict;
+            await section.RefreshRestorationCommand.ExecuteAsync(null);
+            Assert.Equal("Conflict", section.StateText);
+            session.Screenshot($"owner-mode-conflict-{theme.Key}");
 
             // Disable through the button: the fake flips to Disabled.
-            session.ClickText("Disable Service");
+            session.ClickText("Pause");
             await session.WaitForAsync(() => !section.IsBusy && !section.IsRunning, what: "service disabled");
             Assert.True(session.IsTextVisible("Installed, disabled"));
             session.Screenshot($"owner-mode-disabled-{theme.Key}");
 
             // Enable that hangs: the busy bar shows while the fake waits.
             service.Pending = new TaskCompletionSource<Core.Results.OperationResult<bool>>();
-            session.ClickText("Enable Service");
+            session.ClickText("Enable Owner Mode");
             await session.WaitForAsync(() => section.IsBusy, what: "busy state");
             Assert.True(session.Find<ProgressBar>(_ => true).IsEffectivelyVisible);
             session.Screenshot($"owner-mode-busy-{theme.Key}");
@@ -212,10 +221,11 @@ public class SettingsTabsShotTests
 
             // A second enable succeeds and clears the error.
             service.Pending = null;
-            session.ClickText("Enable Service");
+            session.ClickText("Enable Owner Mode");
             await session.WaitForAsync(() => section.IsRunning, what: "service running");
             Assert.Equal("", section.ErrorText);
-            Assert.True(session.IsTextVisible("Running"));
+            Assert.True(session.IsTextVisible("Service running"));
+            session.Screenshot($"owner-mode-enabled-{theme.Key}");
         }
     }
 

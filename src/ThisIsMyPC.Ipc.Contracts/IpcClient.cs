@@ -9,6 +9,10 @@ public interface IIpcClient
 {
     Task<OperationResult<ServiceStatusResponse>> GetStatusAsync(CancellationToken cancellationToken = default);
     Task<OperationResult<DriftReportResponse>> GetDriftReportAsync(CancellationToken cancellationToken = default);
+    Task<OperationResult<RestorationStatusResponse>> EnableRestorationAsync(CancellationToken cancellationToken = default)
+        => Task.FromResult(OperationResult<RestorationStatusResponse>.Failure("Restoration control is unavailable.", ErrorCategory.ServiceUnavailable));
+    Task<OperationResult<RestorationStatusResponse>> PauseRestorationAsync(CancellationToken cancellationToken = default)
+        => Task.FromResult(OperationResult<RestorationStatusResponse>.Failure("Restoration control is unavailable.", ErrorCategory.ServiceUnavailable));
 }
 
 /// <summary>
@@ -23,24 +27,40 @@ public sealed class IpcClient : IIpcClient
 {
     private readonly string _pipeName;
     private readonly TimeSpan _connectTimeout;
+    private readonly TimeSpan _requestTimeout;
 
-    public IpcClient(string? pipeName = null, TimeSpan? connectTimeout = null)
+    public IpcClient(string? pipeName = null, TimeSpan? connectTimeout = null, TimeSpan? requestTimeout = null)
     {
         _pipeName = pipeName ?? IpcProtocol.PipeName;
         _connectTimeout = connectTimeout ?? TimeSpan.FromSeconds(2);
+        _requestTimeout = requestTimeout ?? TimeSpan.FromSeconds(35);
     }
 
-    public Task<OperationResult<ServiceStatusResponse>> GetStatusAsync(CancellationToken cancellationToken = default) =>
-        RequestAsync(IpcMessageTypes.ServiceStatus, IpcJsonContext.Default.ServiceStatusResponse, cancellationToken);
+    public async Task<OperationResult<ServiceStatusResponse>> GetStatusAsync(CancellationToken cancellationToken = default)
+    {
+        var result = await RequestAsync(IpcMessageTypes.ServiceStatus, IpcJsonContext.Default.ServiceStatusResponse, cancellationToken).ConfigureAwait(false);
+        return result.IsSuccess && result.Value is { Restoration: null } status
+            ? OperationResult<ServiceStatusResponse>.Success(status with { Restoration = new() }) : result;
+    }
 
     public Task<OperationResult<DriftReportResponse>> GetDriftReportAsync(CancellationToken cancellationToken = default) =>
         RequestAsync(IpcMessageTypes.DriftReport, IpcJsonContext.Default.DriftReportResponse, cancellationToken);
+
+    public Task<OperationResult<RestorationStatusResponse>> EnableRestorationAsync(CancellationToken cancellationToken = default) =>
+        RequestAsync(IpcMessageTypes.EnableRestoration, IpcJsonContext.Default.RestorationStatusResponse, cancellationToken);
+
+    public Task<OperationResult<RestorationStatusResponse>> PauseRestorationAsync(CancellationToken cancellationToken = default) =>
+        RequestAsync(IpcMessageTypes.PauseRestoration, IpcJsonContext.Default.RestorationStatusResponse, cancellationToken);
 
     private async Task<OperationResult<T>> RequestAsync<T>(
         string type,
         System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> payloadTypeInfo,
         CancellationToken cancellationToken)
     {
+        var callerToken = cancellationToken;
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(callerToken);
+        timeout.CancelAfter(_requestTimeout);
+        cancellationToken = timeout.Token;
         try
         {
             using var pipe = new NamedPipeClientStream(
@@ -93,6 +113,10 @@ public sealed class IpcClient : IIpcClient
             return payload is null
                 ? OperationResult<T>.Failure("Empty response payload", ErrorCategory.ServiceUnavailable)
                 : OperationResult<T>.Success(payload);
+        }
+        catch (OperationCanceledException) when (!callerToken.IsCancellationRequested)
+        {
+            return OperationResult<T>.Failure("The service request timed out.", ErrorCategory.ServiceUnavailable);
         }
         catch (OperationCanceledException)
         {

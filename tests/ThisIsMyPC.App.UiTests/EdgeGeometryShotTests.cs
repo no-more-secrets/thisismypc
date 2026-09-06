@@ -34,6 +34,9 @@ public class EdgeGeometryShotTests
         await session.WaitForAsync(
             () => viewModel.ContentTitle == "Settings", timeoutMs: 30_000, what: "settings load");
         session.Screenshot("settings");
+        session.ClickText("Owner Mode");
+        session.Pump();
+        session.Screenshot("settings-owner-mode");
     }
 
     private static string Slug(string name) =>

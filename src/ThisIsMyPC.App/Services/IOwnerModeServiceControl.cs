@@ -1,4 +1,5 @@
 using ThisIsMyPC.Core.Results;
+using ThisIsMyPC.Ipc.Contracts;
 
 namespace ThisIsMyPC.App.Services;
 
@@ -10,6 +11,8 @@ namespace ThisIsMyPC.App.Services;
 public interface IOwnerModeServiceControl : IOwnerModeLifecycle
 {
     OwnerModeState GetState();
+    Task<RestorationStatusResponse> GetRestorationStatusAsync(CancellationToken cancellationToken = default)
+        => Task.FromResult(new RestorationStatusResponse());
 
     Task<OperationResult<bool>> DisableAsync(CancellationToken cancellationToken = default);
 }
