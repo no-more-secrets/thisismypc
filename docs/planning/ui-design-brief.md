@@ -43,9 +43,10 @@ Two themes required, dark and light, equal citizens. Dark is the default.
   marked until applied) and a disabled state with an inline reason.
 - **Setting card**: a richer row used by card-based modules. Groups of cards
   under a section header with a group description. Cards can carry: an SKU
-  callout ("needs Pro"), an enforcement note, an expandable advanced section,
-  and a per-card registry data panel toggled globally ("Registry Data" and
-  "Compact" view toggles at the top of those modules).
+  callout ("needs Pro"), an enforcement note, and a technical details panel
+  (registry path, value type, last reading) closed by default and opened by
+  the card's own link or by the page's "Technical details" toggle; "Compact"
+  moves descriptions into the (i) tooltip. Card pages use one tab per section.
 - **Scope badges**: small tinted chips (Files, Folders, Background, Desktop,
   Misc) on rows that affect multiple right-click contexts.
 - **Status colors**: success, warning, danger, info, each with a muted

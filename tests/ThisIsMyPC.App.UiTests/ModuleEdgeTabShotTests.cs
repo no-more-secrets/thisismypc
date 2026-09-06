@@ -32,8 +32,15 @@ public class ModuleEdgeTabShotTests
         using var context = new ContextMenuViewModel([], pending, new UiFakeRegistryService());
         using var shell = new ShellViewModel(new ShellScanData([], new TaskbarSettings(1, true, false, false)), pending, new UiFakeRegistryService());
         using var software = new SoftwareViewModel(new SoftwareScanData([], new HashSet<string>(), true, "test", [], new HashSet<string>(), true), new PendingActionsService());
+        var cardRegistry = new UiFakeRegistryService();
+        using var privacy = new PrivacyViewModel(
+            new ThisIsMyPC.Modules.Privacy.Services.PrivacySettingsReader(cardRegistry).ReadAll(), pending, cardRegistry);
+        using var windowsUpdate = new WindowsUpdateViewModel(
+            new ThisIsMyPC.Modules.WindowsUpdate.Services.WindowsUpdateSettingsReader(cardRegistry).ReadAll(), pending, cardRegistry);
         var pages = new (string Name, Control View, object Model)[]
         {
+            ("privacy", new SettingCardPageView(), privacy),
+            ("windows-update", new SettingCardPageView(), windowsUpdate),
             ("explorer", new ShellView(), shell),
             ("environment", new EnvironmentView(), new EnvironmentViewModel(new EnvironmentScanData([], []), pending)),
             ("settings", new SettingsView(), new SettingsViewModel(new SettingsService(Path.Combine(Path.GetTempPath(), $"tipc-tabs-{Guid.NewGuid():N}.json")), [])),

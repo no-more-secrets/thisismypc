@@ -146,18 +146,29 @@ public sealed class SettingsImportRowWrapper
 public sealed class SettingsSectionViewModel
 {
     public required string Header { get; init; }
+
+    /// <summary>False when the tab already carries the section's name, so the page does not say it twice.</summary>
+    public bool ShowHeader { get; init; } = true;
+
     public string? Subtitle { get; init; }
     public required IReadOnlyList<object> Items { get; init; }
 }
 
 /// <summary>
-/// The application settings screen: General + Persistence app preferences plus
-/// module-contributed settings. Values live in ISettingsService and persist on
-/// every change. Export/import lives here too; file dialogs are handled by the
-/// view's code-behind, the VM works on JSON strings so it stays testable.
+/// The application settings screen, one tab per concern: Application (look,
+/// tray, startup, update check), Notifications, Owner Mode (the service plus
+/// the app's own monitoring, which does not need the service), Modules
+/// (module preferences and the read-only capability summary), and Backup &amp;
+/// Transfer. Values live in ISettingsService and persist on every change.
+/// Export/import lives here too; file dialogs are handled by the view's
+/// code-behind, the VM works on JSON strings so it stays testable.
 /// </summary>
 public sealed partial class SettingsViewModel : ViewModelBase, ITabbedPage
 {
+    public const string ApplicationHeader = "Application";
+    public const string NotificationsHeader = "Notifications";
+    public const string MonitoringHeader = "In-app monitoring";
+
     [ObservableProperty]
     private int _selectedTabIndex;
 
@@ -166,12 +177,15 @@ public sealed partial class SettingsViewModel : ViewModelBase, ITabbedPage
     private readonly string _appVersion;
     private SettingsImportPreview? _pendingImport;
 
+    /// <summary>Every section in tab order: the three app sections, then one per module contributor.</summary>
     public ObservableCollection<SettingsSectionViewModel> Sections { get; } = [];
-    public SettingsSectionViewModel GeneralSection => Sections[0];
-    public SettingsSectionViewModel BackgroundSection => Sections[1];
-    public IReadOnlyList<SettingsSectionViewModel> GeneralSections => [GeneralSection];
-    public IReadOnlyList<SettingsSectionViewModel> BackgroundSections => [BackgroundSection];
-    public IReadOnlyList<SettingsSectionViewModel> ModuleSections => Sections.Skip(2).ToList();
+    public SettingsSectionViewModel ApplicationSection { get; }
+    public SettingsSectionViewModel NotificationsSection { get; }
+    public SettingsSectionViewModel MonitoringSection { get; }
+    public IReadOnlyList<SettingsSectionViewModel> ApplicationSections => [ApplicationSection];
+    public IReadOnlyList<SettingsSectionViewModel> NotificationSections => [NotificationsSection];
+    public IReadOnlyList<SettingsSectionViewModel> MonitoringSections => [MonitoringSection];
+    public IReadOnlyList<SettingsSectionViewModel> ModuleSections { get; }
 
     /// <summary>Owner Mode service lifecycle section; null when unavailable (tests).</summary>
     public OwnerModeSectionViewModel? OwnerMode { get; }
@@ -199,9 +213,10 @@ public sealed partial class SettingsViewModel : ViewModelBase, ITabbedPage
         _settings = settings;
         _installedModuleIds = installedModuleIds ?? [];
         _appVersion = appVersion ?? "0.0.0";
-        Sections.Add(new SettingsSectionViewModel
+        ApplicationSection = new SettingsSectionViewModel
         {
-            Header = "General",
+            Header = ApplicationHeader,
+            ShowHeader = false,
             Items =
             [
                 new SettingChoiceItemViewModel(
@@ -216,14 +231,6 @@ public sealed partial class SettingsViewModel : ViewModelBase, ITabbedPage
                     "Dyslexia-friendly font",
                     "Switches body text to OpenDyslexic.",
                     settings.GetAppBool(AppSettingKeys.DyslexiaFont, false)),
-            ],
-        });
-
-        Sections.Add(new SettingsSectionViewModel
-        {
-            Header = "Persistence & Background",
-            Items =
-            [
                 new SettingToggleItemViewModel(
                     settings, null, AppSettingKeys.TrayMode,
                     "Tray mode",
@@ -235,14 +242,24 @@ public sealed partial class SettingsViewModel : ViewModelBase, ITabbedPage
                     "",
                     settings.GetAppBool(AppSettingKeys.AutoStart, false)),
                 new SettingToggleItemViewModel(
-                    settings, null, AppSettingKeys.MonitoringEnabled,
-                    "Startup & service monitoring",
-                    "Watches for new startup entries, services, and scheduled tasks while the app runs. Detections appear on Home.",
-                    settings.GetAppBool(AppSettingKeys.MonitoringEnabled, false)),
+                    settings, null, AppSettingKeys.UpdateCheck,
+                    "Check for app updates",
+                    "Compares the app version against GitHub Releases at launch. Only version numbers are sent; turn off for offline use.",
+                    settings.GetAppBool(AppSettingKeys.UpdateCheck, true)),
+            ],
+        };
+
+        NotificationsSection = new SettingsSectionViewModel
+        {
+            Header = NotificationsHeader,
+            ShowHeader = false,
+            Subtitle = "Windows notifications from the app. Off keeps events in-app only.",
+            Items =
+            [
                 new SettingToggleItemViewModel(
                     settings, null, AppSettingKeys.Notifications,
                     "Notifications",
-                    "Master switch; off keeps events in-app only.",
+                    "Master switch for every notification below.",
                     settings.GetAppBool(AppSettingKeys.Notifications, true)),
                 new SettingToggleItemViewModel(
                     settings, null, AppSettingKeys.NotifyMonitoring,
@@ -254,29 +271,49 @@ public sealed partial class SettingsViewModel : ViewModelBase, ITabbedPage
                     "Notify: update available",
                     "A newer release was found at launch.",
                     settings.GetAppBool(AppSettingKeys.NotifyUpdates, true)),
-                new SettingToggleItemViewModel(
-                    settings, null, AppSettingKeys.UpdateCheck,
-                    "Check for updates",
-                    "Compares the app version against GitHub Releases at launch. Only version numbers are sent; turn off for offline use.",
-                    settings.GetAppBool(AppSettingKeys.UpdateCheck, true)),
             ],
-        });
+        };
 
+        // The app's own watcher, not the service: it runs inside the app while
+        // the window or tray icon is up and needs nothing installed.
+        MonitoringSection = new SettingsSectionViewModel
+        {
+            Header = MonitoringHeader,
+            Subtitle = "Runs inside the app while it is open. Does not need the Owner Mode service.",
+            Items =
+            [
+                new SettingToggleItemViewModel(
+                    settings, null, AppSettingKeys.MonitoringEnabled,
+                    "Startup & service monitoring",
+                    "Watches for new startup entries, services, and scheduled tasks while the app runs. Detections appear on Home.",
+                    settings.GetAppBool(AppSettingKeys.MonitoringEnabled, false)),
+            ],
+        };
+
+        Sections.Add(ApplicationSection);
+        Sections.Add(NotificationsSection);
+        Sections.Add(MonitoringSection);
+
+        var moduleSections = new List<SettingsSectionViewModel>();
         foreach (var contributor in moduleContributors.OrderBy(c => c.ModuleId, StringComparer.Ordinal))
         {
             if (contributor.SettingDefinitions.Count == 0)
                 continue;
 
-            Sections.Add(new SettingsSectionViewModel
+            var section = new SettingsSectionViewModel
             {
                 Header = contributor.ModuleId,
                 Items = contributor.SettingDefinitions.Select(d => BuildModuleItem(settings, contributor.ModuleId, d)).ToList(),
-            });
+            };
+            moduleSections.Add(section);
+            Sections.Add(section);
         }
 
-        HasModuleSections = Sections.Count > 2;
+        ModuleSections = moduleSections;
+        HasModuleSections = moduleSections.Count > 0;
     }
 
+    /// <summary>True when any installed module contributes preferences; the Modules tab stays for the capability summary either way.</summary>
     public bool HasModuleSections { get; }
 
     /// <summary>Read-only capability summary; the first-launch info, always reachable.</summary>

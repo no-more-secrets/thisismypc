@@ -39,6 +39,38 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
         ? string.Empty
         : Model.ValueName is null ? Model.RegistryPath : $@"{Model.RegistryPath}\{Model.ValueName}";
 
+    /// <summary>
+    /// The (i) tooltip carries the description only while the card is compact;
+    /// otherwise the description is on the card and the icon would repeat it.
+    /// </summary>
+    public string? TooltipDescription => IsDescriptionVisible ? null : Description;
+
+    // --- Technical details: registry path, value type, and the reading at scan
+    // time. Hidden by default; the card's own link or the page toggle opens them. ---
+
+    public bool HasTechnicalDetails => Model.RegistryPath is not null;
+
+    /// <summary>The path with a break opportunity after each separator, so a long key wraps between names instead of inside one.</summary>
+    public string WrappableSystemPath => SystemPath.Replace("\\", "\\​", StringComparison.Ordinal);
+
+    public string DetailsLinkText => IsRegistryDataVisible ? "Hide technical details" : "Show technical details";
+
+    /// <summary>"DWord value, read as Suppressed at the last scan".</summary>
+    public string TechnicalStateText
+    {
+        get
+        {
+            var type = Model.RegistryValueType?.Replace("Registry_", string.Empty, StringComparison.Ordinal);
+            var typePart = string.IsNullOrEmpty(type) ? "Value" : $"{type} value";
+            return string.IsNullOrEmpty(Model.CurrentDisplayValue)
+                ? typePart
+                : $"{typePart}, read as {Model.CurrentDisplayValue} at the last scan";
+        }
+    }
+
+    [RelayCommand]
+    private void ToggleTechnicalDetails() => IsRegistryDataVisible = !IsRegistryDataVisible;
+
     /// <summary>Card templates bind their root visibility here; the owning tab's search sets it.</summary>
     [ObservableProperty]
     private bool _isSearchVisible = true;
@@ -149,12 +181,14 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private bool _isPendingDisable;
 
-    /// <summary>Collapsed in Compact mode (10-2); expanded by default.</summary>
+    /// <summary>The description sits on the card; Compact mode moves it into the (i) tooltip.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TooltipDescription))]
     private bool _isDescriptionVisible = true;
 
-    /// <summary>Registry Data mode (10-2); hidden by default.</summary>
+    /// <summary>The technical details panel; closed by default, opened per card or by the page toggle.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DetailsLinkText))]
     private bool _isRegistryDataVisible;
 
     public SettingCardViewModel(
@@ -187,7 +221,7 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
         if (Model.OwnerModeRequired)
         {
             _ownerMode = ownerMode;
-            OwnerModeCallout = "Needs Owner Mode. The background service keeps this setting applied when Windows reverts it.";
+            OwnerModeCallout = "Needs Owner Mode. The background service reports when Windows reverts this setting; you reapply it from Home.";
             RefreshOwnerModeState();
             if (_ownerMode is not null)
                 _ownerMode.StateChanged += OnOwnerModeStateChanged;

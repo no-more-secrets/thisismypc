@@ -11,7 +11,7 @@ namespace ThisIsMyPC.App.ViewModels;
 /// </summary>
 public partial class OwnerModeSectionViewModel : ViewModelBase
 {
-    private readonly OwnerModeService _ownerMode;
+    private readonly IOwnerModeServiceControl _ownerMode;
 
     [ObservableProperty]
     private string _stateText = "";
@@ -30,7 +30,7 @@ public partial class OwnerModeSectionViewModel : ViewModelBase
         "service so drift is caught at boot, before you open the app. Optional; everything " +
         "else works without it.";
 
-    public OwnerModeSectionViewModel(OwnerModeService ownerMode)
+    public OwnerModeSectionViewModel(IOwnerModeServiceControl ownerMode)
     {
         ArgumentNullException.ThrowIfNull(ownerMode);
         _ownerMode = ownerMode;

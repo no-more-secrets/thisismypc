@@ -36,12 +36,47 @@ public sealed class SettingsViewModelTests : IDisposable
     }
 
     [Fact]
-    public void Sections_GeneralAndPersistence_AlwaysPresent()
+    public void Sections_ApplicationNotificationsMonitoring_AlwaysPresent()
     {
         var vm = new SettingsViewModel(_settings, []);
 
-        Assert.Equal(["General", "Persistence & Background"], vm.Sections.Select(s => s.Header));
+        Assert.Equal(
+            [SettingsViewModel.ApplicationHeader, SettingsViewModel.NotificationsHeader, SettingsViewModel.MonitoringHeader],
+            vm.Sections.Select(s => s.Header));
         Assert.False(vm.HasModuleSections);
+        Assert.Empty(vm.ModuleSections);
+    }
+
+    [Fact]
+    public void EveryAppKey_LivesInItsOwnTab_AndKeepsItsDefault()
+    {
+        var vm = new SettingsViewModel(_settings, []);
+        static string[] Names(SettingsSectionViewModel section) =>
+            section.Items.Select(i => i switch
+            {
+                SettingToggleItemViewModel t => t.DisplayName,
+                SettingChoiceItemViewModel c => c.DisplayName,
+                SettingTextItemViewModel x => x.DisplayName,
+                _ => "?",
+            }).ToArray();
+
+        Assert.Equal(["Theme", "Dyslexia-friendly font", "Tray mode", "Start with Windows", "Check for app updates"],
+            Names(vm.ApplicationSection));
+        Assert.Equal(["Notifications", "Notify: monitoring alerts", "Notify: update available"],
+            Names(vm.NotificationsSection));
+        Assert.Equal(["Startup & service monitoring"], Names(vm.MonitoringSection));
+
+        var toggles = vm.Sections.SelectMany(s => s.Items).OfType<SettingToggleItemViewModel>().ToList();
+        Assert.False(toggles.Single(t => t.DisplayName == "Tray mode").IsOn);
+        Assert.False(toggles.Single(t => t.DisplayName == "Start with Windows").IsOn);
+        Assert.True(toggles.Single(t => t.DisplayName == "Check for app updates").IsOn);
+        Assert.True(toggles.Single(t => t.DisplayName == "Notifications").IsOn);
+        Assert.False(toggles.Single(t => t.DisplayName == "Startup & service monitoring").IsOn);
+
+        toggles.Single(t => t.DisplayName == "Startup & service monitoring").IsOn = true;
+        toggles.Single(t => t.DisplayName == "Check for app updates").IsOn = false;
+        Assert.True(_settings.GetAppBool(AppSettingKeys.MonitoringEnabled, fallback: false));
+        Assert.False(_settings.GetAppBool(AppSettingKeys.UpdateCheck, fallback: true));
     }
 
     [Fact]

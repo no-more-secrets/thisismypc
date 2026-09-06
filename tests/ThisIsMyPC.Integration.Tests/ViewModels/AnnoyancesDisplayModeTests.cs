@@ -76,6 +76,44 @@ public sealed class AnnoyancesDisplayModeTests : IDisposable
     }
 
     [Fact]
+    public async Task Compact_LeavesEachCardsOwnDetailsAlone()
+    {
+        var vm = await CreateVmAsync();
+        var cards = AllCards(vm).ToList();
+
+        // Page toggle off, one card opened by its own link.
+        cards[0].IsRegistryDataVisible = true;
+        vm.IsCompact = true;
+        Assert.True(cards[0].IsRegistryDataVisible);
+        Assert.All(cards.Skip(1), c => Assert.False(c.IsRegistryDataVisible));
+        vm.IsCompact = false;
+        Assert.True(cards[0].IsRegistryDataVisible);
+
+        // Page toggle on, one card closed by its own link.
+        vm.ShowRegistryData = true;
+        cards[1].IsRegistryDataVisible = false;
+        vm.IsCompact = true;
+        Assert.False(cards[1].IsRegistryDataVisible);
+        Assert.All(cards.Where(c => c != cards[1]), c => Assert.True(c.IsRegistryDataVisible));
+        Assert.All(cards, c => Assert.False(c.IsDescriptionVisible));
+        vm.IsCompact = false;
+        Assert.False(cards[1].IsRegistryDataVisible);
+        Assert.All(cards, c => Assert.True(c.IsDescriptionVisible));
+    }
+
+    [Fact]
+    public async Task PageDetailsToggle_LeavesCompactAlone()
+    {
+        var vm = await CreateVmAsync();
+        vm.IsCompact = true;
+
+        vm.ShowRegistryData = true;
+        Assert.All(AllCards(vm), c => Assert.False(c.IsDescriptionVisible));
+        vm.ShowRegistryData = false;
+        Assert.All(AllCards(vm), c => Assert.False(c.IsDescriptionVisible));
+    }
+
+    [Fact]
     public async Task ModeSwitch_MutatesExistingCards_PendingTintSurvives()
     {
         var vm = await CreateVmAsync();

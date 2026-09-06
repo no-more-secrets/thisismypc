@@ -483,14 +483,9 @@
                             <DataTemplate DataType="{x:Type vm:EnvironmentViewModel}">
                                 <views:EnvironmentView />
                             </DataTemplate>
-                            <DataTemplate DataType="{x:Type vm:AnnoyancesViewModel}">
-                                <views:AnnoyancesView />
-                            </DataTemplate>
-                            <DataTemplate DataType="{x:Type vm:PrivacyViewModel}">
-                                <views:PrivacyView />
-                            </DataTemplate>
-                            <DataTemplate DataType="{x:Type vm:WindowsUpdateViewModel}">
-                                <views:WindowsUpdateView />
+                            <!-- Annoyances, Privacy, and Windows Update share one card page -->
+                            <DataTemplate DataType="{x:Type vm:SettingCardPageViewModel}">
+                                <views:SettingCardPageView />
                             </DataTemplate>
                             <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
                                 <views:SettingsView />

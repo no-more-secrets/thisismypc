@@ -2,9 +2,9 @@ using Avalonia.Controls;
 
 namespace ThisIsMyPC.App.Views;
 
-public partial class WindowsUpdateView : UserControl
+public partial class SettingCardPageView : UserControl
 {
-    public WindowsUpdateView()
+    public SettingCardPageView()
     {
         InitializeComponent();
     }

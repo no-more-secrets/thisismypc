@@ -45,7 +45,7 @@ public class HoverAuditTests
             await session.WaitForAsync(
                 () => viewModel.ContentTitle == "Windows Annoyances",
                 timeoutMs: 60_000, what: "annoyances load");
-            session.HoverText("Registry Data");
+            session.HoverText("Technical details");
             session.Screenshot($"card-toolbar-{suffix}");
 
             var toggle = session.TryFind<ToggleSwitch>(_ => true);

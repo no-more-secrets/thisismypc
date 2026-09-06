@@ -7,6 +7,35 @@
              x:Class="ThisIsMyPC.App.Views.SettingsView"
              x:DataType="vm:SettingsViewModel">
 
+    <UserControl.Resources>
+        <!-- One section: header, optional subtitle, its rows. -->
+        <DataTemplate x:Key="SectionTemplate" x:DataType="vm:SettingsSectionViewModel">
+            <StackPanel Margin="0,0,0,16">
+                <TextBlock Text="{Binding Header}"
+                           FontWeight="SemiBold"
+                           FontSize="16"
+                           Margin="0,0,0,2"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           IsVisible="{Binding ShowHeader}" />
+                <TextBlock Text="{Binding Subtitle}"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextTertiaryBrush}"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,10"
+                           IsVisible="{Binding Subtitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                <Border Height="8">
+                    <Border.IsVisible>
+                        <MultiBinding Converter="{x:Static BoolConverters.And}">
+                            <Binding Path="ShowHeader" />
+                            <Binding Path="Subtitle" Converter="{x:Static StringConverters.IsNullOrEmpty}" />
+                        </MultiBinding>
+                    </Border.IsVisible>
+                </Border>
+                <ItemsControl ItemsSource="{Binding Items}" />
+            </StackPanel>
+        </DataTemplate>
+    </UserControl.Resources>
+
     <UserControl.DataTemplates>
         <DataTemplate DataType="{x:Type vm:SettingToggleItemViewModel}">
             <Border Classes="card" CornerRadius="8" Padding="14" Margin="0,0,0,8">
@@ -85,34 +114,32 @@
         </DataTemplate>
     </UserControl.DataTemplates>
 
+    <!-- One tab per concern. Owner Mode keeps the service card and the app's
+         own monitoring switch side by side, with the copy saying the switch
+         does not need the service. Modules stays even when no module has
+         preferences, for the capability summary. -->
     <TabControl Theme="{StaticResource EdgeTabControlTheme}" SelectedIndex="{Binding SelectedTabIndex}">
-      <TabItem Header="General">
-    <ScrollViewer HorizontalScrollBarVisibility="Disabled"
-                  VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="0,0,16,24">
-            <ItemsControl ItemsSource="{Binding GeneralSections}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="vm:SettingsSectionViewModel">
-                        <StackPanel Margin="0,0,0,24">
-                            <TextBlock Text="{Binding Header}"
-                                       FontWeight="SemiBold"
-                                       FontSize="16"
-                                       Foreground="{DynamicResource TextPrimaryBrush}" />
-                            <TextBlock Text="{Binding Subtitle}"
-                                       FontSize="12"
-                                       Foreground="{DynamicResource TextTertiaryBrush}"
-                                       TextWrapping="Wrap"
-                                       Margin="0,2,0,10"
-                                       IsVisible="{Binding Subtitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-                            <Border Height="8" IsVisible="{Binding Subtitle, Converter={x:Static StringConverters.IsNullOrEmpty}}" />
-                            <ItemsControl ItemsSource="{Binding Items}" />
-                        </StackPanel>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+      <TabItem Header="Application">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+          <ItemsControl ItemsSource="{Binding ApplicationSections}"
+                        ItemTemplate="{StaticResource SectionTemplate}"
+                        Margin="0,0,16,24" />
+        </ScrollViewer>
+      </TabItem>
 
+      <TabItem Header="Notifications">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+          <ItemsControl ItemsSource="{Binding NotificationSections}"
+                        ItemTemplate="{StaticResource SectionTemplate}"
+                        Margin="0,0,16,24" />
+        </ScrollViewer>
+      </TabItem>
+
+      <TabItem Header="Owner Mode">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+          <StackPanel Margin="0,0,16,24">
             <!-- Owner Mode service lifecycle -->
-            <Border Classes="card" CornerRadius="8" Padding="14" Margin="0,0,0,8"
+            <Border Classes="card" CornerRadius="8" Padding="14" Margin="0,0,0,16"
                     IsVisible="{Binding HasOwnerModeSection}">
               <StackPanel DataContext="{Binding OwnerMode}">
                 <TextBlock Text="Owner Mode Service"
@@ -149,6 +176,29 @@
                            IsVisible="{Binding ErrorText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
               </StackPanel>
             </Border>
+            <TextBlock Text="The Owner Mode service is not available in this build."
+                       FontSize="12" FontStyle="Italic"
+                       Foreground="{DynamicResource TextTertiaryBrush}"
+                       Margin="0,0,0,16"
+                       IsVisible="{Binding !HasOwnerModeSection}" />
+
+            <!-- The app's own watcher; independent of the service -->
+            <ItemsControl ItemsSource="{Binding MonitoringSections}"
+                          ItemTemplate="{StaticResource SectionTemplate}" />
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <TabItem Header="Modules">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+          <StackPanel Margin="0,0,16,24">
+            <ItemsControl ItemsSource="{Binding ModuleSections}"
+                          ItemTemplate="{StaticResource SectionTemplate}" />
+            <TextBlock Text="No installed module has preferences yet."
+                       FontSize="12" FontStyle="Italic"
+                       Foreground="{DynamicResource TextTertiaryBrush}"
+                       Margin="0,0,0,16"
+                       IsVisible="{Binding !HasModuleSections}" />
 
             <!-- Read-only capability summary, always reachable -->
             <Border Classes="card" CornerRadius="8" Padding="14" Margin="0,0,0,8"
@@ -185,8 +235,13 @@
                 </ItemsControl>
               </StackPanel>
             </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
 
-            <!-- Backup & Transfer -->
+      <TabItem Header="Backup &amp; Transfer">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+          <StackPanel Margin="0,0,16,24">
             <Border Classes="card" CornerRadius="8" Padding="14">
               <StackPanel>
                 <TextBlock Text="Backup &amp; Transfer"
@@ -231,37 +286,7 @@
                            IsVisible="{Binding TransferStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
               </StackPanel>
             </Border>
-        </StackPanel>
-    </ScrollViewer>
-      </TabItem>
-      <TabItem Header="Background">
-        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-          <ItemsControl ItemsSource="{Binding BackgroundSections}" Margin="0,0,16,24">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="vm:SettingsSectionViewModel">
-                <StackPanel>
-                  <TextBlock Text="{Binding Header}" FontWeight="SemiBold" FontSize="16"
-                             Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,8" />
-                  <ItemsControl ItemsSource="{Binding Items}" />
-                </StackPanel>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-        </ScrollViewer>
-      </TabItem>
-      <TabItem Header="Modules" IsVisible="{Binding HasModuleSections}">
-        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-          <ItemsControl ItemsSource="{Binding ModuleSections}" Margin="0,0,16,24">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="vm:SettingsSectionViewModel">
-                <StackPanel Margin="0,0,0,16">
-                  <TextBlock Text="{Binding Header}" FontWeight="SemiBold" FontSize="16"
-                             Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,0,0,8" />
-                  <ItemsControl ItemsSource="{Binding Items}" />
-                </StackPanel>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
+          </StackPanel>
         </ScrollViewer>
       </TabItem>
     </TabControl>

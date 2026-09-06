@@ -168,6 +168,6 @@ public class ToastAndOwnerModeShotTests
         session.Screenshot("degraded-no-action");
 
         Assert.False(session.IsTextVisible("Turn on Owner Mode"));
-        Assert.True(session.IsTextVisible("Needs Owner Mode. The background service keeps this setting applied when Windows reverts it."));
+        Assert.True(session.IsTextVisible("Needs Owner Mode. The background service reports when Windows reverts this setting; you reapply it from Home."));
     }
 }

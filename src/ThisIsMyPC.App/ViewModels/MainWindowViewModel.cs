@@ -241,7 +241,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     /// <summary>Whether the current page owns its card edge and content padding.</summary>
     public bool UsesEdgeTabs => CurrentContent is ShellViewModel or EnvironmentViewModel or SettingsViewModel
-        or SoftwareViewModel or ContextMenuViewModel or StartupViewModel or PowerViewModel;
+        or SoftwareViewModel or ContextMenuViewModel or StartupViewModel or PowerViewModel or SettingCardPageViewModel;
 
     [ObservableProperty]
     private bool _isSidebarCollapsed;
