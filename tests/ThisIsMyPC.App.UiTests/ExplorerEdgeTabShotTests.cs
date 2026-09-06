@@ -156,6 +156,68 @@ public class ExplorerEdgeTabShotTests
             }
         }
     }
+    [AvaloniaFact]
+    public void CurvedJoin_SharesRimCenterlineThroughDesktopDpiAndAppZoom()
+    {
+        var vm = new ShellViewModel(new ShellScanData([], new TaskbarSettings(1, true, false, false)),
+            new PendingChangesService(), new UiFakeRegistryService());
+        var zoomHost = new LayoutTransformControl { Child = new ShellView() };
+        using var session = UiSession.ForView(zoomHost, vm, "explorer-rim-zoom", width: 980, height: 300);
+        session.Window.Background = Avalonia.Media.Brushes.White;
+        session.ClickText("File Explorer");
+        foreach (var dpi in new[] { 1.0, 1.25, 1.5, 2.0 })
+        foreach (var zoom in new[] { 1.0, 1.1, 1.2, 1.25 })
+        {
+            var platform = session.Window.PlatformImpl!;
+            platform.GetType().GetField("<RenderScaling>k__BackingField",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.SetValue(platform, dpi);
+            ((Action<double>)platform.GetType().GetProperty("ScalingChanged")!.GetValue(platform)!)(dpi);
+            zoomHost.LayoutTransform = new Avalonia.Media.ScaleTransform(zoom, zoom);
+            session.Pump();
+            var strip = session.Find<Border>(b => b.Name == "PART_Strip");
+            var selected = session.Find<TabItem>(t => t.IsSelected);
+            var chrome = selected.GetVisualDescendants().OfType<ThisIsMyPC.App.Controls.SelectedTabChrome>().Single();
+            strip.Background = Avalonia.Media.Brushes.White;
+            strip.BorderBrush = Avalonia.Media.Brushes.Black;
+            chrome.Background = Avalonia.Media.Brushes.White;
+            chrome.BorderBrush = Avalonia.Media.Brushes.Black;
+            session.Pump();
+            using var frame = new Avalonia.Media.Imaging.RenderTargetBitmap(
+                new PixelSize((int)(980 * dpi), (int)(300 * dpi)), new Vector(96 * dpi, 96 * dpi));
+            frame.Render(session.Window);
+            var path = Path.Combine(session.ShotDirectory, $"rim-dpi{dpi:0.00}-zoom{zoom:0.00}.png");
+            frame.Save(path);
+            using var pixels = SkiaSharp.SKBitmap.Decode(path);
+            var floor = strip.TranslatePoint(new Point(0, strip.Bounds.Height), session.Window)!.Value.Y * dpi;
+            foreach (var rightSide in new[] { false, true })
+            {
+                var endpoint = chrome.TranslatePoint(new Point(rightSide ? chrome.Bounds.Width + 6 : -6, 0), session.Window)!.Value.X * dpi;
+                var direction = rightSide ? -1 : 1;
+                var rimX = (int)Math.Round(endpoint - direction * 3 * dpi * zoom);
+                var curveX = (int)Math.Floor(endpoint + direction * 0.5 * dpi * zoom);
+                var rim = StrokeColumn(pixels, rimX, floor);
+                var curve = StrokeColumn(pixels, curveX, floor);
+                Assert.True(Math.Abs(rim.Center - curve.Center) < 0.5,
+                    $"dpi {dpi}, zoom {zoom}, right {rightSide}: rim center {rim.Center}, curve {curve.Center}.");
+                Assert.True(Math.Abs(rim.Ink - curve.Ink) < 0.5,
+                    $"dpi {dpi}, zoom {zoom}, right {rightSide}: rim ink {rim.Ink}, curve {curve.Ink}.");
+            }
+        }
+    }
+
+    private static (double Center, double Ink) StrokeColumn(SkiaSharp.SKBitmap pixels, int x, double floor)
+    {
+        double ink = 0;
+        double moment = 0;
+        for (var y = (int)Math.Floor(floor - 5); y < Math.Ceiling(floor + 2); y++)
+        {
+            var coverage = (255 - pixels.GetPixel(x, y).Red) / 255.0;
+            ink += coverage;
+            moment += (y + 0.5) * coverage;
+        }
+        Assert.True(ink > 0);
+        return (moment / ink, ink);
+    }
     private static PixelRect TextInkBounds(SkiaSharp.SKBitmap pixels, TextBlock label, Window window)
     {
         var origin = label.TranslatePoint(default, window)!.Value;
