@@ -15,6 +15,11 @@ public partial class ChangeHistoryEntryViewModel : ViewModelBase
     public required DateTimeOffset AppliedAt { get; init; }
     public required bool IsReverted { get; init; }
 
+    public bool CanExecuteHistoryAction { get; init; } = true;
+    public string? ActionRestriction { get; init; }
+    public bool CanRestore => CanExecuteHistoryAction && !IsReverted;
+    public bool CanRedo => CanExecuteHistoryAction && IsReverted;
+
     public string AppliedAtDisplay => AppliedAt.LocalDateTime.ToString("HH:mm:ss", CultureInfo.CurrentCulture);
 
     public bool IsEnableOrCreate => Category is ChangeCategory.Enable or ChangeCategory.Create;

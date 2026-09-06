@@ -97,6 +97,9 @@ public sealed class ChangeHistoryService : IChangeHistoryService
                 ErrorCategory.NotFound);
         }
 
+        if (!entry.SupportsGenericUndo)
+            return OperationResult<bool>.Failure("This history entry requires a profile-aware recovery path.", ErrorCategory.NotFound);
+
         if (entry.RevertedAt.HasValue)
         {
             return OperationResult<bool>.Failure(
@@ -173,6 +176,9 @@ public sealed class ChangeHistoryService : IChangeHistoryService
                 $"History entry {historyId} not found",
                 ErrorCategory.NotFound);
         }
+
+        if (!entry.SupportsGenericUndo)
+            return OperationResult<bool>.Failure("This history entry requires a profile-aware recovery path.", ErrorCategory.NotFound);
 
         if (!entry.RevertedAt.HasValue)
         {

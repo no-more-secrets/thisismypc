@@ -138,6 +138,7 @@
                                                         <!-- Selection for Create Set from Selection (8.5) -->
                                                         <CheckBox DockPanel.Dock="Left"
                                                                   IsChecked="{Binding IsSelected}"
+                                                                  IsEnabled="{Binding CanCreateCustomSet}"
                                                                   VerticalAlignment="Center"
                                                                   Margin="0,0,8,0"
                                                                   Padding="0"
@@ -151,14 +152,14 @@
                                                                     Content="Restore"
                                                                     FontSize="11"
                                                                     Padding="8,4"
-                                                                    IsVisible="{Binding !IsReverted}"
+                                                                    IsVisible="{Binding CanRestore}"
                                                                     Command="{Binding $parent[UserControl].((vm:ChangeHistoryViewModel)DataContext).RestoreCommand}"
                                                                     CommandParameter="{Binding PrimaryEntry}" />
                                                             <Button Classes="apply-bar-discard"
                                                                     Content="Redo"
                                                                     FontSize="11"
                                                                     Padding="8,4"
-                                                                    IsVisible="{Binding IsReverted}"
+                                                                    IsVisible="{Binding CanRedo}"
                                                                     Command="{Binding $parent[UserControl].((vm:ChangeHistoryViewModel)DataContext).RedoCommand}"
                                                                     CommandParameter="{Binding PrimaryEntry}" />
                                                         </StackPanel>
@@ -191,6 +192,9 @@
                                                                        ToolTip.Tip="{Binding DisplayName}" />
                                                         </DockPanel>
 
+                                                        <TextBlock Text="{Binding ActionRestriction}" TextWrapping="Wrap"
+                                                                   IsVisible="{Binding !!ActionRestriction}" FontSize="12"
+                                                                   Foreground="{DynamicResource TextSecondaryBrush}" />
                                                         <!-- Before -> After + detail toggle -->
                                                         <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2,0,0">
                                                             <TextBlock Text="{Binding BeforeDisplay}"
@@ -235,14 +239,14 @@
                                                                                         Content="Restore"
                                                                                         FontSize="11"
                                                                                         Padding="6,2"
-                                                                                        IsVisible="{Binding !IsReverted}"
+                                                                                        IsVisible="{Binding CanRestore}"
                                                                                         Command="{Binding $parent[UserControl].((vm:ChangeHistoryViewModel)DataContext).RestoreCommand}"
                                                                                         CommandParameter="{Binding}" />
                                                                                 <Button Classes="apply-bar-discard"
                                                                                         Content="Redo"
                                                                                         FontSize="11"
                                                                                         Padding="6,2"
-                                                                                        IsVisible="{Binding IsReverted}"
+                                                                                        IsVisible="{Binding CanRedo}"
                                                                                         Command="{Binding $parent[UserControl].((vm:ChangeHistoryViewModel)DataContext).RedoCommand}"
                                                                                         CommandParameter="{Binding}" />
                                                                             </StackPanel>

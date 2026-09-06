@@ -60,6 +60,12 @@ public sealed class CustomSetWriter : ICustomSetWriter
         var skipped = 0;
         foreach (var batch in entries.GroupBy(e => e.GroupId ?? $"solo-{e.Id}"))
         {
+            if (batch.Any(entry => !entry.CanCreateCustomSet))
+            {
+                skipped++;
+                continue;
+            }
+
             // Rowids follow insertion order; query result order within a batch is not
             // guaranteed (all rows share one applied_at), and the schema's toggle
             // convention needs the group's FIRST descriptor's value.

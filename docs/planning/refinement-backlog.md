@@ -25,7 +25,7 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 - DONE: Debug replaces UI Gallery in Debug builds, with gallery, test controls, and transient state simulation. Mutation leases block live actions during simulation and block simulation changes during actions.
 - DONE: Annotation fixes cover transient zoom, dependent notification switches, page-level technical details, stacked toolbar checkboxes, description tooltips, fixed tab positions, and Display value spacing.
 - DONE: Pure hardware compatibility decisions distinguish unobserved evidence, verified support, companion actions, sensor reads, and device writes. Live detection and module integration remain pending.
-- DONE: Native cross-process lease foundation requires recovery clearance for every acquisition. Production wiring and durable recovery remain pending. Eleven elevated Windows tests remain unverified; this is not release-ready coordination.
+- DONE: Native cross-process lease foundation requires recovery clearance for every acquisition. Production wiring and durable recovery remain pending. All 20 isolated native tests passed with Windows elevation. Production routing remains unwired.
 - Verified: Full Release build, CI-safe suite, fresh review, and rendered UI inspection. Isolated Debug window tests verify tabs, simulation banner, and edge geometry. No live applies or hardware control tested.
 ## Owner Mode restoration foundations (2026-09-06)
 
@@ -33,7 +33,9 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 - Verified: 163 Drift tests, full CI-safe suite, Release build, and review corrections. Reader values checked against the module source. Executable provider parity coverage adds 67 cases; the Annoyances suite passes 142 tests.
 - DONE: Shared reversible execution now routes apply, rollback, undo, and redo consistently. Restoration preparation validates shipped targets and issues immutable preparations. Scoped tests, full suite, Release build, and review fixes passed.
 - DONE: Pure eligibility gates require explicit consent, loaded-profile evidence, exact unmanaged-target evidence, and a bounded retry history. Append-only journal contracts flush intents before issuing permits and preserve recovery evidence without granting undo.
-- Pending: native coordination validation, production trust adapters, transactional history import, management/profile probing, consent persistence, and service/UI wiring. No automatic restoration is enabled.
+- DONE: Transactional journal import retains immutable receipts through history clearing. Imported records preserve profile identity and cannot use generic restore, redo, or custom-set export. History displays outcome restrictions.
+- Verified: full CI-safe suite, Release build, fresh review, and dark/light history screenshots. All 20 native lock tests passed with elevation.
+- Pending: production journal/database trust, management/profile probing, consent integration, and service/UI wiring. No automatic restoration is enabled.
 - Design: [Owner Mode restoration](owner-mode-restoration.md).
 ## System pages and Settings organization (2026-09-06)
 

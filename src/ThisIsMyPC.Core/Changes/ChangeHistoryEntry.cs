@@ -2,6 +2,13 @@ namespace ThisIsMyPC.Core.Changes;
 
 public record ChangeHistoryEntry
 {
+    public string? JournalOutcome { get; init; }
+    public string? JournalDetail { get; init; }
+    public Guid? OwnerAttemptId { get; init; }
+    public string? TargetUserSid { get; init; }
+    public bool CanExecuteHistoryAction => SupportsGenericUndo;
+    public bool CanCreateCustomSet => SupportsGenericUndo;
+    public bool SupportsGenericUndo => OwnerAttemptId is null && TargetUserSid is null && Category != ChangeCategory.SystemReversion;
     public long Id { get; init; }
     public required string ModuleId { get; init; }
     public required string SettingId { get; init; }

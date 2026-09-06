@@ -190,6 +190,31 @@ public class ChangeHistoryViewModelTests
         Assert.Contains("not available", vm.ErrorMessage);
     }
 
+    [Fact]
+    public async Task Imported_recovery_keeps_absence_and_blocks_actions_and_selection()
+    {
+        var record = CreateEntry(1, "test", DateTimeOffset.Now) with
+        {
+            OwnerAttemptId = Guid.NewGuid(), TargetUserSid = "S-1-5-21-1-2-3-1001",
+            JournalOutcome = "RecoveryObservation", AfterDisplay = null, AfterValue = null,
+        };
+        var vm = CreateViewModel(new Fakes.FakeChangeHistoryServiceWithEntries([record]),
+            _ => throw new InvalidOperationException("Must not restore"),
+            _ => throw new InvalidOperationException("Must not redo"));
+        await vm.LoadHistoryCommand.ExecuteAsync(null);
+        var batch = Assert.Single(Assert.Single(vm.HistoryGroups).Batches);
+        Assert.False(batch.CanRestore);
+        Assert.False(batch.CanRedo);
+        Assert.False(batch.CanCreateCustomSet);
+        Assert.Equal("Absent", batch.AfterDisplay);
+        Assert.StartsWith("Recovery observation.", batch.ActionRestriction);
+        batch.IsSelected = true;
+        Assert.False(vm.HasSelection);
+        await vm.RestoreCommand.ExecuteAsync(batch.PrimaryEntry);
+        Assert.Equal(batch.ActionRestriction, vm.ErrorMessage);
+        await vm.RedoCommand.ExecuteAsync(batch.PrimaryEntry);
+        Assert.Equal(batch.ActionRestriction, vm.ErrorMessage);
+    }
     private static ChangeHistoryEntry CreateEntry(
         long id,
         string settingId,

@@ -223,4 +223,36 @@ public sealed class CustomSetWriterTests : IDisposable
         Assert.Equal(1, result.EntryCount);
         Assert.Equal(1, result.SkippedGroupCount);
     }
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void History_UnsafeCompanionSkipsWholeBatch(bool imported)
+    {
+        var unsafeRow = HistoryEntry(2, "mixed") with
+        {
+            OwnerAttemptId = imported ? Guid.NewGuid() : null,
+            Category = imported ? ChangeCategory.Modify : ChangeCategory.SystemReversion,
+        };
+        var result = CreateSut().WriteFromHistory(Metadata(),
+            [HistoryEntry(1, "mixed"), unsafeRow, HistoryEntry(3, "safe")]);
+        Assert.True(result.Success);
+        Assert.Equal(1, result.EntryCount);
+        Assert.Equal(1, result.SkippedGroupCount);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void History_UnsafeOnlyDoesNotWrite(bool imported)
+    {
+        var row = HistoryEntry(1, "unsafe") with
+        {
+            TargetUserSid = imported ? "S-1-5-21-111-222-333-1001" : null,
+            Category = imported ? ChangeCategory.Modify : ChangeCategory.SystemReversion,
+        };
+        var result = CreateSut().WriteFromHistory(Metadata(), [row]);
+        Assert.False(result.Success);
+        Assert.Equal(1, result.SkippedGroupCount);
+        Assert.False(Directory.Exists(_user) && Directory.GetFiles(_user).Length != 0);
+    }
 }

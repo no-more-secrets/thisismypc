@@ -4,9 +4,9 @@ using ThisIsMyPC.Core.Changes;
 
 namespace ThisIsMyPC.Core.Data;
 
-public sealed class ChangeHistoryRepository
+public sealed partial class ChangeHistoryRepository
 {
-    private const int CurrentSchemaVersion = 2;
+    private const int CurrentSchemaVersion = 3;
 
     // v2: enforcement metadata persisted per entry so history undo/redo can route
     // through the enforcement executor. Applied to fresh v1 schemas and migrated
@@ -79,6 +79,13 @@ public sealed class ChangeHistoryRepository
                 await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
             }
 
+            if (schemaVersion < 3)
+            {
+                await using var cmd = connection.CreateCommand();
+                cmd.CommandText = MigrateToV3;
+                await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+            }
+
             await SetSchemaVersionAsync(connection, CurrentSchemaVersion).ConfigureAwait(false);
             await transaction.CommitAsync().ConfigureAwait(false);
         }
@@ -94,12 +101,12 @@ public sealed class ChangeHistoryRepository
                 module_id, setting_id, display_name, system_location,
                 before_value, after_value, before_display, after_display,
                 value_type, category, group_id, applied_at,
-                reverted_at, reverted_by_entry_id, redo_of_entry_id, enforcement_json
+                reverted_at, reverted_by_entry_id, redo_of_entry_id, enforcement_json, owner_attempt_id, target_user_sid, journal_outcome, journal_detail
             ) VALUES (
                 @module_id, @setting_id, @display_name, @system_location,
                 @before_value, @after_value, @before_display, @after_display,
                 @value_type, @category, @group_id, @applied_at,
-                @reverted_at, @reverted_by_entry_id, @redo_of_entry_id, @enforcement_json
+                @reverted_at, @reverted_by_entry_id, @redo_of_entry_id, @enforcement_json, @owner_attempt_id, @target_user_sid, @journal_outcome, @journal_detail
             );
             SELECT last_insert_rowid();
             """;
@@ -206,12 +213,12 @@ public sealed class ChangeHistoryRepository
                     module_id, setting_id, display_name, system_location,
                     before_value, after_value, before_display, after_display,
                     value_type, category, group_id, applied_at,
-                    reverted_at, reverted_by_entry_id, redo_of_entry_id, enforcement_json
+                    reverted_at, reverted_by_entry_id, redo_of_entry_id, enforcement_json, owner_attempt_id, target_user_sid, journal_outcome, journal_detail
                 ) VALUES (
                     @module_id, @setting_id, @display_name, @system_location,
                     @before_value, @after_value, @before_display, @after_display,
                     @value_type, @category, @group_id, @applied_at,
-                    @reverted_at, @reverted_by_entry_id, @redo_of_entry_id, @enforcement_json
+                    @reverted_at, @reverted_by_entry_id, @redo_of_entry_id, @enforcement_json, @owner_attempt_id, @target_user_sid, @journal_outcome, @journal_detail
                 )
                 """;
             AddEntryParameters(cmd, entry);
@@ -318,6 +325,10 @@ public sealed class ChangeHistoryRepository
 
     private static void AddEntryParameters(SqliteCommand cmd, ChangeHistoryEntry entry)
     {
+        cmd.Parameters.AddWithValue("@owner_attempt_id", (object?)entry.OwnerAttemptId?.ToString("N") ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@target_user_sid", (object?)entry.TargetUserSid ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@journal_outcome", (object?)entry.JournalOutcome ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@journal_detail", (object?)entry.JournalDetail ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@module_id", entry.ModuleId);
         cmd.Parameters.AddWithValue("@setting_id", entry.SettingId);
         cmd.Parameters.AddWithValue("@display_name", entry.DisplayName);
@@ -360,6 +371,10 @@ public sealed class ChangeHistoryRepository
             RevertedAt = revertedAtStr is not null ? DateTimeOffset.Parse(revertedAtStr, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind) : null,
             RevertedByEntryId = revertedByRaw is long rbei ? rbei : null,
             RedoOfEntryId = redoOfRaw is long roei ? roei : null,
+            JournalOutcome = reader["journal_outcome"] as string,
+            JournalDetail = reader["journal_detail"] as string,
+            OwnerAttemptId = reader["owner_attempt_id"] is string attempt ? Guid.Parse(attempt) : null,
+            TargetUserSid = reader["target_user_sid"] as string,
             Enforcement = EnforcementJson.Deserialize(reader["enforcement_json"] as string),
         };
     }

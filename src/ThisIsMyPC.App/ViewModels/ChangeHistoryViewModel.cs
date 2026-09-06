@@ -77,7 +77,7 @@ public partial class ChangeHistoryViewModel : ViewModelBase
 
     private CustomSetWriteResult CreateSetFromSelection(CustomSetMetadata metadata)
     {
-        var entries = _allBatches.Where(b => b.IsSelected)
+        var entries = _allBatches.Where(b => b.IsSelected && b.CanCreateCustomSet)
             .SelectMany(b => b.SourceEntries)
             .ToList();
 
@@ -94,7 +94,7 @@ public partial class ChangeHistoryViewModel : ViewModelBase
     private void OnBatchPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         if (e.PropertyName is nameof(HistoryBatchViewModel.IsSelected))
-            SelectedBatchCount = _allBatches.Count(b => b.IsSelected);
+            SelectedBatchCount = _allBatches.Count(b => b.IsSelected && b.CanCreateCustomSet);
     }
 
     [RelayCommand]
@@ -164,18 +164,20 @@ public partial class ChangeHistoryViewModel : ViewModelBase
             DisplayName = e.DisplayName,
             ModuleId = e.ModuleId,
             SystemLocation = e.SystemLocation,
-            BeforeDisplay = e.BeforeDisplay ?? string.Empty,
-            AfterDisplay = e.AfterDisplay ?? string.Empty,
+            BeforeDisplay = e.BeforeDisplay ?? (e.OwnerAttemptId.HasValue ? "Absent" : string.Empty),
+            AfterDisplay = e.AfterDisplay ?? (e.OwnerAttemptId.HasValue ? "Absent" : string.Empty),
             Category = e.Category,
             AppliedAt = e.AppliedAt,
             IsReverted = e.RevertedAt.HasValue,
+            CanExecuteHistoryAction = e.CanExecuteHistoryAction,
+            ActionRestriction = e.CanExecuteHistoryAction ? null : RestrictionFor(e),
         }).ToList();
 
         return new HistoryBatchViewModel
         {
             DisplayName = displayName,
-            BeforeDisplay = primary.BeforeDisplay ?? string.Empty,
-            AfterDisplay = primary.AfterDisplay ?? string.Empty,
+            BeforeDisplay = details[0].BeforeDisplay,
+            AfterDisplay = details[0].AfterDisplay,
             Category = primary.Category,
             AppliedAt = primary.AppliedAt,
             IsReverted = entries.All(e => e.RevertedAt.HasValue),
@@ -185,10 +187,27 @@ public partial class ChangeHistoryViewModel : ViewModelBase
         };
     }
 
+    private static string RestrictionFor(ChangeHistoryEntry entry)
+    {
+        var status = entry.JournalOutcome switch
+        {
+            "Applied" => "Restored by Owner Mode",
+            "Failed" => "Restoration failed",
+            "Uncertain" => "Restoration outcome uncertain",
+            "RecoveryObservation" => "Recovery observation",
+            _ => "Diagnostic record",
+        };
+        return $"{status}. Restore and custom sets are unavailable for this record.";
+    }
     [RelayCommand]
     private async Task RestoreAsync(ChangeHistoryEntryViewModel entry)
     {
         ErrorMessage = null;
+        if (!entry.CanExecuteHistoryAction)
+        {
+            ErrorMessage = entry.ActionRestriction;
+            return;
+        }
         using var lease = _beginMutation();
         if (lease.Refusal is { } refusal)
         {
@@ -214,6 +233,11 @@ public partial class ChangeHistoryViewModel : ViewModelBase
     private async Task RedoAsync(ChangeHistoryEntryViewModel entry)
     {
         ErrorMessage = null;
+        if (!entry.CanExecuteHistoryAction)
+        {
+            ErrorMessage = entry.ActionRestriction;
+            return;
+        }
         using var lease = _beginMutation();
         if (lease.Refusal is { } refusal)
         {

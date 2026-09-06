@@ -24,6 +24,11 @@ public partial class HistoryBatchViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isSelected;
 
+    public bool CanCreateCustomSet => SourceEntries.All(entry => entry.CanCreateCustomSet);
+    public bool CanRestore => Details.All(entry => entry.CanRestore);
+    public bool CanRedo => Details.All(entry => entry.CanRedo);
+    public string? ActionRestriction => Details.FirstOrDefault(entry => !entry.CanExecuteHistoryAction)?.ActionRestriction;
+
     public ChangeHistoryEntryViewModel PrimaryEntry => Details[0];
     public string AppliedAtDisplay => AppliedAt.LocalDateTime.ToString("HH:mm:ss", CultureInfo.CurrentCulture);
     public int DetailCount => Details.Count;
