@@ -17,6 +17,7 @@ Windows Update 5, Power 1) + 5 built-in sets (59 entries) + the enumerative modu
 - Ctrl+Shift+A toggles navigation while retaining figures across pages. Schema 3 records page routes and distinct capture images.
 - Escape suspends review; Ctrl+Shift+Alt+A clears the session. tools/read-region-selection.ps1 retrieves all figures.
 - No network listener or production feature. Native voice workflow validation remains pending.
+- Region review: null or omitted resolved history restores as an empty list, preserving open notes and numbering.
 - Region review: notes persist across restarts in .region-review/, with resolve/reopen history and agent status commands.
 - Region review: removed the persistent instruction banner so it cannot cover app content.
 - Reopening annotation restores figures for the same route, client dimensions, display scale, and sidebar state.

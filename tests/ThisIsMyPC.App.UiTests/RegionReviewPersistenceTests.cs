@@ -23,6 +23,52 @@ public sealed class RegionReviewPersistenceTests
         }
     }
 
+    [AvaloniaTheory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void EmptyOrMissingHistoryRestoresWithoutLosingOpenNotes(bool omitHistory, bool hasNote)
+    {
+        var root = new Grid { Background = Brushes.White };
+        using var session = UiSession.ForView(root, new object(), "region-review-null-history", 640, 420);
+        var directory = Path.Combine(session.ShotDirectory, Guid.NewGuid().ToString("N"));
+        var overlay = new RegionReviewOverlay(session.Window, directory);
+        root.Children.Add(overlay);
+        overlay.Start(); session.Pump();
+        if (hasNote)
+        {
+            Drag(session, 50, 80, 250, 200);
+            overlay.EditSelectedNote(); session.Pump();
+            session.Find<TextBox>(_ => true).Text = "Preserve this open note";
+        }
+        overlay.Close(); root.Children.Remove(overlay);
+        var path = Path.Combine(directory, "latest.json");
+        var json = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(path))!;
+        if (omitHistory) json.AsObject().Remove("resolvedFigures");
+        else json["resolvedFigures"] = null;
+        File.WriteAllText(path, json.ToJsonString());
+
+        overlay = new RegionReviewOverlay(session.Window, directory);
+        root.Children.Add(overlay);
+        overlay.Start(); session.Pump();
+        Assert.True(overlay.CanSelect);
+        Assert.Equal(hasNote ? 1 : 0, overlay.FigureCount);
+        Assert.Equal(0, overlay.ResolvedFigureCount);
+        if (hasNote)
+        {
+            overlay.EditSelectedNote(); session.Pump();
+            Assert.Equal("Preserve this open note", session.Find<TextBox>(_ => true).Text);
+            overlay.CancelNote();
+        }
+        session.Screenshot($"restored-{omitHistory}-{hasNote}");
+        Drag(session, 350, 80, 500, 200);
+        Assert.Equal(hasNote ? 2 : 1, overlay.SelectedFigureNumber);
+        overlay.Close();
+        Assert.Empty(Read(directory).ResolvedFigures);
+        Assert.Equal(hasNote ? 2 : 1, Read(directory).Figures.Count);
+    }
+
     [AvaloniaFact]
     public void RestartPreservesNotesHistoryRoutesDimensionsAndNumbers()
     {

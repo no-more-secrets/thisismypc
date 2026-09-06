@@ -21,7 +21,13 @@ internal sealed record RegionReviewRecord
     public required IReadOnlyList<RegionReviewFigure> Figures { get; init; }
     public required IReadOnlyList<RegionReviewCapture> Captures { get; init; }
     public int NextFigureNumber { get; init; } = 1;
-    public IReadOnlyList<RegionReviewFigure> ResolvedFigures { get; init; } = [];
+    private IReadOnlyList<RegionReviewFigure> resolvedFigures = [];
+    // Older records and external writers can encode an empty history as null.
+    public IReadOnlyList<RegionReviewFigure> ResolvedFigures
+    {
+        get => resolvedFigures;
+        init => resolvedFigures = value ?? [];
+    }
     public required bool Suspended { get; init; }
 }
 
