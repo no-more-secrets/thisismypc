@@ -163,24 +163,9 @@
             <Setter Property="Template">
                 <ControlTemplate>
                     <Grid>
-                        <!-- The side outlines stop where the concave joins begin. -->
-                        <Border Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="1,1,1,0" CornerRadius="4,4,0,0"
-                                Margin="0,0,0,7" />
-                        <Panel Height="7" VerticalAlignment="Bottom"
-                               Background="{TemplateBinding Background}" IsHitTestVisible="False">
-                            <Path Width="6" Height="7" HorizontalAlignment="Left" RenderTransform="translate(-6px, 0px)"
-                                  Fill="{TemplateBinding Background}" Data="M 0,7 A 6,7 0 0 0 6,0 L 6,7 Z" />
-                            <Path Width="6" Height="7" HorizontalAlignment="Right" RenderTransform="translate(6px, 0px)"
-                                  Fill="{TemplateBinding Background}" Data="M 0,0 A 6,7 0 0 0 6,7 L 0,7 Z" />
-                            <Path Width="6" Height="7" HorizontalAlignment="Left" RenderTransform="translate(-6px, 0px)"
-                                  Stroke="{TemplateBinding BorderBrush}" StrokeThickness="1"
-                                  Data="M 0,6.5 A 6.5,6.5 0 0 0 6.5,0" />
-                            <Path Width="6" Height="7" HorizontalAlignment="Right" RenderTransform="translate(6px, 0px)"
-                                  Stroke="{TemplateBinding BorderBrush}" StrokeThickness="1"
-                                  Data="M -0.5,0 A 6.5,6.5 0 0 0 6,6.5" />
-                        </Panel>
+                        <controls:SelectedTabChrome Background="{TemplateBinding Background}"
+                                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                                    IsHitTestVisible="False" />
                         <ContentPresenter Name="PART_ContentPresenter"
                                           Margin="{TemplateBinding Padding}"
                                           Content="{TemplateBinding Header}"

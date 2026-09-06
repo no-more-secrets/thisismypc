@@ -13,7 +13,7 @@ Windows Update 5, Power 1) + 5 built-in sets (59 entries) + the enumerative modu
 ## Annotation feedback: control geometry (2026-09-06)
 
 - DONE: Hovered slider thumbs remain whole at minimum and maximum values. Shared slider and validation containers allow the hover overhang.
-- DONE: Selected-tab fillets start level with adjacent tab bottoms and join the side outlines without a horizontal offset.
+- DONE: Selected-tab fillets start level with adjacent tab bottoms. A continuous one-pixel outline replaces separate fill and stroke paths to remove seams and uneven thickness. Pixel coverage checks span 100% through 200% scaling.
 - Verified endpoint screenshots in both themes, wide and wrapped tab geometry, full tests, and fresh review.
 
 ## Development tooling: region review prototype (2026-09-05)

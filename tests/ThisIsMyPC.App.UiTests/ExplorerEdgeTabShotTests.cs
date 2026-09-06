@@ -44,9 +44,8 @@ public class ExplorerEdgeTabShotTests
                 var tabs = session.FindAll<TabItem>(_ => true).ToArray();
                 var selected = tabs.Single(t => t.IsSelected);
                 var neighbor = tabs.First(t => !t.IsSelected && Math.Abs(session.TopOf(t) - session.TopOf(selected)) < 1);
-                var joins = selected.GetVisualDescendants().OfType<Panel>()
-                    .Single(p => p.Children.OfType<Avalonia.Controls.Shapes.Path>().Any());
-                Assert.Equal(session.TopOf(neighbor) + neighbor.Bounds.Height, session.TopOf(joins), 0.01);
+                var chrome = selected.GetVisualDescendants().OfType<ThisIsMyPC.App.Controls.SelectedTabChrome>().Single();
+                Assert.Equal(session.TopOf(neighbor) + neighbor.Bounds.Height, session.TopOf(chrome) + chrome.Bounds.Height - 7, 0.01);
                 session.Screenshot($"{theme.Key}-{width}");
             }
         }
