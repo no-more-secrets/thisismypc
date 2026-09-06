@@ -20,7 +20,7 @@ param(
     [string[]]$Path,
 
     # Names (no path) held to the full set; everything else is reported only.
-    [string[]]$Require = @('ThisIsMyPC.App.exe', 'ThisIsMyPC.Service.exe', 'ThisIsMyPC-Installer.exe')
+    [string[]]$Require = @('ThisIsMyPC.App.exe', 'ThisIsMyPC.Service.exe', 'ThisIsMyPC.Broker.exe', 'ThisIsMyPC-Installer.exe')
 )
 
 $ErrorActionPreference = 'Stop'

@@ -36,13 +36,15 @@ public sealed class OwnerModeService : IOwnerModeServiceControl
     private readonly IMutationLeaseProvider? _mutationLeaseProvider;
     private readonly IMachineConsentStore? _consentStore;
     private readonly IIpcClient? _ipc;
+    private readonly IPrivilegeBrokerClient? _privilegeBroker;
     private bool _restorationEnabled;
     public bool IsRestorationEnabled => Volatile.Read(ref _restorationEnabled) && IsRunning;
 
     public OwnerModeService(
         IServiceInstaller installer, IServiceControlService serviceControl, string? binaryPath = null,
         IMutationLeaseProvider? mutationLeaseProvider = null, IMachineConsentStore? consentStore = null,
-        IIpcClient? ipc = null)
+        IIpcClient? ipc = null,
+        IPrivilegeBrokerClient? privilegeBroker = null)
     {
         ArgumentNullException.ThrowIfNull(installer);
         ArgumentNullException.ThrowIfNull(serviceControl);
@@ -51,6 +53,7 @@ public sealed class OwnerModeService : IOwnerModeServiceControl
         _mutationLeaseProvider = mutationLeaseProvider;
         _consentStore = consentStore;
         _ipc = ipc;
+        _privilegeBroker = privilegeBroker;
         _installer = installer;
         _serviceControl = serviceControl;
         _binaryPath = binaryPath ?? Path.Combine(AppContext.BaseDirectory, "ThisIsMyPC.Service.exe");
@@ -107,6 +110,21 @@ public sealed class OwnerModeService : IOwnerModeServiceControl
     public async Task<OperationResult<bool>> EnableAsync(CancellationToken cancellationToken = default)
     {
         Volatile.Write(ref _restorationEnabled, false);
+        if (_privilegeBroker is not null)
+        {
+            var opened = await _privilegeBroker.OpenSessionAsync(new BrokerSessionRequest
+            {
+                AllowOwnerModeEnable = true,
+            }, cancellationToken).ConfigureAwait(false);
+            if (!opened.IsSuccess)
+                return OperationResult<bool>.Failure(opened.ErrorMessage!, opened.ErrorCategory ?? ErrorCategory.AccessDenied);
+            await using var session = opened.Value!;
+            var result = await session.EnableOwnerModeAsync(cancellationToken).ConfigureAwait(false);
+            InvalidateProbe();
+            Volatile.Write(ref _restorationEnabled, result.IsSuccess);
+            StateChanged?.Invoke(this, EventArgs.Empty);
+            return result;
+        }
         if (_ipc is null)
             return OperationResult<bool>.Failure("Trusted restoration is unavailable in this build.", ErrorCategory.ServiceUnavailable);
         if (!File.Exists(_binaryPath))
@@ -162,6 +180,21 @@ public sealed class OwnerModeService : IOwnerModeServiceControl
     public async Task<OperationResult<bool>> DisableAsync(CancellationToken cancellationToken = default)
     {
         Volatile.Write(ref _restorationEnabled, false);
+        if (_privilegeBroker is not null)
+        {
+            var opened = await _privilegeBroker.OpenSessionAsync(new BrokerSessionRequest
+            {
+                AllowOwnerModeDisable = true,
+            }, cancellationToken).ConfigureAwait(false);
+            if (!opened.IsSuccess)
+                return OperationResult<bool>.Failure(opened.ErrorMessage!, opened.ErrorCategory ?? ErrorCategory.AccessDenied);
+            await using var session = opened.Value!;
+            var brokerResult = await session.DisableOwnerModeAsync(cancellationToken).ConfigureAwait(false);
+            InvalidateProbe();
+            if (brokerResult.IsSuccess)
+                StateChanged?.Invoke(this, EventArgs.Empty);
+            return brokerResult;
+        }
         if (_mutationLeaseProvider is null && _ipc is not null)
         {
             var paused = await _ipc.PauseRestorationAsync(cancellationToken).ConfigureAwait(false);

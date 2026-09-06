@@ -21,6 +21,9 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 
 ## Reviewed v1 foundations and Debug tools (2026-09-06)
 
+- DONE: The Avalonia UI runs unelevated. A NativeAOT Broker confirms and applies
+  bounded privileged batches. UI state moved to LocalAppData; trusted Owner Mode
+  state remains in protected ProgramData storage.
 - DONE: Partial apply records confirmed changes once. Uncertain groups block further applies and cannot be removed by queued edits. Discard All clears the queue and reloads the page.
 - DONE: Debug replaces UI Gallery in Debug builds, with gallery, test controls, and transient state simulation. Mutation leases block live actions during simulation and block simulation changes during actions.
 - DONE: Annotation fixes cover transient zoom, dependent notification switches, page-level technical details, stacked toolbar checkboxes, description tooltips, fixed tab positions, and Display value spacing.

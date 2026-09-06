@@ -1,5 +1,6 @@
 using System.IO.Pipes;
 using System.Runtime.InteropServices;
+using System.Security.Principal;
 using Microsoft.Win32.SafeHandles;
 using ThisIsMyPC.Core.Results;
 
@@ -33,6 +34,37 @@ public static partial class HardenedPipeFactory
     /// name is squatted (or a previous instance is still open).
     /// </summary>
     public static OperationResult<NamedPipeServerStream> Create(string pipeName)
+        => Create(pipeName, PipeSddl);
+
+    /// <summary>
+    /// Creates the service status pipe for local signed-in accounts. Mutating
+    /// messages still require an elevated client token at the service boundary.
+    /// </summary>
+    public static OperationResult<NamedPipeServerStream> CreateForAuthenticatedUsers(string pipeName)
+        => Create(pipeName, "D:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;GA;;;AU)");
+
+    /// <summary>
+    /// Creates a one-session callback pipe for an unelevated user and the elevated broker.
+    /// The caller supplies its token SID. The protected DACL admits only that SID,
+    /// Administrators, and SYSTEM.
+    /// </summary>
+    public static OperationResult<NamedPipeServerStream> CreateForUser(string pipeName, string userSid)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(userSid);
+        try
+        {
+            _ = new SecurityIdentifier(userSid);
+        }
+        catch (ArgumentException ex)
+        {
+            return OperationResult<NamedPipeServerStream>.Failure(
+                $"Invalid callback pipe SID: {ex.Message}", ErrorCategory.AccessDenied, ex);
+        }
+
+        return Create(pipeName, $"D:P(A;;GA;;;SY)(A;;GA;;;BA)(A;;GA;;;{userSid})");
+    }
+
+    private static OperationResult<NamedPipeServerStream> Create(string pipeName, string sddl)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(pipeName);
 
@@ -40,7 +72,7 @@ public static partial class HardenedPipeFactory
         try
         {
             if (!NativePipe.ConvertStringSecurityDescriptorToSecurityDescriptorW(
-                    PipeSddl, 1 /* SDDL_REVISION_1 */, out securityDescriptor, out _))
+                    sddl, 1 /* SDDL_REVISION_1 */, out securityDescriptor, out _))
             {
                 return OperationResult<NamedPipeServerStream>.Failure(
                     $"SDDL conversion failed (win32={Marshal.GetLastPInvokeError()})",

@@ -10,8 +10,7 @@ namespace ThisIsMyPC.Integration.Tests.Fakes;
 /// <see cref="ApplyResult"/> as-is (default: success with nothing applied) and
 /// clears the staged groups, so a test can hand the view model any result shape
 /// the real service can produce, including ones with <c>Failed</c> null.
-/// It does not override the token overload, so a cancellable token throws, as
-/// the interface documents.
+/// The token overload checks cancellation before returning the configured result.
 /// </summary>
 public sealed class FakePendingChangesService : IPendingChangesService
 {
@@ -65,6 +64,15 @@ public sealed class FakePendingChangesService : IPendingChangesService
         _groups.Clear();
         RaiseChanged();
         return Task.FromResult(ApplyResult);
+    }
+
+    public Task<MutationResult> ApplyAllAsync(
+        Func<ChangeDescriptor, Task<OperationResult<bool>>> applyFunc,
+        Func<ChangeDescriptor, Task<OperationResult<bool>>> revertFunc,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return ApplyAllAsync(applyFunc, revertFunc);
     }
 
     private void RaiseChanged()

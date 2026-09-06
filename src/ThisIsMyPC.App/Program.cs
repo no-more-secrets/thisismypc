@@ -48,7 +48,7 @@ sealed class Program
             .SetAutoApplyOnStartup(false)
             .Run();
 
-        var dataDir = AppConstants.DataDirectoryPath;
+        var dataDir = AppConstants.UserDataDirectoryPath;
         Directory.CreateDirectory(dataDir);
 
 #if DEBUG
@@ -58,13 +58,6 @@ sealed class Program
 #endif
 
 #pragma warning disable CA1031 // Top-level crash handler must catch all exceptions
-        // Faults on thread-pool threads and forgotten tasks never reach the
-        // catch below; log them so the last line before a crash names it.
-        AppDomain.CurrentDomain.UnhandledException += (_, e) =>
-            log.Fatal(e.ExceptionObject as Exception, "Unhandled exception (terminating: {Terminating})", e.IsTerminating);
-        TaskScheduler.UnobservedTaskException += (_, e) =>
-            log.Error(e.Exception, "Unobserved task exception");
-
         // Faults on thread-pool threads and forgotten tasks never reach the
         // catch below; log them so the last line before a crash names it.
         AppDomain.CurrentDomain.UnhandledException += (_, e) =>
@@ -83,15 +76,8 @@ sealed class Program
                 log.Warn("Unprotected install location: {Path}: {Warning}",
                     AppContext.BaseDirectory, installGuard.WarningMessage);
 
-            var guard = new DataDirectoryGuard();
-            var daclResult = guard.EnsureHardened(dataDir);
-            if (daclResult.IsSuccess)
-                log.Info("Data directory DACL: {Status}", daclResult.Value);
-            else
-                log.Warn("Data directory DACL hardening failed: {Error}", daclResult.ErrorMessage);
-
-            // Pre-machine-scope builds stored data in %APPDATA%; bring it along
-            // once, after hardening and before any service opens the files.
+            // Older profile builds stored data under roaming AppData. Copy it once
+            // before services open the local UI state.
             LegacyDataMigration.CopyFromUserProfile(dataDir, log);
 
             BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);

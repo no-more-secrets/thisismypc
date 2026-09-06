@@ -74,8 +74,8 @@ the service talk over a hardened named pipe whose message envelope is in
   unless enabled in Settings.
 - Network use: the update check against GitHub Releases (on by default, one
   toggle to turn off) and winget when the user installs software. Nothing else.
-- All data lives in `%ProgramData%\ThisIsMyPC` with a DACL that only
-  Administrators and SYSTEM can write. One database per machine, not per user.
+- UI settings and history live in `%LocalAppData%\ThisIsMyPC`. Trusted Owner
+  Mode state stays in protected `%ProgramData%\ThisIsMyPC` storage.
 - Updates are verified against a GPG-signed manifest before they are applied
   (`GpgManifestUpdateVerifier`; process in
   [docs/release/update-signing.md](docs/release/update-signing.md)).
@@ -84,8 +84,7 @@ the service talk over a hardened named pipe whose message envelope is in
 
 - Windows 11, x64. The manifest also declares Windows 10 compatibility, but
   nothing has been tested there.
-- Administrator rights. The app elevates at launch (`requireAdministrator` in
-  `app.manifest`); it does nothing useful without elevation.
+- Administrator rights for changes. Browsing and staging run without elevation.
 - Installed per machine from an MSI into `Program Files`. No per-user install,
   no portable build.
 
@@ -96,8 +95,8 @@ the service talk over a hardened named pipe whose message envelope is in
 2. Double-click it. Windows asks for permission; click Yes.
 3. Read the license, choose the folder and the options you want, click
    Install.
-4. Open ThisIsMyPC from the Start menu. It asks for permission every time it
-   starts, because everything it does needs administrator rights.
+4. Open ThisIsMyPC from the Start menu. Windows asks for permission only when
+   you apply changes or use another privileged command.
 
 The same page also carries `ThisIsMyPC-win.msi`, the plain Windows Installer
 package inside the exe, for winget and for administrators who deploy with
@@ -139,7 +138,7 @@ environment, structure, or content check terminates with a nonzero exit code.
 The certificate-removal foundation is tested, not only designed. On September
 3, 2026, an outer installer signed by SSL.com for No More Secrets, LLC and RFC
 3161 timestamped matched its clean unsigned build after its certificate was
-removed. The first live test of the complete six-signature NativeAOT path will
+removed. The first live test of the complete seven-signature NativeAOT path will
 be recorded here after it is run.
 
 For an already prepared clean clone, the lower-level comparison is:

@@ -7,6 +7,7 @@ using Avalonia.VisualTree;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using ThisIsMyPC.App.UiTests.Fakes;
+using ThisIsMyPC.App.Services;
 using ThisIsMyPC.App.ViewModels;
 using ThisIsMyPC.App.Views;
 using ThisIsMyPC.Core.Packages;
@@ -81,6 +82,7 @@ public sealed class UiSession : IDisposable
     {
         var services = new ServiceCollection();
         App.ConfigureServices(services);
+        services.RemoveAll<IPrivilegeBrokerClient>();
 
         var tempDataDir = Path.Combine(Path.GetTempPath(), "tipc-ui-tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempDataDir);

@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/ThisIsMyPC.App/ThisIsMyPC.App.csproj" />
+    <Project Path="src/ThisIsMyPC.Broker/ThisIsMyPC.Broker.csproj" />
     <Project Path="src/ThisIsMyPC.Core/ThisIsMyPC.Core.csproj" />
     <Project Path="src/ThisIsMyPC.Installer/ThisIsMyPC.Installer.csproj" />
     <Project Path="src/ThisIsMyPC.Interop.Com/ThisIsMyPC.Interop.Com.csproj" />

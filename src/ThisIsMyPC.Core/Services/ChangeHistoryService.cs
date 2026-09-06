@@ -21,7 +21,7 @@ public sealed class ChangeHistoryService : IChangeHistoryService
         Drift.DeliberateChangeCoordinator? deliberateChanges = null)
     {
         _repository = repository;
-        _dbPath = dbPath ?? Path.Combine(AppConstants.DataDirectoryPath, "history.db");
+        _dbPath = dbPath ?? Path.Combine(AppConstants.UserDataDirectoryPath, "history.db");
         _executor = new ReversibleChangeExecutor(enforcementExecutor);
         _driftBaseline = driftBaseline;
         _deliberateChanges = deliberateChanges;

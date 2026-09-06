@@ -6,8 +6,8 @@ namespace ThisIsMyPC.Ipc.Contracts;
 /// Wire-level constants and framing for the desktop-app / Session 0 service channel
 /// (28-1). Frames are a 4-byte little-endian length prefix followed by a UTF-8 JSON
 /// <see cref="IpcEnvelope"/>. The transport is a local-only named pipe; remote
-/// clients are rejected at pipe-creation time and the server ACL admits only
-/// Administrators and SYSTEM.
+/// clients are rejected at pipe-creation time. Signed-in users can read status.
+/// The service separately rejects mutating messages from unelevated clients.
 /// </summary>
 public static class IpcProtocol
 {

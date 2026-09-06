@@ -31,9 +31,10 @@ The app corresponds to the PC, not a user profile (AGENTS.md). Packaging follows
   and a newer one blocks Next until it is removed. It runs
   the MSI quietly (`/qn`, `VELOPACK_INSTALLDIR`, verbose log under
   `%ProgramData%\ThisIsMyPC\logs`), removes the Public Desktop shortcut when
-  unticked, and writes the behavior choices through the app's own
-  `SettingsService`; the app's `AutoStartService.Reconcile()` turns the
-  setting into the Run entry at first start.
+  unticked, and writes three untrusted behavior choices to the installing
+  account's HKCU registry. The unelevated app imports and deletes those values
+  on first start. `AutoStartService.Reconcile()` then turns the setting into
+  the Run entry.
 - **File properties** (Explorer, Details tab): description "ThisIsMyPC
   Installer", product version without the commit hash
   (`IncludeSourceRevisionInInformationalVersion` off in Directory.Build.props),
@@ -45,7 +46,7 @@ The app corresponds to the PC, not a user profile (AGENTS.md). Packaging follows
   every .exe and cannot be changed.
 - **Exploit mitigations are a release gate.** `tools/check-binary-hardening.ps1`
   reads the PE headers of the files about to ship. The release fails if the App,
-  Service, or installer lacks ASLR with a real relocation table, high-entropy
+  Broker, Service, or installer lacks ASLR with a real relocation table, high-entropy
   VA, DEP, CFG with a populated target table, the /GS stack cookie, CET, or
   table-based x64 unwinding. It also rejects any writable executable section.
   Pinned source builds give Skia, HarfBuzz, and SQLite the same mitigations.
@@ -60,15 +61,14 @@ The app corresponds to the PC, not a user profile (AGENTS.md). Packaging follows
   path). A same-user non-elevated process can write to %TEMP% and would get
   our elevation by swapping a file there. If the DACL cannot be set, the
   installer stops with a message box before loading anything.
-- **Mutable state in `%ProgramData%\ThisIsMyPC`** (settings, history.db, sets,
-  monitoring state, drift baseline): one database for the machine. The app
-  creates and DACL-hardens the folder at startup (Administrators/SYSTEM only);
-  a profile folder would be defeatable because users own their profile
-  directories. Pre-machine-scope builds stored data in `%APPDATA%\ThisIsMyPC`;
-  `LegacyDataMigration` copies it across once at startup and leaves a marker.
-- **Updates**: the always-elevated app runs Update.exe, which can write
-  Program Files; update flow is identical to per-user Velopack. Every download
-  is verified against the GPG-signed manifest (update-signing.md) before apply.
+- **State is split by trust.** UI settings, history, sets, monitoring state,
+  and logs live in `%LocalAppData%\ThisIsMyPC`. The elevated Broker never trusts
+  those files as authority. Owner Mode consent, baseline, and journal state stay
+  under the Administrators/SYSTEM-only `%ProgramData%\ThisIsMyPC` directory.
+  `LegacyDataMigration` copies old `%APPDATA%\ThisIsMyPC` UI state once.
+- **Updates**: every download is verified against the GPG-signed manifest before
+  apply. Applying a per-machine update from the unelevated UI remains a required
+  live release test.
 
 ## Building a release
 
@@ -77,13 +77,13 @@ dotnet tool restore               # restores the repository-pinned vpk version
 .\tools\build-release.ps1 -Version 1.0.0 -Aot
 ```
 
-Official releases are NativeAOT only. The script publishes the App and the
-Session 0 Service (self-contained, win-x64) into one staging directory (the
-service exe must sit next to the app exe for Owner Mode enable), packs the MSI,
-and writes `SHA256SUMS`. Then follow
+Official releases are NativeAOT only. The script publishes the App, elevated
+Broker, and Session 0 Service as self-contained win-x64 binaries. The Broker
+and Service sit beside the App in the package. The script then packs the MSI
+and writes `SHA256SUMS`. Follow
 `update-signing.md` for signing and upload.
 
-All three NativeAOT executables enable Arbitrary Code Guard before application
+All four NativeAOT executables enable Arbitrary Code Guard before application
 startup. The local Avalonia.Win32 and SkiaSharp packages under
 `third-party/acg` replace runtime-generated native callback thunks with static
 unmanaged callbacks. Rebuild them with `tools/build-acg-dependencies.ps1`.
@@ -146,7 +146,7 @@ signs that bundle. Every object is checked for signer, chain, timestamp, and
 thumbprint. `SHA256SUMS` is written only after the complete signed install tree
 matches the preserved unsigned build.
 
-Each official NativeAOT release uses six SSL.com signing credits: app, service,
+Each official NativeAOT release uses seven SSL.com signing credits: app, broker, service,
 Velopack app stub, Update.exe, MSI, and outer installer. Velopack batches up to
 100 paths into one callback, which reduces authentication and network round
 trips but does not reduce SSL.com's per-object credit count. A catalog signature

@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
+using Microsoft.Win32;
 using ThisIsMyPC.Core;
 using ThisIsMyPC.Core.Settings;
 using ThisIsMyPC.Interop.Win32.Security;
@@ -80,7 +81,7 @@ public sealed class MsiInstallEngine : IInstallEngine
                 RemoveShortcut(Environment.SpecialFolder.CommonDesktopDirectory);
             if (!options.StartMenuShortcut)
                 RemoveShortcut(Environment.SpecialFolder.CommonPrograms);
-            WriteSettings(dataDir, options);
+            WritePendingSettings(options);
 
             return new InstallOutcome(true, result.RebootRequired, null, logPath);
         }
@@ -230,19 +231,16 @@ public sealed class MsiInstallEngine : IInstallEngine
     }
 
     /// <summary>
-    /// Writes through the app's own SettingsService so the file shape is the
-    /// app's. AutoStartService.Reconcile() turns the auto-start setting into
-    /// the Run entry at the app's next start; the installer never touches the
-    /// registry itself.
+    /// Stores untrusted UI preferences in HKCU. The unelevated app imports and
+    /// removes them. The elevated installer never writes into a user-controlled
+    /// profile directory, which could contain a reparse point.
     /// </summary>
-    private static void WriteSettings(string dataDir, InstallOptions options)
+    private static void WritePendingSettings(InstallOptions options)
     {
-        var settings = new SettingsService(Path.Combine(dataDir, "settings.json"));
-        settings.Initialize();
-        var autoStart = options.StartWithWindows ? "1" : "0";
-        settings.SetApp(AppSettingKeys.AutoStart, autoStart);
-        settings.SetApp(AppSettingKeys.TrayMode, autoStart);
-        settings.SetApp(AppSettingKeys.UpdateCheck, options.CheckForUpdates ? "1" : "0");
+        using var key = Registry.CurrentUser.CreateSubKey(@"Software\No More Secrets\ThisIsMyPC\InstallOptions", writable: true);
+        key.SetValue(AppSettingKeys.AutoStart, options.StartWithWindows ? "1" : "0", RegistryValueKind.String);
+        key.SetValue(AppSettingKeys.TrayMode, options.StartWithWindows ? "1" : "0", RegistryValueKind.String);
+        key.SetValue(AppSettingKeys.UpdateCheck, options.CheckForUpdates ? "1" : "0", RegistryValueKind.String);
     }
 
     private static void TryDelete(string directory)

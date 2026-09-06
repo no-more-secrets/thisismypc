@@ -55,6 +55,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ThisIsMyPC.Core\ThisIsMyPC.Core.csproj" />
+    <ProjectReference Include="..\ThisIsMyPC.Broker\ThisIsMyPC.Broker.csproj"
+                      ReferenceOutputAssembly="false" Condition="'$(AotPublish)' != 'true'" />
     <ProjectReference Include="..\ThisIsMyPC.Interop.Win32\ThisIsMyPC.Interop.Win32.csproj" />
     <ProjectReference Include="..\ThisIsMyPC.Ipc.Contracts\ThisIsMyPC.Ipc.Contracts.csproj" />
     <ProjectReference Include="..\ThisIsMyPC.Modules.Annoyances\ThisIsMyPC.Modules.Annoyances.csproj" />
@@ -69,4 +71,13 @@
     <ProjectReference Include="..\ThisIsMyPC.Modules.Power\ThisIsMyPC.Modules.Power.csproj" />
     <ProjectReference Include="..\ThisIsMyPC.Modules.WindowsUpdate\ThisIsMyPC.Modules.WindowsUpdate.csproj" />
   </ItemGroup>
+
+  <Target Name="CopyPrivilegeBroker" AfterTargets="Build"
+          Condition="'$(AotPublish)' != 'true'">
+    <ItemGroup>
+      <PrivilegeBrokerFiles Include="..\ThisIsMyPC.Broker\bin\$(Configuration)\$(TargetFramework)\ThisIsMyPC.Broker.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(PrivilegeBrokerFiles)" DestinationFolder="$(TargetDir)"
+          SkipUnchangedFiles="true" />
+  </Target>
 </Project>

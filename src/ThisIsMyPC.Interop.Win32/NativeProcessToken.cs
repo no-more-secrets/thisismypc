@@ -20,6 +20,7 @@ internal static unsafe partial class NativeProcessToken
     internal const int TokenSessionId = 12;
     internal const int TokenElevationType = 18;
     internal const int TokenLinkedToken = 19;
+    internal const int TokenElevation = 20;
 
     // TOKEN_ELEVATION_TYPE
     internal const int TokenElevationTypeDefault = 1;

@@ -20,7 +20,7 @@ public sealed class SettingsService : ISettingsService
 
     public SettingsService(string? filePath = null)
     {
-        _filePath = filePath ?? Path.Combine(AppConstants.DataDirectoryPath, "settings.json");
+        _filePath = filePath ?? Path.Combine(AppConstants.UserDataDirectoryPath, "settings.json");
     }
 
     public bool SettingsWereReset { get; private set; }

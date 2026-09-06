@@ -12,7 +12,9 @@ public static class ExistingSettings
 {
     public static InstallOptions? Read()
     {
-        var path = Path.Combine(AppConstants.DataDirectoryPath, "settings.json");
+        var path = Path.Combine(AppConstants.UserDataDirectoryPath, "settings.json");
+        if (!File.Exists(path))
+            path = Path.Combine(AppConstants.DataDirectoryPath, "settings.json");
         if (!File.Exists(path))
             return null;
 

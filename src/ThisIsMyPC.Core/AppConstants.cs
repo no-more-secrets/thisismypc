@@ -3,10 +3,16 @@ namespace ThisIsMyPC.Core;
 public static class AppConstants
 {
     /// <summary>
-    /// The machine-scoped data directory (%ProgramData%\ThisIsMyPC): settings,
-    /// change history, sets, monitoring state, and the drift baseline the
-    /// Session 0 service consumes. The app corresponds to the PC, not a profile:
-    /// one install, one database, all-profiles coverage. Created and
+    /// UI-owned settings, history, sets, monitoring state, and logs. The unelevated
+    /// Avalonia process may parse this data. Privileged code must never trust it.
+    /// </summary>
+    public static string UserDataDirectoryPath { get; } = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "ThisIsMyPC");
+
+    /// <summary>
+    /// The machine-scoped trusted directory (%ProgramData%\ThisIsMyPC). The
+    /// privilege broker and Session 0 service use it for restoration state. Created and
     /// DACL-hardened (Administrators/SYSTEM only) at startup; ProgramData's
     /// default ACL would let a standard user rewrite state that an elevated app
     /// and a SYSTEM service trust. Not a profile folder: users own their profile

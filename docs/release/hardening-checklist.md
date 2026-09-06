@@ -76,50 +76,39 @@ EH Continuation table present.
   - Installers/uninstallers: none; the MSI is WiX/Velopack-run, not launched
     by the app.
 
-## IPC and elevation boundary (audited against threat-model part 1, tm1)
+## IPC and elevation boundary
 
-- **Pipe ACL: OK.** `D:P(A;;GA;;;SY)(A;;GA;;;BA)` protected DACL (SYSTEM +
-  Administrators only), FILE_FLAG_FIRST_PIPE_INSTANCE (anti-squatting,
-  tm1 mitigation 1), PIPE_REJECT_REMOTE_CLIENTS, single instance
-  (HardenedPipeFactory). Squatted names are logged critical and never served
-  around.
-- **Impersonation: OK.** The client connects with
-  TokenImpersonationLevel.Identification (SECURITY_SQOS_PRESENT |
-  SECURITY_IDENTIFICATION), exactly tm1 mitigation 2: a rogue server cannot
-  use the client token.
-- **Connecting-process identity: OK by design.** The kernel enforces the pipe
-  DACL at open: only admin/SYSTEM tokens can connect at all. No PID-based
-  checks (tm1 explicitly calls those spoofable); no server-side impersonation
-  added (ImpersonateNamedPipeClient is itself attack surface the service does
-  not need).
-- **Input validation at the boundary: OK.** Length-prefixed frames with a hard
-  1 MB cap enforced on read AND write, strict source-generated JSON (parse
-  failure returns an error envelope, never an exception path), per-request
-  nonce echoed and checked (replay guard), idle-session timeout, unknown types
-  answered with Error. The GUI-to-service direction carries NO mutation
-  commands (read-only status/drift queries); drift data flows into staged
-  pending changes that a human reviews before apply.
-- tm1 mitigation 3 (authenticated RPC ncacn_np + PKT_PRIVACY) remains the
-  documented upgrade path if the envelope ever grows mutation commands
-  (agent-interface chapter); the current read-only surface does not justify it.
+- **Broker split: DONE.** The Avalonia UI runs at medium integrity. A small,
+  Avalonia-free NativeAOT Broker starts through `runas` for each approved batch.
+- **Broker pipe: DONE.** Each session uses a random first-instance local pipe.
+  Its protected DACL names only the UI account, Administrators, and SYSTEM.
+  Both processes bind the connection to the expected peer PID.
+- **Broker identity: DONE.** Release builds require the installed UI and Broker
+  paths under Program Files. Authenticode must identify No More Secrets, LLC.
+- **Broker consent: DONE.** The elevated native confirmation lists every change,
+  action, target, and enforcement target. It paginates large batches and defaults
+  to Cancel. Commands must exactly match the approved session.
+- **Broker parsing: DONE.** Frames have a 1 MB cap. Text rejects control
+  characters and oversized values. Operation count, enforcement count, session
+  opening, idle time, and execution time are bounded.
+- **Service pipe: DONE.** Authenticated local users can read service status and
+  drift. Enable and pause controls require an elevated connecting process.
+  Remote clients and second pipe instances remain rejected.
 
 ## Build hygiene
 
 - **Symbol stripping: OK.** `vpk pack` excludes `.pdb` by default (verified in
   the CLI reference); release packages ship no symbols. PDBs stay local for
   crash-log symbolication.
-- **Reflection metadata: OK / deliberate.** NativeAOT trims unreachable
-  metadata by definition; the two reflection-binding templates were converted
-  to compiled bindings (zero IL trim warnings). Stack-trace metadata is
-  deliberately KEPT (`StackTraceSupport` default): NLog crash logs need
-  frames, and the metadata discloses nothing an open-source repo does not.
+- **Reflection metadata: MOSTLY DONE.** NativeAOT trims unreachable metadata.
+  One tab-template `ReflectionBinding` remains and produces one IL2026 warning.
+  Stack-trace metadata stays enabled because NLog crash logs need frames. The
+  metadata discloses nothing absent from the open-source repository.
 
 ## Elevated content and child execution
 
-- **Untrusted file parsing: DONE.** The elevated UI no longer resolves shortcut
-  contents, reads PE version resources, inspects autorun signatures, or asks
-  the shell to extract icons from target files. Icons, publishers, and
-  descriptions stay unknown until this work moves to a non-elevated helper.
+- **Untrusted file parsing: DONE.** The medium-integrity UI performs discovery
+  and display parsing. The elevated Broker receives bounded typed requests only.
 - **Third-party shell code: DONE.** Context-menu discovery reads registry
   metadata only. It never creates or calls a registered in-process shell
   extension. Surface classification falls back conservatively.
@@ -140,22 +129,19 @@ EH Continuation table present.
   startup outside Program Files. Canonical path checks reject traversal and
   prefix lookalikes.
 
-The main remaining architectural risk is the always-elevated Avalonia process.
-ACG starts at managed Main, after the Windows image loader. A future split must
-run the UI without elevation and expose a small authenticated mutation broker.
-PPL is unavailable to a normal OV-signed desktop product.
+The always-elevated Avalonia risk is removed. A compromised UI can request a
+malicious target, but it cannot apply one silently. The elevated confirmation
+shows the exact target before the Broker accepts the session. PPL remains
+unavailable to a normal OV-signed desktop product.
 
 ## Verification (2026-09-06)
 
-The non-elevated Release suite passed 2,359 tests. The numbered acg-04
-NativeAOT build contains the App, Service, and installer launcher. All twelve
-PE images passed the strengthened mitigation gate. The installer screenshot
-suite confirmed that an outside-Program-Files path shows an error and disables
-installation. Elevated loader-time checks passed for the App and Service.
-ACG was active before each process resumed, remained active after startup, and
-both processes stayed alive. A Debug NativeAOT installer, which skipped only
-the release signature check, passed the same test and opened its main window.
-The elevated security project also passed all 69 tests.
+The Release build and all 2,455 CI-safe tests passed. Numbered build
+`0.0.1-broker.1` contains NativeAOT App, Broker, Service, and installer
+executables. All four passed the ASLR, high-entropy VA, DEP, CFG, /GS, CET,
+SEH, and W^X release gate. The package is unsigned because no eSigner inputs
+were present. Live Broker elevation, signed identity checks, and a per-machine
+update from the medium-integrity UI remain untested.
 
 `ChildProcessGateTests` covers the winget launch gate directly, including a
 live Integration case that resolves the real winget alias and verifies its

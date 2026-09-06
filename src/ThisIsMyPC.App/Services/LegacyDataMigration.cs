@@ -3,9 +3,8 @@ using NLog;
 namespace ThisIsMyPC.App.Services;
 
 /// <summary>
-/// One-shot move of pre-machine-scope data: builds before the packaging switch
-/// stored state in %APPDATA%\ThisIsMyPC; the machine-scoped app reads only
-/// %ProgramData%\ThisIsMyPC. Copies what the new location does not already have
+/// One-shot copy of older profile data. Earlier builds stored state in roaming
+/// AppData. The unelevated UI uses local AppData. Copies missing entries
 /// (never overwrites, never deletes the old directory), then drops a marker so
 /// the scan runs once per profile. Only the launching user's profile is
 /// reachable; other profiles' old data stays where it is, which matches the
@@ -13,7 +12,7 @@ namespace ThisIsMyPC.App.Services;
 /// </summary>
 internal static class LegacyDataMigration
 {
-    private const string MarkerFileName = "migrated-to-programdata.txt";
+    private const string MarkerFileName = "migrated-to-localappdata.txt";
 
     public static void CopyFromUserProfile(string machineDataDir, ILogger logger)
     {

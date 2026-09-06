@@ -25,6 +25,58 @@ public static class IpcMessageTypes
     public const string Error = "error";
     public const string EnableRestoration = "enable-restoration";
     public const string PauseRestoration = "pause-restoration";
+    public const string BrokerSession = "broker-session";
+    public const string BrokerCommand = "broker-command";
+    public const string BrokerClose = "broker-close";
+}
+
+/// <summary>One privileged operation authorized by the broker confirmation.</summary>
+public enum BrokerCommandKind
+{
+    ApplyChange,
+    RevertChange,
+    ExecuteAction,
+    CreateRestorePoint,
+    EnableOwnerMode,
+    DisableOwnerMode,
+}
+
+/// <summary>
+/// Complete operation set shown by the elevated broker before it accepts commands.
+/// The broker rejects commands not represented by this immutable request.
+/// </summary>
+public sealed record BrokerSessionRequest
+{
+    public IReadOnlyList<Core.Changes.ChangeDescriptor> Changes { get; init; } = [];
+    public IReadOnlyList<Core.Actions.ActionDescriptor> Actions { get; init; } = [];
+    public string? RestorePointDescription { get; init; }
+    public bool AllowOwnerModeEnable { get; init; }
+    public bool AllowOwnerModeDisable { get; init; }
+}
+
+/// <summary>One command sent after the elevated broker accepted a session.</summary>
+public sealed record BrokerCommandRequest
+{
+    public required BrokerCommandKind Kind { get; init; }
+    public Core.Changes.ChangeDescriptor? Change { get; init; }
+    public Core.Actions.ActionDescriptor? Action { get; init; }
+    public string? RestorePointDescription { get; init; }
+}
+
+/// <summary>Result returned by the broker without serializing exception objects.</summary>
+public sealed record BrokerCommandResponse
+{
+    public required bool IsSuccess { get; init; }
+    public string? ErrorMessage { get; init; }
+    public Core.Results.ErrorCategory? ErrorCategory { get; init; }
+    public Core.Services.RestorePointResult? RestorePoint { get; init; }
+}
+
+/// <summary>Broker session authorization result.</summary>
+public sealed record BrokerSessionResponse
+{
+    public required bool Accepted { get; init; }
+    public string? ErrorMessage { get; init; }
 }
 
 /// <summary>Restoration authorization is separate from the service process state.</summary>
@@ -86,6 +138,10 @@ public sealed record IpcErrorResponse
 [JsonSerializable(typeof(RestorationStatusResponse))]
 [JsonSerializable(typeof(DriftReportResponse))]
 [JsonSerializable(typeof(IpcErrorResponse))]
+[JsonSerializable(typeof(BrokerSessionRequest))]
+[JsonSerializable(typeof(BrokerSessionResponse))]
+[JsonSerializable(typeof(BrokerCommandRequest))]
+[JsonSerializable(typeof(BrokerCommandResponse))]
 public sealed partial class IpcJsonContext : JsonSerializerContext;
 
 public static class IpcSerializer

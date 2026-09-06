@@ -384,10 +384,35 @@
           "xunit.extensibility.core": "[2.9.3]"
         }
       },
+      "thisismypc.broker": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection": "[10.0.0, )",
+          "NLog": "[6.2.0, )",
+          "ThisIsMyPC.Core": "[1.0.0, )",
+          "ThisIsMyPC.Interop.Com": "[1.0.0, )",
+          "ThisIsMyPC.Interop.Win32": "[1.0.0, )",
+          "ThisIsMyPC.Ipc.Contracts": "[1.0.0, )",
+          "ThisIsMyPC.Modules.Annoyances": "[1.0.0, )",
+          "ThisIsMyPC.Modules.Display": "[1.0.0, )",
+          "ThisIsMyPC.Modules.Power": "[1.0.0, )",
+          "ThisIsMyPC.Modules.Privacy": "[1.0.0, )",
+          "ThisIsMyPC.Modules.Shell": "[1.0.0, )",
+          "ThisIsMyPC.Modules.Software": "[1.0.0, )",
+          "ThisIsMyPC.Modules.Startup": "[1.0.0, )",
+          "ThisIsMyPC.Modules.WindowsUpdate": "[1.0.0, )"
+        }
+      },
       "thisismypc.core": {
         "type": "Project",
         "dependencies": {
           "Microsoft.Data.Sqlite": "[10.0.11, )"
+        }
+      },
+      "thisismypc.interop.com": {
+        "type": "Project",
+        "dependencies": {
+          "ThisIsMyPC.Core": "[1.0.0, )"
         }
       },
       "thisismypc.interop.win32": {
@@ -398,6 +423,59 @@
         }
       },
       "thisismypc.ipc.contracts": {
+        "type": "Project",
+        "dependencies": {
+          "ThisIsMyPC.Core": "[1.0.0, )"
+        }
+      },
+      "thisismypc.modules.annoyances": {
+        "type": "Project",
+        "dependencies": {
+          "ThisIsMyPC.Core": "[1.0.0, )"
+        }
+      },
+      "thisismypc.modules.display": {
+        "type": "Project",
+        "dependencies": {
+          "ThisIsMyPC.Core": "[1.0.0, )"
+        }
+      },
+      "thisismypc.modules.power": {
+        "type": "Project",
+        "dependencies": {
+          "ThisIsMyPC.Core": "[1.0.0, )",
+          "ThisIsMyPC.Interop.Win32": "[1.0.0, )"
+        }
+      },
+      "thisismypc.modules.privacy": {
+        "type": "Project",
+        "dependencies": {
+          "ThisIsMyPC.Core": "[1.0.0, )"
+        }
+      },
+      "thisismypc.modules.shell": {
+        "type": "Project",
+        "dependencies": {
+          "ThisIsMyPC.Core": "[1.0.0, )",
+          "ThisIsMyPC.Interop.Com": "[1.0.0, )",
+          "ThisIsMyPC.Interop.Win32": "[1.0.0, )"
+        }
+      },
+      "thisismypc.modules.software": {
+        "type": "Project",
+        "dependencies": {
+          "ThisIsMyPC.Core": "[1.0.0, )"
+        }
+      },
+      "thisismypc.modules.startup": {
+        "type": "Project",
+        "dependencies": {
+          "ThisIsMyPC.Core": "[1.0.0, )",
+          "ThisIsMyPC.Interop.Com": "[1.0.0, )",
+          "ThisIsMyPC.Interop.Win32": "[1.0.0, )"
+        }
+      },
+      "thisismypc.modules.windowsupdate": {
         "type": "Project",
         "dependencies": {
           "ThisIsMyPC.Core": "[1.0.0, )"

@@ -53,6 +53,8 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly Core.Notifications.INotificationService? _notificationService;
     private readonly Core.Monitoring.MonitoringService? _monitoringService;
     private readonly IRestorePointService _restorePointService;
+    private readonly IPrivilegeBrokerClient? _privilegeBroker;
+    private IPrivilegeBrokerSession? _activeBrokerSession;
 
     // --- 9-3 monitoring review (Home section) ---
 
@@ -348,8 +350,10 @@ public partial class MainWindowViewModel : ViewModelBase
         Core.Packages.IWingetService? wingetService = null,
         Services.AutorunEnrichment? autorunEnrichment = null,
         Services.DebugSimulation? debugSimulation = null,
-        Core.Drift.DeliberateChangeCoordinator? deliberateChanges = null)
+        Core.Drift.DeliberateChangeCoordinator? deliberateChanges = null,
+        IPrivilegeBrokerClient? privilegeBroker = null)
     {
+        _privilegeBroker = privilegeBroker;
         _deliberateChanges = deliberateChanges;
         _wingetService = wingetService;
         _autorunEnrichment = autorunEnrichment;
@@ -1614,8 +1618,10 @@ public partial class MainWindowViewModel : ViewModelBase
         SetStatus("Creating restore point...", StatusSeverity.Warning);
         try
         {
-            var result = await _restorePointService.CreateRestorePointAsync(
-                $"ThisIsMyPC restore point {DateTime.Now:yyyy-MM-dd HH:mm}").ConfigureAwait(true);
+            var description = $"ThisIsMyPC restore point {DateTime.Now:yyyy-MM-dd HH:mm}";
+            var result = _privilegeBroker is null
+                ? await _restorePointService.CreateRestorePointAsync(description).ConfigureAwait(true)
+                : await CreateBrokerRestorePoint(description).ConfigureAwait(true);
 
             if (result.IsSuccess)
             {
@@ -1696,11 +1702,35 @@ public partial class MainWindowViewModel : ViewModelBase
             // reversible thing in the app and deserves the restore point most.
             var changeCount = _pendingChangesService.PendingGroups.Sum(g => g.Changes.Count)
                 + (_pendingActionsService?.PendingCount ?? 0);
+            var restorePointDescription = changeCount >= AutoRestorePointThreshold && !_applyWithoutRestorePoint
+                ? $"ThisIsMyPC: Before applying {changeCount} changes"
+                : null;
+
+            IPrivilegeBrokerSession? brokerSession = null;
+            if (_privilegeBroker is not null)
+            {
+                var opened = await _privilegeBroker.OpenSessionAsync(new Ipc.Contracts.BrokerSessionRequest
+                {
+                    Changes = _pendingChangesService.PendingGroups.SelectMany(group => group.Changes).ToList(),
+                    Actions = _pendingActionsService?.PendingActions ?? [],
+                    RestorePointDescription = restorePointDescription,
+                }, cancellationToken).ConfigureAwait(true);
+                if (!opened.IsSuccess)
+                {
+                    SetStatus(opened.ErrorMessage ?? "Administrator confirmation failed.", StatusSeverity.Error);
+                    return;
+                }
+                brokerSession = opened.Value!;
+                _activeBrokerSession = brokerSession;
+            }
+
+            await using var brokerScope = brokerSession;
             if (changeCount >= AutoRestorePointThreshold && !_applyWithoutRestorePoint)
             {
                 SetStatus("Creating restore point...", StatusSeverity.Warning);
-                var restorePoint = await _restorePointService.CreateRestorePointAsync(
-                    $"ThisIsMyPC: Before applying {changeCount} changes").ConfigureAwait(true);
+                var restorePoint = brokerSession is null
+                    ? await _restorePointService.CreateRestorePointAsync(restorePointDescription!).ConfigureAwait(true)
+                    : await brokerSession.CreateRestorePointAsync(restorePointDescription!, cancellationToken).ConfigureAwait(true);
 
                 if (!restorePoint.IsSuccess)
                 {
@@ -1724,7 +1754,8 @@ public partial class MainWindowViewModel : ViewModelBase
             cancellationToken.ThrowIfCancellationRequested();
             // Each module callback enters through the dispatcher, including calls after lease waits or rollback awaits.
             var result = _deliberateChanges is null
-                ? await _pendingChangesService.ApplyAllAsync(ApplyChangeToModule, RevertChangeOnModule).ConfigureAwait(true)
+                ? await _pendingChangesService.ApplyAllAsync(
+                    ApplyChangeToModule, RevertChangeOnModule, cancellationToken).ConfigureAwait(true)
                 : await _deliberateChanges.ApplyAsync(_pendingChangesService, _changeHistoryService,
                     change => Dispatcher.UIThread.InvokeAsync(() => ApplyChangeToModule(change)),
                     change => Dispatcher.UIThread.InvokeAsync(() => RevertChangeOnModule(change)),
@@ -1861,6 +1892,7 @@ public partial class MainWindowViewModel : ViewModelBase
         }
         finally
         {
+            _activeBrokerSession = null;
             IsApplying = false;
             PendingCount = _pendingChangesService.PendingCount;
             if (_pendingActionsService is not null)
@@ -1890,21 +1922,46 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private Task<OperationResult<bool>> ApplyChangeToModule(ChangeDescriptor change) =>
         Logged("Apply", change.ModuleId, change.SettingId, DescribeChange(change), () =>
-        {
-            var module = ResolveModule(change.ModuleId);
-            return module is null
-                ? Task.FromResult(OperationResult<bool>.Failure($"Module '{change.ModuleId}' not found", ErrorCategory.NotFound))
-                : module.ApplyChangeAsync(change);
-        });
+            RunChange(change, revert: false));
 
     private Task<OperationResult<bool>> RevertChangeOnModule(ChangeDescriptor change) =>
         Logged("Revert", change.ModuleId, change.SettingId, DescribeChange(change), () =>
+            RunChange(change, revert: true));
+
+    private async Task<OperationResult<bool>> RunChange(ChangeDescriptor change, bool revert)
+    {
+        if (_activeBrokerSession is not null)
         {
-            var module = ResolveModule(change.ModuleId);
-            return module is null
-                ? Task.FromResult(OperationResult<bool>.Failure($"Module '{change.ModuleId}' not found for revert", ErrorCategory.NotFound))
-                : module.RevertChangeAsync(change);
-        });
+            return revert
+                ? await _activeBrokerSession.RevertChangeAsync(change).ConfigureAwait(false)
+                : await _activeBrokerSession.ApplyChangeAsync(change).ConfigureAwait(false);
+        }
+
+        if (_privilegeBroker is not null)
+        {
+            var opened = await _privilegeBroker.OpenSessionAsync(new Ipc.Contracts.BrokerSessionRequest
+            {
+                Changes = [change],
+            }).ConfigureAwait(false);
+            if (!opened.IsSuccess)
+                return OperationResult<bool>.Failure(opened.ErrorMessage!, opened.ErrorCategory ?? ErrorCategory.AccessDenied);
+            await using var session = opened.Value!;
+            return revert
+                ? await session.RevertChangeAsync(change).ConfigureAwait(false)
+                : await session.ApplyChangeAsync(change).ConfigureAwait(false);
+        }
+
+        var module = ResolveModule(change.ModuleId);
+        if (module is null)
+        {
+            return OperationResult<bool>.Failure(
+                $"Module '{change.ModuleId}' not found{(revert ? " for revert" : string.Empty)}",
+                ErrorCategory.NotFound);
+        }
+        return revert
+            ? await module.RevertChangeAsync(change).ConfigureAwait(false)
+            : await module.ApplyChangeAsync(change).ConfigureAwait(false);
+    }
 
     private static string DescribeChange(ChangeDescriptor change) =>
         $"{change.DisplayName}: '{change.BeforeDisplay}' to '{change.AfterDisplay}' at {change.SystemLocation}";
@@ -1940,11 +1997,44 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     private Task<OperationResult<bool>> ExecuteActionOnModule(Core.Actions.ActionDescriptor action) =>
-        Logged("Action", action.ModuleId, action.ActionId, $"{action.DisplayName}: {action.Detail}", () =>
-            ResolveModule(action.ModuleId) is Core.Modules.IActionModule actionModule
-                ? actionModule.ExecuteActionAsync(action)
-                : Task.FromResult(OperationResult<bool>.Failure(
-                    $"Module '{action.ModuleId}' not found or cannot execute actions", ErrorCategory.NotFound)));
+        Logged("Action", action.ModuleId, action.ActionId, $"{action.DisplayName}: {action.Detail}", async () =>
+        {
+            if (_activeBrokerSession is not null)
+                return await _activeBrokerSession.ExecuteActionAsync(action).ConfigureAwait(false);
+            if (_privilegeBroker is not null)
+            {
+                var opened = await _privilegeBroker.OpenSessionAsync(new Ipc.Contracts.BrokerSessionRequest
+                {
+                    Actions = [action],
+                }).ConfigureAwait(false);
+                if (!opened.IsSuccess)
+                    return OperationResult<bool>.Failure(opened.ErrorMessage!, opened.ErrorCategory ?? ErrorCategory.AccessDenied);
+                await using var session = opened.Value!;
+                return await session.ExecuteActionAsync(action).ConfigureAwait(false);
+            }
+            return ResolveModule(action.ModuleId) is Core.Modules.IActionModule actionModule
+                ? await actionModule.ExecuteActionAsync(action).ConfigureAwait(false)
+                : OperationResult<bool>.Failure(
+                    $"Module '{action.ModuleId}' not found or cannot execute actions", ErrorCategory.NotFound);
+        });
+
+    private async Task<RestorePointResult> CreateBrokerRestorePoint(string description)
+    {
+        var opened = await _privilegeBroker!.OpenSessionAsync(new Ipc.Contracts.BrokerSessionRequest
+        {
+            RestorePointDescription = description,
+        }).ConfigureAwait(true);
+        if (!opened.IsSuccess)
+        {
+            return new()
+            {
+                Outcome = RestorePointOutcome.Failed,
+                Message = opened.ErrorMessage,
+            };
+        }
+        await using var session = opened.Value!;
+        return await session.CreateRestorePointAsync(description).ConfigureAwait(true);
+    }
 
     /// <summary>
     /// Shows the restart banner for the changes that completed (on every exit,

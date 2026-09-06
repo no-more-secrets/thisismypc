@@ -6,6 +6,25 @@ namespace ThisIsMyPC.Ipc.Tests;
 
 public sealed class RestorationIpcBoundaryTests
 {
+    [Theory]
+    [InlineData(IpcMessageTypes.Ping)]
+    [InlineData(IpcMessageTypes.ServiceStatus)]
+    [InlineData(IpcMessageTypes.DriftReport)]
+    public void MediumIntegrityClientCanReadServiceState(string messageType)
+    {
+        Assert.True(ThisIsMyPC.Service.PipeServerWorker.CanHandleRequest(messageType, clientIsElevated: false));
+    }
+
+    [Theory]
+    [InlineData(IpcMessageTypes.EnableRestoration, false, false)]
+    [InlineData(IpcMessageTypes.PauseRestoration, false, false)]
+    [InlineData(IpcMessageTypes.EnableRestoration, true, true)]
+    [InlineData(IpcMessageTypes.PauseRestoration, true, true)]
+    public void RestorationControlsRequireElevatedClient(string messageType, bool elevated, bool expected)
+    {
+        Assert.Equal(expected, ThisIsMyPC.Service.PipeServerWorker.CanHandleRequest(messageType, elevated));
+    }
+
     [Fact]
     public async Task OldStatusPayloadCannotClaimRestorationSupport()
     {

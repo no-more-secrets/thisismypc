@@ -122,7 +122,7 @@ New-Item -ItemType Directory -Force $output | Out-Null
 # toolchain through vswhere in the VS installer directory.
 $env:PATH = "$env:PATH;${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer"
 $aotArgs = @()
-if ($Aot) { $aotArgs = @('-p:AotPublish=true') }
+if ($Aot) { $aotArgs = @('-p:AotPublish=true', '-p:OS=Windows_NT') }
 
 Write-Host "Publishing App ($Version, win-x64, self-contained$(if ($Aot) { ', NativeAOT' }))..."
 dotnet publish (Join-Path $repoRoot 'src\ThisIsMyPC.App\ThisIsMyPC.App.csproj') `
@@ -136,13 +136,22 @@ dotnet publish (Join-Path $repoRoot 'src\ThisIsMyPC.Service\ThisIsMyPC.Service.c
     -p:Version=$Version @aotArgs --output $staging -m:1
 if ($LASTEXITCODE -ne 0) { throw 'Service publish failed' }
 
+Write-Host "Publishing the on-demand privilege broker$(if ($Aot) { ' (NativeAOT)' })..."
+dotnet publish (Join-Path $repoRoot 'src\ThisIsMyPC.Broker\ThisIsMyPC.Broker.csproj') `
+    --configuration Release --runtime win-x64 --self-contained true `
+    -p:Version=$Version @aotArgs --output $staging -m:1
+if ($LASTEXITCODE -ne 0) { throw 'Privilege broker publish failed' }
+
 if (-not (Test-Path (Join-Path $staging 'ThisIsMyPC.Service.exe'))) {
     throw 'ThisIsMyPC.Service.exe missing from staging; Owner Mode enable would break'
+}
+if (-not (Test-Path (Join-Path $staging 'ThisIsMyPC.Broker.exe'))) {
+    throw 'ThisIsMyPC.Broker.exe missing from staging; privileged changes would break'
 }
 
 # Version blocks read English (United States) instead of Language Neutral
 # (the compiler cannot be told otherwise). Before vpk pack, which signs them.
-foreach ($exe in 'ThisIsMyPC.App.exe', 'ThisIsMyPC.Service.exe') {
+foreach ($exe in 'ThisIsMyPC.App.exe', 'ThisIsMyPC.Service.exe', 'ThisIsMyPC.Broker.exe') {
     & (Join-Path $PSScriptRoot 'set-version-language.ps1') -Path (Join-Path $staging $exe)
 }
 
@@ -206,7 +215,7 @@ if (-not (Test-Path $msiPath)) { throw 'ThisIsMyPC-win.msi missing from the vpk 
 & (Join-Path $PSScriptRoot 'normalize-msi.ps1') -Path $msiPath -Version $Version
 dotnet publish (Join-Path $repoRoot 'src\ThisIsMyPC.Installer\ThisIsMyPC.Installer.csproj') `
     --configuration Release --runtime win-x64 --self-contained true `
-    -p:Version=$Version -p:AotPublish=true -p:BundleNativeLibraries=true --output $installerStaging -m:1
+    -p:Version=$Version -p:AotPublish=true -p:OS=Windows_NT -p:BundleNativeLibraries=true --output $installerStaging -m:1
 if ($LASTEXITCODE -ne 0) { throw 'Installer publish failed' }
 $installerExe = Join-Path $installerStaging 'ThisIsMyPC-Installer.exe'
 if (-not (Test-Path $installerExe)) { throw 'ThisIsMyPC-Installer.exe missing from the installer publish output' }
@@ -225,8 +234,9 @@ Add-InstallerPayload -StubPath $installerExe -PayloadPath $msiPath -OutputPath $
 # files about to ship (tools/check-binary-hardening.ps1 exits 1 otherwise).
 Write-Host 'Checking exploit mitigations on the shipped binaries...'
 & (Join-Path $PSScriptRoot 'check-binary-hardening.ps1') `
-    (Join-Path $staging 'ThisIsMyPC.App.exe') (Join-Path $staging 'ThisIsMyPC.Service.exe') $installerAsset `
-    -Require 'ThisIsMyPC.App.exe', 'ThisIsMyPC.Service.exe', (Split-Path $installerAsset -Leaf)
+    (Join-Path $staging 'ThisIsMyPC.App.exe') (Join-Path $staging 'ThisIsMyPC.Service.exe') `
+    (Join-Path $staging 'ThisIsMyPC.Broker.exe') $installerAsset `
+    -Require 'ThisIsMyPC.App.exe', 'ThisIsMyPC.Service.exe', 'ThisIsMyPC.Broker.exe', (Split-Path $installerAsset -Leaf)
 if ($LASTEXITCODE -ne 0) { throw 'A shipped binary is missing an exploit mitigation; see the table above.' }
 
 if ($SignThumbprint) {

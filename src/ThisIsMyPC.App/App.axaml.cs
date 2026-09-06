@@ -160,6 +160,7 @@ public partial class App : Application
     private static void InitializeSettings(Core.Settings.ISettingsService settingsService)
     {
         settingsService.Initialize();
+        InstallerPreferenceImport.Apply(settingsService);
         WindowBehaviorPolicy.NormalizeLegacySettings(settingsService);
         if (settingsService.LoadError is { } error)
             Log.Warn("Settings load: {Error}", error);
@@ -177,7 +178,6 @@ public partial class App : Application
 
         // Interop services
         services.AddSingleton<ISecurityApi, SecurityApi>();
-        services.AddSingleton<IDataDirectoryGuard, DataDirectoryGuard>();
         services.AddSingleton<IRegistryService, RegistryService>();
         services.AddSingleton(_ => new Services.AutorunEnrichment());
         services.AddSingleton<IShellExtensionService, ShellExtensionService>();
@@ -189,7 +189,7 @@ public partial class App : Application
         services.AddSingleton<IStartupFolderService, StartupFolderService>();
         services.AddSingleton<IScheduledTaskService, ScheduledTaskService>();
         services.AddSingleton(new ThisIsMyPC.Modules.Startup.Services.TaskClassificationOverrideStore(
-            System.IO.Path.Combine(AppConstants.DataDirectoryPath, "task-classifications.txt")));
+            System.IO.Path.Combine(AppConstants.UserDataDirectoryPath, "task-classifications.txt")));
         services.AddSingleton<IAppxPackageService, AppxPackageService>();
         services.AddSingleton<IWingetService, ThisIsMyPC.Interop.Win32.Packages.WingetService>();
         services.AddSingleton<IPowerService, ThisIsMyPC.Interop.Win32.Power.PowerService>();
@@ -219,42 +219,15 @@ public partial class App : Application
         // Owner Mode IPC client (28-1); connects per request; a missing service
         // degrades to ServiceUnavailable, never an error dialog.
         services.AddSingleton<ThisIsMyPC.Ipc.Contracts.IIpcClient>(_ => new ThisIsMyPC.Ipc.Contracts.IpcClient());
-
-        // Step 4 registers deliberate app writes only. No restoration loop is registered.
-        services.AddSingleton<Core.Coordination.IMutationLeaseProvider>(_ =>
-            new Interop.Win32.Coordination.NamedMutexMutationLeaseProvider(Core.Coordination.MutationLeaseNames.Production, "app"));
-        services.AddSingleton<Core.Drift.Consent.IMachineConsentStore>(_ =>
-            new Interop.Win32.Drift.Consent.MachineConsentStore());
-        services.AddSingleton(sp => new Core.Coordination.MutationCoordinator(
-            sp.GetRequiredService<Core.Coordination.IMutationLeaseProvider>(), (lease, token) =>
-            {
-                token.ThrowIfCancellationRequested();
-                // App-only recovery disables restoration durably. It does not reconcile the restoration journal.
-                // Never reuse this callback to enable or authorize the automatic restoration loop.
-                var off = sp.GetRequiredService<Core.Drift.Consent.IMachineConsentStore>().SetEnabled(false, lease);
-                return Task.FromResult(off.IsSuccess && off.State.Status == Core.Drift.Consent.MachineConsentStatus.Loaded && !off.State.Enabled
-                    ? Core.Results.OperationResult<bool>.Success(true)
-                    : Core.Results.OperationResult<bool>.Failure("Could not inhibit Owner Mode before the app change: " + off.State.Detail,
-                        Core.Results.ErrorCategory.ServiceUnavailable));
-            }));
-        services.AddSingleton(sp => new Core.Drift.Baseline.SingleOwnerBaselineStore(
-            new Interop.Win32.Drift.Baseline.MachineBaselineStorage(),
-            sp.GetRequiredService<Core.Coordination.IMutationLeaseProvider>().Name,
-            System.Security.Principal.WindowsIdentity.GetCurrent().User?.Value
-                ?? throw new InvalidOperationException("The primary Windows account SID is unavailable.")));
-        services.AddSingleton(sp => new Core.Drift.DeliberateChangeCoordinator(
-            sp.GetRequiredService<Core.Coordination.MutationCoordinator>(),
-            sp.GetRequiredService<Core.Drift.Baseline.SingleOwnerBaselineStore>(),
-            sp.GetRequiredService<IRegistryService>(), TimeProvider.System));
+        services.AddSingleton<IPrivilegeBrokerClient, PrivilegeBrokerClient>();
 
         // Owner Mode lifecycle (28-2): SCM registration + live capability probe.
         services.AddSingleton<IServiceInstaller, ServiceInstaller>();
         services.AddSingleton(sp => new OwnerModeService(
             sp.GetRequiredService<IServiceInstaller>(),
             sp.GetRequiredService<IServiceControlService>(),
-            mutationLeaseProvider: sp.GetRequiredService<Core.Coordination.IMutationLeaseProvider>(),
-            consentStore: sp.GetRequiredService<Core.Drift.Consent.IMachineConsentStore>(),
-            ipc: sp.GetRequiredService<ThisIsMyPC.Ipc.Contracts.IIpcClient>()));
+            ipc: sp.GetRequiredService<ThisIsMyPC.Ipc.Contracts.IIpcClient>(),
+            privilegeBroker: sp.GetRequiredService<IPrivilegeBrokerClient>()));
 
         // Core Services. The capability detector is wrapped by the Debug page's
         // simulation seam: a pass-through until the Debug page (Debug builds only)
@@ -266,18 +239,18 @@ public partial class App : Application
                 ownerModeProbe: () => sp.GetRequiredService<OwnerModeService>().IsRestorationEnabled),
             sp.GetRequiredService<Services.DebugSimulation>()));
         // PendingChangesService's optional ctor param resolves this because it is registered.
-        services.AddSingleton<IEnforcementExecutor, EnforcementExecutor>();
+        services.AddSingleton<IEnforcementExecutor, BrokerRoutingEnforcementExecutor>();
         services.AddSingleton<IPendingChangesService, PendingChangesService>();
         services.AddSingleton<IPendingActionsService, PendingActionsService>();
         services.AddSingleton<ISetProvider>(_ => new SetProvider(
             Path.Combine(AppContext.BaseDirectory, "sets"),
-            Path.Combine(AppConstants.DataDirectoryPath, "sets")));
+            Path.Combine(AppConstants.UserDataDirectoryPath, "sets")));
         // Custom set creation (8.5) writes into the same user sets directory.
         services.AddSingleton<ICustomSetWriter>(_ => new CustomSetWriter(
-            Path.Combine(AppConstants.DataDirectoryPath, "sets")));
+            Path.Combine(AppConstants.UserDataDirectoryPath, "sets")));
         // Per-tab display-mode persistence (10.2).
         services.AddSingleton(_ => new DisplayModePreferencesStore(
-            Path.Combine(AppConstants.DataDirectoryPath, "display-modes.txt")));
+            Path.Combine(AppConstants.UserDataDirectoryPath, "display-modes.txt")));
         // Per-module set-entry inspectors for the Set Loader preview (8.2) and
         // conflict detection (8.3)
         services.AddSingleton<ISetEntryInspector, ThisIsMyPC.Modules.Shell.Services.ShellSetEntryInspector>();
@@ -295,15 +268,20 @@ public partial class App : Application
         services.AddSingleton<Core.Search.ISearchSettingsContributor, ThisIsMyPC.Modules.Shell.Services.EnvironmentSearchContributor>();
         services.AddSingleton<Core.Search.ISearchSettingsContributor, ThisIsMyPC.Modules.Startup.Services.StartupSearchContributor>();
         services.AddSingleton<Core.Search.ISearchSettingsContributor, ThisIsMyPC.Modules.Power.Services.PowerSearchContributor>();
-        services.AddSingleton<Core.Settings.ISettingsService, Core.Settings.SettingsService>();
+        services.AddSingleton<Core.Settings.ISettingsService>(_ => new Core.Settings.SettingsService(
+            Path.Combine(AppConstants.UserDataDirectoryPath, "settings.json")));
         services.AddSingleton<Core.Notifications.INotificationService, Core.Notifications.NotificationService>();
         services.AddSingleton<Core.Monitoring.IMonitoringSnapshotProvider, MonitoringSnapshotProvider>();
-        services.AddSingleton<Core.Monitoring.MonitoringService>();
-        // userSid lets the SYSTEM watchdog map HKCU baseline paths to HKU\{sid}.
-        services.AddSingleton<Core.Drift.IDriftBaselineStore>(_ => new Core.Drift.DriftBaselineStore(
-            userSid: System.Security.Principal.WindowsIdentity.GetCurrent().User?.Value));
+        services.AddSingleton(sp => new Core.Monitoring.MonitoringService(
+            sp.GetRequiredService<Core.Settings.ISettingsService>(),
+            sp.GetRequiredService<Core.Notifications.INotificationService>(),
+            sp.GetRequiredService<Core.Monitoring.IMonitoringSnapshotProvider>(),
+            Path.Combine(AppConstants.UserDataDirectoryPath, "monitoring.json")));
         services.AddSingleton<ChangeHistoryRepository>();
-        services.AddSingleton<IChangeHistoryService, ChangeHistoryService>();
+        services.AddSingleton<IChangeHistoryService>(sp => new ChangeHistoryService(
+            sp.GetRequiredService<ChangeHistoryRepository>(),
+            Path.Combine(AppConstants.UserDataDirectoryPath, "history.db"),
+            sp.GetRequiredService<IEnforcementExecutor>()));
 
         // Navigation
         services.AddSingleton<NavigationService>();

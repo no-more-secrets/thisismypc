@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\ThisIsMyPC.Ipc.Contracts\ThisIsMyPC.Ipc.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\ThisIsMyPC.Broker\ThisIsMyPC.Broker.csproj" />
     <ProjectReference Include="..\..\src\ThisIsMyPC.Service\ThisIsMyPC.Service.csproj" />
   </ItemGroup>
 

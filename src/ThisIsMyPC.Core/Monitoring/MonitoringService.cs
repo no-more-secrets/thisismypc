@@ -77,7 +77,7 @@ public sealed class MonitoringService : IDisposable
         _settings = settings;
         _notifications = notifications;
         _provider = provider;
-        _statePath = statePath ?? Path.Combine(AppConstants.DataDirectoryPath, "monitoring.json");
+        _statePath = statePath ?? Path.Combine(AppConstants.UserDataDirectoryPath, "monitoring.json");
 
         _settings.SettingChanged += OnSettingChanged;
     }
