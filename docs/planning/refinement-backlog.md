@@ -39,7 +39,8 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 - Verified: full CI-safe suite, Release build, fresh review, and dark/light history screenshots. All 20 native lock tests passed with elevation.
 - DONE: Machine consent storage verifies native handles, refuses unsafe paths, and durably replaces explicit consent. Disabling remains possible before journal recovery. Five isolated elevated tests and fourteen parser tests passed, with fresh review.
 - DONE: Pure mutation coordinator acquires once, requires recovery clearance, rejects nested acquisition, and releases after operation completion. All 48 coordination tests and fresh review passed.
-- Pending: production journal/database trust, management/profile probing, consent integration, and service/UI wiring. No automatic restoration is enabled.
+- DONE: Single-owner baseline storage binds one account, validates catalog values, preserves corrupt evidence, and reports persistence failures. Native adapter reuses consent trust checks. Verified: 24 storage tests, full CI-safe suite, Release build, fresh review, and 10 elevated baseline/consent tests.
+- Pending: production journal/database trust, management/profile probing, consent integration, and service/UI wiring. Legacy observational storage remains unchanged; automatic restoration must use the strict new store. No automatic restoration is enabled.
 - Design: [Owner Mode restoration](owner-mode-restoration.md).
 ## System pages and Settings organization (2026-09-06)
 

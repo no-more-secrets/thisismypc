@@ -26,6 +26,25 @@ public class ChangeHistoryServiceTests : IDisposable
         GC.SuppressFinalize(this);
     }
 
+    [Fact]
+    public async Task Baseline_failure_propagates_after_confirmed_history_is_retained()
+    {
+        var failure = new IOException("Baseline storage unavailable");
+        var service = new ChangeHistoryService(new ChangeHistoryRepository(), _dbPath,
+            driftBaseline: new FailingBaseline(failure));
+        await service.InitializeAsync();
+
+        var thrown = await Assert.ThrowsAsync<IOException>(() =>
+            service.RecordChangesAsync(CreateSuccessResult(CreateChange())));
+
+        Assert.Same(failure, thrown);
+        Assert.Single(await service.GetHistoryAsync());
+    }
+
+    private sealed class FailingBaseline(IOException failure) : ThisIsMyPC.Core.Drift.IDriftBaselineStore
+    {
+        public void RecordApplied(IEnumerable<ChangeDescriptor> applied) => throw failure;
+    }
     private static MutationResult CreateSuccessResult(params ChangeDescriptor[] applied) => new()
     {
         IsSuccess = true,

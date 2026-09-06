@@ -104,7 +104,7 @@ public sealed class MachineConsentStore : IMachineConsentStore
         && (!enabled || lease.CanWrite)
         && string.Equals(lease.Name, _leaseName, StringComparison.Ordinal);
 
-    private static void WriteNewProtected(string path, byte[] bytes)
+    internal static void WriteNewProtected(string path, byte[] bytes)
     {
         if (!NativeMutationLease.ConvertStringSecurityDescriptorToSecurityDescriptorW(
                 "O:BAG:BAD:P(A;;FA;;;SY)(A;;FA;;;BA)", 1, out var descriptor, out _))

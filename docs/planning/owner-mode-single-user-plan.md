@@ -39,6 +39,8 @@ Exit: remaining steps name implementation seams and tests. No product code chang
 
 ## 2. Finish single-owner settings storage
 
+Storage implementation: [single-owner baseline](owner-mode-single-owner-baseline.md). The new strict store and native adapter replace the experimental multi-profile design. Legacy observational storage is unchanged and must not authorize automatic restoration. Production caller routing remains part of Steps 3-4.
+
 Assignment: one Core/native implementation agent; separate reviewer afterward.
 
 Work:
