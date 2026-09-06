@@ -109,6 +109,45 @@ public class ExplorerEdgeTabShotTests
             }
         }
     }
+    [AvaloniaFact]
+    public void SelectedTabFill_MeetsContentWithoutADarkPixelAtFractionalDpi()
+    {
+        var vm = new ShellViewModel(new ShellScanData([], new TaskbarSettings(1, true, false, false)),
+            new PendingChangesService(), new UiFakeRegistryService());
+        var card = new Border { Child = new ShellView() };
+        card.Bind(Border.BackgroundProperty, card.GetResourceObservable("RaisedBrush"));
+        using var session = UiSession.ForView(card, vm, "explorer-tab-seam", width: 980, height: 300);
+        session.ClickText("File Explorer");
+        foreach (var theme in new[] { ThemeVariant.Dark, ThemeVariant.Light })
+        foreach (var scale in new[] { 1.0, 1.25, 1.5, 1.75, 2.0 })
+        {
+            session.SetTheme(theme);
+            var platform = session.Window.PlatformImpl!;
+            platform.GetType().GetField("<RenderScaling>k__BackingField",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.SetValue(platform, scale);
+            ((Action<double>)platform.GetType().GetProperty("ScalingChanged")!.GetValue(platform)!)(scale);
+            session.Pump();
+            using var frame = new Avalonia.Media.Imaging.RenderTargetBitmap(
+                new PixelSize((int)(980 * scale), (int)(300 * scale)), new Vector(96 * scale, 96 * scale));
+            frame.Render(session.Window);
+            var path = Path.Combine(session.ShotDirectory, $"seam-{theme.Key}-{scale:0.00}.png");
+            frame.Save(path);
+            using var pixels = SkiaSharp.SKBitmap.Decode(path);
+            var selected = session.Find<TabItem>(t => t.IsSelected);
+            var strip = session.Find<Border>(b => b.Name == "PART_Strip");
+            var origin = selected.TranslatePoint(default, session.Window)!.Value;
+            var x = (int)((origin.X + selected.Bounds.Width / 2) * scale);
+            var seam = (int)Math.Round((session.TopOf(strip) + strip.Bounds.Height) * scale);
+            var fill = pixels.GetPixel(x, seam + 4);
+            for (var sampleX = (int)((origin.X + 10) * scale); sampleX < (origin.X + selected.Bounds.Width - 10) * scale; sampleX++)
+            for (var y = seam - 4; y <= seam + 4; y++)
+            {
+                var actual = pixels.GetPixel(sampleX, y);
+                Assert.True(fill == actual,
+                    $"{theme.Key}, scale {scale}, pixel {sampleX},{y}: {actual}, expected {fill}; seam {seam}.");
+            }
+        }
+    }
     private static PixelRect TextInkBounds(SkiaSharp.SKBitmap pixels, TextBlock label, Window window)
     {
         var origin = label.TranslatePoint(default, window)!.Value;

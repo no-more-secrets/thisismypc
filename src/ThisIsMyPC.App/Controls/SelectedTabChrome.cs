@@ -45,8 +45,11 @@ public sealed class SelectedTabChrome : Control
             path.ArcTo(new Point(size.Width + 6, size.Height - 0.5), new Size(6.5, 6.5), 0, false, SweepDirection.CounterClockwise);
             path.EndFigure(false);
         }
-        // Cover the strip's floor without adding a bottom stroke to the tab.
-        context.DrawRectangle(Background, null, new Rect(-6, size.Height - 1, size.Width + 12, 1));
+        // Extend the fill into the content by one DIP. At fractional DPI the
+        // chrome bottom and strip padding round separately; ending exactly at
+        // Bounds.Height leaves a partially covered dark pixel between them.
         context.DrawGeometry(Background, BorderBrush is { } brush ? new Pen(brush, 1) : null, outline);
+        using (context.PushRenderOptions(new RenderOptions { EdgeMode = EdgeMode.Aliased }))
+            context.DrawRectangle(Background, null, new Rect(-6, size.Height - 1, size.Width + 12, 2));
     }
 }

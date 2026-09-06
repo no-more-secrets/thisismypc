@@ -4,6 +4,7 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 
 ## Annotation follow-up: toolbar and tabs (2026-09-06)
 
+- Fixed fractional-scale antialiasing at the selected-tab/content join. Pixel tests cover both themes at 100%, 125%, 150%, 175%, and 200%.
 - Removed the shared divider between tab strips and content, preserving strip height and page geometry.
 - Software catalog dropdowns stretch to the search field height.
 - Shared tabs retain one header layout across selection, avoiding label movement from template replacement and border rounding.
