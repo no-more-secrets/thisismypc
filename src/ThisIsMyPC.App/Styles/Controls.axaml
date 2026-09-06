@@ -47,10 +47,15 @@
          and a thumb that grows toward the pointer. The wheel never moves a
          slider; it scrolls the page. -->
     <Style Selector="Slider">
+        <Setter Property="ClipToBounds" Value="False" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="Padding" Value="0" />
         <Setter Property="MinHeight" Value="24" />
+    </Style>
+    <!-- The enlarged thumb extends beyond the track at either endpoint. -->
+    <Style Selector="Slider /template/ DataValidationErrors">
+        <Setter Property="ClipToBounds" Value="False" />
     </Style>
     <Style Selector="Slider /template/ Thumb">
         <Setter Property="Transitions">

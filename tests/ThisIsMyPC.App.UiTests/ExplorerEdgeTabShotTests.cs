@@ -41,6 +41,12 @@ public class ExplorerEdgeTabShotTests
                 Assert.True(session.TopOf(search) >= session.TopOf(strip) + strip.Bounds.Height + 12);
                 Assert.Equal(25, search.TranslatePoint(default, card)!.Value.X, 0.5);
                 Assert.Equal(23, card.Bounds.Width - search.TranslatePoint(default, card)!.Value.X - search.Bounds.Width, 0.5);
+                var tabs = session.FindAll<TabItem>(_ => true).ToArray();
+                var selected = tabs.Single(t => t.IsSelected);
+                var neighbor = tabs.First(t => !t.IsSelected && Math.Abs(session.TopOf(t) - session.TopOf(selected)) < 1);
+                var joins = selected.GetVisualDescendants().OfType<Panel>()
+                    .Single(p => p.Children.OfType<Avalonia.Controls.Shapes.Path>().Any());
+                Assert.Equal(session.TopOf(neighbor) + neighbor.Bounds.Height, session.TopOf(joins), 0.01);
                 session.Screenshot($"{theme.Key}-{width}");
             }
         }

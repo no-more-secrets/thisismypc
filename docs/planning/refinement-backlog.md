@@ -10,6 +10,12 @@ Current coverage baseline: ~40 fixed toggles (Explorer 13, Annoyances 21 cards,
 Windows Update 5, Power 1) + 5 built-in sets (59 entries) + the enumerative modules
 (Context Menus, Environment, Startup & Services, Power grid).
 
+## Annotation feedback: control geometry (2026-09-06)
+
+- DONE: Hovered slider thumbs remain whole at minimum and maximum values. Shared slider and validation containers allow the hover overhang.
+- DONE: Selected-tab fillets start level with adjacent tab bottoms and join the side outlines without a horizontal offset.
+- Verified endpoint screenshots in both themes, wide and wrapped tab geometry, full tests, and fresh review.
+
 ## Development tooling: region review prototype (2026-09-05)
 
 - Debug-only Ctrl+Shift+A region selection freezes the current window for shared visual review.
