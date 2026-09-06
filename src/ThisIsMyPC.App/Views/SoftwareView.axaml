@@ -1,4 +1,5 @@
 <UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:icons="using:ThisIsMyPC.App.Icons"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ThisIsMyPC.App.ViewModels"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -65,12 +66,12 @@
                                                                 HorizontalContentAlignment="Center"
                                                                 Content="{Binding ActionButtonText}"
                                                                 Command="{Binding ToggleQueueCommand}" />
-                                                        <PathIcon DockPanel.Dock="Left"
+                                                        <icons:FluentIcon DockPanel.Dock="Left"
                                                                   Width="16" Height="16"
                                                                   Margin="0,0,9,0"
                                                                   VerticalAlignment="Center"
                                                                   Foreground="{DynamicResource TextTertiaryBrush}"
-                                                                  Data="{Binding Category, Converter={x:Static vm:CategoryIconConverter.Instance}}" />
+                                                                  Symbol="{Binding Category, Converter={x:Static vm:CategoryIconConverter.Instance}}" />
                                                         <StackPanel Margin="0,0,8,0"
                                                                     VerticalAlignment="Center">
                                                             <StackPanel Orientation="Horizontal" Spacing="6">

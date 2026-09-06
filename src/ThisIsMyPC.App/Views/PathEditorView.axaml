@@ -1,4 +1,5 @@
 <UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:icons="using:ThisIsMyPC.App.Icons"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ThisIsMyPC.App.ViewModels"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -48,10 +49,9 @@
                                         VerticalAlignment="Stretch">
                                     <StackPanel Orientation="Horizontal" Spacing="6"
                                                 VerticalAlignment="Center">
-                                        <TextBlock Text="&#x283F;"
-                                                   FontSize="11"
+                                        <icons:FluentIcon Symbol="ReOrderDotsVertical"
                                                    Foreground="{DynamicResource TextTertiaryBrush}"
-                                                   VerticalAlignment="Center" />
+                                                   VerticalAlignment="Center" Width="14" Height="14" />
                                         <TextBlock Text="{Binding Index}"
                                                    Width="22" FontSize="12"
                                                    TextAlignment="Right"
@@ -82,11 +82,9 @@
                                         VerticalAlignment="Stretch"
                                         VerticalContentAlignment="Center"
                                         HorizontalContentAlignment="Center">
-                                    <TextBlock Text="&#x2715;"
+                                    <icons:FluentIcon Symbol="Dismiss"
                                                Foreground="{DynamicResource DangerBrush}"
-                                               FontSize="14"
-                                               FontWeight="Bold"
-                                               Margin="0,-1,0,0" />
+                                               Margin="0,-1,0,0" Width="14" Height="14" VerticalAlignment="Center" />
                                 </Button>
                             </Grid>
                         </Border>

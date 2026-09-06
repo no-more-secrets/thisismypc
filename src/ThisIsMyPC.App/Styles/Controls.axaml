@@ -1,4 +1,5 @@
 <Styles xmlns="https://github.com/avaloniaui"
+        xmlns:icons="using:ThisIsMyPC.App.Icons"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!-- Dropdowns and flyouts follow the app layout scale. -->
@@ -103,31 +104,23 @@
         <Setter Property="BorderThickness" Value="0" />
     </Style>
 
-    <!-- Info icon: a small circled i whose tooltip carries the full
-         description, so rows and cards can stay one line tall. -->
+    <!-- Shared Fluent information icon; the host retains its tooltip target. -->
     <Style Selector="Border.info-icon">
         <Setter Property="Width" Value="15" />
         <Setter Property="Height" Value="15" />
-        <Setter Property="CornerRadius" Value="8" />
-        <Setter Property="BorderBrush" Value="{DynamicResource OutlineStrongBrush}" />
-        <Setter Property="BorderThickness" Value="1" />
         <Setter Property="VerticalAlignment" Value="Center" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="Cursor" Value="Help" />
         <Setter Property="ToolTip.ShowDelay" Value="150" />
     </Style>
-    <Style Selector="Border.info-icon:pointerover">
-        <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
-    </Style>
-    <Style Selector="TextBlock.info-icon-glyph">
-        <Setter Property="Text" Value="i" />
-        <Setter Property="FontSize" Value="10" />
-        <Setter Property="FontWeight" Value="SemiBold" />
+    <Style Selector="icons|FluentIcon.info-icon-glyph">
+        <Setter Property="Width" Value="15" />
+        <Setter Property="Height" Value="15" />
         <Setter Property="HorizontalAlignment" Value="Center" />
         <Setter Property="VerticalAlignment" Value="Center" />
         <Setter Property="Foreground" Value="{DynamicResource TextTertiaryBrush}" />
     </Style>
-    <Style Selector="Border.info-icon:pointerover TextBlock.info-icon-glyph">
+    <Style Selector="Border.info-icon:pointerover icons|FluentIcon.info-icon-glyph">
         <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
     </Style>
 

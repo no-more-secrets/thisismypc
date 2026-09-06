@@ -1,3 +1,4 @@
+using ThisIsMyPC.App.Icons;
 #if DEBUG
 using System.Globalization;
 using System.Text.Json;
@@ -811,9 +812,11 @@ internal sealed partial class RegionReviewOverlay : Panel
             Width = 28,
             Height = 28,
             Padding = new Thickness(5),
-            Content = new PathIcon
+            Content = new FluentIcon
             {
-                Data = Geometry.Parse("M3,17.25V21h3.75L17.81,9.94l-3.75-3.75L3,17.25M20.71,7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41,0l-1.83,1.83 3.75,3.75 1.83-1.83Z"),
+                Symbol = FluentSymbol.Edit,
+                Width = 18,
+                Height = 18,
             },
         };
         AutomationProperties.SetName(button, $"Edit note for figure {figure.Number}");

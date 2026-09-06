@@ -1,4 +1,5 @@
 <UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:icons="using:ThisIsMyPC.App.Icons"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="ThisIsMyPC.App.Controls.TitleBarControl"
              x:Name="Root"
@@ -37,9 +38,9 @@
         <Style Selector="Button.caption:pressed /template/ ContentPresenter">
             <Setter Property="Background" Value="{DynamicResource ControlPressedBrush}" />
         </Style>
-        <Style Selector="Button.caption PathIcon">
-            <Setter Property="Width" Value="10" />
-            <Setter Property="Height" Value="10" />
+        <Style Selector="Button.caption icons|FluentIcon">
+            <Setter Property="Width" Value="16" />
+            <Setter Property="Height" Value="16" />
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
         </Style>
         <!-- Close turns Windows red on hover, white glyph, like every stock window -->
@@ -49,7 +50,7 @@
         <Style Selector="Button.caption.close:pressed /template/ ContentPresenter">
             <Setter Property="Background" Value="#B12A1B" />
         </Style>
-        <Style Selector="Button.caption.close:pointerover PathIcon">
+        <Style Selector="Button.caption.close:pointerover icons|FluentIcon">
             <Setter Property="Foreground" Value="White" />
         </Style>
     </UserControl.Styles>
@@ -103,22 +104,22 @@
                               Margin="0,0,12,0" />
             <Button Classes="caption" Click="OnMinimizeClick" ToolTip.Tip="Minimize"
                     AutomationProperties.Name="Minimize">
-                <PathIcon Data="M0,5H10V6H0Z" />
+                <icons:FluentIcon Symbol="Subtract" />
             </Button>
             <Button x:Name="MaximizeButton" Classes="caption" Click="OnMaximizeClick"
                     ToolTip.Tip="Maximize"
                     AutomationProperties.Name="Maximize">
                 <Panel>
                     <!-- Single square: maximize -->
-                    <PathIcon x:Name="MaximizeGlyph" Data="M0,0H10V10H0Z M1,1V9H9V1Z" />
+                    <icons:FluentIcon x:Name="MaximizeGlyph" Symbol="Square" />
                     <!-- Two offset squares: restore -->
-                    <PathIcon x:Name="RestoreGlyph" IsVisible="False"
-                              Data="M2,0H10V8H8V2H2Z M0,2H8V10H0Z M1,3V9H7V3Z" />
+                    <icons:FluentIcon x:Name="RestoreGlyph" IsVisible="False"
+                              Symbol="SquareMultiple" />
                 </Panel>
             </Button>
             <Button Classes="caption close" Click="OnCloseClick" ToolTip.Tip="Close"
                     AutomationProperties.Name="Close">
-                <PathIcon Data="M0,0.7L0.7,0L5,4.3L9.3,0L10,0.7L5.7,5L10,9.3L9.3,10L5,5.7L0.7,10L0,9.3L4.3,5Z" />
+                <icons:FluentIcon Symbol="Dismiss" />
             </Button>
         </StackPanel>
     </Grid>

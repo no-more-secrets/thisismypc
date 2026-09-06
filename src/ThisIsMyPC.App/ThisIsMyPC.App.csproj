@@ -19,6 +19,12 @@
 
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
+    <None Include="..\..\assets\fluent-system-icons\LICENSE"
+          Link="licenses\FluentSystemIcons.LICENSE.txt"
+          CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="..\..\assets\fluent-system-icons\NOTICE"
+          Link="licenses\FluentSystemIcons.NOTICE.txt"
+          CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

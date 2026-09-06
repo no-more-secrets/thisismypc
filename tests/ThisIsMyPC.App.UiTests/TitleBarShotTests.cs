@@ -1,3 +1,4 @@
+using ThisIsMyPC.App.Icons;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
@@ -58,8 +59,8 @@ public class TitleBarShotTests
 
         var maximize = session.Find<Button>(b => b.Name == "MaximizeButton");
         // Find only sees visible controls; the hidden glyph comes off the control by name.
-        var maximizeGlyph = bar.FindControl<PathIcon>("MaximizeGlyph")!;
-        var restoreGlyph = bar.FindControl<PathIcon>("RestoreGlyph")!;
+        var maximizeGlyph = bar.FindControl<FluentIcon>("MaximizeGlyph")!;
+        var restoreGlyph = bar.FindControl<FluentIcon>("RestoreGlyph")!;
         Assert.True(maximizeGlyph.IsVisible);
         Assert.False(restoreGlyph.IsVisible);
 

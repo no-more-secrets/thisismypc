@@ -19,6 +19,13 @@ Current coverage baseline: ~40 fixed toggles (Explorer 13, Annoyances 21 cards,
 Windows Update 5, Power 1) + 5 built-in sets (59 entries) + the enumerative modules
 (Context Menus, Environment, Startup & Services, Power grid).
 
+## Shared Fluent icons (2026-09-06)
+
+- DONE: App navigation, actions, category symbols, information hints, caption buttons, and annotation pencils use Microsoft Fluent UI System Icons.
+- Regular is the default; selected navigation uses Filled. The shared control preserves each official 20px canvas during scaling.
+- Pinned SVG sources, generator, MIT license, and notices are checked in. Build and publish outputs include the license and notices.
+- Verified: full CI-safe suite, Release build, Debug annotation tests, navigation selection, both themes, page edge measurements, and fresh review.
+
 ## Collapsed sidebar spacing (2026-09-06)
 
 - DONE: Collapsed sidebar icons keep the expanded sidebar's group spacing while group titles remain hidden. Verified matching group gaps at 90% zoom in both themes. Full tests and Release build passed.

@@ -1,4 +1,5 @@
 <UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:icons="using:ThisIsMyPC.App.Icons"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ThisIsMyPC.App.ViewModels"
              xmlns:controls="using:ThisIsMyPC.App.Controls"
@@ -41,7 +42,7 @@
                             IsVisible="{Binding !IsCreatingPlan}">
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <TextBlock Text="Add plan" />
-                            <TextBlock Text="&#x25BE;" FontSize="10" VerticalAlignment="Center" />
+                            <icons:FluentIcon Symbol="ChevronDown"  VerticalAlignment="Center" Width="14" Height="14" />
                         </StackPanel>
                         <Button.Flyout>
                             <Flyout Placement="BottomEdgeAlignedRight">

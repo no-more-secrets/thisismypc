@@ -1,4 +1,5 @@
 <UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:icons="using:ThisIsMyPC.App.Icons"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ThisIsMyPC.App.ViewModels"
              x:Class="ThisIsMyPC.App.Controls.ToastHostControl"
@@ -51,7 +52,7 @@
                                 Padding="8"
                                 VerticalAlignment="Top"
                                 ToolTip.Tip="Dismiss">
-                            <PathIcon Data="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"
+                            <icons:FluentIcon Symbol="Dismiss"
                                       Width="10" Height="10"
                                       Foreground="{DynamicResource TextTertiaryBrush}" />
                         </Button>

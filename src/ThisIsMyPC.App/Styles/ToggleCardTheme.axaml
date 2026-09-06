@@ -1,4 +1,5 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:icons="using:ThisIsMyPC.App.Icons"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:controls="using:ThisIsMyPC.App.Controls">
 
@@ -47,7 +48,7 @@
                                         Margin="6,0,0,0"
                                         ToolTip.Tip="{TemplateBinding Description}"
                                         IsVisible="{TemplateBinding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                                    <TextBlock Classes="info-icon-glyph" />
+                                    <icons:FluentIcon Classes="info-icon-glyph" Symbol="Info" />
                                 </Border>
                             </Grid>
                             <ContentPresenter Name="PART_ContentPresenter"
