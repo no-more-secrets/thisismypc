@@ -103,7 +103,9 @@ Exit: verified subset restores correctly, pause works, history is truthful, and 
 
 ## Audit result and next batch
 
-The independent read-only audit confirmed the seams and blockers above. Step 1 is complete. Recommend Step 2 only: single-owner durable storage, explicit failure propagation, and tests. Do not bundle service/UI activation into that batch.
+Steps 1 and 2 are complete. Step 3 implements one fake-backed catalog target through the coordinator, strict baseline, eligibility, durable intent, pending changes, verification, and history import. Production registration stays disabled.
+
+The initial loop also caps total attempts at three per seven days. This conservative ceiling includes successful attempts; it does not classify an external edit as a Windows reversion. Uncertain outcomes and unmatched intents block further writes. The next checkpoint is Step 4: coordinate deliberate app changes and pause.
 
 ## Deferred
 

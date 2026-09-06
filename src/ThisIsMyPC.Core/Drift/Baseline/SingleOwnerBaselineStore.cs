@@ -46,6 +46,8 @@ public sealed class SingleOwnerBaselineStore
         _leaseName = leaseName;
     }
 
+    public string PrimaryUserSid => _primaryUserSid;
+
     public IReadOnlyList<SingleOwnerBaselineEntry> Read(IMutationLease lease)
     {
         CheckLease(lease, false);

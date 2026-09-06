@@ -23,7 +23,7 @@ public sealed class RestorationJournal
     private readonly Lock _gate = new();
 
     public RestorationJournal(string directory, IDataDirectoryGuard guard,
-        Func<string, bool> trustCheck, long maximumBytes = 16 * 1024 * 1024)
+        Func<string, bool> trustCheck, long maximumBytes = 16 * 1024 * 1024, TimeProvider? timeProvider = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(directory);
         ArgumentNullException.ThrowIfNull(guard);
@@ -33,7 +33,11 @@ public sealed class RestorationJournal
         _guard = guard;
         _trustCheck = trustCheck;
         _maximumBytes = maximumBytes;
+        TimeProvider = timeProvider ?? TimeProvider.System;
     }
+
+    /// <summary>Clock shared with restoration eligibility and attempt budgets.</summary>
+    public TimeProvider TimeProvider { get; }
 
     /// <summary>Read during recovery before MarkRecovered. Never marks a lease recovered automatically.</summary>
     public JournalSnapshot Read(IMutationLease lease)
@@ -60,7 +64,7 @@ public sealed class RestorationJournal
             if (attemptId == Guid.Empty) throw new ArgumentException("Attempt id is required.", nameof(attemptId));
             var prepared = RestorationBatchFactory.Prepare(candidate, observed);
             if (!prepared.IsReady) throw new InvalidOperationException(prepared.Detail);
-            var intent = new JournalIntent(attemptId, lease.LeaseId, DateTimeOffset.UtcNow,
+            var intent = new JournalIntent(attemptId, lease.LeaseId, TimeProvider.GetUtcNow(),
                 candidate.Target.ModuleId, candidate.Target.SettingId,
                 candidate.Target.KeyPath + "\\" + candidate.Target.ValueName, candidate.UserSid!,
                 new RegistryValueData(RegistryValueDataKind.DWord, prepared.Change!.BeforeValue), candidate.DesiredValue);
