@@ -49,6 +49,7 @@ public partial class TitleBarControl : UserControl
     public TitleBarControl()
     {
         InitializeComponent();
+        SizeChanged += (_, e) => BrandText.IsVisible = e.NewSize.Width >= 700;
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)

@@ -10,6 +10,13 @@ Current coverage baseline: ~40 fixed toggles (Explorer 13, Annoyances 21 cards,
 Windows Update 5, Power 1) + 5 built-in sets (59 entries) + the enumerative modules
 (Context Menus, Environment, Startup & Services, Power grid).
 
+## App zoom (2026-09-06)
+
+- DONE: Ctrl+= and Ctrl+- zoom the entire app in 10% steps from 50% to 150%. Ctrl+0 resets to 100%; numpad shortcuts also work.
+- Zoom persists in app settings. Pages reflow without losing the selected tab. Dropdowns inherit the app scale.
+- The title bar and footer adapt to narrow logical widths. Annotation views retain their zoom identity and suspend before a zoom change.
+- Verified: saved zoom and bounds, real keyboard input, dropdown scale, selected-tab retention, annotation captures, dark/light minimum-window screenshots, full tests, Release build, and fresh review.
+
 ## Annotation feedback: control geometry (2026-09-06)
 
 - DONE: Hovered slider thumbs remain whole at minimum and maximum values. Shared slider and validation containers allow the hover overhang.

@@ -34,9 +34,12 @@
     <!-- Shell shape: the bar and the sidebar are one L-shaped block in the
          sidebar colour; the page area is an inset panel with a rounded
          inner corner, so the bar reads as chrome and the page as the surface. -->
-    <Grid RowDefinitions="Auto,*"
-          Background="{DynamicResource SidebarBackgroundBrush}"
-          Margin="{Binding $parent[Window].OffScreenMargin}">
+    <LayoutTransformControl x:Name="AppScaleHost" Margin="{Binding $parent[Window].OffScreenMargin}">
+        <LayoutTransformControl.LayoutTransform>
+            <ScaleTransform ScaleX="{Binding UiScale}" ScaleY="{Binding UiScale}" />
+        </LayoutTransformControl.LayoutTransform>
+    <Grid x:Name="AppSurface" RowDefinitions="Auto,*"
+          Background="{DynamicResource SidebarBackgroundBrush}">
     <controls:TitleBarControl Grid.Row="0" Subtitle="{Binding VersionText}">
         <controls:TitleBarControl.CenterContent>
             <!-- 5-3: cross-module search. Results drop down in the overlay
@@ -325,9 +328,9 @@
                         BorderThickness="1"
                         Padding="16,10"
                         CornerRadius="8">
-                    <DockPanel>
+                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
                         <!-- Right side: buttons -->
-                        <StackPanel DockPanel.Dock="Right"
+                        <StackPanel Grid.Column="1"
                                     Orientation="Horizontal"
                                     Spacing="8">
                             <Button Classes="apply-bar-discard"
@@ -362,8 +365,7 @@
                         </StackPanel>
 
                         <!-- Left side: history button + pending count text -->
-                        <StackPanel DockPanel.Dock="Left"
-                                    Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                        <Grid ColumnDefinitions="Auto,Auto,*" Margin="0,0,12,0" VerticalAlignment="Center">
                             <Button Classes="apply-bar-discard"
                                     Command="{Binding OpenHistoryPanelCommand}"
                                     Padding="10,6"
@@ -380,6 +382,7 @@
                             </Button>
 
                             <Button Classes="apply-bar-discard"
+                                    Grid.Column="1" Margin="12,0,0,0"
                                     Command="{Binding CreateRestorePointCommand}"
                                     IsEnabled="{Binding CanCreateRestorePoint}"
                                     Padding="10,6"
@@ -395,15 +398,20 @@
                                 </StackPanel>
                             </Button>
 
-                            <Button Classes="apply-bar-count"
+                            <Button Grid.Column="2" Margin="12,0,0,0" HorizontalContentAlignment="Stretch"
+                                    Classes="apply-bar-count"
                                     Command="{Binding OpenReviewPanelCommand}">
-                                <TextBlock Text="{Binding PendingCountText}"
+                                <TextBlock TextTrimming="CharacterEllipsis" Text="{Binding PendingCountText}"
                                            Foreground="{DynamicResource TextSecondaryBrush}"
                                            FontSize="13" />
                             </Button>
 
+
+                        </Grid>
+
                             <!-- 7-3: unobtrusive update badge; visible only when a newer release is known -->
                             <Button Classes="apply-bar-discard"
+                                    Grid.Row="1" Grid.Column="1" Margin="0,4,0,0"
                                     IsVisible="{Binding IsUpdateBadgeVisible}"
                                     Command="{Binding OpenReleasesPageCommand}"
                                     Padding="10,6"
@@ -417,19 +425,18 @@
                                                FontSize="13" />
                                 </StackPanel>
                             </Button>
-                        </StackPanel>
 
                         <!-- Status message (fills remaining space, truncates with ellipsis) -->
-                        <TextBlock Text="{Binding StatusMessage}"
+                        <TextBlock Grid.Row="1" Text="{Binding StatusMessage}"
                                    FontSize="12"
                                    VerticalAlignment="Center"
-                                   Margin="12,0,12,0"
+                                   Margin="0,4,0,0"
                                    TextTrimming="CharacterEllipsis"
                                    IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                    Classes.status-success="{Binding IsStatusSuccess}"
                                    Classes.status-warning="{Binding IsStatusWarning}"
                                    Classes.status-error="{Binding IsStatusError}" />
-                    </DockPanel>
+                    </Grid>
                 </Border>
 
                 <!-- Review panel popup -->
@@ -644,4 +651,5 @@
         </StackPanel>
     </Border>
     </Grid>
+    </LayoutTransformControl>
 </Window>

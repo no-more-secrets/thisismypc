@@ -13,6 +13,7 @@ public partial class MainWindow : Window
 {
     private const double CollapseThreshold = 1100;
     private bool _wasAboveThreshold = true;
+    private MainWindowViewModel? _zoomViewModel;
 #if DEBUG
     private int _debugChangeCounter;
     private RegionReviewOverlay? _regionReviewOverlay;
@@ -22,11 +23,22 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
 
+        DataContextChanged += (_, _) =>
+        {
+            if (_zoomViewModel is not null) _zoomViewModel.PropertyChanged -= OnZoomPropertyChanged;
+            _zoomViewModel = DataContext as MainWindowViewModel;
+            if (_zoomViewModel is not null) _zoomViewModel.PropertyChanged += OnZoomPropertyChanged;
+            UpdateResponsiveSidebar();
+        };
+        Closed += (_, _) =>
+        {
+            if (_zoomViewModel is not null) _zoomViewModel.PropertyChanged -= OnZoomPropertyChanged;
+        };
         PropertyChanged += OnWindowPropertyChanged;
         Loaded += OnLoaded;
         Deactivated += OnWindowDeactivated;
         AddHandler(PointerPressedEvent, OnGlobalPointerPressed, Avalonia.Interactivity.RoutingStrategies.Tunnel);
-        AddHandler(KeyDownEvent, OnSearchKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+        AddHandler(KeyDownEvent, OnSearchKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
         HookDisplayChanges();
 #if DEBUG
         AddHandler(KeyDownEvent, OnRegionReviewKeyDown, Avalonia.Interactivity.RoutingStrategies.Tunnel);
@@ -109,7 +121,7 @@ public partial class MainWindow : Window
             return;
         _gripMoved = true;
         // Snap as the pointer crosses the midpoint between the two widths.
-        var x = point.X;
+        var x = point.X / vm.UiScale;
         var midpoint = (SidebarWidthConverter.CollapsedWidth + SidebarWidthConverter.ExpandedWidth) / 2;
         vm.IsSidebarCollapsed = x < midpoint;
     }
@@ -151,8 +163,33 @@ public partial class MainWindow : Window
 #endif
     }
 
+    private void OnZoomPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(MainWindowViewModel.UiScale)) UpdateResponsiveSidebar();
+    }
+
     private void OnSearchKeyDown(object? sender, KeyEventArgs e)
     {
+        var zoomDirection = e.Key switch
+        {
+            Key.OemPlus or Key.Add => 1,
+            Key.OemMinus or Key.Subtract => -1,
+            Key.D0 or Key.NumPad0 => 0,
+            _ => (int?)null,
+        };
+        if (zoomDirection is { } direction &&
+            (e.KeyModifiers == KeyModifiers.Control || e.KeyModifiers == (KeyModifiers.Control | KeyModifiers.Shift)) &&
+            DataContext is MainWindowViewModel zoomVm)
+        {
+            e.Handled = true;
+#if DEBUG
+            _regionReviewOverlay?.Suspend();
+            if (_regionReviewOverlay?.IsReviewActive == true) return;
+#endif
+            CancelSidebarGrip();
+            zoomVm.ChangeZoom(direction);
+            return;
+        }
 #if DEBUG
         if (_regionReviewOverlay?.IsReviewActive == true)
             return;
@@ -228,7 +265,7 @@ public partial class MainWindow : Window
     {
         if (DataContext is MainWindowViewModel vm)
         {
-            _wasAboveThreshold = Bounds.Width >= CollapseThreshold;
+            _wasAboveThreshold = Bounds.Width / vm.UiScale >= CollapseThreshold;
             await vm.InitializeAsync().ConfigureAwait(true);
         }
     }
@@ -239,10 +276,13 @@ public partial class MainWindow : Window
         if (e.Property == BoundsProperty && _regionReviewOverlay?.IsReviewActive == true)
             _regionReviewOverlay.Suspend();
 #endif
-        if (e.Property != BoundsProperty || DataContext is not MainWindowViewModel vm)
-            return;
+        if (e.Property == BoundsProperty) UpdateResponsiveSidebar();
+    }
 
-        var isAboveThreshold = Bounds.Width >= CollapseThreshold;
+    private void UpdateResponsiveSidebar()
+    {
+        if (Bounds.Width <= 0 || DataContext is not MainWindowViewModel vm) return;
+        var isAboveThreshold = Bounds.Width / vm.UiScale >= CollapseThreshold;
 
         // Only act on threshold crossings
         if (isAboveThreshold == _wasAboveThreshold)
@@ -358,9 +398,12 @@ public partial class MainWindow : Window
         return tab is null ? route : $"{route}/tab/{tab.SelectedIndex}";
     }
 
-    private string ResolveRegionReviewLayoutState() => DataContext is MainWindowViewModel vm
-        ? vm.IsSidebarCollapsed ? "sidebar-collapsed" : "sidebar-expanded"
-        : "sidebar-unknown";
+    private string ResolveRegionReviewLayoutState()
+    {
+        if (DataContext is not MainWindowViewModel vm) return "sidebar-unknown";
+        var sidebar = vm.IsSidebarCollapsed ? "sidebar-collapsed" : "sidebar-expanded";
+        return vm.ZoomPercent == 100 ? sidebar : $"{sidebar};zoom={vm.ZoomPercent}";
+    }
 
     private static string Slug(string value) => string.Join('-', value.Trim().ToLowerInvariant()
         .Split([' ', '/', '\\'], StringSplitOptions.RemoveEmptyEntries));

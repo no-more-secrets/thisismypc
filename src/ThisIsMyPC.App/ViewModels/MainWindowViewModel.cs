@@ -356,6 +356,9 @@ public partial class MainWindowViewModel : ViewModelBase
         _setEntryInspectors = setEntryInspectors.ToList();
         _capabilityDetector = capabilityDetector;
         _settingsService = settingsService;
+        _zoomPercent = int.TryParse(settingsService?.GetApp(Core.Settings.AppSettingKeys.UiZoom, "100"),
+            System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var savedZoom)
+            ? Math.Clamp(savedZoom, 50, 150) : 100;
         _moduleSettingsContributors = moduleSettingsContributors?.ToList() ?? [];
         _updateService = updateService;
         _searchContributors = searchContributors?.ToList() ?? [];
@@ -689,6 +692,21 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _loadingText = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(UiScale))]
+    private int _zoomPercent = 100;
+
+    public double UiScale => ZoomPercent / 100.0;
+
+    /// <summary>Changes the app zoom by ten percentage points, or resets it when direction is zero.</summary>
+    public void ChangeZoom(int direction)
+    {
+        ZoomPercent = direction == 0 ? 100 : Math.Clamp(ZoomPercent + Math.Sign(direction) * 10, 50, 150);
+        _settingsService?.SetApp(Core.Settings.AppSettingKeys.UiZoom,
+            ZoomPercent.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        SetStatus($"Zoom: {ZoomPercent}%", StatusSeverity.Success);
+    }
 
     public async Task InitializeAsync()
     {

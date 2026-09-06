@@ -6,6 +6,7 @@ namespace ThisIsMyPC.Core.Settings;
 /// </summary>
 public static class AppSettingKeys
 {
+    public const string UiZoom = "uiZoom"; // percentage, 50 through 150
     public const string Theme = "theme";                       // "dark" | "light"
     public const string CloseAction = "closeAction";           // "exit" | "tray"
     public const string MinimizeAction = "minimizeAction";     // "taskbar" | "tray"
@@ -24,6 +25,7 @@ public static class AppSettingKeys
         new Dictionary<string, string>(StringComparer.Ordinal)
         {
             [Theme] = "dark",
+            [UiZoom] = "100",
             [CloseAction] = "exit",
             [MinimizeAction] = "taskbar",
             [DyslexiaFont] = "0",

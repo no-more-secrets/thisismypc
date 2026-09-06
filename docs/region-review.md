@@ -57,6 +57,8 @@ Group figures by `captureId` and inspect every referenced image when reviewing m
 The `captures` array includes `logicalWidth`, `logicalHeight`, PNG pixel dimensions, and `renderScale` for each capture.
 Use these dimensions when a figure describes behavior at a particular window size.
 Each capture also records `layoutState` to distinguish expanded and collapsed sidebar views.
+Non-default app zoom adds `;zoom=<percentage>` to that state. Ctrl+=, Ctrl+-, and Ctrl+0 suspend review before changing zoom.
+Notes stay attached to their original zoom. Returning to that zoom and sidebar state restores the saved figures.
 `active` means figures are available; `suspended` means the user can navigate the live app.
 When `imageFigureNumber` differs from `number`, the saved PNG shows the earlier badge. Use the figure bounds and ID to map it. A new export updates the badge.
 Use `selectedFigureNumber` for the current selection. Figure numbers belong to the recorded review session.

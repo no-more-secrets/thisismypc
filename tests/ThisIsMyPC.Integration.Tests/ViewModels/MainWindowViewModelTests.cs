@@ -17,6 +17,12 @@ public class MainWindowViewModelTests
     private static MainWindowViewModel CreateViewModel(
         out PendingChangesService pendingChangesService,
         out Fakes.FakeExplorerRestartService explorerRestartService,
+        params IModule[] modules) => CreateViewModel(out pendingChangesService, out explorerRestartService, null, modules);
+
+    private static MainWindowViewModel CreateViewModel(
+        out PendingChangesService pendingChangesService,
+        out Fakes.FakeExplorerRestartService explorerRestartService,
+        Core.Settings.ISettingsService? settings,
         params IModule[] modules)
     {
         var navigationService = new NavigationService(modules);
@@ -25,7 +31,30 @@ public class MainWindowViewModelTests
         var reviewPanel = new ReviewPanelViewModel(pendingChangesService, new Core.Sets.CustomSetWriter(Path.Combine(Path.GetTempPath(), $"tipc-mw-{Guid.NewGuid():N}")));
         var registryService = new Fakes.FakeRegistryService();
         explorerRestartService = new Fakes.FakeExplorerRestartService();
-        return new MainWindowViewModel(navigationService, pendingChangesService, historyService, registryService, explorerRestartService, reviewPanel, new Fakes.FakeSetProvider(), [], new Core.Sets.CustomSetWriter(Path.Combine(Path.GetTempPath(), $"tipc-mw-{Guid.NewGuid():N}")), new Fakes.FakeRestorePointService());
+        return new MainWindowViewModel(navigationService, pendingChangesService, historyService, registryService, explorerRestartService, reviewPanel, new Fakes.FakeSetProvider(), [], new Core.Sets.CustomSetWriter(Path.Combine(Path.GetTempPath(), $"tipc-mw-{Guid.NewGuid():N}")), new Fakes.FakeRestorePointService(), settingsService: settings);
+    }
+
+    [Theory]
+    [InlineData("invalid", 100)]
+    [InlineData("0", 50)]
+    [InlineData("999", 150)]
+    [InlineData("120", 120)]
+    public void ZoomLoadsWithinBounds_AndSavesChangesAndReset(string saved, int expected)
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"tipc-zoom-{Guid.NewGuid():N}.json");
+        var settings = new Core.Settings.SettingsService(path);
+        settings.Initialize();
+        settings.SetApp(Core.Settings.AppSettingKeys.UiZoom, saved);
+        var vm = CreateViewModel(out _, out _, settings);
+        Assert.Equal(expected, vm.ZoomPercent);
+        vm.ChangeZoom(1);
+        var restored = new Core.Settings.SettingsService(path);
+        restored.Initialize();
+        var reloaded = CreateViewModel(out _, out _, restored);
+        Assert.Equal(Math.Min(expected + 10, 150), reloaded.ZoomPercent);
+        vm.ChangeZoom(0);
+        Assert.Equal(1, vm.UiScale);
+        Assert.Equal("100", settings.GetApp(Core.Settings.AppSettingKeys.UiZoom, ""));
     }
 
     private static ChangeDescriptor CreateTestChange(string moduleId = "test", string settingId = "setting1") => new()

@@ -1,6 +1,11 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
+    <!-- Dropdowns and flyouts follow the app layout scale. -->
+    <Style Selector="Popup, Control /template/ Popup">
+        <Setter Property="InheritsTransform" Value="True" />
+    </Style>
+
     <!-- Interaction baseline: every clickable gets a hand cursor. Colors and
          hover/press states come from the Fluent resource-key overrides in
          Theme.axaml, so stock controls and custom classes share one system. -->

@@ -69,7 +69,7 @@
             <Image Source="avares://ThisIsMyPC.App/Assets/ThisIsMyPC.ico"
                    Width="48" Height="48"
                    VerticalAlignment="Center" />
-            <StackPanel VerticalAlignment="Center">
+            <StackPanel x:Name="BrandText" VerticalAlignment="Center">
                 <TextBlock Text="ThisIsMyPC"
                            FontFamily="{StaticResource DisplayFont}"
                            FontSize="20"
