@@ -2,22 +2,27 @@ using NLog;
 using ThisIsMyPC.Core.Results;
 using ThisIsMyPC.Core.Services;
 using Velopack;
+using Velopack.Locators;
 
 namespace ThisIsMyPC.App.Services;
 
 public sealed class VelopackUpdateService : IUpdateService, IDisposable
 {
     private readonly UpdateManager _manager;
+    private readonly IVelopackLocator? _locator;
     private readonly IUpdateVerifier? _verifier;
     private readonly ILogger _logger;
     private UpdateInfo? _pendingUpdate;
+    private UpdateInfo? _readyUpdate;
 
     public VelopackUpdateService(string updateUrl, IUpdateVerifier? verifier = null, ILogger? logger = null)
         : this(new UpdateManager(updateUrl), verifier, logger) { }
 
-    internal VelopackUpdateService(UpdateManager manager, IUpdateVerifier? verifier = null, ILogger? logger = null)
+    internal VelopackUpdateService(UpdateManager manager, IUpdateVerifier? verifier = null, ILogger? logger = null,
+        IVelopackLocator? locator = null)
     {
         _manager = manager;
+        _locator = locator;
         _verifier = verifier;
         _logger = logger ?? LogManager.GetLogger("ThisIsMyPC.App.Services.VelopackUpdateService");
     }
@@ -39,6 +44,7 @@ public sealed class VelopackUpdateService : IUpdateService, IDisposable
             }
 
             _pendingUpdate = update;
+            _readyUpdate = null;
             var version = update.TargetFullRelease.Version.ToString();
             _logger.Info("Update available: {Version}", version);
 
@@ -67,6 +73,7 @@ public sealed class VelopackUpdateService : IUpdateService, IDisposable
                 ErrorCategory.NotFound);
         }
 
+        _readyUpdate = null;
         try
         {
             Action<int>? progressAction = progress is not null ? v => progress.Report(v) : null;
@@ -87,7 +94,7 @@ public sealed class VelopackUpdateService : IUpdateService, IDisposable
                 if (!verification.IsSuccess)
                 {
                     _logger.Error("Update {Version} rejected: {Reason}", version, verification.ErrorMessage);
-                    _pendingUpdate = null;
+                    _readyUpdate = null;
                     return OperationResult<bool>.Failure(
                         "Update could not be verified and has been rejected for security.",
                         ErrorCategory.AccessDenied);
@@ -96,6 +103,8 @@ public sealed class VelopackUpdateService : IUpdateService, IDisposable
                 _logger.Info("Update {Version} integrity verified", version);
             }
 
+            cancellationToken.ThrowIfCancellationRequested();
+            _readyUpdate = _pendingUpdate;
             return OperationResult<bool>.Success(true);
         }
 #pragma warning disable CA1031 // Velopack throws on download/network errors; must not crash
@@ -112,14 +121,14 @@ public sealed class VelopackUpdateService : IUpdateService, IDisposable
 
     public void ApplyUpdateAndRestart()
     {
-        if (_pendingUpdate is null)
+        if (_readyUpdate is null)
         {
-            _logger.Warn("ApplyUpdateAndRestart called with no pending update");
+            _logger.Warn("ApplyUpdateAndRestart called before a successful verified download");
             return;
         }
 
         _logger.Info("Applying update and restarting");
-        _manager.ApplyUpdatesAndRestart(_pendingUpdate.TargetFullRelease);
+        _manager.ApplyUpdatesAndRestart(_readyUpdate.TargetFullRelease);
     }
 
     public void Dispose()
@@ -145,7 +154,7 @@ public sealed class VelopackUpdateService : IUpdateService, IDisposable
                 return null;
             }
 
-            var path = Path.Combine(AppContext.BaseDirectory, "packages", fileName);
+            var path = Path.Combine((_locator ?? VelopackLocator.Current).PackagesDir!, fileName);
             if (!File.Exists(path))
             {
                 _logger.Debug("Downloaded package not found at {Path}", path);

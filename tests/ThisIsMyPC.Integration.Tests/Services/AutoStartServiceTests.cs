@@ -32,6 +32,20 @@ public sealed class AutoStartServiceTests : IDisposable
         _registry.ReadString(AutoStartService.RunKeyPath, AutoStartService.RunValueName) is { IsSuccess: true } r
             ? r.Value : null;
 
+    [Theory]
+    [InlineData("1", " --minimized")]
+    [InlineData("2", "")]
+    public void LogonModeWritesExpectedLaunchArguments(string mode, string suffix)
+    {
+        using var service = Create();
+        _settings.SetApp(AppSettingKeys.AutoStart, mode);
+        Assert.Equal("\"C:\\Apps\\ThisIsMyPC.exe\"" + suffix, RunValue());
+        service.Reconcile();
+        Assert.Equal("\"C:\\Apps\\ThisIsMyPC.exe\"" + suffix, RunValue());
+        _settings.SetApp(AppSettingKeys.AutoStart, "0");
+        Assert.Null(RunValue());
+    }
+
     [Fact]
     public void Default_ReconcileCreatesNoEntry()
     {

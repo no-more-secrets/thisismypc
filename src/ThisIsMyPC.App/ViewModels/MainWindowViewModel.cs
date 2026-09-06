@@ -361,6 +361,8 @@ public partial class MainWindowViewModel : ViewModelBase
             ? Math.Clamp(savedZoom, 50, 150) : 100;
         _moduleSettingsContributors = moduleSettingsContributors?.ToList() ?? [];
         _updateService = updateService;
+        if (_settingsService is not null)
+            _settingsService.SettingChanged += OnUpdateSettingChanged;
         _searchContributors = searchContributors?.ToList() ?? [];
         _notificationService = notificationService;
         _monitoringService = monitoringService;
@@ -1023,47 +1025,6 @@ public partial class MainWindowViewModel : ViewModelBase
 
         ClearSidebarActives();
     }
-
-    [ObservableProperty]
-    private bool _isUpdateBadgeVisible;
-
-    [ObservableProperty]
-    private string _updateBadgeText = string.Empty;
-
-    private async Task CheckForUpdateBadgeAsync()
-    {
-        if (_updateService is null)
-            return;
-        // Opt-out toggle (default on): off means NO network request at all.
-        if (_settingsService is not null
-            && !_settingsService.GetAppBool(Core.Settings.AppSettingKeys.UpdateCheck, fallback: true))
-        {
-            return;
-        }
-
-        try
-        {
-            var result = await _updateService.CheckForUpdateAsync().ConfigureAwait(true);
-            if (result.IsSuccess && result.Value is { IsAvailable: true, Version: { } version })
-            {
-                UpdateBadgeText = $"Update {version}";
-                IsUpdateBadgeVisible = true;
-                _notificationService?.Notify(
-                    Core.Notifications.NotificationType.UpdateAvailable,
-                    "Update available",
-                    $"ThisIsMyPC {version} is available - click the badge to open the releases page");
-            }
-        }
-#pragma warning disable CA1031 // AC: check failures are silently ignored; offline-safe
-        catch (Exception ex)
-        {
-            Log.Warn(ex, "Update check failed");
-        }
-#pragma warning restore CA1031
-    }
-
-    [RelayCommand]
-    private void OpenReleasesPage() => OpenUrl(Core.AppConstants.UpdateUrl, "the releases page");
 
     [RelayCommand]
     private void OpenRepository() => OpenUrl(Core.AppConstants.RepositoryUrl, "the GitHub page");

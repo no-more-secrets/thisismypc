@@ -14,8 +14,9 @@ public static class AppSettingKeys
     /// <summary>Timestamp (round-trip format) of the last drift report audited into history (28-3, not user-facing).</summary>
     public const string DriftLastRecorded = "driftLastRecorded";
     public const string TrayMode = "trayMode";                 // bool (Epic 9 behavior)
-    public const string AutoStart = "autoStart";               // bool (Epic 9 behavior)
+    public const string AutoStart = "autoStart";               // "0" disabled, "1" minimized (legacy enabled), "2" open
     public const string Notifications = "notifications";       // bool (Epic 9 behavior)
+    public const string AutoDownloadUpdates = "autoDownloadUpdates"; // bool, downloads only
     public const string UpdateCheck = "updateCheck";           // bool (7-3; opt-out default on)
     public const string MonitoringEnabled = "monitoringEnabled"; // bool (9-3 opt-in background monitoring)
     public const string NotifyMonitoring = "notifyMonitoring"; // bool (9-2 granular; gated by Notifications)
@@ -33,6 +34,7 @@ public static class AppSettingKeys
             [AutoStart] = "0",
             [Notifications] = "1",
             [UpdateCheck] = "1",
+            [AutoDownloadUpdates] = "0",
             [MonitoringEnabled] = "0",
             [NotifyMonitoring] = "1",
             [NotifyUpdates] = "1",

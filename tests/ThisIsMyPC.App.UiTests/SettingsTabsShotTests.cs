@@ -89,7 +89,7 @@ public class SettingsTabsShotTests
 
         var expectedText = new Dictionary<string, string[]>
         {
-            ["Application"] = ["Theme", "Dyslexia-friendly font", "Tray mode", "Start with Windows", "Check for app updates"],
+            ["Application"] = ["Theme", "Dyslexia-friendly font", "Tray mode", "Start with Windows", "Check for app updates", "Automatically download updates"],
             ["Notifications"] = ["Notifications", "Notify: monitoring alerts", "Notify: update available"],
             ["Owner Mode"] = ["In-app monitoring", "Startup & service monitoring", "Runs inside the app while it is open. Does not need the Owner Mode service."],
             ["Modules"] = ["Fake Module", "Show extras", "System Capabilities", "DDC/CI monitors", "OpenRGB"],

@@ -256,6 +256,12 @@
             <DockPanel DockPanel.Dock="Top" Margin="0,0,0,10">
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="6"
                             VerticalAlignment="Center">
+                    <Button x:Name="AppUpdateButton"
+                            Content="{Binding UpdateActionText}"
+                            IsVisible="{Binding IsUpdateBadgeVisible}"
+                            Command="{Binding DownloadOrRestartUpdateCommand}"
+                            ToolTip.Tip="{Binding UpdateBadgeText}"
+                            Padding="12,6" />
                     <Button Classes="bar-icon"
                             Command="{Binding RefreshPageCommand}"
                             IsEnabled="{Binding !IsModuleLoading}"
@@ -286,7 +292,8 @@
                            FontSize="24"
                            FontWeight="Bold"
                            VerticalAlignment="Center"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           TextTrimming="CharacterEllipsis" />
             </DockPanel>
 
             <!-- Restart notification bar -->
@@ -409,23 +416,6 @@
 
 
                         </Grid>
-
-                            <!-- 7-3: unobtrusive update badge; visible only when a newer release is known -->
-                            <Button Classes="apply-bar-discard"
-                                    Grid.Row="1" Grid.Column="1" Margin="0,4,0,0"
-                                    IsVisible="{Binding IsUpdateBadgeVisible}"
-                                    Command="{Binding OpenReleasesPageCommand}"
-                                    Padding="10,6"
-                                    ToolTip.Tip="A newer version is available - click to open the releases page">
-                                <StackPanel Orientation="Horizontal" Spacing="6">
-                                    <Ellipse Width="8" Height="8"
-                                             Fill="{DynamicResource SuccessBrush}"
-                                             VerticalAlignment="Center" />
-                                    <TextBlock Text="{Binding UpdateBadgeText}"
-                                               Foreground="{DynamicResource TextSecondaryBrush}"
-                                               FontSize="13" />
-                                </StackPanel>
-                            </Button>
 
                         <!-- Status message (fills remaining space, truncates with ellipsis) -->
                         <TextBlock Grid.Row="1" Text="{Binding StatusMessage}"
@@ -551,11 +541,11 @@
         </Border>
     </Grid>
 
-    <!-- Toast overlay: transient notifications, top-right over the content area -->
+    <!-- Keep notifications below the header actions. -->
     <controls:ToastHostControl DataContext="{Binding ToastStack}"
                                HorizontalAlignment="Right"
                                VerticalAlignment="Top"
-                               Margin="0,16,24,0" />
+                               Margin="0,64,24,0" />
     </Panel>
 
     <!-- Search results: an in-window overlay (not a Popup) hanging from the

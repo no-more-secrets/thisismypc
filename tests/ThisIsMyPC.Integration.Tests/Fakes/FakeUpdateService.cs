@@ -15,11 +15,17 @@ internal sealed class FakeUpdateService : IUpdateService
         return Task.FromResult(NextResult);
     }
 
-    public Task<OperationResult<bool>> DownloadUpdateAsync(
-        IProgress<int>? progress = null, CancellationToken cancellationToken = default) =>
-        Task.FromResult(OperationResult<bool>.Success(true));
+    public int DownloadCallCount { get; private set; }
+    public int RestartCallCount { get; private set; }
+    public OperationResult<bool> DownloadResult { get; set; } = OperationResult<bool>.Success(true);
+    public Func<CancellationToken, Task<OperationResult<bool>>>? DownloadHandler { get; set; }
 
-    public void ApplyUpdateAndRestart()
+    public Task<OperationResult<bool>> DownloadUpdateAsync(
+        IProgress<int>? progress = null, CancellationToken cancellationToken = default)
     {
+        DownloadCallCount++;
+        return DownloadHandler?.Invoke(cancellationToken) ?? Task.FromResult(DownloadResult);
     }
+
+    public void ApplyUpdateAndRestart() => RestartCallCount++;
 }

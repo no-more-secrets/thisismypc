@@ -20,12 +20,17 @@ public sealed partial class SettingToggleItemViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isOn;
 
+    [ObservableProperty]
+    private bool _isEnabled = true;
+
+    private readonly Action<bool>? _applied;
+
     public string DisplayName { get; }
     public string Description { get; }
 
     public SettingToggleItemViewModel(
         ISettingsService settings, string? moduleId, string key,
-        string displayName, string description, bool initial)
+        string displayName, string description, bool initial, Action<bool>? applied = null)
     {
         _settings = settings;
         _moduleId = moduleId;
@@ -33,10 +38,12 @@ public sealed partial class SettingToggleItemViewModel : ViewModelBase
         DisplayName = displayName;
         Description = description;
         _isOn = initial;
+        _applied = applied;
     }
 
     partial void OnIsOnChanged(bool value)
     {
+        _applied?.Invoke(value);
         if (_moduleId is null)
             _settings.SetApp(_key, value ? "1" : "0");
         else
@@ -213,6 +220,14 @@ public sealed partial class SettingsViewModel : ViewModelBase, ITabbedPage
         _settings = settings;
         _installedModuleIds = installedModuleIds ?? [];
         _appVersion = appVersion ?? "0.0.0";
+        var automaticDownloads = new SettingToggleItemViewModel(
+            settings, null, AppSettingKeys.AutoDownloadUpdates,
+            "Automatically download updates",
+            "Downloads updates when available. Install them with Restart ThisIsMyPC.",
+            settings.GetAppBool(AppSettingKeys.AutoDownloadUpdates, false))
+        {
+            IsEnabled = settings.GetAppBool(AppSettingKeys.UpdateCheck, true),
+        };
         ApplicationSection = new SettingsSectionViewModel
         {
             Header = ApplicationHeader,
@@ -236,16 +251,18 @@ public sealed partial class SettingsViewModel : ViewModelBase, ITabbedPage
                     "Tray mode",
                     "Keep the app running in the tray when you close its window.",
                     settings.GetAppBool(AppSettingKeys.TrayMode, false)),
-                new SettingToggleItemViewModel(
+                new SettingChoiceItemViewModel(
                     settings, null, AppSettingKeys.AutoStart,
-                    "Start with Windows",
-                    "",
-                    settings.GetAppBool(AppSettingKeys.AutoStart, false)),
+                    "Start with Windows", "",
+                    [new("0", "Disabled"), new("1", "Minimized"), new("2", "Open at logon")],
+                    settings.GetApp(AppSettingKeys.AutoStart, "0")),
                 new SettingToggleItemViewModel(
                     settings, null, AppSettingKeys.UpdateCheck,
                     "Check for app updates",
                     "Compares the app version against GitHub Releases at launch. Only version numbers are sent; turn off for offline use.",
-                    settings.GetAppBool(AppSettingKeys.UpdateCheck, true)),
+                    settings.GetAppBool(AppSettingKeys.UpdateCheck, true),
+                    enabled => automaticDownloads.IsEnabled = enabled),
+                automaticDownloads,
             ],
         };
 

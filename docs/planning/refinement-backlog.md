@@ -26,6 +26,12 @@ Current coverage baseline: ~40 fixed toggles (Explorer 13, Annoyances 21 cards,
 Windows Update 5, Power 1) + 5 built-in sets (59 entries) + the enumerative modules
 (Context Menus, Environment, Startup & Services, Power grid).
 
+## Logon and update controls (2026-09-06)
+
+- DONE: Start with Windows offers Disabled, Minimized, and Open at logon. Existing enabled settings remain Minimized.
+- DONE: Optional automatic downloads follow the update-check preference. Installation requires clicking Restart ThisIsMyPC in the page header. Download failures remain retryable; pending changes prevent restart.
+- Verified: 1,929 CI-safe tests, Release build, three update UI workflows, scaling checks, dark/light screenshots, page edge measurements, and fresh review.
+- Untested: native Windows logon and installation of a real signed update.
 ## Shared Fluent icons (2026-09-06)
 
 - DONE: Increased navigation icons to 22px and toolbar icons to 20px. Regular icons use a 0.35-unit round outline for stronger visual weight. Both themes, sidebar spacing, full tests, and Release build verified.

@@ -36,6 +36,29 @@ public sealed class SettingsViewModelTests : IDisposable
     }
 
     [Fact]
+    public void LogonChoicesPersistAndAutomaticDownloadsFollowUpdateChecking()
+    {
+        _settings.SetApp(AppSettingKeys.AutoStart, "1");
+        var vm = new SettingsViewModel(_settings, []);
+        var logon = vm.ApplicationSection.Items.OfType<SettingChoiceItemViewModel>().Single(t => t.DisplayName == "Start with Windows");
+        Assert.Equal(new[] { "Disabled", "Minimized", "Open at logon" }, logon.Options.Select(o => o.DisplayName));
+        Assert.Equal("Minimized", logon.Selected!.DisplayName);
+        logon.Selected = logon.Options[2];
+        Assert.Equal("2", _settings.GetApp(AppSettingKeys.AutoStart, "0"));
+        var toggles = vm.ApplicationSection.Items.OfType<SettingToggleItemViewModel>().ToList();
+        var check = toggles.Single(t => t.DisplayName == "Check for app updates");
+        var download = toggles.Single(t => t.DisplayName == "Automatically download updates");
+        Assert.False(download.IsOn);
+        Assert.True(download.IsEnabled);
+        download.IsOn = true;
+        check.IsOn = false;
+        Assert.False(download.IsEnabled);
+        Assert.True(download.IsOn);
+        check.IsOn = true;
+        Assert.True(download.IsEnabled);
+    }
+
+    [Fact]
     public void Sections_ApplicationNotificationsMonitoring_AlwaysPresent()
     {
         var vm = new SettingsViewModel(_settings, []);
@@ -60,7 +83,7 @@ public sealed class SettingsViewModelTests : IDisposable
                 _ => "?",
             }).ToArray();
 
-        Assert.Equal(["Theme", "Dyslexia-friendly font", "Tray mode", "Start with Windows", "Check for app updates"],
+        Assert.Equal(["Theme", "Dyslexia-friendly font", "Tray mode", "Start with Windows", "Check for app updates", "Automatically download updates"],
             Names(vm.ApplicationSection));
         Assert.Equal(["Notifications", "Notify: monitoring alerts", "Notify: update available"],
             Names(vm.NotificationsSection));
@@ -68,7 +91,7 @@ public sealed class SettingsViewModelTests : IDisposable
 
         var toggles = vm.Sections.SelectMany(s => s.Items).OfType<SettingToggleItemViewModel>().ToList();
         Assert.False(toggles.Single(t => t.DisplayName == "Tray mode").IsOn);
-        Assert.False(toggles.Single(t => t.DisplayName == "Start with Windows").IsOn);
+        Assert.Equal("0", vm.ApplicationSection.Items.OfType<SettingChoiceItemViewModel>().Single(t => t.DisplayName == "Start with Windows").Selected!.Value);
         Assert.True(toggles.Single(t => t.DisplayName == "Check for app updates").IsOn);
         Assert.True(toggles.Single(t => t.DisplayName == "Notifications").IsOn);
         Assert.False(toggles.Single(t => t.DisplayName == "Startup & service monitoring").IsOn);

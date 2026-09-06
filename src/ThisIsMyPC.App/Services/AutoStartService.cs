@@ -5,7 +5,7 @@ namespace ThisIsMyPC.App.Services;
 
 /// <summary>
 /// Owns the "Start with Windows" HKCU Run entry (9-2). No entry exists by default;
-/// the setting toggle creates/removes it live, and Reconcile() at startup repairs any
+/// the setting choice creates/removes it live, and Reconcile() at startup repairs any
 /// drift between the setting and the registry (e.g. an external cleaner removed the
 /// key while the setting stayed on).
 /// </summary>
@@ -28,30 +28,31 @@ public sealed class AutoStartService : IDisposable
         _settings = settings;
 
         var path = exePath ?? Environment.ProcessPath ?? string.Empty;
-        _launchCommand = $"\"{path}\" --minimized";
+        _launchCommand = $"\"{path}\"";
 
         _settings.SettingChanged += OnSettingChanged;
     }
 
     /// <summary>Startup repair: make the registry match the setting.</summary>
-    public void Reconcile() => Apply(_settings.GetAppBool(AppSettingKeys.AutoStart, fallback: false));
+    public void Reconcile() => Apply(_settings.GetApp(AppSettingKeys.AutoStart, "0"));
 
     private void OnSettingChanged(object? sender, SettingChangedEventArgs e)
     {
         if (e is { Scope: SettingChangedEventArgs.AppScope, Key: AppSettingKeys.AutoStart })
-            Apply(e.Value == "1");
+            Apply(e.Value);
     }
 
-    private void Apply(bool enabled)
+    private void Apply(string? mode)
     {
-        if (enabled)
+        if (mode is "1" or "2")
         {
             if (_launchCommand.StartsWith("\"\"", StringComparison.Ordinal))
             {
                 Log.Warn("Auto-start: executable path unknown; not writing a Run entry");
                 return;
             }
-            var result = _registry.WriteString(RunKeyPath, RunValueName, _launchCommand);
+            var result = _registry.WriteString(RunKeyPath, RunValueName,
+                mode == "1" ? _launchCommand + " --minimized" : _launchCommand);
             if (!result.IsSuccess)
                 Log.Warn("Auto-start entry write failed: {Error}", result.ErrorMessage);
         }
