@@ -29,6 +29,8 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 - Verified: Full Release build, CI-safe suite, fresh review, and rendered UI inspection. Isolated Debug window tests verify tabs, simulation banner, and edge geometry. No live applies or hardware control tested.
 ## Owner Mode restoration foundations (2026-09-06)
 
+- Current scope: [single-user checkpoint plan](owner-mode-single-user-plan.md). Step 1 audit is complete. Next recommendation is single-owner durable storage only; implementation is paused at the spending checkpoint. Uncommitted multi-profile baseline files remain experimental.
+
 - DONE: Typed present/absent snapshots and an immutable exact-target catalog for eleven non-policy Annoyances settings. Invalid value data, account SID syntax, and incompatible enforcement are rejected.
 - Verified: 163 Drift tests, full CI-safe suite, Release build, and review corrections. Reader values checked against the module source. Executable provider parity coverage adds 67 cases; the Annoyances suite passes 142 tests.
 - DONE: Shared reversible execution now routes apply, rollback, undo, and redo consistently. Restoration preparation validates shipped targets and issues immutable preparations. Scoped tests, full suite, Release build, and review fixes passed.

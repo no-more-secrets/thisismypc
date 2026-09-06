@@ -1,5 +1,7 @@
 # Owner Mode restoration plan
 
+Current scope and checkpoint order: [single-user completion plan](owner-mode-single-user-plan.md). It supersedes multi-profile assumptions below. Historical implementation details remain reference material.
+
 Owner Mode today detects drift after boot and reports it over IPC; the app
 reapplies through the normal pending-changes pipeline when the person asks.
 Restoration means the service puts a drifted value back on its own. This
@@ -57,9 +59,7 @@ fail. Well-known domain group RIDs from MS-DTYP 2.4.2.4 (498, 512 to 522,
 Service, builtin, capability, and logon-session principals fail the shape
 test. User-created groups (RID 1000 and up) are not distinguishable by shape
 and are excluded later by profile enumeration. The check is pure string
-work; Core makes no Win32 lookups. The candidate keeps the SID so a later
-machine-scoped pass restores each profile's own values. There is no
-single-consenting-SID filter, by design.
+work; Core makes no Win32 lookups. The candidate keeps the SID to address the primary user from SYSTEM. Production routing must enforce the single-owner binding described in the current plan.
 
 Canonicalization rule: `TryCanonicalize` recognizes the six
 `RegistryValueDataKind` members explicitly. Null data, an unrecognized kind,

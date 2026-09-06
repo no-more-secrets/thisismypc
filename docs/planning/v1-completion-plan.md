@@ -2,6 +2,8 @@
 
 Approved direction: Sam Boland, 2026-09-06. This plan supersedes older notes that put all hardware work after v1. Detailed historical work remains in refinement-backlog.md.
 
+Owner Mode scope update: [single-user completion checkpoints](owner-mode-single-user-plan.md). Near-term work targets one primary user; multi-profile restoration is deferred.
+
 ## Product and release scope
 
 Finish the System experience, add the agreed Hardware modules, and complete release validation. The approved ownership pitch is at the top of README.md. Sam owns thisismypc.com.
