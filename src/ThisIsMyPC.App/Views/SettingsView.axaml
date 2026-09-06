@@ -85,11 +85,11 @@
         </DataTemplate>
     </UserControl.DataTemplates>
 
-    <TabControl Margin="0,4,0,0">
+    <TabControl Theme="{StaticResource EdgeTabControlTheme}">
       <TabItem Header="General">
     <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                   VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="0,12,16,24">
+        <StackPanel Margin="0,0,16,24">
             <ItemsControl ItemsSource="{Binding GeneralSections}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:SettingsSectionViewModel">
@@ -236,7 +236,7 @@
       </TabItem>
       <TabItem Header="Background">
         <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-          <ItemsControl ItemsSource="{Binding BackgroundSections}" Margin="0,12,16,24">
+          <ItemsControl ItemsSource="{Binding BackgroundSections}" Margin="0,0,16,24">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:SettingsSectionViewModel">
                 <StackPanel>
@@ -251,7 +251,7 @@
       </TabItem>
       <TabItem Header="Modules" IsVisible="{Binding HasModuleSections}">
         <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-          <ItemsControl ItemsSource="{Binding ModuleSections}" Margin="0,12,16,24">
+          <ItemsControl ItemsSource="{Binding ModuleSections}" Margin="0,0,16,24">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:SettingsSectionViewModel">
                 <StackPanel Margin="0,0,0,16">

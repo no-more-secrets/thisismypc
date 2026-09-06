@@ -19,8 +19,16 @@ namespace ThisIsMyPC.App.ViewModels;
 /// switch as a single pending change; per-plan settings load on demand into a
 /// detail panel with simplified and registry display modes.
 /// </summary>
-public sealed partial class PowerViewModel : ObservableObject, IDisposable
+public sealed partial class PowerViewModel : ObservableObject, ISearchNavigationTarget, IDisposable
 {
+    public void NavigateToSearchResult(string settingId, string displayName)
+    {
+        if (settingId is "plan-settings" or "modern-standby")
+            OpenSettingsCommand.Execute(Plans.FirstOrDefault(plan => plan.IsActive) ?? Plans.FirstOrDefault());
+        else
+            CloseSettingsCommand.Execute(null);
+    }
+
     private readonly IPendingChangesService _pendingChangesService;
     private readonly IPowerService? _powerService;
     private readonly IRegistryService? _registryService;

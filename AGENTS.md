@@ -270,27 +270,17 @@ Run over every page before showing it; each line cost a correction once.
 
 ### Edge-geometry contract
 
-The MainWindow host Border pads 24 left and bottom, 12 top, and 6 right. Every view
-gives its scroll content a 16px right margin: the scrollbar overlays the
-viewport (it reserves no space), so 16 leaves a ~10px gap between content and
-the 4px thumb and puts bg-to-content at ~24 on both sides. Fixed chrome above
-a scroller (card-page toolbar rows) uses right margin 16 too, so it shares the
-content edge exactly. Inside a page: first element starts 4px below the host
-padding (24 host plus 12 page read as spare room on every page; Sam,
-2026-09-02, twice); scrolled content ends 24px above it. Views never set their own left
-margins. `Styles/TabStripTheme.axaml` owns tab strips: the selected tab connects to content; other tabs float in a
-sunken well that ends 16px short of the page edge (the same edge a search
-box above it uses) while the selected content keeps the full width for its
-scrollbar lane; a new tab page needs `Margin="0,4,0,0"` on its TabControl
-and nothing else; a panel that holds a TabControl carries no right margin of
-its own, each fixed row above the strip keeps 16 (see PowerView's settings
-panel).
+Untabbed pages use MainWindow host padding: 24px left and bottom, 12px top, and
+6px right. Their first element adds 4px top margin. Scroll content keeps 16px
+right margin for the overlay scrollbar and 24px bottom margin. Fixed toolbars
+also keep 16px right margin so their edges match the rows.
 
-Explorer opts into EdgeTabControlTheme: the host has zero padding and the strip
-spans the card's top edge. The selected content restores 24px left, 16px top,
-6px right, and 24px bottom padding; its scroller retains 16px right and 24px bottom margins.
-Search belongs inside each tab and shares the same query. Other pages retain
-the existing inset strip until explicitly migrated.
+All tabbed app pages use EdgeTabControlTheme or ModuleTabControlTheme. Their host
+has zero padding and the strip spans the card's top edge. Selected content restores
+24px left, 16px top, 6px right, and 24px bottom padding. Keep the scroller's 16px
+right lane. ModuleTabControl places shared tools below the strip and can replace
+tabs with search results. Power's plan list owns normal page padding; its settings
+use edge tabs. Do not add an inset margin to an edge tab strip.
 
 After touching any page layout, verify parity in pixels, not by eye and never
 from XAML: screenshot the pages (walkthrough or `EdgeGeometryShotTests`), then
@@ -299,10 +289,10 @@ ContentL 25 and LaneFrom 10; ContentR 23 except width-capped pages (
 Display and Gallery cap content width, so their ContentR is large);
 ContentT 17 give or take 4, tab pages included (the strip's well starts
 where any other first element does). Any page off those numbers is the bug,
-even if it looks close. For Explorer, pass -SkipHeaderPixels 42 at a one-row width
+even if it looks close. For edge tabs, pass -SkipHeaderPixels 42 at a one-row width
 to exclude the full-width strip. ContentL/ContentR/LaneFrom stay 25/23/10;
 ContentT includes the strip and reads 59. Use the actual strip height for wrapped tabs.
-ExplorerEdgeTabShotTests also checks the strip against the card bounds and verifies search alignment.
+ExplorerEdgeTabShotTests and ModuleEdgeTabShotTests check card bounds, wrapped strips, and search destinations.
 
 ## Architecture must-rules (violations get caught in review)
 

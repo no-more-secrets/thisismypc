@@ -10,8 +10,25 @@ using ThisIsMyPC.Modules.Shell.Services;
 
 namespace ThisIsMyPC.App.ViewModels;
 
-public partial class ContextMenuViewModel : ViewModelBase, IDisposable
+public partial class ContextMenuViewModel : ViewModelBase, ISearchNavigationTarget, IDisposable
 {
+    [ObservableProperty]
+    private int _selectedTabIndex;
+
+    public void NavigateToSearchResult(string settingId, string displayName)
+    {
+        SearchText = string.Empty;
+        HandlerTypeFilter = null;
+        IsOrphanFilterActive = false;
+        var tabs = new[] { MultiHandlers, FileHandlers, FolderHandlers, FolderBackgroundHandlers, DesktopHandlers, MiscHandlers };
+        SelectedTabIndex = Math.Max(0, Array.FindIndex(tabs, rows => rows.Any(row => settingId switch
+        {
+            "static-verbs" => row.HandlerType == HandlerType.StaticVerb,
+            "orphans" => row.IsOrphaned,
+            _ => true,
+        })));
+    }
+
     // Backing store for handler type filtering; populated once, used to repopulate collections
     private readonly List<(ContextMenuHandlerViewModel Vm, HashSet<ContextMenuTab> Tabs)> _allHandlerEntries = [];
     private readonly IPendingChangesService _pendingChangesService;

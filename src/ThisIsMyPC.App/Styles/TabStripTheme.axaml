@@ -80,6 +80,40 @@
         </Setter>
     </ControlTheme>
 
+    <!-- Opt-in for a page hosted without outer padding. The strip owns the
+         whole top edge; selected content restores the normal content margins. -->
+    <ControlTheme x:Key="ModuleTabControlTheme" TargetType="controls:ModuleTabControl"
+                  BasedOn="{StaticResource EdgeTabControlTheme}">
+        <Setter Property="Padding" Value="24,16,6,24" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <DockPanel>
+                    <Border Name="PART_Strip" DockPanel.Dock="Top" IsVisible="{TemplateBinding ShowTabs}"
+                            Background="{DynamicResource SunkenBrush}"
+                            BorderBrush="{DynamicResource OutlineBrush}"
+                            BorderThickness="0,0,0,1" CornerRadius="8,8,0,0"
+                            Padding="6,7,6,0">
+                        <ItemsPresenter Name="PART_ItemsPresenter"
+                                        ItemsPanel="{TemplateBinding ItemsPanel}" />
+                    </Border>
+                    <DockPanel Margin="{TemplateBinding Padding}">
+                        <ContentPresenter DockPanel.Dock="Top" Content="{TemplateBinding Toolbar}" />
+                        <Panel>
+                            <ContentPresenter Name="PART_SelectedContentHost"
+                                              IsVisible="{TemplateBinding ShowTabs}"
+                                              Content="{TemplateBinding SelectedContent}"
+                                              ContentTemplate="{TemplateBinding SelectedContentTemplate}"
+                                              HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+                            <ContentPresenter Content="{TemplateBinding AlternateContent}"
+                                              IsVisible="{ReflectionBinding !ShowTabs, RelativeSource={RelativeSource TemplatedParent}}" />
+                        </Panel>
+                    </DockPanel>
+                </DockPanel>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+
     <!-- Tab header as a browser tab. Unselected: a dim chip floating in the
          well (no fill, the shared outline, 13px secondary text, 6px above
          the floor); hover lifts it to the control hover wash and primary

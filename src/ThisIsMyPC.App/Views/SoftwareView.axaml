@@ -7,12 +7,12 @@
              x:Class="ThisIsMyPC.App.Views.SoftwareView"
              x:DataType="vm:SoftwareViewModel">
 
-    <TabControl Margin="0,4,0,0">
+    <TabControl Theme="{StaticResource EdgeTabControlTheme}">
         <!-- App Catalog tab -->
         <TabItem Header="App Catalog">
             <DockPanel>
                 <!-- Toolbar: search + category filter + installed-state note -->
-                <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,8,16,8">
+                <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,0,16,8">
                     <DockPanel>
                         <ComboBox DockPanel.Dock="Right"
                                   MinWidth="180"
@@ -107,7 +107,7 @@
         <!-- Updates tab: winget upgrade management -->
         <TabItem Header="Updates">
             <DockPanel>
-                <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,8,16,8">
+                <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,0,16,8">
                     <DockPanel>
                         <Button DockPanel.Dock="Right"
                                 Padding="8,4" FontSize="12"
@@ -182,7 +182,7 @@
         <!-- Windows Apps tab: built-in app removal -->
         <TabItem Header="Windows Apps">
             <DockPanel>
-                <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,8,16,8">
+                <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,0,16,8">
                     <TextBox Text="{Binding WindowsAppsSearchText}"
                              Watermark="Search Windows apps" />
                     <TextBlock Text="Removal deletes the app for all users and stops it from auto-installing for new accounts. Apps with a Store listing can be reinstalled here."

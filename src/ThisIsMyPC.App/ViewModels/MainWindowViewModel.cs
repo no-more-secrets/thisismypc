@@ -240,7 +240,8 @@ public partial class MainWindowViewModel : ViewModelBase
     private object? _currentContent;
 
     /// <summary>Whether the current page owns its card edge and content padding.</summary>
-    public bool UsesEdgeTabs => CurrentContent is ShellViewModel;
+    public bool UsesEdgeTabs => CurrentContent is ShellViewModel or EnvironmentViewModel or SettingsViewModel
+        or SoftwareViewModel or ContextMenuViewModel or StartupViewModel or PowerViewModel;
 
     [ObservableProperty]
     private bool _isSidebarCollapsed;
@@ -414,6 +415,11 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             epoch = ++_contentEpoch;
             var current = _navigationService.CurrentModule;
+            // Stamp before clearing or constructing content, including synchronous scans.
+            if (_pendingSearchResult?.ModuleId == current?.Module.Info.Name)
+                _pendingSearchFocusEpoch = epoch;
+            else
+                _pendingSearchResult = null;
 
             // Release the outgoing content VM's pending-changes subscriptions
             // before building the replacement (Dispose implementations are idempotent),
@@ -784,7 +790,7 @@ public partial class MainWindowViewModel : ViewModelBase
     // Stamped with the content epoch of that navigation so a superseding
     // navigation (Home mid-scan, failed scan then elsewhere) drops the focus
     // instead of injecting it into an unrelated page.
-    private string? _pendingSearchFocusName;
+    private SearchResultViewModel? _pendingSearchResult;
     private int _pendingSearchFocusEpoch;
 
     [RelayCommand]
@@ -794,25 +800,26 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
 
         SearchQuery = string.Empty;
-        _pendingSearchFocusName = result.Name;
+        _pendingSearchResult = result;
+        _pendingSearchFocusEpoch = _contentEpoch;
         var epochBefore = _contentEpoch;
         NavigateToModuleByName(result.ModuleId);
         // Any rebuild bumps the epoch synchronously before this line. An
         // unchanged epoch means no rebuild is coming (the target module is the
         // page already on screen), so the live page consumes the focus here.
         _pendingSearchFocusEpoch = _contentEpoch;
-        if (_contentEpoch == epochBefore && _pendingSearchFocusName is not null && CurrentContent is not null)
+        if (_contentEpoch == epochBefore && _pendingSearchResult is not null && CurrentContent is not null)
             ApplySearchFocus(CurrentContent);
     }
 
     partial void OnCurrentContentChanged(object? value)
     {
-        if (_pendingSearchFocusName is null)
+        if (_pendingSearchResult is null)
             return;
         if (_contentEpoch != _pendingSearchFocusEpoch)
         {
             // A different navigation owns the content now; the moment has passed.
-            _pendingSearchFocusName = null;
+            _pendingSearchResult = null;
             return;
         }
         // Content flips to null while the module scans; only real content consumes.
@@ -822,9 +829,12 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private void ApplySearchFocus(object content)
     {
-        var focus = _pendingSearchFocusName!;
-        _pendingSearchFocusName = null;
-        if (content is ISearchFocusTarget target)
+        var result = _pendingSearchResult!;
+        var focus = result.Name;
+        _pendingSearchResult = null;
+        if (content is ISearchNavigationTarget navigationTarget)
+            navigationTarget.NavigateToSearchResult(result.SettingId, result.Name);
+        else if (content is ISearchFocusTarget target)
             target.SearchText = focus;
         else
             SetStatus($"Look for \"{focus}\" on this page", StatusSeverity.Success);

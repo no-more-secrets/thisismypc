@@ -58,13 +58,13 @@
         </DataTemplate>
     </UserControl.Resources>
 
-    <TabControl Margin="0,4,0,0">
+    <TabControl Theme="{StaticResource EdgeTabControlTheme}" SelectedIndex="{Binding SelectedTabIndex}">
 
         <!-- PATH Tab -->
         <TabItem Header="PATH">
             <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Auto">
-                <StackPanel Spacing="20" Margin="0,8,16,24">
+                <StackPanel Spacing="20" Margin="0,0,16,24">
 
                     <!-- User PATH -->
                     <StackPanel Spacing="6">
@@ -110,7 +110,7 @@
         <TabItem Header="{Binding UserTabHeader}">
             <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Auto">
-                <StackPanel Spacing="8" Margin="0,8,16,24">
+                <StackPanel Spacing="8" Margin="0,0,16,24">
                     <DockPanel Margin="0,0,0,4">
                         <TextBlock Text="Per-user variables (excluding PATH)"
                                    FontSize="12"
@@ -138,7 +138,7 @@
         <TabItem Header="{Binding SystemTabHeader}">
             <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Auto">
-                <StackPanel Spacing="8" Margin="0,8,16,24">
+                <StackPanel Spacing="8" Margin="0,0,16,24">
                     <DockPanel Margin="0,0,0,4">
                         <TextBlock Text="System-wide variables (excluding PATH)"
                                    FontSize="12"

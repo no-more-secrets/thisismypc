@@ -455,7 +455,7 @@
                 </Popup>
             </Panel>
 
-            <!-- Most pages use host padding. Explorer owns the whole card edge
+            <!-- Untabbed pages use host padding. Tabbed pages own the whole card edge
                  and restores content padding in EdgeTabControlTheme instead.
                  Both paths retain the 16px right margin beside the scrollbar. -->
             <Border x:Name="ModuleContentHost" Classes="module-content"

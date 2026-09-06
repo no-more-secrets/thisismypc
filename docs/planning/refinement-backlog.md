@@ -29,6 +29,17 @@ Windows Update 5, Power 1) + 5 built-in sets (59 entries) + the enumerative modu
 - Usage and limitations: docs/region-review.md.
 - Fixed high-DPI top-left crop: source bounds now use physical bitmap pixels; regression coverage includes 100-200% capture scaling.
 
+## Shared card-edge tabs and search destinations: DONE (2026-09-05)
+
+- Explorer, Context Menus, Environment, Startup, Software, Settings, and Power settings share the card-edge tab layout.
+- Shared toolbars sit below tabs. Startup still replaces its categories with search results; clearing search restores the selected category.
+- Global search carries the setting ID into each page and selects the owning tab before filtering.
+- Environment results open variables or PATH. Power settings results open the active plan's settings.
+- Context-menu results select a tab containing matching handlers without leaving hidden filters active.
+- Search navigation retains its destination across loading transitions and drops it after superseding navigation.
+- Validation: CI-safe suite, Release build, real-window search navigation, and dark/light screenshots at wide and wrapped widths.
+- Measured main-window content edges: 25px left, 23px right, and 10px scrollbar lane where scrolling is present.
+
 ## Explorer card-edge tab trial: DONE (2026-09-05)
 
 - Session 3ad820e808c14c178f498f75421ee468, fig. 1: Explorer tabs span the content card's top edge.

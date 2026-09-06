@@ -6,8 +6,17 @@ using ThisIsMyPC.Modules.Shell.Models;
 
 namespace ThisIsMyPC.App.ViewModels;
 
-public partial class EnvironmentViewModel : ViewModelBase
+public partial class EnvironmentViewModel : ViewModelBase, ISearchNavigationTarget
 {
+    [ObservableProperty]
+    private int _selectedTabIndex;
+
+    public void NavigateToSearchResult(string settingId, string displayName)
+    {
+        SelectedTabIndex = settingId == "env-vars" ? 1 : 0;
+        VariableSearchText = string.Empty;
+    }
+
     private readonly IPendingChangesService _pendingChangesService;
 
     // PATH tab; inline editors for user and system PATH

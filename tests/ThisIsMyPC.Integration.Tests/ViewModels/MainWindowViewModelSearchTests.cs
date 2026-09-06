@@ -137,4 +137,37 @@ public sealed class MainWindowViewModelSearchTests
 
         Assert.Contains("Taskbar alignment", vm.StatusMessage, StringComparison.Ordinal);
     }
+
+    private sealed class TabbedPage : ISearchNavigationTarget, ISearchFocusTarget
+    {
+        public string SearchText { get; set; } = string.Empty;
+        public string? Destination { get; private set; }
+        public void NavigateToSearchResult(string settingId, string displayName) => Destination = settingId;
+    }
+
+    [Fact]
+    public async Task Search_PassesStableDestination_InsteadOfOnlyTheDisplayName()
+    {
+        var vm = CreateViewModel();
+        await vm.InitializeAsync();
+        vm.SearchQuery = "TaskbarAl";
+        vm.SelectSearchResultCommand.Execute(Assert.Single(vm.SearchResults));
+        var page = new TabbedPage();
+        vm.CurrentContent = page;
+        Assert.Equal("s1", page.Destination);
+        Assert.Empty(page.SearchText);
+    }
+
+    [Fact]
+    public async Task Search_FromAnExistingPage_SurvivesTheLoadingTransition()
+    {
+        var vm = CreateViewModel();
+        await vm.InitializeAsync();
+        vm.CurrentContent = new object();
+        vm.SearchQuery = "TaskbarAl";
+        vm.SelectSearchResultCommand.Execute(Assert.Single(vm.SearchResults));
+        var page = new TabbedPage();
+        vm.CurrentContent = page;
+        Assert.Equal("s1", page.Destination);
+    }
 }

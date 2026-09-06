@@ -83,7 +83,7 @@
 
     <!-- Explorer tabs form the content card's top edge. Search belongs to
          the selected page and retains its query when changing tabs. -->
-    <TabControl Theme="{StaticResource EdgeTabControlTheme}">
+    <TabControl Theme="{StaticResource EdgeTabControlTheme}" SelectedIndex="{Binding SelectedTabIndex}">
             <TabItem Header="General">
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                               VerticalScrollBarVisibility="Auto">

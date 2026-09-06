@@ -7,6 +7,7 @@ public sealed class SearchResultViewModel
 {
     public SearchResultViewModel(SearchResult result)
     {
+        SettingId = result.Entry.SettingId;
         Name = result.Entry.DisplayName;
         Description = result.Entry.Description;
         ModuleId = result.Entry.ModuleId;
@@ -16,6 +17,7 @@ public sealed class SearchResultViewModel
             : $"{result.Entry.ModuleId} - unavailable: {result.UnavailableReason ?? "reason unknown"}";
     }
 
+    public string SettingId { get; }
     public string Name { get; }
     public string Description { get; }
     public string ModuleId { get; }

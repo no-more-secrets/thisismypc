@@ -9,7 +9,7 @@ using ThisIsMyPC.Modules.Software.Services;
 
 namespace ThisIsMyPC.App.ViewModels;
 
-public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, IDisposable
+public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, ISearchNavigationTarget, IDisposable
 {
     private static readonly string AdvancedKeyPath = Modules.Shell.ShellRegistryPaths.AdvancedKeyPath;
     private static readonly string ClassicContextMenuKeyPath = Modules.Shell.ShellRegistryPaths.ClassicContextMenuKeyPath;
@@ -107,6 +107,39 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, IDispos
         _ => FileExplorerSettings,
     };
 
+    private readonly Dictionary<string, int> _searchTabs = new(StringComparer.Ordinal)
+    {
+        ["taskbar-alignment"] = 2,
+        ["taskbar-widgets"] = 2,
+        ["classic-context-menu"] = 0,
+    };
+
+    [ObservableProperty]
+    private int _selectedTabIndex;
+
+    private static int TabIndex(ShellSection section) => section switch
+    {
+        ShellSection.General => 0,
+        ShellSection.Taskbar => 2,
+        ShellSection.Desktop => 3,
+        ShellSection.StartMenu => 4,
+        _ => 1,
+    };
+
+    public void NavigateToSearchResult(string settingId, string displayName)
+    {
+        if (_searchTabs.TryGetValue(settingId, out var tab))
+            SelectedTabIndex = tab;
+        else if (settingId.StartsWith(ExplorerPatcherChangeFactory.SettingIdPrefix, StringComparison.Ordinal))
+        {
+            // The global inventory includes this entry before ExplorerPatcher is installed.
+            SelectedTabIndex = 0;
+            SearchText = string.Empty;
+            return;
+        }
+        SearchText = displayName;
+    }
+
     [ObservableProperty]
     private string _searchText = string.Empty;
 
@@ -130,6 +163,7 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, IDispos
         foreach (var pref in scanData.ExplorerPreferences)
         {
             var capturedPref = pref;
+            _searchTabs[pref.Id] = TabIndex(pref.Section);
             RowsFor(pref.Section).Add(new ShellSettingViewModel(
                 capturedPref,
                 pendingChangesService,
@@ -162,6 +196,7 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, IDispos
                 continue;
 
             var captured = setting;
+            _searchTabs[ExplorerPatcherChangeFactory.SettingIdPrefix + captured.RegistryValueName] = TabIndex(captured.Section);
             var rows = PatcherGroupFor(captured.Section, captured.GroupHeading).Rows;
             var description = captured.Description;
 

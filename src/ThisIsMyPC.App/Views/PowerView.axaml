@@ -8,13 +8,12 @@
              x:Class="ThisIsMyPC.App.Views.PowerView"
              x:DataType="vm:PowerViewModel">
 
-    <ScrollViewer HorizontalScrollBarVisibility="Disabled"
-                  VerticalScrollBarVisibility="Auto">
-        <Panel>
+    <Panel>
 
             <!-- ======== Plan list ======== -->
-            <StackPanel Spacing="12" Margin="0,4,16,24"
-                        IsVisible="{Binding !IsSettingsView}">
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto"
+                          Margin="24,12,6,24" IsVisible="{Binding !IsSettingsView}">
+            <StackPanel Spacing="12" Margin="0,4,16,24">
 
                 <!-- Scan failure -->
                 <Border IsVisible="{Binding HasScanError}"
@@ -260,13 +259,12 @@
                 </StackPanel>
             </StackPanel>
 
-            <!-- ======== Settings panel ======== -->
-            <!-- No right margin on the panel itself: the fixed rows keep 16,
-                 the strip's well keeps its own 16, and the tab content keeps
-                 16 for the scrollbar lane, so every edge lines up. -->
-            <StackPanel Spacing="12" Margin="0,4,0,24"
-                        IsVisible="{Binding IsSettingsView}">
-
+            </ScrollViewer>
+            <controls:ModuleTabControl Theme="{StaticResource ModuleTabControlTheme}"
+                                       ItemsSource="{Binding SettingsGroups}" IsVisible="{Binding IsSettingsView}"
+                                       ShowTabs="{Binding !!SettingsGroups.Count}">
+                <controls:ModuleTabControl.Toolbar>
+                    <StackPanel Spacing="12" Margin="0,0,0,8">
                 <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,16,0">
                     <Button Grid.Column="0" Content="&#8592; Back to plans"
                             Padding="12,6" FontSize="12"
@@ -306,20 +304,16 @@
                                Foreground="{DynamicResource WarningBrush}" />
                 </controls:ToggleCard>
 
-                <!-- One tab per subgroup: a plan carries about 170 settings
-                     in a dozen groups, far too many for one column. The strip
-                     wraps; the settings panel sits inside the page scroller,
-                     so a tab's rows scroll with the page. -->
-                <TabControl ItemsSource="{Binding SettingsGroups}"
-                            IsVisible="{Binding !!SettingsGroups.Count}"
-                            Margin="0,4,0,0">
-                    <TabControl.ItemTemplate>
+                    </StackPanel>
+                </controls:ModuleTabControl.Toolbar>
+                    <controls:ModuleTabControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:PowerSettingGroupViewModel">
                             <TextBlock Text="{Binding Header}" />
                         </DataTemplate>
-                    </TabControl.ItemTemplate>
-                    <TabControl.ContentTemplate>
+                    </controls:ModuleTabControl.ItemTemplate>
+                    <controls:ModuleTabControl.ContentTemplate>
                         <DataTemplate x:DataType="vm:PowerSettingGroupViewModel">
+                            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                             <ItemsControl ItemsSource="{Binding Settings}" Margin="0,8,16,0">
                                 <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:PowerSettingItemViewModel">
@@ -410,10 +404,9 @@
                 </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
+                            </ScrollViewer>
                         </DataTemplate>
-                    </TabControl.ContentTemplate>
-                </TabControl>
-            </StackPanel>
-        </Panel>
-    </ScrollViewer>
+                    </controls:ModuleTabControl.ContentTemplate>
+                </controls:ModuleTabControl>
+    </Panel>
 </UserControl>

@@ -54,7 +54,7 @@ public class ExplorerEdgeTabShotTests
         session.Screenshot("search-preserved-taskbar");
     }
 
-    [AvaloniaFact(Timeout = 180_000)]
+    [AvaloniaFact(Timeout = 300_000)]
     [Trait("Category", "Diagnostic")]
     public async Task MainWindow_HostsExplorerAtCardEdgeAndRestoresOtherPagePadding()
     {
@@ -75,8 +75,29 @@ public class ExplorerEdgeTabShotTests
             session.SetTheme(theme);
             session.Screenshot($"{theme.Key}-1200x800-explorer");
         }
-        session.ClickText("Settings");
-        await session.WaitForAsync(() => vm.CurrentContent is SettingsViewModel, timeoutMs: 30_000, what: "Settings");
+        foreach (var name in new[] { "Environment", "Context Menus", "Startup & Services", "Software", "Settings" })
+        {
+            session.ClickText(name);
+            await session.WaitForAsync(() => vm.CurrentContent is not null && vm.ContentTitle == name,
+                timeoutMs: 120_000, what: name);
+            Assert.Equal(default, card.Padding);
+            strip = session.Find<Border>(b => b.Name == "PART_Strip");
+            Assert.Equal(card.Bounds.Width - 2, strip.Bounds.Width, 0.5);
+            Assert.Equal(session.TopOf(card) + 1, session.TopOf(strip), 0.5);
+            session.SetTheme(ThemeVariant.Dark);
+            session.Screenshot(name.Replace(" ", "-", StringComparison.Ordinal));
+        }
+        // Search from a different module must survive clearing its current content.
+        vm.SearchQuery = "TaskbarAl";
+        session.Pump();
+        session.ClickText("Taskbar alignment");
+        await session.WaitForAsync(() => vm.CurrentContent is ShellViewModel { SearchText.Length: > 0 },
+            timeoutMs: 120_000, what: "Explorer search destination");
+        Assert.Equal(2, session.Find<TabControl>(t => t.IsEffectivelyVisible).SelectedIndex);
+        Assert.True(session.IsTextVisible("Taskbar alignment (Left)"));
+        session.Screenshot("global-search-taskbar");
+        session.ClickText("Home");
+        session.Pump();
         Assert.Equal(new Thickness(24, 12, 6, 24), card.Padding);
     }
 }
