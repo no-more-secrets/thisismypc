@@ -30,6 +30,11 @@ Windows Update 5, Power 1) + 5 built-in sets (59 entries) + the enumerative modu
 - Usage and limitations: docs/region-review.md.
 - Fixed high-DPI top-left crop: source bounds now use physical bitmap pixels; regression coverage includes 100-200% capture scaling.
 
+## Selected tab fillets: DONE (2026-09-05)
+
+- Region review session 3ad820e808c14c178f498f75421ee468, figure 1: selected tabs have curved bottom joins into the content area.
+- The shared TabItem theme applies the joins across modules and wrapped tab rows.
+
 ## Shared card-edge tabs and search destinations: DONE (2026-09-05)
 
 - Explorer, Context Menus, Environment, Startup, Software, Settings, and Power settings share the card-edge tab layout.

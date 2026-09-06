@@ -117,7 +117,7 @@
     <!-- Tab header as a browser tab. Unselected: a dim chip floating in the
          well (no fill, the shared outline, 13px secondary text, 6px above
          the floor); hover lifts it to the control hover wash and primary
-         text. Selected: the page's Raised fill with square bottom corners,
+         text. Selected: the page's Raised fill with curved bottom joins,
          no bottom border, and a 1px overhang that covers the well's bottom
          line, so the outline runs from the chip's sides straight into the
          content. Its 7px bottom padding keeps the label level with the
@@ -159,6 +159,37 @@
             <Setter Property="BorderBrush" Value="{DynamicResource OutlineStrongBrush}" />
         </Style>
         <Style Selector="^:selected">
+            <Setter Property="ClipToBounds" Value="False" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Grid>
+                        <!-- The side outlines stop where the concave joins begin. -->
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="1,1,1,0" CornerRadius="4,4,0,0"
+                                Margin="0,0,0,6" />
+                        <Panel Height="6" VerticalAlignment="Bottom"
+                               Background="{TemplateBinding Background}" IsHitTestVisible="False">
+                            <Path Width="6" Height="6" HorizontalAlignment="Left" RenderTransform="translate(-6px, 0px)"
+                                  Fill="{TemplateBinding Background}" Data="M 0,6 A 6,6 0 0 0 6,0 L 6,6 Z" />
+                            <Path Width="6" Height="6" HorizontalAlignment="Right" RenderTransform="translate(6px, 0px)"
+                                  Fill="{TemplateBinding Background}" Data="M 0,0 A 6,6 0 0 0 6,6 L 0,6 Z" />
+                            <Path Width="6" Height="6" HorizontalAlignment="Left" RenderTransform="translate(-6px, 0px)"
+                                  Stroke="{TemplateBinding BorderBrush}" StrokeThickness="1"
+                                  Data="M 0,5.5 A 5.5,5.5 0 0 0 5.5,0" />
+                            <Path Width="6" Height="6" HorizontalAlignment="Right" RenderTransform="translate(6px, 0px)"
+                                  Stroke="{TemplateBinding BorderBrush}" StrokeThickness="1"
+                                  Data="M 0.5,0 A 5.5,5.5 0 0 0 6,5.5" />
+                        </Panel>
+                        <ContentPresenter Name="PART_ContentPresenter"
+                                          Margin="{TemplateBinding Padding}"
+                                          Content="{TemplateBinding Header}"
+                                          ContentTemplate="{TemplateBinding HeaderTemplate}"
+                                          HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                    </Grid>
+                </ControlTemplate>
+            </Setter>
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
             <Setter Property="Background" Value="{DynamicResource RaisedBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource OutlineBrush}" />
