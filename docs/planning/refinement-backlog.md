@@ -2,6 +2,12 @@
 
 Current release scope: [v1 completion plan](v1-completion-plan.md), approved 2026-09-06. It supersedes older post-release hardware assumptions below.
 
+## Owner Mode restoration foundations (2026-09-06)
+
+- DONE: Typed present/absent snapshots and an immutable exact-target catalog for eleven non-policy Annoyances settings. Invalid value data, account SID syntax, and incompatible enforcement are rejected.
+- Verified: 163 Drift tests, full CI-safe suite, Release build, and review corrections. Reader values checked against the module source.
+- Pending: executable provider parity tests, shared reversible execution, cross-process coordination, durable journal/history, management checks, consent, and service/UI wiring. No automatic restoration is enabled.
+- Design: [Owner Mode restoration](owner-mode-restoration.md).
 ## System pages and Settings organization (2026-09-06)
 
 - DONE: Annoyances, Privacy, and Windows Update use shared category tabs, cross-category search, retained tabs on refresh, and technical details hidden per card.
