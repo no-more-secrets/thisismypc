@@ -28,6 +28,15 @@ public class SelectedTabChromeShotTests
             var path = Path.Combine(session.ShotDirectory, $"outline-{scale:0.00}.png");
             frame.Save(path);
             using var pixels = SKBitmap.Decode(path);
+            // The floor fill must not erase either curve where it reaches the rim.
+            foreach (var endpoint in new[] { 34, 206 })
+            {
+                var darkest = 255;
+                for (var x = (int)((endpoint - 1) * scale); x <= (int)((endpoint + 1) * scale); x++)
+                for (var y = (int)(54 * scale); y < (int)(55 * scale); y++)
+                    darkest = Math.Min(darkest, pixels.GetPixel(x, y).Red);
+                Assert.True(darkest < 200, $"Missing rim join at {endpoint}, scale {scale}.");
+            }
             // Compare ink coverage through the straight-to-curve join with a one-pixel line.
             // Pixel coverage includes antialiasing, so fractional scaling remains measurable.
             foreach (var left in new[] { 34, 194 })

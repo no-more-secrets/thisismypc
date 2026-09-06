@@ -48,8 +48,11 @@ public sealed class SelectedTabChrome : Control
         // Extend the fill into the content by one DIP. At fractional DPI the
         // chrome bottom and strip padding round separately; ending exactly at
         // Bounds.Height leaves a partially covered dark pixel between them.
-        context.DrawGeometry(Background, BorderBrush is { } brush ? new Pen(brush, 1) : null, outline);
+        context.DrawGeometry(Background, null, outline);
         using (context.PushRenderOptions(new RenderOptions { EdgeMode = EdgeMode.Aliased }))
             context.DrawRectangle(Background, null, new Rect(-6, size.Height - 1, size.Width + 12, 2));
+        // Paint the outline last so the floor fill cannot erase the curved joins.
+        if (BorderBrush is { } brush)
+            context.DrawGeometry(null, new Pen(brush, 1), outline);
     }
 }

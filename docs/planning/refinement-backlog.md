@@ -5,6 +5,7 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 ## Annotation follow-up: toolbar and tabs (2026-09-06)
 
 - Fixed fractional-scale antialiasing at the selected-tab/content join. Pixel tests cover both themes at 100%, 125%, 150%, 175%, and 200%.
+- Selected-tab outlines draw after the seam fill so curved rim joins retain their final pixels. Endpoint regression coverage checks both corners.
 - Restored the tab-bar bottom rim outside the selected tab. The selected tab alone covers the rim, with no dark seam. Pixel tests verify both conditions.
 - Software catalog dropdowns stretch to the search field height.
 - Shared tabs retain one header layout across selection, avoiding label movement from template replacement and border rounding.
