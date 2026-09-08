@@ -77,6 +77,7 @@ function ConvertTo-ReleaseVersionInput {
     return $Value.Trim() -replace '[\u2010-\u2015\u2212]', '-'
 }
 
+$releaseBuildFailed = $false
 try {
 if ([string]::IsNullOrWhiteSpace($Version)) {
     $Version = Read-RequiredValue `
@@ -236,7 +237,18 @@ $repoRoot = Split-Path $PSScriptRoot -Parent
 $installer = Join-Path $repoRoot "artifacts\releases\$Version\ThisIsMyPC-Installer-$Version.exe"
 Write-Host ''
 Write-Host "Release build completed: $installer" -ForegroundColor Green
-} finally {
+}
+catch {
+    $releaseBuildFailed = $true
+    Write-Host ''
+    Write-Host 'Release build failed:' -ForegroundColor Red
+    Write-Host ($_ | Out-String)
+}
+finally {
     Write-Host ''
     [void](Read-Host 'Press Enter to close')
+}
+
+if ($releaseBuildFailed) {
+    exit 1
 }
