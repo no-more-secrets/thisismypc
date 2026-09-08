@@ -41,6 +41,7 @@ internal sealed class TrustedConsentDirectory : IDisposable
     private void Hold(string path)
     {
         // No write or delete sharing: existing incompatible handles also cause refusal.
+        // Do not request GenericRead. Directory list access blocks the atomic child-file replacements performed under this scope.
         var handle = NativeConsentFiles.CreateFileW(path,
             NativeConsentFiles.ReadControl | NativeConsentFiles.ReadAttributes, 1, 0, 3,
             NativeConsentFiles.OpenReparsePoint | NativeConsentFiles.BackupSemantics, 0);
