@@ -74,7 +74,7 @@ The app corresponds to the PC, not a user profile (AGENTS.md). Packaging follows
 
 ```
 dotnet tool restore               # restores the repository-pinned vpk version
-.\tools\build-release.ps1 -Version 1.0.0 -Aot
+.\tools\build-release.ps1 -Version 1.0.0
 ```
 
 Official releases are NativeAOT only. The script publishes the App, elevated
@@ -107,7 +107,6 @@ Set the non-password inputs for the shell and run the signed build:
 $env:ESIGNER_USERNAME = 'your SSL.com account username'
 $env:ESIGNER_CREDENTIAL_ID = 'the code-signing credential ID'
 .\tools\build-release.ps1 -Version 1.0.0 `
-  -Aot `
   -SignThumbprint 'the 40-character certificate thumbprint'
 ```
 
@@ -195,7 +194,7 @@ Check out the release tag, install the exact toolchain named in
 
 ```
 git checkout v1.0.0
-.\tools\build-release.ps1 -Version 1.0.0 -Aot
+.\tools\build-release.ps1 -Version 1.0.0
 ```
 
 The unsigned release pipeline is byte-for-byte deterministic. Roslyn
@@ -278,13 +277,12 @@ an existing release.
   unsigned test builds.
 - `AppConstants.UpdateUrl` points at github.com/No-More-Secrets/thisismypc
   (public since 2026-09-01).
-- NativeAOT: `build-release.ps1 -Aot` publishes the App (~38 MB exe, zero
+- NativeAOT: `build-release.ps1` publishes the App (~38 MB exe, zero
   trim warnings since the shared row templates gained compiled bindings) and
   the Session 0 Service (~6 MB exe, zero trim warnings, probed 2026-09-01:
   hosts and starts as a console process) native with Control Flow Guard. It
-  is both or neither: they share one folder. The installer is always NativeAOT,
-  and no CoreCLR release will be published. Passing `-Aot` is mandatory for a
-  release. The remaining release gate is one full manual pass on an AOT build
+  is both or neither: they share one folder. The release script has no CoreCLR
+  path. The remaining release gate is one full manual pass on an AOT build
   (every module page plus an apply, Owner Mode enable for the service). The
   install half is done: Sam installed AOT 0.1.0 and updated it to AOT 0.1.1 on
   2026-09-02, both clean. The in-app half is open.

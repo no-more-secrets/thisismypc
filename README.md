@@ -146,7 +146,7 @@ For an already prepared clean clone, the lower-level comparison is:
 ```powershell
 $version = "1.0.0"
 .\tools\test-reproducible-build-environment.ps1
-.\tools\build-release.ps1 -Version $version -Aot
+.\tools\build-release.ps1 -Version $version
 .\tools\compare-reproducible-installer.ps1 `
   -ReleasedInstaller "C:\path\to\ThisIsMyPC-Installer-$version.exe" `
   -LocalInstaller ".\artifacts\releases\$version\ThisIsMyPC-Installer-$version.exe"

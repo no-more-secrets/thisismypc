@@ -15,13 +15,6 @@ param(
     # carries the full name.
     [string]$Authors = 'NMS',
 
-    # NativeAOT publish for the App and the Session 0 Service (both probe
-    # zero trim warnings; the native link needs the VS C++ toolchain). Both
-    # or neither: the two share one folder, and a CoreCLR service drags the
-    # whole runtime along, which cancels any AOT saving on the app. Default
-    # off until a full manual pass on an AOT build.
-    [switch]$Aot,
-
     # SHA-1 thumbprint of the SSL.com OV code-signing certificate (No More
     # Secrets, LLC) exposed through eSigner CKA. When given, the script scans
     # and signs every first-party installed binary, the MSI, and the outer
@@ -119,25 +112,24 @@ if (Test-Path $output) { Remove-Item $output -Recurse -Force }
 New-Item -ItemType Directory -Force $staging | Out-Null
 New-Item -ItemType Directory -Force $output | Out-Null
 
-# The native link step (installer always, app with -Aot) finds the C++
-# toolchain through vswhere in the VS installer directory.
+# The native link step finds the C++ toolchain through vswhere in the Visual
+# Studio installer directory. Release builds are always NativeAOT.
 $env:PATH = "$env:PATH;${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer"
-$aotArgs = @()
-if ($Aot) { $aotArgs = @('-p:AotPublish=true', '-p:OS=Windows_NT') }
+$aotArgs = @('-p:AotPublish=true', '-p:OS=Windows_NT')
 
-Write-Host "Publishing App ($Version, win-x64, self-contained$(if ($Aot) { ', NativeAOT' }))..."
+Write-Host "Publishing App ($Version, win-x64, self-contained, NativeAOT)..."
 dotnet publish (Join-Path $repoRoot 'src\ThisIsMyPC.App\ThisIsMyPC.App.csproj') `
     --configuration Release --runtime win-x64 --self-contained true `
     -p:Version=$Version @aotArgs --output $staging -m:1
 if ($LASTEXITCODE -ne 0) { throw 'App publish failed' }
 
-Write-Host "Publishing Session 0 Service into the same directory$(if ($Aot) { ' (NativeAOT)' })..."
+Write-Host 'Publishing Session 0 Service into the same directory (NativeAOT)...'
 dotnet publish (Join-Path $repoRoot 'src\ThisIsMyPC.Service\ThisIsMyPC.Service.csproj') `
     --configuration Release --runtime win-x64 --self-contained true `
     -p:Version=$Version @aotArgs --output $staging -m:1
 if ($LASTEXITCODE -ne 0) { throw 'Service publish failed' }
 
-Write-Host "Publishing the on-demand privilege broker$(if ($Aot) { ' (NativeAOT)' })..."
+Write-Host 'Publishing the on-demand privilege broker (NativeAOT)...'
 dotnet publish (Join-Path $repoRoot 'src\ThisIsMyPC.Broker\ThisIsMyPC.Broker.csproj') `
     --configuration Release --runtime win-x64 --self-contained true `
     -p:Version=$Version @aotArgs --output $staging -m:1

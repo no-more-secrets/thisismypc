@@ -162,7 +162,6 @@ runtime against `tools/esigner-signing-environment.json` before building.
 $env:ESIGNER_USERNAME = 'SSL.com account username'
 $env:ESIGNER_CREDENTIAL_ID = 'code-signing credential ID, not eSeal ID'
 .\tools\build-release.ps1 -Version 1.0.0 `
-  -Aot `
   -SignThumbprint '40-character certificate thumbprint'
 ```
 

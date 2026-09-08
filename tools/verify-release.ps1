@@ -51,16 +51,13 @@ try {
         $content = Export-MsiLogicalContent `
             -Path $msi -Destination (Join-Path $inspectionRoot 'msi')
         $coreClrMarker = Join-Path $content.Payload 'current\ThisIsMyPC.App.dll'
-        $isAot = -not (Test-Path -LiteralPath $coreClrMarker -PathType Leaf)
-        Write-Host "Detected $(if ($isAot) { 'NativeAOT' } else { 'CoreCLR' }) release $version."
+        if (Test-Path -LiteralPath $coreClrMarker -PathType Leaf) {
+            throw 'Official releases must use NativeAOT. The installer contains a CoreCLR app.'
+        }
+        Write-Host "Detected NativeAOT release $version."
 
         & .\Setup.ps1
-        if ($isAot) {
-            & .\tools\build-release.ps1 -Version $version -Aot
-        }
-        else {
-            & .\tools\build-release.ps1 -Version $version
-        }
+        & .\tools\build-release.ps1 -Version $version
         $localInstaller = Join-Path $cloneRoot `
             "artifacts\releases\$version\ThisIsMyPC-Installer-$version.exe"
         & .\tools\compare-reproducible-installer.ps1 `
