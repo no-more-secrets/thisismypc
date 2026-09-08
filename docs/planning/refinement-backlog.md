@@ -8,7 +8,13 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 - Non-ACG development builds keep Avalonia's normal platform renderer selection.
 - Verified: policy test, full suite, Release NativeAOT App publish, and visible App and Installer windows under strict ACG.
 - Verified: signed `1.0.1-test-09` upgraded the installed test release on its first run and opened normally.
-- Pending: finish the installed runtime tamper audit. Initial checks found two remaining exposure points in the unelevated UI.
+- Installed runtime testing confirmed active ACG, hardened payloads, valid signatures, protected files, and fake Broker caller rejection.
+- A same-user process still injected an unsigned disk DLL into the unelevated UI. ACG blocked RWX allocation inside that DLL.
+- A CIG prototype preloaded four native DLLs before enforcement. Rendering, SQLite, DNS, TLS, and update networking remained functional.
+- The CIG process blocked later unsigned and No More Secrets DLL loads. Bonjour stayed outside the process.
+- Pending: implement CIG only after full module, update, accessibility, input method, and overlay compatibility tests.
+- Pending: constrain Broker operations to trusted targets. Action confirmations must show immutable identifiers and reject Unicode formatting controls.
+- Pending: rebuild or replace the signed x86 Velopack helpers. They still lack CFG, CET, and high-entropy ASLR.
 
 ## Sidebar module groups (2026-09-06)
 
