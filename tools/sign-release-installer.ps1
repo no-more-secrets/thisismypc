@@ -156,6 +156,7 @@ $passwordFile = Join-Path $temporaryRoot 'password.clixml'
 $configurationFile = Join-Path $temporaryRoot 'signing.json'
 $auditFile = Join-Path $temporaryRoot 'signed-files.txt'
 $unsignedInstaller = Join-Path $temporaryRoot 'unsigned-installer.exe'
+$signedInstaller = Join-Path $temporaryRoot 'signed-installer.exe'
 $wrapper = Join-Path $PSScriptRoot 'invoke-release-signing-batch.ps1'
 
 try {
@@ -174,11 +175,11 @@ try {
         username = $ESignerUsername
     } | ConvertTo-Json | Set-Content -LiteralPath $configurationFile -Encoding UTF8
 
-    # Velopack creates two privileged helpers in addition to copying our app
-    # and service. Its callback scans and signs the exact bytes it will pack.
+    # Velopack creates privileged helpers in addition to copying the payload.
+    # Its callback scans and signs every PE byte sequence it will install.
     $signTemplate = "`"$powerShell`" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$wrapper`" -ConfigurationFile `"$configurationFile`" -VelopackCallback {{file...}}"
-    $signExclude = '(?i)^(?!.*(?:ThisIsMyPC(?:\..+)?\.(?:exe|dll)|Squirrel\.exe)$).*'
-    Write-Host 'Repacking while scanning and signing every first-party installed executable...'
+    $signExclude = '(?i)^(?!.*\.(?:exe|dll)$).*'
+    Write-Host 'Repacking while scanning and signing every installed EXE and DLL...'
     & $dotnet tool run vpk -- pack `
         --packId ThisIsMyPC `
         --packVersion $Version `
@@ -216,13 +217,14 @@ try {
     }
 
     Import-Module (Join-Path $PSScriptRoot 'InstallerBundle.psm1') -Force
-    Add-InstallerPayload -StubPath $stubPath -PayloadPath $signedMsi -OutputPath $installerAsset | Out-Null
-    & $wrapper -ConfigurationFile $configurationFile -Container -InputFile $installerAsset
+    Add-InstallerPayload -StubPath $stubPath -PayloadPath $signedMsi -OutputPath $signedInstaller | Out-Null
+    & $wrapper -ConfigurationFile $configurationFile -Container -InputFile $signedInstaller
 
     Write-Host 'Comparing the complete signed release with the preserved unsigned build...'
     & (Join-Path $PSScriptRoot 'compare-reproducible-installer.ps1') `
-        -ReleasedInstaller $installerAsset `
+        -ReleasedInstaller $signedInstaller `
         -LocalInstaller $unsignedInstaller
+    Copy-Item -LiteralPath $signedInstaller -Destination $installerAsset -Force
 
     $signedObjects = @(Get-Content -LiteralPath $auditFile | Sort-Object -Unique)
     Write-Host "Signing completed: $($signedObjects.Count) objects, approximately $($signedObjects.Count) SSL.com signing credits."

@@ -113,8 +113,8 @@ matching prompts. `build-release.ps1` remains the noninteractive CI entry point.
 Use the credential ID beside the eSigner code-signing certificate, not the
 document eSeal ID. The local command prompts privately for the SSL.com account
 password. CodeSignTool has no protected password-input channel, so its Java
-process still receives that password as an argument for the lifetime of the
-scan. Use a dedicated release machine with no untrusted same-user processes.
+process receives that password during each scan or MSI signing command. Use a
+dedicated release machine with no untrusted same-user processes.
 For unattended CI, store `ESIGNER_PASSWORD` in the runner's secret store and
 expose it only to the signing step. Never put the password, CKA master key, or
 TOTP seed in the repository, workflow text, command history, artifacts, or logs.
@@ -137,22 +137,26 @@ environment variable before starting any child process. This prevents build
 tools, SignTool, and later children from inheriting it. `build-release.ps1`
 refuses to start if the password is already in its environment.
 
-The script repacks through Velopack's signing callback. Each exact first-party
-file is malware-scanned immediately before the pinned SignTool signs it. It then
-normalizes, scans, and signs the MSI, builds the outer bundle, and scans and
-signs that bundle. Every object is checked for signer, chain, timestamp, and
-thumbprint. `SHA256SUMS` is written only after the complete signed install tree
-matches the preserved unsigned build.
+The script repacks through Velopack's signing callback. Each installed EXE and
+DLL is malware-scanned immediately before the pinned SignTool signs it. This
+includes the four locally built native dependency DLLs and Velopack helpers.
+CKA signs these PE files and the outer installer without another OTP.
 
-Each official NativeAOT release uses seven SSL.com signing credits: app, broker, service,
-Velopack app stub, Update.exe, MSI, and outer installer. Velopack batches up to
-100 paths into one callback, which reduces authentication and network round
-trips but does not reduce SSL.com's per-object credit count. A catalog signature
-could cover many files with one credit, but those files would not carry
-embedded signatures and catalog registration adds failure-prone
-installer state. It saves nothing for the two-file NativeAOT payload, so the
-release pipeline deliberately uses embedded signatures. Third-party binaries
-retain their upstream signatures and are never re-signed as No More Secrets.
+The MSI uses CodeSignTool's integrated scan and sign command. Enter one current
+eSigner OTP when it asks. This path is required because SSL.com's separate
+`scan_code` and CKA path approves a different MSI digest than SignTool submits.
+The integrated command scans and signs the same MSI byte sequence. Every object
+is checked for signer, chain, timestamp, and thumbprint. The outer installer is
+built at a temporary path, verified, and then replaces the unsigned installer.
+`SHA256SUMS` is written only after the complete signed install tree matches the
+preserved unsigned build.
+
+The current NativeAOT package uses eleven SSL.com signing credits: nine package
+PE files, the MSI, and the outer installer. Velopack batches paths into one
+callback. This reduces authentication and network trips, but each object still
+uses one signing credit. A catalog signature would remove embedded signatures
+from these files and add catalog registration state. The pipeline uses embedded
+signatures so Windows can verify every executable file directly.
 
 The complete path was exercised on 2026-09-03 using source commit
 `1dc1ff3f86262ae064cbc9dc3d7384bd6410924d` and test version
@@ -160,6 +164,11 @@ The complete path was exercised on 2026-09-03 using source commit
 and SSL.com timestamp. Removing the 8,072-byte certificate table produced the
 exact unsigned SHA-256
 `73049718503DE3A1CCFD4225CB31B6A501B7FB431A01922316BB5D45B7F67E4F`.
+
+The all-PE path passed on 2026-09-07 with test version `1.0.1-test-06`.
+All 20 signature locations across the release, MSI payload, and nupkg were
+valid and timestamped. The signed-to-unsigned comparison produced release root
+`0C84F2F4BD7F5FE2960C27CBBE982B16F26AD6DB0320ED534991E802A9BE1778`.
 
 Build inputs are locked: `global.json` selects the exact .NET SDK,
 `.config/dotnet-tools.json` pins vpk, and each project commits its NuGet
@@ -245,11 +254,11 @@ sequence of revision 2 PKCS SignedData records. It rejects overlays and tables
 overlapping section data, removes the certificate table, and zeros only the PE
 checksum and Security directory entry that Authenticode excludes from its image
 digest. MSI comparison exports deterministic logical metadata while excluding
-only signature tables and first-party PE sizes changed by nested signing. All
-other File-table columns and the complete MsiFileHash table remain part of the
-canonical metadata. It
-then expands the cabinet and canonicalizes each first-party PE. Third-party
-files compare byte for byte, including any upstream signatures.
+only signature tables and PE sizes changed by nested signing. MsiFileHash values
+for signed PE files are canonicalized because Authenticode changes those values.
+Hash values for all non-PE files remain part of the canonical metadata. It then
+expands the cabinet and canonicalizes every PE. Non-PE files compare byte for
+byte.
 Missing, additional, or different paths fail with their names. Matching records
 are sorted into one SHA-256 release root. The download is never modified.
 
@@ -271,7 +280,7 @@ an existing release.
   submissions and cert validation: inquiries@no-more-secrets.com.
 - Authenticode signing is ready: SSL.com issued the No More Secrets, LLC OV
   certificate through eSigner on 2026-09-03. The original outer-only path
-  passed that day. The release now signs every first-party installed PE, the
+  passed that day. The release now signs every installed PE, the
   MSI, and the outer installer while preserving public source verification
   through the canonical release tree. Builds without `-SignThumbprint` are
   unsigned test builds.

@@ -79,7 +79,14 @@ function Export-MsiLogicalContent {
         $installer = New-Object -ComObject WindowsInstaller.Installer
         $database = $installer.OpenDatabase($msiPath, 0)
         $tableNames = @(Get-MsiTableNames $database)
-        $excluded = @('File', 'MsiDigitalSignature', 'MsiDigitalSignatureEx', '_DigitalSignature', '_DigitalSignatureEx')
+        $excluded = @(
+            'File',
+            'MsiFileHash',
+            'MsiDigitalSignature',
+            'MsiDigitalSignatureEx',
+            '_DigitalSignature',
+            '_DigitalSignatureEx'
+        )
         foreach ($table in $tableNames) {
             if ([string]::IsNullOrWhiteSpace($table)) { continue }
             if ($excluded -contains $table) { continue }
@@ -90,11 +97,16 @@ function Export-MsiLogicalContent {
         foreach ($table in 'File', 'Component', 'Directory') {
             $database.Export($table, $working, "$table.idt")
         }
+        if ($tableNames -contains 'MsiFileHash') {
+            $database.Export('MsiFileHash', $working, 'MsiFileHash.idt')
+        }
+        $fileRows = @(Import-IdtRows (Join-Path $working 'File.idt'))
+        $fileNames = @{}
         $canonicalFileRows = @("File`tComponent_`tFileName`tFileSize`tVersion`tLanguage`tAttributes`tSequence")
-        foreach ($row in @(Import-IdtRows (Join-Path $working 'File.idt') | Sort-Object File)) {
+        foreach ($row in @($fileRows | Sort-Object File)) {
             $longName = Get-LongMsiName ([string]$row.FileName)
-            $fileSize = if ($longName -eq 'Update.exe' -or
-                $longName -match '^ThisIsMyPC(?:\..+)?\.(?:exe|dll)$') {
+            $fileNames[[string]$row.File] = $longName
+            $fileSize = if ([IO.Path]::GetExtension($longName) -in '.exe', '.dll') {
                 '<AUTHENTICODE>'
             }
             else {
@@ -115,6 +127,34 @@ function Export-MsiLogicalContent {
             (Join-Path $metadataPath 'File.canonical.tsv'),
             $canonicalFileRows,
             [Text.UTF8Encoding]::new($false))
+        if ($tableNames -contains 'MsiFileHash') {
+            $canonicalHashRows = @("File_`tOptions`tHashPart1`tHashPart2`tHashPart3`tHashPart4")
+            foreach ($row in @(Import-IdtRows (Join-Path $working 'MsiFileHash.idt') | Sort-Object File_)) {
+                $fileKey = [string]$row.File_
+                if (-not $fileNames.ContainsKey($fileKey)) {
+                    throw "MsiFileHash references unknown file $fileKey."
+                }
+                $isPe = [IO.Path]::GetExtension($fileNames[$fileKey]) -in '.exe', '.dll'
+                $hashParts = if ($isPe) {
+                    @('<AUTHENTICODE>', '<AUTHENTICODE>', '<AUTHENTICODE>', '<AUTHENTICODE>')
+                }
+                else {
+                    @($row.HashPart1, $row.HashPart2, $row.HashPart3, $row.HashPart4)
+                }
+                $canonicalHashRows += @(
+                    $fileKey,
+                    $row.Options,
+                    $hashParts[0],
+                    $hashParts[1],
+                    $hashParts[2],
+                    $hashParts[3]
+                ) -join "`t"
+            }
+            [IO.File]::WriteAllLines(
+                (Join-Path $metadataPath 'MsiFileHash.canonical.tsv'),
+                $canonicalHashRows,
+                [Text.UTF8Encoding]::new($false))
+        }
         $summary = $installer.SummaryInformation($msiPath, 0)
         $summaryLines = for ($property = 1; $property -le 19; $property++) {
             $value = $summary.Property($property)
@@ -175,7 +215,7 @@ function Export-MsiLogicalContent {
 
         $rawPayloadPrefix = [IO.Path]::GetFullPath($rawPayload).TrimEnd('\') + '\'
         $payloadPrefix = [IO.Path]::GetFullPath($payloadPath).TrimEnd('\') + '\'
-        foreach ($row in Import-IdtRows (Join-Path $working 'File.idt')) {
+        foreach ($row in $fileRows) {
             $fileKey = [string]$row.File
             $component = [string]$row.Component_
             if ([string]::IsNullOrWhiteSpace($fileKey) -or $fileKey -in @('.', '..') -or

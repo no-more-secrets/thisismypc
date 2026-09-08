@@ -48,18 +48,16 @@ function Get-RelativeInventory([string]$root) {
     )
 }
 
-function Get-CanonicalRecords([string]$root, [string]$temporaryRoot, [bool]$requireFirstPartySignatures) {
+function Get-CanonicalRecords([string]$root, [string]$temporaryRoot, [bool]$requirePeSignatures) {
     $records = @()
     foreach ($relative in Get-RelativeInventory $root) {
         $path = Join-Path $root $relative.Replace('/', '\')
         $bytes = [IO.File]::ReadAllBytes($path)
         $isPe = $bytes.Length -ge 64 -and $bytes[0] -eq 0x4D -and $bytes[1] -eq 0x5A
-        $leafName = Split-Path $path -Leaf
-        $isFirstParty = $leafName -eq 'Update.exe' -or $leafName -match '^ThisIsMyPC(?:\..+)?\.(?:exe|dll)$'
-        if ($requireFirstPartySignatures -and $isFirstParty) {
-            Assert-TrustedSignature $path "Installed first-party file $relative"
+        if ($requirePeSignatures -and $isPe) {
+            Assert-TrustedSignature $path "Installed PE file $relative"
         }
-        if ($isPe -and $isFirstParty) {
+        if ($isPe) {
             $canonical = Join-Path $temporaryRoot ([guid]::NewGuid().ToString('N') + '.pe')
             & (Join-Path $PSScriptRoot 'normalize-authenticode-pe.ps1') `
                 -Path $path -OutputPath $canonical -Quiet | Out-Null
