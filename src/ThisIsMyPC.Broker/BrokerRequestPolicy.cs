@@ -1,3 +1,6 @@
+using System.Buffers;
+using System.Globalization;
+using System.Text;
 using ThisIsMyPC.Core.Actions;
 using ThisIsMyPC.Core.Changes;
 using ThisIsMyPC.Core.Results;
@@ -75,6 +78,8 @@ internal sealed class BrokerRequestPolicy
             {
                 return Failure("A change contains invalid or oversized text.");
             }
+            if (!BrokerOperationRules.Allows(change))
+                return Failure($"Setting '{change.SettingId}' is outside the '{change.ModuleId}' broker schema.");
         }
 
         foreach (var action in request.Actions)
@@ -87,6 +92,8 @@ internal sealed class BrokerRequestPolicy
             {
                 return Failure("An action contains invalid or oversized text.");
             }
+            if (!BrokerOperationRules.Allows(action))
+                return Failure($"Action '{action.ActionId}' is outside the '{action.ModuleId}' broker schema.");
         }
 
         if (!Valid(request.RestorePointDescription)
@@ -118,8 +125,8 @@ internal sealed class BrokerRequestPolicy
         {
             var lines = new List<string>
             {
-                $"{change.ModuleId}: {change.DisplayName}",
-                change.SystemLocation,
+                $"{change.ModuleId}: {change.SettingId}",
+                $"Target: {change.SystemLocation}",
                 $"New value: {DisplayValue(change.AfterValue)}",
             };
             AddEnforcementTargets(lines, change.Enforcement);
@@ -127,7 +134,7 @@ internal sealed class BrokerRequestPolicy
         }
         foreach (var action in _actions)
         {
-            operations.Add([$"{action.ModuleId}: {action.DisplayName}", action.Detail]);
+            operations.Add([$"{action.ModuleId}: {action.ActionId}"]);
         }
         if (_restorePointDescription is not null)
             operations.Add([$"Create restore point: {_restorePointDescription}"]);
@@ -165,6 +172,7 @@ internal sealed class BrokerRequestPolicy
             || !string.Equals(authorized.SettingId, requested.SettingId, StringComparison.Ordinal)
             || !string.Equals(authorized.SystemLocation, requested.SystemLocation, StringComparison.OrdinalIgnoreCase)
             || authorized.ValueType != requested.ValueType
+            || authorized.Category != requested.Category
             || !EnforcementEquals(authorized.Enforcement, requested.Enforcement))
         {
             return false;
@@ -181,8 +189,29 @@ internal sealed class BrokerRequestPolicy
         && string.Equals(authorized.ActionId, requested.ActionId, StringComparison.Ordinal)
         && string.Equals(authorized.Detail, requested.Detail, StringComparison.Ordinal);
 
-    private static bool Valid(string? value) => value is null
-        || value.Length <= MaximumTextLength && !value.Any(char.IsControl);
+    private static bool Valid(string? value)
+    {
+        if (value is null)
+            return true;
+        if (value.Length > MaximumTextLength)
+            return false;
+        var remaining = value.AsSpan();
+        while (!remaining.IsEmpty)
+        {
+            if (Rune.DecodeFromUtf16(remaining, out var rune, out var consumed) != OperationStatus.Done)
+                return false;
+            if (rune.Value == Rune.ReplacementChar.Value
+                || Rune.GetUnicodeCategory(rune) is UnicodeCategory.Control
+                or UnicodeCategory.Format or UnicodeCategory.LineSeparator
+                or UnicodeCategory.ParagraphSeparator or UnicodeCategory.Surrogate
+                or UnicodeCategory.PrivateUse or UnicodeCategory.OtherNotAssigned)
+            {
+                return false;
+            }
+            remaining = remaining[consumed..];
+        }
+        return true;
+    }
 
     private static bool ValidRequired(string? value) => !string.IsNullOrWhiteSpace(value) && Valid(value);
 

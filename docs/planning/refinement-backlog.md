@@ -13,7 +13,9 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 - A CIG prototype preloaded four native DLLs before enforcement. Rendering, SQLite, DNS, TLS, and update networking remained functional.
 - The CIG process blocked later unsigned and No More Secrets DLL loads. Bonjour stayed outside the process.
 - Pending: implement CIG only after full module, update, accessibility, input method, and overlay compatibility tests.
-- Pending: constrain Broker operations to trusted targets. Action confirmations must show immutable identifiers and reject Unicode formatting controls.
+- DONE: Broker requests are limited to each module's target schema and value type. Autoruns can use only shipped locations.
+- Confirmation pages show immutable setting and action identifiers. Unicode controls, formatting marks, malformed text, and category changes are rejected.
+- Verified: 64 Broker policy tests, full CI-safe suite, Release build, NativeAOT Broker publish, and the complete PE mitigation gate.
 - Pending: rebuild or replace the signed x86 Velopack helpers. They still lack CFG, CET, and high-entropy ASLR.
 
 ## Sidebar module groups (2026-09-06)
