@@ -7,7 +7,8 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 - DONE: ACG App and Installer builds use Avalonia's software renderer. ANGLE produced a live UI tree but presented a black window.
 - Non-ACG development builds keep Avalonia's normal platform renderer selection.
 - Verified: policy test, full suite, Release NativeAOT App publish, and visible App and Installer windows under strict ACG.
-- Pending: build and install the next signed test release over `1.0.1-test-07`.
+- Verified: signed `1.0.1-test-09` upgraded the installed test release on its first run and opened normally.
+- Pending: finish the installed runtime tamper audit. Initial checks found two remaining exposure points in the unelevated UI.
 
 ## Sidebar module groups (2026-09-06)
 
@@ -276,7 +277,8 @@ The app corresponds to the PC, not a profile. Implemented:
   current package version file instead of stale MSI display versions. The MSI
   major-upgrade range includes equal numeric versions because Windows Installer
   ignores prerelease labels. A separate MSI launch guard blocks direct equal-version
-  transitions, while the launcher supplies the guarded upgrade property. Open:
+  transitions, while the launcher supplies the guarded upgrade property. Sam
+  confirmed signed test-09 upgraded successfully on its first run. Open:
   the in-app half of the AOT pass (every module page, one
   apply, Owner Mode enable), then flip the script default to AOT.
 - Publisher settled 2026-09-01: NMS, short for No More Secrets, LLC (build
