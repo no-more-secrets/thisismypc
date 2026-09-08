@@ -23,8 +23,6 @@ param(
     [ValidatePattern('^[0-9a-fA-F-]{36}$')]
     [string]$ESignerCredentialId,
 
-    [Parameter(Mandatory)]
-    [ValidateScript({ Test-Path -LiteralPath $_ -PathType Leaf })]
     [string]$CodeSignToolArchive,
 
     [string]$Authors = 'NMS',
@@ -38,6 +36,10 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+
+if ([string]::IsNullOrWhiteSpace($CodeSignToolArchive)) {
+    $CodeSignToolArchive = & (Join-Path $PSScriptRoot 'get-codesigntool-archive.ps1')
+}
 
 # A CI runner supplies the password only to this short signing process. Convert
 # it immediately and remove it from the environment before starting a child.

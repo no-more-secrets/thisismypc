@@ -153,15 +153,14 @@ live in `docs/release/packaging.md`.
 ## Sign a release with SSL.com eSigner
 
 Use CKA 1.1.2 in Automated Code Signing and Production mode. Keep SSL.com's
-malware blocker enabled. Download the unmodified CodeSignTool 1.3.3 Windows zip
-from SSL.com; do not run from a previously extracted directory. The release
-scripts hash-check the archive and the installed CKA runtime against
-`tools/esigner-signing-environment.json` before building.
+malware blocker enabled. The release script downloads CodeSignTool 1.3.3 from
+SSL.com into `artifacts/tool-cache/esigner/` when the cache is empty. The release
+scripts hash-check the archive on every run. They also check the installed CKA
+runtime against `tools/esigner-signing-environment.json` before building.
 
 ```powershell
 $env:ESIGNER_USERNAME = 'SSL.com account username'
 $env:ESIGNER_CREDENTIAL_ID = 'code-signing credential ID, not eSeal ID'
-$env:ESIGNER_CODESIGNTOOL_ARCHIVE = 'C:\path\to\CodeSignTool-v1.3.3-windows.zip'
 .\tools\build-release.ps1 -Version 1.0.0 `
   -Aot `
   -SignThumbprint '40-character certificate thumbprint'

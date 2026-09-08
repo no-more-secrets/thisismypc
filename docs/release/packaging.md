@@ -92,11 +92,12 @@ Run `tools/AcgLauncher` from an elevated terminal to test loader-time ACG.
 ### Signing with SSL.com eSigner
 
 Releases use SSL.com eSigner CKA in Automated Code Signing and Production mode.
-Keep the account's malware blocker enabled. Install CKA 1.1.2, load its master
-key, and download the unmodified CodeSignTool 1.3.3 Windows zip from SSL.com.
+Keep the account's malware blocker enabled. Install CKA 1.1.2 and load its master
+key. The release script downloads CodeSignTool 1.3.3 from SSL.com into
+`artifacts/tool-cache/esigner/` when the cache is empty.
 The release gate checks every executable CKA runtime file against
 `tools/esigner-signing-environment.json`. It also verifies the complete
-CodeSignTool archive hash before extracting it into a new temporary directory.
+CodeSignTool archive hash on every run before extraction.
 This pin is important because the installed CKA runtime files are not themselves
 Authenticode-signed.
 
@@ -105,7 +106,6 @@ Set the non-password inputs for the shell and run the signed build:
 ```powershell
 $env:ESIGNER_USERNAME = 'your SSL.com account username'
 $env:ESIGNER_CREDENTIAL_ID = 'the code-signing credential ID'
-$env:ESIGNER_CODESIGNTOOL_ARCHIVE = 'C:\path\to\CodeSignTool-v1.3.3-windows.zip'
 .\tools\build-release.ps1 -Version 1.0.0 `
   -Aot `
   -SignThumbprint 'the 40-character certificate thumbprint'
@@ -130,8 +130,7 @@ Windows signing step, expose the password and run:
   -InstallerStub ".\artifacts\staging\$version-installer\ThisIsMyPC-Installer.exe" `
   -Version $version `
   -SignThumbprint $thumbprint `
-  -ESignerCredentialId $env:ESIGNER_CREDENTIAL_ID `
-  -CodeSignToolArchive $env:ESIGNER_CODESIGNTOOL_ARCHIVE
+  -ESignerCredentialId $env:ESIGNER_CREDENTIAL_ID
 ```
 
 That script converts `ESIGNER_PASSWORD` to a secure string and removes the

@@ -32,8 +32,8 @@ param(
     # eSigner certificate credential ID. Not the document eSeal ID.
     [string]$ESignerCredentialId = $env:ESIGNER_CREDENTIAL_ID,
 
-    # Unmodified SSL.com CodeSignTool zip. The exact version and archive hash
-    # are pinned in tools/esigner-signing-environment.json.
+    # Optional override for the unmodified SSL.com CodeSignTool zip. When this
+    # is empty, the pinned archive is cached under artifacts/tool-cache.
     [string]$CodeSignToolArchive = $env:ESIGNER_CODESIGNTOOL_ARCHIVE,
 
     # The account password is intentionally not a parameter. This build script
@@ -69,7 +69,7 @@ if ($SignThumbprint) {
         throw 'Signing requires -ESignerCredentialId or ESIGNER_CREDENTIAL_ID.'
     }
     if ([string]::IsNullOrWhiteSpace($CodeSignToolArchive)) {
-        throw 'Signing requires -CodeSignToolArchive or ESIGNER_CODESIGNTOOL_ARCHIVE.'
+        $CodeSignToolArchive = & (Join-Path $PSScriptRoot 'get-codesigntool-archive.ps1')
     }
     & (Join-Path $PSScriptRoot 'test-esigner-signing-environment.ps1') `
         -CodeSignToolArchive $CodeSignToolArchive
