@@ -68,6 +68,7 @@
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="ThisIsMyPC.App.UiTests" />
+    <InternalsVisibleTo Include="ThisIsMyPC.Security.Tests" />
     <ProjectReference Include="..\ThisIsMyPC.Modules.Shell\ThisIsMyPC.Modules.Shell.csproj" />
     <ProjectReference Include="..\ThisIsMyPC.Modules.Startup\ThisIsMyPC.Modules.Startup.csproj" />
     <ProjectReference Include="..\ThisIsMyPC.Modules.Power\ThisIsMyPC.Modules.Power.csproj" />

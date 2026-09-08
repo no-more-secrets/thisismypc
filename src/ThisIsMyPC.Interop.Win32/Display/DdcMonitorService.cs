@@ -1,4 +1,6 @@
 using System.Text;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using ThisIsMyPC.Core.Display;
 using ThisIsMyPC.Core.Results;
 using ThisIsMyPC.Core.Services;
@@ -440,14 +442,7 @@ public sealed class DdcMonitorService : IMonitorService
     /// <summary>Yields every physical monitor with its adapter device name and per-adapter index.</summary>
     private static IEnumerable<(NativeDisplay.PHYSICAL_MONITOR Physical, string DeviceName, int Index)> EnumeratePhysical()
     {
-        var hmonitors = new List<nint>();
-        NativeDisplay.MonitorEnumProc proc = (hMonitor, _, _, _) =>
-        {
-            hmonitors.Add(hMonitor);
-            return 1;
-        };
-        _ = NativeDisplay.EnumDisplayMonitors(0, 0, proc, 0);
-        GC.KeepAlive(proc);
+        var hmonitors = EnumerateMonitorHandles();
 
         foreach (var hMonitor in hmonitors)
         {
@@ -465,6 +460,42 @@ public sealed class DdcMonitorService : IMonitorService
 
             for (var i = 0; i < physicals.Length; i++)
                 yield return (physicals[i], deviceName, i);
+        }
+    }
+
+    private static unsafe List<nint> EnumerateMonitorHandles()
+    {
+        var monitors = new List<nint>();
+        var state = GCHandle.Alloc(monitors);
+        try
+        {
+            _ = NativeDisplay.EnumDisplayMonitors(
+                0,
+                0,
+                &CollectMonitor,
+                GCHandle.ToIntPtr(state));
+            return monitors;
+        }
+        finally
+        {
+            state.Free();
+        }
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
+    private static int CollectMonitor(nint monitor, nint hdc, nint bounds, nint state)
+    {
+        try
+        {
+            if (GCHandle.FromIntPtr(state).Target is not List<nint> monitors)
+                return 0;
+            monitors.Add(monitor);
+            return 1;
+        }
+        catch
+        {
+            // Exceptions cannot cross the unmanaged callback boundary.
+            return 0;
         }
     }
 

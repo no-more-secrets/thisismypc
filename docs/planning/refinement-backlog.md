@@ -10,9 +10,10 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 - Verified: signed `1.0.1-test-09` upgraded the installed test release on its first run and opened normally.
 - Installed runtime testing confirmed active ACG, hardened payloads, valid signatures, protected files, and fake Broker caller rejection.
 - A same-user process still injected an unsigned disk DLL into the unelevated UI. ACG blocked RWX allocation inside that DLL.
-- A CIG prototype preloaded four native DLLs before enforcement. Rendering, SQLite, DNS, TLS, and update networking remained functional.
-- The CIG process blocked later unsigned and No More Secrets DLL loads. Bonjour stayed outside the process.
-- Pending: implement CIG only after full module, update, accessibility, input method, and overlay compatibility tests.
+- DONE: NativeAOT App startup verifies and preloads its four signed native DLLs, then enables Microsoft-only CIG before Avalonia starts.
+- The live NativeAOT probe kept ACG and CIG active, scanned a physical display, and rejected unsigned DLL injection.
+- Pending: verify the signed installed App across all modules, updates, accessibility, input methods, and overlays.
+- CIG starts at managed entry. Process-creation enforcement remains incompatible with the required OV-signed native DLLs.
 - DONE: Broker requests are limited to each module's target schema and value type. Autoruns can use only shipped locations.
 - Confirmation pages show immutable setting and action identifiers. Unicode controls, formatting marks, malformed text, and category changes are rejected.
 - Verified: 64 Broker policy tests, full CI-safe suite, Release build, NativeAOT Broker publish, and the complete PE mitigation gate.

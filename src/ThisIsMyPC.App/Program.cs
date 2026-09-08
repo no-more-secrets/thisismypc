@@ -36,6 +36,16 @@ sealed class Program
             Environment.FailFast(installGuard.WarningMessage ?? "The application directory is not protected.");
 #endif
 
+#if ACG_ENABLED
+        // CIG cannot admit our OV-signed Avalonia, Skia, HarfBuzz, and SQLite
+        // images. Verify and map the fixed package set before closing image loads.
+        var nativeDependencies = TrustedNativeDependencyLoader.VerifyAndLoad(AppContext.BaseDirectory);
+        if (!nativeDependencies.IsSuccess)
+            Environment.FailFast(nativeDependencies.ErrorMessage ?? "Native dependency verification failed.");
+        if (!BinarySignatureHardening.Apply() || !BinarySignatureHardening.IsEnabled())
+            Environment.FailFast("Code Integrity Guard could not be enabled.");
+#endif
+
 #if DEBUG
         // Debug builds get a separate console window streaming verbose logs.
         // Must run before anything touches System.Console (handles are cached).

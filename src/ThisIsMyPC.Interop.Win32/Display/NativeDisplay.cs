@@ -42,14 +42,14 @@ internal static partial class NativeDisplay
         public uint BatteryFullLifeTime;
     }
 
-    // EnumDisplayMonitors uses a native callback; DllImport with a delegate is
-    // the simplest marshaling that stays NativeAOT-safe via [UnmanagedCallersOnly]
-    // alternatives being overkill here (the delegate is kept alive for the call).
-    internal delegate int MonitorEnumProc(nint hMonitor, nint hdc, nint lprcMonitor, nint dwData);
-
-    [DllImport("user32.dll")]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    internal static extern int EnumDisplayMonitors(nint hdc, nint lprcClip, MonitorEnumProc lpfnEnum, nint dwData);
+    // A delegate callback requires a runtime-generated unmanaged thunk. CIG and
+    // ACG forbid that allocation, so NativeAOT passes a static function pointer.
+    [LibraryImport("user32.dll")]
+    internal static unsafe partial int EnumDisplayMonitors(
+        nint hdc,
+        nint lprcClip,
+        delegate* unmanaged[Stdcall]<nint, nint, nint, nint, int> callback,
+        nint callbackState);
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]

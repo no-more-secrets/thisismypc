@@ -43,6 +43,16 @@ EH Continuation table present.
   ACG App and Installer builds use software rendering because ANGLE presented black frames.
   The shipped self-enable path still starts at managed `Main`. Loader-time ACG
   needs a trusted launcher or machine policy as a separate hardening step.
+- **Code Integrity Guard: DONE.** NativeAOT App startup verifies the complete
+  packaged native dependency set through WinVerifyTrust and the exact No More
+  Secrets, LLC signer name. It maps those four fixed files by absolute path,
+  then enables the Microsoft-only process signature policy before Avalonia,
+  logging, IPC, or user input starts. The process stops if any verification,
+  load, policy application, or policy query fails. A live NativeAOT probe kept
+  ACG and CIG active, scanned a physical display, and rejected an unsigned DLL.
+  Process-creation CIG cannot admit our OV-signed native libraries. The current
+  managed-entry policy leaves a small pre-entry injection window. Full signed
+  App compatibility testing remains pending.
 - **Safe DLL search: DONE.** New `DllSearchHardening.Apply()`
   (SetDefaultDllDirectories: SYSTEM32 + application dir only, PATH and CWD
   removed process-wide) called before framework startup in the App, Service,
