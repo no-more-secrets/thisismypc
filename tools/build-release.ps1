@@ -45,6 +45,11 @@ param(
 $ErrorActionPreference = 'Stop'
 Import-Module Microsoft.PowerShell.Utility -ErrorAction Stop
 Import-Module Microsoft.PowerShell.Security -ErrorAction Stop
+if ([string]::IsNullOrWhiteSpace($ESignerUsername)) {
+    $ESignerUsername = [Environment]::GetEnvironmentVariable(
+        'ESIGNER_USERNAME',
+        [EnvironmentVariableTarget]::User)
+}
 if (Test-Path Env:ESIGNER_PASSWORD) {
     throw 'Refusing to build with ESIGNER_PASSWORD in the environment. Build unsigned, then expose the secret only to sign-release-installer.ps1.'
 }

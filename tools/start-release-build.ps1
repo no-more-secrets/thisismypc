@@ -139,7 +139,13 @@ if ($Mode -eq 'Signed') {
     }
 
     if (-not $PSBoundParameters.ContainsKey('ESignerUsername')) {
-        if ([string]::IsNullOrWhiteSpace($env:ESIGNER_USERNAME)) {
+        $savedUsername = $env:ESIGNER_USERNAME
+        if ([string]::IsNullOrWhiteSpace($savedUsername)) {
+            $savedUsername = [Environment]::GetEnvironmentVariable(
+                'ESIGNER_USERNAME',
+                [EnvironmentVariableTarget]::User)
+        }
+        if ([string]::IsNullOrWhiteSpace($savedUsername)) {
             $ESignerUsername = Read-RequiredValue `
                 -Prompt 'SSL.com username' `
                 -IsValid { param($value) -not [string]::IsNullOrWhiteSpace($value) } `
@@ -147,7 +153,7 @@ if ($Mode -eq 'Signed') {
         } else {
             $ESignerUsername = Read-DefaultValue `
                 -Prompt 'SSL.com username' `
-                -DefaultValue $env:ESIGNER_USERNAME
+                -DefaultValue $savedUsername
         }
     }
     if ([string]::IsNullOrWhiteSpace($ESignerUsername)) {

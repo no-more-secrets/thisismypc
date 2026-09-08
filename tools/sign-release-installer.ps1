@@ -64,6 +64,11 @@ if (-not $securePassword) {
     }
 }
 if ([string]::IsNullOrWhiteSpace($ESignerUsername)) {
+    $ESignerUsername = [Environment]::GetEnvironmentVariable(
+        'ESIGNER_USERNAME',
+        [EnvironmentVariableTarget]::User)
+}
+if ([string]::IsNullOrWhiteSpace($ESignerUsername)) {
     $ESignerUsername = Read-Host 'SSL.com eSigner username'
 }
 if ([string]::IsNullOrWhiteSpace($ESignerUsername)) {
