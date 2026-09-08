@@ -50,6 +50,19 @@ if (Test-Path Env:ESIGNER_PASSWORD) {
     $securePassword = ConvertTo-SecureString $env:ESIGNER_PASSWORD -AsPlainText -Force
     Remove-Item Env:ESIGNER_PASSWORD
 }
+if (-not $securePassword) {
+    $savedPasswordPath = Join-Path `
+        ([Environment]::GetFolderPath([Environment+SpecialFolder]::LocalApplicationData)) `
+        'ThisIsMyPC\ReleaseSigning\esigner-password.clixml'
+    if (Test-Path -LiteralPath $savedPasswordPath -PathType Leaf) {
+        $savedPassword = Import-Clixml -LiteralPath $savedPasswordPath
+        if ($savedPassword -isnot [Security.SecureString] -or $savedPassword.Length -eq 0) {
+            throw "Saved eSigner password is invalid: $savedPasswordPath"
+        }
+        $securePassword = $savedPassword
+        Write-Host 'Using the eSigner password saved with Windows DPAPI.'
+    }
+}
 if ([string]::IsNullOrWhiteSpace($ESignerUsername)) {
     $ESignerUsername = Read-Host 'SSL.com eSigner username'
 }
