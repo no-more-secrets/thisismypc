@@ -24,6 +24,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+Import-Module Microsoft.PowerShell.Security -ErrorAction Stop
 $Host.UI.RawUI.WindowTitle = 'ThisIsMyPC release build'
 
 function Read-RequiredValue {

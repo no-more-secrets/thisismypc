@@ -13,6 +13,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+Import-Module Microsoft.PowerShell.Utility -ErrorAction Stop
+Import-Module Microsoft.PowerShell.Security -ErrorAction Stop
 $configuration = Get-Content -LiteralPath $ConfigurationFile -Raw | ConvertFrom-Json
 $password = Import-Clixml -LiteralPath $configuration.passwordFile
 $inputPaths = @($InputFile | ForEach-Object { (Resolve-Path -LiteralPath $_).Path })
