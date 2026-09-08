@@ -159,11 +159,11 @@ scripts hash-check the archive on every run. They also check the installed CKA
 runtime against `tools/esigner-signing-environment.json` before building.
 
 ```powershell
-$env:ESIGNER_USERNAME = 'SSL.com account username'
-$env:ESIGNER_CREDENTIAL_ID = 'code-signing credential ID, not eSeal ID'
-.\tools\build-release.ps1 -Version 1.0.0 `
-  -SignThumbprint '40-character certificate thumbprint'
+.\tools\start-release-build.ps1
 ```
+
+The interactive launcher prompts for each omitted release option. The lower-level
+`build-release.ps1` remains noninteractive for CI and repeatable automation.
 
 For a local release, enter the account password only at the script's secure
 prompt. For CI, supply `ESIGNER_PASSWORD` only through the runner secret store

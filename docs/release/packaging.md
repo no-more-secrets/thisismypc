@@ -101,14 +101,14 @@ CodeSignTool archive hash on every run before extraction.
 This pin is important because the installed CKA runtime files are not themselves
 Authenticode-signed.
 
-Set the non-password inputs for the shell and run the signed build:
+Run the interactive launcher for a local signed or unsigned build:
 
 ```powershell
-$env:ESIGNER_USERNAME = 'your SSL.com account username'
-$env:ESIGNER_CREDENTIAL_ID = 'the code-signing credential ID'
-.\tools\build-release.ps1 -Version 1.0.0 `
-  -SignThumbprint 'the 40-character certificate thumbprint'
+.\tools\start-release-build.ps1
 ```
+
+The launcher prompts for every omitted option. Passed parameters skip their
+matching prompts. `build-release.ps1` remains the noninteractive CI entry point.
 
 Use the credential ID beside the eSigner code-signing certificate, not the
 document eSeal ID. The local command prompts privately for the SSL.com account

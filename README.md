@@ -158,6 +158,9 @@ requirements, expected outputs, and failure meanings are in
 `-AllowUnsignedRelease` is only for testing the comparison machinery, never
 for verifying a public release.
 
+Run `.\tools\start-release-build.ps1` for an interactive signed or unsigned
+build. Each omitted release option becomes a prompt.
+
 ## Development
 
 This project is built with Claude Code and expects contributors to work the
