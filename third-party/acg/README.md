@@ -13,6 +13,7 @@ The patch uses static Cdecl function pointers and blittable callback tables.
 The native x64 builds also replace Skia, HarfBuzz, and SQLite.
 They enable CFG, CET, ASLR, high-entropy VA, DEP, `/GS`, and table-based unwinding.
 The Skia build disables unused Vulkan support. ANGLE stays upstream because it already has every checked mitigation.
+The SQLite build keeps its upstream file version so MSI upgrades do not discard it as an unversioned file.
 
 The package archives retain untouched files from the official packages.
 Only the two managed assemblies and three Windows x64 native libraries are rebuilt.

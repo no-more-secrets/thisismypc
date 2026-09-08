@@ -375,9 +375,9 @@
       },
       "SQLitePCLRaw.lib.e_sqlite3": {
         "type": "CentralTransitive",
-        "requested": "[2.1.12.2, 2.1.12.2]",
-        "resolved": "2.1.12.2",
-        "contentHash": "5SWyDipnBIoF5xX3Crmt4Dxx2K9z4qbV595dIGJICAIOqT/tDSWGJBrP0rQVuo+GeLVA1rx5EBpQHdHDbzp2Yw=="
+        "requested": "[2.1.12.3, 2.1.12.3]",
+        "resolved": "2.1.12.3",
+        "contentHash": "p21hlPxyAgsr8A4upsTXRC4rZ3ZqPthv9USB7ag0OOJ98QlHDH2HxfQB2sOVx2icIedwZH7LioFt4zzPJqowMg=="
       }
     },
     "net10.0-windows10.0.22621/win-x64": {
@@ -396,9 +396,9 @@
       },
       "SQLitePCLRaw.lib.e_sqlite3": {
         "type": "CentralTransitive",
-        "requested": "[2.1.12.2, 2.1.12.2]",
-        "resolved": "2.1.12.2",
-        "contentHash": "5SWyDipnBIoF5xX3Crmt4Dxx2K9z4qbV595dIGJICAIOqT/tDSWGJBrP0rQVuo+GeLVA1rx5EBpQHdHDbzp2Yw=="
+        "requested": "[2.1.12.3, 2.1.12.3]",
+        "resolved": "2.1.12.3",
+        "contentHash": "p21hlPxyAgsr8A4upsTXRC4rZ3ZqPthv9USB7ag0OOJ98QlHDH2HxfQB2sOVx2icIedwZH7LioFt4zzPJqowMg=="
       }
     }
   }

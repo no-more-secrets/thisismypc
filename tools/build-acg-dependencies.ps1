@@ -299,6 +299,7 @@ Expand-Archive -LiteralPath $sqliteArchive -DestinationPath $workRoot
 $sqliteSource = Join-Path $workRoot "sqlite-amalgamation-$sqliteVersion"
 Copy-Item (Join-Path $repoRoot 'third-party\acg\sqlite\sqlite-x64.rsp') $sqliteSource
 Copy-Item (Join-Path $repoRoot 'third-party\acg\sqlite\sqlite-key-stubs.c') $sqliteSource
+Copy-Item (Join-Path $repoRoot 'third-party\acg\sqlite\sqlite-version.rc') $sqliteSource
 Remove-Item -LiteralPath `
     (Join-Path $sqliteSource 'e_sqlite3.dll'), `
     (Join-Path $sqliteSource 'e_sqlite3.exp'), `
@@ -308,11 +309,16 @@ $sqliteBuildCommand = "`"$($toolchain.VcVars)`" amd64 >nul && " +
     "cd /d `"$sqliteSource`" && " +
     'cl.exe @sqlite-x64.rsp && ' +
     'cl.exe /nologo /c /O2 /GL /Brepro /GS /guard:cf /MT /DNDEBUG /Fosqlite-key-stubs.obj sqlite-key-stubs.c && ' +
+    'rc.exe /nologo /fo sqlite-version.res sqlite-version.rc && ' +
     'link.exe /nologo /DLL /LTCG /Brepro /guard:cf /CETCOMPAT /DYNAMICBASE /NXCOMPAT ' +
-    '/HIGHENTROPYVA /OUT:e_sqlite3.dll sqlite3.obj sqlite-key-stubs.obj'
+    '/HIGHENTROPYVA /OUT:e_sqlite3.dll sqlite3.obj sqlite-key-stubs.obj sqlite-version.res'
 & cmd.exe /d /s /c $sqliteBuildCommand
 Assert-LastExitCode 'Native SQLite build failed.'
 $sqliteNativeBinary = Join-Path $sqliteSource 'e_sqlite3.dll'
+$sqliteFileVersion = (Get-Item -LiteralPath $sqliteNativeBinary).VersionInfo.FileVersion
+if ($sqliteFileVersion -ne '3.53.3.0') {
+    throw "Native SQLite file version must be 3.53.3.0. Found '$sqliteFileVersion'."
+}
 
 $avaloniaPackage = Get-VerifiedPackage 'Avalonia.Win32' '11.3.12' $avaloniaPackageHash
 $skiaPackage = Get-VerifiedPackage 'SkiaSharp' '2.88.9' $skiaPackageHash
@@ -348,6 +354,6 @@ New-PatchedPackage $skiaNativePackage 'SkiaSharp.NativeAssets.Win32' '2.88.9' '2
 New-PatchedPackage $harfBuzzNativePackage 'HarfBuzzSharp.NativeAssets.Win32' '8.3.1.1' '8.3.1.2' `
     'runtimes\win-x64\native\libHarfBuzzSharp.dll' $harfBuzzNativeBinary `
     'DCE2CFADB5CB7DD2F58DD927333B1B9E2AA5FFE79BA55632A4BF8B03DE1F40C6'
-New-PatchedPackage $sqliteNativePackage 'SQLitePCLRaw.lib.e_sqlite3' '2.1.12' '2.1.12.2' `
+New-PatchedPackage $sqliteNativePackage 'SQLitePCLRaw.lib.e_sqlite3' '2.1.12' '2.1.12.3' `
     'runtimes\win-x64\native\e_sqlite3.dll' $sqliteNativeBinary `
-    'E048978BF68D6C71E09BA3650996B96CBFAD22B9D5001BD7951D31E15DC19BDD'
+    '6F2FABEE00A35D37118FA7E81DEB4D857C81218E249DF0A35956F404CFD5E222'

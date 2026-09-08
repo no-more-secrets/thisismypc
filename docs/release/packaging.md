@@ -35,6 +35,11 @@ The app corresponds to the PC, not a user profile (AGENTS.md). Packaging follows
   account's HKCU registry. The unelevated app imports and deletes those values
   on first start. `AutoStartService.Reconcile()` then turns the setting into
   the Run entry.
+- **Native DLL versions survive upgrades.** Every rebuilt native DLL keeps a
+  Windows file version. Windows Installer can reject an unversioned replacement
+  when the installed component has a version, then remove the installed file
+  while removing the old product. The dependency build checks SQLite's version
+  before it creates the local package.
 - **File properties** (Explorer, Details tab): description "ThisIsMyPC
   Installer", product version without the commit hash
   (`IncludeSourceRevisionInInformationalVersion` off in Directory.Build.props),

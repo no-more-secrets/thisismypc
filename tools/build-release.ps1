@@ -148,6 +148,17 @@ if (-not (Test-Path (Join-Path $staging 'ThisIsMyPC.Broker.exe'))) {
     throw 'ThisIsMyPC.Broker.exe missing from staging; privileged changes would break'
 }
 
+# Windows Installer compares component key files by their Windows file version.
+# An unversioned SQLite replacement can be skipped, then deleted with the old MSI.
+$sqlitePath = Join-Path $staging 'e_sqlite3.dll'
+if (-not (Test-Path -LiteralPath $sqlitePath -PathType Leaf)) {
+    throw 'e_sqlite3.dll missing from staging; database startup would break'
+}
+$sqliteFileVersion = (Get-Item -LiteralPath $sqlitePath).VersionInfo.FileVersion
+if ($sqliteFileVersion -ne '3.53.3.0') {
+    throw "e_sqlite3.dll must retain file version 3.53.3.0 for safe MSI upgrades. Found '$sqliteFileVersion'."
+}
+
 # Version blocks read English (United States) instead of Language Neutral
 # (the compiler cannot be told otherwise). Before vpk pack, which signs them.
 foreach ($exe in 'ThisIsMyPC.App.exe', 'ThisIsMyPC.Service.exe', 'ThisIsMyPC.Broker.exe') {
