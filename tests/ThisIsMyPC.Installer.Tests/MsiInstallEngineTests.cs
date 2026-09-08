@@ -25,7 +25,7 @@ public class MsiInstallEngineTests
             @"C:\Temp\x\ThisIsMyPC-win.msi", @"C:\Program Files\NMS\ThisIsMyPC", @"C:\ProgramData\ThisIsMyPC\logs\install.log");
 
         Assert.Equal(
-            @"/i ""C:\Temp\x\ThisIsMyPC-win.msi"" /qn /norestart VELOPACK_INSTALLDIR=""C:\Program Files\NMS\ThisIsMyPC"" /l*v ""C:\ProgramData\ThisIsMyPC\logs\install.log""",
+            @"/i ""C:\Temp\x\ThisIsMyPC-win.msi"" /qn /norestart VELOPACK_INSTALLDIR=""C:\Program Files\NMS\ThisIsMyPC"" TIPC_ALLOW_EQUAL_VERSION_UPGRADE=1 /l*v ""C:\ProgramData\ThisIsMyPC\logs\install.log""",
             args);
     }
 

@@ -270,7 +270,14 @@ The app corresponds to the PC, not a profile. Implemented:
   Sam ran the AOT 0.1.0 and 0.1.1 builds on 2026-09-02: fresh install and
   update in place both clean, install time noted as fast. The Welcome page
   gained an Uninstall checkbox the same day (ticked: Welcome and Remove tabs
-  only). Open: the in-app half of the AOT pass (every module page, one
+  only). Prerelease upgrades now compare the complete version before selecting
+  MSI reinstall mode. This fixes the test-07 to test-08 path that removed the
+  old product without installing test-08 on the first run. Detection uses the
+  current package version file instead of stale MSI display versions. The MSI
+  major-upgrade range includes equal numeric versions because Windows Installer
+  ignores prerelease labels. A separate MSI launch guard blocks direct equal-version
+  transitions, while the launcher supplies the guarded upgrade property. Open:
+  the in-app half of the AOT pass (every module page, one
   apply, Owner Mode enable), then flip the script default to AOT.
 - Publisher settled 2026-09-01: NMS, short for No More Secrets, LLC (build
   script, assembly metadata, packaging.md); cert subject is the full name. Open at release: Authenticode signing on release

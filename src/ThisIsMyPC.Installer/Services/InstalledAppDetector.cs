@@ -61,9 +61,9 @@ public static partial class InstalledAppDetector
                     var found = FromFolder(folder?.TrimEnd(Path.DirectorySeparatorChar));
                     if (found is null)
                         continue;
-
-                    var displayVersion = key.GetValue("DisplayVersion") as string;
-                    return string.IsNullOrWhiteSpace(displayVersion) ? found : found with { Version = displayVersion };
+                    // The current package owns sq.version. Old MSI product entries can remain
+                    // registered and expose a stale four-part DisplayVersion for this folder.
+                    return found;
                 }
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)

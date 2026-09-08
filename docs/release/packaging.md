@@ -23,12 +23,21 @@ The app corresponds to the PC, not a user profile (AGENTS.md). Packaging follows
   automatic update checks), Installing, Done (launch when finished). When a
   copy is already installed (found through the Apps entry Update.exe
   registers, or Update.exe plus current\sq.version in the default folder),
+  current\sq.version supplies the version. Stale MSI DisplayVersion values are
+  never used for package selection.
   Welcome names its version and folder and offers Uninstall behind a confirm
   page; that runs Velopack's own `Update.exe uninstall --silent`, which is
   the uninstaller for this app (there is no unins000.exe). An older version
-  updates in place (folder locked, button reads Update), the same version
+  updates in place (folder locked, button reads Update), the same full version
   reinstalls (REINSTALL=ALL REINSTALLMODE=vomus, or msiexec answers 1638),
-  and a newer one blocks Next until it is removed. It runs
+  and a newer one blocks Next until it is removed. Prerelease labels are part
+  of the version. An upgrade from test-07 to test-08 never uses reinstall mode.
+  Windows Installer compares only the numeric MSI version. The normalized MSI
+  includes equal numeric versions in its major-upgrade range, so it replaces
+  the old prerelease product instead of registering a second product. A second
+  detection row blocks that ambiguous transition when someone runs the MSI
+  directly. The launcher performs the complete prerelease ordering and passes
+  the guarded upgrade property. It runs
   the MSI quietly (`/qn`, `VELOPACK_INSTALLDIR`, verbose log under
   `%ProgramData%\ThisIsMyPC\logs`), removes the Public Desktop shortcut when
   unticked, and writes three untrusted behavior choices to the installing

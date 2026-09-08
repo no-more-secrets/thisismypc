@@ -196,6 +196,26 @@ public class InstallerViewModelTests
     }
 
     [Fact]
+    public async Task DifferentPrerelease_UpdatesWithoutTheReinstallFlag()
+    {
+        var engine = new FakeEngine();
+        var installed = new InstalledApp("1.0.1-test-07", InstallFolderRules.DefaultFolder, "x");
+        var vm = new InstallerViewModel(engine, "LICENSE TEXT", installed, existing: null, packageVersion: "1.0.1-test-08")
+        {
+            LicenseAccepted = true,
+            Step = InstallStep.Options,
+        };
+
+        Assert.Equal(InstalledVersionRelation.Older, vm.VersionRelation);
+        Assert.Equal("Update", vm.PrimaryButtonText);
+
+        await vm.PrimaryCommand.ExecuteAsync(null);
+
+        Assert.NotNull(engine.Received);
+        Assert.False(engine.Received.Reinstall);
+    }
+
+    [Fact]
     public void NewerInstalled_BlocksNextAndOffersUninstall()
     {
         var installed = new InstalledApp("99.0.0", InstallFolderRules.DefaultFolder, "x");
@@ -356,7 +376,20 @@ public class InstallerViewModelTests
     [InlineData("1.0.0", "1.0.0", InstalledVersionRelation.Same)]
     [InlineData("1.0.0.0", "1.0.0", InstalledVersionRelation.Same)]
     [InlineData("1.0.1", "1.0.0", InstalledVersionRelation.Newer)]
-    [InlineData("1.0.0-beta.1", "1.0.0", InstalledVersionRelation.Same)]
+    [InlineData("1.0.0-beta.1", "1.0.0", InstalledVersionRelation.Older)]
+    [InlineData("1.0.0", "1.0.0-beta.1", InstalledVersionRelation.Newer)]
+    [InlineData("1.0.1-test-07", "1.0.1-test-08", InstalledVersionRelation.Older)]
+    [InlineData("1.0.1-test-08", "1.0.1-test-08", InstalledVersionRelation.Same)]
+    [InlineData("1.0.1-test-08+first", "1.0.1-test-08+second", InstalledVersionRelation.Same)]
+    [InlineData("1.0.0-preview.2", "1.0.0-preview.10", InstalledVersionRelation.Older)]
+    [InlineData("1.0.0-99999999999999999999", "1.0.0-100000000000000000000", InstalledVersionRelation.Older)]
+    [InlineData("1.0.0-alpha", "1.0.0-alpha.1", InstalledVersionRelation.Older)]
+    [InlineData("1.0.0-alpha.1", "1.0.0-alpha.beta", InstalledVersionRelation.Older)]
+    [InlineData("1.0.0-alpha.beta", "1.0.0-beta", InstalledVersionRelation.Older)]
+    [InlineData("1.0.0-beta", "1.0.0-beta.2", InstalledVersionRelation.Older)]
+    [InlineData("1.0.0-beta.2", "1.0.0-beta.11", InstalledVersionRelation.Older)]
+    [InlineData("1.0.0-beta.11", "1.0.0-rc.1", InstalledVersionRelation.Older)]
+    [InlineData("1.0.0-rc.1", "1.0.0", InstalledVersionRelation.Older)]
     [InlineData("weird", "1.0.0", InstalledVersionRelation.Older)]
     public void Compare_OrdersVersions(string? installed, string package, InstalledVersionRelation expected)
     {

@@ -174,6 +174,8 @@ public sealed class MsiInstallEngine : IInstallEngine
     /// property the Velopack MSI reads, and a verbose log for support. A
     /// reinstall of the version already present needs REINSTALL/REINSTALLMODE,
     /// or Windows Installer answers 1638 (already installed).
+    /// The guarded property permits a same-numeric-version upgrade only after
+    /// this launcher compares the complete package versions.
     /// </summary>
     public static string BuildMsiExecArguments(string msiPath, string installFolder, string logPath, bool reinstall = false)
     {
@@ -184,7 +186,7 @@ public sealed class MsiInstallEngine : IInstallEngine
         // the Installer's parser; strip it.
         var folder = installFolder.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         var reinstallArgs = reinstall ? " REINSTALL=ALL REINSTALLMODE=vomus" : string.Empty;
-        return $"/i \"{msiPath}\" /qn /norestart VELOPACK_INSTALLDIR=\"{folder}\"{reinstallArgs} /l*v \"{logPath}\"";
+        return $"/i \"{msiPath}\" /qn /norestart VELOPACK_INSTALLDIR=\"{folder}\" TIPC_ALLOW_EQUAL_VERSION_UPGRADE=1{reinstallArgs} /l*v \"{logPath}\"";
     }
 
     internal static bool IsExpectedUninstaller(InstalledApp installed)

@@ -103,7 +103,8 @@ the service talk over a hardened named pipe whose message envelope is in
 
 The same page also carries `ThisIsMyPC-win.msi`, the plain Windows Installer
 package inside the exe, for winget and for administrators who deploy with
-their own tools.
+their own tools. Use the exe to move between prerelease builds with the same
+numeric version. The MSI blocks that ambiguous transition.
 
 Updates arrive inside the app. Each one is checked against a signed manifest
 before it is applied, and an update that fails the check is refused

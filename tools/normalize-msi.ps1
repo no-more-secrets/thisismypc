@@ -190,6 +190,122 @@ function Get-ProductCode($database) {
     }
 }
 
+function Configure-EqualNumericVersionUpgrade($installer, $database) {
+    $equalVersionProperty = 'TIPC_EQUAL_VERSION_DETECTED'
+    $guardCondition = 'Installed OR NOT TIPC_EQUAL_VERSION_DETECTED OR TIPC_ALLOW_EQUAL_VERSION_UPGRADE = "1"'
+    $view = $database.OpenView(
+        "SELECT ``UpgradeCode``,``VersionMin``,``VersionMax``,``Language``,``Attributes``,``Remove``,``ActionProperty`` " +
+        "FROM ``Upgrade`` WHERE ``ActionProperty``='WIX_UPGRADE_DETECTED'")
+    $record = $null
+    $extraRecord = $null
+    $deleteView = $null
+    $insertView = $null
+    $upgradeCode = $null
+    $numericVersion = $null
+    try {
+        $view.Execute()
+        $record = $view.Fetch()
+        if ($null -eq $record) { throw 'MSI Upgrade table has no WIX_UPGRADE_DETECTED row.' }
+        $extraRecord = $view.Fetch()
+        if ($null -ne $extraRecord) { throw 'MSI Upgrade table has multiple WIX_UPGRADE_DETECTED rows.' }
+        $upgradeCode = $record.StringData(1)
+        $numericVersion = $record.StringData(3)
+        if (($record.IntegerData(5) -band 0x200) -eq 0) {
+            # Attributes is part of this table's key, so replace the row.
+            $deleteView = $database.OpenView(
+                "DELETE FROM ``Upgrade`` WHERE ``ActionProperty``='WIX_UPGRADE_DETECTED'")
+            $deleteView.Execute()
+            $record.IntegerData(5) = $record.IntegerData(5) -bor 0x200
+            $insertView = $database.OpenView("SELECT * FROM ``Upgrade``")
+            $insertView.Execute()
+            $insertView.Modify(1, $record)
+        }
+    } finally {
+        if ($null -ne $insertView) { [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($insertView) }
+        if ($null -ne $deleteView) { [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($deleteView) }
+        if ($null -ne $extraRecord) { [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($extraRecord) }
+        if ($null -ne $record) { [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($record) }
+        if ($null -ne $view) { [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($view) }
+    }
+
+    $equalView = $database.OpenView(
+        "SELECT * FROM ``Upgrade`` WHERE ``ActionProperty``='$equalVersionProperty'")
+    $equalRecord = $null
+    $equalExtraRecord = $null
+    $equalInsertView = $null
+    try {
+        $equalView.Execute()
+        $equalRecord = $equalView.Fetch()
+        $equalExtraRecord = $equalView.Fetch()
+        if ($null -ne $equalExtraRecord) { throw "MSI Upgrade table has multiple $equalVersionProperty rows." }
+        if ($null -eq $equalRecord) {
+            $equalRecord = $installer.CreateRecord(7)
+            $equalRecord.StringData(1) = $upgradeCode
+            $equalRecord.StringData(2) = $numericVersion
+            $equalRecord.StringData(3) = $numericVersion
+            $equalRecord.StringData(4) = ''
+            # Only detect, with inclusive minimum and maximum versions.
+            $equalRecord.IntegerData(5) = 0x302
+            $equalRecord.StringData(6) = ''
+            $equalRecord.StringData(7) = $equalVersionProperty
+            $equalInsertView = $database.OpenView("SELECT * FROM ``Upgrade``")
+            $equalInsertView.Execute()
+            $equalInsertView.Modify(1, $equalRecord)
+        }
+    } finally {
+        if ($null -ne $equalInsertView) { [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($equalInsertView) }
+        if ($null -ne $equalExtraRecord) { [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($equalExtraRecord) }
+        if ($null -ne $equalRecord) { [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($equalRecord) }
+        if ($null -ne $equalView) { [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($equalView) }
+    }
+
+    $conditionView = $database.OpenView(
+        "SELECT * FROM ``LaunchCondition`` WHERE ``Condition``='$guardCondition'")
+    $conditionRecord = $null
+    $conditionExtraRecord = $null
+    $conditionInsertView = $null
+    try {
+        $conditionView.Execute()
+        $conditionRecord = $conditionView.Fetch()
+        $conditionExtraRecord = $conditionView.Fetch()
+        if ($null -ne $conditionExtraRecord) { throw 'MSI has duplicate equal-version launch guards.' }
+        if ($null -eq $conditionRecord) {
+            $conditionRecord = $installer.CreateRecord(2)
+            $conditionRecord.StringData(1) = $guardCondition
+            $conditionRecord.StringData(2) = 'Use ThisIsMyPC-Installer.exe to change between prerelease builds of the same version.'
+            $conditionInsertView = $database.OpenView("SELECT * FROM ``LaunchCondition``")
+            $conditionInsertView.Execute()
+            $conditionInsertView.Modify(1, $conditionRecord)
+        }
+    } finally {
+        if ($null -ne $conditionInsertView) { [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($conditionInsertView) }
+        if ($null -ne $conditionExtraRecord) { [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($conditionExtraRecord) }
+        if ($null -ne $conditionRecord) { [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($conditionRecord) }
+        if ($null -ne $conditionView) { [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($conditionView) }
+    }
+}
+
+function Assert-EqualNumericVersionUpgrade($database) {
+    $view = $database.OpenView(
+        "SELECT ``VersionMin``,``VersionMax``,``Attributes`` FROM ``Upgrade`` " +
+        "WHERE ``ActionProperty``='TIPC_EQUAL_VERSION_DETECTED'")
+    $record = $null
+    $extraRecord = $null
+    try {
+        $view.Execute()
+        $record = $view.Fetch()
+        $extraRecord = $view.Fetch()
+        if ($null -eq $record -or $null -ne $extraRecord -or
+            $record.StringData(1) -ne $record.StringData(2) -or $record.IntegerData(3) -ne 0x302) {
+            throw 'MSI equal-version detection row is missing or invalid.'
+        }
+    } finally {
+        if ($null -ne $extraRecord) { [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($extraRecord) }
+        if ($null -ne $record) { [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($record) }
+        if ($null -ne $view) { [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($view) }
+    }
+}
+
 $resolvedPath = (Resolve-Path $Path).Path
 $deterministicProductCode = New-DeterministicGuid 'MSI ProductCode'
 $deterministicPackageCode = New-DeterministicGuid 'MSI PackageCode'
@@ -233,6 +349,7 @@ try {
         if ($null -eq $streamRecord) { throw 'MSI has no app.cab stream row.' }
         $streamRecord.SetStream(2, $cabinetPath)
         $streamView.Modify(2, $streamRecord)
+        Configure-EqualNumericVersionUpgrade $streamInstaller $streamDatabase
         $streamDatabase.Commit()
     } finally {
         if ($null -ne $streamRecord) { [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($streamRecord) }
@@ -253,6 +370,7 @@ try {
     $database = $windowsInstaller.OpenDatabase($resolvedPath, 0)
     $productCode = [string](Get-ProductCode $database)
     $productCode = $productCode.Trim()
+    Assert-EqualNumericVersionUpgrade $database
     $summary = $windowsInstaller.SummaryInformation($resolvedPath, 0)
     $packageCode = ([string]$summary.Property(9)).Trim()
     $created = [DateTime]$summary.Property(12)

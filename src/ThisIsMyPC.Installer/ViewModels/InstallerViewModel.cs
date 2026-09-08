@@ -34,12 +34,18 @@ public sealed partial class InstallerViewModel : ObservableObject
     private readonly IInstallEngine _engine;
 
     public InstallerViewModel(IInstallEngine engine, string licenseText, InstalledApp? installed, InstallOptions? existing)
+        : this(engine, licenseText, installed, existing, AppVersion)
+    {
+    }
+
+    internal InstallerViewModel(IInstallEngine engine, string licenseText, InstalledApp? installed, InstallOptions? existing, string packageVersion)
     {
         ArgumentNullException.ThrowIfNull(engine);
+        ArgumentException.ThrowIfNullOrWhiteSpace(packageVersion);
         _engine = engine;
         LicenseText = licenseText ?? string.Empty;
         Installed = installed;
-        VersionRelation = Compare(installed?.Version, AppVersion);
+        VersionRelation = Compare(installed?.Version, packageVersion);
 
         // An update goes where the app already is; the MSI upgrade replaces it in place.
         _installFolder = installed?.InstallFolder ?? existing?.InstallFolder ?? InstallFolderRules.DefaultFolder;
@@ -392,20 +398,29 @@ public sealed partial class InstallerViewModel : ObservableObject
         Step = InstallStep.Done;
     }
 
-    /// <summary>Numeric comparison where both parse; otherwise string equality decides Same, and anything else counts as Older.</summary>
+    /// <summary>Compares package versions without treating distinct prereleases as the same MSI product.</summary>
     public static InstalledVersionRelation Compare(string? installedVersion, string packageVersion)
     {
         if (string.IsNullOrWhiteSpace(installedVersion))
             return InstalledVersionRelation.NotInstalled;
-        if (Version.TryParse(Normalize(installedVersion), out var installed) && Version.TryParse(Normalize(packageVersion), out var package))
+
+        if (TryParsePackageVersion(installedVersion, out var installed, out var installedPrerelease) &&
+            TryParsePackageVersion(packageVersion, out var package, out var packagePrerelease))
         {
             // System.Version ranks 1.0.0.0 above 1.0.0 (a missing part is -1); pad both to four parts.
             var order = Pad(installed).CompareTo(Pad(package));
-            return order == 0 ? InstalledVersionRelation.Same
-                : order < 0 ? InstalledVersionRelation.Older
-                : InstalledVersionRelation.Newer;
+            if (order == 0)
+                order = ComparePrerelease(installedPrerelease, packagePrerelease);
+
+            return order switch
+            {
+                0 => InstalledVersionRelation.Same,
+                < 0 => InstalledVersionRelation.Older,
+                _ => InstalledVersionRelation.Newer,
+            };
         }
-        return string.Equals(installedVersion.Trim(), packageVersion.Trim(), StringComparison.OrdinalIgnoreCase)
+
+        return string.Equals(RemoveBuildMetadata(installedVersion.Trim()), RemoveBuildMetadata(packageVersion.Trim()), StringComparison.Ordinal)
             ? InstalledVersionRelation.Same
             : InstalledVersionRelation.Older;
     }
@@ -413,11 +428,61 @@ public sealed partial class InstallerViewModel : ObservableObject
     private static Version Pad(Version version)
         => new(version.Major, version.Minor, Math.Max(version.Build, 0), Math.Max(version.Revision, 0));
 
-    /// <summary>System.Version wants dotted numbers only: drop a prerelease tag or build metadata.</summary>
-    private static string Normalize(string version)
+    private static bool TryParsePackageVersion(string value, out Version version, out string? prerelease)
     {
-        var cut = version.IndexOfAny(['-', '+']);
-        return cut > 0 ? version[..cut] : version;
+        var withoutMetadata = RemoveBuildMetadata(value.Trim());
+        var prereleaseStart = withoutMetadata.IndexOf('-', StringComparison.Ordinal);
+        var numericVersion = prereleaseStart > 0 ? withoutMetadata[..prereleaseStart] : withoutMetadata;
+        prerelease = prereleaseStart > 0 ? withoutMetadata[(prereleaseStart + 1)..] : null;
+        if (prerelease is { Length: 0 })
+        {
+            version = new Version();
+            return false;
+        }
+
+        return Version.TryParse(numericVersion, out version!);
+    }
+
+    private static string RemoveBuildMetadata(string version)
+    {
+        var metadataStart = version.IndexOf('+', StringComparison.Ordinal);
+        return metadataStart > 0 ? version[..metadataStart] : version;
+    }
+
+    private static int ComparePrerelease(string? installed, string? package)
+    {
+        if (installed is null)
+            return package is null ? 0 : 1;
+        if (package is null)
+            return -1;
+
+        var installedParts = installed.Split('.');
+        var packageParts = package.Split('.');
+        for (var index = 0; index < Math.Min(installedParts.Length, packageParts.Length); index++)
+        {
+            var installedNumeric = installedParts[index].Length > 0 && installedParts[index].All(char.IsAsciiDigit);
+            var packageNumeric = packageParts[index].Length > 0 && packageParts[index].All(char.IsAsciiDigit);
+            int order;
+            if (installedNumeric && packageNumeric)
+                order = CompareNumericIdentifier(installedParts[index], packageParts[index]);
+            else if (installedNumeric != packageNumeric)
+                order = installedNumeric ? -1 : 1;
+            else
+                order = string.Compare(installedParts[index], packageParts[index], StringComparison.Ordinal);
+
+            if (order != 0)
+                return order;
+        }
+
+        return installedParts.Length.CompareTo(packageParts.Length);
+    }
+
+    private static int CompareNumericIdentifier(string installed, string package)
+    {
+        var installedValue = installed.AsSpan().TrimStart('0');
+        var packageValue = package.AsSpan().TrimStart('0');
+        var lengthOrder = installedValue.Length.CompareTo(packageValue.Length);
+        return lengthOrder != 0 ? lengthOrder : installedValue.SequenceCompareTo(packageValue);
     }
 
     private static string ReadVersion()
