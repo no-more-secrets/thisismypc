@@ -77,6 +77,7 @@ function ConvertTo-ReleaseVersionInput {
     return $Value.Trim() -replace '[\u2010-\u2015\u2212]', '-'
 }
 
+try {
 if ([string]::IsNullOrWhiteSpace($Version)) {
     $Version = Read-RequiredValue `
         -Prompt 'Version, for example 1.0.0' `
@@ -229,3 +230,7 @@ $repoRoot = Split-Path $PSScriptRoot -Parent
 $installer = Join-Path $repoRoot "artifacts\releases\$Version\ThisIsMyPC-Installer-$Version.exe"
 Write-Host ''
 Write-Host "Release build completed: $installer" -ForegroundColor Green
+} finally {
+    Write-Host ''
+    [void](Read-Host 'Press Enter to close')
+}
