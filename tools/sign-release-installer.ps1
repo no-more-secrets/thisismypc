@@ -36,6 +36,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+Import-Module Microsoft.PowerShell.Utility -ErrorAction Stop
 
 if ([string]::IsNullOrWhiteSpace($CodeSignToolArchive)) {
     $CodeSignToolArchive = & (Join-Path $PSScriptRoot 'get-codesigntool-archive.ps1')

@@ -3,6 +3,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+Import-Module Microsoft.PowerShell.Utility -ErrorAction Stop
 $repoRoot = Split-Path $PSScriptRoot -Parent
 $manifestPath = Join-Path $PSScriptRoot 'esigner-signing-environment.json'
 if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) {

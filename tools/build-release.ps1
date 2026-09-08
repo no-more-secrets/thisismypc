@@ -50,6 +50,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+Import-Module Microsoft.PowerShell.Utility -ErrorAction Stop
 if (Test-Path Env:ESIGNER_PASSWORD) {
     throw 'Refusing to build with ESIGNER_PASSWORD in the environment. Build unsigned, then expose the secret only to sign-release-installer.ps1.'
 }
