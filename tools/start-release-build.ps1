@@ -40,6 +40,10 @@ function Read-RequiredValue {
 
     while ($true) {
         $value = Read-Host $Prompt
+        if ($null -eq $value) {
+            throw 'The input stream closed before the prompt was answered.'
+        }
+        $value = $value.Trim()
         if (& $IsValid $value) {
             return $value
         }
@@ -57,17 +61,28 @@ function Read-DefaultValue {
     )
 
     $value = Read-Host "$Prompt [$DefaultValue]"
+    if ($null -eq $value) {
+        throw 'The input stream closed before the prompt was answered.'
+    }
+    $value = $value.Trim()
     if ([string]::IsNullOrWhiteSpace($value)) {
         return $DefaultValue
     }
     return $value
 }
 
+function ConvertTo-ReleaseVersionInput {
+    param([string]$Value)
+
+    return $Value.Trim() -replace '[\u2010-\u2015\u2212]', '-'
+}
+
 if ([string]::IsNullOrWhiteSpace($Version)) {
     $Version = Read-RequiredValue `
         -Prompt 'Version, for example 1.0.0' `
-        -IsValid { param($value) $value -match '^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$' } `
+        -IsValid { param($value) (ConvertTo-ReleaseVersionInput $value) -match '^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$' } `
         -InvalidMessage 'Enter a semantic version such as 1.0.0 or 1.0.0-preview.1.'
+    $Version = ConvertTo-ReleaseVersionInput $Version
 }
 
 if (-not $PSBoundParameters.ContainsKey('Authors')) {
