@@ -2,6 +2,13 @@
 
 Current release scope: [v1 completion plan](v1-completion-plan.md), approved 2026-09-06. It supersedes older post-release hardware assumptions below.
 
+## NativeAOT ACG renderer compatibility (2026-09-08)
+
+- DONE: ACG App and Installer builds use Avalonia's software renderer. ANGLE produced a live UI tree but presented a black window.
+- Non-ACG development builds keep Avalonia's normal platform renderer selection.
+- Verified: policy test, full suite, Release NativeAOT App publish, and visible App and Installer windows under strict ACG.
+- Pending: build and install the next signed test release over `1.0.1-test-07`.
+
 ## Sidebar module groups (2026-09-06)
 
 - Module groups collapse independently in both sidebar widths. Headers support mouse and keyboard input, with named tooltips in the narrow sidebar.

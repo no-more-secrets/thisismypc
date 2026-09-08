@@ -95,7 +95,25 @@ sealed class Program
     }
 
     public static AppBuilder BuildAvaloniaApp()
-        => AppBuilder.Configure<App>()
+    {
+        var builder = AppBuilder.Configure<App>();
+
+#if ACG_ENABLED
+        // ANGLE creates a window under strict ACG but presents only black frames.
+        return builder
+            .UseWin32()
+            .With(CreateAcgWin32Options())
+            .UseSkia()
+            .LogToTrace();
+#else
+        return builder
             .UsePlatformDetect()
             .LogToTrace();
+#endif
+    }
+
+    internal static Win32PlatformOptions CreateAcgWin32Options() => new()
+    {
+        RenderingMode = [Win32RenderingMode.Software],
+    };
 }

@@ -93,6 +93,10 @@ startup. The local Avalonia.Win32 and SkiaSharp packages under
 `third-party/acg` replace runtime-generated native callback thunks with static
 unmanaged callbacks. Rebuild them with `tools/build-acg-dependencies.ps1`.
 Run `tools/AcgLauncher` from an elevated terminal to test loader-time ACG.
+The launcher also rejects a window whose captured frame contains no visible pixels.
+The App and Installer use Avalonia's software renderer in ACG builds. ANGLE
+creates the window under strict ACG but presents black frames on the tested host.
+Non-ACG development builds retain Avalonia's normal platform detection.
 
 ### Signing with SSL.com eSigner
 

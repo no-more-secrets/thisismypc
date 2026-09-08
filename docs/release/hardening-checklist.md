@@ -39,7 +39,8 @@ EH Continuation table present.
   those thunks with static unmanaged function pointers. A strict process
   creation test kept ACG active before resume and after the main window opened.
   The rebuilt Skia, HarfBuzz, and SQLite libraries load under the same strict policy.
-  `tools/AcgLauncher` preserves this loader-time release test in the repository.
+  `tools/AcgLauncher` also rejects a created window when its captured frame remains black.
+  ACG App and Installer builds use software rendering because ANGLE presented black frames.
   The shipped self-enable path still starts at managed `Main`. Loader-time ACG
   needs a trusted launcher or machine policy as a separate hardening step.
 - **Safe DLL search: DONE.** New `DllSearchHardening.Apply()`
