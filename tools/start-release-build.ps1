@@ -153,10 +153,16 @@ if ($Mode -eq 'Signed') {
     }
 
     if (-not $PSBoundParameters.ContainsKey('ESignerCredentialId')) {
-        if ($env:ESIGNER_CREDENTIAL_ID -match '^[0-9a-fA-F-]{36}$') {
+        $savedCredentialId = $env:ESIGNER_CREDENTIAL_ID
+        if ($savedCredentialId -notmatch '^[0-9a-fA-F-]{36}$') {
+            $savedCredentialId = [Environment]::GetEnvironmentVariable(
+                'ESIGNER_CREDENTIAL_ID',
+                [EnvironmentVariableTarget]::User)
+        }
+        if ($savedCredentialId -match '^[0-9a-fA-F-]{36}$') {
             $ESignerCredentialId = Read-DefaultValue `
                 -Prompt 'eSigner code-signing credential ID' `
-                -DefaultValue $env:ESIGNER_CREDENTIAL_ID
+                -DefaultValue $savedCredentialId
         } else {
             $ESignerCredentialId = Read-RequiredValue `
                 -Prompt 'eSigner code-signing credential ID' `
