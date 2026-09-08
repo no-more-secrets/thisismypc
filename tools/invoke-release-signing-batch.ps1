@@ -69,9 +69,54 @@ if ($actualHash -ne $manifest.signToolSha256) {
     throw "signtool.exe hash is $actualHash, expected $($manifest.signToolSha256)."
 }
 
-& $signTool sign /fd sha256 /tr $configuration.timestampUrl /td sha256 `
-    /d $configuration.signingDescription /sha1 $configuration.thumbprint @inputPaths
-if ($LASTEXITCODE -ne 0) { throw 'signtool failed on a release signing batch.' }
+$unsignedHashes = @{}
+foreach ($path in $inputPaths) {
+    $unsignedHashes[$path] = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash
+}
+
+# SSL.com's scan endpoint can report approval before CKA can read it. Retry only
+# the exact unchanged unsigned input. This prevents accidental double signing.
+$approvalRetryDelays = @(5, 15, 30)
+$signingAttempt = 0
+while ($true) {
+    $signingAttempt++
+    $savedErrorActionPreference = $ErrorActionPreference
+    try {
+        # Windows PowerShell converts native stderr into error records. Continue
+        # long enough to capture SignTool's text and inspect its exit code.
+        $ErrorActionPreference = 'Continue'
+        $signingOutput = @(& $signTool sign /fd sha256 /tr $configuration.timestampUrl /td sha256 `
+            /d $configuration.signingDescription /sha1 $configuration.thumbprint @inputPaths 2>&1)
+        $signingExitCode = $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $savedErrorActionPreference
+    }
+    $signingOutput | ForEach-Object { Write-Host $_ }
+
+    if ($signingExitCode -eq 0) { break }
+
+    $approvalPending = ($signingOutput -join "`n") -match `
+        'hash needs to be scanned first before submitting for signing:'
+    $retryIndex = $signingAttempt - 1
+    if (-not $approvalPending -or $retryIndex -ge $approvalRetryDelays.Count) {
+        throw 'signtool failed on a release signing batch.'
+    }
+
+    foreach ($path in $inputPaths) {
+        if ((Get-AuthenticodeSignature -LiteralPath $path).Status -ne 'NotSigned') {
+            throw "signtool failed after changing the signature state: $path"
+        }
+        $currentHash = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash
+        if ($currentHash -ne $unsignedHashes[$path]) {
+            throw "signtool failed after changing the release file: $path"
+        }
+    }
+
+    $delay = $approvalRetryDelays[$retryIndex]
+    Write-Host "eSigner approval is not visible to CKA yet. Retrying the unchanged file in $delay seconds."
+    Start-Sleep -Seconds $delay
+}
 
 foreach ($path in $inputPaths) {
     & $signTool verify /pa /all $path
