@@ -79,6 +79,9 @@ the service talk over a hardened named pipe whose message envelope is in
 - Updates are verified against a GPG-signed manifest before they are applied
   (`GpgManifestUpdateVerifier`; process in
   [docs/release/update-signing.md](docs/release/update-signing.md)).
+- The two trusted release-key fingerprints and their combined public key ring
+  are published in
+  [docs/release/update-signing.md](docs/release/update-signing.md).
 
 ## Requirements
 

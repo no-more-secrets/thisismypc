@@ -1,6 +1,6 @@
 # Builds the SHA256SUMS release manifest for a directory of release assets.
 # Run on release day, then sign the manifest OFFLINE with the release key:
-#   gpg --armor --detach-sign SHA256SUMS
+#   gpg --local-user <full fingerprint> --armor --detach-sign SHA256SUMS
 # Upload SHA256SUMS and SHA256SUMS.asc as assets on the SAME GitHub release as
 # the packages; the updater fetches them from releases/download/v<version>/.
 # Full procedure: docs/release/update-signing.md
@@ -38,4 +38,4 @@ Write-Host "Wrote $OutFile ($($assets.Count) assets):"
 $lines | ForEach-Object { Write-Host "  $_" }
 Write-Host ''
 Write-Host 'Now sign it offline with the release key:'
-Write-Host "  gpg --armor --detach-sign `"$OutFile`""
+Write-Host "  gpg --local-user <full fingerprint> --armor --detach-sign `"$OutFile`""

@@ -20,6 +20,8 @@
 
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
+    <EmbeddedResource Include="..\..\docs\release\thisismypc-release-public-keys.asc"
+                      LogicalName="ThisIsMyPC.ReleasePublicKeys.asc" />
     <None Include="..\..\assets\fluent-system-icons\LICENSE"
           Link="licenses\FluentSystemIcons.LICENSE.txt"
           CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />

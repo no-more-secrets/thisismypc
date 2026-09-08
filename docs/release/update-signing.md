@@ -2,53 +2,56 @@
 
 Out-of-band update verification per the threat model (tm2:54). Every release
 publishes a `SHA256SUMS` manifest and a detached signature `SHA256SUMS.asc`
-made by an offline release key. The app embeds the public key
-(`GpgManifestUpdateVerifier.ReleasePublicKeyArmored`) and rejects any update it
+made by either offline release YubiKey. The app embeds both public keys
+(`GpgManifestUpdateVerifier.ReleasePublicKeysArmored`) and rejects any update it
 cannot positively verify: no manifest, bad signature, digest mismatch, or an
 unresolvable package path. There is no fallback. Even if the GitHub account and
 the code-signing certificate are both compromised, an attacker cannot forge the
 manifest signature.
 
-## Current state
+## Release keys
 
-The embedded public key is EMPTY, so every update is rejected. This is
-deliberate: unsigned builds must never pass. The key ceremony below is a
-release blocker; `GpgManifestVerifierTests.ProductionBuild_StillHasNoEmbeddedKey_UntilTheCeremony`
-pins the empty state and must be flipped in the same commit that embeds the key.
+The ceremony completed on 2026-09-08. Both independent RSA-4096 key sets were
+generated inside separate YubiKey 5C NFC devices. No private key was created or
+exported outside either YubiKey. Signing requires the user PIN and a physical
+touch. Both keys expire on 2028-09-07.
 
-## One-time key ceremony (Sam, offline)
+- YubiKey 1: `3D25 3EF5 CB19 A049 F705 FE28 36D9 1EDA 8504 9BED`
+- YubiKey 2: `91C8 A2E1 94EF FAC5 E1DD 3DB9 BD46 E205 F028 C7C0`
 
-1. On a machine without the repo checked out (or at minimum offline), generate
-   the release key. Ed25519 is fine; RSA 4096 maximizes tooling compatibility:
+The combined public key ring is
+[`thisismypc-release-public-keys.asc`](thisismypc-release-public-keys.asc).
+`GpgManifestVerifierTests.ProductionBuild_ContainsBothCeremonyKeys` pins both
+fingerprints in the production build.
 
-   ```
-   gpg --quick-generate-key "ThisIsMyPC Release Signing <releases@LLC-DOMAIN>" rsa4096 sign 2y
-   ```
+GnuPG created one revocation certificate for each key. Store those two files
+on protected offline media. A revocation certificate cannot sign a release,
+but anyone holding it can revoke its matching public key.
 
-2. Export and store:
-   - `gpg --export-secret-keys --armor <keyid> > release-secret.asc`: offline
-     storage only (hardware token or encrypted media in a drawer, plus one
-     backup). NEVER on the dev machine, NEVER in CI secrets; the whole point is
-     that CI compromise cannot sign updates.
-   - `gpg --export --armor <keyid> > release-public.asc`: public.
+To extend expiry, insert each YubiKey and run `gpg --quick-set-expire` for its
+fingerprint. Export and embed the updated public key ring before the old expiry.
+Adding a new key also requires an application update before that key signs a
+release.
 
-3. Embed the public key: paste the armored block into
-   `GpgManifestUpdateVerifier.ReleasePublicKeyArmored` in
-   `src/ThisIsMyPC.App/Services/GpgManifestUpdateVerifier.cs`, flip the
-   ceremony test, commit. Also publish the public key in the repo README and on
-   the release page so users can verify manually.
-
-4. Expiry is 2 years: extending it (`gpg --quick-set-expire`) re-signs the same
-   key, so the embedded public key stays valid; rotation to a NEW key requires
-   an app update embedding the new key BEFORE releases sign with it.
+If one key is lost or compromised, use the surviving key to sign an application
+release that removes the affected key and embeds a replacement. Existing clients
+must install that release while they still trust the surviving key. The app does
+not fetch OpenPGP revocations from a keyserver. A client that misses the update
+continues to trust its embedded affected key until that key expires.
 
 ## Release day
 
 1. Build the Velopack packages; collect every asset for the GitHub release in
    one directory.
 2. `.\tools\new-release-manifest.ps1 -AssetDirectory <dir>` writes `SHA256SUMS`.
-3. Move `SHA256SUMS` to the offline signing environment;
-   `gpg --armor --detach-sign SHA256SUMS` produces `SHA256SUMS.asc`.
+3. Move `SHA256SUMS` to the offline signing environment. Insert either release
+   YubiKey, then select its full fingerprint explicitly:
+
+   ```powershell
+   gpg --local-user <fingerprint> --armor --detach-sign SHA256SUMS
+   ```
+
+   Enter the user PIN and touch the YubiKey. This produces `SHA256SUMS.asc`.
 4. Upload ALL assets, `SHA256SUMS`, and `SHA256SUMS.asc` to the GitHub release.
    The release tag MUST be exactly `v` plus the package version as Velopack
    renders it (e.g. `v1.0.0`): the updater fetches
@@ -66,7 +69,7 @@ pins the empty state and must be flipped in the same commit that embeds the key.
 ## How users verify manually
 
 ```
-gpg --import release-public.asc
+gpg --import thisismypc-release-public-keys.asc
 gpg --verify SHA256SUMS.asc SHA256SUMS
 sha256sum -c SHA256SUMS
 ```

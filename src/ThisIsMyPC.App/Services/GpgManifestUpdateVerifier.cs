@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
+using Org.BouncyCastle.Bcpg;
 using Org.BouncyCastle.Bcpg.OpenPgp;
 using NLog;
 using ThisIsMyPC.Core.Results;
@@ -12,19 +13,27 @@ namespace ThisIsMyPC.App.Services;
 /// <summary>
 /// Out-of-band update verification per the threat model (tm2:54): each release
 /// publishes SHA256SUMS plus a detached armored signature SHA256SUMS.asc made by
-/// the offline release key. The public key is hardcoded here, so even a
+/// either offline release key. Both public keys are embedded in the app, so a
 /// compromised GitHub account plus a compromised code-signing cert cannot forge
 /// an update. Fail-closed everywhere: no manifest, bad signature, unknown file,
 /// digest mismatch, or an unresolved package path all reject the update.
 /// </summary>
 public sealed class GpgManifestUpdateVerifier : IUpdateVerifier
 {
+    private const string ReleasePublicKeysResourceName = "ThisIsMyPC.ReleasePublicKeys.asc";
+
+    private static readonly IReadOnlySet<string> ReleaseSigningKeyFingerprints =
+        new HashSet<string>(StringComparer.Ordinal)
+        {
+            "3D253EF5CB19A049F705FE2836D91EDA85049BED",
+            "91C8A2E194EFFAC5E1DD3DB9BD46E205F028C7C0",
+        };
+
     /// <summary>
-    /// The ASCII-armored release public key. Empty until the release key
-    /// ceremony (docs/release/update-signing.md); while empty, every update is
-    /// rejected, which is the correct failure direction for unsigned builds.
+    /// The ASCII-armored release public key ring. It contains one independent
+    /// key from each release YubiKey. A signature from either key is accepted.
     /// </summary>
-    public const string ReleasePublicKeyArmored = "";
+    public static string ReleasePublicKeysArmored { get; } = LoadReleasePublicKeys();
 
     /// <summary>
     /// Release assets live under the tag; tags are v{version}. Derived from
@@ -38,17 +47,24 @@ public sealed class GpgManifestUpdateVerifier : IUpdateVerifier
 
     private static readonly HttpClient SharedHttp = CreateHttpClient();
 
-    private readonly string _publicKeyArmored;
+    private readonly string _publicKeysArmored;
+    private readonly IReadOnlySet<string> _trustedSigningKeyFingerprints;
     private readonly Func<Uri, CancellationToken, Task<byte[]?>> _fetchAsync;
+    private readonly Func<DateTimeOffset> _utcNow;
     private readonly ILogger _logger;
 
     public GpgManifestUpdateVerifier(
-        string? publicKeyArmored = null,
+        string? publicKeysArmored = null,
         Func<Uri, CancellationToken, Task<byte[]?>>? fetchAsync = null,
-        ILogger? logger = null)
+        ILogger? logger = null,
+        Func<DateTimeOffset>? utcNow = null)
     {
-        _publicKeyArmored = publicKeyArmored ?? ReleasePublicKeyArmored;
+        _publicKeysArmored = publicKeysArmored ?? ReleasePublicKeysArmored;
+        _trustedSigningKeyFingerprints = publicKeysArmored is null
+            ? ReleaseSigningKeyFingerprints
+            : ReadPrimaryFingerprints(_publicKeysArmored);
         _fetchAsync = fetchAsync ?? FetchOverHttpAsync;
+        _utcNow = utcNow ?? (() => DateTimeOffset.UtcNow);
         _logger = logger ?? LogManager.GetLogger("ThisIsMyPC.App.Services.GpgManifestUpdateVerifier");
     }
 
@@ -63,10 +79,10 @@ public sealed class GpgManifestUpdateVerifier : IUpdateVerifier
                     "The downloaded update package could not be located for verification.");
             }
 
-            if (string.IsNullOrWhiteSpace(_publicKeyArmored))
+            if (string.IsNullOrWhiteSpace(_publicKeysArmored))
             {
                 return Reject(updateVersion,
-                    "No release public key is embedded in this build; updates cannot be verified.");
+                    "No release public keys are embedded in this build; updates cannot be verified.");
             }
 
             var manifestUri = new Uri(string.Format(CultureInfo.InvariantCulture, ManifestUrlFormat, updateVersion));
@@ -81,7 +97,7 @@ public sealed class GpgManifestUpdateVerifier : IUpdateVerifier
                 return Reject(updateVersion, "The release manifest signature (SHA256SUMS.asc) could not be downloaded.");
 
             if (!VerifyDetachedSignature(manifestBytes, signatureBytes))
-                return Reject(updateVersion, "The release manifest signature does not match the release key.");
+                return Reject(updateVersion, "The release manifest signature does not match a release key.");
 
             var manifest = ReleaseManifest.TryParse(Encoding.UTF8.GetString(manifestBytes));
             if (manifest is null)
@@ -132,11 +148,11 @@ public sealed class GpgManifestUpdateVerifier : IUpdateVerifier
         return OperationResult<bool>.Failure(reason, ErrorCategory.AccessDenied);
     }
 
-    /// <summary>True only when the detached signature over the manifest verifies against the embedded key.</summary>
+    /// <summary>True only when the detached signature verifies against an active trusted primary key.</summary>
     private bool VerifyDetachedSignature(byte[] manifestBytes, byte[] signatureBytes)
     {
         using var keyStream = PgpUtilities.GetDecoderStream(
-            new MemoryStream(Encoding.ASCII.GetBytes(_publicKeyArmored)));
+            new MemoryStream(Encoding.ASCII.GetBytes(_publicKeysArmored)));
         var publicKeys = new PgpPublicKeyRingBundle(keyStream);
 
         using var signatureStream = PgpUtilities.GetDecoderStream(new MemoryStream(signatureBytes));
@@ -150,9 +166,16 @@ public sealed class GpgManifestUpdateVerifier : IUpdateVerifier
         for (var i = 0; i < signatures.Count; i++)
         {
             var signature = signatures[i];
+            if (!IsStrongHashAlgorithm(signature.HashAlgorithm))
+            {
+                _logger.Warn("SHA256SUMS.asc used a disallowed hash algorithm: {Algorithm}",
+                    signature.HashAlgorithm);
+                continue;
+            }
+
             var key = publicKeys.GetPublicKey(signature.KeyId);
-            if (key is null)
-                continue; // signed by a key this build does not trust
+            if (key is null || !IsActiveTrustedPrimaryKey(key))
+                continue;
 
             signature.InitVerify(key);
             signature.Update(manifestBytes);
@@ -161,6 +184,51 @@ public sealed class GpgManifestUpdateVerifier : IUpdateVerifier
         }
 
         return false;
+    }
+
+    private static bool IsStrongHashAlgorithm(HashAlgorithmTag algorithm) =>
+        algorithm is HashAlgorithmTag.Sha256 or HashAlgorithmTag.Sha384 or HashAlgorithmTag.Sha512;
+
+    private bool IsActiveTrustedPrimaryKey(PgpPublicKey key)
+    {
+        if (!key.IsMasterKey
+            || !_trustedSigningKeyFingerprints.Contains(Convert.ToHexString(key.GetFingerprint()))
+            || key.HasRevocation())
+        {
+            return false;
+        }
+
+        var now = _utcNow();
+        var created = new DateTimeOffset(key.CreationTime.ToUniversalTime());
+        if (now < created)
+            return false;
+
+        var validSeconds = key.GetValidSeconds();
+        return validSeconds == 0 || now < created.AddSeconds(validSeconds);
+    }
+
+    private static HashSet<string> ReadPrimaryFingerprints(string publicKeysArmored)
+    {
+        if (string.IsNullOrWhiteSpace(publicKeysArmored))
+            return new HashSet<string>(StringComparer.Ordinal);
+
+        using var keyStream = PgpUtilities.GetDecoderStream(
+            new MemoryStream(Encoding.ASCII.GetBytes(publicKeysArmored)));
+        var publicKeys = new PgpPublicKeyRingBundle(keyStream);
+        return publicKeys.GetKeyRings()
+            .Select(keyRing => Convert.ToHexString(keyRing.GetPublicKey().GetFingerprint()))
+            .ToHashSet(StringComparer.Ordinal);
+    }
+
+    private static string LoadReleasePublicKeys()
+    {
+        using var stream = typeof(GpgManifestUpdateVerifier).Assembly
+            .GetManifestResourceStream(ReleasePublicKeysResourceName);
+        if (stream is null)
+            return string.Empty;
+
+        using var reader = new StreamReader(stream, Encoding.ASCII, detectEncodingFromByteOrderMarks: false);
+        return reader.ReadToEnd();
     }
 
     private static async Task<string> ComputeSha256Async(string filePath, CancellationToken cancellationToken)

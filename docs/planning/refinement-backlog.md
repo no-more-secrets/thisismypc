@@ -218,13 +218,12 @@ Consequences, verified against the code and upstream:
 - **Update integrity: GPG manifest verifier SHIPPED 2026-08-31.**
   GpgManifestUpdateVerifier replaces AuthenticodeUpdateVerifier: each release
   publishes SHA256SUMS + detached SHA256SUMS.asc (offline key), the app embeds
-  the public key and fail-closes on everything (no manifest, bad signature,
+  the public keys and fail-closes on everything (no manifest, bad signature,
   digest mismatch, unresolved package path; the old verify-own-binary fallback
-  is gone). Embedded key is EMPTY until Sam runs the key ceremony
-  (docs/release/update-signing.md; a pinned test flips with the key commit),
-  so every update is rejected until then: correct direction, but the ceremony
-  is a release blocker. Tooling: tools/new-release-manifest.ps1. Release tags
-  must be v{version}.
+  is gone). The 2026-09-08 ceremony generated two independent RSA-4096 keys
+  inside separate YubiKey 5C NFC devices. Either key can sign a release; both
+  fingerprints are pinned by a production test. Tooling:
+  tools/new-release-manifest.ps1. Release tags must be v{version}.
 - **OV cert ISSUED AND VERIFIED 2026-09-03** through SSL.com eSigner for No More
   Secrets, LLC. CKA 1.1.2 Automated Production signing, mandatory CodeSignTool
   malware scanning, SignTool RFC 3161 timestamping, signature verification, and

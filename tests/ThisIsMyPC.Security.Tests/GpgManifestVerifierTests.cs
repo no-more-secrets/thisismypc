@@ -21,24 +21,32 @@ public sealed class GpgManifestVerifierTests : IDisposable
     private static readonly char[] Passphrase = ['t', 'e', 's', 't'];
 
     private readonly PgpSecretKey _secretKey;
-    private readonly string _publicKeyArmored;
+    private readonly string _publicKeysArmored;
     private readonly string _tempDir;
 
     public GpgManifestVerifierTests()
+        : this(DateTime.UtcNow, validSeconds: null)
+    {
+    }
+
+    private GpgManifestVerifierTests(DateTime creationTime, long? validSeconds)
     {
         var generator = new RsaKeyPairGenerator();
         generator.Init(new KeyGenerationParameters(new SecureRandom(), 2048));
-        var pgpPair = new PgpKeyPair(PublicKeyAlgorithmTag.RsaGeneral, generator.GenerateKeyPair(), DateTime.UtcNow);
+        var pgpPair = new PgpKeyPair(PublicKeyAlgorithmTag.RsaGeneral, generator.GenerateKeyPair(), creationTime);
+        PgpSignatureSubpacketVector? hashedPackets = null;
+        if (validSeconds.HasValue)
+        {
+            var packets = new PgpSignatureSubpacketGenerator();
+            packets.SetKeyExpirationTime(isCritical: false, validSeconds.Value);
+            hashedPackets = packets.Generate();
+        }
+
         _secretKey = new PgpSecretKey(
             PgpSignature.DefaultCertification, pgpPair, "release-test@thisismypc",
-            SymmetricKeyAlgorithmTag.Aes256, Passphrase, true, null, null, new SecureRandom());
+            SymmetricKeyAlgorithmTag.Aes256, Passphrase, true, hashedPackets, null, new SecureRandom());
 
-        using var keyOut = new MemoryStream();
-        using (var armor = new ArmoredOutputStream(keyOut))
-        {
-            _secretKey.PublicKey.Encode(armor);
-        }
-        _publicKeyArmored = Encoding.ASCII.GetString(keyOut.ToArray());
+        _publicKeysArmored = ArmorPublicKeys(_secretKey.PublicKey);
 
         _tempDir = Path.Combine(Path.GetTempPath(), $"tipc-gpg-{Guid.NewGuid():N}");
         Directory.CreateDirectory(_tempDir);
@@ -46,10 +54,16 @@ public sealed class GpgManifestVerifierTests : IDisposable
 
     public void Dispose() => Directory.Delete(_tempDir, recursive: true);
 
-    private byte[] SignDetachedArmored(byte[] content)
+    private byte[] SignDetachedArmored(
+        byte[] content,
+        HashAlgorithmTag hashAlgorithm = HashAlgorithmTag.Sha256,
+        PgpPrivateKey? privateKey = null,
+        PublicKeyAlgorithmTag publicKeyAlgorithm = PublicKeyAlgorithmTag.RsaGeneral)
     {
-        var signatureGenerator = new PgpSignatureGenerator(PublicKeyAlgorithmTag.RsaGeneral, HashAlgorithmTag.Sha256);
-        signatureGenerator.InitSign(PgpSignature.BinaryDocument, _secretKey.ExtractPrivateKey(Passphrase));
+        var signatureGenerator = new PgpSignatureGenerator(publicKeyAlgorithm, hashAlgorithm);
+        signatureGenerator.InitSign(
+            PgpSignature.BinaryDocument,
+            privateKey ?? _secretKey.ExtractPrivateKey(Passphrase));
         signatureGenerator.Update(content);
 
         using var sigOut = new MemoryStream();
@@ -58,6 +72,43 @@ public sealed class GpgManifestVerifierTests : IDisposable
             signatureGenerator.Generate().Encode(armor);
         }
         return sigOut.ToArray();
+    }
+
+    private PgpPublicKey CreateRevokedPublicKey()
+    {
+        var signatureGenerator = new PgpSignatureGenerator(
+            PublicKeyAlgorithmTag.RsaGeneral,
+            HashAlgorithmTag.Sha256);
+        signatureGenerator.InitSign(
+            PgpSignature.KeyRevocation,
+            _secretKey.ExtractPrivateKey(Passphrase));
+        var revocation = signatureGenerator.GenerateCertification(_secretKey.PublicKey);
+        return PgpPublicKey.AddCertification(_secretKey.PublicKey, revocation);
+    }
+
+    private static string ArmorPublicKeys(params PgpPublicKey[] publicKeys)
+    {
+        using var keyOut = new MemoryStream();
+        using (var armor = new ArmoredOutputStream(keyOut))
+        {
+            foreach (var publicKey in publicKeys)
+            {
+                publicKey.Encode(armor);
+            }
+        }
+
+        return Encoding.ASCII.GetString(keyOut.ToArray());
+    }
+
+    private static string ArmorPublicKeyRing(PgpPublicKeyRing publicKeyRing)
+    {
+        using var keyOut = new MemoryStream();
+        using (var armor = new ArmoredOutputStream(keyOut))
+        {
+            publicKeyRing.Encode(armor);
+        }
+
+        return Encoding.ASCII.GetString(keyOut.ToArray());
     }
 
     private string WritePackage(string fileName, byte[] content)
@@ -72,12 +123,16 @@ public sealed class GpgManifestVerifierTests : IDisposable
             $"{Convert.ToHexStringLower(SHA256.HashData(packageContent))}  {fileName}\n");
 
     private GpgManifestUpdateVerifier CreateVerifier(
-        byte[]? manifest, byte[]? signature, string? publicKey = null)
+        byte[]? manifest,
+        byte[]? signature,
+        string? publicKeys = null,
+        Func<DateTimeOffset>? utcNow = null)
     {
         return new GpgManifestUpdateVerifier(
-            publicKeyArmored: publicKey ?? _publicKeyArmored,
+            publicKeysArmored: publicKeys ?? _publicKeysArmored,
             fetchAsync: (uri, _) => Task.FromResult(
-                uri.AbsolutePath.EndsWith(".asc", StringComparison.Ordinal) ? signature : manifest));
+                uri.AbsolutePath.EndsWith(".asc", StringComparison.Ordinal) ? signature : manifest),
+            utcNow: utcNow);
     }
 
     [Fact]
@@ -134,6 +189,121 @@ public sealed class GpgManifestVerifierTests : IDisposable
         // A different keypair plays "the attacker's key the build does not trust".
         using var foreign = new GpgManifestVerifierTests();
         var verifier = CreateVerifier(manifest, foreign.SignDetachedArmored(manifest));
+
+        var result = await verifier.VerifyPackageAsync("1.0.0", path);
+
+        Assert.False(result.IsSuccess);
+    }
+
+    [Fact]
+    public async Task SignatureFromEitherTrustedKey_Passes()
+    {
+        var package = Encoding.UTF8.GetBytes("release payload");
+        var path = WritePackage("ThisIsMyPC-1.0.0-full.nupkg", package);
+        var manifest = ManifestFor("ThisIsMyPC-1.0.0-full.nupkg", package);
+        using var secondSigner = new GpgManifestVerifierTests();
+        var trustedKeys = ArmorPublicKeys(_secretKey.PublicKey, secondSigner._secretKey.PublicKey);
+        var verifier = CreateVerifier(
+            manifest,
+            secondSigner.SignDetachedArmored(manifest),
+            trustedKeys);
+
+        var result = await verifier.VerifyPackageAsync("1.0.0", path);
+
+        Assert.True(result.IsSuccess);
+    }
+
+    [Fact]
+    public async Task SignatureFromExpiredTrustedKey_IsRejected()
+    {
+        using var expiredSigner = new GpgManifestVerifierTests(
+            DateTime.UtcNow.AddDays(-2),
+            validSeconds: 60);
+        var package = Encoding.UTF8.GetBytes("release payload");
+        var path = WritePackage("ThisIsMyPC-1.0.0-full.nupkg", package);
+        var manifest = ManifestFor("ThisIsMyPC-1.0.0-full.nupkg", package);
+        var verifier = CreateVerifier(
+            manifest,
+            expiredSigner.SignDetachedArmored(manifest),
+            expiredSigner._publicKeysArmored);
+
+        var result = await verifier.VerifyPackageAsync("1.0.0", path);
+
+        Assert.False(result.IsSuccess);
+    }
+
+    [Fact]
+    public async Task SignatureFromRevokedTrustedKey_IsRejected()
+    {
+        var package = Encoding.UTF8.GetBytes("release payload");
+        var path = WritePackage("ThisIsMyPC-1.0.0-full.nupkg", package);
+        var manifest = ManifestFor("ThisIsMyPC-1.0.0-full.nupkg", package);
+        var revokedPublicKey = ArmorPublicKeys(CreateRevokedPublicKey());
+        var verifier = CreateVerifier(
+            manifest,
+            SignDetachedArmored(manifest),
+            revokedPublicKey);
+
+        var result = await verifier.VerifyPackageAsync("1.0.0", path);
+
+        Assert.False(result.IsSuccess);
+    }
+
+    [Fact]
+    public async Task SignatureUsingSha1_IsRejected()
+    {
+        var package = Encoding.UTF8.GetBytes("release payload");
+        var path = WritePackage("ThisIsMyPC-1.0.0-full.nupkg", package);
+        var manifest = ManifestFor("ThisIsMyPC-1.0.0-full.nupkg", package);
+        var verifier = CreateVerifier(
+            manifest,
+            SignDetachedArmored(manifest, HashAlgorithmTag.Sha1));
+
+        var result = await verifier.VerifyPackageAsync("1.0.0", path);
+
+        Assert.False(result.IsSuccess);
+    }
+
+    [Fact]
+    public async Task SignatureFromTrustedSigningSubkey_IsRejected()
+    {
+        var random = new SecureRandom();
+        var generator = new RsaKeyPairGenerator();
+        generator.Init(new KeyGenerationParameters(random, 2048));
+        var primaryPair = new PgpKeyPair(
+            PublicKeyAlgorithmTag.RsaGeneral,
+            generator.GenerateKeyPair(),
+            DateTime.UtcNow);
+        var subkeyPair = new PgpKeyPair(
+            PublicKeyAlgorithmTag.RsaSign,
+            generator.GenerateKeyPair(),
+            DateTime.UtcNow);
+        var keyRingGenerator = new PgpKeyRingGenerator(
+            PgpSignature.DefaultCertification,
+            primaryPair,
+            "release-test@thisismypc",
+            SymmetricKeyAlgorithmTag.Aes256,
+            HashAlgorithmTag.Sha256,
+            Passphrase,
+            useSha1: true,
+            hashedPackets: null,
+            unhashedPackets: null,
+            random);
+        var subkeyPackets = new PgpSignatureSubpacketGenerator();
+        subkeyPackets.SetKeyFlags(isCritical: true, PgpKeyFlags.CanSign);
+        keyRingGenerator.AddSubKey(subkeyPair, subkeyPackets.Generate(), unhashedPackets: null);
+
+        var secretKeyRing = keyRingGenerator.GenerateSecretKeyRing();
+        var subkeyPrivateKey = secretKeyRing.GetSecretKey(subkeyPair.KeyId).ExtractPrivateKey(Passphrase);
+        var trustedKeyRing = ArmorPublicKeyRing(keyRingGenerator.GeneratePublicKeyRing());
+        var package = Encoding.UTF8.GetBytes("release payload");
+        var path = WritePackage("ThisIsMyPC-1.0.0-full.nupkg", package);
+        var manifest = ManifestFor("ThisIsMyPC-1.0.0-full.nupkg", package);
+        var signature = SignDetachedArmored(
+            manifest,
+            privateKey: subkeyPrivateKey,
+            publicKeyAlgorithm: PublicKeyAlgorithmTag.RsaSign);
+        var verifier = CreateVerifier(manifest, signature, trustedKeyRing);
 
         var result = await verifier.VerifyPackageAsync("1.0.0", path);
 
@@ -214,7 +384,7 @@ public sealed class GpgManifestVerifierTests : IDisposable
         var package = Encoding.UTF8.GetBytes("release payload");
         var path = WritePackage("ThisIsMyPC-1.0.0-full.nupkg", package);
         var manifest = ManifestFor("ThisIsMyPC-1.0.0-full.nupkg", package);
-        var verifier = CreateVerifier(manifest, SignDetachedArmored(manifest), publicKey: "");
+        var verifier = CreateVerifier(manifest, SignDetachedArmored(manifest), publicKeys: "");
 
         var result = await verifier.VerifyPackageAsync("1.0.0", path);
 
@@ -223,11 +393,23 @@ public sealed class GpgManifestVerifierTests : IDisposable
     }
 
     [Fact]
-    public void ProductionBuild_StillHasNoEmbeddedKey_UntilTheCeremony()
+    public void ProductionBuild_ContainsBothCeremonyKeys()
     {
-        // Flip this assertion when the release key ceremony lands the real key:
-        // it exists so embedding a key is a deliberate, reviewed act.
-        Assert.Equal("", GpgManifestUpdateVerifier.ReleasePublicKeyArmored);
+        using var keyStream = PgpUtilities.GetDecoderStream(
+            new MemoryStream(Encoding.ASCII.GetBytes(
+                GpgManifestUpdateVerifier.ReleasePublicKeysArmored)));
+        var keyBundle = new PgpPublicKeyRingBundle(keyStream);
+        var fingerprints = keyBundle.GetKeyRings()
+            .Select(keyRing => Convert.ToHexString(keyRing.GetPublicKey().GetFingerprint()))
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.Equal(2, keyBundle.Count);
+        Assert.Equal(
+        [
+            "3D253EF5CB19A049F705FE2836D91EDA85049BED",
+            "91C8A2E194EFFAC5E1DD3DB9BD46E205F028C7C0",
+        ], fingerprints);
     }
 
     [Fact]

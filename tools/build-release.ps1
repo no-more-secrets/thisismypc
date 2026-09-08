@@ -269,6 +269,7 @@ if ($SignThumbprint) {
 
 Write-Host ''
 Write-Host "Release assets in $output. Next steps (docs/release/update-signing.md):"
-Write-Host '  1. Sign SHA256SUMS offline: gpg --armor --detach-sign SHA256SUMS'
+Write-Host '  1. Sign SHA256SUMS offline with either release YubiKey:'
+Write-Host '     gpg --local-user <full fingerprint> --armor --detach-sign SHA256SUMS'
 Write-Host "  2. Tag the release exactly v$Version"
 Write-Host '  3. Upload every asset plus SHA256SUMS and SHA256SUMS.asc to that GitHub release'
