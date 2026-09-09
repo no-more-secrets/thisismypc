@@ -60,11 +60,15 @@ The app corresponds to the PC, not a user profile (AGENTS.md). Packaging follows
   every .exe and cannot be changed.
 - **Exploit mitigations are a release gate.** `tools/check-binary-hardening.ps1`
   reads the PE headers of the files about to ship. The release fails if the App,
-  Broker, Service, or installer lacks ASLR with a real relocation table, high-entropy
-  VA, DEP, CFG with a populated target table, the /GS stack cookie, CET, or
-  table-based x64 unwinding. It also rejects any writable executable section.
+  Broker, Service, installer, generated app launcher, execution stub, or updater
+  lacks ASLR with a real relocation table, high-entropy VA, DEP, CFG with a populated
+  target table, the /GS stack cookie, CET, or table-based x64 unwinding.
+  It also rejects any writable executable section.
   Pinned source builds give Skia, HarfBuzz, and SQLite the same mitigations.
   ANGLE remains upstream because its shipped binary passes the complete gate.
+  Velopack's three Windows helpers are rebuilt as x64 from its pinned 1.2.0 source.
+  The local packaging patch preserves debug-directory pointers after resource edits.
+  This keeps CET metadata valid in each generated app launcher.
   Stack guard pages are not a file property. Windows places one below every
   thread stack.
 - **Nothing trusted goes through %TEMP%.** The installer hardens
@@ -87,9 +91,13 @@ The app corresponds to the PC, not a user profile (AGENTS.md). Packaging follows
 ## Building a release
 
 ```
-dotnet tool restore               # restores the repository-pinned vpk version
 .\tools\build-release.ps1 -Version 1.0.0
 ```
+
+`tools/invoke-vpk.ps1` downloads the official pinned `vpk` package and checks its
+hash. It installs the rebuilt helpers and patched packaging assembly in an artifact
+cache before each pack. Run `tools/build-velopack-helpers.ps1` to reproduce those
+four local files from the pinned Velopack source and Rust toolchain.
 
 Official releases are NativeAOT only. The script publishes the App, elevated
 Broker, and Session 0 Service as self-contained win-x64 binaries. The Broker

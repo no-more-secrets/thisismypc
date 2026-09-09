@@ -4,7 +4,8 @@
 # elevation). The per-user Setup.exe and the portable zip are deliberately not
 # shipped: the app corresponds to the PC, so one elevated machine-wide install
 # is the only supported shape.
-# The repository tool manifest pins vpk; this script restores that exact version.
+# The repository tool manifest pins vpk. The wrapper verifies that package and
+# replaces its Windows helpers with the hardened x64 builds in third-party.
 param(
     [Parameter(Mandatory = $true)]
     [ValidatePattern('^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$')]
@@ -107,10 +108,6 @@ if ($SignThumbprint) {
     }
 }
 
-Write-Host 'Restoring repository-pinned .NET tools...'
-dotnet tool restore
-if ($LASTEXITCODE -ne 0) { throw 'Pinned .NET tool restore failed' }
-
 # Both directories are per-version scratch: vpk refuses to pack over an
 # existing release of the same version, so a rebuild starts clean.
 if (Test-Path $staging) { Remove-Item $staging -Recurse -Force }
@@ -186,17 +183,20 @@ if ($SignThumbprint) {
 }
 
 Write-Host 'Packing per-machine MSI with Velopack...'
-dotnet tool run vpk -- pack `
+& (Join-Path $PSScriptRoot 'invoke-vpk.ps1') pack `
     --packId ThisIsMyPC `
     --packVersion $Version `
     --packDir $staging `
     --mainExe ThisIsMyPC.App.exe `
     --packTitle ThisIsMyPC `
     --packAuthors $Authors `
+    --runtime win-x64 `
     --msi --instLocation PerMachine `
     --noPortable `
     --outputDir $output
 if ($LASTEXITCODE -ne 0) { throw 'vpk pack failed' }
+& (Join-Path $PSScriptRoot 'test-velopack-release-hardening.ps1') `
+    -ReleaseDirectory $output -BuildName $Version
 
 # vpk has no switch that suppresses the per-user Setup.exe, and the MSI is a
 # complete per-machine install on its own (verified by msiexec /a extraction:

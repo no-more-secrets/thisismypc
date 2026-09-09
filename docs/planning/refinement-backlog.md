@@ -20,7 +20,8 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 - DONE: Broker requests are limited to each module's target schema and value type. Autoruns can use only shipped locations.
 - Confirmation pages show immutable setting and action identifiers. Unicode controls, formatting marks, malformed text, and category changes are rejected.
 - Verified: 64 Broker policy tests, full CI-safe suite, Release build, NativeAOT Broker publish, and the complete PE mitigation gate.
-- Pending: rebuild or replace the signed x86 Velopack helpers. They still lack CFG, CET, and high-entropy ASLR.
+- DONE: Velopack helpers are rebuilt from pinned 1.2.0 source as hardened x64 binaries.
+- DONE: the packaging patch preserves CET metadata in generated launchers. Release checks inspect the package and MSI outputs.
 
 ## Sidebar module groups (2026-09-06)
 

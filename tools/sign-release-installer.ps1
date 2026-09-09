@@ -180,13 +180,14 @@ try {
     $signTemplate = "`"$powerShell`" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$wrapper`" -ConfigurationFile `"$configurationFile`" -VelopackCallback {{file...}}"
     $signExclude = '(?i)^(?!.*\.(?:exe|dll)$).*'
     Write-Host 'Repacking while scanning and signing every installed EXE and DLL...'
-    & $dotnet tool run vpk -- pack `
+    & (Join-Path $PSScriptRoot 'invoke-vpk.ps1') pack `
         --packId ThisIsMyPC `
         --packVersion $Version `
         --packDir $stagingRoot `
         --mainExe ThisIsMyPC.App.exe `
         --packTitle ThisIsMyPC `
         --packAuthors $Authors `
+        --runtime win-x64 `
         --msi --instLocation PerMachine `
         --noPortable `
         --outputDir $signedOutput `
@@ -209,6 +210,8 @@ try {
     if (-not (Test-Path -LiteralPath $signedMsi -PathType Leaf)) {
         throw 'Signed pack did not produce ThisIsMyPC-win.msi.'
     }
+    & (Join-Path $PSScriptRoot 'test-velopack-release-hardening.ps1') `
+        -ReleaseDirectory $signedOutput -BuildName "$Version-signed"
     & (Join-Path $PSScriptRoot 'normalize-msi.ps1') -Path $signedMsi -Version $Version
     & $wrapper -ConfigurationFile $configurationFile -Container -InputFile $signedMsi
 

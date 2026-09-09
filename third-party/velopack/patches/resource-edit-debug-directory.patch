@@ -1,0 +1,63 @@
+diff --git a/src/vpk/Velopack.Packaging.Windows/ResourceEdit.cs b/src/vpk/Velopack.Packaging.Windows/ResourceEdit.cs
+index c0ea8f70..aa87bbf5 100644
+--- a/src/vpk/Velopack.Packaging.Windows/ResourceEdit.cs
++++ b/src/vpk/Velopack.Packaging.Windows/ResourceEdit.cs
+@@ -151,6 +151,58 @@ public void Commit()
+             using var fs = File.Create(_exePath);
+             _file.Write(fs);
+         });
++
++        RepairDebugDirectoryPointers(_exePath);
++    }
++
++    private static void RepairDebugDirectoryPointers(string path)
++    {
++        var bytes = File.ReadAllBytes(path);
++        var peOffset = BitConverter.ToInt32(bytes, 0x3c);
++        var coffOffset = peOffset + 4;
++        var sectionCount = BitConverter.ToUInt16(bytes, coffOffset + 2);
++        var optionalHeaderSize = BitConverter.ToUInt16(bytes, coffOffset + 16);
++        var optionalHeaderOffset = coffOffset + 20;
++        var isPe32Plus = BitConverter.ToUInt16(bytes, optionalHeaderOffset) == 0x20b;
++        var dataDirectoryOffset = optionalHeaderOffset + (isPe32Plus ? 112 : 96);
++        var debugDirectoryEntry = dataDirectoryOffset + 6 * 8;
++        var debugDirectoryRva = BitConverter.ToUInt32(bytes, debugDirectoryEntry);
++        var debugDirectorySize = BitConverter.ToUInt32(bytes, debugDirectoryEntry + 4);
++        if (debugDirectoryRva == 0 || debugDirectorySize < 28) return;
++
++        var sectionTableOffset = optionalHeaderOffset + optionalHeaderSize;
++        int RvaToFileOffset(uint rva)
++        {
++            for (var index = 0; index < sectionCount; index++) {
++                var sectionOffset = sectionTableOffset + index * 40;
++                var virtualSize = BitConverter.ToUInt32(bytes, sectionOffset + 8);
++                var virtualAddress = BitConverter.ToUInt32(bytes, sectionOffset + 12);
++                var rawSize = BitConverter.ToUInt32(bytes, sectionOffset + 16);
++                var rawPointer = BitConverter.ToUInt32(bytes, sectionOffset + 20);
++                var span = Math.Max(virtualSize, rawSize);
++                if (rva >= virtualAddress && rva - virtualAddress < span) {
++                    return checked((int)(rawPointer + rva - virtualAddress));
++                }
++            }
++            return -1;
++        }
++
++        var debugDirectoryOffset = RvaToFileOffset(debugDirectoryRva);
++        if (debugDirectoryOffset < 0) return;
++        var changed = false;
++        for (var entryIndex = 0; entryIndex < debugDirectorySize / 28; entryIndex++) {
++            var entryOffset = debugDirectoryOffset + checked((int)entryIndex * 28);
++            var dataRva = BitConverter.ToUInt32(bytes, entryOffset + 20);
++            if (dataRva == 0) continue;
++            var dataOffset = RvaToFileOffset(dataRva);
++            if (dataOffset < 0) continue;
++            var currentOffset = BitConverter.ToUInt32(bytes, entryOffset + 24);
++            if (currentOffset == (uint)dataOffset) continue;
++            BitConverter.GetBytes((uint)dataOffset).CopyTo(bytes, entryOffset + 24);
++            changed = true;
++        }
++
++        if (changed) File.WriteAllBytes(path, bytes);
+     }
+ 
+     private void ThrowIfDisposed()
