@@ -15,8 +15,18 @@
          zero guarded call targets. -->
     <PublishAot Condition="'$(AotPublish)' == 'true'">true</PublishAot>
     <ControlFlowGuard Condition="'$(AotPublish)' == 'true'">Guard</ControlFlowGuard>
-    <DefineConstants Condition="'$(AotPublish)' == 'true'">$(DefineConstants);ACG_ENABLED</DefineConstants>
+    <DefineConstants Condition="'$(DynamicCodeGuard)' == 'true'">$(DefineConstants);ACG_ENABLED</DefineConstants>
+    <DefineConstants Condition="'$(CodeIntegrityGuard)' == 'true'">$(DefineConstants);CIG_ENABLED</DefineConstants>
   </PropertyGroup>
+
+  <Target Name="ValidateDynamicCodeGuardBuild" BeforeTargets="PrepareForBuild"
+          Condition="'$(DynamicCodeGuard)' == 'true' and '$(AotPublish)' != 'true'">
+    <Error Text="DynamicCodeGuard requires AotPublish=true." />
+  </Target>
+  <Target Name="ValidateCodeIntegrityGuardBuild" BeforeTargets="PrepareForBuild"
+          Condition="'$(CodeIntegrityGuard)' == 'true' and '$(AotPublish)' != 'true'">
+    <Error Text="CodeIntegrityGuard requires AotPublish=true." />
+  </Target>
 
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />

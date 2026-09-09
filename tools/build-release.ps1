@@ -122,23 +122,25 @@ New-Item -ItemType Directory -Force $output | Out-Null
 # Studio installer directory. Release builds are always NativeAOT.
 $env:PATH = "$env:PATH;${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer"
 $aotArgs = @('-p:AotPublish=true', '-p:OS=Windows_NT')
+$guardedAotArgs = @($aotArgs) + '-p:DynamicCodeGuard=true'
+$appAotArgs = @($guardedAotArgs) + '-p:CodeIntegrityGuard=true'
 
 Write-Host "Publishing App ($Version, win-x64, self-contained, NativeAOT)..."
 dotnet publish (Join-Path $repoRoot 'src\ThisIsMyPC.App\ThisIsMyPC.App.csproj') `
     --configuration Release --runtime win-x64 --self-contained true `
-    -p:Version=$Version @aotArgs --output $staging -m:1
+    -p:Version=$Version @appAotArgs --output $staging -m:1
 if ($LASTEXITCODE -ne 0) { throw 'App publish failed' }
 
 Write-Host 'Publishing Session 0 Service into the same directory (NativeAOT)...'
 dotnet publish (Join-Path $repoRoot 'src\ThisIsMyPC.Service\ThisIsMyPC.Service.csproj') `
     --configuration Release --runtime win-x64 --self-contained true `
-    -p:Version=$Version @aotArgs --output $staging -m:1
+    -p:Version=$Version @guardedAotArgs --output $staging -m:1
 if ($LASTEXITCODE -ne 0) { throw 'Service publish failed' }
 
 Write-Host 'Publishing the on-demand privilege broker (NativeAOT)...'
 dotnet publish (Join-Path $repoRoot 'src\ThisIsMyPC.Broker\ThisIsMyPC.Broker.csproj') `
     --configuration Release --runtime win-x64 --self-contained true `
-    -p:Version=$Version @aotArgs --output $staging -m:1
+    -p:Version=$Version @guardedAotArgs --output $staging -m:1
 if ($LASTEXITCODE -ne 0) { throw 'Privilege broker publish failed' }
 
 if (-not (Test-Path (Join-Path $staging 'ThisIsMyPC.Service.exe'))) {
@@ -225,7 +227,7 @@ if (-not (Test-Path $msiPath)) { throw 'ThisIsMyPC-win.msi missing from the vpk 
 & (Join-Path $PSScriptRoot 'normalize-msi.ps1') -Path $msiPath -Version $Version
 dotnet publish (Join-Path $repoRoot 'src\ThisIsMyPC.Installer\ThisIsMyPC.Installer.csproj') `
     --configuration Release --runtime win-x64 --self-contained true `
-    -p:Version=$Version -p:AotPublish=true -p:OS=Windows_NT -p:BundleNativeLibraries=true --output $installerStaging -m:1
+    -p:Version=$Version @guardedAotArgs -p:BundleNativeLibraries=true --output $installerStaging -m:1
 if ($LASTEXITCODE -ne 0) { throw 'Installer publish failed' }
 $installerExe = Join-Path $installerStaging 'ThisIsMyPC-Installer.exe'
 if (-not (Test-Path $installerExe)) { throw 'ThisIsMyPC-Installer.exe missing from the installer publish output' }

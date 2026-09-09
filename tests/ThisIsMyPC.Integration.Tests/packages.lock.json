@@ -453,9 +453,9 @@
       },
       "SkiaSharp": {
         "type": "CentralTransitive",
-        "requested": "[2.88.9.3, 2.88.9.3]",
-        "resolved": "2.88.9.3",
-        "contentHash": "qf2NXSIShYgwh8Wc4CDZuNWwbaBWJVuyS9SATtZI0GFOOqsVRABSUwzs6/eCe40q73ZzzkGQvgzeMspM5vdaaQ==",
+        "requested": "[2.88.9.4, 2.88.9.4]",
+        "resolved": "2.88.9.4",
+        "contentHash": "8OIfWgDI4WdATnI//o0fgmS3MzPtluW5ErP43H5BzFyUsT0S+PYdJimvYjN0YdPm0mtZV3wksEMUnQ1elGnzig==",
         "dependencies": {
           "SkiaSharp.NativeAssets.Win32": "2.88.9",
           "SkiaSharp.NativeAssets.macOS": "2.88.9"

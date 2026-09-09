@@ -15,7 +15,7 @@
     <PackageVersion Include="Avalonia.Skia" Version="11.3.12" />
     <!-- Local rebuilds replace runtime-generated interop thunks with static callbacks for ACG. -->
     <PackageVersion Include="Avalonia.Win32" Version="[11.3.12.3]" />
-    <PackageVersion Include="SkiaSharp" Version="[2.88.9.3]" />
+    <PackageVersion Include="SkiaSharp" Version="[2.88.9.4]" />
     <!-- Local x64 native builds add CFG and CET. Skia also omits unused Vulkan support. -->
     <PackageVersion Include="SkiaSharp.NativeAssets.Win32" Version="[2.88.9.1]" />
     <PackageVersion Include="HarfBuzzSharp.NativeAssets.Win32" Version="[8.3.1.2]" />

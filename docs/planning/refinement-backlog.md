@@ -14,6 +14,8 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 - The live NativeAOT probe kept ACG and CIG active, scanned a physical display, and rejected unsigned DLL injection.
 - Pending: verify the signed installed App across all modules, updates, accessibility, input methods, and overlays.
 - CIG starts at managed entry. Process-creation enforcement remains incompatible with the required OV-signed native DLLs.
+- Ordinary NativeAOT builds omit ACG and CIG for unsigned diagnostics. ACG can
+  be tested unsigned with `DynamicCodeGuard=true`. Release builds enable both explicitly.
 - DONE: Broker requests are limited to each module's target schema and value type. Autoruns can use only shipped locations.
 - Confirmation pages show immutable setting and action identifiers. Unicode controls, formatting marks, malformed text, and category changes are rejected.
 - Verified: 64 Broker policy tests, full CI-safe suite, Release build, NativeAOT Broker publish, and the complete PE mitigation gate.

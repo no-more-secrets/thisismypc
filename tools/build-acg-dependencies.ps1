@@ -206,6 +206,9 @@ Assert-LastExitCode 'SkiaSharp checkout failed.'
 Copy-Item (Join-Path $repoRoot 'global.json') (Join-Path $skiaSource 'global.json') -Force
 git -C $skiaSource apply (Join-Path $patchRoot 'skiasharp-2.88.9.patch')
 Assert-LastExitCode 'SkiaSharp ACG patch failed.'
+git -C $skiaSource apply --unidiff-zero `
+    (Join-Path $patchRoot 'skiasharp-callbacks-2.88.9.patch')
+Assert-LastExitCode 'SkiaSharp callback patch failed.'
 git -C $skiaSource apply (Join-Path $patchRoot 'skiasharp-native-windows-2.88.9.patch')
 Assert-LastExitCode 'SkiaSharp native hardening patch failed.'
 $env:MSBuildEnableWorkloadResolver = 'false'
@@ -344,10 +347,10 @@ New-PatchedPackage $avaloniaPackage 'Avalonia.Win32' '11.3.12' '11.3.12.3' `
     'lib\net8.0\Avalonia.Win32.dll' `
     (Join-Path $avaloniaSource 'src\Windows\Avalonia.Win32\bin\Release\net8.0\Avalonia.Win32.dll') `
     '20E243F26370216C677E2434539827038F096DEAED843D067FB7394C99F41244'
-New-PatchedPackage $skiaPackage 'SkiaSharp' '2.88.9' '2.88.9.3' `
+New-PatchedPackage $skiaPackage 'SkiaSharp' '2.88.9' '2.88.9.4' `
     'lib\net6.0\SkiaSharp.dll' `
     (Join-Path $skiaSource 'binding\SkiaSharp\bin\Release\net6.0\SkiaSharp.dll') `
-    '668D0A36575F86D1BB1765E45A495308041602BA1A2EC75B70A3773ECD8037EC'
+    '909C5E2D814C94BFA4D63E81C8FCF8D3890A689EA10B3EEAF61CCD09BC83D34C'
 New-PatchedPackage $skiaNativePackage 'SkiaSharp.NativeAssets.Win32' '2.88.9' '2.88.9.1' `
     'runtimes\win-x64\native\libSkiaSharp.dll' $skiaNativeBinary `
     '2A1E8E0A4EDC6622B8DC82E36BBF7FC0F78EC3892AF6B411A9F262721F28C8A8'

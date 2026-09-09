@@ -32,17 +32,20 @@ EH Continuation table present.
 
 ## Process and loading hardening
 
-- **Arbitrary Code Guard: DONE.** Every NativeAOT App, Service, and Installer
+- **Arbitrary Code Guard: DONE.** Every release App, Broker, Service, and Installer
   enables `ProcessDynamicCodePolicy` before Avalonia or host startup and fails closed
   if Windows does not confirm it. Avalonia.Win32 11.3.12 and SkiaSharp 2.88.9
   used managed delegate thunks that ACG blocks. Pinned local rebuilds replace
-  those thunks with static unmanaged function pointers. A strict process
+  the four callback tables and nine operation callbacks with static unmanaged
+  function pointers. A strict process
   creation test kept ACG active before resume and after the main window opened.
   The rebuilt Skia, HarfBuzz, and SQLite libraries load under the same strict policy.
   `tools/AcgLauncher` also rejects a created window when its captured frame remains black.
   ACG App and Installer builds use software rendering because ANGLE presented black frames.
   The shipped self-enable path still starts at managed `Main`. Loader-time ACG
   needs a trusted launcher or machine policy as a separate hardening step.
+  `AotPublish=true` alone omits ACG for fast unsigned diagnostics.
+  `DynamicCodeGuard=true` enables ACG without requiring code signing.
 - **Code Integrity Guard: DONE.** NativeAOT App startup verifies the complete
   packaged native dependency set through WinVerifyTrust and the exact No More
   Secrets, LLC signer name. It maps those four fixed files by absolute path,
@@ -52,7 +55,10 @@ EH Continuation table present.
   ACG and CIG active, scanned a physical display, and rejected an unsigned DLL.
   Process-creation CIG cannot admit our OV-signed native libraries. The current
   managed-entry policy leaves a small pre-entry injection window. Full signed
-  App compatibility testing remains pending.
+  App compatibility testing remains pending. Ordinary NativeAOT builds omit
+  ACG and CIG, so unsigned Debug builds can use normal NativeAOT behavior.
+  Unsigned ACG diagnostics pass `DynamicCodeGuard=true`. The release script
+  enables ACG and CIG explicitly.
 - **Safe DLL search: DONE.** New `DllSearchHardening.Apply()`
   (SetDefaultDllDirectories: SYSTEM32 + application dir only, PATH and CWD
   removed process-wide) called before framework startup in the App, Service,

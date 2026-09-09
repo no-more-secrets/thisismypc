@@ -7,8 +7,13 @@
          the AOT toolchain leaves it off by default. -->
     <PublishAot Condition="'$(AotPublish)' == 'true'">true</PublishAot>
     <ControlFlowGuard Condition="'$(AotPublish)' == 'true'">Guard</ControlFlowGuard>
-    <DefineConstants Condition="'$(AotPublish)' == 'true'">$(DefineConstants);ACG_ENABLED</DefineConstants>
+    <DefineConstants Condition="'$(DynamicCodeGuard)' == 'true'">$(DefineConstants);ACG_ENABLED</DefineConstants>
   </PropertyGroup>
+
+  <Target Name="ValidateDynamicCodeGuardBuild" BeforeTargets="PrepareForBuild"
+          Condition="'$(DynamicCodeGuard)' == 'true' and '$(AotPublish)' != 'true'">
+    <Error Text="DynamicCodeGuard requires AotPublish=true." />
+  </Target>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" />

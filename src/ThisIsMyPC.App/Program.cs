@@ -18,7 +18,7 @@ sealed class Program
     public static void Main(string[] args)
     {
 #if ACG_ENABLED
-        // NativeAOT releases forbid new executable memory before UI startup.
+        // Guarded NativeAOT builds forbid new executable memory before UI startup.
         // Patched Avalonia and SkiaSharp use static unmanaged callbacks.
         if (!DynamicCodeHardening.Apply() || !DynamicCodeHardening.IsEnabled())
             Environment.FailFast("Arbitrary Code Guard could not be enabled.");
@@ -36,7 +36,7 @@ sealed class Program
             Environment.FailFast(installGuard.WarningMessage ?? "The application directory is not protected.");
 #endif
 
-#if ACG_ENABLED
+#if CIG_ENABLED
         // CIG cannot admit our OV-signed Avalonia, Skia, HarfBuzz, and SQLite
         // images. Verify and map the fixed package set before closing image loads.
         var nativeDependencies = TrustedNativeDependencyLoader.VerifyAndLoad(AppContext.BaseDirectory);

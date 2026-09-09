@@ -1,0 +1,159 @@
+diff --git a/binding/Binding/DelegateProxies.cs b/binding/Binding/DelegateProxies.cs
+index 2acfceca2..3470edc0e 100644
+--- a/binding/Binding/DelegateProxies.cs
++++ b/binding/Binding/DelegateProxies.cs
+@@ -2,0 +3 @@ using System.ComponentModel;
++using System.Runtime.CompilerServices;
+@@ -32,9 +33,9 @@ namespace SkiaSharp
+-		public static readonly SKBitmapReleaseProxyDelegate SKBitmapReleaseDelegateProxy = SKBitmapReleaseDelegateProxyImplementation;
+-		public static readonly SKDataReleaseProxyDelegate SKDataReleaseDelegateProxy = SKDataReleaseDelegateProxyImplementation;
+-		public static readonly SKImageRasterReleaseProxyDelegate SKImageRasterReleaseDelegateProxy = SKImageRasterReleaseDelegateProxyImplementation;
+-		public static readonly SKImageRasterReleaseProxyDelegate SKImageRasterReleaseDelegateProxyForCoTaskMem = SKImageRasterReleaseDelegateProxyImplementationForCoTaskMem;
+-		public static readonly SKImageTextureReleaseProxyDelegate SKImageTextureReleaseDelegateProxy = SKImageTextureReleaseDelegateProxyImplementation;
+-		public static readonly SKSurfaceRasterReleaseProxyDelegate SKSurfaceReleaseDelegateProxy = SKSurfaceReleaseDelegateProxyImplementation;
+-		public static readonly GRGlGetProcProxyDelegate GRGlGetProcDelegateProxy = GRGlGetProcDelegateProxyImplementation;
+-		public static readonly GRVkGetProcProxyDelegate GRVkGetProcDelegateProxy = GRVkGetProcDelegateProxyImplementation;
+-		public static readonly SKGlyphPathProxyDelegate SKGlyphPathDelegateProxy = SKGlyphPathDelegateProxyImplementation;
++		public static readonly IntPtr SKBitmapReleaseDelegateProxy = (IntPtr)(delegate* unmanaged[Cdecl]<void*, void*, void>)&SKBitmapReleaseDelegateProxyImplementation;
++		public static readonly IntPtr SKDataReleaseDelegateProxy = (IntPtr)(delegate* unmanaged[Cdecl]<void*, void*, void>)&SKDataReleaseDelegateProxyImplementation;
++		public static readonly IntPtr SKImageRasterReleaseDelegateProxy = (IntPtr)(delegate* unmanaged[Cdecl]<void*, void*, void>)&SKImageRasterReleaseDelegateProxyImplementation;
++		public static readonly IntPtr SKImageRasterReleaseDelegateProxyForCoTaskMem = (IntPtr)(delegate* unmanaged[Cdecl]<void*, void*, void>)&SKImageRasterReleaseDelegateProxyImplementationForCoTaskMem;
++		public static readonly IntPtr SKImageTextureReleaseDelegateProxy = (IntPtr)(delegate* unmanaged[Cdecl]<void*, void>)&SKImageTextureReleaseDelegateProxyImplementation;
++		public static readonly IntPtr SKSurfaceReleaseDelegateProxy = (IntPtr)(delegate* unmanaged[Cdecl]<void*, void*, void>)&SKSurfaceReleaseDelegateProxyImplementation;
++		public static readonly IntPtr GRGlGetProcDelegateProxy = (IntPtr)(delegate* unmanaged[Cdecl]<void*, void*, IntPtr>)&GRGlGetProcDelegateProxyImplementation;
++		public static readonly IntPtr GRVkGetProcDelegateProxy = (IntPtr)(delegate* unmanaged[Cdecl]<void*, void*, IntPtr, IntPtr, IntPtr>)&GRVkGetProcDelegateProxyImplementation;
++		public static readonly IntPtr SKGlyphPathDelegateProxy = (IntPtr)(delegate* unmanaged[Cdecl]<IntPtr, SKMatrix*, void*, void>)&SKGlyphPathDelegateProxyImplementation;
+@@ -44,0 +46 @@ namespace SkiaSharp
++		[UnmanagedCallersOnly (CallConvs = new[] { typeof (CallConvCdecl) })]
+@@ -55,0 +58 @@ namespace SkiaSharp
++		[UnmanagedCallersOnly (CallConvs = new[] { typeof (CallConvCdecl) })]
+@@ -66,0 +70 @@ namespace SkiaSharp
++		[UnmanagedCallersOnly (CallConvs = new[] { typeof (CallConvCdecl) })]
+@@ -72,0 +77 @@ namespace SkiaSharp
++		[UnmanagedCallersOnly (CallConvs = new[] { typeof (CallConvCdecl) })]
+@@ -83,0 +89 @@ namespace SkiaSharp
++		[UnmanagedCallersOnly (CallConvs = new[] { typeof (CallConvCdecl) })]
+@@ -94,0 +101 @@ namespace SkiaSharp
++		[UnmanagedCallersOnly (CallConvs = new[] { typeof (CallConvCdecl) })]
+@@ -105,0 +113 @@ namespace SkiaSharp
++		[UnmanagedCallersOnly (CallConvs = new[] { typeof (CallConvCdecl) })]
+@@ -112,0 +121 @@ namespace SkiaSharp
++		[UnmanagedCallersOnly (CallConvs = new[] { typeof (CallConvCdecl) })]
+@@ -120,0 +130 @@ namespace SkiaSharp
++		[UnmanagedCallersOnly (CallConvs = new[] { typeof (CallConvCdecl) })]
+diff --git a/binding/Binding/GRVkBackendContext.cs b/binding/Binding/GRVkBackendContext.cs
+index 428b7784d..3fec2fd38 100644
+--- a/binding/Binding/GRVkBackendContext.cs
++++ b/binding/Binding/GRVkBackendContext.cs
+@@ -13 +13 @@ namespace SkiaSharp
+-		private GRVkGetProcProxyDelegate getProcProxy;
++		private IntPtr getProcProxy;
+@@ -59 +59 @@ namespace SkiaSharp
+-				getProcProxy = null;
++				getProcProxy = IntPtr.Zero;
+diff --git a/binding/Binding/SkiaApi.generated.cs b/binding/Binding/SkiaApi.generated.cs
+index 910f5a142..35a8a0917 100644
+--- a/binding/Binding/SkiaApi.generated.cs
++++ b/binding/Binding/SkiaApi.generated.cs
+@@ -716 +716 @@ namespace SkiaSharp
+-		internal static extern gr_glinterface_t gr_glinterface_assemble_gl_interface (void* ctx, GRGlGetProcProxyDelegate get);
++		internal static extern gr_glinterface_t gr_glinterface_assemble_gl_interface (void* ctx, IntPtr get);
+@@ -720 +720 @@ namespace SkiaSharp
+-			internal delegate gr_glinterface_t gr_glinterface_assemble_gl_interface (void* ctx, GRGlGetProcProxyDelegate get);
++			internal delegate gr_glinterface_t gr_glinterface_assemble_gl_interface (void* ctx, IntPtr get);
+@@ -723 +723 @@ namespace SkiaSharp
+-		internal static gr_glinterface_t gr_glinterface_assemble_gl_interface (void* ctx, GRGlGetProcProxyDelegate get) =>
++		internal static gr_glinterface_t gr_glinterface_assemble_gl_interface (void* ctx, IntPtr get) =>
+@@ -730 +730 @@ namespace SkiaSharp
+-		internal static extern gr_glinterface_t gr_glinterface_assemble_gles_interface (void* ctx, GRGlGetProcProxyDelegate get);
++		internal static extern gr_glinterface_t gr_glinterface_assemble_gles_interface (void* ctx, IntPtr get);
+@@ -734 +734 @@ namespace SkiaSharp
+-			internal delegate gr_glinterface_t gr_glinterface_assemble_gles_interface (void* ctx, GRGlGetProcProxyDelegate get);
++			internal delegate gr_glinterface_t gr_glinterface_assemble_gles_interface (void* ctx, IntPtr get);
+@@ -737 +737 @@ namespace SkiaSharp
+-		internal static gr_glinterface_t gr_glinterface_assemble_gles_interface (void* ctx, GRGlGetProcProxyDelegate get) =>
++		internal static gr_glinterface_t gr_glinterface_assemble_gles_interface (void* ctx, IntPtr get) =>
+@@ -744 +744 @@ namespace SkiaSharp
+-		internal static extern gr_glinterface_t gr_glinterface_assemble_interface (void* ctx, GRGlGetProcProxyDelegate get);
++		internal static extern gr_glinterface_t gr_glinterface_assemble_interface (void* ctx, IntPtr get);
+@@ -748 +748 @@ namespace SkiaSharp
+-			internal delegate gr_glinterface_t gr_glinterface_assemble_interface (void* ctx, GRGlGetProcProxyDelegate get);
++			internal delegate gr_glinterface_t gr_glinterface_assemble_interface (void* ctx, IntPtr get);
+@@ -751 +751 @@ namespace SkiaSharp
+-		internal static gr_glinterface_t gr_glinterface_assemble_interface (void* ctx, GRGlGetProcProxyDelegate get) =>
++		internal static gr_glinterface_t gr_glinterface_assemble_interface (void* ctx, IntPtr get) =>
+@@ -758 +758 @@ namespace SkiaSharp
+-		internal static extern gr_glinterface_t gr_glinterface_assemble_webgl_interface (void* ctx, GRGlGetProcProxyDelegate get);
++		internal static extern gr_glinterface_t gr_glinterface_assemble_webgl_interface (void* ctx, IntPtr get);
+@@ -762 +762 @@ namespace SkiaSharp
+-			internal delegate gr_glinterface_t gr_glinterface_assemble_webgl_interface (void* ctx, GRGlGetProcProxyDelegate get);
++			internal delegate gr_glinterface_t gr_glinterface_assemble_webgl_interface (void* ctx, IntPtr get);
+@@ -765 +765 @@ namespace SkiaSharp
+-		internal static gr_glinterface_t gr_glinterface_assemble_webgl_interface (void* ctx, GRGlGetProcProxyDelegate get) =>
++		internal static gr_glinterface_t gr_glinterface_assemble_webgl_interface (void* ctx, IntPtr get) =>
+@@ -904 +904 @@ namespace SkiaSharp
+-		internal static extern void gr_vk_extensions_init (gr_vk_extensions_t extensions, GRVkGetProcProxyDelegate getProc, void* userData, vk_instance_t instance, vk_physical_device_t physDev, UInt32 instanceExtensionCount, [MarshalAs (UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPStr)] String[] instanceExtensions, UInt32 deviceExtensionCount, [MarshalAs (UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPStr)] String[] deviceExtensions);
++		internal static extern void gr_vk_extensions_init (gr_vk_extensions_t extensions, IntPtr getProc, void* userData, vk_instance_t instance, vk_physical_device_t physDev, UInt32 instanceExtensionCount, [MarshalAs (UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPStr)] String[] instanceExtensions, UInt32 deviceExtensionCount, [MarshalAs (UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPStr)] String[] deviceExtensions);
+@@ -908 +908 @@ namespace SkiaSharp
+-			internal delegate void gr_vk_extensions_init (gr_vk_extensions_t extensions, GRVkGetProcProxyDelegate getProc, void* userData, vk_instance_t instance, vk_physical_device_t physDev, UInt32 instanceExtensionCount, [MarshalAs (UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPStr)] String[] instanceExtensions, UInt32 deviceExtensionCount, [MarshalAs (UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPStr)] String[] deviceExtensions);
++			internal delegate void gr_vk_extensions_init (gr_vk_extensions_t extensions, IntPtr getProc, void* userData, vk_instance_t instance, vk_physical_device_t physDev, UInt32 instanceExtensionCount, [MarshalAs (UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPStr)] String[] instanceExtensions, UInt32 deviceExtensionCount, [MarshalAs (UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPStr)] String[] deviceExtensions);
+@@ -911 +911 @@ namespace SkiaSharp
+-		internal static void gr_vk_extensions_init (gr_vk_extensions_t extensions, GRVkGetProcProxyDelegate getProc, void* userData, vk_instance_t instance, vk_physical_device_t physDev, UInt32 instanceExtensionCount, [MarshalAs (UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPStr)] String[] instanceExtensions, UInt32 deviceExtensionCount, [MarshalAs (UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPStr)] String[] deviceExtensions) =>
++		internal static void gr_vk_extensions_init (gr_vk_extensions_t extensions, IntPtr getProc, void* userData, vk_instance_t instance, vk_physical_device_t physDev, UInt32 instanceExtensionCount, [MarshalAs (UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPStr)] String[] instanceExtensions, UInt32 deviceExtensionCount, [MarshalAs (UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPStr)] String[] deviceExtensions) =>
+@@ -1167 +1167 @@ namespace SkiaSharp
+-		internal static extern bool sk_bitmap_install_pixels (sk_bitmap_t cbitmap, SKImageInfoNative* cinfo, void* pixels, /* size_t */ IntPtr rowBytes, SKBitmapReleaseProxyDelegate releaseProc, void* context);
++		internal static extern bool sk_bitmap_install_pixels (sk_bitmap_t cbitmap, SKImageInfoNative* cinfo, void* pixels, /* size_t */ IntPtr rowBytes, IntPtr releaseProc, void* context);
+@@ -1172 +1172 @@ namespace SkiaSharp
+-			internal delegate bool sk_bitmap_install_pixels (sk_bitmap_t cbitmap, SKImageInfoNative* cinfo, void* pixels, /* size_t */ IntPtr rowBytes, SKBitmapReleaseProxyDelegate releaseProc, void* context);
++			internal delegate bool sk_bitmap_install_pixels (sk_bitmap_t cbitmap, SKImageInfoNative* cinfo, void* pixels, /* size_t */ IntPtr rowBytes, IntPtr releaseProc, void* context);
+@@ -1175 +1175 @@ namespace SkiaSharp
+-		internal static bool sk_bitmap_install_pixels (sk_bitmap_t cbitmap, SKImageInfoNative* cinfo, void* pixels, /* size_t */ IntPtr rowBytes, SKBitmapReleaseProxyDelegate releaseProc, void* context) =>
++		internal static bool sk_bitmap_install_pixels (sk_bitmap_t cbitmap, SKImageInfoNative* cinfo, void* pixels, /* size_t */ IntPtr rowBytes, IntPtr releaseProc, void* context) =>
+@@ -3554 +3554 @@ namespace SkiaSharp
+-		internal static extern sk_data_t sk_data_new_with_proc (void* ptr, /* size_t */ IntPtr length, SKDataReleaseProxyDelegate proc, void* ctx);
++		internal static extern sk_data_t sk_data_new_with_proc (void* ptr, /* size_t */ IntPtr length, IntPtr proc, void* ctx);
+@@ -3558 +3558 @@ namespace SkiaSharp
+-			internal delegate sk_data_t sk_data_new_with_proc (void* ptr, /* size_t */ IntPtr length, SKDataReleaseProxyDelegate proc, void* ctx);
++			internal delegate sk_data_t sk_data_new_with_proc (void* ptr, /* size_t */ IntPtr length, IntPtr proc, void* ctx);
+@@ -3561 +3561 @@ namespace SkiaSharp
+-		internal static sk_data_t sk_data_new_with_proc (void* ptr, /* size_t */ IntPtr length, SKDataReleaseProxyDelegate proc, void* ctx) =>
++		internal static sk_data_t sk_data_new_with_proc (void* ptr, /* size_t */ IntPtr length, IntPtr proc, void* ctx) =>
+@@ -3890 +3890 @@ namespace SkiaSharp
+-		internal static extern void sk_font_get_paths (sk_font_t font, UInt16* glyphs, Int32 count, SKGlyphPathProxyDelegate glyphPathProc, void* context);
++		internal static extern void sk_font_get_paths (sk_font_t font, UInt16* glyphs, Int32 count, IntPtr glyphPathProc, void* context);
+@@ -3894 +3894 @@ namespace SkiaSharp
+-			internal delegate void sk_font_get_paths (sk_font_t font, UInt16* glyphs, Int32 count, SKGlyphPathProxyDelegate glyphPathProc, void* context);
++			internal delegate void sk_font_get_paths (sk_font_t font, UInt16* glyphs, Int32 count, IntPtr glyphPathProc, void* context);
+@@ -3897 +3897 @@ namespace SkiaSharp
+-		internal static void sk_font_get_paths (sk_font_t font, UInt16* glyphs, Int32 count, SKGlyphPathProxyDelegate glyphPathProc, void* context) =>
++		internal static void sk_font_get_paths (sk_font_t font, UInt16* glyphs, Int32 count, IntPtr glyphPathProc, void* context) =>
+@@ -5158 +5158 @@ namespace SkiaSharp
+-		internal static extern sk_image_t sk_image_new_from_texture (gr_recording_context_t context, gr_backendtexture_t texture, GRSurfaceOrigin origin, SKColorTypeNative colorType, SKAlphaType alpha, sk_colorspace_t colorSpace, SKImageTextureReleaseProxyDelegate releaseProc, void* releaseContext);
++		internal static extern sk_image_t sk_image_new_from_texture (gr_recording_context_t context, gr_backendtexture_t texture, GRSurfaceOrigin origin, SKColorTypeNative colorType, SKAlphaType alpha, sk_colorspace_t colorSpace, IntPtr releaseProc, void* releaseContext);
+@@ -5162 +5162 @@ namespace SkiaSharp
+-			internal delegate sk_image_t sk_image_new_from_texture (gr_recording_context_t context, gr_backendtexture_t texture, GRSurfaceOrigin origin, SKColorTypeNative colorType, SKAlphaType alpha, sk_colorspace_t colorSpace, SKImageTextureReleaseProxyDelegate releaseProc, void* releaseContext);
++			internal delegate sk_image_t sk_image_new_from_texture (gr_recording_context_t context, gr_backendtexture_t texture, GRSurfaceOrigin origin, SKColorTypeNative colorType, SKAlphaType alpha, sk_colorspace_t colorSpace, IntPtr releaseProc, void* releaseContext);
+@@ -5165 +5165 @@ namespace SkiaSharp
+-		internal static sk_image_t sk_image_new_from_texture (gr_recording_context_t context, gr_backendtexture_t texture, GRSurfaceOrigin origin, SKColorTypeNative colorType, SKAlphaType alpha, sk_colorspace_t colorSpace, SKImageTextureReleaseProxyDelegate releaseProc, void* releaseContext) =>
++		internal static sk_image_t sk_image_new_from_texture (gr_recording_context_t context, gr_backendtexture_t texture, GRSurfaceOrigin origin, SKColorTypeNative colorType, SKAlphaType alpha, sk_colorspace_t colorSpace, IntPtr releaseProc, void* releaseContext) =>
+@@ -5172 +5172 @@ namespace SkiaSharp
+-		internal static extern sk_image_t sk_image_new_raster (sk_pixmap_t pixmap, SKImageRasterReleaseProxyDelegate releaseProc, void* context);
++		internal static extern sk_image_t sk_image_new_raster (sk_pixmap_t pixmap, IntPtr releaseProc, void* context);
+@@ -5176 +5176 @@ namespace SkiaSharp
+-			internal delegate sk_image_t sk_image_new_raster (sk_pixmap_t pixmap, SKImageRasterReleaseProxyDelegate releaseProc, void* context);
++			internal delegate sk_image_t sk_image_new_raster (sk_pixmap_t pixmap, IntPtr releaseProc, void* context);
+@@ -5179 +5179 @@ namespace SkiaSharp
+-		internal static sk_image_t sk_image_new_raster (sk_pixmap_t pixmap, SKImageRasterReleaseProxyDelegate releaseProc, void* context) =>
++		internal static sk_image_t sk_image_new_raster (sk_pixmap_t pixmap, IntPtr releaseProc, void* context) =>
+@@ -11880 +11880 @@ namespace SkiaSharp
+-		internal static extern sk_surface_t sk_surface_new_raster_direct (SKImageInfoNative* param0, void* pixels, /* size_t */ IntPtr rowBytes, SKSurfaceRasterReleaseProxyDelegate releaseProc, void* context, sk_surfaceprops_t props);
++		internal static extern sk_surface_t sk_surface_new_raster_direct (SKImageInfoNative* param0, void* pixels, /* size_t */ IntPtr rowBytes, IntPtr releaseProc, void* context, sk_surfaceprops_t props);
+@@ -11884 +11884 @@ namespace SkiaSharp
+-			internal delegate sk_surface_t sk_surface_new_raster_direct (SKImageInfoNative* param0, void* pixels, /* size_t */ IntPtr rowBytes, SKSurfaceRasterReleaseProxyDelegate releaseProc, void* context, sk_surfaceprops_t props);
++			internal delegate sk_surface_t sk_surface_new_raster_direct (SKImageInfoNative* param0, void* pixels, /* size_t */ IntPtr rowBytes, IntPtr releaseProc, void* context, sk_surfaceprops_t props);
+@@ -11887 +11887 @@ namespace SkiaSharp
+-		internal static sk_surface_t sk_surface_new_raster_direct (SKImageInfoNative* param0, void* pixels, /* size_t */ IntPtr rowBytes, SKSurfaceRasterReleaseProxyDelegate releaseProc, void* context, sk_surfaceprops_t props) =>
++		internal static sk_surface_t sk_surface_new_raster_direct (SKImageInfoNative* param0, void* pixels, /* size_t */ IntPtr rowBytes, IntPtr releaseProc, void* context, sk_surfaceprops_t props) =>
+@@ -13779 +13779 @@ namespace SkiaSharp {
+-		public GRVkGetProcProxyDelegate fGetProc;
++		public IntPtr fGetProc;
