@@ -37,6 +37,12 @@ sealed class Program
 #endif
 
 #if CIG_ENABLED
+        // Optional Winsock providers can be non-Microsoft signed. CIG rejects
+        // them, but Windows must return that failure instead of showing a
+        // process-blocking Bad Image dialog.
+        if (!CriticalErrorDialogHardening.Apply())
+            Environment.FailFast("Critical error dialog suppression could not be enabled.");
+
         // CIG cannot admit our OV-signed Avalonia, Skia, HarfBuzz, and SQLite
         // images. Verify and map the fixed package set before closing image loads.
         var nativeDependencies = TrustedNativeDependencyLoader.VerifyAndLoad(AppContext.BaseDirectory);

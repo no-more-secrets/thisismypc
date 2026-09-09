@@ -58,7 +58,9 @@ EH Continuation table present.
   App compatibility testing remains pending. Ordinary NativeAOT builds omit
   ACG and CIG, so unsigned Debug builds can use normal NativeAOT behavior.
   Unsigned ACG diagnostics pass `DynamicCodeGuard=true`. The release script
-  enables ACG and CIG explicitly.
+  enables ACG and CIG explicitly. CIG can reject optional third-party Winsock
+  providers such as Apple Bonjour. The App suppresses Windows critical-error
+  dialogs so Winsock can skip the rejected provider without blocking startup.
 - **Safe DLL search: DONE.** New `DllSearchHardening.Apply()`
   (SetDefaultDllDirectories: SYSTEM32 + application dir only, PATH and CWD
   removed process-wide) called before framework startup in the App, Service,

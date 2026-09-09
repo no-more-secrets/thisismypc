@@ -12,6 +12,7 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 - A same-user process still injected an unsigned disk DLL into the unelevated UI. ACG blocked RWX allocation inside that DLL.
 - DONE: NativeAOT App startup verifies and preloads its four signed native DLLs, then enables Microsoft-only CIG before Avalonia starts.
 - The live NativeAOT probe kept ACG and CIG active, scanned a physical display, and rejected unsigned DLL injection.
+- CIG blocks Apple Bonjour's Winsock provider. Critical-error dialog suppression lets Winsock skip it without blocking App startup.
 - Pending: verify the signed installed App across all modules, updates, accessibility, input methods, and overlays.
 - CIG starts at managed entry. Process-creation enforcement remains incompatible with the required OV-signed native DLLs.
 - Ordinary NativeAOT builds omit ACG and CIG for unsigned diagnostics. ACG can
