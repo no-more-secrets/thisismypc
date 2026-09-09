@@ -13,9 +13,9 @@ $sourceCommit = 'f2edcbcafb81da5b3c884aaea330e225ad91d8b6'
 $rustToolchain = '1.98.1-x86_64-pc-windows-msvc'
 $expectedRustCommit = '48a229ceaefd4985c50990b14116b6d856af0985'
 $expectedHashes = @{
-    'setup.exe' = 'EEB52F602C3E442EC6D4F7CD82A3F84F64F083D0E83759194F7D98F909E24701'
-    'stub.exe' = '006BC2B85917F5F277842F28DFDAC9D6AED73FDD4B7D191920C1139322A462F0'
-    'update.exe' = '68C844ADC859AE56A9C1D0A503342F83755D09607D2E64D6D0FCBBF28A405628'
+    'setup.exe' = '3EBC9447E033383E729E84895AF77D5CDEB2889B5C0F43B206CB0E22272A772D'
+    'stub.exe' = '46B1F06FA14FB31091C3625D93F95A79A955AE37BC29237601F7D2291796FB69'
+    'update.exe' = 'DC7BEEA1CB712D7D36624816B5D4124A89007F9473A3B9CFDF2A2B3F063D3E96'
 }
 $managedAssemblyName = 'Velopack.Packaging.Windows.dll'
 $managedAssemblyHash = '22DF4ACC4597CF4967A3C0882F50674ABC621B076D916011F32339BD3FC4F2FA'
@@ -66,8 +66,10 @@ if ($sourceChanges.Count -eq 0) {
     & git -C $sourceRoot apply $patchPath
     Assert-LastExitCode 'Velopack packaging patch failed.'
 }
-elseif ($sourceChanges.Count -eq 1 -and
-    $sourceChanges[0] -eq ' M src/vpk/Velopack.Packaging.Windows/ResourceEdit.cs') {
+elseif ($sourceChanges.Count -eq 3 -and
+    $sourceChanges -contains ' M Cargo.lock' -and
+    $sourceChanges -contains ' M Cargo.toml' -and
+    $sourceChanges -contains ' M src/vpk/Velopack.Packaging.Windows/ResourceEdit.cs') {
     & git -C $sourceRoot apply --reverse --check $patchPath
     Assert-LastExitCode 'The existing Velopack source change does not match the packaging patch.'
 }

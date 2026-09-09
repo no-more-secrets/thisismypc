@@ -3,6 +3,7 @@
 This directory contains rebuilt Windows helpers and one patched assembly from Velopack 1.2.0.
 The source commit is `f2edcbcafb81da5b3c884aaea330e225ad91d8b6`.
 Velopack uses the MIT license.
+The source workspace version is set to the matching `1.2.0` release version.
 
 The build uses Rust 1.98.1 and the x64 MSVC target. It enables these linker protections:
 

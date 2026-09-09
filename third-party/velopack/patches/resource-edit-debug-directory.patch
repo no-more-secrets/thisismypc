@@ -1,3 +1,76 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index c75ce4f5..a96c80fb 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -4469,7 +4469,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "velopack"
+-version = "0.0.0-local"
++version = "1.2.0"
+ dependencies = [
+  "anyhow",
+  "bitflags 2.11.1",
+@@ -4503,7 +4503,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "velopack_bins"
+-version = "0.0.0-local"
++version = "1.2.0"
+ dependencies = [
+  "anyhow",
+  "bitflags 2.11.1",
+@@ -4555,7 +4555,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "velopack_l18n"
+-version = "0.0.0-local"
++version = "1.2.0"
+ dependencies = [
+  "anyhow",
+  "fluent",
+@@ -4571,7 +4571,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "velopack_libc"
+-version = "0.0.0-local"
++version = "1.2.0"
+ dependencies = [
+  "anyhow",
+  "cbindgen",
+@@ -4588,7 +4588,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "velopack_nodeffi"
+-version = "0.0.0-local"
++version = "1.2.0"
+ dependencies = [
+  "lazy_static",
+  "log",
+@@ -4613,7 +4613,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "velopack_wix"
+-version = "0.0.0-local"
++version = "1.2.0"
+ dependencies = [
+  "anyhow",
+  "remove_dir_all",
+
+diff --git a/Cargo.toml b/Cargo.toml
+index 81b632c3..1ce55242 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -14,7 +14,7 @@ exclude = [
+ ]
+ 
+ [workspace.package]
+-version = "0.0.0-local"
++version = "1.2.0"
+ authors = ["Velopack Ltd, Caelan Sayler <git@caesay.com>"]
+ homepage = "https://velopack.io"
+ repository = "https://github.com/velopack/velopack"
+
 diff --git a/src/vpk/Velopack.Packaging.Windows/ResourceEdit.cs b/src/vpk/Velopack.Packaging.Windows/ResourceEdit.cs
 index c0ea8f70..aa87bbf5 100644
 --- a/src/vpk/Velopack.Packaging.Windows/ResourceEdit.cs
