@@ -247,10 +247,12 @@ public partial class App : Application
         services.AddSingleton<Core.Hardware.Lighting.IOpenRgbHost>(sp => new ThisIsMyPC.Interop.Win32.Hardware.BundledOpenRgbHost(
             sp.GetRequiredService<Core.Hardware.Detection.IHardwareProbeEnvironment>(),
             Path.Combine(AppConstants.UserDataDirectoryPath, "openrgb")));
+        services.AddSingleton<ICompanionWindowService, ThisIsMyPC.Interop.Win32.Hardware.CompanionWindowService>();
         services.AddSingleton(sp => new HardwareCompanionActions(
             sp.GetRequiredService<IPendingActionsService>(),
             sp.GetRequiredService<IInteractiveUserContext>(),
-            sp.GetRequiredService<Core.Hardware.Lighting.IOpenRgbHost>()));
+            sp.GetRequiredService<Core.Hardware.Lighting.IOpenRgbHost>(),
+            sp.GetRequiredService<ICompanionWindowService>()));
         services.AddSingleton<IModule, ThisIsMyPC.Modules.Hardware.SystemControlModule>();
         services.AddSingleton<IModule, ThisIsMyPC.Modules.Hardware.LightingModule>();
         services.AddSingleton<IModule, ThisIsMyPC.Modules.Hardware.CoolingModule>();

@@ -2,6 +2,16 @@
 
 Current release scope: [v1 completion plan](v1-completion-plan.md), approved 2026-09-06. It supersedes older post-release hardware assumptions below.
 
+## FanControl existing instance and configuration probe (2026-09-10)
+
+- DONE: Open FanControl checks the live process before launching. An accessible matching window is activated; a tray-only instance gets tray instructions without another launch or UAC prompt.
+- Verified: Release build, 2,530 CI-safe tests, fresh review, native tray-only/absent detection, and live window activation with unchanged process IDs.
+- Verified: a separately edited version 226 configuration loaded into the running application through an elevated CLI request. UI Automation observed the temporary card nickname.
+- The original configuration was restored, its nickname was verified in the UI, and its file remained byte-identical. Active curves and calibration were never edited.
+- Pending: full configuration editor, verified active-curve changes, other versions/service mode, and tray-only window activation without elevation.
+- `CACHE.CurrentConfigFileName` remained stale during the live profile change. It must not serve as a reload acknowledgement.
+- Findings and next steps: [FanControl configuration integration](../fancontrol-configuration.md).
+
 ## Shared hardware detection and Home (2026-09-09)
 
 - DONE: `IHardwareDetectionService` supplies one cached, refreshable snapshot to Home and future hardware modules.

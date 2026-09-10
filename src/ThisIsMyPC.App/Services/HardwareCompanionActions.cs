@@ -23,15 +23,18 @@ public sealed class HardwareCompanionActions
     private readonly IPendingActionsService? _pendingActions;
     private readonly IInteractiveUserContext? _user;
     private readonly IOpenRgbHost? _lightingHost;
+    private readonly ICompanionWindowService? _companionWindows;
 
     public HardwareCompanionActions(
         IPendingActionsService? pendingActions = null,
         IInteractiveUserContext? user = null,
-        IOpenRgbHost? lightingHost = null)
+        IOpenRgbHost? lightingHost = null,
+        ICompanionWindowService? companionWindows = null)
     {
         _pendingActions = pendingActions;
         _user = user;
         _lightingHost = lightingHost;
+        _companionWindows = companionWindows;
         if (_pendingActions is not null)
             _pendingActions.PropertyChanged += (_, _) => QueueChanged?.Invoke(this, EventArgs.Empty);
     }
@@ -80,6 +83,16 @@ public sealed class HardwareCompanionActions
             return OperationResult<bool>.Failure("Opening apps is not available in this session.", ErrorCategory.ServiceUnavailable);
         if (string.IsNullOrWhiteSpace(executablePath) || !File.Exists(executablePath))
             return OperationResult<bool>.Failure("The program's location could not be found. Open it from the Start menu.", ErrorCategory.NotFound);
+        if (Path.GetFileName(executablePath).Equals("FanControl.exe", StringComparison.OrdinalIgnoreCase))
+        {
+            var existing = _companionWindows?.TryActivate(executablePath);
+            if (existing == CompanionWindowOutcome.Activated)
+                return OperationResult<bool>.Success(true);
+            if (existing == CompanionWindowOutcome.RunningWithoutAccessibleWindow)
+                return OperationResult<bool>.Failure(
+                    "FanControl is already running. Open it from its notification-area icon beside the Windows clock.",
+                    ErrorCategory.ServiceUnavailable);
+        }
         return _user.LaunchAsUser(executablePath);
     }
 
