@@ -240,9 +240,17 @@ public partial class App : Application
             sp.GetRequiredService<IScheduledTaskService>(),
             sp.GetRequiredService<IServiceControlService>(),
             internalPanelProbe: InternalPanelProbe(sp)));
+        // Lighting: the bundled OpenRGB runs as a headless SDK server for the
+        // life of the app (its own config folder, localhost only, killed with
+        // the app), and the tab talks to it over the documented SDK protocol.
+        services.AddSingleton<Core.Hardware.Lighting.IOpenRgbClient, ThisIsMyPC.Interop.Win32.Hardware.OpenRgbSdkClient>();
+        services.AddSingleton<Core.Hardware.Lighting.IOpenRgbHost>(sp => new ThisIsMyPC.Interop.Win32.Hardware.BundledOpenRgbHost(
+            sp.GetRequiredService<Core.Hardware.Detection.IHardwareProbeEnvironment>(),
+            Path.Combine(AppConstants.UserDataDirectoryPath, "openrgb")));
         services.AddSingleton(sp => new HardwareCompanionActions(
             sp.GetRequiredService<IPendingActionsService>(),
-            sp.GetRequiredService<IInteractiveUserContext>()));
+            sp.GetRequiredService<IInteractiveUserContext>(),
+            sp.GetRequiredService<Core.Hardware.Lighting.IOpenRgbHost>()));
         services.AddSingleton<IModule, ThisIsMyPC.Modules.Hardware.SystemControlModule>();
         services.AddSingleton<IModule, ThisIsMyPC.Modules.Hardware.LightingModule>();
         services.AddSingleton<IModule, ThisIsMyPC.Modules.Hardware.CoolingModule>();

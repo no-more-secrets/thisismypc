@@ -57,7 +57,141 @@
             <Setter Property="TextWrapping" Value="Wrap" />
             <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
         </Style>
+        <Style Selector="TextBlock.row-label">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+        </Style>
+        <Style Selector="TextBlock.row-value">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Width" Value="48" />
+            <Setter Property="Margin" Value="8,0,0,0" />
+            <Setter Property="Padding" Value="0,0,6,0" />
+            <Setter Property="TextAlignment" Value="Right" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        </Style>
     </UserControl.Styles>
+
+    <UserControl.DataTemplates>
+        <!-- Lighting: one card per device, in the Display page's register:
+             rows of label, bare control, plain value; no boxes inside the card. -->
+        <DataTemplate DataType="{x:Type vm:LightingControlsViewModel}">
+            <StackPanel Spacing="10">
+                <TextBlock Text="{Binding Status}"
+                           FontSize="12" TextWrapping="Wrap"
+                           Foreground="{DynamicResource TextTertiaryBrush}"
+                           IsVisible="{Binding Status, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                <!-- Greyed out, not hidden, while the decision forbids writes (the Advanced override). -->
+                <ItemsControl ItemsSource="{Binding Devices}" IsEnabled="{Binding WritesAllowed}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Spacing="10" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                </ItemsControl>
+            </StackPanel>
+        </DataTemplate>
+
+        <DataTemplate DataType="{x:Type vm:LightingDeviceViewModel}">
+            <Border Classes="card" CornerRadius="8" Padding="20,16" MinWidth="560">
+                <StackPanel Spacing="12">
+                    <StackPanel Spacing="2">
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <icons:FluentIcon Width="24" Height="24" VerticalAlignment="Center"
+                                              Foreground="{DynamicResource TextPrimaryBrush}"
+                                              Symbol="Lightbulb" />
+                            <TextBlock Text="{Binding Name}"
+                                       FontWeight="SemiBold" FontSize="15"
+                                       VerticalAlignment="Center"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding Subtitle}"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource TextTertiaryBrush}" />
+                    </StackPanel>
+
+                    <Grid ColumnDefinitions="128,*" MinHeight="32">
+                        <TextBlock Classes="row-label" Text="Mode" />
+                        <ComboBox Grid.Column="1" HorizontalAlignment="Stretch"
+                                  ItemsSource="{Binding Modes}"
+                                  SelectedItem="{Binding SelectedMode}"
+                                  DisplayMemberBinding="{Binding Name}" />
+                    </Grid>
+
+                    <Grid ColumnDefinitions="128,*,Auto" MinHeight="32" IsVisible="{Binding HasBrightness}">
+                        <TextBlock Classes="row-label" Text="Brightness" />
+                        <Slider Grid.Column="1" Minimum="{Binding BrightnessMin}" Maximum="{Binding BrightnessMax}"
+                                Value="{Binding Brightness}" VerticalAlignment="Center"
+                                TickFrequency="1" IsSnapToTickEnabled="True" />
+                        <TextBlock Grid.Column="2" Classes="row-value" Text="{Binding Brightness, StringFormat={}{0:0}}" />
+                    </Grid>
+
+                    <Grid ColumnDefinitions="128,*,Auto" MinHeight="32" IsVisible="{Binding HasSpeed}">
+                        <TextBlock Classes="row-label" Text="Speed" />
+                        <Slider Grid.Column="1" Minimum="{Binding SpeedMin}" Maximum="{Binding SpeedMax}"
+                                Value="{Binding Speed}" VerticalAlignment="Center"
+                                TickFrequency="1" IsSnapToTickEnabled="True" />
+                        <TextBlock Grid.Column="2" Classes="row-value" Text="{Binding Speed, StringFormat={}{0:0}}" />
+                    </Grid>
+
+                    <Grid ColumnDefinitions="128,*" MinHeight="32" IsVisible="{Binding HasDirection}">
+                        <TextBlock Classes="row-label" Text="Direction" />
+                        <ComboBox Grid.Column="1" HorizontalAlignment="Stretch"
+                                  ItemsSource="{Binding Directions}"
+                                  SelectedItem="{Binding SelectedDirection}"
+                                  DisplayMemberBinding="{Binding Label}" />
+                    </Grid>
+
+                    <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding HasRandomColor}">
+                        <ToggleSwitch IsChecked="{Binding RandomColors}" OnContent="{x:Null}" OffContent="{x:Null}" Margin="0,-4" />
+                        <TextBlock Text="Use random colors" VerticalAlignment="Center" FontSize="12"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                    </StackPanel>
+
+                    <ItemsControl ItemsSource="{Binding Colors}" IsVisible="{Binding HasColors}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Spacing="8" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+
+                    <StackPanel Orientation="Horizontal" Spacing="12" IsVisible="{Binding CanSave}">
+                        <Button Content="Save to device" Command="{Binding SaveCommand}" Padding="12,5"
+                                ToolTip.Tip="Keeps the current mode across power cycles on devices that support it." />
+                    </StackPanel>
+
+                    <TextBlock Text="{Binding LastError}" Classes="status-error"
+                               FontSize="12" TextWrapping="Wrap"
+                               IsVisible="{Binding HasLastError}" />
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+
+        <!-- One color: swatch, hex box, three channel sliders on one row -->
+        <DataTemplate DataType="{x:Type vm:ColorSlotViewModel}">
+            <Grid ColumnDefinitions="128,28,84,*,*,*" ColumnSpacing="8" MinHeight="32">
+                <TextBlock Classes="row-label" Text="{Binding Label}" TextWrapping="Wrap" />
+                <Border Grid.Column="1" Width="24" Height="24" CornerRadius="4"
+                        BorderBrush="{DynamicResource SidebarBorderBrush}" BorderThickness="1"
+                        VerticalAlignment="Center">
+                    <Border.Background>
+                        <SolidColorBrush Color="{Binding SwatchColor}" />
+                    </Border.Background>
+                </Border>
+                <TextBox Grid.Column="2" Classes="plain-value" Text="{Binding Hex}"
+                         FontFamily="{StaticResource MonoFont}" FontSize="12"
+                         VerticalAlignment="Center" Width="84" />
+                <Slider Grid.Column="3" Minimum="0" Maximum="255" Value="{Binding Red}" VerticalAlignment="Center"
+                        ToolTip.Tip="Red" />
+                <Slider Grid.Column="4" Minimum="0" Maximum="255" Value="{Binding Green}" VerticalAlignment="Center"
+                        ToolTip.Tip="Green" />
+                <Slider Grid.Column="5" Minimum="0" Maximum="255" Value="{Binding Blue}" VerticalAlignment="Center"
+                        ToolTip.Tip="Blue" />
+            </Grid>
+        </DataTemplate>
+    </UserControl.DataTemplates>
 
     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
         <StackPanel MaxWidth="760" HorizontalAlignment="Left" Spacing="10" Margin="0,4,16,24">
@@ -125,18 +259,19 @@
             </Border>
 
             <!-- Controls area: only when the decision (or the override) shows it -->
-            <Border Classes="card" CornerRadius="8" Padding="20,16" MinWidth="560"
-                    IsVisible="{Binding ControlsVisible}">
-                <StackPanel Spacing="8">
-                    <TextBlock Text="Shown by the Advanced setting. Nothing here can write to hardware on this PC."
-                               Classes="status-warning"
-                               FontSize="12" TextWrapping="Wrap"
-                               IsVisible="{Binding IsOverrideShowingControls}" />
+            <StackPanel Spacing="10" IsVisible="{Binding ControlsVisible}">
+                <TextBlock Text="Shown by the Advanced setting. Nothing here can write to hardware on this PC."
+                           Classes="status-warning"
+                           FontSize="12" TextWrapping="Wrap"
+                           IsVisible="{Binding IsOverrideShowingControls}" />
+                <Border Classes="card" CornerRadius="8" Padding="20,16" MinWidth="560"
+                        IsVisible="{Binding ShowsPlaceholder}">
                     <TextBlock Text="{Binding ControlsPlaceholder}"
                                FontSize="13" TextWrapping="Wrap"
                                Foreground="{DynamicResource TextSecondaryBrush}" />
-                </StackPanel>
-            </Border>
+                </Border>
+                <ContentControl Content="{Binding Lighting}" />
+            </StackPanel>
 
             <!-- Details: closed by default -->
             <Expander IsExpanded="False" HorizontalAlignment="Stretch" MinWidth="560">

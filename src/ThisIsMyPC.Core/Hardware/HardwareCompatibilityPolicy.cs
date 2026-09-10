@@ -131,6 +131,10 @@ public static class HardwareCompatibilityPolicy
         if (formFactor.FormFactor == MachineFormFactor.Laptop)
             evidence.Add("Laptop: lighting depends on what OpenRGB detects; laptops are not excluded.");
 
+        var bundled = facts.OpenRgbBundled is true;
+        if (bundled)
+            evidence.Add("A bundled OpenRGB ships with this app and runs as a background lighting service.");
+
         Draft draft;
         if (openRgb is null)
         {
@@ -145,9 +149,18 @@ public static class HardwareCompatibilityPolicy
         }
         else if (!openRgb.IsRunning)
         {
-            draft = new Draft(HardwareAvailability.Unavailable,
-                "OpenRGB is installed but not running. Start it with its SDK server enabled.",
-                new CompanionAction(CompanionActionKind.Open, CompanionApp.OpenRgb));
+            // With a bundled copy nothing is open to talk to, so the action
+            // starts the background service; the page does that as it opens.
+            // A user's own OpenRGB that is running without its SDK server is
+            // never doubled up (that case is below): two servers would fight
+            // for the same devices.
+            draft = bundled
+                ? new Draft(HardwareAvailability.Unavailable,
+                    "The lighting service is not running. It starts when this page opens.",
+                    new CompanionAction(CompanionActionKind.StartService, CompanionApp.OpenRgb))
+                : new Draft(HardwareAvailability.Unavailable,
+                    "OpenRGB is installed but not running. Start it with its SDK server enabled.",
+                    new CompanionAction(CompanionActionKind.Open, CompanionApp.OpenRgb));
         }
         else
         {
@@ -164,9 +177,10 @@ public static class HardwareCompatibilityPolicy
                         "OpenRGB's server answered, but its device list was not read yet.", null),
                     0 => new Draft(HardwareAvailability.Unavailable,
                         "OpenRGB is running but found no controllable lighting devices on this PC.", null),
+                    // The bundled service has no window to open; the device cards are the controls.
                     > 0 => new Draft(HardwareAvailability.Available,
                         "Lighting is controlled through the running OpenRGB server.",
-                        new CompanionAction(CompanionActionKind.Open, CompanionApp.OpenRgb)),
+                        bundled ? null : new CompanionAction(CompanionActionKind.Open, CompanionApp.OpenRgb)),
                     _ => new Draft(HardwareAvailability.Unknown,
                         "OpenRGB's server returned an invalid device count, so Lighting cannot trust it.", null),
                 },
@@ -299,6 +313,7 @@ public static class HardwareCompatibilityPolicy
         {
             CompanionActionKind.Install => HardwareOperations.InstallCompanion,
             CompanionActionKind.Open => HardwareOperations.OpenCompanion,
+            CompanionActionKind.StartService => HardwareOperations.OpenCompanion,
             _ => HardwareOperations.None,
         };
         if (availability == HardwareAvailability.Available)

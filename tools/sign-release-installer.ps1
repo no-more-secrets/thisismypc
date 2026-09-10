@@ -178,8 +178,10 @@ try {
     # Velopack creates privileged helpers in addition to copying the payload.
     # Its callback scans and signs every PE byte sequence it will install.
     $signTemplate = "`"$powerShell`" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$wrapper`" -ConfigurationFile `"$configurationFile`" -VelopackCallback {{file...}}"
-    $signExclude = '(?i)^(?!.*\.(?:exe|dll)$).*'
-    Write-Host 'Repacking while scanning and signing every installed EXE and DLL...'
+    # Bundled companions (companions\*) are third-party files shipped byte-identical
+    # to their upstream archive: never signed here, some already signed upstream.
+    $signExclude = '(?i)^(?:(?!.*\.(?:exe|dll)$).*|.*[\\/]companions[\\/].*)$'
+    Write-Host 'Repacking while scanning and signing every installed first-party EXE and DLL...'
     & (Join-Path $PSScriptRoot 'invoke-vpk.ps1') pack `
         --packId ThisIsMyPC `
         --packVersion $Version `

@@ -36,6 +36,9 @@ public sealed record ObservedHardwareFacts
     /// <summary>ASUS ATKACPI platform driver observed (SystemCapability.AsusAtkacpi). Null when not probed.</summary>
     public bool? AsusPlatformDriverPresent { get; init; }
 
+    /// <summary>A copy of OpenRGB ships with this app and was found next to it. Null when not checked.</summary>
+    public bool? OpenRgbBundled { get; init; }
+
     /// <summary>OpenRGB SDK server answered on its socket. Null when not probed.</summary>
     public bool? OpenRgbServerReachable { get; init; }
 

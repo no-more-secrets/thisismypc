@@ -55,6 +55,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IRestorePointService _restorePointService;
     private readonly IPrivilegeBrokerClient? _privilegeBroker;
     private readonly Services.HardwareCompanionActions? _hardwareActions;
+    private readonly Core.Hardware.Lighting.IOpenRgbClient? _openRgbClient;
     private IPrivilegeBrokerSession? _activeBrokerSession;
 
     // --- 9-3 monitoring review (Home section) ---
@@ -354,11 +355,13 @@ public partial class MainWindowViewModel : ViewModelBase
         Core.Drift.DeliberateChangeCoordinator? deliberateChanges = null,
         IPrivilegeBrokerClient? privilegeBroker = null,
         Core.Hardware.IHardwareDetectionService? hardwareDetection = null,
-        Services.HardwareCompanionActions? hardwareActions = null)
+        Services.HardwareCompanionActions? hardwareActions = null,
+        Core.Hardware.Lighting.IOpenRgbClient? openRgbClient = null)
     {
         _hardwareDetection = hardwareDetection;
         _privilegeBroker = privilegeBroker;
         _hardwareActions = hardwareActions;
+        _openRgbClient = openRgbClient;
         _deliberateChanges = deliberateChanges;
         _wingetService = wingetService;
         _autorunEnrichment = autorunEnrichment;
@@ -707,8 +710,10 @@ public partial class MainWindowViewModel : ViewModelBase
                         CurrentContent = new HardwareTabViewModel(
                             hardwareData,
                             _hardwareActions,
-                            hardwareData.RefreshInBackground ? hardwareModule.RefreshAsync : null,
-                            installAvailable: LookupModuleAvailability(Modules.Software.SoftwareModule.ModuleName)?.IsAvailable ?? false);
+                            hardwareModule.RefreshAsync,
+                            installAvailable: LookupModuleAvailability(Modules.Software.SoftwareModule.ModuleName)?.IsAvailable ?? false,
+                            refreshOnOpen: hardwareData.RefreshInBackground,
+                            lightingClient: _openRgbClient);
                     }
                     else
                     {

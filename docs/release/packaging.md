@@ -99,6 +99,12 @@ hash. It installs the rebuilt helpers and patched packaging assembly in an artif
 cache before each pack. Run `tools/build-velopack-helpers.ps1` to reproduce those
 four local files from the pinned Velopack source and Rust toolchain.
 
+After the three publishes, `tools/copy-bundled-companions.ps1` adds the pinned
+OpenRGB subset under `companions\OpenRGB` (hash-checked archive, file list and
+NOTICE from `tools/companion-manifest.json`; see [companions.md](companions.md)).
+Those files are third-party: unsigned by us, outside the first-party PE gates,
+byte-identical on both sides of the reproducible-build comparison.
+
 Official releases are NativeAOT only. The script publishes the App, elevated
 Broker, and Session 0 Service as self-contained win-x64 binaries. The Broker
 and Service sit beside the App in the package. The script then packs the MSI

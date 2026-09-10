@@ -154,6 +154,8 @@ public sealed class Win32HardwareProbeEnvironment : IHardwareProbeEnvironment
         }
     }
 
+    public string? BundledCompanionExecutable(Core.Hardware.CompanionApp app) => BundledCompanionLocator.Find(app);
+
     private static bool ReadExactly(NetworkStream stream, byte[] buffer)
     {
         var read = 0;

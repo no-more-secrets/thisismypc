@@ -135,6 +135,7 @@ public sealed class HardwareFactsProvider : IHardwareFactsProvider, IDisposable
         {
             FormFactor = shared.FormFactor with { HasInternalDisplayPanel = panel },
             Companions = companions,
+            OpenRgbBundled = _environment.BundledCompanionExecutable(CompanionApp.OpenRgb) is not null,
             OpenRgbServerReachable = openRgb?.Reachable,
             OpenRgbDeviceCount = openRgb is { Reachable: true } ? openRgb.DeviceCount : null,
         };
