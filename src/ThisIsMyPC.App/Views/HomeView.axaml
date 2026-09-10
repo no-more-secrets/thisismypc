@@ -162,10 +162,10 @@
                     <StackPanel Spacing="12">
                         <StackPanel Spacing="2">
                             <TextBlock Text="Device" FontSize="12" Foreground="{DynamicResource TextTertiaryBrush}" />
-                            <TextBlock Text="{Binding Identity.MachineName}" FontWeight="SemiBold" FontSize="20"
+                            <TextBlock Text="{Binding Identity.MachineName}" FontWeight="SemiBold" FontSize="20" TextWrapping="Wrap"
                                        Foreground="{DynamicResource TextPrimaryBrush}" />
                         </StackPanel>
-                        <Grid ColumnDefinitions="112,*" RowDefinitions="Auto,8,Auto,8,Auto,8,Auto,8,Auto">
+                        <Grid ColumnDefinitions="112,*" RowDefinitions="Auto,8,Auto,8,Auto,8,Auto,8,Auto,8,Auto,8,Auto,8,Auto">
                             <TextBlock Text="Manufacturer" Foreground="{DynamicResource TextTertiaryBrush}" />
                             <TextBlock Grid.Column="1" Text="{Binding Identity.Manufacturer}" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
                             <TextBlock Grid.Row="2" Text="Model" Foreground="{DynamicResource TextTertiaryBrush}" />
@@ -176,21 +176,38 @@
                             <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding Identity.Ram}" Foreground="{DynamicResource TextSecondaryBrush}" />
                             <TextBlock Grid.Row="8" Text="System type" Foreground="{DynamicResource TextTertiaryBrush}" />
                             <TextBlock Grid.Row="8" Grid.Column="1" Text="{Binding Identity.SystemType}" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <TextBlock Grid.Row="10" Text="Form factor" Foreground="{DynamicResource TextTertiaryBrush}" />
+                            <TextBlock Grid.Row="10" Grid.Column="1" Text="{Binding FormFactorSummary}" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <TextBlock Grid.Row="12" Text="Motherboard" Foreground="{DynamicResource TextTertiaryBrush}" />
+                            <TextBlock Grid.Row="12" Grid.Column="1" Text="{Binding MotherboardSummary}" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <TextBlock Grid.Row="14" Text="Chipset" Foreground="{DynamicResource TextTertiaryBrush}" />
+                            <StackPanel Grid.Row="14" Grid.Column="1" Spacing="2">
+                                <TextBlock Text="{Binding ChipsetSummary}" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                <TextBlock Text="{Binding ChipsetSource}" TextWrapping="Wrap" FontSize="11" Foreground="{DynamicResource TextTertiaryBrush}" />
+                            </StackPanel>
                         </Grid>
                     </StackPanel>
                 </Border>
                 <Border Grid.Column="2" Classes="card" CornerRadius="8" Padding="20,16">
                     <StackPanel Spacing="12">
-                        <TextBlock Text="Windows specifications" FontWeight="SemiBold" FontSize="16"
+                        <TextBlock Text="System details" FontWeight="SemiBold" FontSize="16"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
-                        <Grid ColumnDefinitions="88,*" RowDefinitions="Auto,8,Auto,8,Auto">
+                        <Grid ColumnDefinitions="88,*" RowDefinitions="Auto,8,Auto,8,Auto,8,Auto,8,Auto,8,Auto">
                             <TextBlock Text="Edition" Foreground="{DynamicResource TextTertiaryBrush}" />
                             <TextBlock Grid.Column="1" Text="{Binding Identity.WindowsEdition}" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
                             <TextBlock Grid.Row="2" Text="Version" Foreground="{DynamicResource TextTertiaryBrush}" />
                             <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Identity.WindowsVersion}" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
                             <TextBlock Grid.Row="4" Text="Graphics" Foreground="{DynamicResource TextTertiaryBrush}" />
                             <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding Identity.Gpu}" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <TextBlock Grid.Row="6" Text="BIOS" Foreground="{DynamicResource TextTertiaryBrush}" />
+                            <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding FirmwareSummary}" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <TextBlock Grid.Row="8" Text="Memory" Foreground="{DynamicResource TextTertiaryBrush}" />
+                            <TextBlock Grid.Row="8" Grid.Column="1" Text="{Binding MemorySummary}" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <TextBlock Grid.Row="10" Text="Storage" Foreground="{DynamicResource TextTertiaryBrush}" />
+                            <TextBlock Grid.Row="10" Grid.Column="1" Text="{Binding StorageSummary}" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
                         </Grid>
+                        <Button Content="Refresh hardware" Command="{Binding RefreshHardwareCommand}" IsEnabled="{Binding CanRefreshHardware}" HorizontalAlignment="Left" />
+                        <TextBlock Text="{Binding HardwareStatus}" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource TextTertiaryBrush}" />
                     </StackPanel>
                 </Border>
             </Grid>

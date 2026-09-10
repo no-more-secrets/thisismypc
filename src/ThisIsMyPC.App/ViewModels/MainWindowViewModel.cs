@@ -351,8 +351,10 @@ public partial class MainWindowViewModel : ViewModelBase
         Services.AutorunEnrichment? autorunEnrichment = null,
         Services.DebugSimulation? debugSimulation = null,
         Core.Drift.DeliberateChangeCoordinator? deliberateChanges = null,
-        IPrivilegeBrokerClient? privilegeBroker = null)
+        IPrivilegeBrokerClient? privilegeBroker = null,
+        Core.Hardware.IHardwareDetectionService? hardwareDetection = null)
     {
+        _hardwareDetection = hardwareDetection;
         _privilegeBroker = privilegeBroker;
         _deliberateChanges = deliberateChanges;
         _wingetService = wingetService;
@@ -1460,7 +1462,8 @@ public partial class MainWindowViewModel : ViewModelBase
             _changeHistoryService,
             BuildFirstLaunchBanner(),
             BuildMonitoringSection(),
-            _driftSection);
+            _driftSection,
+            _debugSimulation is { IsActive: true } ? null : _hardwareDetection);
         CurrentContent = home;
         IsHomeActive = true;
         IsDebugActive = false;
@@ -1471,7 +1474,10 @@ public partial class MainWindowViewModel : ViewModelBase
 
         // Recent activity fills in asynchronously; the dashboard never blocks.
         _ = home.LoadRecentActivityCommand.ExecuteAsync(null);
+        _ = home.LoadHardwareAsync();
     }
+
+    private readonly Core.Hardware.IHardwareDetectionService? _hardwareDetection;
 
     private void ClearSidebarActives()
     {

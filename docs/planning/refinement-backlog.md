@@ -2,6 +2,18 @@
 
 Current release scope: [v1 completion plan](v1-completion-plan.md), approved 2026-09-06. It supersedes older post-release hardware assumptions below.
 
+## Shared hardware detection and Home (2026-09-09)
+
+- DONE: `IHardwareDetectionService` supplies one cached, refreshable snapshot to Home and future hardware modules.
+- DONE: Native firmware and present-device reads identify system, motherboard, chassis, BIOS, configured memory, graphics, and storage separately.
+- DONE: Chipset names carry their evidence source. Board-model inference is labeled; generic PCI bridges do not become invented chipset identities.
+- DONE: Positive companion observations and ATKACPI interface presence feed the existing compatibility facts without claiming device ownership.
+- DONE: Home loads detailed inventory asynchronously and exposes Refresh hardware. Firmware placeholders no longer appear as real manufacturer/model names.
+- Verified: Release build, 2,462 CI-safe tests, guarded NativeAOT App publish, fresh review, and read-only native detection on Sam's B550-F desktop.
+- Verified: dark/light Home screenshots with live hardware. Content edges measure 25px left, 23px right, and 17px top; content fits without a scrollbar.
+- Pending hardware coverage: physical laptops, other motherboard families, module SDK/device ownership probes, and sensor backend readiness.
+- Integration contract and evidence limits: [shared hardware detection](../hardware-detection.md). Claude's separate worktree owns Hardware module implementation.
+
 ## NativeAOT ACG renderer compatibility (2026-09-08)
 
 - DONE: ACG App and Installer builds use Avalonia's software renderer. ANGLE produced a live UI tree but presented a black window.
@@ -50,7 +62,7 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 - DONE: Partial apply records confirmed changes once. Uncertain groups block further applies and cannot be removed by queued edits. Discard All clears the queue and reloads the page.
 - DONE: Debug replaces UI Gallery in Debug builds, with gallery, test controls, and transient state simulation. Mutation leases block live actions during simulation and block simulation changes during actions.
 - DONE: Annotation fixes cover transient zoom, dependent notification switches, page-level technical details, stacked toolbar checkboxes, description tooltips, fixed tab positions, and Display value spacing.
-- DONE: Pure hardware compatibility decisions distinguish unobserved evidence, verified support, companion actions, sensor reads, and device writes. Live detection and module integration remain pending.
+- DONE: Pure hardware compatibility decisions distinguish unobserved evidence, verified support, companion actions, sensor reads, and device writes. Shared live inventory is connected; module-specific probes and module integration remain pending.
 - DONE: Native cross-process lease foundation requires recovery clearance for every acquisition. Shared native recovery now connects the Broker and restoration service. All 20 isolated native foundation tests passed with Windows elevation.
 - Verified: Full Release build, CI-safe suite, fresh review, and rendered UI inspection. Isolated Debug window tests verify tabs, simulation banner, and edge geometry. No live applies or hardware control tested.
 ## Owner Mode restoration foundations (2026-09-06)

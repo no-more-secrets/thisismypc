@@ -5,6 +5,7 @@ using ThisIsMyPC.App.Views;
 using ThisIsMyPC.Core.Changes;
 using ThisIsMyPC.Core.Results;
 using ThisIsMyPC.Core.Services;
+using ThisIsMyPC.Core.Hardware;
 
 namespace ThisIsMyPC.App.UiTests;
 
@@ -29,10 +30,11 @@ public sealed class HomeShotTests
             Gpu = "NVIDIA GeForce RTX 4080",
             Ram = "64 GB",
             Manufacturer = "ASUSTeK COMPUTER INC.",
-            Model = "ROG STRIX X570-E GAMING",
+            Model = "Unknown",
             SystemType = "64-bit operating system, x64-based processor",
         };
-        var viewModel = new HomeViewModel(identity, history);
+        using var viewModel = new HomeViewModel(identity, history, hardwareDetection: new ShotHardware());
+        await viewModel.LoadHardwareAsync();
         await viewModel.LoadRecentActivityCommand.ExecuteAsync(null);
 
         using var session = UiSession.ForView(new HomeView(), viewModel, "home-overview", width: 976, height: 676);
@@ -42,8 +44,22 @@ public sealed class HomeShotTests
 
         Assert.True(session.IsTextVisible("Windows 11 Education"));
         Assert.True(session.IsTextVisible("64 GB"));
+        Assert.True(session.IsTextVisible("B550"));
+        Assert.True(session.IsTextVisible("Inferred from motherboard model"));
         Assert.True(session.IsTextVisible("Windows 11 to Windows 10"));
         Assert.False(session.IsTextVisible("Quick Actions"));
+    }
+
+    private sealed class ShotHardware : IHardwareDetectionService
+    {
+        public Task<HardwareSnapshot> GetSnapshotAsync(CancellationToken cancellationToken = default) => Task.FromResult(new HardwareSnapshot
+        {
+            Facts = new() { Identity = MachineIdentity.From("ASUSTeK COMPUTER INC.", null), FormFactor = new() { SmbiosChassisTypes = [3] } },
+            Firmware = new() { BoardManufacturer = "ASUSTeK COMPUTER INC.", BoardProduct = "ROG STRIX B550-F GAMING (WI-FI)", BiosVersion = "3636", BiosDate = "07/18/2025", MemoryDevices = [new("DIMM_A2", 32UL * 1024 * 1024 * 1024, "DDR4", 3200)] },
+            Chipset = new("B550", "Inferred from motherboard model"),
+            Devices = [new("NVIDIA GeForce RTX 4080", "Display", []), new("Samsung SSD 990 PRO 2TB", "DiskDrive", []), new("WD_BLACK SN850X 4000GB", "DiskDrive", [])],
+        });
+        public Task<HardwareSnapshot> RefreshAsync(CancellationToken cancellationToken = default) => GetSnapshotAsync(cancellationToken);
     }
 
     private static ChangeHistoryEntry Entry(long id, string moduleId, string name, string before, string after, DateTimeOffset at) => new()

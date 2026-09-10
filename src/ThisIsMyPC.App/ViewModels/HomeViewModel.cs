@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using CommunityToolkit.Mvvm.Input;
 using ThisIsMyPC.Core.Services;
+using ThisIsMyPC.Core.Hardware;
 
 namespace ThisIsMyPC.App.ViewModels;
 
@@ -36,7 +37,7 @@ public sealed class RecentActivityGroupViewModel
 /// settings, no pending changes, no display modes. Renders from cheap/cached data;
 /// recent activity loads async after construction without blocking.
 /// </summary>
-public sealed partial class HomeViewModel : ViewModelBase
+public sealed partial class HomeViewModel : ViewModelBase, IDisposable
 {
     private static readonly NLog.Logger Log = NLog.LogManager.GetLogger("ThisIsMyPC.App.ViewModels.HomeViewModel");
 
@@ -44,7 +45,28 @@ public sealed partial class HomeViewModel : ViewModelBase
 
     private readonly IChangeHistoryService _historyService;
 
-    public SystemIdentity Identity { get; }
+    private readonly IHardwareDetectionService? _hardwareDetection;
+    private readonly CancellationTokenSource _lifetime = new();
+    private HardwareSnapshot? _hardware;
+    private bool _disposed;
+    public SystemIdentity Identity { get; private set; }
+    public string FormFactorSummary => _hardware is null ? "Not checked" : FormFactorClassifier.Classify(_hardware.Facts.FormFactor).FormFactor.ToString();
+    public string MotherboardSummary => _hardware is null ? "Not checked" : Join(_hardware.Firmware.BoardManufacturer, _hardware.Firmware.BoardProduct);
+    public string ChipsetSummary => _hardware is null ? "Not checked" : _hardware.Chipset.Name ?? "Not identified";
+    public string ChipsetSource => _hardware?.Chipset.Source ?? "Hardware detection has not finished";
+    public string FirmwareSummary => _hardware is null ? "Not checked" : Join(_hardware.Firmware.BiosVersion, _hardware.Firmware.BiosDate);
+    public string StorageSummary => _hardware is null ? "Not checked" : Join(_hardware.Devices.Where(d => d.ClassName.Equals("DiskDrive", StringComparison.OrdinalIgnoreCase)).Select(d => d.Name).Distinct().ToArray());
+    public string MemorySummary => _hardware is null ? "Not checked" : Join(_hardware.Firmware.MemoryDevices
+        .Where(m => m.SizeBytes is > 0).Select(m => Join(m.Type, m.ConfiguredSpeedMt is { } speed ? $"{speed} MT/s" : null)).Distinct().ToArray());
+    public string HardwareStatus { get; private set; } = "";
+    public bool IsHardwareLoading { get; private set; }
+    public bool CanRefreshHardware => _hardwareDetection is not null && !IsHardwareLoading && !_disposed;
+
+    private static string Join(params string?[] parts)
+    {
+        var values = parts.Where(p => !string.IsNullOrWhiteSpace(p)).ToArray();
+        return values.Length == 0 ? "Not reported" : string.Join(" · ", values);
+    }
     public ObservableCollection<RecentActivityGroupViewModel> RecentActivityGroups { get; } = [];
 
     public bool HasRecentActivity => RecentActivityGroups.Count > 0;
@@ -60,13 +82,61 @@ public sealed partial class HomeViewModel : ViewModelBase
         IChangeHistoryService historyService,
         FirstLaunchBannerViewModel? firstLaunchBanner = null,
         MonitoringSectionViewModel? monitoringSection = null,
-        DriftSectionViewModel? driftSection = null)
+        DriftSectionViewModel? driftSection = null,
+        IHardwareDetectionService? hardwareDetection = null)
     {
         Identity = identity;
         _historyService = historyService;
         FirstLaunchBanner = firstLaunchBanner;
         MonitoringSection = monitoringSection;
         DriftSection = driftSection;
+        _hardwareDetection = hardwareDetection;
+    }
+
+    public async Task LoadHardwareAsync(bool refresh = false)
+    {
+        if (!CanRefreshHardware) return;
+        IsHardwareLoading = true;
+        OnPropertyChanged(nameof(IsHardwareLoading));
+        OnPropertyChanged(nameof(CanRefreshHardware));
+        HardwareStatus = "Reading hardware…";
+        OnPropertyChanged(nameof(HardwareStatus));
+        try
+        {
+            var token = _lifetime.Token;
+            var snapshot = await (refresh ? _hardwareDetection!.RefreshAsync(token) : _hardwareDetection!.GetSnapshotAsync(token)).ConfigureAwait(true);
+            token.ThrowIfCancellationRequested();
+            _hardware = snapshot;
+            var adapters = snapshot.Devices.Where(d => d.ClassName.Equals("Display", StringComparison.OrdinalIgnoreCase)).Select(d => d.Name).Distinct().ToArray();
+            Identity = Identity with
+            {
+                Manufacturer = snapshot.Facts.Identity.Manufacturer ?? Identity.Manufacturer,
+                Model = snapshot.Facts.Identity.Model ?? Identity.Model,
+                Gpu = adapters.Length == 0 ? Identity.Gpu : string.Join("; ", adapters),
+            };
+            foreach (var name in new[] { nameof(Identity), nameof(FormFactorSummary), nameof(MotherboardSummary), nameof(ChipsetSummary), nameof(ChipsetSource), nameof(FirmwareSummary), nameof(MemorySummary), nameof(StorageSummary) }) OnPropertyChanged(name);
+            HardwareStatus = snapshot.Issues.Count == 0 ? "" : "Some hardware details could not be read.";
+        }
+        catch (OperationCanceledException) { HardwareStatus = ""; }
+        catch (Exception ex) { HardwareStatus = "Hardware details are unavailable."; Log.Warn(ex, "Home hardware detection failed"); }
+        finally
+        {
+            IsHardwareLoading = false;
+            OnPropertyChanged(nameof(IsHardwareLoading));
+            OnPropertyChanged(nameof(CanRefreshHardware));
+            OnPropertyChanged(nameof(HardwareStatus));
+        }
+    }
+
+    [RelayCommand]
+    private Task RefreshHardwareAsync() => LoadHardwareAsync(true);
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _lifetime.Cancel();
+        _lifetime.Dispose();
     }
 
     /// <summary>Owner Mode drift report (28-3); null when the service found nothing (or is off).</summary>

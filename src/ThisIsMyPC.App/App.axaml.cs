@@ -179,6 +179,7 @@ public partial class App : Application
         // Interop services
         services.AddSingleton<ISecurityApi, SecurityApi>();
         services.AddSingleton<IRegistryService, RegistryService>();
+        services.AddSingleton<Core.Hardware.IHardwareDetectionService, Interop.Win32.Hardware.HardwareDetectionService>();
         services.AddSingleton(_ => new Services.AutorunEnrichment());
         services.AddSingleton<IShellExtensionService, ShellExtensionService>();
         services.AddSingleton<IContextMenuProbe, ContextMenuProbe>();

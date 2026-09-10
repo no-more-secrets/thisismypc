@@ -81,8 +81,8 @@ public sealed class SystemIdentityService
             Cpu = ReadString(ProcessorKeyPath, "ProcessorNameString")?.Trim() ?? Unknown,
             Gpu = ReadDisplayAdapters(),
             Ram = ReadRam(),
-            Manufacturer = ReadString(BiosKeyPath, "SystemManufacturer") ?? Unknown,
-            Model = ReadString(BiosKeyPath, "SystemProductName") ?? Unknown,
+            Manufacturer = Hardware.MachineIdentity.From(ReadString(BiosKeyPath, "SystemManufacturer"), null).Manufacturer ?? Unknown,
+            Model = Hardware.MachineIdentity.From(null, ReadString(BiosKeyPath, "SystemProductName")).Model ?? Unknown,
             SystemType = FormatSystemType(),
         };
     }

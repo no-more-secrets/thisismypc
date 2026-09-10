@@ -83,6 +83,7 @@ public sealed class UiSession : IDisposable
         var services = new ServiceCollection();
         App.ConfigureServices(services);
         services.RemoveAll<IPrivilegeBrokerClient>();
+        services.AddSingleton<IPrivilegeBrokerClient, UiDisabledPrivilegeBrokerClient>();
 
         var tempDataDir = Path.Combine(Path.GetTempPath(), "tipc-ui-tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempDataDir);
@@ -137,7 +138,7 @@ public sealed class UiSession : IDisposable
     {
         Pump();
         using var frame = Window.CaptureRenderedFrame()
-            ?? throw new InvalidOperationException("Headless renderer returned no frame — is Skia enabled?");
+            ?? throw new InvalidOperationException("Headless renderer returned no frame. Is Skia enabled?");
         var path = Path.Combine(_shotDirectory, $"{++_shotCounter:D2}-{name}.png");
         frame.Save(path);
         return path;
@@ -208,7 +209,7 @@ public sealed class UiSession : IDisposable
         Pump();
     }
 
-    /// <summary>Clicks whatever reads <paramref name="text"/> — the interactive ancestor if there is one.</summary>
+    /// <summary>Clicks whatever reads <paramref name="text"/>, using the interactive ancestor if there is one.</summary>
     public void ClickText(string text)
     {
         var visual = FindText(text);
