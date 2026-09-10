@@ -20,6 +20,10 @@ public partial class SidebarItemViewModel : ViewModelBase
         ["security"] = FluentSymbol.Shield,
         ["display"] = FluentSymbol.Desktop,
         ["software"] = FluentSymbol.ArrowDownload,
+        ["system-control"] = FluentSymbol.Laptop,
+        ["lighting"] = FluentSymbol.Lightbulb,
+        ["cooling"] = FluentSymbol.Temperature,
+        ["monitoring"] = FluentSymbol.Gauge,
     }.ToFrozenDictionary();
 
     public required string Name { get; init; }

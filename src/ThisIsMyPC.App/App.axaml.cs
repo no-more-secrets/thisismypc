@@ -168,6 +168,25 @@ public partial class App : Application
             Log.Warn("Settings were reset to defaults; previous file preserved as settings.json.bad");
     }
 
+    /// <summary>
+    /// Whether this PC has a built-in display panel, read once: the Display
+    /// module's laptop-panel path walks every setting of the active power
+    /// plan, and the answer cannot change while the app runs. No battery
+    /// means no panel; a battery with no readable brightness setting is
+    /// unknown, never "no panel".
+    /// </summary>
+    private static Func<bool?> InternalPanelProbe(IServiceProvider sp)
+    {
+        var panel = new Lazy<bool?>(() =>
+        {
+            if (!sp.GetRequiredService<IMonitorService>().HasSystemBattery())
+                return false;
+            var read = new ThisIsMyPC.Modules.Display.Services.InternalPanelService(sp.GetRequiredService<IPowerService>()).ReadPanel();
+            return read is not null ? true : null;
+        }, LazyThreadSafetyMode.ExecutionAndPublication);
+        return () => panel.Value;
+    }
+
     // Internal so the headless UI test harness can build the real service graph
     // and swap in test-safe substitutes (winget, restore points, data paths).
     internal static void ConfigureServices(IServiceCollection services)
@@ -208,6 +227,26 @@ public partial class App : Application
         services.AddSingleton<IModule, ThisIsMyPC.Modules.Software.SoftwareModule>();
         services.AddSingleton<IModule, PowerModule>();
         services.AddSingleton<IModule, ThisIsMyPC.Modules.Display.DisplayModule>();
+
+        // Hardware tabs (v1 plan section 5): the module-level facts layer over
+        // the shared inventory. It adds what the tabs need and the inventory
+        // leaves unobserved: companion launch paths and ownership, the OpenRGB
+        // SDK probe, the internal panel. Every probe is a read.
+        services.AddSingleton<Core.Hardware.Detection.IHardwareProbeEnvironment, ThisIsMyPC.Interop.Win32.Hardware.Win32HardwareProbeEnvironment>();
+        services.AddSingleton<Core.Hardware.IHardwareFactsProvider>(sp => new Core.Hardware.Detection.HardwareFactsProvider(
+            sp.GetRequiredService<Core.Hardware.IHardwareDetectionService>(),
+            sp.GetRequiredService<IRegistryService>(),
+            sp.GetRequiredService<Core.Hardware.Detection.IHardwareProbeEnvironment>(),
+            sp.GetRequiredService<IScheduledTaskService>(),
+            sp.GetRequiredService<IServiceControlService>(),
+            internalPanelProbe: InternalPanelProbe(sp)));
+        services.AddSingleton(sp => new HardwareCompanionActions(
+            sp.GetRequiredService<IPendingActionsService>(),
+            sp.GetRequiredService<IInteractiveUserContext>()));
+        services.AddSingleton<IModule, ThisIsMyPC.Modules.Hardware.SystemControlModule>();
+        services.AddSingleton<IModule, ThisIsMyPC.Modules.Hardware.LightingModule>();
+        services.AddSingleton<IModule, ThisIsMyPC.Modules.Hardware.CoolingModule>();
+        services.AddSingleton<IModule, ThisIsMyPC.Modules.Hardware.MonitoringModule>();
 
         // Update services. GPG manifest verification (tm2:54): fail-closed,
         // offline release key, public key hardcoded in the verifier.

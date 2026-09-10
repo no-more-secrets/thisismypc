@@ -21,6 +21,8 @@ public static class AppSettingKeys
     public const string MonitoringEnabled = "monitoringEnabled"; // bool (9-3 opt-in background monitoring)
     public const string NotifyMonitoring = "notifyMonitoring"; // bool (9-2 granular; gated by Notifications)
     public const string NotifyUpdates = "notifyUpdates";       // bool (9-2 granular; gated by Notifications)
+    /// <summary>Settings > Advanced debug override: every Hardware tab renders its controls. Never grants writes.</summary>
+    public const string ShowAllHardwareControls = "showAllHardwareControls"; // bool
 
     public static IReadOnlyDictionary<string, string> Defaults { get; } =
         new Dictionary<string, string>(StringComparer.Ordinal)
@@ -38,5 +40,6 @@ public static class AppSettingKeys
             [MonitoringEnabled] = "0",
             [NotifyMonitoring] = "1",
             [NotifyUpdates] = "1",
+            [ShowAllHardwareControls] = "0",
         };
 }

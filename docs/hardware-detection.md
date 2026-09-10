@@ -41,6 +41,10 @@ Process names do not prove trust, executable location, or device ownership. Neve
 OpenRGB SDK readiness, device ownership, internal display evidence, and sensor backend readiness belong to their module adapters.
 Those facts remain unobserved here. Refresh after installing or closing a companion.
 
+The Hardware tabs consume this snapshot through `IHardwareFactsProvider` (`Core/Hardware/Detection/HardwareFactsProvider`),
+which adds companion launch paths, confirmed absences, observed ownership, the OpenRGB SDK probe, and the internal panel.
+Its rules and limits are in [planning/hardware-compatibility.md](planning/hardware-compatibility.md).
+
 ## Sources and verification
 
 - [DMTF SMBIOS 3.8.0](https://www.dmtf.org/sites/default/files/standards/documents/DSP0134_3.8.0.pdf), types 0, 1, 2, 3, and 17.

@@ -300,5 +300,13 @@
           </StackPanel>
         </ScrollViewer>
       </TabItem>
+
+      <TabItem Header="Advanced">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+          <ItemsControl ItemsSource="{Binding AdvancedSections}"
+                        ItemTemplate="{StaticResource SectionTemplate}"
+                        Margin="0,0,16,24" />
+        </ScrollViewer>
+      </TabItem>
     </TabControl>
 </UserControl>

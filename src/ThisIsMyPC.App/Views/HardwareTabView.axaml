@@ -1,0 +1,182 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ThisIsMyPC.App.ViewModels"
+             xmlns:icons="using:ThisIsMyPC.App.Icons"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="700"
+             x:Class="ThisIsMyPC.App.Views.HardwareTabView"
+             x:DataType="vm:HardwareTabViewModel">
+
+    <!-- One page shape for every companion-backed Hardware tab: a status
+         card (badge, explanation, the one companion button), the controls
+         area when the decision allows it, and a closed Details expander with
+         the evidence. Untabbed page: the scroller keeps the 16px lane. -->
+    <UserControl.Styles>
+        <Style Selector="Border.status-badge">
+            <Setter Property="CornerRadius" Value="3" />
+            <Setter Property="Padding" Value="6,1" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Border.status-badge TextBlock">
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="Border.status-badge.available">
+            <Setter Property="Background" Value="{DynamicResource SuccessMutedBrush}" />
+        </Style>
+        <Style Selector="Border.status-badge.available TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}" />
+        </Style>
+        <Style Selector="Border.status-badge.unavailable">
+            <Setter Property="Background" Value="{DynamicResource RaisedBrush}" />
+        </Style>
+        <Style Selector="Border.status-badge.unavailable TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+        </Style>
+        <Style Selector="Border.status-badge.unknown">
+            <Setter Property="Background" Value="{DynamicResource InfoMutedBrush}" />
+        </Style>
+        <Style Selector="Border.status-badge.unknown TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource InfoBrush}" />
+        </Style>
+        <Style Selector="Border.status-badge.pending">
+            <Setter Property="Background" Value="{DynamicResource WarningMutedBrush}" />
+        </Style>
+        <Style Selector="Border.status-badge.pending TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource WarningBrush}" />
+        </Style>
+        <Style Selector="Border.status-badge.conflict">
+            <Setter Property="Background" Value="{DynamicResource DangerMutedBrush}" />
+        </Style>
+        <Style Selector="Border.status-badge.conflict TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
+        </Style>
+        <Style Selector="TextBlock.detail-line">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+        </Style>
+    </UserControl.Styles>
+
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <StackPanel MaxWidth="760" HorizontalAlignment="Left" Spacing="10" Margin="0,4,16,24">
+
+            <!-- Status card -->
+            <Border Classes="card" CornerRadius="8" Padding="20,16" MinWidth="560">
+                <StackPanel Spacing="10">
+                    <DockPanel>
+                        <Border DockPanel.Dock="Right" Classes="status-badge"
+                                Classes.available="{Binding IsAvailable}"
+                                Classes.unavailable="{Binding IsUnavailable}"
+                                Classes.unknown="{Binding IsUnknown}"
+                                Classes.pending="{Binding IsPendingVerification}"
+                                Classes.conflict="{Binding IsConflict}"
+                                Margin="12,0,0,0">
+                            <TextBlock Text="{Binding StatusLabel}" />
+                        </Border>
+                        <StackPanel Spacing="2">
+                            <TextBlock Text="{Binding MachineLine}"
+                                       FontWeight="SemiBold" FontSize="15"
+                                       TextWrapping="Wrap"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="{Binding CheckedAt}"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource TextTertiaryBrush}" />
+                                <TextBlock Text="Checking again..."
+                                           FontSize="11"
+                                           Foreground="{DynamicResource TextTertiaryBrush}"
+                                           IsVisible="{Binding IsRefreshing}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </DockPanel>
+
+                    <TextBlock Text="{Binding Explanation}"
+                               FontSize="13" TextWrapping="Wrap"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+
+                    <ItemsControl ItemsSource="{Binding ConflictNotes}" IsVisible="{Binding HasConflictNotes}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="x:String">
+                                <TextBlock Text="{Binding}" Classes="status-warning"
+                                           FontSize="12" TextWrapping="Wrap" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <StackPanel Spacing="4" IsVisible="{Binding HasAction}">
+                        <Button Content="{Binding ActionLabel}"
+                                Classes="accent"
+                                Command="{Binding RunActionCommand}"
+                                HorizontalAlignment="Left"
+                                Padding="14,6" />
+                        <TextBlock Text="{Binding ActionHint}"
+                                   FontSize="12" TextWrapping="Wrap"
+                                   Foreground="{DynamicResource TextTertiaryBrush}"
+                                   IsVisible="{Binding HasActionHint}" />
+                        <TextBlock Text="{Binding ActionMessage}"
+                                   FontSize="12" TextWrapping="Wrap"
+                                   Classes.status-error="{Binding ActionFailed}"
+                                   Classes.status-success="{Binding !ActionFailed}"
+                                   IsVisible="{Binding ActionMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Controls area: only when the decision (or the override) shows it -->
+            <Border Classes="card" CornerRadius="8" Padding="20,16" MinWidth="560"
+                    IsVisible="{Binding ControlsVisible}">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Shown by the Advanced setting. Nothing here can write to hardware on this PC."
+                               Classes="status-warning"
+                               FontSize="12" TextWrapping="Wrap"
+                               IsVisible="{Binding IsOverrideShowingControls}" />
+                    <TextBlock Text="{Binding ControlsPlaceholder}"
+                               FontSize="13" TextWrapping="Wrap"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                </StackPanel>
+            </Border>
+
+            <!-- Details: closed by default -->
+            <Expander IsExpanded="False" HorizontalAlignment="Stretch" MinWidth="560">
+                <Expander.Header>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="Details"
+                                   FontWeight="SemiBold" FontSize="12"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                        <TextBlock Text="what was checked and what it found"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource TextTertiaryBrush}"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+                </Expander.Header>
+                <StackPanel Spacing="10" Margin="8,8,8,4">
+                    <StackPanel Spacing="3">
+                        <TextBlock Text="Evidence" FontSize="12" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <ItemsControl ItemsSource="{Binding Evidence}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="x:String">
+                                    <TextBlock Text="{Binding}" Classes="detail-line" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                    <StackPanel Spacing="3">
+                        <TextBlock Text="Detection notes" FontSize="12" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <ItemsControl ItemsSource="{Binding DetectionNotes}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="x:String">
+                                    <TextBlock Text="{Binding}" Classes="detail-line"
+                                               Foreground="{DynamicResource TextTertiaryBrush}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </StackPanel>
+            </Expander>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

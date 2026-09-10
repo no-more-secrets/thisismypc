@@ -19,7 +19,7 @@ namespace ThisIsMyPC.App.UiTests;
 public class SettingsTabsShotTests
 {
     private static readonly string[] TabHeaders =
-        ["Application", "Notifications", "Owner Mode", "Modules", "Backup & Transfer"];
+        ["Application", "Notifications", "Owner Mode", "Modules", "Backup & Transfer", "Advanced"];
 
     private sealed class FakeContributor : IModuleSettingsContributor
     {
@@ -99,6 +99,7 @@ public class SettingsTabsShotTests
             ["Owner Mode"] = ["In-app monitoring", "Startup & service monitoring", "Runs inside the app while it is open. Does not need the Owner Mode service."],
             ["Modules"] = ["Fake Module", "Show extras", "System Capabilities", "DDC/CI monitors", "OpenRGB"],
             ["Backup & Transfer"] = ["Export Settings...", "Import Settings..."],
+            ["Advanced"] = ["Show all hardware controls", "Settings for troubleshooting. They change what the app shows, never what it can do."],
         };
         var notExpected = new Dictionary<string, string[]>
         {

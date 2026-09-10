@@ -394,7 +394,6 @@
           "ThisIsMyPC.Interop.Win32": "[1.0.0, )",
           "ThisIsMyPC.Ipc.Contracts": "[1.0.0, )",
           "ThisIsMyPC.Modules.Annoyances": "[1.0.0, )",
-          "ThisIsMyPC.Modules.Display": "[1.0.0, )",
           "ThisIsMyPC.Modules.Power": "[1.0.0, )",
           "ThisIsMyPC.Modules.Privacy": "[1.0.0, )",
           "ThisIsMyPC.Modules.Shell": "[1.0.0, )",
@@ -429,12 +428,6 @@
         }
       },
       "thisismypc.modules.annoyances": {
-        "type": "Project",
-        "dependencies": {
-          "ThisIsMyPC.Core": "[1.0.0, )"
-        }
-      },
-      "thisismypc.modules.display": {
         "type": "Project",
         "dependencies": {
           "ThisIsMyPC.Core": "[1.0.0, )"

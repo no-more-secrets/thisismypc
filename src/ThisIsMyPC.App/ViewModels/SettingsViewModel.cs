@@ -175,6 +175,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, ITabbedPage
     public const string ApplicationHeader = "Application";
     public const string NotificationsHeader = "Notifications";
     public const string MonitoringHeader = "In-app monitoring";
+    public const string AdvancedHeader = "Advanced";
 
     [ObservableProperty]
     private int _selectedTabIndex;
@@ -192,6 +193,8 @@ public sealed partial class SettingsViewModel : ViewModelBase, ITabbedPage
     public IReadOnlyList<SettingsSectionViewModel> ApplicationSections => [ApplicationSection];
     public IReadOnlyList<SettingsSectionViewModel> NotificationSections => [NotificationsSection];
     public IReadOnlyList<SettingsSectionViewModel> MonitoringSections => [MonitoringSection];
+    public SettingsSectionViewModel AdvancedSection { get; }
+    public IReadOnlyList<SettingsSectionViewModel> AdvancedSections => [AdvancedSection];
     public IReadOnlyList<SettingsSectionViewModel> ModuleSections { get; }
 
     /// <summary>Owner Mode service lifecycle section; null when unavailable (tests).</summary>
@@ -324,9 +327,27 @@ public sealed partial class SettingsViewModel : ViewModelBase, ITabbedPage
             ],
         };
 
+        // Debug override for the Hardware tabs. The copy says what it does
+        // not do: the policy computes permitted operations without it.
+        AdvancedSection = new SettingsSectionViewModel
+        {
+            Header = AdvancedHeader,
+            ShowHeader = false,
+            Subtitle = "Settings for troubleshooting. They change what the app shows, never what it can do.",
+            Items =
+            [
+                new SettingToggleItemViewModel(
+                    settings, null, AppSettingKeys.ShowAllHardwareControls,
+                    "Show all hardware controls",
+                    "Renders every Hardware tab's controls even where this PC does not support them. It does not enable writes to hardware, bypass drivers, or override conflict checks.",
+                    settings.GetAppBool(AppSettingKeys.ShowAllHardwareControls, false)),
+            ],
+        };
+
         Sections.Add(ApplicationSection);
         Sections.Add(NotificationsSection);
         Sections.Add(MonitoringSection);
+        Sections.Add(AdvancedSection);
 
         var moduleSections = new List<SettingsSectionViewModel>();
         foreach (var contributor in moduleContributors.OrderBy(c => c.ModuleId, StringComparer.Ordinal))

@@ -54,6 +54,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly Core.Monitoring.MonitoringService? _monitoringService;
     private readonly IRestorePointService _restorePointService;
     private readonly IPrivilegeBrokerClient? _privilegeBroker;
+    private readonly Services.HardwareCompanionActions? _hardwareActions;
     private IPrivilegeBrokerSession? _activeBrokerSession;
 
     // --- 9-3 monitoring review (Home section) ---
@@ -352,10 +353,12 @@ public partial class MainWindowViewModel : ViewModelBase
         Services.DebugSimulation? debugSimulation = null,
         Core.Drift.DeliberateChangeCoordinator? deliberateChanges = null,
         IPrivilegeBrokerClient? privilegeBroker = null,
-        Core.Hardware.IHardwareDetectionService? hardwareDetection = null)
+        Core.Hardware.IHardwareDetectionService? hardwareDetection = null,
+        Services.HardwareCompanionActions? hardwareActions = null)
     {
         _hardwareDetection = hardwareDetection;
         _privilegeBroker = privilegeBroker;
+        _hardwareActions = hardwareActions;
         _deliberateChanges = deliberateChanges;
         _wingetService = wingetService;
         _autorunEnrichment = autorunEnrichment;
@@ -684,6 +687,33 @@ public partial class MainWindowViewModel : ViewModelBase
                     {
                         CurrentContent = null;
                         SetStatus(scanResult.ErrorMessage ?? "Failed to scan displays", StatusSeverity.Error);
+                    }
+                });
+            }
+            else if (current?.Module is Modules.Hardware.HardwareCompanionModule hardwareModule)
+            {
+                var scanResult = await current.Module.ScanSystemStateAsync().ConfigureAwait(false);
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    if (epoch != _contentEpoch)
+                        return; // superseded by Home/Set Loader/newer navigation while scanning
+                    if (scanResult.IsSuccess
+                        && scanResult.Value is Modules.Hardware.Models.HardwareTabScanData hardwareData)
+                    {
+                        ContentTitle = current.Module.Info.Name;
+                        ContentDescription = current.Module.Info.Description;
+                        // A cached snapshot is on screen now; when it is old
+                        // enough, a fresh pass runs behind it and updates the page.
+                        CurrentContent = new HardwareTabViewModel(
+                            hardwareData,
+                            _hardwareActions,
+                            hardwareData.RefreshInBackground ? hardwareModule.RefreshAsync : null,
+                            installAvailable: LookupModuleAvailability(Modules.Software.SoftwareModule.ModuleName)?.IsAvailable ?? false);
+                    }
+                    else
+                    {
+                        CurrentContent = null;
+                        SetStatus(scanResult.ErrorMessage ?? "Failed to check this PC's hardware", StatusSeverity.Error);
                     }
                 });
             }
@@ -1061,6 +1091,7 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
 
         (current.Module as Modules.Display.DisplayModule)?.InvalidateSnapshot();
+        (current.Module as Modules.Hardware.HardwareCompanionModule)?.InvalidateSnapshot();
         OnNavigationPropertyChanged(
             _navigationService,
             new PropertyChangedEventArgs(nameof(NavigationService.CurrentModule)));

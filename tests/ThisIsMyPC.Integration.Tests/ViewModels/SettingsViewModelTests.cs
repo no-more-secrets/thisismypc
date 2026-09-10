@@ -102,7 +102,7 @@ public sealed class SettingsViewModelTests : IDisposable
         var vm = new SettingsViewModel(_settings, []);
 
         Assert.Equal(
-            [SettingsViewModel.ApplicationHeader, SettingsViewModel.NotificationsHeader, SettingsViewModel.MonitoringHeader],
+            [SettingsViewModel.ApplicationHeader, SettingsViewModel.NotificationsHeader, SettingsViewModel.MonitoringHeader, SettingsViewModel.AdvancedHeader],
             vm.Sections.Select(s => s.Header));
         Assert.False(vm.HasModuleSections);
         Assert.Empty(vm.ModuleSections);
@@ -126,9 +126,11 @@ public sealed class SettingsViewModelTests : IDisposable
         Assert.Equal(["Notifications", "Notify: monitoring alerts", "Notify: update available"],
             Names(vm.NotificationsSection));
         Assert.Equal(["Startup & service monitoring"], Names(vm.MonitoringSection));
+        Assert.Equal(["Show all hardware controls"], Names(vm.AdvancedSection));
 
         var toggles = vm.Sections.SelectMany(s => s.Items).OfType<SettingToggleItemViewModel>().ToList();
         Assert.False(toggles.Single(t => t.DisplayName == "Tray mode").IsOn);
+        Assert.False(toggles.Single(t => t.DisplayName == "Show all hardware controls").IsOn);
         Assert.Equal("0", vm.ApplicationSection.Items.OfType<SettingChoiceItemViewModel>().Single(t => t.DisplayName == "Start with Windows").Selected!.Value);
         Assert.True(toggles.Single(t => t.DisplayName == "Check for app updates").IsOn);
         Assert.True(toggles.Single(t => t.DisplayName == "Notifications").IsOn);

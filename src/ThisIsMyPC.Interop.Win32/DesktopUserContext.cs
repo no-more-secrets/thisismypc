@@ -83,9 +83,24 @@ public sealed unsafe class DesktopUserContext : IInteractiveUserContext
 
         if (!IsCallerElevated)
         {
-            Process.Start(new ProcessStartInfo { FileName = applicationPath, Arguments = arguments ?? string.Empty, UseShellExecute = false });
-            Log.Info("Started {App} with this process's own (unelevated) token", applicationPath);
-            return OperationResult<bool>.Success(true);
+            // Through the shell, so a program whose manifest asks for
+            // administrator rights (FanControl, G-Helper) gets its own UAC
+            // prompt instead of CreateProcess failing with error 740.
+            try
+            {
+                Process.Start(new ProcessStartInfo { FileName = applicationPath, Arguments = arguments ?? string.Empty, UseShellExecute = true });
+                Log.Info("Started {App} with this process's own (unelevated) token", applicationPath);
+                return OperationResult<bool>.Success(true);
+            }
+            catch (Win32Exception ex)
+            {
+                Log.Warn(ex, "Starting {App} failed (Win32 {Code})", applicationPath, ex.NativeErrorCode);
+                return OperationResult<bool>.Failure(
+                    ex.NativeErrorCode == 1223
+                        ? $"{Path.GetFileName(applicationPath)} was not started because the permission prompt was cancelled."
+                        : $"Could not start {Path.GetFileName(applicationPath)}: {ex.Message}",
+                    ErrorCategory.ServiceUnavailable, ex);
+            }
         }
 
         var handle = CaptureUserToken(preferred: null, out var source);

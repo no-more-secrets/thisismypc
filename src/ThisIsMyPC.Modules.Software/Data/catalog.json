@@ -642,6 +642,16 @@
    "foss": false
   },
   {
+   "id": "fancontrol",
+   "name": "FanControl",
+   "description": "FanControl sets fan curves from temperature sensors. The Cooling tab opens it.",
+   "category": "Utilities",
+   "wingetId": "Rem0o.FanControl",
+   "source": "winget",
+   "link": "https://getfancontrol.com/",
+   "foss": false
+  },
+  {
    "id": "files",
    "name": "Files",
    "description": "Alternative file explorer.",
@@ -720,6 +730,16 @@
    "source": "winget",
    "link": "https://www.foxit.com/pdf-reader/",
    "foss": false
+  },
+  {
+   "id": "g-helper",
+   "name": "G-Helper",
+   "description": "G-Helper controls performance modes, fans, battery limit and keyboard lighting on ASUS laptops. The System Control tab opens it.",
+   "category": "Utilities",
+   "wingetId": "seerge.g-helper",
+   "source": "winget",
+   "link": "https://github.com/seerge/g-helper",
+   "foss": true
   },
   {
    "id": "geforcenow",
@@ -1069,6 +1089,16 @@
    "wingetId": "JesseDuffield.lazygit",
    "source": "winget",
    "link": "https://github.com/jesseduffield/lazygit/",
+   "foss": true
+  },
+  {
+   "id": "librehardwaremonitor",
+   "name": "LibreHardwareMonitor",
+   "description": "LibreHardwareMonitor reads temperatures, clocks, load, fan speeds and voltages.",
+   "category": "Utilities",
+   "wingetId": "LibreHardwareMonitor.LibreHardwareMonitor",
+   "source": "winget",
+   "link": "https://github.com/LibreHardwareMonitor/LibreHardwareMonitor",
    "foss": true
   },
   {

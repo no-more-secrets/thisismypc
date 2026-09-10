@@ -79,6 +79,6 @@ Workers do not commit, push, change global focus, alter live Windows settings, o
 - [ ] Complete policy/SKU/System assessment.
 - [ ] Review implementation batches and shared contracts.
 - [ ] Complete System polish and policy coverage.
-- [ ] Complete shared hardware detection and Hardware modules.
+- [ ] Complete shared hardware detection and Hardware modules. Detection and the four companion tabs landed 2026-09-09 ([hardware-compatibility.md](hardware-compatibility.md)); Lighting device controls, Monitoring sensors and Cooling presets remain.
 - [ ] Complete agreed Security and Network & Firewall scope.
 - [ ] Complete release validation and owner-gated release steps.

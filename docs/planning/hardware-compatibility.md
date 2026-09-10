@@ -1,6 +1,6 @@
 # Hardware compatibility: facts and decisions
 
-Batch 1 of the shared hardware detection in [v1-completion-plan.md](v1-completion-plan.md) section 5. Landed 2026-09-06 as a pure Core layer with a fake-fact test matrix. Nothing here probes hardware, launches programs or writes anything. Detection and App wiring are the next batches; their exact shape is listed below.
+Shared hardware detection from [v1-completion-plan.md](v1-completion-plan.md) section 5. Batch 1 (2026-09-06) is the pure policy with a fake-fact test matrix. Batch 2 (2026-09-09) is live detection and the four companion tabs; see "Detection as built" and "App integration as built" below. Nothing in the policy probes hardware, launches programs or writes anything; detection reads, and the tabs write nothing to hardware in this batch.
 
 ## What exists (Core, `src/ThisIsMyPC.Core/Hardware/`)
 
@@ -58,7 +58,46 @@ Availability values: Available, Unavailable, Unknown, PendingVerification, Confl
 dotnet test tests/ThisIsMyPC.Core.Tests --filter "FullyQualifiedName~ThisIsMyPC.Core.Tests.Hardware"
 ```
 
-## Detection still needed (batch 2, Interop and App)
+## Detection as built (batch 2, 2026-09-09)
+
+Two layers. The shared inventory ([hardware-detection.md](../hardware-detection.md), `IHardwareDetectionService`) reads firmware, present devices, platform role, battery and the ATKACPI interface, and records companions it happens to see. The module layer in `Core/Hardware/Detection/` starts from that snapshot and adds what the tabs need; `Interop.Win32/Hardware/` holds its native reads.
+
+| Type | Role |
+| --- | --- |
+| `IHardwareProbeEnvironment` | The module layer's machine reads: known folders, file and directory checks, running-process paths, the OpenRGB SDK probe. `Win32HardwareProbeEnvironment` implements it; tests script it. |
+| `OpenRgbSdkProtocol` | Packet header codec and the request builders (controller count, controller data, protocol version, client name). Constants from NetworkProtocol.h. |
+| `CompanionDetector` | One `CompanionDetection` (observation, launch path, notes) per companion. Every companion gets an observation, so an absent one is `NotInstalled`, never unobserved; the shared inventory's positive-only list is replaced, not merged. |
+| `HardwareFactsProvider` | `IHardwareFactsProvider`: takes the shared snapshot (identity, chassis types, platform role, battery, ATKACPI pass through), adds the internal-panel fact, the companions from the detector, and the OpenRGB probe only while OpenRGB runs. One pass at a time, cached until a refresh (a refresh also refreshes the shared inventory), `Changed` after each pass. A failed inventory read degrades to empty shared facts with a note. Sensor backend stays `NotIntegrated`. |
+| `HardwareDetectionSnapshot` | Facts, the shared `HardwareSnapshot` they came from, launch paths, detection notes and the pass time. |
+
+Process paths are read with `OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION)` and `QueryFullProcessImageNameW`, which works from the unelevated UI against an elevated companion (FanControl runs elevated from its task). A process whose path is still unreadable counts as running with no launch path.
+
+Where each companion is looked for, and what sets ownership:
+
+| Companion | Installed when any of | Running when | Launch path order | Ownership |
+| --- | --- | --- | --- | --- |
+| OpenRGB | uninstall entry starting "OpenRGB"; `Program Files\OpenRGB\OpenRGB.exe`; `%LocalAppData%\Programs\OpenRGB`; winget portable `OpenRGB.OpenRGB*`; `%AppData%\OpenRGB` folder (has run) | process `OpenRGB` | running process, DisplayIcon, InstallLocation, known folders | Lighting when running and the SDK server answers with a count above zero |
+| FanControl | scheduled task `\FanControl` (Command resolved against Start In); uninstall entry; `FanControl*` under Program Files, Program Files (x86), `%LocalAppData%\Programs`; winget portable `Rem0o.FanControl*` | process `FanControl` | running process, task, uninstall entry, folders | Cooling when running and a `Configurations\*.json` sits next to the exe (Sam's v226 layout; not a schema guarantee) |
+| G-Helper | HKCU Run value `GHelper`; `%AppData%\GHelper\config.json`; winget portable `seerge.g-helper*`; winget Links `GHelper.exe` | process `GHelper` | running process, Run value, winget | never |
+| Armoury Crate | uninstall entry containing "Armoury Crate"; any of the services ArmouryCrateService, ArmouryCrateControlInterface, AsusAppService, ASUSOptimization, LightingService | any of those services Running | none (Store app) | Lighting when LightingService runs; System Control and Cooling when ArmouryCrateService runs and ATKACPI is present |
+| SignalRGB | uninstall entry starting "SignalRGB" | process `SignalRgb` or `SignalRgbLauncher` | running process, DisplayIcon, InstallLocation | never |
+| LibreHardwareMonitor | uninstall entry; `Program Files\LibreHardwareMonitor`; winget portable | process `LibreHardwareMonitor` | running process, entry, folders | never |
+| HWiNFO | uninstall entry starting "HWiNFO"; `HKCU\Software\HWiNFO64` or `HWiNFO32` | process `HWiNFO64` or `HWiNFO32` | running process, DisplayIcon, InstallLocation | never |
+
+Verified live on Sam's desktop (2026-09-09): chassis type 3, platform role Desktop, no battery, ATKACPI absent. FanControl was found by process and task with a saved configuration. OpenRGB was found by uninstall entry and Program Files, not running. HWiNFO was found by entry and key. Unverified: every G-Helper, Armoury Crate and SignalRGB source (no such machine at hand), and the SDK probe against a running OpenRGB.
+
+DisplayIcon counts as a launch path only when its file name is the program's own executable. Installers often point it at the uninstaller. The shared inventory's positive sightings are merged in: a companion it saw running or registered stays running or installed here, with this layer's launch path and ownership.
+
+## App integration as built (batch 2)
+
+- `Modules.Hardware`: `HardwareCompanionModule` (one class per tab: System Control, Lighting, Cooling, Monitoring) returns `HardwareTabScanData` (the tab's decision, the full report, the launch path, the notes). `CheckAvailabilityAsync` is always true, so the tabs stay in the sidebar. `ScanSystemStateAsync` returns the cached snapshot; `RefreshAsync` runs a fresh pass. `ShowAllControls` is read from Settings on every evaluation.
+- `App/ViewModels/HardwareTabViewModel` + `Views/HardwareTabView`: status badge (Available, Not available, Unknown, Not verified, In use elsewhere), the explanation, conflict notes, and the companion button. A controls card appears only when `ControlsVisible`, with a warning line when the override is the reason. A closed Details expander holds the evidence. The page opens on the cached snapshot. A cache older than 30 seconds is re-checked behind the page; the Refresh button forces a fresh pass.
+- `App/Services/HardwareCompanionActions`: Install stages `install:{catalogId}` on `IPendingActionsService` through `SoftwareActionFactory`, applied from the review panel like any install. Open calls `IInteractiveUserContext.LaunchAsUser` on the detected path; unelevated, that goes through the shell so an administrator-manifested program gets its own UAC prompt. The view model checks `Operations` (InstallCompanion, OpenCompanion) before either; the override cannot reach them. Install is disabled with a hint while the Software module reports winget unavailable, and the button follows the queue when the review panel discards or applies the action.
+- Settings > Advanced: "Show all hardware controls" (`AppSettingKeys.ShowAllHardwareControls`). The copy says it does not enable writes, bypass drivers or override conflict checks.
+- Catalog: `fancontrol` (Rem0o.FanControl), `g-helper` (seerge.g-helper), `librehardwaremonitor` added; ids confirmed with `winget search` on 2026-09-09.
+- Not built yet: sensor backend integration (Monitoring stays PendingVerification), Lighting device controls, Cooling presets, the tray flyout contributions.
+
+## Detection sources (planning table, kept for the unverified rows)
 
 Each fact, the source, and whether that source already exists in this repo.
 
@@ -85,14 +124,14 @@ Each fact, the source, and whether that source already exists in this repo.
 
 Detection must record a `NotInstalled` observation for every companion it looked for and found absent. Leaving a companion out means "not checked" and the tab stays Unknown with no Install offer.
 
-## App integration still needed (batch 2, App)
+## App integration rules (batch 2, all built)
 
-1. A session-scoped `IHardwareFactsProvider` in `App/Services` (or an Interop project) that builds `ObservedHardwareFacts` from the sources above, cached, refreshed by the page refresh button and on resume.
-2. Settings, Advanced: an off-by-default "Show all hardware controls" switch bound to `HardwareCompatibilityOptions.ShowAllControls`. Copy must say it does not enable writes.
-3. Each Hardware tab view model calls `HardwareCompatibilityPolicy.Decide` and renders: a status banner with `Explanation`, an expandable details block with `Evidence` and `ConflictNotes`, and the `Action` button. Controls render when `ControlsVisible`; every write path checks `Operations` for WriteDevices first (or `LiveWritesAllowed`), sensor reads check ReadSensors, and companion buttons check InstallCompanion or OpenCompanion, so the override can never reach hardware.
+1. A session-scoped `IHardwareFactsProvider` builds `ObservedHardwareFacts` from the sources above, cached, refreshed by the page refresh button. Refresh on resume is not wired yet.
+2. Settings, Advanced: an off-by-default "Show all hardware controls" switch bound to `HardwareCompatibilityOptions.ShowAllControls`. The copy says it does not enable writes.
+3. Each Hardware tab renders a status banner with `Explanation`, a closed details block with `Evidence` and `ConflictNotes`, and the `Action` button. Controls render when `ControlsVisible`; every write path checks `Operations` for WriteDevices first (or `LiveWritesAllowed`), sensor reads check ReadSensors, and companion buttons check InstallCompanion or OpenCompanion, so the override can never reach hardware.
 4. Install actions go through the Software module's pending-actions queue (one-way, no fabricated before-state). Open actions launch the companion as the signed-in desktop user through `IInteractiveUserContext`, never from the elevated token.
 5. Tabs remain in the sidebar regardless of availability. A Conflict or Unavailable tab shows the explanation in place of controls.
-6. The Home tab's "Hardware ecosystems" list can keep reading `CapabilityDetector`; it does not need the policy.
+6. The Home tab's "Hardware ecosystems" list keeps reading `CapabilityDetector`; it does not need the policy.
 
 ## Pending verification (owner or a real machine)
 
@@ -103,6 +142,6 @@ Detection must record a `NotInstalled` observation for every companion it looked
 - Armoury Crate coexistence with G-Helper: G-Helper's own guidance about Armoury Crate services is the reason it sits in the likely-interferer list. Unverified link: https://github.com/seerge/g-helper (unverified).
 - OpenRGB SDK default port and "close other RGB software" guidance: https://openrgb.org/ (catalog link) and the OpenRGB wiki (unverified).
 
-## Non-goals in this batch
+## Non-goals so far
 
-No live detection, no process launching, no installs, no packages, no App or Owner Mode edits, no compatibility tables beyond the rules above.
+No sensor backend, no device writes, no packages added, no Owner Mode edits, no compatibility tables beyond the rules above. Install and Open are the only actions, and both run through existing app services.
