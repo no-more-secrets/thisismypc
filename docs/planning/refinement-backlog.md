@@ -63,9 +63,9 @@ Replaces the bundled OpenRGB of the same day (Sam: "native is the better choice,
 
 ## NativeAOT ACG renderer compatibility (2026-09-08)
 
-- DONE: ACG App and Installer builds use Avalonia's software renderer. ANGLE produced a live UI tree but presented a black window.
+- DONE: the App uses Avalonia's software renderer under ACG. The NativeAOT installer uses Win32 and GDI without Avalonia.
 - Non-ACG development builds keep Avalonia's normal platform renderer selection.
-- Verified: policy test, full suite, Release NativeAOT App publish, and visible App and Installer windows under strict ACG.
+- Verified: policy test, full suite, and a visible App under strict ACG. The Win32 installer passed headless GDI rendering and PE mitigation checks.
 - Verified: signed `1.0.1-test-09` upgraded the installed test release on its first run and opened normally.
 - Installed runtime testing confirmed active ACG, hardened payloads, valid signatures, protected files, and fake Broker caller rejection.
 - A same-user process still injected an unsigned disk DLL into the unelevated UI. ACG blocked RWX allocation inside that DLL.
@@ -336,7 +336,7 @@ The app corresponds to the PC, not a profile. Implemented:
   Program Files, elevation required). Per-user Setup.exe and portable zip are
   not shipped.
 - **Installer shipped 2026-09-01** (`src/ThisIsMyPC.Installer`): the download is
-  `ThisIsMyPC-Installer.exe`, an elevated NativeAOT Avalonia launcher with the MSI
+  `ThisIsMyPC-Installer.exe`, an elevated NativeAOT Win32 launcher with the MSI
   inside. Reason: a bare per-machine MSI gets its UAC prompt parked in the
   taskbar and its follow-up dialog can land off screen (Sam, 4K display), and
   the Velopack wizard has no options. Pages: Welcome, GPLv3 license with

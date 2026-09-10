@@ -236,10 +236,17 @@ if (-not (Test-Path $msiPath)) { throw 'ThisIsMyPC-win.msi missing from the vpk 
 & (Join-Path $PSScriptRoot 'normalize-msi.ps1') -Path $msiPath -Version $Version
 dotnet publish (Join-Path $repoRoot 'src\ThisIsMyPC.Installer\ThisIsMyPC.Installer.csproj') `
     --configuration Release --runtime win-x64 --self-contained true `
-    -p:Version=$Version @guardedAotArgs -p:BundleNativeLibraries=true --output $installerStaging -m:1
+    -p:Version=$Version @guardedAotArgs --output $installerStaging -m:1
 if ($LASTEXITCODE -ne 0) { throw 'Installer publish failed' }
 $installerExe = Join-Path $installerStaging 'ThisIsMyPC-Installer.exe'
 if (-not (Test-Path $installerExe)) { throw 'ThisIsMyPC-Installer.exe missing from the installer publish output' }
+$unexpectedInstallerFiles = @(
+    Get-ChildItem -LiteralPath $installerStaging -File |
+        Where-Object { $_.Name -ne 'ThisIsMyPC-Installer.exe' }
+)
+if ($unexpectedInstallerFiles.Count -ne 0) {
+    throw "The Win32 installer publish must contain one executable. Unexpected files: $($unexpectedInstallerFiles.Name -join ', ')"
+}
 # Release assets carry the version in the name (Sam, 2026-09-01).
 $installerAsset = Join-Path $output "ThisIsMyPC-Installer-$Version.exe"
 # The compiler stamps the version block Language Neutral; Explorer should say

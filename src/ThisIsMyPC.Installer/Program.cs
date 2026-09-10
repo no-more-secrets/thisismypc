@@ -1,4 +1,6 @@
-using Avalonia;
+using ThisIsMyPC.Installer.Services;
+using ThisIsMyPC.Installer.ViewModels;
+using ThisIsMyPC.Installer.Win32;
 using ThisIsMyPC.Interop.Win32.Security;
 
 namespace ThisIsMyPC.Installer;
@@ -37,37 +39,26 @@ sealed class Program
                     "The installer signature is invalid. This file may be incomplete or modified.\n\n" +
                     trust.ErrorMessage);
 #endif
-            NativeBootstrap.Prepare();
-            BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
-            return 0;
+            var package = new EmbeddedPackage();
+            var engine = new MsiInstallEngine(package);
+            var viewModel = new InstallerViewModel(
+                engine,
+                EmbeddedPackage.LoadLicenseText(),
+                InstalledAppDetector.Detect(),
+                ExistingSettings.Read());
+            using var window = new InstallerWindow(viewModel);
+            return window.Run();
         }
         catch (Exception ex)
         {
-            NativeBootstrap.ReportFatal("The installer could not start.\n\n" + ex.Message);
+            _ = NativeMethods.MessageBox(
+                nint.Zero,
+                "The installer could not start.\n\n" + ex.Message,
+                "ThisIsMyPC installer",
+                0x10);
             return 1;
         }
 #pragma warning restore CA1031
     }
 
-    public static AppBuilder BuildAvaloniaApp()
-    {
-        var builder = AppBuilder.Configure<App>();
-
-#if ACG_ENABLED
-        return builder
-            .UseWin32()
-            .With(CreateAcgWin32Options())
-            .UseSkia()
-            .LogToTrace();
-#else
-        return builder
-            .UsePlatformDetect()
-            .LogToTrace();
-#endif
-    }
-
-    internal static Win32PlatformOptions CreateAcgWin32Options() => new()
-    {
-        RenderingMode = [Win32RenderingMode.Software],
-    };
 }

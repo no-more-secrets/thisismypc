@@ -12,16 +12,15 @@
     <TargetExt>.exe</TargetExt>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>..\ThisIsMyPC.App\Assets\ThisIsMyPC.ico</ApplicationIcon>
-    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-    <!-- LibraryImport (the pre-Avalonia message box in NativeBootstrap) -->
+    <!-- Win32 callbacks and source-generated interop use unmanaged pointers. -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- CA1515: Avalonia XAML requires public types for views/viewmodels -->
-    <NoWarn>CA1515</NoWarn>
-    <!-- The release script always publishes the installer NativeAOT (one small
-         native exe around the MSI); dev builds stay CoreCLR unless asked. -->
+    <!-- The release script always publishes the installer NativeAOT. -->
     <PublishAot Condition="'$(AotPublish)' == 'true'">true</PublishAot>
     <ControlFlowGuard Condition="'$(AotPublish)' == 'true'">Guard</ControlFlowGuard>
     <DefineConstants Condition="'$(DynamicCodeGuard)' == 'true'">$(DefineConstants);ACG_ENABLED</DefineConstants>
+    <OptimizationPreference Condition="'$(AotPublish)' == 'true'">Size</OptimizationPreference>
+    <InvariantGlobalization Condition="'$(AotPublish)' == 'true'">true</InvariantGlobalization>
+    <EventSourceSupport Condition="'$(AotPublish)' == 'true'">false</EventSourceSupport>
   </PropertyGroup>
 
   <Target Name="ValidateDynamicCodeGuardBuild" BeforeTargets="PrepareForBuild"
@@ -29,47 +28,20 @@
     <Error Text="DynamicCodeGuard requires AotPublish=true." />
   </Target>
 
-  <ItemGroup>
-    <!-- Palette and type are the App's own files, linked, so the installer
-         cannot drift from the app it installs. -->
-    <AvaloniaResource Include="..\ThisIsMyPC.App\Styles\Theme.axaml" Link="Styles\Theme.axaml" />
-    <AvaloniaResource Include="..\ThisIsMyPC.App\Assets\ThisIsMyPC.ico" Link="Assets\ThisIsMyPC.ico" />
-    <AvaloniaResource Include="..\ThisIsMyPC.App\Assets\Fonts\IBMPlexSans-Regular.ttf" Link="Assets\Fonts\IBMPlexSans-Regular.ttf" />
-    <AvaloniaResource Include="..\ThisIsMyPC.App\Assets\Fonts\IBMPlexSans-SemiBold.ttf" Link="Assets\Fonts\IBMPlexSans-SemiBold.ttf" />
-    <AvaloniaResource Include="..\ThisIsMyPC.App\Assets\Fonts\IBMPlexSans-Bold.ttf" Link="Assets\Fonts\IBMPlexSans-Bold.ttf" />
-    <AvaloniaResource Include="..\ThisIsMyPC.App\Assets\Fonts\IBMPlexMono-Regular.ttf" Link="Assets\Fonts\IBMPlexMono-Regular.ttf" />
-  </ItemGroup>
+  <!-- Core exposes the shared settings types, but the installer never opens the SQLite database. -->
+  <Target Name="RemoveUnusedInstallerNativeAssets" AfterTargets="ComputeResolvedFilesToPublishList">
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)"
+                             Condition="'%(Filename)%(Extension)' == 'e_sqlite3.dll'" />
+    </ItemGroup>
+  </Target>
 
   <ItemGroup>
     <!-- The license page shows the repo LICENSE verbatim. -->
     <EmbeddedResource Include="..\..\LICENSE" LogicalName="LICENSE" />
   </ItemGroup>
 
-  <!-- Release publish only: the two native libraries NativeAOT cannot fold
-       into the launcher ride inside it as resources. NativeBootstrap unpacks
-       and loads them. The MSI is appended after publish, not embedded here.
-       Dev builds keep the DLLs beside the exe. -->
-  <!-- BeforeTargets on AssignTargetPaths, the first consumer of EmbeddedResource:
-       a later hook (PrepareResourceNames) runs after that target's own
-       dependencies have already split the resource list. -->
-  <Target Name="EmbedNativeLibraries" BeforeTargets="AssignTargetPaths" DependsOnTargets="ResolvePackageAssets"
-          Condition="'$(BundleNativeLibraries)' == 'true'">
-    <ItemGroup>
-      <_InstallerNativeLibrary Include="@(NativeCopyLocalItems)"
-          Condition="'%(Filename)' == 'libSkiaSharp' Or '%(Filename)' == 'libHarfBuzzSharp'" />
-      <EmbeddedResource Include="@(_InstallerNativeLibrary)" LogicalName="native/%(Filename)%(Extension)" />
-    </ItemGroup>
-    <Error Condition="@(_InstallerNativeLibrary->Count()) != 2"
-           Text="Expected libSkiaSharp.dll and libHarfBuzzSharp.dll among the native package assets; found @(_InstallerNativeLibrary->Count())." />
-  </Target>
-
   <ItemGroup>
-    <PackageReference Include="Avalonia" />
-    <!-- Avalonia adds optional build telemetry transitively. Keep the package
-         assetless so its task and collector are never imported or executed. -->
-    <PackageReference Include="Avalonia.BuildServices" ExcludeAssets="all" PrivateAssets="all" />
-    <PackageReference Include="Avalonia.Desktop" />
-    <PackageReference Include="Avalonia.Themes.Fluent" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
   </ItemGroup>
 
