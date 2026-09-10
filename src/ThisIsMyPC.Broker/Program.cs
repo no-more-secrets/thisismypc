@@ -52,8 +52,8 @@ internal static class Program
             if (!opened.IsSuccess)
                 return Fail(opened.ErrorMessage ?? "The broker session was rejected.");
 
-            await using var host = new PrivilegedModuleHost(uiSid.Value!);
-            var ownerMode = new OwnerModeBrokerController();
+            await using var host = new DeferredModuleHost(uiSid.Value!);
+            var ownerMode = new OwnerModeBrokerController(uiUserSid: uiSid.Value!);
             return await Serve(pipe, opened.Value!, host, ownerMode).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
@@ -65,6 +65,14 @@ internal static class Program
         {
             return Fail("The privilege broker stopped: " + ex.Message);
         }
+    }
+
+    // Control-only sessions must not depend on a healthy restoration journal or module graph.
+    private sealed class DeferredModuleHost(string uiUserSid) : IAsyncDisposable
+    {
+        private PrivilegedModuleHost? _host;
+        public PrivilegedModuleHost Value => _host ??= new(uiUserSid);
+        public ValueTask DisposeAsync() => _host?.DisposeAsync() ?? ValueTask.CompletedTask;
     }
 
     private static async Task<OperationResult<BrokerRequestPolicy>> OpenSession(
@@ -113,7 +121,7 @@ internal static class Program
     }
 
     private static async Task<int> Serve(NamedPipeClientStream pipe, BrokerRequestPolicy policy,
-        PrivilegedModuleHost host, OwnerModeBrokerController ownerMode)
+        DeferredModuleHost host, OwnerModeBrokerController ownerMode)
     {
         while (pipe.IsConnected)
         {
@@ -152,13 +160,13 @@ internal static class Program
     }
 
     private static async Task<BrokerCommandResponse> Execute(BrokerCommandRequest command,
-        PrivilegedModuleHost host, OwnerModeBrokerController ownerMode, CancellationToken cancellationToken)
+        DeferredModuleHost host, OwnerModeBrokerController ownerMode, CancellationToken cancellationToken)
     {
         try
         {
             if (command.Kind == BrokerCommandKind.CreateRestorePoint)
             {
-                var restorePoint = await host.CreateRestorePoint(command.RestorePointDescription!).ConfigureAwait(false);
+                var restorePoint = await host.Value.CreateRestorePoint(command.RestorePointDescription!).ConfigureAwait(false);
                 return new()
                 {
                     IsSuccess = restorePoint.IsSuccess,
@@ -170,9 +178,9 @@ internal static class Program
 
             OperationResult<bool> result = command.Kind switch
             {
-                BrokerCommandKind.ApplyChange => await host.Apply(command.Change!, revert: false, cancellationToken).ConfigureAwait(false),
-                BrokerCommandKind.RevertChange => await host.Apply(command.Change!, revert: true, cancellationToken).ConfigureAwait(false),
-                BrokerCommandKind.ExecuteAction => await host.Execute(command.Action!).ConfigureAwait(false),
+                BrokerCommandKind.ApplyChange => await host.Value.Apply(command.Change!, revert: false, cancellationToken).ConfigureAwait(false),
+                BrokerCommandKind.RevertChange => await host.Value.Apply(command.Change!, revert: true, cancellationToken).ConfigureAwait(false),
+                BrokerCommandKind.ExecuteAction => await host.Value.Execute(command.Action!).ConfigureAwait(false),
                 BrokerCommandKind.EnableOwnerMode => await ownerMode.Enable(cancellationToken).ConfigureAwait(false),
                 BrokerCommandKind.DisableOwnerMode => await ownerMode.Disable(cancellationToken).ConfigureAwait(false),
                 _ => OperationResult<bool>.Failure("Unknown broker command.", ErrorCategory.AccessDenied),

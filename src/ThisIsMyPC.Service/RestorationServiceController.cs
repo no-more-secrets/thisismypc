@@ -106,4 +106,6 @@ public interface IRestorationServiceController
     RestorationStatusResponse GetStatus();
     Task<RestorationStatusResponse> EnableAsync(CancellationToken token = default);
     Task<RestorationStatusResponse> PauseAsync(CancellationToken token = default);
+    Task<IReadOnlyList<ThisIsMyPC.Core.Changes.ChangeHistoryEntry>> GetHistoryAsync(CancellationToken token = default) =>
+        Task.FromResult<IReadOnlyList<ThisIsMyPC.Core.Changes.ChangeHistoryEntry>>([]);
 }

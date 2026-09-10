@@ -49,11 +49,15 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 - DONE: Debug replaces UI Gallery in Debug builds, with gallery, test controls, and transient state simulation. Mutation leases block live actions during simulation and block simulation changes during actions.
 - DONE: Annotation fixes cover transient zoom, dependent notification switches, page-level technical details, stacked toolbar checkboxes, description tooltips, fixed tab positions, and Display value spacing.
 - DONE: Pure hardware compatibility decisions distinguish unobserved evidence, verified support, companion actions, sensor reads, and device writes. Live detection and module integration remain pending.
-- DONE: Native cross-process lease foundation requires recovery clearance for every acquisition. Production wiring and durable recovery remain pending. All 20 isolated native tests passed with Windows elevation. Production routing remains unwired.
+- DONE: Native cross-process lease foundation requires recovery clearance for every acquisition. Shared native recovery now connects the Broker and restoration service. All 20 isolated native foundation tests passed with Windows elevation.
 - Verified: Full Release build, CI-safe suite, fresh review, and rendered UI inspection. Isolated Debug window tests verify tabs, simulation banner, and edge geometry. No live applies or hardware control tested.
 ## Owner Mode restoration foundations (2026-09-06)
 
-- Current scope: [single-user checkpoint plan](owner-mode-single-user-plan.md). Steps 1 through 5 are complete. App changes coordinate; fake-backed service controls, bounded scans, and status are connected. Production restoration remains unavailable until Step 6 supplies native trust and evidence adapters.
+- Current scope: [single-user checkpoint plan](owner-mode-single-user-plan.md). Software integration is complete: the unelevated UI uses the Broker, and the service restores eligible saved choices from the eleven-target catalog. Installed-service live evaluation remains untested.
+- Explicit consent defaults off. Pause persists off even with a missing or stopped service. Saved choices bind to the verified UI account; managed, unknown, unsupported, or unloaded-profile states block automatic writes.
+- Verified 2026-09-09: Release build, 2,439 CI-safe tests, and sixteen elevated native tests, including interrupted recovery. Fresh review found no blockers; dark/light history screenshots were inspected. Guarded App, Broker, and Service NativeAOT publishes passed. The App retains one existing Avalonia reflection-binding trim warning.
+- Directory pins retain metadata-only access for child atomic replacement; file pins request GenericRead, following `c82fed1`.
+- The following foundation entries record their original checkpoint verification, not the current activation status.
 
 - DONE: Typed present/absent snapshots and an immutable exact-target catalog for eleven non-policy Annoyances settings. Invalid value data, account SID syntax, and incompatible enforcement are rejected.
 - Verified: 163 Drift tests, full CI-safe suite, Release build, and review corrections. Reader values checked against the module source. Executable provider parity coverage adds 67 cases; the Annoyances suite passes 142 tests.
@@ -67,7 +71,7 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 - DONE: One-target restoration loop acquires once, rereads consent, journals intent, applies through pending changes, verifies, and imports history. Uncertain attempts block writes while completed outcomes can retry import. Shared time enforces a conservative three-attempt limit over seven days. Verified: 17 focused tests, full CI-safe suite, Release build, and fresh review. No production registration or live writes.
 - DONE: Deliberate app changes remove affected protected choices durably before writing, then save verified values after history. Catalog staging preserves absence. Pause confirms consent-off before releasing the lease and stopping SCM. Shutdown cancels waits and drains active commands. Verified: 14 coordinator tests, 5 Pause tests, 5 command/shutdown tests, 153 Annoyances tests, full CI-safe suite, Release build, fresh review, and rendered main/history views. Production app-only recovery leaves consent off; live restoration remains disabled.
 - DONE: Restoration status is separate from SCM state. IPC enable requires confirmed consent; Pause remains accessible with a stopped service. Old payloads, wrong nonces/types, timeouts, and control failures cannot report enable success. Verified: full CI-safe suite and Release build in an isolated copy using committed dependencies, fresh review, dark/light status screenshots, and Settings geometry. The shared tree has unrelated patched-package hash mismatches. See [service controls](../owner-mode-service-controls.md).
-- Pending: production journal/database trust, management/profile probing, consent integration, and service/UI wiring. Legacy observational storage remains unchanged; automatic restoration must use the strict new store. No automatic restoration is enabled.
+- DONE: Native journal/database trust, management/profile evidence, shared recovery, Broker consent controls, and service/UI integration. Automatic restoration uses the strict single-owner store. Read-only IPC shows restoration history without granting generic undo. Installed-service live evaluation remains untested.
 - Design: [Owner Mode restoration](owner-mode-restoration.md).
 ## System pages and Settings organization (2026-09-06)
 
@@ -262,14 +266,11 @@ Consequences, verified against the code and upstream:
   pipeline builds unsigned first, then supplies the account password only to a
   short Windows signing process that clears it before starting child tools.
 
-## Machine-scope packaging: SHIPPED 2026-08-31 (docs/release/packaging.md)
+## Machine-scope packaging (updated 2026-09-09)
 
 The app corresponds to the PC, not a profile. Implemented:
-- **All mutable state now lives in `%ProgramData%\ThisIsMyPC`** (settings,
-  history.db, sets, monitoring, drift baseline): AppConstants collapsed to one
-  DataDirectoryPath; DACL-hardened at startup; LegacyDataMigration copies old
-  `%APPDATA%\ThisIsMyPC` data across once and marks the old folder.
-- **tools/build-release.ps1** publishes App + Service into one staging dir and
+- **State follows the privilege boundary**: UI settings, ordinary history, sets, and monitoring preferences live in `%LocalAppData%\ThisIsMyPC`. Trusted Owner Mode baseline, consent, journal, and restoration history remain in protected `%ProgramData%\ThisIsMyPC`. The installation stays per machine.
+- **tools/build-release.ps1** publishes App, Broker, and Service into one staging dir and
   packs the Velopack per-machine MSI (`--msi --instLocation PerMachine`, WiX 5,
   Program Files, elevation required). Per-user Setup.exe and portable zip are
   not shipped.

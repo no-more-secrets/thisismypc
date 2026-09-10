@@ -43,21 +43,25 @@ public sealed partial class ChangeHistoryRepository
         """;
 
     private string? _connectionString;
+    private Action? _verifyAccess;
 
-    public async Task InitializeDatabaseAsync(string dbPath)
+    /// <summary>The optional verifier requires its caller to hold trusted storage through all repository operations.</summary>
+    public async Task InitializeDatabaseAsync(string dbPath, Action? verifyAccess = null)
     {
+        verifyAccess?.Invoke();
         var directory = Path.GetDirectoryName(dbPath);
-        if (!string.IsNullOrEmpty(directory))
+        if (verifyAccess is null && !string.IsNullOrEmpty(directory))
             Directory.CreateDirectory(directory);
 
+        _verifyAccess = verifyAccess;
         _connectionString = new SqliteConnectionStringBuilder
         {
             DataSource = dbPath,
             Mode = SqliteOpenMode.ReadWriteCreate,
+            Pooling = verifyAccess is null,
         }.ToString();
 
-        await using var connection = new SqliteConnection(_connectionString);
-        await connection.OpenAsync().ConfigureAwait(false);
+        await using var connection = await OpenConnectionAsync().ConfigureAwait(false);
 
         var schemaVersion = await GetSchemaVersionAsync(connection).ConfigureAwait(false);
 
@@ -291,9 +295,26 @@ public sealed partial class ChangeHistoryRepository
         if (_connectionString is null)
             throw new InvalidOperationException("Database not initialized. Call InitializeDatabaseAsync first.");
 
+        _verifyAccess?.Invoke();
         var connection = new SqliteConnection(_connectionString);
-        await connection.OpenAsync().ConfigureAwait(false);
-        return connection;
+        try
+        {
+            await connection.OpenAsync().ConfigureAwait(false);
+            if (_verifyAccess is not null)
+            {
+                await using var command = connection.CreateCommand();
+                command.CommandText = "PRAGMA journal_mode=PERSIST";
+                var mode = await command.ExecuteScalarAsync().ConfigureAwait(false);
+                if (!string.Equals(mode as string, "persist", StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException("Trusted history requires persistent SQLite journaling.");
+            }
+            return connection;
+        }
+        catch
+        {
+            await connection.DisposeAsync().ConfigureAwait(false);
+            throw;
+        }
     }
 
     private static async Task<int> GetSchemaVersionAsync(SqliteConnection connection)

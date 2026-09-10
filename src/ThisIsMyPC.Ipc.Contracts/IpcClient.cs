@@ -7,6 +7,8 @@ namespace ThisIsMyPC.Ipc.Contracts;
 
 public interface IIpcClient
 {
+    Task<OperationResult<RestorationHistoryResponse>> GetRestorationHistoryAsync(CancellationToken cancellationToken = default)
+        => Task.FromResult(OperationResult<RestorationHistoryResponse>.Failure("Owner Mode history is unavailable.", ErrorCategory.ServiceUnavailable));
     Task<OperationResult<ServiceStatusResponse>> GetStatusAsync(CancellationToken cancellationToken = default);
     Task<OperationResult<DriftReportResponse>> GetDriftReportAsync(CancellationToken cancellationToken = default);
     Task<OperationResult<RestorationStatusResponse>> EnableRestorationAsync(CancellationToken cancellationToken = default)
@@ -45,6 +47,9 @@ public sealed class IpcClient : IIpcClient
 
     public Task<OperationResult<DriftReportResponse>> GetDriftReportAsync(CancellationToken cancellationToken = default) =>
         RequestAsync(IpcMessageTypes.DriftReport, IpcJsonContext.Default.DriftReportResponse, cancellationToken);
+
+    public Task<OperationResult<RestorationHistoryResponse>> GetRestorationHistoryAsync(CancellationToken cancellationToken = default) =>
+        RequestAsync(IpcMessageTypes.RestorationHistory, IpcJsonContext.Default.RestorationHistoryResponse, cancellationToken);
 
     public Task<OperationResult<RestorationStatusResponse>> EnableRestorationAsync(CancellationToken cancellationToken = default) =>
         RequestAsync(IpcMessageTypes.EnableRestoration, IpcJsonContext.Default.RestorationStatusResponse, cancellationToken);

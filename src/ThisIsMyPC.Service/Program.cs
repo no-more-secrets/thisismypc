@@ -24,6 +24,9 @@ if (!ThisIsMyPC.Interop.Win32.Security.DllSearchHardening.Apply())
 var builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddWindowsService(options => options.ServiceName = "ThisIsMyPC");
 builder.Services.AddSingleton<IRegistryService, RegistryService>();
+builder.Services.AddSingleton<NativeRestorationService>();
+builder.Services.AddSingleton<IRestorationServiceController>(sp => sp.GetRequiredService<NativeRestorationService>());
+builder.Services.AddHostedService(sp => sp.GetRequiredService<NativeRestorationService>());
 builder.Services.AddSingleton<DriftWatchdog>();
 builder.Services.AddSingleton<IDriftReportSource>(sp => sp.GetRequiredService<DriftWatchdog>());
 builder.Services.AddHostedService(sp => sp.GetRequiredService<DriftWatchdog>());

@@ -2,6 +2,7 @@ using ThisIsMyPC.Core.Changes;
 using ThisIsMyPC.Core.Coordination;
 using ThisIsMyPC.Core.Data;
 using ThisIsMyPC.Core.Drift.Baseline;
+using ThisIsMyPC.Core.Drift.Consent;
 using ThisIsMyPC.Core.Results;
 using ThisIsMyPC.Core.Services;
 
@@ -140,6 +141,27 @@ public sealed class DeliberateChangeSession
             entries.Add(new(change.ModuleId, change.SettingId, location, validation.Candidate!.DesiredValue, _time.GetUtcNow()));
         }
         if (entries.Count > 0) _baseline.RecordApplied(entries, _lease);
+    }
+
+    /// <summary>Disarms an ambiguous baseline save before rollback while retaining the same mutation lease.</summary>
+    public void DisableProtection(IMachineConsentStore consent)
+    {
+        ArgumentNullException.ThrowIfNull(consent);
+        CheckHeld();
+        if (!_started) throw new InvalidOperationException("Prepare must run before disabling protection.");
+        if (_prepared.Count == 0) return;
+        try
+        {
+            _baseline.Remove(_prepared.Keys.ToArray(), _lease);
+        }
+        catch (Exception removalError)
+        {
+            // An atomic replace may have committed before reporting failure. Consent-off disarms that choice.
+            var off = consent.SetEnabled(false, _lease);
+            if (!off.IsSuccess || off.State.Status != MachineConsentStatus.Loaded || off.State.Enabled)
+                throw new InvalidOperationException(
+                    "The protected choice could not be removed and paused consent could not be saved.", removalError);
+        }
     }
 
     private RestorationTarget? FindTarget(string location)

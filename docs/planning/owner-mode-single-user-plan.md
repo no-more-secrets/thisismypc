@@ -11,23 +11,24 @@ Machine-wide policies retain their existing Windows scope. Do not copy arbitrary
 Explicit consent defaults off. Pause prevents new writes and waits for an active attempt. Unknown or unsupported state produces a readable refusal.
 Changes made through ThisIsMyPC update the chosen value. Changes outside the app cannot reliably identify the writer: explain that protected values will be restored, and provide pause before external edits. Do not promise to recognize Windows versus a person.
 
-## What already exists
+## Current status (2026-09-09)
 
-- Exact catalog, typed snapshots, restoration preparation, and reversible execution.
-- Native machine lock and pure mutation coordinator. Twenty elevated native tests and 48 coordination tests passed.
-- Append-only journal and idempotent transactional history import. Imported records are blocked from generic undo and custom-set export.
-- Trusted consent storage. Five elevated consent tests passed, including opt-out before recovery.
-- Pure eligibility and retry policy, existing service lifecycle, IPC, drift report, and Settings section.
+Steps 1 through 6 have complete software integration. The UI is unelevated; the Broker and SYSTEM service
+share native recovery and the mutation lease. Trusted storage, bound-owner loading, profile and management evidence,
+explicit consent, status, and restoration history are connected. Only eligible saved catalog choices can restore.
+Installed-service live evaluation remains untested. No live preference change is claimed by this completion record.
 
-These foundations are not a working automatic restoration feature. The production service only scans at startup. It does not register the consent store, journal, or coordinator.
+Verification: Release build and all 2,439 CI-safe tests passed. Sixteen elevated native tests passed,
+including interrupted recovery. Fresh review found no blockers. Dark and light history screenshots were inspected.
+Guarded App, Broker, and Service NativeAOT publishes passed. The App retains one existing Avalonia reflection-binding trim warning.
 
-The single-owner store replaced the experimental multi-profile baseline. Production automatic restoration remains disabled.
+The earlier per-step authorization rule was superseded by Sam's instruction to complete Owner Mode autonomously.
+The checkpoints below preserve the implementation sequence and its test requirements.
 
-## Delegation and spending boundaries
+## Historical checkpoint assignments (2026-09-06)
 
-One implementation worker per step, followed by a short independent review. The coordinator integrates and verifies. A second agent runs only for an independent test/review task. No manager agents or nested delegation.
-Each completed batch gets a commit and a checkpoint: observable behavior, tests, unresolved blockers, and measured usage if available. No unsupported cost or time estimate.
-Each new step requires the next batch authorization. Steps 1 through 5 are complete. Stop at the Step 5 checkpoint before native activation.
+Each completed batch used an implementation worker and independent review, with coordinator integration and verification.
+No unsupported cost or time estimate forms part of the completion evidence.
 
 ## 1. Scope audit and plan
 
@@ -103,13 +104,33 @@ Prepare one controlled live target with captured before-state and an explicit ro
 
 Exit: verified subset restores correctly, pause works, history is truthful, and failures remain visible. Unsupported cases stay disabled.
 
-## Audit result and next batch
+## Historical Step 5 checkpoint
 
 Steps 1 and 2 are complete. Step 3 implements one fake-backed catalog target through the coordinator, strict baseline, eligibility, durable intent, pending changes, verification, and history import. Production registration stays disabled.
 
 The initial loop also caps total attempts at three per seven days. This conservative ceiling includes successful attempts; it does not classify an external edit as a Windows reversion. Uncertain outcomes and unmatched intents block further writes. Step 4 is complete: [deliberate changes and Pause](../owner-mode-deliberate-changes.md). Production app-only recovery saves consent-off and does not reconcile the restoration journal. Step 5 is complete for the fake-backed service path: [controls and status](../owner-mode-service-controls.md). Native journal/database/profile/management adapters remain absent. Step 6 must supply them and shared recovery before production restoration can run.
 
-## Deferred
+## Historical Step 6 pause (2026-09-06)
+
+Added strict saved-owner resolution and shared interruption recovery. Clean recovery preserves consent.
+Interrupted attempts disable consent and become diagnostic observations, never inferred successful restores.
+
+Added a native storage scope for the journal and history database. Initial elevated tests exposed metadata-only
+handles that did not prevent replacement. That checkpoint tried read access for file and directory pins;
+its elevated rerun was canceled. No live preferences changed.
+
+The later correction in `c82fed1` keeps directory handles metadata-only so child files can be replaced atomically.
+Only file pins request GenericRead. The current sixteen elevated native tests passed with that correction.
+
+The CI-safe suite and Release build pass in `artifacts/diagnostics/owner-step6-isolated`, based on a433cf2
+plus the scoped changes. Concurrent hardening dependency edits still prevent root restoration.
+At that checkpoint, the changes remained uncommitted pending native verification.
+
+Remaining at that checkpoint: validate corrected native storage, connect every history writer with pooling disabled and PERSIST
+journal mode, provide native profile/management evidence, register the shared service graph, then prepare
+the controlled live evaluation. Production restoration remains unavailable.
+
+## Deferred scope
 
 Multi-user restoration, per-profile preferences, hive loading, machine-policy catalog expansion, journal compaction, real-time registry subscriptions, new hardware targets, generic storage frameworks, and automatic history undo for imported SID-bound records.
 

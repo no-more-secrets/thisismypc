@@ -1,11 +1,9 @@
+using System.Security.Principal;
 using Microsoft.Extensions.DependencyInjection;
 using ThisIsMyPC.App.Services;
 using ThisIsMyPC.Core.Actions;
 using ThisIsMyPC.Core.Changes;
-using ThisIsMyPC.Core.Coordination;
 using ThisIsMyPC.Core.Drift;
-using ThisIsMyPC.Core.Drift.Baseline;
-using ThisIsMyPC.Core.Drift.Consent;
 using ThisIsMyPC.Core.Enforcement;
 using ThisIsMyPC.Core.Modules;
 using ThisIsMyPC.Core.Packages;
@@ -16,9 +14,7 @@ using ThisIsMyPC.Interop.Com.Shell;
 using ThisIsMyPC.Interop.Com.Startup;
 using ThisIsMyPC.Interop.Com.Tasks;
 using ThisIsMyPC.Interop.Win32;
-using ThisIsMyPC.Interop.Win32.Coordination;
-using ThisIsMyPC.Interop.Win32.Drift.Baseline;
-using ThisIsMyPC.Interop.Win32.Drift.Consent;
+using ThisIsMyPC.Interop.Win32.Drift;
 using ThisIsMyPC.Interop.Win32.Packages;
 using ThisIsMyPC.Interop.Win32.Registry;
 using ThisIsMyPC.Interop.Win32.Services;
@@ -37,10 +33,16 @@ internal sealed class PrivilegedModuleHost : IAsyncDisposable
     private readonly Dictionary<string, IModule> _modules;
     private readonly ReversibleChangeExecutor _executor;
     private readonly DeliberateChangeCoordinator _deliberateChanges;
+    private readonly NativeRestorationSession _restoration;
+    private readonly string _uiUserSid;
+    private readonly string? _brokerUserSid;
 
     internal PrivilegedModuleHost(string uiUserSid)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(uiUserSid);
+        _uiUserSid = uiUserSid;
+        using var identity = WindowsIdentity.GetCurrent();
+        _brokerUserSid = identity.User?.Value;
         Directory.CreateDirectory(Core.AppConstants.DataDirectoryPath);
         var hardened = new DataDirectoryGuard().EnsureHardened(Core.AppConstants.DataDirectoryPath);
         if (!hardened.IsSuccess)
@@ -78,25 +80,10 @@ internal sealed class PrivilegedModuleHost : IAsyncDisposable
             .ToDictionary(module => module.Info.Name, StringComparer.Ordinal);
         _executor = new(_services.GetRequiredService<IEnforcementExecutor>());
 
-        var leaseProvider = new NamedMutexMutationLeaseProvider(
-            MutationLeaseNames.Production, "privilege-broker");
-        var consent = new MachineConsentStore(leaseName: leaseProvider.Name);
-        var mutationCoordinator = new MutationCoordinator(leaseProvider, (lease, token) =>
-        {
-            token.ThrowIfCancellationRequested();
-            var off = consent.SetEnabled(false, lease);
-            return Task.FromResult(off.IsSuccess
-                && off.State.Status == MachineConsentStatus.Loaded
-                && !off.State.Enabled
-                    ? OperationResult<bool>.Success(true)
-                    : OperationResult<bool>.Failure(
-                        "Could not pause Owner Mode before the change: " + off.State.Detail,
-                        ErrorCategory.ServiceUnavailable));
-        });
+        _restoration = new(_services.GetRequiredService<IRegistryService>(), primaryUserSid: uiUserSid);
         _deliberateChanges = new(
-            mutationCoordinator,
-            new SingleOwnerBaselineStore(
-                new MachineBaselineStorage(), leaseProvider.Name, uiUserSid),
+            _restoration.Coordinator,
+            _restoration.Baseline,
             _services.GetRequiredService<IRegistryService>(),
             TimeProvider.System);
     }
@@ -111,6 +98,11 @@ internal sealed class PrivilegedModuleHost : IAsyncDisposable
                 ErrorCategory.NotFound));
         }
 
+        if (!CanApplyProtectedChoice(change, _uiUserSid, _brokerUserSid))
+            return Task.FromResult(OperationResult<bool>.Failure(
+                "Protected settings require administrator approval from the same Windows account that opened ThisIsMyPC.",
+                ErrorCategory.AccessDenied));
+
         var applied = revert ? Invert(change) : change;
         return _deliberateChanges.RunAsync(async (session, token) =>
         {
@@ -119,10 +111,62 @@ internal sealed class PrivilegedModuleHost : IAsyncDisposable
             var result = revert
                 ? await _executor.RevertAsync(change, module.RevertChangeAsync).ConfigureAwait(false)
                 : await _executor.ApplyAsync(change, module.ApplyChangeAsync).ConfigureAwait(false);
-            if (result.IsSuccess)
-                session.RecordApplied([applied]);
-            return result;
+            if (!result.IsSuccess) return result;
+            return await SaveProtectedChoiceAsync(
+                () => session.RecordApplied([applied]),
+                () => session.DisableProtection(_restoration.Consent),
+                () => revert
+                    ? _executor.ApplyAsync(change, module.ApplyChangeAsync)
+                    : _executor.RevertAsync(change, module.RevertChangeAsync)).ConfigureAwait(false);
         }, cancellationToken);
+    }
+
+    internal static bool CanApplyProtectedChoice(ChangeDescriptor change, string uiUserSid, string? brokerUserSid)
+    {
+        var location = change.SystemLocation.Replace("HKEY_CURRENT_USER\\", "HKCU\\", StringComparison.OrdinalIgnoreCase);
+        var catalogTarget = RestorationCatalog.Default.Targets.Any(target =>
+            string.Equals(location, target.KeyPath + "\\" + target.ValueName, StringComparison.OrdinalIgnoreCase));
+        return !catalogTarget || string.Equals(uiUserSid, brokerUserSid, StringComparison.Ordinal);
+    }
+
+    internal static async Task<OperationResult<bool>> SaveProtectedChoiceAsync(Action save, Action disableProtection,
+        Func<Task<OperationResult<bool>>> rollback)
+    {
+        try
+        {
+            save();
+            return OperationResult<bool>.Success(true);
+        }
+        catch (Exception saveError)
+        {
+            try
+            {
+                disableProtection();
+            }
+            catch (Exception protectionError)
+            {
+                return OperationResult<bool>.Failure(
+                    "The setting changed, but its protected choice could not be secured. Rollback was not attempted: " + protectionError.Message,
+                    ErrorCategory.ServiceUnavailable);
+            }
+            try
+            {
+                var restored = await rollback().ConfigureAwait(false);
+                if (restored.IsSuccess)
+                    return OperationResult<bool>.Failure(
+                        "The protected choice could not be saved. The setting was restored to its previous value: " + saveError.Message,
+                        ErrorCategory.ServiceUnavailable);
+                return OperationResult<bool>.Failure(
+                    "The setting changed, but protection could not be saved and rollback failed. Its state is uncertain: " + restored.ErrorMessage,
+                    ErrorCategory.ServiceUnavailable);
+            }
+            catch (Exception rollbackError)
+            {
+                return OperationResult<bool>.Failure(
+                    "The setting changed, but protection could not be saved and rollback failed. Its state is uncertain: " + rollbackError.Message,
+                    ErrorCategory.ServiceUnavailable);
+            }
+        }
     }
 
     internal Task<OperationResult<bool>> Execute(ActionDescriptor action)
@@ -143,6 +187,7 @@ internal sealed class PrivilegedModuleHost : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         _deliberateChanges.Dispose();
+        _restoration.Dispose();
         foreach (var module in _modules.Values)
             await module.DisposeAsync().ConfigureAwait(false);
         await _services.DisposeAsync().ConfigureAwait(false);

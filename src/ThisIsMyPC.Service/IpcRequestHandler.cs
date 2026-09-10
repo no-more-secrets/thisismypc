@@ -29,6 +29,13 @@ public sealed class IpcRequestHandler
     {
         try
         {
+        if (request.Type == IpcMessageTypes.RestorationHistory)
+        {
+            var items = _restoration is null ? [] : await _restoration.GetHistoryAsync(token).ConfigureAwait(false);
+            return new() { Type = request.Type, Nonce = request.Nonce,
+                PayloadJson = JsonSerializer.Serialize(new RestorationHistoryResponse { Items = items },
+                    IpcJsonContext.Default.RestorationHistoryResponse) };
+        }
         if (request.Type is not (IpcMessageTypes.EnableRestoration or IpcMessageTypes.PauseRestoration))
             return Handle(request);
         var status = _restoration is null ? new RestorationStatusResponse() :

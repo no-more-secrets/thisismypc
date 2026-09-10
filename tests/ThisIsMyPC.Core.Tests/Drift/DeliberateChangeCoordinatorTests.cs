@@ -195,6 +195,48 @@ public sealed class DeliberateChangeCoordinatorTests
         Assert.Equal(RestorationScanStatus.BaselineMissing, (await f.Loop.ScanAsync()).Status);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AmbiguousSaveIsDisarmedBeforeRollback(bool removalFails)
+    {
+        using var f = new RestorationLoopFixture();
+        await f.InitializeAsync();
+        f.Registry.BeforeWrite = null;
+        var storage = new AmbiguousStorage(f.Storage);
+        var coordinator = Create(f, new(storage, f.Provider.Name, RestorationLoopFixture.Sid));
+        await coordinator.RunAsync(async (session, token) =>
+        {
+            var change = Change(f, "1", "0");
+            session.Prepare([change]);
+            Assert.True((await Write(f, change)).IsSuccess);
+            storage.ThrowAfterNextWrite = true;
+            Assert.Throws<IOException>(() => session.RecordApplied([change]));
+            storage.FailWrites = removalFails;
+            session.DisableProtection(f.Consent);
+            Assert.True((await Write(f, Change(f, "0", "1"))).IsSuccess);
+            return true;
+        });
+        if (removalFails) Assert.False(f.Consent.Enabled);
+        else Assert.Equal(RestorationScanStatus.BaselineMissing, (await f.Loop.ScanAsync()).Status);
+        Assert.Equal("1", f.Registry.Value!.Data);
+    }
+
+    private sealed class AmbiguousStorage(ITrustedBaselineStorage inner) : ITrustedBaselineStorage
+    {
+        public bool ThrowAfterNextWrite { get; set; }
+        public bool FailWrites { get; set; }
+        public byte[]? Read(int maximumBytes) => inner.Read(maximumBytes);
+        public void ReplaceDurably(ReadOnlyMemory<byte> document)
+        {
+            if (FailWrites) throw new IOException("Storage unavailable.");
+            inner.ReplaceDurably(document);
+            if (!ThrowAfterNextWrite) return;
+            ThrowAfterNextWrite = false;
+            throw new IOException("Committed, then failed acknowledgement.");
+        }
+    }
+
     private sealed class WaitingProvider(string name) : IMutationLeaseProvider
     {
         public string Name => name;

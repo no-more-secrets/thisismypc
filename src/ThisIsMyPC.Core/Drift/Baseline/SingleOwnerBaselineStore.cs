@@ -48,11 +48,39 @@ public sealed class SingleOwnerBaselineStore
 
     public string PrimaryUserSid => _primaryUserSid;
 
+    /// <summary>
+    /// Resolves the saved owner from one trusted read under the machine lease.
+    /// Missing storage does not bind SYSTEM or the service's current account.
+    /// The complete document must validate before its identity becomes usable.
+    /// </summary>
+    public static SingleOwnerBaselineStore OpenExisting(ITrustedBaselineStorage storage, string leaseName,
+        IMutationLease lease)
+    {
+        ArgumentNullException.ThrowIfNull(storage);
+        ArgumentException.ThrowIfNullOrWhiteSpace(leaseName);
+        ArgumentNullException.ThrowIfNull(lease);
+        if (!lease.IsHeld || !string.Equals(lease.Name, leaseName, StringComparison.Ordinal))
+            throw new InvalidOperationException("A matching held baseline lease is required.");
+        var bytes = storage.Read(MaximumBytes)
+            ?? throw new InvalidDataException("No primary owner baseline is saved.");
+        var document = Parse(bytes);
+        if (!RestorationCatalog.IsAccountSid(document.PrimaryUserSid))
+            throw new InvalidDataException("Baseline owner is not a supported account SID.");
+        var store = new SingleOwnerBaselineStore(storage, leaseName, document.PrimaryUserSid);
+        _ = store.ValidateDocument(document);
+        return store;
+    }
+
     public IReadOnlyList<SingleOwnerBaselineEntry> Read(IMutationLease lease)
     {
         CheckLease(lease, false);
         var bytes = _storage.Read(MaximumBytes);
         if (bytes is null) return Array.Empty<SingleOwnerBaselineEntry>();
+        return ValidateDocument(Parse(bytes));
+    }
+
+    private static SingleOwnerBaselineDocument Parse(byte[] bytes)
+    {
         if (bytes.Length > MaximumBytes) throw new InvalidDataException("Baseline exceeds storage limit.");
         SingleOwnerBaselineDocument document;
         try
@@ -63,6 +91,11 @@ public sealed class SingleOwnerBaselineStore
                 ?? throw new InvalidDataException("Baseline document is null.");
         }
         catch (JsonException ex) { throw new InvalidDataException("Baseline document is corrupt.", ex); }
+        return document;
+    }
+
+    private SingleOwnerBaselineEntry[] ValidateDocument(SingleOwnerBaselineDocument document)
+    {
         if (document.Version != 1 || document.Entries is null || !string.Equals(document.PrimaryUserSid, _primaryUserSid, StringComparison.Ordinal))
             throw new InvalidDataException("Unsupported baseline document.");
         return Validate(document.Entries).Values.ToArray();

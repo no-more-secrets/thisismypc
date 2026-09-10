@@ -399,7 +399,12 @@ public partial class MainWindowViewModel : ViewModelBase
             change => Dispatcher.UIThread.InvokeAsync(() => RevertChangeOnModule(change)),
             change => Dispatcher.UIThread.InvokeAsync(() => ApplyChangeToModule(change)),
             customSetWriter,
-            BeginMutation);
+            BeginMutation,
+            ipcClient is null ? null : async () =>
+            {
+                var response = await ipcClient.GetRestorationHistoryAsync().ConfigureAwait(false);
+                return response.IsSuccess && response.Value?.Items is { } items ? items : [];
+            });
 
         _pendingChangesService.PropertyChanged += OnPendingChangesPropertyChanged;
         _navigationService.PropertyChanged += OnNavigationPropertyChanged;

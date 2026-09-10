@@ -312,7 +312,7 @@ public sealed class RestorationJournal
             && record.Outcome?.Kind == JournalOutcomeKind.RecoveryObservation;
         CheckLease(lease, writing: !recoveryEvidence);
         using var file = new FileStream(path, create ? FileMode.CreateNew : FileMode.Open,
-            FileAccess.Write, FileShare.None, 4096, FileOptions.WriteThrough);
+            FileAccess.Write, FileShare.Read, 4096, FileOptions.WriteThrough);
         if (!_trustCheck(path)) throw new UnauthorizedAccessException("Created journal file failed its trust check.");
         file.Position = file.Length;
         Span<byte> header = stackalloc byte[8];

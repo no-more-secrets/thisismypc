@@ -59,19 +59,22 @@ public partial class ChangeHistoryViewModel : ViewModelBase
     // write through enforcement before the module delegate ever runs, so the
     // gate has to sit in front of the service call, not inside the delegates.
     private readonly Func<Services.MutationLease> _beginMutation;
+    private readonly Func<Task<IReadOnlyList<ChangeHistoryEntry>>>? _ownerHistory;
 
     public ChangeHistoryViewModel(
         IChangeHistoryService historyService,
         Func<ChangeDescriptor, Task<OperationResult<bool>>> revertFunc,
         Func<ChangeDescriptor, Task<OperationResult<bool>>> applyFunc,
         ICustomSetWriter customSetWriter,
-        Func<Services.MutationLease>? beginMutation = null)
+        Func<Services.MutationLease>? beginMutation = null,
+        Func<Task<IReadOnlyList<ChangeHistoryEntry>>>? ownerHistory = null)
     {
         _historyService = historyService;
         _revertFunc = revertFunc;
         _applyFunc = applyFunc;
         _customSetWriter = customSetWriter;
         _beginMutation = beginMutation ?? Services.MutationLease.Open;
+        _ownerHistory = ownerHistory;
         SaveSetForm = new SaveSetFormViewModel(CreateSetFromSelection);
     }
 
@@ -104,6 +107,21 @@ public partial class ChangeHistoryViewModel : ViewModelBase
 
         var entries = await _historyService.GetRecentGroupedAsync(DefaultGroupLimit).ConfigureAwait(true);
         var totalGroups = await _historyService.GetGroupCountAsync().ConfigureAwait(true);
+        if (_ownerHistory is not null)
+        {
+            try
+            {
+                var activity = await _ownerHistory().ConfigureAwait(true);
+                // A remote response must never supply an actionable local history row.
+                var safe = activity.Where(e => e.OwnerAttemptId is not null).Take(100)
+                    .DistinctBy(e => e.OwnerAttemptId)
+                    .Select(e => e with { Category = ChangeCategory.SystemReversion,
+                        GroupId = "owner-service-" + e.OwnerAttemptId, Enforcement = null }).ToArray();
+                entries = entries.Concat(safe).OrderByDescending(e => e.AppliedAt).ToList();
+                totalGroups += safe.Length;
+            }
+            catch (Exception ex) { ErrorMessage = "Owner Mode history is unavailable: " + ex.Message; }
+        }
 
         HistoryGroups.Clear();
         foreach (var stale in _allBatches)

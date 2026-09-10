@@ -25,6 +25,7 @@ public static class IpcMessageTypes
     public const string Error = "error";
     public const string EnableRestoration = "enable-restoration";
     public const string PauseRestoration = "pause-restoration";
+    public const string RestorationHistory = "restoration-history";
     public const string BrokerSession = "broker-session";
     public const string BrokerCommand = "broker-command";
     public const string BrokerClose = "broker-close";
@@ -90,6 +91,12 @@ public sealed record RestorationStatusResponse
     public DateTimeOffset? LastScanUtc { get; init; }
 }
 
+/// <summary>Read-only service activity. These records never authorize UI history actions.</summary>
+public sealed record RestorationHistoryResponse
+{
+    public IReadOnlyList<Core.Changes.ChangeHistoryEntry> Items { get; init; } = [];
+}
+
 public sealed record ServiceStatusResponse
 {
     public required int ProtocolVersion { get; init; }
@@ -136,6 +143,7 @@ public sealed record IpcErrorResponse
 [JsonSerializable(typeof(IpcEnvelope))]
 [JsonSerializable(typeof(ServiceStatusResponse))]
 [JsonSerializable(typeof(RestorationStatusResponse))]
+[JsonSerializable(typeof(RestorationHistoryResponse))]
 [JsonSerializable(typeof(DriftReportResponse))]
 [JsonSerializable(typeof(IpcErrorResponse))]
 [JsonSerializable(typeof(BrokerSessionRequest))]

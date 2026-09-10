@@ -100,7 +100,7 @@ public partial class OwnerModeSectionViewModel : ViewModelBase
     }
 
     private bool CanEnable() => !IsBusy && StateText != "Enabled";
-    private bool CanDisable() => !IsBusy && (IsRunning || _consentGranted);
+    private bool CanDisable() => !IsBusy && (IsRunning || _consentGranted || StateText == "Unavailable");
 
     [RelayCommand(CanExecute = nameof(CanEnable))]
     private async Task EnableAsync()

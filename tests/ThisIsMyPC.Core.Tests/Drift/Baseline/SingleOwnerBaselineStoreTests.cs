@@ -171,6 +171,38 @@ public sealed class SingleOwnerBaselineStoreTests
         Assert.Throws<InvalidDataException>(() => store.RecordApplied([Entry()], lease));
     }
 
+    [Fact]
+    public void ServiceResolvesSavedOwnerUnderUnrecoveredLeaseWithoutWriting()
+    {
+        var storage = new Storage();
+        using (var lease = Lease())
+            new SingleOwnerBaselineStore(storage, "test", Sid).RecordApplied([Entry()], lease);
+        var writes = storage.Writes;
+        using var recovery = Lease(false);
+        var resolved = SingleOwnerBaselineStore.OpenExisting(storage, "test", recovery);
+        Assert.Equal(Sid, resolved.PrimaryUserSid);
+        Assert.Single(resolved.Read(recovery));
+        Assert.Equal(writes, storage.Writes);
+        Assert.False(recovery.CanWrite);
+    }
+
+    [Fact]
+    public void ServiceBindingRequiresExistingValidDocumentAndMatchingHeldLease()
+    {
+        var storage = new Storage();
+        using var lease = Lease(false);
+        Assert.Throws<InvalidDataException>(() => SingleOwnerBaselineStore.OpenExisting(storage, "test", lease));
+        Assert.Throws<InvalidOperationException>(() => SingleOwnerBaselineStore.OpenExisting(storage, "wrong", lease));
+        using (var writer = Lease())
+            new SingleOwnerBaselineStore(storage, "test", Sid).RecordApplied([Entry()], writer);
+        var json = System.Text.Json.Nodes.JsonNode.Parse(storage.Bytes!)!;
+        json["Entries"]![0]!["SettingId"] = "not-in-catalog";
+        storage.Bytes = System.Text.Encoding.UTF8.GetBytes(json.ToJsonString());
+        Assert.Throws<InvalidDataException>(() => SingleOwnerBaselineStore.OpenExisting(storage, "test", lease));
+        lease.Dispose();
+        Assert.Throws<InvalidOperationException>(() => SingleOwnerBaselineStore.OpenExisting(storage, "test", lease));
+    }
+
     private sealed class Storage : ITrustedBaselineStorage
     {
         public byte[]? Bytes { get; set; }
