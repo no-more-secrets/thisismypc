@@ -2,13 +2,26 @@
 
 Current release scope: [v1 completion plan](v1-completion-plan.md), approved 2026-09-06. It supersedes older post-release hardware assumptions below.
 
+## FanControl profile editing (2026-09-10)
+
+- Cooling edits saved FanControl 226 profiles: fan names, enabled state, manual speeds, curve assignments, flat speeds, and graph points.
+- Saving defaults to a separate copy. Saves enter pending changes; undo and redo preserve captured file contents.
+- Calibration, sensor pairing, unknown fields, unsupported curve types, and nested selected curves survive supported edits.
+- Profile writes use existing desktop-account permissions. Mixed batches send only system changes to the privilege broker.
+- The editor retains drafts while switching profiles. Reload profiles explicitly discards drafts.
+- Verified: Release build and 2,585 CI-safe tests after native Lighting integration, native compare/delete tests, rendered editor interactions, and all four Hardware pages at 25/23/17 content edges.
+- Verified: Sam's version 226 profile with nine fan controls and six curves round-trips byte-for-byte. No live fan settings changed.
+- Saving does not load the profile. Load the saved file in FanControl; file undo does not restore runtime fan settings.
+- Pending: automatic profile activation with reliable acknowledgement, physical active-curve verification, other versions, and service mode.
+- Details: [FanControl configuration integration](../fancontrol-configuration.md).
+
 ## FanControl existing instance and configuration probe (2026-09-10)
 
 - DONE: Open FanControl checks the live process before launching. An accessible matching window is activated; a tray-only instance gets tray instructions without another launch or UAC prompt.
 - Verified: Release build, 2,530 CI-safe tests, fresh review, native tray-only/absent detection, and live window activation with unchanged process IDs.
 - Verified: a separately edited version 226 configuration loaded into the running application through an elevated CLI request. UI Automation observed the temporary card nickname.
 - The original configuration was restored, its nickname was verified in the UI, and its file remained byte-identical. Active curves and calibration were never edited.
-- Pending: full configuration editor, verified active-curve changes, other versions/service mode, and tray-only window activation without elevation.
+- The profile editor is covered above. Pending: verified active-curve changes, other versions/service mode, and tray-only window activation without elevation.
 - `CACHE.CurrentConfigFileName` remained stale during the live profile change. It must not serve as a reload acknowledgement.
 - Findings and next steps: [FanControl configuration integration](../fancontrol-configuration.md).
 

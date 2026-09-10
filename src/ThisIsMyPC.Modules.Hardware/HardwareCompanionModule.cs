@@ -4,6 +4,7 @@ using ThisIsMyPC.Core.Modules;
 using ThisIsMyPC.Core.Results;
 using ThisIsMyPC.Core.Settings;
 using ThisIsMyPC.Modules.Hardware.Models;
+using ThisIsMyPC.Modules.Hardware.Cooling;
 
 namespace ThisIsMyPC.Modules.Hardware;
 
@@ -11,11 +12,9 @@ namespace ThisIsMyPC.Modules.Hardware;
 /// One Hardware tab decided by <see cref="HardwareCompatibilityPolicy"/> over
 /// the shared detection snapshot. The tab is always available in the sidebar;
 /// what it can do here is the decision it renders. Companion install and open
-/// are the tab's only actions in this batch and they run through the App's
-/// action service, never here. Nothing goes through the change pipeline:
-/// these tabs write no system configuration, and the one that will write
-/// devices (Lighting, through OpenRGB) writes ephemeral hardware state that is
-/// its own undo, the same carve-out the Display module documents.
+/// run through the App's action service. Cooling stages saved profile edits
+/// through the change pipeline. Lighting uses built-in controllers for ephemeral hardware
+/// state, under the same undo exception documented by the Display module.
 /// </summary>
 public abstract class HardwareCompanionModule : IModule
 {
@@ -97,12 +96,12 @@ public abstract class HardwareCompanionModule : IModule
 #pragma warning restore CA1031
     }
 
-    public Task<OperationResult<bool>> ApplyChangeAsync(ChangeDescriptor change) =>
+    public virtual Task<OperationResult<bool>> ApplyChangeAsync(ChangeDescriptor change) =>
         Task.FromResult(OperationResult<bool>.Failure(
             $"{Info.Name} has no staged changes; companion actions run directly.",
             ErrorCategory.ServiceUnavailable));
 
-    public Task<OperationResult<bool>> RevertChangeAsync(ChangeDescriptor change) => ApplyChangeAsync(change);
+    public virtual Task<OperationResult<bool>> RevertChangeAsync(ChangeDescriptor change) => ApplyChangeAsync(change);
 }
 
 /// <summary>Laptop performance modes, battery limit and keyboard controls through G-Helper.</summary>
@@ -143,8 +142,10 @@ public sealed class LightingModule : HardwareCompanionModule
 public sealed class CoolingModule : HardwareCompanionModule
 {
     public const string ModuleName = "Cooling";
+    public FanControlProfileStore Profiles { get; }
 
-    public CoolingModule(IHardwareFactsProvider facts, ISettingsService? settings = null)
+    public CoolingModule(IHardwareFactsProvider facts, ISettingsService? settings = null,
+        ThisIsMyPC.Core.Services.IComparedFileDeletionService? deletion = null)
         : base(facts, settings, new ModuleInfo(
             Name: ModuleName,
             Icon: "cooling",
@@ -153,7 +154,12 @@ public sealed class CoolingModule : HardwareCompanionModule
             Group: ModuleGroup.Hardware,
             LoadOrder: 40), HardwareDomain.Cooling)
     {
+        Profiles = new FanControlProfileStore(facts, deletion);
     }
+
+    public override Task<OperationResult<bool>> ApplyChangeAsync(ChangeDescriptor change) => Profiles.ApplyAsync(change);
+
+    public override Task<OperationResult<bool>> RevertChangeAsync(ChangeDescriptor change) => Profiles.ApplyAsync(change);
 }
 
 /// <summary>Curated sensor readout through LibreHardwareMonitor.</summary>

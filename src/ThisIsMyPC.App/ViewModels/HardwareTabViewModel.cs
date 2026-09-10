@@ -52,7 +52,8 @@ public sealed partial class HardwareTabViewModel : ViewModelBase, IDisposable
         Func<Task<OperationResult<HardwareTabScanData>>>? refresh = null,
         bool installAvailable = true,
         bool refreshOnOpen = true,
-        ILightingBackend? lightingBackend = null)
+        ILightingBackend? lightingBackend = null,
+        CoolingProfilesViewModel? cooling = null)
     {
         ArgumentNullException.ThrowIfNull(data);
         _data = data;
@@ -60,6 +61,7 @@ public sealed partial class HardwareTabViewModel : ViewModelBase, IDisposable
         _installAvailable = installAvailable;
         _refresh = refresh;
         _lightingBackend = lightingBackend;
+        Cooling = cooling;
         if (_actions is not null)
             _actions.QueueChanged += OnQueueChanged;
         SyncLighting();
@@ -70,6 +72,8 @@ public sealed partial class HardwareTabViewModel : ViewModelBase, IDisposable
     public HardwareTabDecision Decision => Data.Decision;
 
     public HardwareDomain Domain => Decision.Domain;
+
+    public CoolingProfilesViewModel? Cooling { get; }
 
     public string Explanation => Decision.Explanation;
 
@@ -202,15 +206,15 @@ public sealed partial class HardwareTabViewModel : ViewModelBase, IDisposable
     /// <summary>Controls are on screen because of Settings > Advanced, not because they can do anything.</summary>
     public bool IsOverrideShowingControls => Decision.ControlsVisible && !IsAvailable;
 
-    /// <summary>Lighting renders its device controls; the placeholder is for the other tabs and for Lighting without a backend.</summary>
-    public bool ShowsPlaceholder => Lighting is null;
+    /// <summary>The placeholder appears when neither a lighting backend nor a cooling editor is supplied.</summary>
+    public bool ShowsPlaceholder => Lighting is null && Cooling is null;
 
     /// <summary>What sits in the controls area in this build, per domain.</summary>
     public string ControlsPlaceholder => Domain switch
     {
         HardwareDomain.Lighting => "Lighting devices appear here once the built-in controllers find one.",
         HardwareDomain.Monitoring => "Sensor readings arrive with the LibreHardwareMonitor integration. Nothing is read yet.",
-        HardwareDomain.Cooling => "FanControl runs the fans. Saved cooling presets for this PC arrive in a later build.",
+        HardwareDomain.Cooling => "FanControl runs the fans. Select a saved profile below to edit it.",
         HardwareDomain.SystemControl => "G-Helper runs the laptop. ThisIsMyPC installs and opens it; it does not replace it.",
         _ => string.Empty,
     };
@@ -287,6 +291,7 @@ public sealed partial class HardwareTabViewModel : ViewModelBase, IDisposable
 
     public void Dispose()
     {
+        Cooling?.Dispose();
         if (_actions is not null)
             _actions.QueueChanged -= OnQueueChanged;
         Lighting?.Dispose();

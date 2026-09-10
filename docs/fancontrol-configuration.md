@@ -58,14 +58,31 @@ The diagnostic inspection used the installed IPC assembly to understand the boun
 No proprietary implementation or FanControl assembly is copied into the application or this repository.
 No internal IPC endpoint is adopted as a production dependency.
 
-## Next implementation
+## Profile editor
 
-1. Add a version-gated editor that starts from a complete local profile and changes only selected fields.
-2. Preserve nested curve definitions, fan mapping, calibration, and unknown properties during round trips.
-3. Stage edits through the existing before-state and undo pipeline. Detect concurrent FanControl saves before replacing a file.
-4. Verify profile reload and field acceptance independently from CACHE and process exit status.
-5. Test an active curve change with explicit hardware observations and a tested restoration path.
-6. Check other FanControl versions and its newer service mode before claiming support.
+Cooling edits local version 226 profiles from the detected FanControl installation's `Configurations` folder.
+Start from a complete existing profile. Saving a copy is the default.
+The editor supports fan names, enabled state, manual speed, curve assignments, flat percentages, and graph points.
+Other curve types remain unchanged. Calibration, hardware identifiers, sensor pairing, and unknown properties are preserved.
+Changes to a selected curve also update its nested definitions in fan controls.
+
+Saving stages a file change for review. Apply writes the file; history can undo or redo the file change.
+An unchanged document retains its original bytes. Undo restores captured bytes and refuses to overwrite subsequent edits.
+Saves use the desktop account's existing file permissions. They do not extend the elevated broker's file access.
+If the folder is not writable, saving reports the access failure.
+Undoing a new copy compares and deletes through one exclusive native file handle, preventing concurrent saves between those steps.
+New copies use a flushed temporary file and a move that refuses existing targets.
+Replacing an existing profile holds exclusive access and restores bytes after an I/O failure; it is not atomic across process termination.
+
+Saving does not load the profile or change the running fan controls.
+Open FanControl and load the saved profile there. File history cannot restore an unknown runtime selection.
+FanControl can save its own loaded profile, so prefer copies and reload the editor after external changes.
+
+Remaining verification:
+
+1. Verify active curve changes with physical observations and a tested restoration path.
+2. Check other FanControl versions and its newer service mode before claiming support.
+3. Add reliable profile activation independently from CACHE and process exit status.
 
 The plugin API remains useful for sensors and controls but does not expose existing curve editing.
 A plugin could provide a narrow window-activation interface through its supported application-control hook, subject to separate implementation and verification.

@@ -249,6 +249,7 @@ public partial class App : Application
             internalPanelProbe: InternalPanelProbe(sp),
             lighting: sp.GetRequiredService<Core.Hardware.Lighting.ILightingBackend>()));
         services.AddSingleton<ICompanionWindowService, ThisIsMyPC.Interop.Win32.Hardware.CompanionWindowService>();
+        services.AddSingleton<IComparedFileDeletionService, ThisIsMyPC.Interop.Win32.ComparedFileDeletionService>();
         services.AddSingleton(sp => new HardwareCompanionActions(
             sp.GetRequiredService<IPendingActionsService>(),
             sp.GetRequiredService<IInteractiveUserContext>(),

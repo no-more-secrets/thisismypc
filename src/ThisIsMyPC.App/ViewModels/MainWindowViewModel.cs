@@ -10,6 +10,7 @@ using ThisIsMyPC.Core.Changes;
 using ThisIsMyPC.Core.Results;
 using ThisIsMyPC.Core.Modules;
 using ThisIsMyPC.Core.Services;
+using ThisIsMyPC.Modules.Hardware;
 using ThisIsMyPC.Modules.Shell;
 using ThisIsMyPC.Modules.Shell.Models;
 using ContextMenuHandlerList = System.Collections.Generic.IReadOnlyList<ThisIsMyPC.Modules.Shell.Models.ContextMenuHandler>;
@@ -713,7 +714,9 @@ public partial class MainWindowViewModel : ViewModelBase
                             hardwareModule.RefreshAsync,
                             installAvailable: LookupModuleAvailability(Modules.Software.SoftwareModule.ModuleName)?.IsAvailable ?? false,
                             refreshOnOpen: hardwareData.RefreshInBackground,
-                            lightingBackend: _lightingBackend);
+                            lightingBackend: _lightingBackend,
+                            cooling: hardwareModule is Modules.Hardware.CoolingModule coolingModule
+                                ? new CoolingProfilesViewModel(coolingModule.Profiles, _pendingChangesService) : null);
                     }
                     else
                     {
@@ -1747,18 +1750,21 @@ public partial class MainWindowViewModel : ViewModelBase
             // PendingCount counts groups, so a single 6-change set must still trigger.
             // One-way actions count too: a bulk of Appx removals is the least
             // reversible thing in the app and deserves the restore point most.
-            var changeCount = _pendingChangesService.PendingGroups.Sum(g => g.Changes.Count)
+            var brokerChanges = _pendingChangesService.PendingGroups.SelectMany(group => group.Changes)
+                .Where(change => !IsLocalCoolingProfile(change)).ToList();
+            var changeCount = brokerChanges.Count
                 + (_pendingActionsService?.PendingCount ?? 0);
             var restorePointDescription = changeCount >= AutoRestorePointThreshold && !_applyWithoutRestorePoint
                 ? $"ThisIsMyPC: Before applying {changeCount} changes"
                 : null;
 
             IPrivilegeBrokerSession? brokerSession = null;
-            if (_privilegeBroker is not null)
+            if (_privilegeBroker is not null && (brokerChanges.Count > 0
+                || (_pendingActionsService?.PendingCount ?? 0) > 0 || restorePointDescription is not null))
             {
                 var opened = await _privilegeBroker.OpenSessionAsync(new Ipc.Contracts.BrokerSessionRequest
                 {
-                    Changes = _pendingChangesService.PendingGroups.SelectMany(group => group.Changes).ToList(),
+                    Changes = brokerChanges,
                     Actions = _pendingActionsService?.PendingActions ?? [],
                     RestorePointDescription = restorePointDescription,
                 }, cancellationToken).ConfigureAwait(true);
@@ -1977,6 +1983,13 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private async Task<OperationResult<bool>> RunChange(ChangeDescriptor change, bool revert)
     {
+        // Profile files use the desktop account's existing access. Never elevate
+        // a caller-supplied file path through the system settings broker.
+        if (IsLocalCoolingProfile(change) && ResolveModule(change.ModuleId) is CoolingModule cooling)
+            return revert
+                ? await cooling.RevertChangeAsync(change).ConfigureAwait(false)
+                : await cooling.ApplyChangeAsync(change).ConfigureAwait(false);
+
         if (_activeBrokerSession is not null)
         {
             return revert
@@ -2009,6 +2022,10 @@ public partial class MainWindowViewModel : ViewModelBase
             ? await module.RevertChangeAsync(change).ConfigureAwait(false)
             : await module.ApplyChangeAsync(change).ConfigureAwait(false);
     }
+
+    private bool IsLocalCoolingProfile(ChangeDescriptor change) =>
+        Modules.Hardware.Cooling.FanControlProfileStore.IsProfileChange(change)
+        && ResolveModule(change.ModuleId) is CoolingModule;
 
     private static string DescribeChange(ChangeDescriptor change) =>
         $"{change.DisplayName}: '{change.BeforeDisplay}' to '{change.AfterDisplay}' at {change.SystemLocation}";

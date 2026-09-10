@@ -1,0 +1,127 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ThisIsMyPC.App.ViewModels"
+             x:Class="ThisIsMyPC.App.Views.CoolingProfilesView"
+             x:DataType="vm:CoolingProfilesViewModel">
+    <UserControl.Styles>
+        <Style Selector="Border.profile-card">
+            <Setter Property="Background" Value="{DynamicResource RaisedBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SidebarBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="20,16" />
+        </Style>
+        <Style Selector="Border.profile-card.staged">
+            <Setter Property="Background" Value="{DynamicResource SuccessMutedBrush}" />
+        </Style>
+        <Style Selector="Button.staged-save">
+            <Setter Property="Background" Value="{DynamicResource SuccessMutedBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SuccessBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        <Style Selector="TextBlock.label">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <Style Selector="TextBlock.hint">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+        </Style>
+        <Style Selector="TextBlock.error">
+            <Setter Property="Foreground" Value="{DynamicResource ErrorBrush}" />
+        </Style>
+    </UserControl.Styles>
+    <UserControl.DataTemplates>
+        <DataTemplate DataType="{x:Type vm:CoolingFanEditorViewModel}">
+            <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="170,*" RowSpacing="10" ColumnSpacing="12">
+                <TextBlock Classes="label" Text="Fan name" />
+                <TextBox Grid.Column="1" Text="{Binding Nickname}" Watermark="{Binding Name}" MaxLength="120" />
+                <TextBlock Grid.Row="1" Classes="label" Text="Fan control" />
+                <ToggleSwitch Grid.Row="1" Grid.Column="1" Content="Enable this fan control" IsChecked="{Binding Enabled}" />
+                <TextBlock Grid.Row="2" Classes="label" Text="Speed mode" />
+                <ToggleSwitch Grid.Row="2" Grid.Column="1" Content="Use a manual speed" IsChecked="{Binding ManualControl}" IsEnabled="{Binding Enabled}" />
+                <TextBlock Grid.Row="3" Classes="label" Text="Manual speed (%)" />
+                <NumericUpDown Grid.Row="3" Grid.Column="1" Value="{Binding ManualPercent}" Minimum="0" Maximum="100"
+                               FormatString="0.##" IsEnabled="{Binding ManualControl}" HorizontalAlignment="Left" MinWidth="140" />
+                <TextBlock Grid.Row="4" Classes="label" Text="Assigned curve" />
+                <ComboBox Grid.Row="4" Grid.Column="1" ItemsSource="{Binding CurveChoices}" SelectedItem="{Binding SelectedCurve}"
+                          IsEnabled="{Binding !ManualControl}" HorizontalAlignment="Stretch">
+                    <ComboBox.ItemTemplate><DataTemplate x:DataType="vm:CoolingCurveChoice"><TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" /></DataTemplate></ComboBox.ItemTemplate>
+                </ComboBox>
+                <TextBlock Grid.Row="5" Grid.ColumnSpan="2" Classes="hint"
+                           Text="Calibration, sensor pairing, start and stop speeds stay as configured in FanControl." />
+            </Grid>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:CoolingCurveEditorViewModel}">
+            <StackPanel Spacing="10">
+                <Grid ColumnDefinitions="170,*" ColumnSpacing="12" IsVisible="{Binding IsFlat}">
+                    <TextBlock Classes="label" Text="Fixed speed (%)" />
+                    <NumericUpDown Grid.Column="1" Value="{Binding Percent}" Minimum="0" Maximum="100" FormatString="0.##"
+                                   HorizontalAlignment="Left" MinWidth="140" />
+                </Grid>
+                <StackPanel Spacing="8" IsVisible="{Binding IsGraph}">
+                    <TextBlock Classes="hint" Text="{Binding TemperatureSource}" />
+                    <TextBlock Classes="hint" Text="Temperature points use Celsius. Hysteresis and the temperature sensor stay unchanged." />
+                    <Grid ColumnDefinitions="*,*,Auto" ColumnSpacing="12">
+                        <TextBlock Classes="label" Text="Temperature (°C)" />
+                        <TextBlock Grid.Column="1" Classes="label" Text="Fan speed (%)" />
+                        <Border Grid.Column="2" Width="80" />
+                    </Grid>
+                    <ItemsControl ItemsSource="{Binding Points}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:CoolingPointEditorViewModel">
+                                <Grid ColumnDefinitions="*,*,80" ColumnSpacing="12" Margin="0,0,0,6">
+                                    <NumericUpDown Value="{Binding Temperature}" FormatString="0.############" />
+                                    <NumericUpDown Grid.Column="1" Value="{Binding Percent}" Minimum="0" Maximum="100" FormatString="0.############" />
+                                    <Button Grid.Column="2" Content="Remove" HorizontalAlignment="Stretch"
+                                            Command="{Binding $parent[ItemsControl].((vm:CoolingCurveEditorViewModel)DataContext).RemovePointCommand}"
+                                            CommandParameter="{Binding}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Button Content="Add point" Command="{Binding AddPointCommand}" HorizontalAlignment="Left" />
+                </StackPanel>
+                <TextBlock Classes="hint" IsVisible="{Binding IsUnsupported}"
+                           Text="This curve type stays unchanged. Edit it in FanControl. You can still assign it to a fan here." />
+            </StackPanel>
+        </DataTemplate>
+    </UserControl.DataTemplates>
+    <Border Classes="profile-card" Classes.staged="{Binding HasStagedProfile}">
+        <StackPanel Spacing="14">
+            <TextBlock Text="Cooling profiles" FontSize="18" FontWeight="SemiBold" />
+            <TextBlock Classes="hint" Text="Edit FanControl 226 profiles for this PC. Saving a profile does not load it or change running fans." />
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" IsEnabled="{Binding !IsBusy}">
+                <ComboBox ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfile}" PlaceholderText="Select a saved profile" HorizontalAlignment="Stretch" />
+                <Button Grid.Column="1" Content="Reload profiles" Command="{Binding RefreshCommand}" ToolTip.Tip="Discard editor changes and read saved profiles again." />
+            </Grid>
+            <StackPanel Spacing="14" IsVisible="{Binding HasProfile}" IsEnabled="{Binding !IsBusy}">
+                <Expander Header="Fans" IsExpanded="True" HorizontalAlignment="Stretch">
+                    <StackPanel Spacing="12" Margin="0,12,0,4">
+                        <ComboBox ItemsSource="{Binding Fans}" SelectedItem="{Binding SelectedFan}" HorizontalAlignment="Stretch">
+                            <ComboBox.ItemTemplate><DataTemplate x:DataType="vm:CoolingFanEditorViewModel"><TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" /></DataTemplate></ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <ContentControl Content="{Binding SelectedFan}" />
+                    </StackPanel>
+                </Expander>
+                <Expander Header="Curves" IsExpanded="False" HorizontalAlignment="Stretch">
+                    <StackPanel Spacing="12" Margin="0,12,0,4">
+                        <ComboBox ItemsSource="{Binding Curves}" SelectedItem="{Binding SelectedCurve}" HorizontalAlignment="Stretch">
+                            <ComboBox.ItemTemplate><DataTemplate x:DataType="vm:CoolingCurveEditorViewModel"><TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" /></DataTemplate></ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <ContentControl Content="{Binding SelectedCurve}" />
+                    </StackPanel>
+                </Expander>
+                <TextBlock Text="Save a profile copy" FontWeight="SemiBold" />
+                <TextBox Text="{Binding SaveName}" Watermark="My cooling profile.json" MaxLength="120" />
+                <CheckBox Content="Allow replacing the selected profile" IsChecked="{Binding ReplaceSelected}" />
+                <TextBlock Classes="hint" IsVisible="{Binding ReplaceSelected}"
+                           Text="FanControl can overwrite a loaded profile. Use a copy unless this profile is not loaded there." />
+                <Button Content="{Binding StageLabel}" Classes.staged-save="{Binding HasStagedProfile}" Command="{Binding StageCommand}" IsEnabled="{Binding CanStage}" HorizontalAlignment="Left" />
+            </StackPanel>
+            <TextBlock Classes="hint" Classes.error="{Binding Failed}" Text="{Binding Message}" />
+            <TextBlock Classes="hint" Text="After Apply, open FanControl and use Load configuration to choose the saved profile. Undo restores the file, not the running fan settings." />
+        </StackPanel>
+    </Border>
+</UserControl>
