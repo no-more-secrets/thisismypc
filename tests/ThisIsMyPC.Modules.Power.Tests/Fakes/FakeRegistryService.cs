@@ -16,6 +16,9 @@ public sealed class FakeRegistryService : IRegistryService
     /// <summary>Sees every recorded call; a test flips the power fake when a step happens.</summary>
     public Action<string>? OnCall { get; set; }
 
+    /// <summary>When set, every DWORD read fails with this category instead of NotFound.</summary>
+    public ErrorCategory? ReadDWordFailure { get; set; }
+
     private void Record(string call)
     {
         Calls.Add(call);
@@ -31,9 +34,13 @@ public sealed class FakeRegistryService : IRegistryService
     private static string Key(string keyPath, string valueName) => $"{keyPath}\\{valueName}";
 
     public OperationResult<int> ReadDWord(string keyPath, string valueName)
-        => _values.TryGetValue(Key(keyPath, valueName), out var v) && v is int i
+    {
+        if (ReadDWordFailure is { } failure)
+            return OperationResult<int>.Failure("Read failed", failure);
+        return _values.TryGetValue(Key(keyPath, valueName), out var v) && v is int i
             ? OperationResult<int>.Success(i)
             : OperationResult<int>.Failure("Not found", ErrorCategory.NotFound);
+    }
 
     public OperationResult<bool> WriteDWord(string keyPath, string valueName, int value)
     {

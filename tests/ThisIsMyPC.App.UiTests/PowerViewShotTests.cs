@@ -14,7 +14,8 @@ namespace ThisIsMyPC.App.UiTests;
 [Trait("Category", "Diagnostic")]
 public class PowerViewShotTests
 {
-    private static PowerScanData CreateScanData(bool hibernate = true, Guid? pinnedPlan = null)
+    private static PowerScanData CreateScanData(
+        bool hibernate = true, Guid? pinnedPlan = null, SleepPolicy? sleepPolicy = null)
     {
         var plans = new List<PowerPlan>
         {
@@ -26,7 +27,12 @@ public class PowerViewShotTests
                 IsActive = true,
             },
         };
-        return new PowerScanData(plans, HibernateEnabled: hibernate, PolicyPinnedPlan: pinnedPlan, ActivePlanLockedByPolicy: pinnedPlan is not null);
+        return new PowerScanData(
+            plans,
+            HibernateEnabled: hibernate,
+            PolicyPinnedPlan: pinnedPlan,
+            ActivePlanLockedByPolicy: pinnedPlan is not null,
+            SleepPolicy: sleepPolicy ?? SleepPolicy.Unset);
     }
 
     [AvaloniaFact]
@@ -56,8 +62,10 @@ public class PowerViewShotTests
         session.Screenshot("system-power-section");
 
         Assert.True(session.IsTextVisible("System power"));
+        Assert.True(session.IsTextVisible("Allow sleep"));
         Assert.True(session.IsTextVisible("Allow hibernation"));
-        // No power service in this session — the Ultimate Performance row must not render.
+        Assert.Contains(viewModel.SystemPowerToggles, r => r.Label == "Allow sleep");
+        // No power service in this session, so the Ultimate Performance row must not render.
         Assert.False(session.IsTextVisible("Add the Ultimate Performance plan"));
     }
 
@@ -82,5 +90,42 @@ public class PowerViewShotTests
 
         row.IsEnabled = !row.IsEnabled;
         await session.WaitForAsync(() => queue.PendingCount == 0, timeoutMs: 5000, what: "hibernate unstaging");
+    }
+
+    [AvaloniaFact]
+    public void SystemPowerSection_HidesTheSleepRowWhenThePolicyIsUnreadable()
+    {
+        var queue = new PendingChangesService();
+        var scan = CreateScanData() with { SleepPolicy = null };
+        var viewModel = new PowerViewModel(scan, queue, registryService: Registry);
+        using var session = UiSession.ForView(new PowerView(), viewModel, "power-view", height: 1400);
+
+        Assert.False(session.IsTextVisible("Allow sleep"));
+        Assert.True(session.IsTextVisible("Allow hibernation"));
+    }
+
+    [AvaloniaFact]
+    public async Task TogglingSleep_StagesOneChangeAndUnstagesOnTheWayBack()
+    {
+        // Seed the scan with the live policy so the flip differs from the read at stage time.
+        var live = Modules.Power.Services.PowerPlanScanner.ReadSleepPolicy(Registry) ?? SleepPolicy.Unset;
+
+        var queue = new PendingChangesService();
+        var viewModel = new PowerViewModel(CreateScanData(sleepPolicy: live), queue, registryService: Registry);
+        using var session = UiSession.ForView(new PowerView(), viewModel, "power-view", height: 1400);
+
+        var row = viewModel.SystemPowerToggles.First(r => r.Label == "Allow sleep");
+        Assert.Equal(live.AllowsSleep, row.IsEnabled);
+        row.IsEnabled = !live.AllowsSleep;
+        await session.WaitForAsync(() => queue.PendingCount == 1, timeoutMs: 5000, what: "sleep staging");
+        session.Screenshot("sleep-staged");
+
+        var group = Assert.Single(queue.PendingGroups);
+        Assert.NotEmpty(group.Changes);
+        Assert.All(group.Changes, c => Assert.Equal(
+            Modules.Power.Changes.PowerPlanChangeFactory.AllowSleepSettingId, c.SettingId));
+
+        row.IsEnabled = !row.IsEnabled;
+        await session.WaitForAsync(() => queue.PendingCount == 0, timeoutMs: 5000, what: "sleep unstaging");
     }
 }

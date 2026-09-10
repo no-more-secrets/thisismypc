@@ -285,6 +285,9 @@ internal static class BrokerOperationRules
             return false;
         if (change.ValueType == ChangeValueType.Registry_DWord)
         {
+            if (change.SettingId == PowerPlanChangeFactory.AllowSleepSettingId)
+                return PowerSleepTargets.Contains(RegistryTarget(change.SettingId, change.SystemLocation, change.ValueType))
+                    && DWordOrEmptyPair(change);
             return change.SettingId == PowerPlanChangeFactory.ModernStandbySettingId
                 && change.SystemLocation.Equals(
                     $@"{PowerPlanChangeFactory.ModernStandbyKeyPath}\{PowerPlanChangeFactory.ModernStandbyValueName}",
@@ -385,6 +388,12 @@ internal static class BrokerOperationRules
     private static bool AllowsRegistryModule(ChangeDescriptor change, HashSet<string> targets) =>
         targets.Contains(RegistryTarget(change.SettingId, change.SystemLocation, change.ValueType));
 
+    private static readonly HashSet<string> PowerSleepTargets = RegistryTargets(
+    [
+        (PowerPlanChangeFactory.AllowSleepSettingId, PowerPlanChangeFactory.AllowStandbyPolicyKeyPath, PowerPlanChangeFactory.PluggedInIndexValueName, ChangeValueType.Registry_DWord),
+        (PowerPlanChangeFactory.AllowSleepSettingId, PowerPlanChangeFactory.AllowStandbyPolicyKeyPath, PowerPlanChangeFactory.OnBatteryIndexValueName, ChangeValueType.Registry_DWord),
+    ]);
+
     private static HashSet<string> RegistryTargets(
         IEnumerable<(string SettingId, string Key, string Name, ChangeValueType Type)> targets) =>
         new(targets.Select(target => RegistryTarget(
@@ -481,6 +490,10 @@ internal static class BrokerOperationRules
         Enum.TryParse<T>(value, out var parsed) && Enum.IsDefined(parsed);
     private static bool BinaryPair(ChangeDescriptor change) => change.BeforeValue is "0" or "1"
         && change.AfterValue is "0" or "1";
+    private static bool DWordOrEmptyPair(ChangeDescriptor change) => DWordOrEmpty(change.BeforeValue)
+        && DWordOrEmpty(change.AfterValue);
+    private static bool DWordOrEmpty(string value) => value.Length == 0
+        || int.TryParse(value, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out _);
     private static bool GuidPair(ChangeDescriptor change) => Guid.TryParse(change.BeforeValue, out _)
         && Guid.TryParse(change.AfterValue, out _);
     private static bool GuidOrEmptyPair(ChangeDescriptor change) => GuidOrEmpty(change.BeforeValue)

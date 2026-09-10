@@ -17,6 +17,32 @@ public sealed class PowerPlanScanner
     public string? LastScanError { get; private set; }
 
     /// <summary>
+    /// The ALLOWSTANDBY policy override. An absent key or value means unset;
+    /// any other read failure returns null so no before-state is fabricated.
+    /// </summary>
+    public static SleepPolicy? ReadSleepPolicy(IRegistryService registry)
+    {
+        if (!TryReadPolicyIndex(registry, Changes.PowerPlanChangeFactory.PluggedInIndexValueName, out var pluggedIn)
+            || !TryReadPolicyIndex(registry, Changes.PowerPlanChangeFactory.OnBatteryIndexValueName, out var onBattery))
+        {
+            return null;
+        }
+        return new SleepPolicy(pluggedIn, onBattery);
+    }
+
+    private static bool TryReadPolicyIndex(IRegistryService registry, string valueName, out int? index)
+    {
+        var read = registry.ReadDWord(Changes.PowerPlanChangeFactory.AllowStandbyPolicyKeyPath, valueName);
+        if (read.IsSuccess)
+        {
+            index = read.Value;
+            return true;
+        }
+        index = null;
+        return read.ErrorCategory == Core.Results.ErrorCategory.NotFound;
+    }
+
+    /// <summary>
     /// A plan counts as Ultimate Performance when it carries our marker
     /// description (locale-proof), or matches the hidden source GUID or name
     /// (installed by something else, e.g. winutil or a Workstation SKU).

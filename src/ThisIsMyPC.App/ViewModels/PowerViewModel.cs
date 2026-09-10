@@ -11,6 +11,7 @@ using ThisIsMyPC.Core.Changes;
 using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Modules.Power.Changes;
 using ThisIsMyPC.Modules.Power.Models;
+using ThisIsMyPC.Modules.Power.Services;
 
 namespace ThisIsMyPC.App.ViewModels;
 
@@ -378,6 +379,13 @@ public sealed partial class PowerViewModel : ObservableObject, ISearchNavigation
     public string UltimatePerformanceCaveat =>
         "This PC uses Modern Standby. Windows may largely ignore classic power plans here.";
 
+    private const string SleepDescription =
+        "Sleep keeps your work in memory at low power. Turning this off blocks sleep by policy, " +
+        "plugged in and on battery, and removes Sleep from the power menu. Takes effect at the next restart.";
+
+    private const string SleepModernStandbyNote =
+        " This PC uses Modern Standby; the block may not stop its low-power idle.";
+
     private const string HibernateDescription =
         "Hibernation writes memory to disk so the machine can power off fully and resume. " +
         "Disabling it deletes the hiberfile, which also turns off Fast Startup and removes " +
@@ -393,6 +401,27 @@ public sealed partial class PowerViewModel : ObservableObject, ISearchNavigation
     private List<ShellSettingViewModel> BuildSystemPowerRows(PowerScanData scanData)
     {
         var rows = new List<ShellSettingViewModel>();
+
+        if (_registryService is not null && scanData.SleepPolicy is { } sleepAtScan)
+        {
+            var lastKnownSleep = sleepAtScan;
+            bool ReadSleep()
+            {
+                if (PowerPlanScanner.ReadSleepPolicy(_registryService) is { } read)
+                    lastKnownSleep = read;
+                return lastKnownSleep.AllowsSleep;
+            }
+
+            rows.Add(new ShellSettingViewModel(
+                "Allow sleep",
+                _supportsModernStandby ? SleepDescription + SleepModernStandbyNote : SleepDescription,
+                PowerPlanChangeFactory.AllowStandbyPolicyKeyPath,
+                sleepAtScan.AllowsSleep,
+                _pendingChangesService,
+                groupFactory: allow => PowerPlanChangeFactory.CreateAllowSleepToggle(lastKnownSleep, allow),
+                readRegistryState: ReadSleep,
+                rehydrateSettingId: PowerPlanChangeFactory.AllowSleepSettingId));
+        }
 
         if (_registryService is not null && scanData.HibernateEnabled is { } hibernateAtScan)
         {

@@ -767,6 +767,12 @@ Update COM service registration, not a registry write).
 ## 4. Power Plans module
 
 - Hibernation on/off: DONE 2026-08-30 (CallNtPowerInformation, no powercfg shell)
+- Allow sleep: DONE 2026-09-10 (System power row; Group Policy ALLOWSTANDBY
+  override, ACSettingIndex and DCSettingIndex under
+  Policies\Microsoft\Power\PowerSettings\abfc2519-...; block writes 0 for both,
+  allow deletes only the zeros; one change carries both indexes; needs a restart).
+  Owed: Sam's elevated pass (Sleep gone from the power menu after restart; undo
+  brings it back). Open: whether the block covers Modern Standby's S0 idle.
 - Ultimate Performance plan install/remove: DONE 2026-08-30 (PowerDuplicateScheme
   + marker description for locale-proof detection; removal refuses while active)
 - Network adapter power saving (Sophia): NIC device setting, not powrprof; flag

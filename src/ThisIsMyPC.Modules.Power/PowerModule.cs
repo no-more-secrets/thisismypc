@@ -117,7 +117,8 @@ public sealed class PowerModule : IActionModule
                         Services.PowerPlanScanner.FindUltimatePerformance(plans),
                         pinnedPlan,
                         locked,
-                        afterRestart));
+                        afterRestart,
+                        Services.PowerPlanScanner.ReadSleepPolicy(_registryService)));
             }
             catch (Exception ex)
             {
@@ -181,7 +182,7 @@ public sealed class PowerModule : IActionModule
         return _powerService.WriteSettingIndex(planGuid, subgroupGuid, settingGuid, ac: parts[3] == "AC", valueIndex);
     }
 
-    /// <summary>Empty AfterValue restores "value absent" (e.g. reverting PlatformAoAcOverride to the Windows default).</summary>
+    /// <summary>Empty AfterValue restores "value absent" (PlatformAoAcOverride, the ALLOWSTANDBY policy indexes).</summary>
     private OperationResult<bool> ApplyRegistryDWordChange(ChangeDescriptor change)
     {
         var separator = change.SystemLocation.LastIndexOf('\\');

@@ -22,6 +22,7 @@ public sealed record PowerPlan
 /// <param name="PolicyPinnedPlan">The plan a Group Policy value pins as active, when the value exists.</param>
 /// <param name="ActivePlanLockedByPolicy">True while the power service refuses plan switches until a restart.</param>
 /// <param name="ActiveAfterRestartPlan">While locked: the plan Windows activates at the next startup, when it differs from the active one.</param>
+/// <param name="SleepPolicy">The sleep policy override; null when it could not be read.</param>
 public sealed record PowerScanData(
     IReadOnlyList<PowerPlan> Plans,
     string? ScanError = null,
@@ -29,4 +30,5 @@ public sealed record PowerScanData(
     PowerPlan? UltimatePerformancePlan = null,
     Guid? PolicyPinnedPlan = null,
     bool ActivePlanLockedByPolicy = false,
-    Guid? ActiveAfterRestartPlan = null);
+    Guid? ActiveAfterRestartPlan = null,
+    SleepPolicy? SleepPolicy = null);

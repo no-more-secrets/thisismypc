@@ -40,6 +40,18 @@ public static class PowerPlanChangeFactory
     public const string HibernateSettingId = "hibernation";
     public const string HibernateValueName = "HibernateEnabled";
 
+    /// <summary>The system-wide sleep switch: one logical setting over two policy values.</summary>
+    public const string AllowSleepSettingId = "allow-sleep";
+
+    /// <summary>
+    /// Group Policy "Allow standby states (S1-S3) when sleeping": the override
+    /// key for the ALLOWSTANDBY power setting. ACSettingIndex and DCSettingIndex
+    /// of 0 block sleep on that power source and hide Sleep in the power menu.
+    /// </summary>
+    public const string AllowStandbyPolicyKeyPath = ActivePlanPolicyKeyPath + @"\abfc2519-3608-4c2a-94ea-171b0ed546ab";
+    public const string PluggedInIndexValueName = "ACSettingIndex";
+    public const string OnBatteryIndexValueName = "DCSettingIndex";
+
     public const string UltimatePerformanceSettingId = "ultimate-performance";
 
     /// <summary>The hidden scheme Windows ships; installing means duplicating it.</summary>
@@ -180,6 +192,50 @@ public static class PowerPlanChangeFactory
             ValueType = ChangeValueType.PowerPlan_Setting,
             Category = enable ? ChangeCategory.Enable : ChangeCategory.Disable,
             RestartRequirement = RestartRequirement.None,
+        };
+    }
+
+    /// <summary>
+    /// Allows or blocks sleep through the ALLOWSTANDBY policy values: one
+    /// Registry_DWord change per power source, applied together as one group
+    /// so the pipeline rolls back, records history, and tracks drift per
+    /// value. Blocking writes 0; allowing deletes the value (empty AfterValue)
+    /// so the plan decides again. Values already at the target are left out.
+    /// The power service reads the policy at startup, so the change needs a restart.
+    /// </summary>
+    public static ChangeGroup CreateAllowSleepToggle(SleepPolicy current, bool allow)
+    {
+        ArgumentNullException.ThrowIfNull(current);
+        var changes = new List<ChangeDescriptor>
+        {
+            SleepPolicyChange("Sleep when plugged in", PluggedInIndexValueName, current.PluggedIn, allow),
+            SleepPolicyChange("Sleep on battery", OnBatteryIndexValueName, current.OnBattery, allow),
+        };
+        var needed = changes.Where(c => c.BeforeValue != c.AfterValue).ToList();
+        return new ChangeGroup
+        {
+            GroupId = Guid.NewGuid().ToString("N"),
+            DisplayName = allow ? "Allow sleep" : "Block sleep",
+            Description = "Group Policy standby override, plugged in and on battery",
+            Changes = needed.Count > 0 ? needed : changes,
+        };
+    }
+
+    private static ChangeDescriptor SleepPolicyChange(string displayName, string valueName, int? current, bool allow)
+    {
+        return new ChangeDescriptor
+        {
+            ModuleId = ModuleId,
+            SettingId = AllowSleepSettingId,
+            DisplayName = displayName,
+            SystemLocation = $@"{AllowStandbyPolicyKeyPath}\{valueName}",
+            BeforeValue = current?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty,
+            AfterValue = allow ? string.Empty : "0",
+            BeforeDisplay = current == 0 ? "Blocked by policy" : "Allowed",
+            AfterDisplay = allow ? "Allowed" : "Blocked by policy",
+            ValueType = ChangeValueType.Registry_DWord,
+            Category = allow ? ChangeCategory.Enable : ChangeCategory.Disable,
+            RestartRequirement = RestartRequirement.Reboot,
         };
     }
 
