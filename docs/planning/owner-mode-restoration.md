@@ -1,5 +1,9 @@
 # Owner Mode restoration plan
 
+Historical foundation record. Statements about unwired production code describe the original checkpoint.
+Current software integration and remaining live evaluation are recorded in the
+[single-user plan](owner-mode-single-user-plan.md).
+
 Current scope and checkpoint order: [single-user completion plan](owner-mode-single-user-plan.md). It supersedes multi-profile assumptions below. Historical implementation details remain reference material.
 
 Owner Mode today detects drift after boot and reports it over IPC; the app

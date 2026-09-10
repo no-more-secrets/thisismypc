@@ -1,5 +1,9 @@
 # Owner Mode cross-process coordination
 
+Historical foundation record. Statements about unwired production code describe the original checkpoint.
+Current software integration and remaining live evaluation are recorded in the
+[single-user plan](owner-mode-single-user-plan.md).
+
 Step 2 of `owner-mode-restoration.md`: one machine-wide mutation lease that
 the interactive app and the Session 0 service take around every write that
 restoration and the app's own pipeline share. This document records what

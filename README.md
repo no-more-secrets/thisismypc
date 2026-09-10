@@ -11,8 +11,8 @@ Open source, free and yours forever. No accounts, no telemetry. Only the things 
 Say it with me.<br>
 **This is MY PC.**
 
-This repository is developed by AI coding agents (Claude Code) under the human owner (Sam Boland). This file and everything under `docs/` are AI-written and checked
-against the code. The operating rules an agent needs are in
+This repository is developed with AI coding agents under the human owner, Sam Boland.
+The documentation includes agent-written material. The operating rules an agent needs are in
 [AGENTS.md](AGENTS.md), the shared source. [CLAUDE.md](CLAUDE.md) and
 [GEMINI.md](GEMINI.md) are one-line imports for clients using native filenames. The doc index with what
 each file is for is [docs/README.md](docs/README.md).
@@ -60,13 +60,26 @@ applies. Sets are JSON files in `src/ThisIsMyPC.App/sets/`; the format is in
 
 ## Owner Mode
 
-Windows reverts some settings on its own: feature updates, scheduled tasks,
-and policy caches undo registry edits. Owner Mode is an optional background
-service (`src/ThisIsMyPC.Service`, runs in Session 0 as SYSTEM) that re-applies
-the settings the user chose and reports drift on the Home page when something
-changed behind their back. It is off until turned on in Settings. The app and
-the service talk over a hardened named pipe whose message envelope is in
-`src/ThisIsMyPC.Ipc.Contracts`.
+Owner Mode is an optional SYSTEM service that restores explicitly chosen,
+supported settings. Its catalog contains eleven non-policy DWORD preferences
+from Windows Annoyances. Each saved choice belongs to one verified Windows
+account. Only eligible choices are restored; managed, unknown, unsupported,
+or unloaded-profile states block automatic writes.
+
+Consent defaults off. Apply a supported setting, then enable Owner Mode in
+Settings. Pause saves consent-off before stopping the service. Protected
+changes made outside ThisIsMyPC can also be restored, so pause before making
+external edits. Owner Mode cannot identify whether Windows or a person made them.
+Each protected setting permits at most three restoration attempts in seven days.
+
+The unelevated UI requests privileged operations from a separate elevated
+Broker. Broker changes and service restoration share a machine lock and
+trusted recovery. Restoration records appear in History with their outcome;
+they do not support generic undo. Software integration is complete; an
+installed-service live evaluation remains untested.
+
+See [service controls](docs/owner-mode-service-controls.md) and the
+[single-user plan](docs/planning/owner-mode-single-user-plan.md).
 
 ## Defaults
 
@@ -142,8 +155,10 @@ environment, structure, or content check terminates with a nonzero exit code.
 The certificate-removal foundation is tested, not only designed. On September
 3, 2026, an outer installer signed by SSL.com for No More Secrets, LLC and RFC
 3161 timestamped matched its clean unsigned build after its certificate was
-removed. The first live test of the complete seven-signature NativeAOT path will
-be recorded here after it is run.
+removed. The all-PE path passed on September 7 with test version
+`1.0.1-test-06`. All twenty signature locations were valid and timestamped,
+and the signed-to-unsigned comparison matched. The evidence is recorded in
+[packaging.md](docs/release/packaging.md).
 
 For an already prepared clean clone, the lower-level comparison is:
 
@@ -167,7 +182,7 @@ build. Each omitted release option becomes a prompt.
 
 ## Development
 
-This project is built with Claude Code and expects contributors to work the
+This project uses coding agents and expects contributors to work the
 same way: a person sets direction and reviews, their agent does the work. The
 sections below are written so the agent can follow them directly. Everything
 here is also in [AGENTS.md](AGENTS.md), which the agent loads on its own when
@@ -183,9 +198,10 @@ build assets. Its task and collector are never imported or executed.
   machine.
 - .NET 10 SDK. Visual Studio 2026 is optional (XAML preview, debugging);
   `dotnet` from a terminal is enough.
-- An elevated terminal for the app and for the Integration and Diagnostic
-  test tiers.
-- Claude Code with the GitHub CLI (`gh`) signed in. The agent uses `gh` to
+- Normal app browsing and staging run without elevation. Privileged changes
+  use the Broker. Integration tests that require administrator access need
+  an elevated terminal.
+- A coding agent with the GitHub CLI (`gh`) signed in. The agent uses `gh` to
   tell whether it is working for the owner or a contributor, and for issues
   and PRs.
 

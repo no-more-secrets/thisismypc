@@ -1,7 +1,6 @@
 # ThisIsMyPC documentation
 
-This folder was written by AI models (Claude Code during development, Gemini
-for the deep research) and checked against the code. It is design rationale
+This folder includes material written by coding agents and research models. It is design rationale
 and reference, not a spec: where a document and the code disagree, the code
 wins. If an agent is working on the repo, it needs the root `AGENTS.md`
 (operating rules, build and test commands, UI verification loop) before
@@ -12,7 +11,7 @@ anything here; `planning/refinement-backlog.md` is the plan and status.
 | Document | What it is |
 |---|---|
 | [avalonia-guide.md](avalonia-guide.md) | Avalonia patterns this app relies on: compiled bindings, Popup limits, command binding inside templates, thread marshaling, NativeAOT constraints, theme and font setup. |
-| [owner-mode-service-controls.md](owner-mode-service-controls.md) | Restoration consent, service status, IPC, and remaining native activation. |
+| [owner-mode-service-controls.md](owner-mode-service-controls.md) | Restoration consent, broker controls, service status, history, and live evaluation limits. |
 | [owner-mode-deliberate-changes.md](owner-mode-deliberate-changes.md) | Shared mutation boundary, baseline invalidation, and durable Pause behavior. |
 | [sets-schema.md](sets-schema.md) | JSON schema for tweak set definitions, built-in and user. |
 | [testing/context-menu-diagnostics.md](testing/context-menu-diagnostics.md) | Diagnostic and integration tests that dump the real registry state for context menus. UI verification itself uses the headless sight harness in `tests/ThisIsMyPC.App.UiTests`. |
@@ -23,6 +22,7 @@ anything here; `planning/refinement-backlog.md` is the plan and status.
 
 | Document | What it is |
 |---|---|
+| [planning/owner-mode-single-user-plan.md](planning/owner-mode-single-user-plan.md) | Current Owner Mode scope, completed software integration, and remaining live evaluation. |
 | [planning/refinement-backlog.md](planning/refinement-backlog.md) | What shipped, what is deferred, and the release blockers. |
 | [planning/ui-design-brief.md](planning/ui-design-brief.md) | What every screen contains and how the app behaves, written for redesign work. |
 | [release/packaging.md](release/packaging.md) | NativeAOT release signing, deterministic packaging, public source verification, per-machine MSI, and ProgramData store. |

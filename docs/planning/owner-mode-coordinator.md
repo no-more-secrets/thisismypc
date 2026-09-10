@@ -1,5 +1,9 @@
 # Owner Mode mutation coordinator
 
+Historical foundation record. Statements about unwired production code describe the original checkpoint.
+Current software integration and remaining live evaluation are recorded in the
+[single-user plan](owner-mode-single-user-plan.md).
+
 `MutationCoordinator` is a pure Core foundation. This batch does not register it or change App or Service routing.
 
 One `RunAsync` call acquires one lease and awaits recovery on every acquisition, including clean acquisitions.

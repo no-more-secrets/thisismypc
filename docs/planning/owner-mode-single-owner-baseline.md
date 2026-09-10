@@ -1,5 +1,9 @@
 # Single-owner durable baseline
 
+Historical foundation record. Statements about unwired production code describe the original checkpoint.
+Current software integration and remaining live evaluation are recorded in the
+[single-user plan](owner-mode-single-user-plan.md).
+
 `SingleOwnerBaselineStore` holds chosen values for one primary Windows account. It is separate from the legacy observational `DriftBaselineStore`.
 No production registration or automatic restoration changes in this batch. The legacy best-effort store must never authorize automatic restoration.
 

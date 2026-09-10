@@ -14,29 +14,23 @@ dash you find in text you touch.
 
 **ThisIsMyPC** is a Windows system-control app that consolidates the trusted-utility
 zoo (winutil / O&O ShutUp10 / Autoruns / ShellExView / UniGetUI territory) with
-before-state capture and undo for everything. Post-release ambition: replace OEM
-control bloatware (Armoury Crate, Vantage, Omen Hub) with clean hardware modules.
+before-state capture and undo for reversible changes. Hardware modules use maintained
+companions where appropriate, including G-Helper and FanControl.
 C# / .NET (`net10.0-windows10.0.22621.0`), Avalonia 11 + CommunityToolkit.Mvvm, xUnit.
-Runs elevated (`app.manifest` requireAdministrator). **The app corresponds to the PC,
-not a user profile**; machine-scoped decisions win (one install, one database,
-all-profiles coverage).
+The UI runs unelevated. An on-demand elevated Broker performs privileged changes.
+Owner Mode runs as a SYSTEM service. Installation is per machine; UI data is per user.
+Owner Mode binds saved choices to one verified account. Do not add profile enumeration
+or hive loading without an explicit scope change.
 
 ## Roadmap
 
 Full detail, ordering rationale, and per-module deferred lists:
 `docs/planning/refinement-backlog.md`.
 
-Feature work is complete (all modules plus the UI/UX chapter; history in the
-backlog).
-
-1. **Release prep (current)**. Remaining hard blocker, Sam-gated: GPG
-   release-key ceremony (docs/release/update-signing.md). SSL.com eSigner OV
-   signing and signed-to-unsigned reproducibility passed end to end on
-   2026-09-03. Then: Defender false-positive submission, VirusTotal CI canary,
-   winget distribution.
-2. **Post-release menu**: retired BMAD epics (ASUS/ATKACPI, OpenRGB, drivers,
-   network/firewall, profiles, WU remainder) and install-engine leftovers
-   (OneDrive/Edge removal, OEM tools, progress/cancel).
+Use the backlog and `docs/planning/v1-completion-plan.md` for current release scope.
+Use `docs/release/packaging.md` for signing and reproducibility evidence, and
+`docs/release/update-signing.md` for the completed release-key ceremony.
+Do not treat historical checkpoint restrictions as current activation status.
 
 The BMAD planning framework that drove the first chapter was removed from the repo
 on 2026-09-01; do not reinstall it. ⛔ Never shell out to opaque binaries
@@ -329,3 +323,48 @@ ExplorerEdgeTabShotTests and ModuleEdgeTabShotTests check card bounds, wrapped s
   Fix findings before committing, with the same review standard.
 - Open screenshots under artifacts/ui-shots/ as images. Never verify UI from XAML alone.
 - The gh role check in "How work runs here" applies to every agent.
+
+<!-- gitnexus:start -->
+# GitNexus: Code Intelligence
+
+This project is indexed by GitNexus as **thisismypc**. Read its context resource for current index coverage.
+
+> Index stale? Run `node .gitnexus/run.cjs analyze --index-only` from the project root: it auto-selects an available runner. No `.gitnexus/run.cjs` yet? Bootstrap with `npx`, `bunx`, or `pnpm dlx`: e.g. `bunx gitnexus@latest analyze` (npm 11 npx crash; #1939).
+
+## Always Do
+
+- **MUST run impact before editing.** Use `impact({target: "symbolName", direction: "upstream"})` or `node .gitnexus/run.cjs impact "symbolName" --direction upstream --repo .`; report callers, processes, and risk. Never substitute grep for graph analysis.
+- **MUST analyze graph changes before committing.** Use `detect_changes({scope: "all"})` (MCP) or `node .gitnexus/run.cjs detect-changes --scope all --repo .` (CLI fallback). `partial: true` or `truncated: true` is not a clean check: a zero means unseen, not unaffected; re-run it. For regression review: `detect_changes({scope: "compare", base_ref: "main"})` or `node .gitnexus/run.cjs detect-changes --scope compare --base-ref "main" --repo .`.
+- MUST warn on HIGH/CRITICAL `risk` pre-edit; never use `riskSharedAxes` to waive a HIGH/CRITICAL `risk` warning. Compare File/symbol: MCP File omits axes; Graph-RAG expands File.
+- **MUST treat `risk: UNKNOWN` as unresolved, not as low.** An empty caller set is not evidence the symbol is unused: it can also mean the callers are not resolvable by the index (plain-object property access, dynamic dispatch, cross-language calls). `impact` pairs `UNKNOWN` with a `riskNote` saying so. Confirm with a text search before treating the symbol as safe to change or delete; do not proceed on the strength of a zero.
+- **MUST use `query({search_query: "concept"})` for concepts/flows, `context({name: "symbolName"})` for a named symbol, or `impact` for blast radius, on read-only callers, dependencies, imports, or execution flow.** Graph first; text search only for empty/`UNKNOWN`/literals.
+- For security review, `explain({target: "fileOrSymbol"})` lists taint findings (source→sink flows; needs `analyze --pdg`).
+
+## Never Do
+
+- NEVER edit a function, class, or method before MCP/CLI impact analysis.
+- NEVER ignore HIGH or CRITICAL risk warnings from impact analysis, and never read `UNKNOWN` as an all-clear: it means the walk could not answer, which is the one verdict that requires confirming by other means.
+- NEVER rename symbols with find-and-replace: use `rename` which understands the call graph.
+- NEVER commit before MCP/CLI graph change analysis.
+
+## Resources
+
+| Resource | Use for |
+| --- | --- |
+| `gitnexus://repo/thisismypc/context` | Codebase overview, check index freshness |
+| `gitnexus://repo/thisismypc/clusters` | All functional areas |
+| `gitnexus://repo/thisismypc/processes` | All execution flows |
+| `gitnexus://repo/thisismypc/process/{name}` | Step-by-step execution trace |
+
+## CLI
+
+| Task | Read this skill file |
+| --- | --- |
+| Understand architecture / "How does X work?" | `.claude/skills/gitnexus-exploring/SKILL.md` |
+| Blast radius / "What breaks if I change X?" | `.claude/skills/gitnexus-impact-analysis/SKILL.md` |
+| Trace bugs / "Why is X failing?" | `.claude/skills/gitnexus-debugging/SKILL.md` |
+| Rename / extract / split / refactor | `.claude/skills/gitnexus-refactoring/SKILL.md` |
+| Tools, resources, schema reference | `.claude/skills/gitnexus-guide/SKILL.md` |
+| Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus-cli/SKILL.md` |
+
+<!-- gitnexus:end -->

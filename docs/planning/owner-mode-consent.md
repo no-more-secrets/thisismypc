@@ -1,5 +1,9 @@
 # Durable machine restoration consent
 
+Historical foundation record. Statements about unwired production code describe the original checkpoint.
+Current software integration and remaining live evaluation are recorded in the
+[single-user plan](owner-mode-single-user-plan.md).
+
 `IMachineConsentStore` stores explicit machine consent separately from service installation or running state.
 `MachineConsentStore` is not registered in production. No service worker consumes this consent yet.
 Missing, malformed, unsupported, inaccessible, or untrusted data never grants consent.

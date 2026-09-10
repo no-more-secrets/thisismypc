@@ -1,5 +1,9 @@
 # Owner Mode journal foundation
 
+Historical foundation record. Statements about unwired production code describe the original checkpoint.
+Current software integration and remaining live evaluation are recorded in the
+[single-user plan](owner-mode-single-user-plan.md).
+
 This batch adds Core persistence contracts only. No App, service, IPC, registry writer, consent, or history importer calls them.
 
 ## Write protocol

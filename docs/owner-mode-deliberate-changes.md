@@ -1,26 +1,32 @@
 # Deliberate changes and Owner Mode
 
-Step 4 of the [single-user plan](planning/owner-mode-single-user-plan.md) connects deliberate app changes to the protected baseline.
+The unelevated UI sends approved changes to the elevated Broker. Software integration is complete;
+installed-service live evaluation remains untested.
 
 ## Transaction boundary
 
-Apply, rollback, history persistence, and chosen-value persistence share one machine lease. Undo and redo use the same boundary. Delegates do not acquire another lease.
+Each broker change uses the shared machine lease through recovery, before-value validation, mutation, and protected-choice persistence.
+Undo, redo, and rollback commands use the same boundary. The UI keeps its ordinary history in LocalAppData;
+service restoration history uses protected ProgramData storage and is displayed through read-only IPC.
 
-After acquisition, supported catalog targets are read again. A changed or unreadable before-value refuses the operation. This revalidation covers the eleven existing catalog targets, not every module setting.
+The eleven catalog targets are read again after acquisition. A changed or unreadable before-value refuses the operation.
+Affected protected choices are removed durably before mutation. Successful typed values become the new protected choice.
+Unsupported or absent choices remain unprotected. Other catalog choices are preserved.
 
-Before the first system write, affected choices are removed durably from the strict baseline. Unaffected choices remain. Successful changes become protected choices only after history succeeds and the live typed values match. A crash, failed write, failed history insert, or failed baseline save cannot retain an old choice for an affected target.
+An ambiguous baseline save is disarmed before rollback. If the affected choices cannot be removed,
+consent-off must be saved before rollback. Failed rollback or failed disarming reports the uncertainty explicitly.
+A different administrator account cannot write the bound user's protected catalog settings.
 
-## Pause
+## Pause and recovery
 
-Pause acquires the same lease and saves explicit consent-off. It does not require journal recovery, so a corrupt journal cannot prevent opt-out. The lease is released before service shutdown. Failed consent persistence cannot report a successful pause.
+Pause saves explicit consent-off under the machine lease without requiring journal recovery.
+The lease is released before service shutdown. Failed persistence cannot report a successful pause.
+Broker control sessions do not initialize the module graph merely to pause.
 
-## Production boundary
+Shared native recovery replaces the temporary consent-off-on-every-apply path.
+Clean recovery preserves consent. Interrupted or uncertain restoration retains diagnostic evidence and blocks further writes.
 
-Automatic restoration remains unregistered. The temporary production app-only recovery path saves consent-off before deliberate work. It does not reconcile the restoration journal and must not authorize automatic restoration. Consent remains off after deliberate changes in this preactivation batch.
-
-Step 5 must replace that app-only recovery boundary with trusted shared recovery before connecting restoration consent and status. Unsupported journal or management evidence must continue to block automatic writes.
-
-## Verification
+## Historical Step 4 verification
 
 Fourteen coordinator tests cover stale staging, exact queue snapshots, persistence failures, rollback, service exclusion, and undo/redo. Five Pause tests cover acquisition ordering and failed persistence. Five command tests cover readable refusal, cancelled shutdown waits, and active-write completion. The Annoyances suite passes 153 tests, including absent-value undo across the catalog.
 

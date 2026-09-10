@@ -1,5 +1,9 @@
 # Owner Mode history import
 
+Historical foundation record. Statements about unwired production code describe the original checkpoint.
+Current software integration and remaining live evaluation are recorded in the
+[single-user plan](owner-mode-single-user-plan.md).
+
 This Core-only batch imports terminal journal evidence. It does not start a worker or write registry values.
 
 ## Transaction and retry contract

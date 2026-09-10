@@ -11,8 +11,8 @@ consolidates trusted power-user utilities: debloat and privacy tweaks, startup
 management, context menu cleanup, power plans, app install/update. The core
 promise: every change captures its before-state and can be undone. The tone is
 competent and calm, not gamer or enterprise. Users range from curious
-tinkerers to sysadmins. It runs elevated and touches the registry, so trust and
-legibility matter more than flash.
+tinkerers to sysadmins. The UI runs unelevated. An elevated Broker confirms and applies privileged
+changes, so trust and legibility matter more than flash.
 
 Two themes required, dark and light, equal citizens. Dark is the default.
 

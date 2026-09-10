@@ -1,20 +1,27 @@
 # Owner Mode service controls and status
 
-Step 5 connects the existing Settings section to restoration control over IPC. Service process state and restoration consent are separate.
+Software integration is complete. Installed-service live evaluation remains untested.
 
-The UI shows Enabled, Paused, Unavailable, or Conflict, plus service state and the reason. Enable succeeds only after the service confirms enabled restoration and consent. Pause remains available when saved consent exists but the service is stopped. Protected external edits are described explicitly.
+The unelevated UI shows Enabled, Paused, Unavailable, or Conflict, plus service state and the reason.
+Running does not imply consent. Enable uses the elevated Broker, validates the saved owner against the verified UI account,
+and requires the service to confirm consent and restoration. Apply a supported Annoyances setting before enabling.
 
-The existing envelope carries new enable and pause message types. Responses retain nonce and type checks. Older status payloads cannot imply support. Requests have a bounded timeout, and control failures return error envelopes. Capability checks use confirmed restoration status instead of SCM process state.
+Pause remains available when the service is unavailable. The Broker saves consent-off under the machine lease,
+then releases it before stopping the service. A missing service or corrupt restoration journal does not skip that durable opt-out.
+Failed consent persistence cannot report success.
 
-The injected service graph runs the existing restoration loop with bounded ticks and publishes its results. Tests exercise enable, two scans, one verified write, history, and pause. Production has no trusted restoration graph, so it reports Unavailable and refuses enable. The temporary app-only consent-off recovery from Step 4 remains in place.
+The native service graph uses trusted baseline, journal, and history storage with shared recovery.
+The catalog contains eleven non-policy Annoyances DWORD targets. Eligibility applies separately to each saved choice.
+The bound profile must be loaded; management evidence must establish that the target is unmanaged.
+Unknown, managed, unsupported, or untrusted state blocks writes. Interrupted or uncertain attempts disable further restoration.
 
-## Native activation still required
+Read-only IPC exposes service status and restoration history to the UI. Privileged controls retain the existing elevation boundary.
+Nonce, type, protocol, and timeout checks remain in place. Older payloads cannot imply restoration support.
+Imported restoration records show their outcome and remain excluded from generic undo, redo, and set export.
 
-Step 6 must supply trusted journal/database access, resolve the bound account from trusted baseline storage, and obtain loaded-profile and management evidence. It must replace app-only recovery with shared recovery before registering automatic restoration. Unknown evidence must block writes.
+Protected external edits can be restored regardless of who made them. Pause before changing a protected setting outside ThisIsMyPC.
 
-No live Windows setting changed during this batch. Native activation and live evaluation remain untested.
-
-## Verification
+## Historical Step 5 verification
 
 The full CI-safe suite and Release build passed in an isolated copy of b4702ea plus this batch. The shared working tree had unrelated Avalonia/Skia package hash mismatches from concurrent hardening work. Isolation used the committed dependency files and did not change the hardening work.
 

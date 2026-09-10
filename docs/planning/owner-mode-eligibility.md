@@ -1,5 +1,9 @@
 # Owner Mode eligibility foundation
 
+Historical foundation record. Statements about unwired production code describe the original checkpoint.
+Current software integration and remaining live evaluation are recorded in the
+[single-user plan](owner-mode-single-user-plan.md).
+
 The pure `RestorationEligibilityPolicy` evaluates one baseline entry using supplied evidence.
 It performs no probing, writes, persistence, journal parsing, or service activation.
 `TimeProvider` supplies the evaluation time.
