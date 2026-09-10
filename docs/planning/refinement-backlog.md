@@ -39,6 +39,8 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 
 ## Lighting device settings (2026-09-10)
 
+- DONE: Lighting color swatches open a spectrum and palette picker. Hex input stays synchronized, alpha is disabled, and edits wait for Apply. Verified with pointer interaction and dark/light screenshots.
+
 - DONE: per-device settings gear, Save to device enabled by default for supported manual-save modes, and persistent per-device opt-out. Automatic-save-only devices have no toggle.
 - DONE: controls hold a draft until Apply. Apply writes final mode and colors, then saves once if supported and enabled. No writes during editing or loading. Permission changes and disposal block later apply steps; save failures remain visible.
 - Verified: Release build, 2,592 CI-safe tests, fresh review, dark/light screenshots, and all Hardware page content edges at 25/23/17 pixels.

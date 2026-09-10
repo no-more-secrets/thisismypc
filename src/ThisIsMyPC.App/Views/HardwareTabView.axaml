@@ -14,6 +14,7 @@
          area when the decision allows it, and a closed Details expander with
          the evidence. Untabbed page: the scroller keeps the 16px lane. -->
     <UserControl.Styles>
+        <StyleInclude Source="avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml" />
         <Style Selector="Border.status-badge">
             <Setter Property="CornerRadius" Value="3" />
             <Setter Property="Padding" Value="6,1" />
@@ -197,26 +198,18 @@
             </Border>
         </DataTemplate>
 
-        <!-- One color: swatch, hex box, three channel sliders on one row -->
+        <!-- The swatch opens the spectrum and palette; hex input remains available. -->
         <DataTemplate DataType="{x:Type vm:ColorSlotViewModel}">
-            <Grid ColumnDefinitions="128,28,84,*,*,*" ColumnSpacing="8" MinHeight="32">
+            <Grid ColumnDefinitions="128,Auto,84,*" ColumnSpacing="8" MinHeight="32">
                 <TextBlock Classes="row-label" Text="{Binding Label}" TextWrapping="Wrap" />
-                <Border Grid.Column="1" Width="24" Height="24" CornerRadius="4"
-                        BorderBrush="{DynamicResource SidebarBorderBrush}" BorderThickness="1"
-                        VerticalAlignment="Center">
-                    <Border.Background>
-                        <SolidColorBrush Color="{Binding SwatchColor}" />
-                    </Border.Background>
-                </Border>
+                <ColorPicker Grid.Column="1" Color="{Binding SwatchColor, Mode=TwoWay}"
+                             IsAlphaEnabled="False" IsAlphaVisible="False"
+                             IsAccentColorsVisible="False" IsColorComponentsVisible="False"
+                             AutomationProperties.Name="{Binding Label}" ToolTip.Tip="Choose a color"
+                             VerticalAlignment="Center" />
                 <TextBox Grid.Column="2" Classes="plain-value" Text="{Binding Hex}"
                          FontFamily="{StaticResource MonoFont}" FontSize="12"
                          VerticalAlignment="Center" Width="84" />
-                <Slider Grid.Column="3" Minimum="0" Maximum="255" Value="{Binding Red}" VerticalAlignment="Center"
-                        ToolTip.Tip="Red" />
-                <Slider Grid.Column="4" Minimum="0" Maximum="255" Value="{Binding Green}" VerticalAlignment="Center"
-                        ToolTip.Tip="Green" />
-                <Slider Grid.Column="5" Minimum="0" Maximum="255" Value="{Binding Blue}" VerticalAlignment="Center"
-                        ToolTip.Tip="Blue" />
             </Grid>
         </DataTemplate>
     </UserControl.DataTemplates>

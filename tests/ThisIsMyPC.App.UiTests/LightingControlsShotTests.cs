@@ -166,6 +166,34 @@ public class LightingControlsShotTests
     }
 
     [AvaloniaFact]
+    public async Task ColorPicker_OpensSpectrum_AndKeepsHexInSyncWithoutWriting()
+    {
+        var session = new FakeSession();
+        session.Devices.Add(Motherboard(1));
+        using var vm = new HardwareTabViewModel(LightingData(), refreshOnOpen: false, lightingBackend: new FakeBackend(session));
+        using var s = UiSession.ForView(new HardwareTabView(), vm, "lighting-picker", width: 976, height: 900);
+        await s.WaitForAsync(() => vm.Lighting is { HasDevices: true });
+        var slot = vm.Lighting!.Devices[0].Colors[0];
+        var picker = s.Find<ColorPicker>(p => ReferenceEquals(p.DataContext, slot));
+        Assert.False(picker.IsAlphaEnabled);
+        s.Click(picker);
+        var spectrum = s.Find<Avalonia.Controls.Primitives.ColorSpectrum>(_ => true);
+        s.Click(spectrum);
+        Assert.Equal(picker.Color.R, slot.Color.R);
+        Assert.Equal(picker.Color.G, slot.Color.G);
+        Assert.Equal(picker.Color.B, slot.Color.B);
+        Assert.Equal(slot.Color.ToHex(), slot.Hex);
+        Assert.Empty(session.Writes);
+        s.Screenshot("spectrum-dark");
+        s.SetTheme(ThemeVariant.Light);
+        s.Screenshot("spectrum-light");
+        slot.Hex = "#12AB34";
+        s.Pump();
+        Assert.Equal(Avalonia.Media.Color.FromRgb(0x12, 0xAB, 0x34), picker.Color);
+        Assert.Empty(session.Writes);
+    }
+
+    [AvaloniaFact]
     public async Task Lighting_ListsDevices_AndWritesModeBrightnessAndColors()
     {
         var session = new FakeSession();

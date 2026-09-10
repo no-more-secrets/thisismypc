@@ -637,8 +637,17 @@ public sealed partial class ColorSlotViewModel : ViewModelBase
     [ObservableProperty]
     private string _hex;
 
-    /// <summary>The swatch color; the view owns the brush.</summary>
-    public Avalonia.Media.Color SwatchColor => Avalonia.Media.Color.FromRgb(Color.R, Color.G, Color.B);
+    /// <summary>The picker color, synchronized with hex input. Hardware colors are always opaque.</summary>
+    public Avalonia.Media.Color SwatchColor
+    {
+        get => Avalonia.Media.Color.FromRgb(Color.R, Color.G, Color.B);
+        set
+        {
+            var color = new RgbColor(value.R, value.G, value.B);
+            if (!_syncing && color != Color)
+                Set(color, notify: true);
+        }
+    }
 
     /// <summary>Sets the color from a device read or a sibling slot without raising Changed.</summary>
     public void SetSilently(RgbColor color) => Set(color, notify: false);
