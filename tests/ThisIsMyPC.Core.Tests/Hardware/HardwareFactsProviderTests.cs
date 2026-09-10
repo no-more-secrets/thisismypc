@@ -1,5 +1,7 @@
 using ThisIsMyPC.Core.Hardware;
 using ThisIsMyPC.Core.Hardware.Detection;
+using ThisIsMyPC.Core.Hardware.Lighting;
+using ThisIsMyPC.Core.Results;
 using ThisIsMyPC.Core.Tests.Fakes;
 
 namespace ThisIsMyPC.Core.Tests.Hardware;
@@ -100,7 +102,7 @@ public sealed class HardwareFactsProviderTests
         var facts = snapshot.Facts;
 
         Assert.False(facts.IsInstalled(CompanionApp.OpenRgb));
-        Assert.Equal(CompanionActionKind.Install, HardwareCompatibilityPolicy.Decide(facts).For(HardwareDomain.Lighting).Action?.Kind);
+        Assert.False(facts.IsInstalled(CompanionApp.GHelper));
         Assert.True(facts.IsRunning(CompanionApp.FanControl));
         Assert.Null(snapshot.LaunchPathOf(CompanionApp.FanControl));
         Assert.Empty(facts.Companion(CompanionApp.FanControl)!.ObservedOwnership);
@@ -125,7 +127,8 @@ public sealed class HardwareFactsProviderTests
         Assert.Equal(1, running.OpenRgbProbes);
         Assert.True(runningFacts.OpenRgbServerReachable);
         Assert.Equal(2, runningFacts.OpenRgbDeviceCount);
-        Assert.Equal(HardwareAvailability.Available, HardwareCompatibilityPolicy.Decide(runningFacts).For(HardwareDomain.Lighting).Availability);
+        // A serving OpenRGB owns the devices: the built-in controllers stand back.
+        Assert.Contains(HardwareDomain.Lighting, runningFacts.Companion(CompanionApp.OpenRgb)!.ObservedOwnership);
     }
 
     [Fact]
@@ -139,7 +142,67 @@ public sealed class HardwareFactsProviderTests
 
         Assert.False(facts.OpenRgbServerReachable);
         Assert.Null(facts.OpenRgbDeviceCount);
-        Assert.Equal(HardwareAvailability.Unavailable, HardwareCompatibilityPolicy.Decide(facts).For(HardwareDomain.Lighting).Availability);
+        Assert.Empty(facts.Companion(CompanionApp.OpenRgb)!.ObservedOwnership);
+    }
+
+    private sealed class FakeLightingBackend : ILightingBackend
+    {
+        public int Passes { get; private set; }
+        public int Rescans { get; private set; }
+        public bool Fails { get; set; }
+        public List<LightingDeviceSummary> Devices { get; } = [new("Glorious Model O / O-", LightingDeviceType.Mouse, "Sinowealth", "HID: fake")];
+
+        public Task<OperationResult<LightingInventory>> DetectAsync(bool rescan = false, CancellationToken cancellationToken = default)
+        {
+            Passes++;
+            if (rescan)
+                Rescans++;
+            return Task.FromResult(Fails
+                ? OperationResult<LightingInventory>.Failure("HID enumeration failed", ErrorCategory.ServiceUnavailable)
+                : OperationResult<LightingInventory>.Success(new LightingInventory(Devices.ToList(), ["HID collections enumerated: 12."], DateTimeOffset.Now)));
+        }
+
+        public Task<OperationResult<ILightingSession>> OpenAsync(CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+    }
+
+    [Fact]
+    public async Task Detect_TakesTheLightingDevices_FromTheBackend_AndRescansOnRefresh()
+    {
+        var lighting = new FakeLightingBackend();
+        using var provider = new HardwareFactsProvider(new InventoryFake(), new FakeRegistryService(), new FakeHardwareProbeEnvironment(), lighting: lighting);
+
+        var facts = (await provider.GetAsync()).Facts;
+        var refreshed = await provider.GetAsync(refresh: true);
+
+        Assert.Equal(["Glorious Model O / O-"], facts.LightingDevices!.Select(d => d.Name));
+        Assert.Equal(HardwareAvailability.Available, HardwareCompatibilityPolicy.Decide(facts).For(HardwareDomain.Lighting).Availability);
+        Assert.Contains("Lighting controllers: HID collections enumerated: 12.", refreshed.Notes);
+        Assert.Equal(2, lighting.Passes);
+        Assert.Equal(1, lighting.Rescans);
+    }
+
+    [Fact]
+    public async Task Detect_WithoutABackend_LeavesLightingUnknown()
+    {
+        using var provider = new HardwareFactsProvider(new InventoryFake(), new FakeRegistryService(), new FakeHardwareProbeEnvironment());
+
+        var facts = (await provider.GetAsync()).Facts;
+
+        Assert.Null(facts.LightingDevices);
+        Assert.Equal(HardwareAvailability.Unknown, HardwareCompatibilityPolicy.Decide(facts).For(HardwareDomain.Lighting).Availability);
+    }
+
+    [Fact]
+    public async Task Detect_BackendFailure_IsANoteNotAFailedPage()
+    {
+        var lighting = new FakeLightingBackend { Fails = true };
+        using var provider = new HardwareFactsProvider(new InventoryFake(), new FakeRegistryService(), new FakeHardwareProbeEnvironment(), lighting: lighting);
+
+        var snapshot = await provider.GetAsync();
+
+        Assert.Null(snapshot.Facts.LightingDevices);
+        Assert.Contains("Lighting controllers: HID enumeration failed.", snapshot.Notes);
     }
 
     [Fact]

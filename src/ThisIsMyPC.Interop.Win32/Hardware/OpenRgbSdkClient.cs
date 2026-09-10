@@ -19,7 +19,7 @@ public sealed class OpenRgbSdkClient : IOpenRgbClient
     private static readonly TimeSpan DeviceReplyTimeout = TimeSpan.FromSeconds(4);
     private const int MaxPayload = 8 * 1024 * 1024;
 
-    public async Task<OperationResult<IOpenRgbSession>> ConnectAsync(int port, CancellationToken cancellationToken = default)
+    public async Task<OperationResult<ILightingSession>> ConnectAsync(int port, CancellationToken cancellationToken = default)
     {
         var client = new TcpClient();
         try
@@ -33,23 +33,23 @@ public sealed class OpenRgbSdkClient : IOpenRgbClient
             if (!handshake.IsSuccess)
             {
                 session.Dispose();
-                return OperationResult<IOpenRgbSession>.Failure(handshake.ErrorMessage!, handshake.ErrorCategory ?? ErrorCategory.ServiceUnavailable, handshake.Exception);
+                return OperationResult<ILightingSession>.Failure(handshake.ErrorMessage!, handshake.ErrorCategory ?? ErrorCategory.ServiceUnavailable, handshake.Exception);
             }
-            return OperationResult<IOpenRgbSession>.Success(session);
+            return OperationResult<ILightingSession>.Success(session);
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
             client.Dispose();
-            return OperationResult<IOpenRgbSession>.Failure($"The lighting service did not accept a connection on port {port}.", ErrorCategory.ServiceUnavailable);
+            return OperationResult<ILightingSession>.Failure($"The lighting service did not accept a connection on port {port}.", ErrorCategory.ServiceUnavailable);
         }
         catch (Exception ex) when (ex is SocketException or IOException)
         {
             client.Dispose();
-            return OperationResult<IOpenRgbSession>.Failure($"The lighting service is not answering on port {port}: {ex.Message}", ErrorCategory.ServiceUnavailable, ex);
+            return OperationResult<ILightingSession>.Failure($"The lighting service is not answering on port {port}: {ex.Message}", ErrorCategory.ServiceUnavailable, ex);
         }
     }
 
-    private sealed class Session : IOpenRgbSession
+    private sealed class Session : ILightingSession
     {
         private readonly TcpClient _client;
         private readonly NetworkStream _stream;

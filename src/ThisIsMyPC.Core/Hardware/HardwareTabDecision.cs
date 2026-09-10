@@ -49,9 +49,6 @@ public enum CompanionActionKind
 {
     Install,
     Open,
-
-    /// <summary>Start the companion bundled with the app as a background service (no window).</summary>
-    StartService,
 }
 
 public sealed record CompanionAction(CompanionActionKind Kind, CompanionApp App);
@@ -100,7 +97,6 @@ public sealed record HardwareTabDecision
     {
         CompanionActionKind.Install => $"Install {CompanionNames.Of(action.App)} from Software.",
         CompanionActionKind.Open => $"Open {CompanionNames.Of(action.App)}.",
-        CompanionActionKind.StartService => $"Start the bundled {CompanionNames.Of(action.App)} service.",
         _ => string.Empty,
     };
 }

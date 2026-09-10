@@ -5,6 +5,7 @@ using ThisIsMyPC.App.Services;
 using ThisIsMyPC.App.ViewModels;
 using ThisIsMyPC.App.Views;
 using ThisIsMyPC.Core.Hardware;
+using ThisIsMyPC.Core.Hardware.Lighting;
 using ThisIsMyPC.Core.Results;
 using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Modules.Hardware.Models;
@@ -92,42 +93,42 @@ public class HardwareTabShotTests
     }
 
     [AvaloniaFact]
-    public void Lighting_WithoutOpenRgb_OffersInstall_AndInstallQueuesTheAction()
+    public void Cooling_WithoutFanControl_OffersInstall_AndInstallQueuesTheAction()
     {
         var queue = new PendingActionsService();
         var actions = new HardwareCompanionActions(queue, new FakeUser());
-        using var vm = new HardwareTabViewModel(Data(Facts(Desktop), HardwareDomain.Lighting), actions);
+        using var vm = new HardwareTabViewModel(Data(Facts(Desktop), HardwareDomain.Cooling), actions);
 
         using var session = UiSession.ForView(new HardwareTabView(), vm, "hardware-tab", width: 976, height: 676);
-        session.Screenshot("lighting-install-dark");
+        session.Screenshot("cooling-install-dark");
 
         Assert.True(session.IsTextVisible("Not available"));
-        Assert.True(session.IsTextVisible("Install OpenRGB"));
+        Assert.True(session.IsTextVisible("Install FanControl"));
 
-        session.ClickText("Install OpenRGB");
+        session.ClickText("Install FanControl");
         session.Pump();
         Assert.Single(queue.PendingActions);
-        Assert.Equal("install:openrgb", queue.PendingActions[0].ActionId);
-        Assert.True(session.IsTextVisible("OpenRGB queued for install"));
-        Assert.True(session.IsTextVisible("OpenRGB is queued. Apply the queued changes to install it."));
+        Assert.Equal("install:fancontrol", queue.PendingActions[0].ActionId);
+        Assert.True(session.IsTextVisible("FanControl queued for install"));
+        Assert.True(session.IsTextVisible("FanControl is queued. Apply the queued changes to install it."));
         Assert.False(session.IsTextVisible("Apply the queued changes to run the install."));
-        session.Screenshot("lighting-install-queued-dark");
+        session.Screenshot("cooling-install-queued-dark");
 
         // Clicking again is a no-op: the button is disabled once queued.
-        session.ClickText("OpenRGB queued for install");
+        session.ClickText("FanControl queued for install");
         session.Pump();
         Assert.Single(queue.PendingActions);
 
         // Discarding from the review panel re-enables the button on this page.
         queue.DiscardAll();
         session.Pump();
-        Assert.True(session.IsTextVisible("Install OpenRGB"));
-        Assert.True(session.Find<Button>(b => b.Content is "Install OpenRGB").IsEffectivelyEnabled);
+        Assert.True(session.IsTextVisible("Install FanControl"));
+        Assert.True(session.Find<Button>(b => b.Content is "Install FanControl").IsEffectivelyEnabled);
 
         // A fresh page open with the action queued explains the disabled button instead.
         queue.Stage(Modules.Software.Actions.SoftwareActionFactory.CreateInstall(
-            Modules.Software.Services.SoftwareCatalog.Entries.Single(e => e.Id == "openrgb")));
-        using var reopened = new HardwareTabViewModel(Data(Facts(Desktop), HardwareDomain.Lighting), actions);
+            Modules.Software.Services.SoftwareCatalog.Entries.Single(e => e.Id == "fancontrol")));
+        using var reopened = new HardwareTabViewModel(Data(Facts(Desktop), HardwareDomain.Cooling), actions);
         Assert.Equal("Apply the queued changes to run the install.", reopened.ActionHint);
         Assert.False(reopened.CanRunAction);
     }
@@ -136,24 +137,23 @@ public class HardwareTabShotTests
     public void Install_WhenTheSoftwareModuleIsUnavailable_IsDisabledWithAHint()
     {
         var actions = new HardwareCompanionActions(new PendingActionsService(), new FakeUser());
-        using var vm = new HardwareTabViewModel(Data(Facts(Desktop), HardwareDomain.Lighting), actions, installAvailable: false);
+        using var vm = new HardwareTabViewModel(Data(Facts(Desktop), HardwareDomain.Cooling), actions, installAvailable: false);
 
         using var session = UiSession.ForView(new HardwareTabView(), vm, "hardware-tab", width: 976, height: 676);
-        session.Screenshot("lighting-install-no-winget-dark");
+        session.Screenshot("cooling-install-no-winget-dark");
 
-        Assert.False(session.Find<Button>(b => b.Content is "Install OpenRGB").IsEffectivelyEnabled);
+        Assert.False(session.Find<Button>(b => b.Content is "Install FanControl").IsEffectivelyEnabled);
         Assert.True(session.IsTextVisible("Installs need the app installer (winget), which the Software page reports as unavailable on this PC."));
     }
 
     [AvaloniaFact]
-    public void Lighting_OpenRgbOwnedByArmouryCrate_IsAConflict_WithNoButton()
+    public void Lighting_DevicesOwnedByArmouryCrate_IsAConflict_WithNoButton()
     {
         var facts = Facts(Desktop,
             CompanionObservation.Running(CompanionApp.OpenRgb),
             CompanionObservation.Running(CompanionApp.ArmouryCrate, HardwareDomain.Lighting)) with
         {
-            OpenRgbServerReachable = true,
-            OpenRgbDeviceCount = 3,
+            LightingDevices = [new LightingDeviceSummary("ASUS ROG STRIX GeForce RTX 4080 Gaming", LightingDeviceType.Gpu, "ENE SMBus", "I2C: NVIDIA NvAPI I2C on GPU 0, address 0x67")],
         };
         using var vm = new HardwareTabViewModel(Data(facts, HardwareDomain.Lighting, launchPath: Environment.ProcessPath));
 

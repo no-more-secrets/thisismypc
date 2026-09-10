@@ -55,7 +55,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IRestorePointService _restorePointService;
     private readonly IPrivilegeBrokerClient? _privilegeBroker;
     private readonly Services.HardwareCompanionActions? _hardwareActions;
-    private readonly Core.Hardware.Lighting.IOpenRgbClient? _openRgbClient;
+    private readonly Core.Hardware.Lighting.ILightingBackend? _lightingBackend;
     private IPrivilegeBrokerSession? _activeBrokerSession;
 
     // --- 9-3 monitoring review (Home section) ---
@@ -356,12 +356,12 @@ public partial class MainWindowViewModel : ViewModelBase
         IPrivilegeBrokerClient? privilegeBroker = null,
         Core.Hardware.IHardwareDetectionService? hardwareDetection = null,
         Services.HardwareCompanionActions? hardwareActions = null,
-        Core.Hardware.Lighting.IOpenRgbClient? openRgbClient = null)
+        Core.Hardware.Lighting.ILightingBackend? lightingBackend = null)
     {
         _hardwareDetection = hardwareDetection;
         _privilegeBroker = privilegeBroker;
         _hardwareActions = hardwareActions;
-        _openRgbClient = openRgbClient;
+        _lightingBackend = lightingBackend;
         _deliberateChanges = deliberateChanges;
         _wingetService = wingetService;
         _autorunEnrichment = autorunEnrichment;
@@ -713,7 +713,7 @@ public partial class MainWindowViewModel : ViewModelBase
                             hardwareModule.RefreshAsync,
                             installAvailable: LookupModuleAvailability(Modules.Software.SoftwareModule.ModuleName)?.IsAvailable ?? false,
                             refreshOnOpen: hardwareData.RefreshInBackground,
-                            lightingClient: _openRgbClient);
+                            lightingBackend: _lightingBackend);
                     }
                     else
                     {

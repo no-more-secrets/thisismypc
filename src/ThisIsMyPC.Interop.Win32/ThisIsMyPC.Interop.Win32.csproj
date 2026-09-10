@@ -14,5 +14,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ThisIsMyPC.Core\ThisIsMyPC.Core.csproj" />
+    <ProjectReference Include="..\ThisIsMyPC.Lighting\ThisIsMyPC.Lighting.csproj" />
   </ItemGroup>
 </Project>

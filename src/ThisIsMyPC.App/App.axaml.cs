@@ -228,10 +228,17 @@ public partial class App : Application
         services.AddSingleton<IModule, PowerModule>();
         services.AddSingleton<IModule, ThisIsMyPC.Modules.Display.DisplayModule>();
 
+        // Lighting: the built-in controllers (docs/lighting-controllers.md)
+        // over HID (hid.dll) and GPU I2C (NvAPI, mapped before CIG by
+        // Program). One backend for the life of the app: detection runs once
+        // per pass and the page's sessions share the controllers it found.
+        services.AddSingleton<Core.Hardware.Lighting.ILightingBackend>(_ => new ThisIsMyPC.Lighting.NativeLightingBackend(
+            new ThisIsMyPC.Interop.Win32.Hardware.Hid.WindowsHidTransport(),
+            new ThisIsMyPC.Interop.Win32.Hardware.I2c.NvApiI2cBusProvider()));
         // Hardware tabs (v1 plan section 5): the module-level facts layer over
         // the shared inventory. It adds what the tabs need and the inventory
         // leaves unobserved: companion launch paths and ownership, the OpenRGB
-        // SDK probe, the internal panel. Every probe is a read.
+        // SDK probe, the lighting device list, the internal panel. Every probe is a read.
         services.AddSingleton<Core.Hardware.Detection.IHardwareProbeEnvironment, ThisIsMyPC.Interop.Win32.Hardware.Win32HardwareProbeEnvironment>();
         services.AddSingleton<Core.Hardware.IHardwareFactsProvider>(sp => new Core.Hardware.Detection.HardwareFactsProvider(
             sp.GetRequiredService<Core.Hardware.IHardwareDetectionService>(),
@@ -239,19 +246,12 @@ public partial class App : Application
             sp.GetRequiredService<Core.Hardware.Detection.IHardwareProbeEnvironment>(),
             sp.GetRequiredService<IScheduledTaskService>(),
             sp.GetRequiredService<IServiceControlService>(),
-            internalPanelProbe: InternalPanelProbe(sp)));
-        // Lighting: the bundled OpenRGB runs as a headless SDK server for the
-        // life of the app (its own config folder, localhost only, killed with
-        // the app), and the tab talks to it over the documented SDK protocol.
-        services.AddSingleton<Core.Hardware.Lighting.IOpenRgbClient, ThisIsMyPC.Interop.Win32.Hardware.OpenRgbSdkClient>();
-        services.AddSingleton<Core.Hardware.Lighting.IOpenRgbHost>(sp => new ThisIsMyPC.Interop.Win32.Hardware.BundledOpenRgbHost(
-            sp.GetRequiredService<Core.Hardware.Detection.IHardwareProbeEnvironment>(),
-            Path.Combine(AppConstants.UserDataDirectoryPath, "openrgb")));
+            internalPanelProbe: InternalPanelProbe(sp),
+            lighting: sp.GetRequiredService<Core.Hardware.Lighting.ILightingBackend>()));
         services.AddSingleton<ICompanionWindowService, ThisIsMyPC.Interop.Win32.Hardware.CompanionWindowService>();
         services.AddSingleton(sp => new HardwareCompanionActions(
             sp.GetRequiredService<IPendingActionsService>(),
             sp.GetRequiredService<IInteractiveUserContext>(),
-            sp.GetRequiredService<Core.Hardware.Lighting.IOpenRgbHost>(),
             sp.GetRequiredService<ICompanionWindowService>()));
         services.AddSingleton<IModule, ThisIsMyPC.Modules.Hardware.SystemControlModule>();
         services.AddSingleton<IModule, ThisIsMyPC.Modules.Hardware.LightingModule>();

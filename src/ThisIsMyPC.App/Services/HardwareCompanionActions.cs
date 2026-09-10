@@ -1,6 +1,4 @@
 using ThisIsMyPC.Core.Hardware;
-using ThisIsMyPC.Core.Hardware.Detection;
-using ThisIsMyPC.Core.Hardware.Lighting;
 using ThisIsMyPC.Core.Results;
 using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Modules.Software.Actions;
@@ -13,8 +11,8 @@ namespace ThisIsMyPC.App.Services;
 /// Software module's pending-actions queue (one-way, no fabricated
 /// before-state, applied from the review panel like any other install). Open
 /// launches the companion as the signed-in desktop user, never from an
-/// elevated token. For Lighting, the bundled OpenRGB is started as a
-/// background service instead of opened as a window. None of this touches
+/// elevated token. Lighting has no companion: its devices are driven by the
+/// built-in controllers through the tab's own session. None of this touches
 /// hardware; the tabs check the policy's permitted operations before calling
 /// any of it.
 /// </summary>
@@ -22,18 +20,15 @@ public sealed class HardwareCompanionActions
 {
     private readonly IPendingActionsService? _pendingActions;
     private readonly IInteractiveUserContext? _user;
-    private readonly IOpenRgbHost? _lightingHost;
     private readonly ICompanionWindowService? _companionWindows;
 
     public HardwareCompanionActions(
         IPendingActionsService? pendingActions = null,
         IInteractiveUserContext? user = null,
-        IOpenRgbHost? lightingHost = null,
         ICompanionWindowService? companionWindows = null)
     {
         _pendingActions = pendingActions;
         _user = user;
-        _lightingHost = lightingHost;
         _companionWindows = companionWindows;
         if (_pendingActions is not null)
             _pendingActions.PropertyChanged += (_, _) => QueueChanged?.Invoke(this, EventArgs.Empty);
@@ -95,19 +90,4 @@ public sealed class HardwareCompanionActions
         }
         return _user.LaunchAsUser(executablePath);
     }
-
-    // ---- lighting service ----
-
-    /// <summary>A copy of OpenRGB ships with this app, so Lighting runs it as a background service.</summary>
-    public bool IsLightingServiceBundled => _lightingHost?.BundledExecutablePath is not null;
-
-    public int LightingPort => _lightingHost?.Port ?? OpenRgbSdkProtocol.DefaultPort;
-
-    public OpenRgbHostState LightingServiceState => _lightingHost?.State ?? OpenRgbHostState.NotBundled;
-
-    /// <summary>Starts the bundled server unless one already answers on the port.</summary>
-    public Task<OperationResult<bool>> StartLightingServiceAsync(CancellationToken cancellationToken = default) =>
-        _lightingHost is null
-            ? Task.FromResult(OperationResult<bool>.Failure("This build ships without the bundled OpenRGB.", ErrorCategory.NotFound))
-            : _lightingHost.EnsureRunningAsync(cancellationToken);
 }

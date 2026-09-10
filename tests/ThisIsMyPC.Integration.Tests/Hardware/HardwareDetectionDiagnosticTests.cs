@@ -2,6 +2,8 @@ using ThisIsMyPC.Core.Hardware;
 using ThisIsMyPC.Core.Hardware.Detection;
 using ThisIsMyPC.Interop.Com.Tasks;
 using ThisIsMyPC.Interop.Win32.Hardware;
+using ThisIsMyPC.Interop.Win32.Hardware.Hid;
+using ThisIsMyPC.Interop.Win32.Hardware.I2c;
 using ThisIsMyPC.Interop.Win32.Registry;
 using ThisIsMyPC.Interop.Win32.Services;
 using Xunit.Abstractions;
@@ -22,12 +24,14 @@ public sealed class HardwareDetectionDiagnosticTests(ITestOutputHelper output)
     public async Task DetectAndDecide_OnThisMachine()
     {
         var registry = new RegistryService();
+        using var lighting = new ThisIsMyPC.Lighting.NativeLightingBackend(new WindowsHidTransport(), new NvApiI2cBusProvider());
         using var provider = new HardwareFactsProvider(
             new HardwareDetectionService(registry),
             registry,
             new Win32HardwareProbeEnvironment(),
             new ScheduledTaskService(),
-            new ServiceControlService());
+            new ServiceControlService(),
+            lighting: lighting);
 
         var started = DateTimeOffset.Now;
         var snapshot = await provider.GetAsync();
@@ -42,6 +46,7 @@ public sealed class HardwareDetectionDiagnosticTests(ITestOutputHelper output)
         output.WriteLine($"Battery: {facts.FormFactor.HasSystemBattery?.ToString() ?? "null"}; panel: {facts.FormFactor.HasInternalDisplayPanel?.ToString() ?? "null"}");
         output.WriteLine($"ATKACPI: {facts.AsusPlatformDriverPresent?.ToString() ?? "null"}");
         output.WriteLine($"OpenRGB server: reachable={facts.OpenRgbServerReachable?.ToString() ?? "null"} count={facts.OpenRgbDeviceCount?.ToString() ?? "null"}");
+        output.WriteLine($"Lighting devices: {(facts.LightingDevices is null ? "null" : string.Join("; ", facts.LightingDevices.Select(d => $"{d.Name} via {d.Controller} at {d.Location}")))}");
         foreach (var companion in facts.Companions)
         {
             output.WriteLine($"  {companion.App}: installed={companion.IsInstalled} running={companion.IsRunning} owns=[{string.Join(",", companion.ObservedOwnership)}] launch={snapshot.LaunchPathOf(companion.App) ?? "-"}");
@@ -64,6 +69,6 @@ public sealed class HardwareDetectionDiagnosticTests(ITestOutputHelper output)
 
         Assert.Equal(Enum.GetValues<CompanionApp>().Length, facts.Companions.Count);
         Assert.NotNull(facts.FormFactor.SmbiosChassisTypes);
-        Assert.True(elapsed < TimeSpan.FromSeconds(10), $"detection took {elapsed.TotalSeconds:0.0} s");
+        Assert.True(elapsed < TimeSpan.FromSeconds(15), $"detection took {elapsed.TotalSeconds:0.0} s");
     }
 }

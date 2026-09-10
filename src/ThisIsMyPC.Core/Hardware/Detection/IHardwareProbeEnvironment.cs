@@ -44,7 +44,4 @@ public interface IHardwareProbeEnvironment
     string? RunningProcessPath(string processName);
 
     OpenRgbProbeResult ProbeOpenRgbServer(int port, TimeSpan timeout);
-
-    /// <summary>Full path of a companion executable bundled with the app, or null when it does not ship with one.</summary>
-    string? BundledCompanionExecutable(CompanionApp app);
 }

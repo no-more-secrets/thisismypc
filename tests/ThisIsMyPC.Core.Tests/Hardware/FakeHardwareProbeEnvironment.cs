@@ -58,11 +58,6 @@ internal sealed class FakeHardwareProbeEnvironment : IHardwareProbeEnvironment
         return OpenRgb;
     }
 
-    /// <summary>Bundled companion executables by app; a path listed here also exists as a file.</summary>
-    public Dictionary<CompanionApp, string> Bundled { get; } = [];
-
-    public string? BundledCompanionExecutable(CompanionApp app) => Bundled.GetValueOrDefault(app);
-
     private static bool Matches(string name, string pattern)
     {
         if (pattern == "*")

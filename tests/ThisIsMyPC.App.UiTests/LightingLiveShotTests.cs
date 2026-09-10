@@ -6,14 +6,14 @@ namespace ThisIsMyPC.App.UiTests;
 
 /// <summary>
 /// Diagnostic: the real Lighting page on the real service graph. Opening the
-/// page starts the bundled OpenRGB (job-object bound, so it ends with this
-/// test process) and lists this PC's devices. Nothing is written to a device.
+/// page runs the built-in controllers' detection (HID enumeration, GPU I2C)
+/// and lists this PC's devices. Nothing is written to a device.
 /// </summary>
 [Trait("Category", "Diagnostic")]
 public class LightingLiveShotTests
 {
     [AvaloniaFact(Timeout = 180_000)]
-    public async Task LightingPage_StartsTheBundledService_AndListsDevices()
+    public async Task LightingPage_ListsThisPcsDevices()
     {
         using var session = UiSession.ForMainWindow("lighting-live");
         var viewModel = (MainWindowViewModel)session.Window.DataContext!;
@@ -27,7 +27,7 @@ public class LightingLiveShotTests
 
         await session.WaitForAsync(
             () => viewModel.CurrentContent is HardwareTabViewModel { Lighting.HasDevices: true, IsRefreshing: false },
-            timeoutMs: 90_000, what: "lighting service start and device list");
+            timeoutMs: 90_000, what: "detection and device list");
         session.Pump();
         session.Screenshot("devices-dark");
         session.SetTheme(ThemeVariant.Light);

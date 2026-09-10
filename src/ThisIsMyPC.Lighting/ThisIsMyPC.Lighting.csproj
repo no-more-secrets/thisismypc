@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Built-in lighting controllers ported from OpenRGB (GPL-2.0-or-later, taken
+       under GPLv3; docs/lighting-controllers.md). Pure: every device access goes
+       through a transport interface, so the byte protocols run against fakes in
+       tests and against hid.dll and NvAPI in Interop.Win32. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="ThisIsMyPC.Lighting.Tests" />
+    <InternalsVisibleTo Include="ThisIsMyPC.Integration.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ThisIsMyPC.Core\ThisIsMyPC.Core.csproj" />
+  </ItemGroup>
+</Project>

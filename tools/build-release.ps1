@@ -147,14 +147,6 @@ if (-not (Test-Path (Join-Path $staging 'ThisIsMyPC.Broker.exe'))) {
     throw 'ThisIsMyPC.Broker.exe missing from staging; privileged changes would break'
 }
 
-# Bundled companions (docs/release/companions.md): the pinned OpenRGB, hash-checked,
-# under companions\OpenRGB. Third-party files: not signed by us, not run through the
-# first-party PE gates, byte-identical to the verified upstream archive.
-& (Join-Path $PSScriptRoot 'copy-bundled-companions.ps1') -StagingDirectory $staging
-if (-not (Test-Path (Join-Path $staging 'companions\OpenRGB\OpenRGB.exe'))) {
-    throw 'companions\OpenRGB\OpenRGB.exe missing from staging; the Lighting tab would have no service'
-}
-
 # Windows Installer compares component key files by their Windows file version.
 # An unversioned SQLite replacement can be skipped, then deleted with the old MSI.
 $sqlitePath = Join-Path $staging 'e_sqlite3.dll'

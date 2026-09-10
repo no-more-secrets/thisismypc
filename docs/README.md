@@ -28,7 +28,7 @@ anything here; `planning/refinement-backlog.md` is the plan and status.
 | [planning/ui-design-brief.md](planning/ui-design-brief.md) | What every screen contains and how the app behaves, written for redesign work. |
 | [release/packaging.md](release/packaging.md) | NativeAOT release signing, deterministic packaging, public source verification, per-machine MSI, and ProgramData store. |
 | [release/update-signing.md](release/update-signing.md) | GPG-signed release manifest: key ceremony, signing, verification. |
-| [release/companions.md](release/companions.md) | Bundled third-party programs (OpenRGB): pin, fetch, license notice, how the app runs them. |
+| [lighting-controllers.md](lighting-controllers.md) | Built-in lighting controllers ported from OpenRGB: layout, transports, how to port another device family. |
 | [release/hardening-checklist.md](release/hardening-checklist.md) | Binary and process hardening record: CFG, DLL search lockdown, IPC audit. |
 | [why-gplv3.md](why-gplv3.md) | Why every component, including the Session 0 service, is GPLv3, and why the move from v2. |
 

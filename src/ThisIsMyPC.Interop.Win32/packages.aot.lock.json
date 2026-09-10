@@ -73,6 +73,12 @@
           "Microsoft.Data.Sqlite": "[10.0.11, )"
         }
       },
+      "thisismypc.lighting": {
+        "type": "Project",
+        "dependencies": {
+          "ThisIsMyPC.Core": "[1.0.0, )"
+        }
+      },
       "Microsoft.Data.Sqlite": {
         "type": "CentralTransitive",
         "requested": "[10.0.11, )",

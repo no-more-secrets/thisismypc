@@ -38,7 +38,7 @@ Identify machine type, manufacturer/model, devices, and installed control softwa
 | --- | --- |
 | Display | Finish existing monitor controls and verification. |
 | System Control | Primarily laptops. Offer independent G-Helper installation/access and suitable supported vendor alternatives. |
-| Lighting | OpenRGB-backed device, color, brightness, mode controls and saved configurations. |
+| Lighting | Built-in controllers ported from OpenRGB (HID and GPU I2C): device, color, brightness and mode controls; saved configurations later. |
 | Cooling | Offer FanControl; integrate verified startup/settings handling and cooling presets. |
 | Monitoring | Curated custom interface using LibreHardwareMonitor where supported. |
 

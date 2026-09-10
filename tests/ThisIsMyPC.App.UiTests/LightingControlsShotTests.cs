@@ -1,29 +1,26 @@
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Styling;
-using ThisIsMyPC.App.Services;
 using ThisIsMyPC.App.ViewModels;
 using ThisIsMyPC.App.Views;
 using ThisIsMyPC.Core.Hardware;
 using ThisIsMyPC.Core.Hardware.Lighting;
 using ThisIsMyPC.Core.Results;
-using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Modules.Hardware.Models;
 
 namespace ThisIsMyPC.App.UiTests;
 
 /// <summary>
-/// CI-safe: the Lighting tab's device controls over a scripted SDK session.
-/// Every write the page makes lands in the fake's log; nothing reaches a
-/// device or a socket.
+/// CI-safe: the Lighting tab's device controls over a scripted backend
+/// session. Every write the page makes lands in the fake's log; nothing
+/// reaches a device.
 /// </summary>
 public class LightingControlsShotTests
 {
-    private sealed class FakeSession : IOpenRgbSession
+    private sealed class FakeSession : ILightingSession
     {
         public List<string> Writes { get; } = [];
         public List<LightingDevice> Devices { get; } = [];
-        public uint ProtocolVersion => 4;
         public bool IsConnected { get; set; } = true;
         public event EventHandler? DeviceListChanged;
 
@@ -63,14 +60,18 @@ public class LightingControlsShotTests
         public void Dispose() => Writes.Add("disposed");
     }
 
-    private sealed class FakeClient(FakeSession session) : IOpenRgbClient
+    private sealed class FakeBackend(FakeSession session) : ILightingBackend
     {
-        public int Connections { get; private set; }
+        public int Opens { get; private set; }
 
-        public Task<OperationResult<IOpenRgbSession>> ConnectAsync(int port, CancellationToken cancellationToken = default)
+        public Task<OperationResult<LightingInventory>> DetectAsync(bool rescan = false, CancellationToken cancellationToken = default) =>
+            Task.FromResult(OperationResult<LightingInventory>.Success(new LightingInventory(
+                session.Devices.Select(d => new LightingDeviceSummary(d.Name, d.Type, "fake", d.Location)).ToList(), [], DateTimeOffset.Now)));
+
+        public Task<OperationResult<ILightingSession>> OpenAsync(CancellationToken cancellationToken = default)
         {
-            Connections++;
-            return Task.FromResult(OperationResult<IOpenRgbSession>.Success(session));
+            Opens++;
+            return Task.FromResult(OperationResult<ILightingSession>.Success(session));
         }
     }
 
@@ -121,7 +122,7 @@ public class LightingControlsShotTests
     {
         Index = 1,
         Type = LightingDeviceType.Gpu,
-        Name = "NVIDIA GeForce RTX 4080",
+        Name = "ASUS ROG STRIX GeForce RTX 4080 Gaming",
         Vendor = "ASUS",
         ActiveModeIndex = 0,
         Modes = [Direct with { Flags = LightingModeFlags.HasPerLedColor }],
@@ -130,21 +131,22 @@ public class LightingControlsShotTests
         Colors = [new RgbColor(0, 255, 128)],
     };
 
+    private static readonly LightingDeviceSummary[] FoundDevices =
+    [
+        new("ASUS ROG STRIX B550-F", LightingDeviceType.Motherboard, "ENE SMBus", "I2C: SMBus, address 0x4E"),
+        new("ASUS ROG STRIX GeForce RTX 4080 Gaming", LightingDeviceType.Gpu, "ENE SMBus", "I2C: NVIDIA NvAPI I2C on GPU 0, address 0x67"),
+    ];
+
+    /// <param name="available">Detection found devices. Otherwise none were found and the Advanced override shows the (dead) controls.</param>
     private static HardwareTabScanData LightingData(bool available = true)
     {
-        var companions = Enum.GetValues<CompanionApp>()
-            .Select(app => app == CompanionApp.OpenRgb
-                ? CompanionObservation.Running(app, HardwareDomain.Lighting)
-                : CompanionObservation.NotInstalled(app))
-            .ToList();
+        var companions = Enum.GetValues<CompanionApp>().Select(CompanionObservation.NotInstalled).ToList();
         var facts = new ObservedHardwareFacts
         {
             Identity = MachineIdentity.From("ASUSTeK COMPUTER INC.", "ROG STRIX B550-F GAMING"),
             FormFactor = new FormFactorEvidence { SmbiosChassisTypes = [3] },
             Companions = companions,
-            OpenRgbBundled = true,
-            OpenRgbServerReachable = available,
-            OpenRgbDeviceCount = available ? 2 : null,
+            LightingDevices = available ? FoundDevices : [],
         };
         var report = HardwareCompatibilityPolicy.Decide(facts, new HardwareCompatibilityOptions(ShowAllControls: !available));
         return new HardwareTabScanData(report.For(HardwareDomain.Lighting), report, null, ["fake"], new DateTimeOffset(2026, 9, 10, 9, 0, 0, TimeSpan.Zero));
@@ -155,8 +157,8 @@ public class LightingControlsShotTests
     {
         var session = new FakeSession();
         session.Devices.AddRange([Motherboard(), Gpu]);
-        var client = new FakeClient(session);
-        using var vm = new HardwareTabViewModel(LightingData(), refreshOnOpen: false, lightingClient: client);
+        var backend = new FakeBackend(session);
+        using var vm = new HardwareTabViewModel(LightingData(), refreshOnOpen: false, lightingBackend: backend);
 
         using var s = UiSession.ForView(new HardwareTabView(), vm, "lighting", width: 976, height: 900);
         await s.WaitForAsync(() => vm.Lighting is { HasDevices: true }, what: "device load");
@@ -166,10 +168,13 @@ public class LightingControlsShotTests
         s.Screenshot("devices-light");
         s.SetTheme(ThemeVariant.Dark);
 
-        Assert.Equal(1, client.Connections);
+        Assert.Equal(1, backend.Opens);
+        Assert.False(vm.HasAction);
+        Assert.True(s.IsTextVisible("Available"));
         Assert.True(s.IsTextVisible("ASUS ROG STRIX B550-F"));
         Assert.True(s.IsTextVisible("ASUS, Motherboard, 2 zones, 10 LEDs"));
-        Assert.True(s.IsTextVisible("NVIDIA GeForce RTX 4080"));
+        Assert.True(s.IsTextVisible("ASUS ROG STRIX GeForce RTX 4080 Gaming"));
+        Assert.True(s.IsTextVisible("ASUS, Graphics card, 1 LED"));
         Assert.True(s.IsTextVisible("All LEDs"));
         Assert.True(s.IsTextVisible("Aura Header 1"));
         Assert.True(s.IsTextVisible("Chipset"));
@@ -217,7 +222,7 @@ public class LightingControlsShotTests
     {
         var session = new FakeSession();
         session.Devices.Add(Gpu);
-        using var vm = new HardwareTabViewModel(LightingData(available: false), refreshOnOpen: false, lightingClient: new FakeClient(session));
+        using var vm = new HardwareTabViewModel(LightingData(available: false), refreshOnOpen: false, lightingBackend: new FakeBackend(session));
 
         using var s = UiSession.ForView(new HardwareTabView(), vm, "lighting", width: 976, height: 700);
         await s.WaitForAsync(() => vm.Lighting is { HasDevices: true }, what: "device load");
@@ -240,7 +245,7 @@ public class LightingControlsShotTests
     {
         var session = new FakeSession();
         session.Devices.Add(Gpu);
-        var vm = new HardwareTabViewModel(LightingData(), refreshOnOpen: false, lightingClient: new FakeClient(session));
+        var vm = new HardwareTabViewModel(LightingData(), refreshOnOpen: false, lightingBackend: new FakeBackend(session));
         using var s = UiSession.ForView(new HardwareTabView(), vm, "lighting", width: 976, height: 700);
         await s.WaitForAsync(() => vm.Lighting is { HasDevices: true }, what: "device load");
 
@@ -252,92 +257,36 @@ public class LightingControlsShotTests
         vm.Dispose();
         Assert.Contains("disposed", session.Writes);
     }
-    private sealed class FakeHost : IOpenRgbHost
-    {
-        public int Starts { get; private set; }
-        public bool Succeeds { get; set; } = true;
-        public string? BundledExecutablePath => @"C:\Program Files\ThisIsMyPC\companions\OpenRGB\OpenRGB.exe";
-        public OpenRgbHostState State { get; private set; } = OpenRgbHostState.Stopped;
-        public string? LastError { get; private set; }
-        public int Port => 6742;
-
-        public Task<OperationResult<bool>> EnsureRunningAsync(CancellationToken cancellationToken = default)
-        {
-            Starts++;
-            if (Succeeds)
-            {
-                State = OpenRgbHostState.Running;
-                return Task.FromResult(OperationResult<bool>.Success(true));
-            }
-            State = OpenRgbHostState.Failed;
-            LastError = "The lighting service exited with code 1 while starting.";
-            return Task.FromResult(OperationResult<bool>.Failure(LastError, ErrorCategory.ServiceUnavailable));
-        }
-
-        public Task StopAsync() => Task.CompletedTask;
-    }
-
-    private static HardwareTabScanData BundledNotRunning()
-    {
-        var companions = Enum.GetValues<CompanionApp>()
-            .Select(app => app == CompanionApp.OpenRgb ? CompanionObservation.Installed(app) : CompanionObservation.NotInstalled(app))
-            .ToList();
-        var facts = new ObservedHardwareFacts
-        {
-            Identity = MachineIdentity.From("ASUSTeK COMPUTER INC.", "ROG STRIX B550-F GAMING"),
-            FormFactor = new FormFactorEvidence { SmbiosChassisTypes = [3] },
-            Companions = companions,
-            OpenRgbBundled = true,
-        };
-        var report = HardwareCompatibilityPolicy.Decide(facts);
-        return new HardwareTabScanData(report.For(HardwareDomain.Lighting), report, null, ["fake"], new DateTimeOffset(2026, 9, 10, 9, 0, 0, TimeSpan.Zero));
-    }
 
     [AvaloniaFact]
-    public async Task Lighting_BundledServiceNotRunning_StartsItOnOpen_ThenShowsDevicesWithoutAButton()
+    public void Lighting_NoSupportedDevice_IsUnavailable_WithNoButton_AndNoCards()
     {
-        var host = new FakeHost();
         var session = new FakeSession();
-        session.Devices.Add(Gpu);
-        var actions = new HardwareCompanionActions(new PendingActionsService(), null, host);
         using var vm = new HardwareTabViewModel(
-            BundledNotRunning(), actions,
-            refresh: () => Task.FromResult(OperationResult<HardwareTabScanData>.Success(LightingData())),
-            refreshOnOpen: false, lightingClient: new FakeClient(session));
+            new HardwareTabScanData(
+                HardwareCompatibilityPolicy.Decide(new ObservedHardwareFacts
+                {
+                    Identity = MachineIdentity.From("ASUSTeK COMPUTER INC.", "ROG STRIX B550-F GAMING"),
+                    FormFactor = new FormFactorEvidence { SmbiosChassisTypes = [3] },
+                    Companions = Enum.GetValues<CompanionApp>().Select(CompanionObservation.NotInstalled).ToList(),
+                    LightingDevices = [],
+                }).For(HardwareDomain.Lighting),
+                HardwareCompatibilityPolicy.Decide(ObservedHardwareFacts.Empty), null,
+                ["Lighting controllers: HID collections enumerated: 12.", "Lighting controllers: NVIDIA GPU I2C: nvapi64.dll is not installed (no NVIDIA driver)."],
+                new DateTimeOffset(2026, 9, 10, 9, 0, 0, TimeSpan.Zero)),
+            refreshOnOpen: false, lightingBackend: new FakeBackend(session));
 
-        using var s = UiSession.ForView(new HardwareTabView(), vm, "lighting", width: 976, height: 700);
-        await s.WaitForAsync(() => vm.IsAvailable && vm.Lighting is { HasDevices: true }, what: "service start and device load");
-        s.Pump();
-        s.Screenshot("after-start-dark");
+        using var s = UiSession.ForView(new HardwareTabView(), vm, "lighting", width: 976, height: 676);
+        s.Screenshot("no-devices-dark");
 
-        Assert.Equal(1, host.Starts);
+        Assert.True(s.IsTextVisible("Not available"));
+        Assert.True(s.IsTextVisible("No supported lighting device was found on this PC. Lighting drives the devices it has a built-in controller for."));
         Assert.False(vm.HasAction);
-        Assert.Null(vm.ActionMessage);
-        Assert.True(s.IsTextVisible("NVIDIA GeForce RTX 4080"));
-    }
+        Assert.Null(s.TryFind<Button>(b => b.Content is string content && (content.StartsWith("Install", StringComparison.Ordinal) || content.StartsWith("Open", StringComparison.Ordinal))));
+        Assert.Null(vm.Lighting);
 
-    [AvaloniaFact]
-    public async Task Lighting_BundledServiceFailsToStart_ShowsTheErrorAndTheStartButton()
-    {
-        var host = new FakeHost { Succeeds = false };
-        var actions = new HardwareCompanionActions(new PendingActionsService(), null, host);
-        using var vm = new HardwareTabViewModel(
-            BundledNotRunning(), actions,
-            refresh: () => Task.FromResult(OperationResult<HardwareTabScanData>.Success(BundledNotRunning())),
-            refreshOnOpen: false, lightingClient: new FakeClient(new FakeSession()));
-
-        using var s = UiSession.ForView(new HardwareTabView(), vm, "lighting", width: 976, height: 700);
-        await s.WaitForAsync(() => vm.ActionFailed, what: "failed start");
+        s.ClickText("Details");
         s.Pump();
-        s.Screenshot("start-failed-dark");
-
-        Assert.Equal(1, host.Starts);
-        Assert.True(s.IsTextVisible("Start lighting service"));
-        Assert.True(s.IsTextVisible("The lighting service exited with code 1 while starting."));
-        Assert.True(s.Find<Button>(b => b.Content is "Start lighting service").IsEffectivelyEnabled);
-
-        // A click retries the start.
-        s.ClickText("Start lighting service");
-        await s.WaitForAsync(() => host.Starts == 2, what: "manual retry");
+        Assert.True(s.IsTextVisible("Lighting controllers: NVIDIA GPU I2C: nvapi64.dll is not installed (no NVIDIA driver)."));
     }
 }

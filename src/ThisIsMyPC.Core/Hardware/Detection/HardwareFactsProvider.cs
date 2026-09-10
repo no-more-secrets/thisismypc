@@ -1,3 +1,4 @@
+using ThisIsMyPC.Core.Hardware.Lighting;
 using ThisIsMyPC.Core.Services;
 
 namespace ThisIsMyPC.Core.Hardware.Detection;
@@ -8,7 +9,8 @@ namespace ThisIsMyPC.Core.Hardware.Detection;
 /// chassis types, platform role, battery, ATKACPI) and adds what that
 /// inventory leaves unobserved on purpose: every companion with a confirmed
 /// absence or a launch path and observed ownership, the OpenRGB SDK probe,
-/// and the internal display panel. Pure orchestration: every native call sits
+/// the built-in lighting controllers' device list, and the internal display
+/// panel. Pure orchestration: every native call sits
 /// behind an interface, so this runs unchanged under a scripted machine in
 /// tests. One pass at a time; concurrent callers share the pass in flight.
 /// </summary>
@@ -17,6 +19,7 @@ public sealed class HardwareFactsProvider : IHardwareFactsProvider, IDisposable
     private readonly IHardwareDetectionService _inventory;
     private readonly IHardwareProbeEnvironment _environment;
     private readonly Func<bool?>? _internalPanelProbe;
+    private readonly ILightingBackend? _lighting;
     private readonly CompanionDetector _companions;
     private readonly TimeSpan _openRgbTimeout;
     private readonly SemaphoreSlim _gate = new(1, 1);
@@ -29,7 +32,8 @@ public sealed class HardwareFactsProvider : IHardwareFactsProvider, IDisposable
         IScheduledTaskService? tasks = null,
         IServiceControlService? services = null,
         Func<bool?>? internalPanelProbe = null,
-        TimeSpan? openRgbTimeout = null)
+        TimeSpan? openRgbTimeout = null,
+        ILightingBackend? lighting = null)
     {
         ArgumentNullException.ThrowIfNull(inventory);
         ArgumentNullException.ThrowIfNull(registry);
@@ -37,6 +41,7 @@ public sealed class HardwareFactsProvider : IHardwareFactsProvider, IDisposable
         _inventory = inventory;
         _environment = environment;
         _internalPanelProbe = internalPanelProbe;
+        _lighting = lighting;
         _companions = new CompanionDetector(registry, environment, tasks, services);
         _openRgbTimeout = openRgbTimeout ?? TimeSpan.FromMilliseconds(750);
     }
@@ -59,7 +64,8 @@ public sealed class HardwareFactsProvider : IHardwareFactsProvider, IDisposable
 
             var notes = new List<string>();
             var inventory = await ReadInventoryAsync(refresh, notes, cancellationToken).ConfigureAwait(false);
-            snapshot = await Task.Run(() => Detect(inventory, notes), cancellationToken).ConfigureAwait(false);
+            var lighting = await DetectLightingAsync(refresh, notes, cancellationToken).ConfigureAwait(false);
+            snapshot = await Task.Run(() => Detect(inventory, notes, lighting), cancellationToken).ConfigureAwait(false);
             _current = snapshot;
         }
         finally
@@ -96,8 +102,38 @@ public sealed class HardwareFactsProvider : IHardwareFactsProvider, IDisposable
 #pragma warning restore CA1031
     }
 
+    /// <summary>
+    /// The built-in controllers' pass (HID enumeration, GPU I2C probes). A
+    /// refresh rescans; otherwise the backend's cached list is used. A backend
+    /// failure is a missing fact with a note, so the tab reads Unknown.
+    /// </summary>
+    private async Task<LightingInventory?> DetectLightingAsync(bool refresh, List<string> notes, CancellationToken cancellationToken)
+    {
+        if (_lighting is null)
+            return null;
+        try
+        {
+            var result = await _lighting.DetectAsync(rescan: refresh, cancellationToken).ConfigureAwait(false);
+            if (result.IsSuccess && result.Value is { } inventory)
+                return inventory;
+            notes.Add($"Lighting controllers: {result.ErrorMessage ?? "detection failed"}.");
+            return null;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+#pragma warning disable CA1031 // A failed probe is a missing fact, never a failed page.
+        catch (Exception ex)
+        {
+            notes.Add($"Lighting controllers: detection failed ({ex.GetType().Name}).");
+            return null;
+        }
+#pragma warning restore CA1031
+    }
+
     /// <summary>One synchronous module-level pass over a shared inventory snapshot. Public for tests and diagnostics.</summary>
-    public HardwareDetectionSnapshot Detect(HardwareSnapshot inventory, List<string>? notes = null)
+    public HardwareDetectionSnapshot Detect(HardwareSnapshot inventory, List<string>? notes = null, LightingInventory? lighting = null)
     {
         ArgumentNullException.ThrowIfNull(inventory);
         notes ??= [];
@@ -120,6 +156,9 @@ public sealed class HardwareFactsProvider : IHardwareFactsProvider, IDisposable
                 ?? OpenRgbProbeResult.Unreachable("probe failed");
         }
 
+        if (lighting is not null)
+            notes.AddRange(lighting.Notes.Select(note => "Lighting controllers: " + note));
+
         var detections = _companions.DetectAll(shared.AsusPlatformDriverPresent, openRgb);
         var launchPaths = new Dictionary<CompanionApp, string>();
         var companions = new List<CompanionObservation>();
@@ -135,7 +174,7 @@ public sealed class HardwareFactsProvider : IHardwareFactsProvider, IDisposable
         {
             FormFactor = shared.FormFactor with { HasInternalDisplayPanel = panel },
             Companions = companions,
-            OpenRgbBundled = _environment.BundledCompanionExecutable(CompanionApp.OpenRgb) is not null,
+            LightingDevices = lighting?.Devices,
             OpenRgbServerReachable = openRgb?.Reachable,
             OpenRgbDeviceCount = openRgb is { Reachable: true } ? openRgb.DeviceCount : null,
         };

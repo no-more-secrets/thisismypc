@@ -1,4 +1,5 @@
 using System.Globalization;
+using ThisIsMyPC.Core.Hardware.Lighting;
 
 namespace ThisIsMyPC.Core.Hardware;
 
@@ -28,15 +29,16 @@ public static class HardwareCompatibilityPolicy
     private static readonly Dictionary<HardwareDomain, CompanionApp[]> LikelyInterferers = new()
     {
         [HardwareDomain.SystemControl] = [CompanionApp.ArmouryCrate],
-        [HardwareDomain.Lighting] = [CompanionApp.SignalRgb, CompanionApp.ArmouryCrate, CompanionApp.GHelper],
+        [HardwareDomain.Lighting] = [CompanionApp.OpenRgb, CompanionApp.SignalRgb, CompanionApp.ArmouryCrate, CompanionApp.GHelper],
         [HardwareDomain.Cooling] = [CompanionApp.GHelper, CompanionApp.ArmouryCrate],
         [HardwareDomain.Monitoring] = [],
     };
 
-    private static readonly Dictionary<HardwareDomain, CompanionApp> Backends = new()
+    // Lighting has no companion backend: the built-in controllers drive the devices.
+    private static readonly Dictionary<HardwareDomain, CompanionApp?> Backends = new()
     {
         [HardwareDomain.SystemControl] = CompanionApp.GHelper,
-        [HardwareDomain.Lighting] = CompanionApp.OpenRgb,
+        [HardwareDomain.Lighting] = null,
         [HardwareDomain.Cooling] = CompanionApp.FanControl,
         [HardwareDomain.Monitoring] = CompanionApp.LibreHardwareMonitor,
     };
@@ -126,79 +128,45 @@ public static class HardwareCompatibilityPolicy
         ObservedHardwareFacts facts, FormFactorDecision formFactor, HardwareCompatibilityOptions options)
     {
         var evidence = IdentityEvidence(facts, formFactor);
-        var openRgb = facts.Companion(CompanionApp.OpenRgb);
-        evidence.Add(DescribePresence(openRgb, CompanionApp.OpenRgb));
         if (formFactor.FormFactor == MachineFormFactor.Laptop)
-            evidence.Add("Laptop: lighting depends on what OpenRGB detects; laptops are not excluded.");
+            evidence.Add("Laptop: lighting depends on which controllers answer; laptops are not excluded.");
 
-        var bundled = facts.OpenRgbBundled is true;
-        if (bundled)
-            evidence.Add("A bundled OpenRGB ships with this app and runs as a background lighting service.");
-
+        // The tab drives devices through the built-in controllers; no companion
+        // is installed or opened for it. OpenRGB only matters as a program that
+        // may be driving the same devices (the conflict pass below).
         Draft draft;
-        if (openRgb is null)
+        var devices = facts.LightingDevices;
+        if (devices is null)
         {
             draft = new Draft(HardwareAvailability.Unknown,
-                "OpenRGB was not checked for yet, so Lighting cannot say what it can do here.", null);
+                "Lighting devices were not checked for yet, so Lighting cannot say what it can do here.", null);
+            evidence.Add("Built-in lighting controllers: not run.");
         }
-        else if (!openRgb.IsInstalled)
+        else if (devices.Count == 0)
         {
             draft = new Draft(HardwareAvailability.Unavailable,
-                "Lighting works through OpenRGB, which is not installed.",
-                new CompanionAction(CompanionActionKind.Install, CompanionApp.OpenRgb));
-        }
-        else if (!openRgb.IsRunning)
-        {
-            // With a bundled copy nothing is open to talk to, so the action
-            // starts the background service; the page does that as it opens.
-            // A user's own OpenRGB that is running without its SDK server is
-            // never doubled up (that case is below): two servers would fight
-            // for the same devices.
-            draft = bundled
-                ? new Draft(HardwareAvailability.Unavailable,
-                    "The lighting service is not running. It starts when this page opens.",
-                    new CompanionAction(CompanionActionKind.StartService, CompanionApp.OpenRgb))
-                : new Draft(HardwareAvailability.Unavailable,
-                    "OpenRGB is installed but not running. Start it with its SDK server enabled.",
-                    new CompanionAction(CompanionActionKind.Open, CompanionApp.OpenRgb));
+                "No supported lighting device was found on this PC. Lighting drives the devices it has a built-in controller for.", null);
+            evidence.Add("Built-in lighting controllers: no supported device answered.");
         }
         else
         {
-            draft = facts.OpenRgbServerReachable switch
-            {
-                null => new Draft(HardwareAvailability.Unknown,
-                    "OpenRGB is running, but its SDK server was not checked.", null),
-                false => new Draft(HardwareAvailability.Unavailable,
-                    "OpenRGB is running, but its SDK server is not answering. Enable the SDK server in OpenRGB settings.",
-                    new CompanionAction(CompanionActionKind.Open, CompanionApp.OpenRgb)),
-                true => facts.OpenRgbDeviceCount switch
-                {
-                    null => new Draft(HardwareAvailability.Unknown,
-                        "OpenRGB's server answered, but its device list was not read yet.", null),
-                    0 => new Draft(HardwareAvailability.Unavailable,
-                        "OpenRGB is running but found no controllable lighting devices on this PC.", null),
-                    // The bundled service has no window to open; the device cards are the controls.
-                    > 0 => new Draft(HardwareAvailability.Available,
-                        "Lighting is controlled through the running OpenRGB server.",
-                        bundled ? null : new CompanionAction(CompanionActionKind.Open, CompanionApp.OpenRgb)),
-                    _ => new Draft(HardwareAvailability.Unknown,
-                        "OpenRGB's server returned an invalid device count, so Lighting cannot trust it.", null),
-                },
-            };
-            if (facts.OpenRgbServerReachable is null)
-                evidence.Add("OpenRGB SDK server reachability not probed.");
-            else if (facts.OpenRgbServerReachable is true)
-                evidence.Add(facts.OpenRgbDeviceCount switch
-                {
-                    null => "OpenRGB device count not queried.",
-                    < 0 => $"OpenRGB device count invalid: {facts.OpenRgbDeviceCount.Value.ToString(CultureInfo.InvariantCulture)}.",
-                    var count => $"OpenRGB device count: {count.Value.ToString(CultureInfo.InvariantCulture)}.",
-                });
+            var names = devices.Select(d => d.Name).Distinct(StringComparer.Ordinal).ToList();
+            draft = new Draft(HardwareAvailability.Available,
+                devices.Count == 1
+                    ? $"Lighting drives {names[0]} directly."
+                    : $"Lighting drives {devices.Count.ToString(CultureInfo.InvariantCulture)} devices directly: {string.Join(", ", names)}.",
+                null);
+            evidence.Add($"Built-in lighting controllers: {devices.Count.ToString(CultureInfo.InvariantCulture)} device(s).");
+            foreach (var device in devices)
+                evidence.Add($"{device.Name} ({LightingDevice.DescribeType(device.Type)}) via {device.Controller}, {device.Location}.");
         }
 
-        // Lighting is the one tab that writes devices itself, through the server.
+        if (facts.OpenRgbServerReachable is true && facts.OpenRgbDeviceCount is { } count)
+            evidence.Add($"OpenRGB SDK server answering with {count.ToString(CultureInfo.InvariantCulture)} device(s).");
+
+        // Lighting is the one tab that writes devices itself.
         return Finish(HardwareDomain.Lighting, draft, evidence, facts, options,
-            backend: CompanionApp.OpenRgb,
+            backend: null,
             operationsWhenAvailable: HardwareOperations.WriteDevices);
     }
 
@@ -313,7 +281,6 @@ public static class HardwareCompatibilityPolicy
         {
             CompanionActionKind.Install => HardwareOperations.InstallCompanion,
             CompanionActionKind.Open => HardwareOperations.OpenCompanion,
-            CompanionActionKind.StartService => HardwareOperations.OpenCompanion,
             _ => HardwareOperations.None,
         };
         if (availability == HardwareAvailability.Available)

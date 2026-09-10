@@ -8,8 +8,9 @@ using ThisIsMyPC.Core.Results;
 namespace ThisIsMyPC.App.ViewModels;
 
 /// <summary>
-/// The Lighting tab's controls: every device the OpenRGB SDK server exposes,
-/// with its mode, brightness, speed, direction and colors. Controls apply
+/// The Lighting tab's controls: every device the lighting backend exposes
+/// (the built-in controllers), with its mode, brightness, speed, direction
+/// and colors. Controls apply
 /// live, the Display module's carve-out: a color is its own undo and Windows
 /// persists nothing. Every write first asks <c>writesAllowed</c>, which reads
 /// the tab's current decision, so the Settings override that shows these
@@ -18,10 +19,9 @@ namespace ThisIsMyPC.App.ViewModels;
 /// </summary>
 public sealed partial class LightingControlsViewModel : ViewModelBase, IDisposable
 {
-    private readonly IOpenRgbClient _client;
-    private readonly int _port;
+    private readonly ILightingBackend _backend;
     private readonly Func<bool> _writeGate;
-    private IOpenRgbSession? _session;
+    private ILightingSession? _session;
     private bool _disposed;
     private bool _reloadRequested;
 
@@ -39,19 +39,18 @@ public sealed partial class LightingControlsViewModel : ViewModelBase, IDisposab
 
     public bool HasDevices => Devices.Count > 0;
 
-    public LightingControlsViewModel(IOpenRgbClient client, int port, Func<bool> writesAllowed)
+    public LightingControlsViewModel(ILightingBackend backend, Func<bool> writesAllowed)
     {
-        ArgumentNullException.ThrowIfNull(client);
+        ArgumentNullException.ThrowIfNull(backend);
         ArgumentNullException.ThrowIfNull(writesAllowed);
-        _client = client;
-        _port = port;
+        _backend = backend;
         _writeGate = writesAllowed;
         // The observable copy starts from the gate so the first render is right.
         _writesAllowed = writesAllowed();
     }
 
     /// <summary>
-    /// Connects (once) and reads every device. A call during a load is not
+    /// Opens a session (once) and reads every device. A call during a load is not
     /// lost: the load runs again when it finishes, so a device-list change
     /// announced mid-read still lands. A dead session is replaced.
     /// </summary>
@@ -88,7 +87,7 @@ public sealed partial class LightingControlsViewModel : ViewModelBase, IDisposab
             DropSession();
         if (_session is null)
         {
-            var connect = await _client.ConnectAsync(_port).ConfigureAwait(true);
+            var connect = await _backend.OpenAsync().ConfigureAwait(true);
             if (!connect.IsSuccess || connect.Value is null)
             {
                 Status = connect.ErrorMessage;
@@ -118,7 +117,7 @@ public sealed partial class LightingControlsViewModel : ViewModelBase, IDisposab
         foreach (var device in devices.Value)
             Devices.Add(new LightingDeviceViewModel(device, _session, _writeGate));
         OnPropertyChanged(nameof(HasDevices));
-        Status = Devices.Count == 0 ? "The lighting service found no controllable devices on this PC." : null;
+        Status = Devices.Count == 0 ? "No supported lighting device answered on this PC." : null;
     }
 
     [RelayCommand]
@@ -150,14 +149,14 @@ public sealed partial class LightingControlsViewModel : ViewModelBase, IDisposab
 /// <summary>One device card. Mode changes and slider moves write through the session, latest wins.</summary>
 public sealed partial class LightingDeviceViewModel : ViewModelBase, IDisposable
 {
-    private readonly IOpenRgbSession _session;
+    private readonly ILightingSession _session;
     private readonly Func<bool> _writesAllowed;
     private readonly LatestWriteQueue _writes;
     private LightingDevice _device;
     private LightingMode _mode;
     private bool _syncing;
 
-    public LightingDeviceViewModel(LightingDevice device, IOpenRgbSession session, Func<bool> writesAllowed)
+    public LightingDeviceViewModel(LightingDevice device, ILightingSession session, Func<bool> writesAllowed)
     {
         ArgumentNullException.ThrowIfNull(device);
         _device = device;
@@ -181,7 +180,8 @@ public sealed partial class LightingDeviceViewModel : ViewModelBase, IDisposable
         {
             var zones = _device.Zones.Count;
             var leds = _device.Leds.Count;
-            var count = zones == 1 ? $"{leds} LEDs" : $"{zones} zones, {leds} LEDs";
+            var ledText = leds == 1 ? "1 LED" : $"{leds} LEDs";
+            var count = zones == 1 ? ledText : $"{zones} zones, {ledText}";
             return string.IsNullOrWhiteSpace(_device.Vendor)
                 ? $"{TypeName}, {count}"
                 : $"{_device.Vendor}, {TypeName}, {count}";

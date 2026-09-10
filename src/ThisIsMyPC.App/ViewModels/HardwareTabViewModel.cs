@@ -16,16 +16,15 @@ namespace ThisIsMyPC.App.ViewModels;
 /// granted, and a closed details block with the evidence. Controls render
 /// only when the decision says so; the debug override can show them but
 /// never lets them write, because every write path re-checks the decision's
-/// permitted operations, not its visibility. Lighting starts the bundled
-/// OpenRGB service when the page opens and hosts the device controls.
+/// permitted operations, not its visibility. Lighting hosts the device
+/// controls over the built-in lighting backend.
 /// </summary>
 public sealed partial class HardwareTabViewModel : ViewModelBase, IDisposable
 {
     private readonly HardwareCompanionActions? _actions;
     private readonly bool _installAvailable;
     private readonly Func<Task<OperationResult<HardwareTabScanData>>>? _refresh;
-    private readonly IOpenRgbClient? _lightingClient;
-    private bool _serviceStartAttempted;
+    private readonly ILightingBackend? _lightingBackend;
 
     [ObservableProperty]
     private HardwareTabScanData _data;
@@ -53,18 +52,18 @@ public sealed partial class HardwareTabViewModel : ViewModelBase, IDisposable
         Func<Task<OperationResult<HardwareTabScanData>>>? refresh = null,
         bool installAvailable = true,
         bool refreshOnOpen = true,
-        IOpenRgbClient? lightingClient = null)
+        ILightingBackend? lightingBackend = null)
     {
         ArgumentNullException.ThrowIfNull(data);
         _data = data;
         _actions = actions;
         _installAvailable = installAvailable;
         _refresh = refresh;
-        _lightingClient = lightingClient;
+        _lightingBackend = lightingBackend;
         if (_actions is not null)
             _actions.QueueChanged += OnQueueChanged;
         SyncLighting();
-        if (!TryAutoStartLightingService() && refresh is not null && refreshOnOpen)
+        if (refresh is not null && refreshOnOpen)
             _ = RefreshAsync();
     }
 
@@ -122,15 +121,11 @@ public sealed partial class HardwareTabViewModel : ViewModelBase, IDisposable
 
     public bool HasAction => Decision.Action is not null;
 
-    /// <summary>The policy asks for the bundled lighting service to be started (no window to open).</summary>
-    private bool StartsLightingService => Decision.Action is { Kind: CompanionActionKind.StartService };
-
     public string ActionLabel => Decision.Action switch
     {
         { Kind: CompanionActionKind.Install } action => IsInstallQueued
             ? $"{CompanionNames.Of(action.App)} queued for install"
             : $"Install {CompanionNames.Of(action.App)}",
-        { Kind: CompanionActionKind.StartService } => "Start lighting service",
         { Kind: CompanionActionKind.Open } action => $"Open {CompanionNames.Of(action.App)}",
         _ => string.Empty,
     };
@@ -144,9 +139,6 @@ public sealed partial class HardwareTabViewModel : ViewModelBase, IDisposable
         { Kind: CompanionActionKind.Install, App: var app } =>
             Decision.Operations.HasFlag(HardwareOperations.InstallCompanion)
             && _installAvailable && _actions?.CanInstall(app) == true && !IsInstallQueued,
-        { Kind: CompanionActionKind.StartService } =>
-            Decision.Operations.HasFlag(HardwareOperations.OpenCompanion)
-            && _actions?.IsLightingServiceBundled == true && !IsRefreshing,
         { Kind: CompanionActionKind.Open } =>
             Decision.Operations.HasFlag(HardwareOperations.OpenCompanion)
             && _actions?.CanOpen == true && Data.LaunchPath is { Length: > 0 },
@@ -158,8 +150,6 @@ public sealed partial class HardwareTabViewModel : ViewModelBase, IDisposable
     {
         { Kind: CompanionActionKind.Open } when Data.LaunchPath is null or "" =>
             "Its location could not be found. Open it from the Start menu.",
-        { Kind: CompanionActionKind.StartService } when _actions?.IsLightingServiceBundled != true =>
-            "This build ships without the bundled OpenRGB.",
         { Kind: CompanionActionKind.Install } when !_installAvailable =>
             "Installs need the app installer (winget), which the Software page reports as unavailable on this PC.",
         { Kind: CompanionActionKind.Install } when IsInstallQueued && string.IsNullOrEmpty(ActionMessage) =>
@@ -170,16 +160,10 @@ public sealed partial class HardwareTabViewModel : ViewModelBase, IDisposable
     public bool HasActionHint => ActionHint is not null;
 
     [RelayCommand(CanExecute = nameof(CanRunAction))]
-    private async Task RunActionAsync()
+    private void RunAction()
     {
         if (Decision.Action is not { } action || _actions is null)
             return;
-
-        if (StartsLightingService && Decision.Operations.HasFlag(HardwareOperations.OpenCompanion))
-        {
-            await StartLightingServiceAsync().ConfigureAwait(true);
-            return;
-        }
 
         // The visibility override never reaches here: CanRunAction reads the
         // permitted operations, which the override cannot change.
@@ -210,60 +194,6 @@ public sealed partial class HardwareTabViewModel : ViewModelBase, IDisposable
             Dispatcher.UIThread.Post(NotifyActionState);
     }
 
-    // ---- lighting service ----
-
-    /// <summary>
-    /// The policy asked for the bundled lighting service (no OpenRGB running
-    /// at all): start it as the page opens, once, unless another program owns
-    /// the devices (Conflict). A user's own OpenRGB running without its SDK
-    /// server never gets this action, so no second server is started beside
-    /// it. Returns true when a start was kicked off, which also refreshes the page.
-    /// </summary>
-    private bool TryAutoStartLightingService()
-    {
-        if (_serviceStartAttempted || !StartsLightingService || IsConflict
-            || _actions?.IsLightingServiceBundled != true
-            || !Decision.Operations.HasFlag(HardwareOperations.OpenCompanion))
-        {
-            return false;
-        }
-        _ = StartLightingServiceAsync();
-        return true;
-    }
-
-    private async Task StartLightingServiceAsync()
-    {
-        if (_actions is null)
-            return;
-        _serviceStartAttempted = true;
-        IsRefreshing = true;
-        ActionFailed = false;
-        ActionMessage = "Starting the lighting service...";
-        NotifyActionState();
-        try
-        {
-            var start = await _actions.StartLightingServiceAsync().ConfigureAwait(true);
-            if (!start.IsSuccess)
-            {
-                ActionFailed = true;
-                ActionMessage = start.ErrorMessage;
-                return;
-            }
-            ActionMessage = null;
-            if (_refresh is not null)
-            {
-                var result = await _refresh().ConfigureAwait(true);
-                if (result.IsSuccess && result.Value is { } fresh)
-                    Apply(fresh);
-            }
-        }
-        finally
-        {
-            IsRefreshing = false;
-            NotifyActionState();
-        }
-    }
-
     // ---- controls area ----
 
     /// <summary>The decision (or the debug override) says the tab renders its controls.</summary>
@@ -272,13 +202,13 @@ public sealed partial class HardwareTabViewModel : ViewModelBase, IDisposable
     /// <summary>Controls are on screen because of Settings > Advanced, not because they can do anything.</summary>
     public bool IsOverrideShowingControls => Decision.ControlsVisible && !IsAvailable;
 
-    /// <summary>Lighting renders its device controls; the placeholder is for the other tabs and for Lighting without a client.</summary>
+    /// <summary>Lighting renders its device controls; the placeholder is for the other tabs and for Lighting without a backend.</summary>
     public bool ShowsPlaceholder => Lighting is null;
 
     /// <summary>What sits in the controls area in this build, per domain.</summary>
     public string ControlsPlaceholder => Domain switch
     {
-        HardwareDomain.Lighting => "Lighting devices appear here once the lighting service answers.",
+        HardwareDomain.Lighting => "Lighting devices appear here once the built-in controllers find one.",
         HardwareDomain.Monitoring => "Sensor readings arrive with the LibreHardwareMonitor integration. Nothing is read yet.",
         HardwareDomain.Cooling => "FanControl runs the fans. Saved cooling presets for this PC arrive in a later build.",
         HardwareDomain.SystemControl => "G-Helper runs the laptop. ThisIsMyPC installs and opens it; it does not replace it.",
@@ -288,7 +218,7 @@ public sealed partial class HardwareTabViewModel : ViewModelBase, IDisposable
     /// <summary>Creates or drops the Lighting controls to match the decision; writes stay gated by the live decision.</summary>
     private void SyncLighting()
     {
-        if (Domain != HardwareDomain.Lighting || _lightingClient is null || !ControlsVisible)
+        if (Domain != HardwareDomain.Lighting || _lightingBackend is null || !ControlsVisible)
         {
             Lighting?.Dispose();
             Lighting = null;
@@ -296,10 +226,7 @@ public sealed partial class HardwareTabViewModel : ViewModelBase, IDisposable
         }
         if (Lighting is null)
         {
-            Lighting = new LightingControlsViewModel(
-                _lightingClient,
-                _actions?.LightingPort ?? Core.Hardware.Detection.OpenRgbSdkProtocol.DefaultPort,
-                () => Decision.LiveWritesAllowed);
+            Lighting = new LightingControlsViewModel(_lightingBackend, () => Decision.LiveWritesAllowed);
             _ = Lighting.LoadAsync();
         }
         else

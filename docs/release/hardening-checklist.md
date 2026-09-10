@@ -52,7 +52,10 @@ EH Continuation table present.
   Startup then requires WinVerifyTrust and the exact No More Secrets, LLC signer.
   It maps those four fixed files by absolute path and confirms each loaded path.
   A pre-CIG inventory permits only the App, those four files, System32, and WinSxS.
-  Startup then enables the Microsoft-only process signature policy before Avalonia,
+  One optional vendor library follows: `nvapi64.dll` from System32, mapped only when
+  its Authenticode signer is NVIDIA Corporation, so the Lighting tab can drive GPU
+  I2C after the policy closes (`VendorNativeDependencyLoader`; a skip is logged,
+  never fatal). Startup then enables the Microsoft-only process signature policy before Avalonia,
   logging, IPC, or user input. The process stops if any check fails. A live probe kept
   ACG and CIG active, scanned a physical display, and rejected an unsigned DLL.
   Process-creation CIG cannot admit our OV-signed native libraries. The current

@@ -48,6 +48,9 @@ sealed class Program
         var nativeDependencies = TrustedNativeDependencyLoader.VerifyAndLoad(AppContext.BaseDirectory);
         if (!nativeDependencies.IsSuccess)
             Environment.FailFast(nativeDependencies.ErrorMessage ?? "Native dependency verification failed.");
+        // Vendor-signed System32 libraries the Lighting tab needs (NvAPI for
+        // GPU I2C). Optional: a missing or unverifiable one is skipped, never fatal.
+        VendorNativeDependencyLoader.PreloadOptional();
         if (!BinarySignatureHardening.Apply() || !BinarySignatureHardening.IsEnabled())
             Environment.FailFast("Code Integrity Guard could not be enabled.");
 #endif
@@ -84,6 +87,8 @@ sealed class Program
         try
         {
             log.Info("ThisIsMyPC starting");
+            foreach (var outcome in VendorNativeDependencyLoader.Report)
+                log.Info("Vendor native dependency: {Outcome}", outcome);
 
             InstallGuard = installGuard;
             if (installGuard.IsProtectedLocation)

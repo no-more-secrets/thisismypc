@@ -88,15 +88,6 @@ public sealed class CompanionDetector
             AddExeCandidates(entry, "OpenRGB.exe", candidates);
         }
 
-        // The copy bundled with the app comes before any user install: the
-        // page starts it as a background service and talks to it over the SDK.
-        var bundled = _environment.BundledCompanionExecutable(CompanionApp.OpenRgb);
-        if (bundled is not null)
-        {
-            notes.Add($"OpenRGB: bundled copy at {bundled}.");
-            candidates.Insert(running && candidates.Count > 0 ? 1 : 0, bundled);
-        }
-
         var folders = _environment.Folders;
         candidates.Add(Path.Combine(folders.ProgramFiles, "OpenRGB", "OpenRGB.exe"));
         candidates.Add(Path.Combine(folders.LocalAppData, "Programs", "OpenRGB", "OpenRGB.exe"));

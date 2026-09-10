@@ -42,6 +42,13 @@
         "type": "Project",
         "dependencies": {
           "NLog": "[6.2.0, )",
+          "ThisIsMyPC.Core": "[1.0.0, )",
+          "ThisIsMyPC.Lighting": "[1.0.0, )"
+        }
+      },
+      "thisismypc.lighting": {
+        "type": "Project",
+        "dependencies": {
           "ThisIsMyPC.Core": "[1.0.0, )"
         }
       },

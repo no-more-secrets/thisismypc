@@ -1,4 +1,5 @@
 using ThisIsMyPC.Core.Hardware;
+using ThisIsMyPC.Core.Hardware.Lighting;
 using static ThisIsMyPC.Core.Tests.Hardware.HardwareFactsBuilder;
 
 namespace ThisIsMyPC.Core.Tests.Hardware;
@@ -8,9 +9,12 @@ public sealed class HardwareCompatibilityPolicyTests
     private static HardwareTabDecision Decide(ObservedHardwareFacts facts, HardwareDomain domain, bool showAll = false)
         => HardwareCompatibilityPolicy.Decide(facts, new HardwareCompatibilityOptions(showAll)).For(domain);
 
+    private static readonly LightingDeviceSummary Strix4080 = new("ASUS ROG STRIX GeForce RTX 4080 Gaming", LightingDeviceType.Gpu, "ENE SMBus", "I2C: NVIDIA NvAPI I2C on GPU 0, address 0x67");
+    private static readonly LightingDeviceSummary ModelO = new("Glorious Model O / O-", LightingDeviceType.Mouse, "Sinowealth", @"HID: \\?\hid#vid_258a&pid_0036&mi_01&col01");
+
+    /// <summary>Two built-in devices found; every companion confirmed absent unless listed.</summary>
     private static ObservedHardwareFacts LightingReady(params CompanionObservation[] extra)
-        => Desktop("ASUS", [CompanionObservation.Running(CompanionApp.OpenRgb, HardwareDomain.Lighting), .. extra])
-            with { OpenRgbServerReachable = true, OpenRgbDeviceCount = 2 };
+        => Desktop("ASUS", extra) with { LightingDevices = [Strix4080, ModelO] };
 
     // ---- shape ----
 
@@ -122,19 +126,20 @@ public sealed class HardwareCompatibilityPolicyTests
     [Fact]
     public void ConfirmedAbsentCompanion_OffersInstall()
     {
-        var tab = Decide(Desktop("ASUS", CompanionObservation.NotInstalled(CompanionApp.OpenRgb)), HardwareDomain.Lighting);
+        var tab = Decide(Desktop("ASUS", CompanionObservation.NotInstalled(CompanionApp.FanControl)), HardwareDomain.Cooling);
 
         Assert.Equal(HardwareAvailability.Unavailable, tab.Availability);
-        Assert.Equal(new CompanionAction(CompanionActionKind.Install, CompanionApp.OpenRgb), tab.Action);
+        Assert.Equal(new CompanionAction(CompanionActionKind.Install, CompanionApp.FanControl), tab.Action);
         Assert.Equal(HardwareOperations.InstallCompanion, tab.Operations);
     }
 
     [Fact]
     public void UnobservedInterferers_AddNoNotesOrEvidence()
     {
+        // Only FanControl was looked at; nothing is said about the programs that were not.
         var facts = LightingReady() with
         {
-            Companions = [CompanionObservation.Running(CompanionApp.OpenRgb, HardwareDomain.Lighting)],
+            Companions = [CompanionObservation.Installed(CompanionApp.FanControl)],
         };
 
         var tab = Decide(facts, HardwareDomain.Lighting);
@@ -298,106 +303,85 @@ public sealed class HardwareCompatibilityPolicyTests
     // ---- Lighting ----
 
     [Fact]
-    public void Lighting_OpenRgbInstalledNotRunning_OffersOpen()
+    public void Lighting_NotDetectedYet_Unknown_NoAction()
     {
         var tab = Decide(Desktop("ASUS", CompanionObservation.Installed(CompanionApp.OpenRgb)), HardwareDomain.Lighting);
 
-        Assert.Equal(HardwareAvailability.Unavailable, tab.Availability);
-        Assert.Equal(new CompanionAction(CompanionActionKind.Open, CompanionApp.OpenRgb), tab.Action);
-        Assert.Equal(HardwareOperations.OpenCompanion, tab.Operations);
-    }
-
-    [Fact]
-    public void Lighting_OpenRgbRunningServerNotProbed_Unknown()
-    {
-        var tab = Decide(Desktop("ASUS", CompanionObservation.Running(CompanionApp.OpenRgb)), HardwareDomain.Lighting);
-
         Assert.Equal(HardwareAvailability.Unknown, tab.Availability);
-        Assert.False(tab.LiveWritesAllowed);
-    }
-
-    [Fact]
-    public void Lighting_OpenRgbRunningServerDown_Unavailable()
-    {
-        var facts = Desktop("ASUS", CompanionObservation.Running(CompanionApp.OpenRgb)) with { OpenRgbServerReachable = false };
-
-        var tab = Decide(facts, HardwareDomain.Lighting);
-
-        Assert.Equal(HardwareAvailability.Unavailable, tab.Availability);
-        Assert.Contains("SDK server", tab.Explanation, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void Lighting_ServerUpDeviceCountUnknown_IsUnknown_NoWrites()
-    {
-        // Regression: reachable server with an unread device list used to be Available.
-        var facts = Desktop("ASUS", CompanionObservation.Running(CompanionApp.OpenRgb))
-            with { OpenRgbServerReachable = true, OpenRgbDeviceCount = null };
-
-        var tab = Decide(facts, HardwareDomain.Lighting);
-
-        Assert.Equal(HardwareAvailability.Unknown, tab.Availability);
-        Assert.False(tab.LiveWritesAllowed);
-        Assert.Equal(HardwareOperations.None, tab.Operations);
-        Assert.Contains("device list was not read", tab.Explanation, StringComparison.Ordinal);
-    }
-
-    [Theory]
-    [InlineData(-1)]
-    [InlineData(int.MinValue)]
-    public void Lighting_ServerUpNegativeDeviceCount_IsUnknown_NoWrites(int count)
-    {
-        // Regression: a negative count used to fall through to Available.
-        var facts = Desktop("ASUS", CompanionObservation.Running(CompanionApp.OpenRgb))
-            with { OpenRgbServerReachable = true, OpenRgbDeviceCount = count };
-
-        var tab = Decide(facts, HardwareDomain.Lighting);
-
-        Assert.Equal(HardwareAvailability.Unknown, tab.Availability);
-        Assert.False(tab.LiveWritesAllowed);
-        Assert.Equal(HardwareOperations.None, tab.Operations);
         Assert.Null(tab.Action);
-        Assert.Contains("invalid device count", tab.Explanation, StringComparison.Ordinal);
-        Assert.Contains(tab.Evidence, e => e.Contains("device count invalid", StringComparison.Ordinal));
+        Assert.Null(tab.Backend);
+        Assert.Equal(HardwareOperations.None, tab.Operations);
+        Assert.Contains(tab.Evidence, e => e.Contains("not run", StringComparison.Ordinal));
     }
 
     [Fact]
-    public void Lighting_OpenRgbServerUpWithDevices_Available_WritesAllowed()
+    public void Lighting_NoSupportedDevice_Unavailable_NoInstallOffer()
     {
-        var facts = Desktop("ASUS", CompanionObservation.Running(CompanionApp.OpenRgb, HardwareDomain.Lighting))
-            with { OpenRgbServerReachable = true, OpenRgbDeviceCount = 3 };
+        // No companion is offered: the tab drives devices itself or not at all.
+        var tab = Decide(Desktop("ASUS") with { LightingDevices = [] }, HardwareDomain.Lighting);
 
-        var tab = Decide(facts, HardwareDomain.Lighting);
+        Assert.Equal(HardwareAvailability.Unavailable, tab.Availability);
+        Assert.Null(tab.Action);
+        Assert.Equal(HardwareOperations.None, tab.Operations);
+        Assert.Contains("No supported lighting device", tab.Explanation, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Lighting_DevicesFound_Available_WritesAllowed_NamesThemInEvidence()
+    {
+        var tab = Decide(LightingReady(), HardwareDomain.Lighting);
 
         Assert.Equal(HardwareAvailability.Available, tab.Availability);
         Assert.True(tab.LiveWritesAllowed);
-        Assert.Equal(HardwareOperations.WriteDevices | HardwareOperations.OpenCompanion, tab.Operations);
-        Assert.Empty(tab.ConflictNotes); // the backend owning its own domain is not a conflict
-        Assert.Contains(tab.Evidence, e => e.Contains("device count: 3", StringComparison.Ordinal));
+        Assert.Equal(HardwareOperations.WriteDevices, tab.Operations);
+        Assert.Null(tab.Action);
+        Assert.Empty(tab.ConflictNotes);
+        Assert.Contains("2 devices", tab.Explanation, StringComparison.Ordinal);
+        Assert.Contains("Glorious Model O / O-", tab.Explanation, StringComparison.Ordinal);
+        Assert.Contains(tab.Evidence, e => e.Contains("ASUS ROG STRIX GeForce RTX 4080 Gaming (Graphics card) via ENE SMBus", StringComparison.Ordinal));
     }
 
     [Fact]
-    public void Lighting_OpenRgbServerUpNoDevices_Unavailable()
+    public void Lighting_OneDevice_ExplanationNamesIt()
     {
-        var facts = Desktop("ASUS", CompanionObservation.Running(CompanionApp.OpenRgb))
-            with { OpenRgbServerReachable = true, OpenRgbDeviceCount = 0 };
+        var tab = Decide(Desktop("ASUS") with { LightingDevices = [ModelO] }, HardwareDomain.Lighting);
 
-        var tab = Decide(facts, HardwareDomain.Lighting);
-
-        Assert.Equal(HardwareAvailability.Unavailable, tab.Availability);
-        Assert.Contains("no controllable", tab.Explanation, StringComparison.Ordinal);
+        Assert.Equal("Lighting drives Glorious Model O / O- directly.", tab.Explanation);
     }
 
     [Fact]
     public void Lighting_LaptopIsNotExcluded()
     {
-        var facts = AsusLaptop(true, CompanionObservation.Running(CompanionApp.OpenRgb))
-            with { OpenRgbServerReachable = true, OpenRgbDeviceCount = 1 };
-
-        var tab = Decide(facts, HardwareDomain.Lighting);
+        var tab = Decide(AsusLaptop(true) with { LightingDevices = [ModelO] }, HardwareDomain.Lighting);
 
         Assert.Equal(HardwareAvailability.Available, tab.Availability);
         Assert.Contains(tab.Evidence, e => e.Contains("laptops are not excluded", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Lighting_OpenRgbServingDevices_IsAConflict()
+    {
+        // A running OpenRGB with devices would fight the built-in controllers for them.
+        var facts = LightingReady(CompanionObservation.Running(CompanionApp.OpenRgb, HardwareDomain.Lighting))
+            with { OpenRgbServerReachable = true, OpenRgbDeviceCount = 2 };
+
+        var tab = Decide(facts, HardwareDomain.Lighting);
+
+        Assert.Equal(HardwareAvailability.Conflict, tab.Availability);
+        Assert.False(tab.LiveWritesAllowed);
+        Assert.Contains("OpenRGB", tab.Explanation, StringComparison.Ordinal);
+        Assert.Contains(tab.Evidence, e => e.Contains("OpenRGB SDK server answering with 2", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Lighting_OpenRgbRunningWithoutDevices_IsAdvisoryOnly()
+    {
+        var tab = Decide(LightingReady(CompanionObservation.Running(CompanionApp.OpenRgb)), HardwareDomain.Lighting);
+
+        Assert.Equal(HardwareAvailability.Available, tab.Availability);
+        Assert.True(tab.LiveWritesAllowed);
+        Assert.Single(tab.ConflictNotes);
+        Assert.Contains("OpenRGB", tab.ConflictNotes[0], StringComparison.Ordinal);
     }
 
     [Fact]
@@ -545,8 +529,8 @@ public sealed class HardwareCompatibilityPolicyTests
     {
         { "lighting conflict", LightingReady(CompanionObservation.Running(CompanionApp.SignalRgb, HardwareDomain.Lighting)) },
         { "lighting available", LightingReady() },
-        { "lighting device count unknown", Desktop("ASUS", CompanionObservation.Running(CompanionApp.OpenRgb)) with { OpenRgbServerReachable = true } },
-        { "lighting device count invalid", Desktop("ASUS", CompanionObservation.Running(CompanionApp.OpenRgb)) with { OpenRgbServerReachable = true, OpenRgbDeviceCount = -1 } },
+        { "lighting not detected", Desktop("ASUS", CompanionObservation.Running(CompanionApp.OpenRgb)) },
+        { "lighting no devices", Desktop("ASUS") with { LightingDevices = [] } },
         { "role-only laptop guess", AsusLaptop() with { FormFactor = new FormFactorEvidence { PlatformRole = PlatformRole.Mobile, HasSystemBattery = true } } },
         { "pending asus laptop", AsusLaptop(true, CompanionObservation.Running(CompanionApp.GHelper)) },
         { "cooling installed", Desktop("ASUS", CompanionObservation.Installed(CompanionApp.FanControl)) },
@@ -582,13 +566,13 @@ public sealed class HardwareCompatibilityPolicyTests
     [Fact]
     public void ToModuleAvailability_CarriesExplanationAndActionHint()
     {
-        var tab = Decide(Desktop(), HardwareDomain.Lighting);
+        var tab = Decide(Desktop(), HardwareDomain.Cooling);
 
         var availability = tab.ToModuleAvailability();
 
         Assert.False(availability.IsAvailable);
         Assert.Equal(tab.Explanation, availability.Reason);
-        Assert.Equal("Install OpenRGB from Software.", availability.RemediationHint);
+        Assert.Equal("Install FanControl from Software.", availability.RemediationHint);
     }
 
     [Fact]

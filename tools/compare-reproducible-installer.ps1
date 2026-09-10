@@ -54,10 +54,7 @@ function Get-CanonicalRecords([string]$root, [string]$temporaryRoot, [bool]$requ
         $path = Join-Path $root $relative.Replace('/', '\')
         $bytes = [IO.File]::ReadAllBytes($path)
         $isPe = $bytes.Length -ge 64 -and $bytes[0] -eq 0x4D -and $bytes[1] -eq 0x5A
-        # Bundled companions (docs/release/companions.md) are third-party: unsigned by us,
-        # some signed upstream. They are compared byte for byte, never by our signature.
-        $isCompanion = $relative -match '(^|/)companions/'
-        if ($requirePeSignatures -and $isPe -and -not $isCompanion) {
+        if ($requirePeSignatures -and $isPe) {
             Assert-TrustedSignature $path "Installed PE file $relative"
         }
         if ($isPe) {

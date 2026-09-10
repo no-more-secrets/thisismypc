@@ -8,6 +8,7 @@
     <Project Path="src/ThisIsMyPC.Interop.Win32/ThisIsMyPC.Interop.Win32.csproj" />
     <Project Path="src/ThisIsMyPC.Interop.Wmi/ThisIsMyPC.Interop.Wmi.csproj" />
     <Project Path="src/ThisIsMyPC.Ipc.Contracts/ThisIsMyPC.Ipc.Contracts.csproj" />
+    <Project Path="src/ThisIsMyPC.Lighting/ThisIsMyPC.Lighting.csproj" />
     <Project Path="src/ThisIsMyPC.Service/ThisIsMyPC.Service.csproj" />
     <Project Path="src/ThisIsMyPC.Modules.Annoyances/ThisIsMyPC.Modules.Annoyances.csproj" />
     <Project Path="src/ThisIsMyPC.Modules.Display/ThisIsMyPC.Modules.Display.csproj" />
@@ -28,6 +29,7 @@
     <Project Path="tests/ThisIsMyPC.Installer.Tests/ThisIsMyPC.Installer.Tests.csproj" />
     <Project Path="tests/ThisIsMyPC.Integration.Tests/ThisIsMyPC.Integration.Tests.csproj" />
     <Project Path="tests/ThisIsMyPC.Ipc.Tests/ThisIsMyPC.Ipc.Tests.csproj" />
+    <Project Path="tests/ThisIsMyPC.Lighting.Tests/ThisIsMyPC.Lighting.Tests.csproj" />
     <Project Path="tests/ThisIsMyPC.Modules.Annoyances.Tests/ThisIsMyPC.Modules.Annoyances.Tests.csproj" />
     <Project Path="tests/ThisIsMyPC.Modules.Display.Tests/ThisIsMyPC.Modules.Display.Tests.csproj" />
     <Project Path="tests/ThisIsMyPC.Modules.Hardware.Tests/ThisIsMyPC.Modules.Hardware.Tests.csproj" />
