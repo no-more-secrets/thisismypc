@@ -90,6 +90,18 @@ public sealed class RegistryServiceIntegrationTests : IDisposable
     }
 
     [Fact]
+    public void DeleteValue_succeeds_when_key_is_absent()
+    {
+        var missingKey = $@"{SandboxKeyPath}\NoSuchKey";
+        Assert.False(_sut.KeyExists(missingKey).Value);
+
+        var deleteResult = _sut.DeleteValue(missingKey, "Anything");
+
+        Assert.True(deleteResult.IsSuccess);
+        Assert.False(_sut.KeyExists(missingKey).Value);
+    }
+
+    [Fact]
     public void DeleteKey_removes_key()
     {
         var childKey = $@"{SandboxKeyPath}\ChildToDelete";
@@ -174,7 +186,7 @@ public sealed class RegistryServiceIntegrationTests : IDisposable
     public void WriteDWord_to_HKLM_without_elevation_returns_AccessDenied()
     {
         // This test verifies access-denied handling for non-elevated processes.
-        // If running elevated, the write will succeed — both outcomes are valid.
+        // If running elevated, the write will succeed; both outcomes are valid.
         var result = _sut.WriteDWord(@"HKLM\SOFTWARE\ThisIsMyPC\Tests", "ElevationTest", 1);
         if (!result.IsSuccess)
         {

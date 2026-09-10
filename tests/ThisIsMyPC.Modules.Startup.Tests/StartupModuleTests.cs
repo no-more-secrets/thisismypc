@@ -94,6 +94,24 @@ public class StartupModuleTests
     }
 
     [Fact]
+    public async Task RevertChange_AbsentBeforeValue_SucceedsWhenKeyIsGone()
+    {
+        // Another tool removed the whole StartupApproved key after we applied.
+        // The value is absent, which is the outcome the revert asks for.
+        var change = StartupChangeFactory.CreateToggle(MakeEntry(), enable: false, currentApprovedBlob: null)!;
+        var module = CreateModule();
+        await module.ApplyChangeAsync(change);
+        _registry.DeleteKey(StartupScanner.UserApprovedRunKey);
+        Assert.False(_registry.KeyExists(StartupScanner.UserApprovedRunKey).Value);
+
+        var reverted = change with { BeforeValue = change.AfterValue!, AfterValue = change.BeforeValue };
+        var result = await module.RevertChangeAsync(reverted);
+
+        Assert.True(result.IsSuccess);
+        Assert.False(_registry.ValueExists(StartupScanner.UserApprovedRunKey, "App").Value);
+    }
+
+    [Fact]
     public async Task ScanSystemState_ReturnsStartupScanData()
     {
         _registry.SetString(StartupScanner.UserRunKey, "App", @"C:\app.exe");

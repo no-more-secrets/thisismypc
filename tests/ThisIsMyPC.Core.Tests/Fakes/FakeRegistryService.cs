@@ -99,8 +99,7 @@ public sealed class FakeRegistryService : IRegistryService
 
     public OperationResult<bool> DeleteValue(string keyPath, string valueName)
     {
-        if (!_keys.Contains(keyPath))
-            return OperationResult<bool>.Failure($"Key not found: {keyPath}", ErrorCategory.NotFound);
+        // Matches RegistryService: an absent key means the value is already absent.
         _values.Remove(MakeKey(keyPath, valueName));
         return OperationResult<bool>.Success(true);
     }

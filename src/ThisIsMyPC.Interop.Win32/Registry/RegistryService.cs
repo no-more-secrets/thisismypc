@@ -70,8 +70,12 @@ public sealed partial class RegistryService : IRegistryService
         {
             var (root, subKeyPath) = ParseKeyPath(keyPath);
             using var key = root.OpenSubKey(subKeyPath, writable: true);
+
+            // An absent key means the value is already absent, which is the requested
+            // outcome. Reverting a value-delete must not fail because another tool
+            // removed the whole key first.
             if (key is null)
-                return OperationResult<bool>.Failure($"Key not found: {keyPath}", ErrorCategory.NotFound);
+                return OperationResult<bool>.Success(true);
 
             key.DeleteValue(valueName, throwOnMissingValue: false);
             return OperationResult<bool>.Success(true);

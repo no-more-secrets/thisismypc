@@ -83,10 +83,8 @@ public sealed class EnvironmentModule : IModule
 
             if (change.Category == ChangeCategory.Delete)
             {
+                // DeleteValue succeeds when the value or its key is already absent.
                 result = _registryService.DeleteValue(keyPath, valueName);
-                // Deleting an already-absent value is a no-op success
-                if (!result.IsSuccess && result.ErrorCategory == ErrorCategory.NotFound)
-                    result = OperationResult<bool>.Success(true);
             }
             else
             {

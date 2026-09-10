@@ -14,6 +14,10 @@ public interface IRegistryService
     OperationResult<bool> WriteExpandString(string keyPath, string valueName, string value);
     OperationResult<bool> WriteMultiString(string keyPath, string valueName, string[] values);
     OperationResult<bool> WriteBinary(string keyPath, string valueName, byte[] value);
+    /// <summary>
+    /// Removes a value. Succeeds when the value or its key is already absent,
+    /// because the requested state (value absent) is reached either way.
+    /// </summary>
     OperationResult<bool> DeleteValue(string keyPath, string valueName);
     OperationResult<bool> DeleteKey(string keyPath, bool recursive = false);
     OperationResult<bool> KeyExists(string keyPath);
