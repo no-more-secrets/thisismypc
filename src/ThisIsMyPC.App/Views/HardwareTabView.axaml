@@ -97,20 +97,43 @@
         <DataTemplate DataType="{x:Type vm:LightingDeviceViewModel}">
             <Border Classes="card" CornerRadius="8" Padding="20,16" MinWidth="560">
                 <StackPanel Spacing="12">
-                    <StackPanel Spacing="2">
-                        <StackPanel Orientation="Horizontal" Spacing="12">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                      <StackPanel Spacing="2">
+                        <Grid ColumnDefinitions="24,*" ColumnSpacing="12">
                             <icons:FluentIcon Width="24" Height="24" VerticalAlignment="Center"
                                               Foreground="{DynamicResource TextPrimaryBrush}"
                                               Symbol="Lightbulb" />
-                            <TextBlock Text="{Binding Name}"
+                            <TextBlock Grid.Column="1" Text="{Binding Name}" TextWrapping="Wrap"
                                        FontWeight="SemiBold" FontSize="15"
                                        VerticalAlignment="Center"
                                        Foreground="{DynamicResource TextPrimaryBrush}" />
-                        </StackPanel>
+                        </Grid>
                         <TextBlock Text="{Binding Subtitle}"
-                                   FontSize="12"
+                                   FontSize="12" TextWrapping="Wrap"
                                    Foreground="{DynamicResource TextTertiaryBrush}" />
+                      </StackPanel>
+                      <Button Grid.Column="1" Command="{Binding ToggleSettingsCommand}"
+                              AutomationProperties.Name="{Binding SettingsLabel}" ToolTip.Tip="Device settings"
+                              VerticalAlignment="Top" Padding="6">
+                          <icons:FluentIcon Symbol="Settings" Width="20" Height="20" />
+                      </Button>
+                    </Grid>
+
+                    <StackPanel IsVisible="{Binding SettingsOpen}" Spacing="8" IsEnabled="{Binding CanEdit}">
+                        <TextBlock Text="Device settings" FontWeight="SemiBold" />
+                        <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding HasSaveSetting}">
+                            <ToggleSwitch IsChecked="{Binding SaveToDevice}" AutomationProperties.Name="Save to device"
+                                          OnContent="{x:Null}" OffContent="{x:Null}" Margin="0,-4" />
+                            <TextBlock Text="Save to device" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding PersistenceDescription}" TextWrapping="Wrap" Classes="detail-line" />
+                        <TextBlock Text="{Binding DeviceLocation}" TextWrapping="Wrap" Classes="detail-line"
+                                   IsVisible="{Binding DeviceLocation, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                        <TextBlock Text="{Binding DeviceVersion}" TextWrapping="Wrap" Classes="detail-line"
+                                   IsVisible="{Binding DeviceVersion, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                     </StackPanel>
+
+                    <StackPanel Spacing="12" IsEnabled="{Binding CanEdit}">
 
                     <Grid ColumnDefinitions="128,*" MinHeight="32">
                         <TextBlock Classes="row-label" Text="Mode" />
@@ -158,9 +181,13 @@
                         </ItemsControl.ItemsPanel>
                     </ItemsControl>
 
-                    <StackPanel Orientation="Horizontal" Spacing="12" IsVisible="{Binding CanSave}">
-                        <Button Content="Save to device" Command="{Binding SaveCommand}" Padding="12,5"
-                                ToolTip.Tip="Keeps the current mode across power cycles on devices that support it." />
+                    </StackPanel>
+
+                    <StackPanel Spacing="8">
+                        <Button Content="Apply" Command="{Binding ApplyCommand}" Padding="12,5" />
+                        <TextBlock Text="{Binding ApplyStatus}" FontSize="12" TextWrapping="Wrap"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   IsVisible="{Binding ApplyStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                     </StackPanel>
 
                     <TextBlock Text="{Binding LastError}" Classes="status-error"

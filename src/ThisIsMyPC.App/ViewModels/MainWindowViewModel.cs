@@ -715,6 +715,7 @@ public partial class MainWindowViewModel : ViewModelBase
                             installAvailable: LookupModuleAvailability(Modules.Software.SoftwareModule.ModuleName)?.IsAvailable ?? false,
                             refreshOnOpen: hardwareData.RefreshInBackground,
                             lightingBackend: _lightingBackend,
+                            settings: _settingsService,
                             cooling: hardwareModule is Modules.Hardware.CoolingModule coolingModule
                                 ? new CoolingProfilesViewModel(coolingModule.Profiles, _pendingChangesService) : null);
                     }

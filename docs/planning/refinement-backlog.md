@@ -37,6 +37,13 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 - Pending hardware coverage: physical laptops, other motherboard families, module SDK/device ownership probes, and sensor backend readiness.
 - Integration contract and evidence limits: [shared hardware detection](../hardware-detection.md). Claude's separate worktree owns Hardware module implementation.
 
+## Lighting device settings (2026-09-10)
+
+- DONE: per-device settings gear, Save to device enabled by default for supported manual-save modes, and persistent per-device opt-out. Automatic-save-only devices have no toggle.
+- DONE: controls hold a draft until Apply. Apply writes final mode and colors, then saves once if supported and enabled. No writes during editing or loading. Permission changes and disposal block later apply steps; save failures remain visible.
+- Verified: Release build, 2,592 CI-safe tests, fresh review, dark/light screenshots, and all Hardware page content edges at 25/23/17 pixels.
+- Physical evidence: Sam confirmed the RTX 4080 retained Off through shutdown using the original explicit save. The new Apply flow still needs physical verification.
+
 ## Built-in lighting controllers (2026-09-10)
 
 Replaces the bundled OpenRGB of the same day (Sam: "native is the better choice, as long as we can continue to pull in support for new devices"). No third-party binary ships or runs; the device protocols are ports of OpenRGB's controllers under GPLv3.

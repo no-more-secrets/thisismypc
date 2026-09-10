@@ -6,6 +6,8 @@ using ThisIsMyPC.App.Views;
 using ThisIsMyPC.Core.Hardware;
 using ThisIsMyPC.Core.Hardware.Lighting;
 using ThisIsMyPC.Core.Results;
+using ThisIsMyPC.Core.Settings;
+using Avalonia.Automation;
 using ThisIsMyPC.Modules.Hardware.Models;
 
 namespace ThisIsMyPC.App.UiTests;
@@ -22,6 +24,10 @@ public class LightingControlsShotTests
         public List<string> Writes { get; } = [];
         public List<LightingDevice> Devices { get; } = [];
         public bool IsConnected { get; set; } = true;
+        public bool FailSave { get; set; }
+        public bool FailMode { get; set; }
+        public Func<Task>? ModeBarrier { get; set; }
+        public IReadOnlyList<RgbColor>? LastColors { get; private set; }
         public event EventHandler? DeviceListChanged;
 
         public void RaiseDeviceListChanged() => DeviceListChanged?.Invoke(this, EventArgs.Empty);
@@ -32,16 +38,21 @@ public class LightingControlsShotTests
         public Task<OperationResult<LightingDevice>> GetDeviceAsync(int deviceIndex, CancellationToken cancellationToken = default) =>
             Task.FromResult(OperationResult<LightingDevice>.Success(Devices[deviceIndex]));
 
-        public Task<OperationResult<bool>> SetModeAsync(int deviceIndex, LightingMode mode, CancellationToken cancellationToken = default)
+        public async Task<OperationResult<bool>> SetModeAsync(int deviceIndex, LightingMode mode, CancellationToken cancellationToken = default)
         {
             Writes.Add($"mode:{deviceIndex}:{mode.Index}:{mode.Name}:speed={mode.Speed}:brightness={mode.Brightness}:colorMode={mode.ColorMode}:colors={string.Join(",", mode.Colors.Select(c => c.ToHex()))}");
+            if (ModeBarrier is not null)
+                await ModeBarrier();
+            if (FailMode)
+                return OperationResult<bool>.Failure("Mode rejected", ErrorCategory.ServiceUnavailable);
             Devices[deviceIndex] = Devices[deviceIndex] with { ActiveModeIndex = mode.Index, Modes = Devices[deviceIndex].Modes.Select(m => m.Index == mode.Index ? mode : m).ToList() };
-            return Task.FromResult(OperationResult<bool>.Success(true));
+            return OperationResult<bool>.Success(true);
         }
 
         public Task<OperationResult<bool>> SetLedsAsync(int deviceIndex, IReadOnlyList<RgbColor> colors, CancellationToken cancellationToken = default)
         {
             Writes.Add($"leds:{deviceIndex}:{colors.Count}x{colors[0].ToHex()}");
+            LastColors = colors.ToArray();
             return Task.FromResult(OperationResult<bool>.Success(true));
         }
 
@@ -54,7 +65,9 @@ public class LightingControlsShotTests
         public Task<OperationResult<bool>> SaveModeAsync(int deviceIndex, LightingMode mode, CancellationToken cancellationToken = default)
         {
             Writes.Add($"save:{deviceIndex}:{mode.Index}");
-            return Task.FromResult(OperationResult<bool>.Success(true));
+            return Task.FromResult(FailSave
+                ? OperationResult<bool>.Failure("Save rejected", ErrorCategory.ServiceUnavailable)
+                : OperationResult<bool>.Success(true));
         }
 
         public void Dispose() => Writes.Add("disposed");
@@ -180,41 +193,190 @@ public class LightingControlsShotTests
         Assert.True(s.IsTextVisible("Chipset"));
         Assert.Empty(session.Writes);
 
-        // Brightness slider: one coalesced mode write with the new value.
+        // Editing is a draft, including devices which persist every hardware write.
         var board = vm.Lighting!.Devices[0];
         board.Brightness = 40;
-        await s.WaitForAsync(() => session.Writes.Count > 0, what: "brightness write");
-        Assert.Contains("mode:0:0:Direct:speed=0:brightness=40:colorMode=PerLed:colors=", session.Writes);
-
-        // A zone color writes that zone only; the All LEDs color writes every LED.
-        session.Writes.Clear();
         board.Colors.Single(c => c.Label == "Chipset").Hex = "#00FF00";
-        await s.WaitForAsync(() => session.Writes.Count > 0, what: "zone write");
-        Assert.Equal(["zone:0:1:6x#00FF00"], session.Writes);
-        session.Writes.Clear();
-        board.Colors.Single(c => c.Label == "All LEDs").Red = 0;
-        board.Colors.Single(c => c.Label == "All LEDs").Blue = 255;
-        await s.WaitForAsync(() => session.Writes.Count > 0 && session.Writes[^1].EndsWith("#0000FF", StringComparison.Ordinal), what: "all-LEDs write");
-        Assert.Equal("#0000FF", board.Colors.Single(c => c.Label == "Chipset").Hex);
+        s.Pump();
+        Assert.Empty(session.Writes);
+        s.Click(s.Find<Button>(button => button.Content is "Apply" && ReferenceEquals(button.DataContext, board)));
+        await s.WaitForAsync(() => board.ApplyStatus == "Applied", what: "apply");
+        Assert.Equal(2, session.Writes.Count);
+        Assert.Equal(Enumerable.Repeat(new RgbColor(255, 0, 0), 4)
+            .Concat(Enumerable.Repeat(new RgbColor(0, 255, 0), 6)), session.LastColors);
+        Assert.Contains("mode:0:0:Direct:speed=0:brightness=40:colorMode=PerLed:colors=", session.Writes);
+        Assert.DoesNotContain(session.Writes, w => w.StartsWith("save:", StringComparison.Ordinal));
 
-        // Switching to Breathing writes the mode and swaps the rows to speed, random and one mode color.
         session.Writes.Clear();
         board.SelectedMode = board.Modes[1];
-        await s.WaitForAsync(() => session.Writes.Count > 0, what: "mode write");
-        Assert.StartsWith("mode:0:1:Breathing:speed=3:brightness=0:colorMode=ModeSpecific:colors=#FF4000", session.Writes[0], StringComparison.Ordinal);
+        board.Speed = 4;
+        board.Colors[0].Hex = "#123456";
         s.Pump();
-        s.Screenshot("breathing-dark");
-        Assert.True(s.IsTextVisible("Speed"));
-        Assert.True(s.IsTextVisible("Use random colors"));
+        Assert.Empty(session.Writes);
+        Assert.True(board.SaveToDevice);
+        Assert.True(board.HasSaveSetting);
+        s.Click(s.Find<Button>(button => AutomationProperties.GetName(button) == board.SettingsLabel));
+        Assert.True(board.SettingsOpen);
         Assert.True(s.IsTextVisible("Save to device"));
-        Assert.DoesNotContain(board.Colors, c => c.Label == "All LEDs");
-        Assert.Equal(["Color"], board.Colors.Select(c => c.Label));
-        Assert.Equal(3, board.Speed);
+        Assert.True(s.IsTextVisible("Apply also saves the lighting to the device."));
+        s.Screenshot("settings-dark");
+        s.SetTheme(ThemeVariant.Light);
+        s.Screenshot("settings-light");
+        s.SetTheme(ThemeVariant.Dark);
+        s.Click(s.Find<Button>(button => button.Content is "Apply" && ReferenceEquals(button.DataContext, board)));
+        await s.WaitForAsync(() => board.ApplyStatus == "Applied and saved to device", what: "save");
+        Assert.Equal(2, session.Writes.Count);
+        Assert.Contains("speed=4", session.Writes[0], StringComparison.Ordinal);
+        Assert.Contains("colors=#123456", session.Writes[0], StringComparison.Ordinal);
+        Assert.Equal("save:0:1", session.Writes[1]);
+        board.SelectedMode = board.Modes[0];
+        board.SelectedMode = board.Modes[1];
+        Assert.Equal(4, board.Speed);
+        Assert.Equal("#123456", board.Colors[0].Hex);
+    }
 
-        session.Writes.Clear();
-        s.ClickText("Save to device");
-        await s.WaitForAsync(() => session.Writes.Count > 0, what: "save");
-        Assert.Equal(["save:0:1"], session.Writes);
+    [AvaloniaFact]
+    [Trait("Category", "Diagnostic")]
+    public async Task LightingSettings_UsesMainWindowGeometry()
+    {
+        using var s = UiSession.ForMainWindow("lighting-settings-host");
+        var main = (MainWindowViewModel)s.Window.DataContext!;
+        await s.WaitForAsync(() => main.SidebarGroups.Count > 0);
+        var session = new FakeSession();
+        session.Devices.AddRange([Motherboard(1), Gpu]);
+        using var vm = new HardwareTabViewModel(LightingData(), refreshOnOpen: false, lightingBackend: new FakeBackend(session));
+        main.CurrentContent = vm;
+        main.ContentTitle = "Lighting";
+        await s.WaitForAsync(() => vm.Lighting is { HasDevices: true });
+        s.Click(s.Find<Button>(b => AutomationProperties.GetName(b) == vm.Lighting!.Devices[0].SettingsLabel));
+        s.Screenshot("settings-dark");
+        s.SetTheme(ThemeVariant.Light);
+        s.Screenshot("settings-light");
+        Assert.Empty(session.Writes);
+    }
+
+    [AvaloniaFact]
+    public async Task SavePreference_PersistsByIdentity_NotEnumerationIndex()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "tipc-lighting-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var path = Path.Combine(root, "settings.json");
+            var settings = new SettingsService(path);
+            settings.Initialize();
+            var session = new FakeSession();
+            var device = Motherboard(1) with { Serial = "board-one", Location = "bus-0" };
+            session.Devices.Add(device);
+            using (var first = new LightingDeviceViewModel(device, session, () => true, settings))
+            {
+                Assert.True(first.SaveToDevice);
+                first.SaveToDevice = false;
+                Assert.Empty(session.Writes);
+                await first.ApplyCommand.ExecuteAsync(null);
+                Assert.DoesNotContain(session.Writes, w => w.StartsWith("save:", StringComparison.Ordinal));
+            }
+            var reloaded = new SettingsService(path);
+            reloaded.Initialize();
+            using var reordered = new LightingDeviceViewModel(device with { Index = 7, Location = "bus-7" }, session, () => true, reloaded);
+            using var other = new LightingDeviceViewModel(device with { Serial = "board-two" }, session, () => true, reloaded);
+            Assert.False(reordered.SaveToDevice);
+            Assert.True(other.SaveToDevice);
+        }
+        finally
+        {
+            Directory.Delete(root, true);
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task AutomaticSave_DoesNotOfferToggle_OrIssueExtraSave()
+    {
+        var device = Motherboard(1) with
+        {
+            Modes = [Breathing with { Flags = LightingModeFlags.AutomaticSave | LightingModeFlags.HasModeSpecificColor }],
+        };
+        var session = new FakeSession();
+        session.Devices.Add(device);
+        using var vm = new LightingDeviceViewModel(device, session, () => true);
+        Assert.False(vm.HasSaveSetting);
+        Assert.Equal("This mode saves automatically on the device.", vm.PersistenceDescription);
+        vm.Colors[0].Hex = "#112233";
+        Assert.Empty(session.Writes);
+        await vm.ApplyCommand.ExecuteAsync(null);
+        Assert.Single(session.Writes);
+        Assert.StartsWith("mode:", session.Writes[0], StringComparison.Ordinal);
+    }
+
+    [AvaloniaFact]
+    public async Task SaveFailure_ReportsAppliedButUnsaved_AndAllowsRetry()
+    {
+        var session = new FakeSession { FailSave = true };
+        session.Devices.Add(Motherboard(1));
+        using var vm = new LightingDeviceViewModel(session.Devices[0], session, () => true);
+        await vm.ApplyCommand.ExecuteAsync(null);
+        Assert.StartsWith("Lighting applied, but saving to the device failed:", vm.LastError, StringComparison.Ordinal);
+        Assert.Null(vm.ApplyStatus);
+        Assert.True(vm.CanApply);
+        session.FailSave = false;
+        await vm.ApplyCommand.ExecuteAsync(null);
+        Assert.Null(vm.LastError);
+        Assert.Equal("Applied and saved to device", vm.ApplyStatus);
+    }
+
+    [AvaloniaFact]
+    public async Task PolicyChange_RefreshesExistingApplyButton()
+    {
+        var session = new FakeSession();
+        session.Devices.Add(Motherboard(1));
+        var allowed = false;
+        using var controls = new LightingControlsViewModel(new FakeBackend(session), () => allowed);
+        await controls.LoadAsync();
+        var device = controls.Devices[0];
+        var changes = 0;
+        device.ApplyCommand.CanExecuteChanged += (_, _) => changes++;
+        Assert.False(device.ApplyCommand.CanExecute(null));
+        allowed = true;
+        controls.WritesAllowed = true;
+        Assert.True(changes > 0);
+        Assert.True(device.ApplyCommand.CanExecute(null));
+        await device.ApplyCommand.ExecuteAsync(null);
+        Assert.Equal("Applied and saved to device", device.ApplyStatus);
+    }
+
+    [AvaloniaFact]
+    public async Task FailedMode_NeverSaves()
+    {
+        var session = new FakeSession { FailMode = true };
+        session.Devices.Add(Motherboard(1));
+        using var vm = new LightingDeviceViewModel(session.Devices[0], session, () => true);
+        await vm.ApplyCommand.ExecuteAsync(null);
+        Assert.Single(session.Writes);
+        Assert.Equal("Mode rejected", vm.LastError);
+    }
+
+    [AvaloniaTheory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task InFlightApply_RechecksGateAndDisposal_BeforeSaving(bool dispose)
+    {
+        var barrier = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var session = new FakeSession { ModeBarrier = () => barrier.Task };
+        session.Devices.Add(Motherboard(1));
+        var allowed = true;
+        using var vm = new LightingDeviceViewModel(session.Devices[0], session, () => allowed);
+        var pending = vm.ApplyCommand.ExecuteAsync(null);
+        Assert.True(vm.IsApplying);
+        Assert.False(vm.CanEdit);
+        if (dispose)
+            vm.Dispose();
+        else
+            allowed = false;
+        barrier.SetResult();
+        await pending;
+        Assert.Single(session.Writes);
+        Assert.Null(vm.ApplyStatus);
+        Assert.NotNull(vm.LastError);
     }
 
     [AvaloniaFact]
@@ -237,7 +399,9 @@ public class LightingControlsShotTests
         gpu.Colors[0].Hex = "#123456";
         s.Pump();
         Assert.Empty(session.Writes);
-        Assert.Equal("Lighting writes are not permitted on this PC.", gpu.LastError);
+        await gpu.ApplyCommand.ExecuteAsync(null);
+        Assert.Empty(session.Writes);
+        Assert.False(gpu.CanApply);
     }
 
     [AvaloniaFact]

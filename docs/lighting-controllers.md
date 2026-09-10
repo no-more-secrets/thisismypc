@@ -44,5 +44,8 @@ Reading OpenRGB's `RGBController.cpp` is the fastest way to learn the model: `Se
 
 - Controllers write nothing the person did not ask for. Detection is reads only (the ENE probe reads registers; the Sinowealth probe sends the configuration-read command).
 - Every write goes through the tab's live decision (`WriteDevices`); the controllers never see the override.
-- Saving to a device's flash is a manual Save, never automatic, except on devices whose firmware stores every write itself (Sinowealth).
+- Each device has a settings gear. Save to device defaults on when a separate save command is supported. The preference uses the device identity, not its enumeration index, and persists in user settings. Serial identifies a device when present; otherwise its connection location does. Moving a device without a serial may reset its preference.
+- Controls edit a draft. Apply writes the mode and LED colors, then saves once when enabled and supported. Slider movements, loading, and opening settings write nothing. Automatic-save modes receive no extra save command and devices with only those modes have no save toggle. Unsupported modes never receive a save command.
+- Apply reports a failed save separately from an applied change. Every device operation checks the live permission gate; closing the card prevents later operations in an unfinished apply.
+- Sam verified the existing ENE save command on his ASUS ROG STRIX RTX 4080: lighting stayed Off through shutdown and startup. This is evidence for that card, not every ENE device.
 - A misbehaving device fails its own detection with a note; it never hides the others.

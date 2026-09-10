@@ -6,6 +6,7 @@ using ThisIsMyPC.App.Services;
 using ThisIsMyPC.Core.Hardware;
 using ThisIsMyPC.Core.Hardware.Lighting;
 using ThisIsMyPC.Core.Results;
+using ThisIsMyPC.Core.Settings;
 using ThisIsMyPC.Modules.Hardware.Models;
 
 namespace ThisIsMyPC.App.ViewModels;
@@ -25,6 +26,7 @@ public sealed partial class HardwareTabViewModel : ViewModelBase, IDisposable
     private readonly bool _installAvailable;
     private readonly Func<Task<OperationResult<HardwareTabScanData>>>? _refresh;
     private readonly ILightingBackend? _lightingBackend;
+    private readonly ISettingsService? _settings;
 
     [ObservableProperty]
     private HardwareTabScanData _data;
@@ -53,7 +55,8 @@ public sealed partial class HardwareTabViewModel : ViewModelBase, IDisposable
         bool installAvailable = true,
         bool refreshOnOpen = true,
         ILightingBackend? lightingBackend = null,
-        CoolingProfilesViewModel? cooling = null)
+        CoolingProfilesViewModel? cooling = null,
+        ISettingsService? settings = null)
     {
         ArgumentNullException.ThrowIfNull(data);
         _data = data;
@@ -61,6 +64,7 @@ public sealed partial class HardwareTabViewModel : ViewModelBase, IDisposable
         _installAvailable = installAvailable;
         _refresh = refresh;
         _lightingBackend = lightingBackend;
+        _settings = settings;
         Cooling = cooling;
         if (_actions is not null)
             _actions.QueueChanged += OnQueueChanged;
@@ -230,7 +234,7 @@ public sealed partial class HardwareTabViewModel : ViewModelBase, IDisposable
         }
         if (Lighting is null)
         {
-            Lighting = new LightingControlsViewModel(_lightingBackend, () => Decision.LiveWritesAllowed);
+            Lighting = new LightingControlsViewModel(_lightingBackend, () => Decision.LiveWritesAllowed, _settings);
             _ = Lighting.LoadAsync();
         }
         else

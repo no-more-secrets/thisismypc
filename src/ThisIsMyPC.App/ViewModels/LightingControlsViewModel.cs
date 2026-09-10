@@ -1,18 +1,21 @@
 using System.Collections.ObjectModel;
+using System.Security.Cryptography;
+using System.Text;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ThisIsMyPC.Core.Hardware.Lighting;
 using ThisIsMyPC.Core.Results;
+using ThisIsMyPC.Core.Settings;
 
 namespace ThisIsMyPC.App.ViewModels;
 
 /// <summary>
 /// The Lighting tab's controls: every device the lighting backend exposes
 /// (the built-in controllers), with its mode, brightness, speed, direction
-/// and colors. Controls apply
-/// live, the Display module's carve-out: a color is its own undo and Windows
-/// persists nothing. Every write first asks <c>writesAllowed</c>, which reads
+/// and colors. Apply writes the draft once, with optional device persistence.
+/// These hardware controls use the Display module's direct-write path.
+/// Every write first asks <c>writesAllowed</c>, which reads
 /// the tab's current decision, so the Settings override that shows these
 /// controls can never make them write; <see cref="WritesAllowed"/> mirrors
 /// that answer for the view, which greys the cards out.
@@ -21,6 +24,7 @@ public sealed partial class LightingControlsViewModel : ViewModelBase, IDisposab
 {
     private readonly ILightingBackend _backend;
     private readonly Func<bool> _writeGate;
+    private readonly ISettingsService? _settings;
     private ILightingSession? _session;
     private bool _disposed;
     private bool _reloadRequested;
@@ -39,12 +43,19 @@ public sealed partial class LightingControlsViewModel : ViewModelBase, IDisposab
 
     public bool HasDevices => Devices.Count > 0;
 
-    public LightingControlsViewModel(ILightingBackend backend, Func<bool> writesAllowed)
+    partial void OnWritesAllowedChanged(bool value)
+    {
+        foreach (var device in Devices)
+            device.NotifyPermissionsChanged();
+    }
+
+    public LightingControlsViewModel(ILightingBackend backend, Func<bool> writesAllowed, ISettingsService? settings = null)
     {
         ArgumentNullException.ThrowIfNull(backend);
         ArgumentNullException.ThrowIfNull(writesAllowed);
         _backend = backend;
         _writeGate = writesAllowed;
+        _settings = settings;
         // The observable copy starts from the gate so the first render is right.
         _writesAllowed = writesAllowed();
     }
@@ -115,7 +126,7 @@ public sealed partial class LightingControlsViewModel : ViewModelBase, IDisposab
             old.Dispose();
         Devices.Clear();
         foreach (var device in devices.Value)
-            Devices.Add(new LightingDeviceViewModel(device, _session, _writeGate));
+            Devices.Add(new LightingDeviceViewModel(device, _session, _writeGate, _settings));
         OnPropertyChanged(nameof(HasDevices));
         Status = Devices.Count == 0 ? "No supported lighting device answered on this PC." : null;
     }
@@ -146,23 +157,33 @@ public sealed partial class LightingControlsViewModel : ViewModelBase, IDisposab
     }
 }
 
-/// <summary>One device card. Mode changes and slider moves write through the session, latest wins.</summary>
+/// <summary>One device draft. Apply writes the final values and optionally saves them to the device.</summary>
 public sealed partial class LightingDeviceViewModel : ViewModelBase, IDisposable
 {
     private readonly ILightingSession _session;
     private readonly Func<bool> _writesAllowed;
-    private readonly LatestWriteQueue _writes;
+    private readonly ISettingsService? _settings;
+    private readonly string _preferenceKey;
+    private RgbColor[] _ledColors;
+    private bool _disposed;
     private LightingDevice _device;
     private LightingMode _mode;
     private bool _syncing;
 
-    public LightingDeviceViewModel(LightingDevice device, ILightingSession session, Func<bool> writesAllowed)
+    public LightingDeviceViewModel(LightingDevice device, ILightingSession session, Func<bool> writesAllowed, ISettingsService? settings = null)
     {
         ArgumentNullException.ThrowIfNull(device);
         _device = device;
         _session = session;
         _writesAllowed = writesAllowed;
-        _writes = new LatestWriteQueue(error => LastError = error);
+        _settings = settings;
+        // Never use the enumeration index: it can change on the next scan.
+        var identity = string.Join("\n", device.Type, device.Vendor, device.Name,
+            string.IsNullOrWhiteSpace(device.Serial) ? device.Location : device.Serial);
+        _preferenceKey = "save-to-device." + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(identity)));
+        _saveToDevice = !bool.TryParse(settings?.GetModule("lighting", _preferenceKey), out var enabled) || enabled;
+        _ledColors = Enumerable.Range(0, device.Leds.Count)
+            .Select(i => i < device.Colors.Count ? device.Colors[i] : RgbColor.Black).ToArray();
         _mode = device.ActiveMode ?? device.Modes.FirstOrDefault() ?? new LightingMode { Index = 0, Name = "Default" };
         _selectedMode = _mode;
         Colors = [];
@@ -172,6 +193,50 @@ public sealed partial class LightingDeviceViewModel : ViewModelBase, IDisposable
     public int Index => _device.Index;
     public string Name => _device.Name;
     public string TypeName => LightingDevice.DescribeType(_device.Type);
+    public string SettingsLabel => $"Settings for {Name}";
+    public string DeviceLocation => _device.Location;
+    public string DeviceVersion => _device.Version;
+
+    [ObservableProperty]
+    private bool _settingsOpen;
+
+    [ObservableProperty]
+    private bool _saveToDevice;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanApply))]
+    [NotifyPropertyChangedFor(nameof(CanEdit))]
+    [NotifyCanExecuteChangedFor(nameof(ApplyCommand))]
+    private bool _isApplying;
+
+    [ObservableProperty]
+    private string? _applyStatus;
+
+    public bool CanEdit => !IsApplying && !_disposed;
+    public bool CanApply => CanEdit && WritesAllowed;
+    public bool HasSaveSetting => Modes.Any(m => m.CanSave && !m.Flags.HasFlag(LightingModeFlags.AutomaticSave));
+    public string PersistenceDescription => _mode.Flags.HasFlag(LightingModeFlags.AutomaticSave)
+        ? "This mode saves automatically on the device."
+        : !_mode.CanSave ? "This mode does not support saving to the device."
+        : SaveToDevice ? "Apply also saves the lighting to the device."
+        : "Apply changes the lighting without saving it to the device.";
+
+    [RelayCommand]
+    private void ToggleSettings() => SettingsOpen = !SettingsOpen;
+
+    partial void OnSaveToDeviceChanged(bool value)
+    {
+        OnPropertyChanged(nameof(PersistenceDescription));
+        ApplyStatus = null;
+        try
+        {
+            _settings?.SetModule("lighting", _preferenceKey, value.ToString());
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            LastError = $"Could not store this device preference: {ex.Message}";
+        }
+    }
 
     /// <summary>Vendor, type, and the LED count on one line.</summary>
     public string Subtitle
@@ -226,48 +291,46 @@ public sealed partial class LightingDeviceViewModel : ViewModelBase, IDisposable
     /// <summary>Whether the tab lets this card write right now (the policy's decision, not the override).</summary>
     public bool WritesAllowed => _writesAllowed();
 
+    /// <summary>Refreshes commands when the owning tab receives a new policy decision.</summary>
+    public void NotifyPermissionsChanged()
+    {
+        OnPropertyChanged(nameof(WritesAllowed));
+        OnPropertyChanged(nameof(CanApply));
+        ApplyCommand.NotifyCanExecuteChanged();
+    }
+
     partial void OnSelectedModeChanged(LightingMode value)
     {
         if (_syncing || value is null)
             return;
         _mode = value;
         SyncFromMode(readColorsFromDevice: false);
-        Write(async () =>
-        {
-            var result = await _session.SetModeAsync(Index, CurrentMode()).ConfigureAwait(false);
-            if (!result.IsSuccess)
-                return result;
-            // The server may reshape colors on a mode change; read it back.
-            var fresh = await _session.GetDeviceAsync(Index).ConfigureAwait(false);
-            if (fresh.IsSuccess && fresh.Value is { } device)
-                Dispatcher.UIThread.Post(() => ApplyDevice(device));
-            return result;
-        });
+        MarkDraft();
     }
 
     partial void OnBrightnessChanged(double value)
     {
         if (!_syncing)
-            WriteMode();
+            MarkDraft();
     }
 
     partial void OnSpeedChanged(double value)
     {
         if (!_syncing)
-            WriteMode();
+            MarkDraft();
     }
 
     partial void OnSelectedDirectionChanged(LightingDirectionOption? value)
     {
         if (!_syncing && value is not null)
-            WriteMode();
+            MarkDraft();
     }
 
     partial void OnRandomColorsChanged(bool value)
     {
         OnPropertyChanged(nameof(HasColors));
         if (!_syncing)
-            WriteMode();
+            MarkDraft();
     }
 
     /// <summary>The mode with this card's current settings folded in.</summary>
@@ -293,9 +356,13 @@ public sealed partial class LightingDeviceViewModel : ViewModelBase, IDisposable
         };
     }
 
-    private void WriteMode() => Write(() => _session.SetModeAsync(Index, CurrentMode()));
+    private void MarkDraft()
+    {
+        LastError = null;
+        ApplyStatus = "Not applied";
+    }
 
-    /// <summary>A color slot changed: mode colors go through the mode; LED colors go straight to the LEDs.</summary>
+    /// <summary>Updates the draft LED table while preserving untouched LEDs and zones.</summary>
     private void OnColorChanged(ColorSlotViewModel slot)
     {
         if (_syncing)
@@ -303,42 +370,101 @@ public sealed partial class LightingDeviceViewModel : ViewModelBase, IDisposable
         switch (slot.Kind)
         {
             case ColorSlotKind.ModeColor:
-                WriteMode();
                 break;
             case ColorSlotKind.AllLeds:
                 foreach (var zone in Colors.Where(c => c.Kind == ColorSlotKind.Zone))
                     zone.SetSilently(slot.Color);
-                var all = Enumerable.Repeat(slot.Color, _device.Leds.Count).ToList();
-                Write(() => _session.SetLedsAsync(Index, all));
+                Array.Fill(_ledColors, slot.Color);
                 break;
             case ColorSlotKind.Zone:
-                var zone1 = _device.Zones[slot.ZoneIndex];
-                var zoneColors = Enumerable.Repeat(slot.Color, (int)zone1.LedCount).ToList();
-                Write(() => _session.SetZoneLedsAsync(Index, slot.ZoneIndex, zoneColors));
+                var start = (int)_device.Zones.Take(slot.ZoneIndex).Sum(z => (long)z.LedCount);
+                var count = (int)_device.Zones[slot.ZoneIndex].LedCount;
+                for (var i = start; i < Math.Min(start + count, _ledColors.Length); i++)
+                    _ledColors[i] = slot.Color;
                 break;
         }
+        MarkDraft();
     }
 
-    [RelayCommand]
-    private Task SaveAsync()
+    [RelayCommand(CanExecute = nameof(CanApply))]
+    private async Task ApplyAsync()
     {
-        if (!WritesAllowed)
-        {
-            LastError = "Lighting writes are not permitted on this PC.";
-            return Task.CompletedTask;
-        }
-        return _writes.RunAsync(() => _session.SaveModeAsync(Index, CurrentMode()));
-    }
-
-    private void Write(Func<Task<OperationResult<bool>>> write)
-    {
-        if (!WritesAllowed)
-        {
-            LastError = "Lighting writes are not permitted on this PC.";
+        if (IsApplying || !CheckWriteAllowed())
             return;
-        }
+        var mode = CurrentMode();
+        var colors = _ledColors.ToArray();
+        var save = SaveToDevice && mode.CanSave && !mode.Flags.HasFlag(LightingModeFlags.AutomaticSave);
+        IsApplying = true;
         LastError = null;
-        _writes.Post(write);
+        ApplyStatus = null;
+        try
+        {
+            var result = await _session.SetModeAsync(Index, mode).ConfigureAwait(true);
+            if (!Accept(result) || !CheckWriteAllowed())
+                return;
+            if (mode.ColorMode == LightingColorMode.PerLed && colors.Length > 0)
+            {
+                result = await _session.SetLedsAsync(Index, colors).ConfigureAwait(true);
+                if (!Accept(result) || !CheckWriteAllowed())
+                    return;
+            }
+            RememberApplied(mode, colors);
+            if (save)
+            {
+                result = await _session.SaveModeAsync(Index, mode).ConfigureAwait(true);
+                if (!result.IsSuccess)
+                {
+                    LastError = $"Lighting applied, but saving to the device failed: {result.ErrorMessage}";
+                    return;
+                }
+            }
+            ApplyStatus = save ? "Applied and saved to device" : "Applied";
+        }
+        catch (Exception ex) when (ex is IOException or InvalidOperationException or OperationCanceledException)
+        {
+            LastError = $"Could not apply lighting: {ex.Message}";
+        }
+        finally
+        {
+            IsApplying = false;
+        }
+    }
+
+    private void RememberApplied(LightingMode mode, RgbColor[] colors)
+    {
+        // Mode selectors must retain applied values, including after a failed flash save.
+        _device = _device with
+        {
+            ActiveModeIndex = mode.Index,
+            Modes = Modes.Select(m => m.Index == mode.Index ? mode : m).ToArray(),
+            Colors = colors,
+        };
+        _mode = mode;
+        _syncing = true;
+        try
+        {
+            OnPropertyChanged(nameof(Modes));
+            SelectedMode = mode;
+        }
+        finally
+        {
+            _syncing = false;
+        }
+    }
+
+    private bool Accept(OperationResult<bool> result)
+    {
+        if (!result.IsSuccess)
+            LastError = result.ErrorMessage ?? "The device rejected the lighting change.";
+        return result.IsSuccess;
+    }
+
+    private bool CheckWriteAllowed()
+    {
+        if (!_disposed && WritesAllowed && _session.IsConnected)
+            return true;
+        LastError = "Lighting writes are not permitted or the device is disconnected.";
+        return false;
     }
 
     /// <summary>Folds a fresh read of the device into the card without writing anything back.</summary>
@@ -347,6 +473,8 @@ public sealed partial class LightingDeviceViewModel : ViewModelBase, IDisposable
         ArgumentNullException.ThrowIfNull(device);
         var modeListChanged = !device.Modes.Select(m => m.Name).SequenceEqual(_device.Modes.Select(m => m.Name));
         _device = device;
+        _ledColors = Enumerable.Range(0, device.Leds.Count)
+            .Select(i => i < device.Colors.Count ? device.Colors[i] : RgbColor.Black).ToArray();
         _mode = device.ActiveMode ?? _mode;
         _syncing = true;
         try
@@ -381,6 +509,7 @@ public sealed partial class LightingDeviceViewModel : ViewModelBase, IDisposable
                 nameof(HasBrightness), nameof(BrightnessMin), nameof(BrightnessMax),
                 nameof(HasSpeed), nameof(SpeedMin), nameof(SpeedMax),
                 nameof(HasDirection), nameof(Directions), nameof(HasRandomColor), nameof(CanSave),
+                nameof(HasSaveSetting), nameof(PersistenceDescription),
             })
             {
                 OnPropertyChanged(name);
@@ -402,7 +531,7 @@ public sealed partial class LightingDeviceViewModel : ViewModelBase, IDisposable
             }
             else if (_mode.HasPerLedColor)
             {
-                var first = _device.Colors.Count > 0 ? _device.Colors[0] : RgbColor.Black;
+                var first = _ledColors.Length > 0 ? _ledColors[0] : RgbColor.Black;
                 Colors.Add(new ColorSlotViewModel("All LEDs", ColorSlotKind.AllLeds, first));
                 if (_device.Zones.Count > 1)
                 {
@@ -410,7 +539,7 @@ public sealed partial class LightingDeviceViewModel : ViewModelBase, IDisposable
                     for (var z = 0; z < _device.Zones.Count; z++)
                     {
                         var zone = _device.Zones[z];
-                        var color = readColorsFromDevice && start < _device.Colors.Count ? _device.Colors[start] : first;
+                        var color = start < _ledColors.Length ? _ledColors[start] : first;
                         Colors.Add(new ColorSlotViewModel(zone.Name, ColorSlotKind.Zone, color) { ZoneIndex = z });
                         start += (int)zone.LedCount;
                     }
@@ -430,6 +559,8 @@ public sealed partial class LightingDeviceViewModel : ViewModelBase, IDisposable
 
     public void Dispose()
     {
+        _disposed = true;
+        ApplyCommand.NotifyCanExecuteChanged();
         foreach (var slot in Colors)
             slot.Changed -= OnColorChanged;
     }
