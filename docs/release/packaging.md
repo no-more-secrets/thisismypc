@@ -116,6 +116,11 @@ creates the window under strict ACG but presents black frames on the tested host
 `AotPublish=true` alone creates an unsigned NativeAOT diagnostic build without
 ACG or CIG. Add `DynamicCodeGuard=true` to test ACG without signing.
 Non-ACG development builds retain Avalonia's normal platform detection.
+Release builds validate the four native DLLs against pinned SHA-256 values.
+The App bakes their canonical hashes into its NativeAOT image. Signing changes
+only the terminal Authenticode certificate table, so the same values remain valid.
+The release build also rejects App, Broker, or Service PE identity fields that
+still name a managed `.dll` module.
 
 ### Signing with SSL.com eSigner
 

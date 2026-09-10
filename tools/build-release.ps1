@@ -164,6 +164,15 @@ foreach ($exe in 'ThisIsMyPC.App.exe', 'ThisIsMyPC.Service.exe', 'ThisIsMyPC.Bro
     & (Join-Path $PSScriptRoot 'set-version-language.ps1') -Path (Join-Path $staging $exe)
 }
 
+# NativeAOT uses the IL module name for both fields unless the project publishes
+# directly to an exe target. Reject .dll metadata before it reaches a launcher.
+foreach ($exe in 'ThisIsMyPC.App.exe', 'ThisIsMyPC.Service.exe', 'ThisIsMyPC.Broker.exe') {
+    $versionInfo = (Get-Item -LiteralPath (Join-Path $staging $exe)).VersionInfo
+    if ($versionInfo.OriginalFilename -ne $exe -or $versionInfo.InternalName -ne $exe) {
+        throw "$exe has incorrect PE identity metadata. OriginalFilename='$($versionInfo.OriginalFilename)', InternalName='$($versionInfo.InternalName)'."
+    }
+}
+
 # ZIP and cabinet formats copy source timestamps into their entries. Fix every
 # staged timestamp so the same source and version produce the same payload.
 $deterministicTimestamp = [DateTime]::SpecifyKind(

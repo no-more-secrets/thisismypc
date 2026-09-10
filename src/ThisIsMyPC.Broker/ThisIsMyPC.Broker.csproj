@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
+    <UseAppHost Condition="'$(AotPublish)' == 'true'">false</UseAppHost>
+    <TargetExt Condition="'$(AotPublish)' == 'true'">.exe</TargetExt>
     <AssemblyTitle>ThisIsMyPC Privilege Broker</AssemblyTitle>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

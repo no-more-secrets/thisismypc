@@ -11,6 +11,8 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 - Installed runtime testing confirmed active ACG, hardened payloads, valid signatures, protected files, and fake Broker caller rejection.
 - A same-user process still injected an unsigned disk DLL into the unelevated UI. ACG blocked RWX allocation inside that DLL.
 - DONE: NativeAOT App startup verifies and preloads its four signed native DLLs, then enables Microsoft-only CIG before Avalonia starts.
+- DONE: each native DLL must match its baked canonical SHA-256 and exact loaded path. A pre-CIG inventory rejects other non-Windows modules.
+- DONE: NativeAOT App, Broker, and Service PE identity fields now use their `.exe` names. The release build rejects `.dll` identities.
 - The live NativeAOT probe kept ACG and CIG active, scanned a physical display, and rejected unsigned DLL injection.
 - CIG blocks Apple Bonjour's Winsock provider. Critical-error dialog suppression lets Winsock skip it without blocking App startup.
 - Pending: verify the signed installed App across all modules, updates, accessibility, input methods, and overlays.

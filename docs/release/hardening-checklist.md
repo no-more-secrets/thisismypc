@@ -47,15 +47,17 @@ EH Continuation table present.
   `AotPublish=true` alone omits ACG for fast unsigned diagnostics.
   `DynamicCodeGuard=true` enables ACG without requiring code signing.
 - **Code Integrity Guard: DONE.** NativeAOT App startup verifies the complete
-  packaged native dependency set through WinVerifyTrust and the exact No More
-  Secrets, LLC signer name. It maps those four fixed files by absolute path,
-  then enables the Microsoft-only process signature policy before Avalonia,
-  logging, IPC, or user input starts. The process stops if any verification,
-  load, policy application, or policy query fails. A live NativeAOT probe kept
+  packaged native dependency set against baked canonical SHA-256 values. The
+  canonical hash excludes only a valid terminal Authenticode certificate table.
+  Startup then requires WinVerifyTrust and the exact No More Secrets, LLC signer.
+  It maps those four fixed files by absolute path and confirms each loaded path.
+  A pre-CIG inventory permits only the App, those four files, System32, and WinSxS.
+  Startup then enables the Microsoft-only process signature policy before Avalonia,
+  logging, IPC, or user input. The process stops if any check fails. A live probe kept
   ACG and CIG active, scanned a physical display, and rejected an unsigned DLL.
   Process-creation CIG cannot admit our OV-signed native libraries. The current
-  managed-entry policy leaves a small pre-entry injection window. Full signed
-  App compatibility testing remains pending. Ordinary NativeAOT builds omit
+  managed-entry policy leaves a small pre-entry injection window. The module
+  inventory detects a mapped side-loaded image before policy activation. Ordinary NativeAOT builds omit
   ACG and CIG, so unsigned Debug builds can use normal NativeAOT behavior.
   Unsigned ACG diagnostics pass `DynamicCodeGuard=true`. The release script
   enables ACG and CIG explicitly. CIG can reject optional third-party Winsock

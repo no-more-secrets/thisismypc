@@ -1,6 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
+    <!-- NativeAOT copies the IL module name into the native version resource. -->
+    <UseAppHost Condition="'$(AotPublish)' == 'true'">false</UseAppHost>
+    <TargetExt Condition="'$(AotPublish)' == 'true'">.exe</TargetExt>
     <AssemblyTitle>ThisIsMyPC</AssemblyTitle>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\ThisIsMyPC.ico</ApplicationIcon>
@@ -17,7 +20,44 @@
     <ControlFlowGuard Condition="'$(AotPublish)' == 'true'">Guard</ControlFlowGuard>
     <DefineConstants Condition="'$(DynamicCodeGuard)' == 'true'">$(DefineConstants);ACG_ENABLED</DefineConstants>
     <DefineConstants Condition="'$(CodeIntegrityGuard)' == 'true'">$(DefineConstants);CIG_ENABLED</DefineConstants>
+    <AngleNativeSha256>9B203E40323B49DAD29546A52B8B67D200BBA8FF4CAB9709A79CEDE23BA847D4</AngleNativeSha256>
+    <HarfBuzzNativeSha256>874FA400D53CEDAD95390743A02510C1CBED2EC659378805CC5FA4192CD87059</HarfBuzzNativeSha256>
+    <SkiaNativeSha256>38ED0F8307E1CCC84A52FFB2216C59A5660721173C81F524249756CF76DBBF54</SkiaNativeSha256>
+    <SqliteNativeSha256>4B615E0717F7E12EDC1CF9100AF77130562421423C25E34F24E80FD982F3DE72</SqliteNativeSha256>
   </PropertyGroup>
+
+  <ItemGroup>
+    <TrustedNativeDependency Include="av_libglesv2.dll" Sha256="$(AngleNativeSha256)" />
+    <TrustedNativeDependency Include="e_sqlite3.dll" Sha256="$(SqliteNativeSha256)" />
+    <TrustedNativeDependency Include="libHarfBuzzSharp.dll" Sha256="$(HarfBuzzNativeSha256)" />
+    <TrustedNativeDependency Include="libSkiaSharp.dll" Sha256="$(SkiaNativeSha256)" />
+  </ItemGroup>
+
+  <Target Name="ValidateTrustedNativeDependencyHashes"
+          BeforeTargets="CoreCompile"
+          DependsOnTargets="ResolvePackageAssets"
+          Condition="'$(CodeIntegrityGuard)' == 'true'">
+    <ItemGroup>
+      <_ResolvedTrustedNativeDependency Include="@(NativeCopyLocalItems)"
+          Condition="'%(DestinationSubPath)' == 'av_libglesv2.dll' or
+                     '%(DestinationSubPath)' == 'e_sqlite3.dll' or
+                     '%(DestinationSubPath)' == 'libHarfBuzzSharp.dll' or
+                     '%(DestinationSubPath)' == 'libSkiaSharp.dll'" />
+    </ItemGroup>
+    <Error Condition="@(_ResolvedTrustedNativeDependency-&gt;Count()) != 4"
+           Text="Expected four trusted native dependencies, found @(_ResolvedTrustedNativeDependency-&gt;Count())." />
+    <GetFileHash Files="@(_ResolvedTrustedNativeDependency)" Algorithm="SHA256">
+      <Output TaskParameter="Items" ItemName="_HashedTrustedNativeDependency" />
+    </GetFileHash>
+    <Error Condition="'%(_HashedTrustedNativeDependency.DestinationSubPath)' == 'av_libglesv2.dll' and '%(_HashedTrustedNativeDependency.FileHash)' != '$(AngleNativeSha256)'"
+           Text="av_libglesv2.dll does not match its baked SHA-256." />
+    <Error Condition="'%(_HashedTrustedNativeDependency.DestinationSubPath)' == 'e_sqlite3.dll' and '%(_HashedTrustedNativeDependency.FileHash)' != '$(SqliteNativeSha256)'"
+           Text="e_sqlite3.dll does not match its baked SHA-256." />
+    <Error Condition="'%(_HashedTrustedNativeDependency.DestinationSubPath)' == 'libHarfBuzzSharp.dll' and '%(_HashedTrustedNativeDependency.FileHash)' != '$(HarfBuzzNativeSha256)'"
+           Text="libHarfBuzzSharp.dll does not match its baked SHA-256." />
+    <Error Condition="'%(_HashedTrustedNativeDependency.DestinationSubPath)' == 'libSkiaSharp.dll' and '%(_HashedTrustedNativeDependency.FileHash)' != '$(SkiaNativeSha256)'"
+           Text="libSkiaSharp.dll does not match its baked SHA-256." />
+  </Target>
 
   <Target Name="ValidateDynamicCodeGuardBuild" BeforeTargets="PrepareForBuild"
           Condition="'$(DynamicCodeGuard)' == 'true' and '$(AotPublish)' != 'true'">
