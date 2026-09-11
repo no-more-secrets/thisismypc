@@ -311,9 +311,9 @@ ExplorerEdgeTabShotTests and ModuleEdgeTabShotTests check card bounds, wrapped s
 - **Session 0 service** (`ThisIsMyPC.Service` + `ThisIsMyPC.Ipc.Contracts`): GPLv3 in
   this repo (docs/why-gplv3.md; one repo holds everything). IPC is the hardened named
   pipe from 28-1; new message types extend the envelope, never change it.
-- **Installer** (`ThisIsMyPC.Installer`, docs/release/packaging.md): elevated Avalonia
-  launcher around the Velopack MSI; references Core and Interop.Win32 only, links the
-  App's Theme.axaml and fonts. Pages are sight-harness tested (`InstallerShotTests`).
+- **Installer** (`ThisIsMyPC.Installer`, docs/release/packaging.md): elevated NativeAOT
+  Win32 launcher around the Velopack MSI; references Core and Interop.Win32 only.
+  Its production GDI renderer creates headless screenshots in `InstallerShotTests`.
   Anything it writes and then trusts goes under the hardened ProgramData folder,
   never %TEMP%.
 

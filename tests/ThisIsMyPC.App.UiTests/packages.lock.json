@@ -271,9 +271,6 @@
       "ThisIsMyPC-Installer": {
         "type": "Project",
         "dependencies": {
-          "Avalonia": "[11.3.12, )",
-          "Avalonia.Desktop": "[11.3.12, )",
-          "Avalonia.Themes.Fluent": "[11.3.12, )",
           "CommunityToolkit.Mvvm": "[8.4.0, )",
           "ThisIsMyPC.Core": "[1.0.0, )",
           "ThisIsMyPC.Interop.Win32": "[1.0.0, )"

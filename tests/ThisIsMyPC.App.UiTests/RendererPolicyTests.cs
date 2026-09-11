@@ -8,9 +8,6 @@ public sealed class RendererPolicyTests
     public void AcgRendererUsesSoftwareOnly()
     {
         var appOptions = Program.CreateAcgWin32Options();
-        var installerOptions = ThisIsMyPC.Installer.Program.CreateAcgWin32Options();
-
         Assert.Equal([Win32RenderingMode.Software], appOptions.RenderingMode);
-        Assert.Equal([Win32RenderingMode.Software], installerOptions.RenderingMode);
     }
 }

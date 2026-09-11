@@ -11,7 +11,7 @@ The app corresponds to the PC, not a user profile (AGENTS.md). Packaging follows
   script deletes it after pack (the MSI is a complete install by itself,
   checked with `msiexec /a` extraction on 2026-09-01).
 - **The download is `ThisIsMyPC-Installer-<version>.exe`** (`src/ThisIsMyPC.Installer`,
-  Avalonia, NativeAOT, with a length-delimited MSI payload). Two reasons it exists.
+  Win32 and GDI, NativeAOT, with a length-delimited MSI payload). Two reasons it exists.
   A bare per-machine MSI gets its UAC consent requested by the Installer
   service, not by the wizard window, so Windows parks the prompt in the
   taskbar and the dialog that follows can land off screen (seen 2026-09-01
@@ -73,10 +73,8 @@ The app corresponds to the PC, not a user profile (AGENTS.md). Packaging follows
   thread stack.
 - **Nothing trusted goes through %TEMP%.** The installer hardens
   `%ProgramData%\ThisIsMyPC` (Administrators/SYSTEM, the app's own
-  `DataDirectoryGuard`) before it writes the unpacked MSI or the two native
-  libraries NativeAOT cannot fold in (libSkiaSharp, libHarfBuzzSharp; the
-  csproj embeds them, `NativeBootstrap` unpacks and loads them by absolute
-  path). A same-user non-elevated process can write to %TEMP% and would get
+  `DataDirectoryGuard`) before it writes the unpacked MSI. A same-user
+  non-elevated process can write to %TEMP% and would get
   our elevation by swapping a file there. If the DACL cannot be set, the
   installer stops with a message box before loading anything.
 - **State is split by trust.** UI settings, history, sets, monitoring state,
@@ -106,16 +104,17 @@ and writes `SHA256SUMS`. Follow
 `update-signing.md` for signing and upload.
 
 All four release executables enable Arbitrary Code Guard before application
-startup. The local Avalonia.Win32 and SkiaSharp packages under
+startup. The installer UI uses only Windows Win32 and GDI APIs. The App's
+local Avalonia.Win32 and SkiaSharp packages under
 `third-party/acg` replace runtime-generated native callback thunks with static
 unmanaged callbacks. Rebuild them with `tools/build-acg-dependencies.ps1`.
 Run `tools/AcgLauncher` from an elevated terminal to test loader-time ACG.
 The launcher also rejects a window whose captured frame contains no visible pixels.
-The App and Installer use Avalonia's software renderer in ACG builds. ANGLE
-creates the window under strict ACG but presents black frames on the tested host.
+The App uses Avalonia's software renderer in ACG builds. ANGLE creates its
+window under strict ACG but presents black frames on the tested host.
 `AotPublish=true` alone creates an unsigned NativeAOT diagnostic build without
 ACG or CIG. Add `DynamicCodeGuard=true` to test ACG without signing.
-Non-ACG development builds retain Avalonia's normal platform detection.
+Non-ACG App development builds retain Avalonia's normal platform detection.
 Release builds validate the four native DLLs against pinned SHA-256 values.
 The App bakes their canonical hashes into its NativeAOT image. Signing changes
 only the terminal Authenticode certificate table, so the same values remain valid.
@@ -242,7 +241,7 @@ git checkout v1.0.0
 The unsigned release pipeline is byte-for-byte deterministic. Roslyn
 determinism, a checkout-independent compiler path map, and locked inputs cover
 managed code. Release PDBs are omitted
-because Avalonia's Cecil XAML rewrite gives portable-PDB debug records a new
+because the App's Avalonia Cecil XAML rewrite gives portable-PDB debug records a new
 identifier on each invocation. Staging timestamps are fixed before packaging.
 `normalize-msi.ps1` derives the MSI ProductCode and PackageCode from the
 version and normalizes WiX summary, compound-file, and cabinet timestamps.

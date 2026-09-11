@@ -2,6 +2,14 @@
 
 Current release scope: [v1 completion plan](v1-completion-plan.md), approved 2026-09-06. It supersedes older post-release hardware assumptions below.
 
+## Win32 installer integration (2026-09-11)
+
+- Merged the native Win32/GDI installer from `codex/win32-installer` into main. Avalonia, Skia, and HarfBuzz are removed from the installer.
+- Integration review identified missing keyboard access to painted choices. Tab traversal, Shift+Tab, Space/Enter activation, and visible focus are included in this merge.
+- Verified: Release build, 2,607 CI-safe tests, real HWND keyboard workflow against a fake install engine, 100%/150% GDI screenshots, guarded NativeAOT publish (7,285,760 bytes, one executable), and all PE mitigation checks.
+- Release signature checks, ACG, DLL search hardening, embedded MSI verification, and hardened extraction remain in place.
+- Pending: screen-reader semantics for painted controls, live elevated install/uninstall, signing, and a complete package under the exact release toolchain. The Visual Studio version currently differs from the pinned reproducibility manifest.
+
 ## FanControl profile editing (2026-09-10)
 
 - Cooling edits saved FanControl 226 profiles: fan names, enabled state, manual speeds, curve assignments, flat speeds, and graph points.
@@ -72,9 +80,9 @@ Replaces the bundled OpenRGB of the same day (Sam: "native is the better choice,
 
 ## NativeAOT ACG renderer compatibility (2026-09-08)
 
-- DONE: ACG App and Installer builds use Avalonia's software renderer. ANGLE produced a live UI tree but presented a black window.
+- DONE: the App uses Avalonia's software renderer under ACG. The NativeAOT installer uses Win32 and GDI without Avalonia.
 - Non-ACG development builds keep Avalonia's normal platform renderer selection.
-- Verified: policy test, full suite, Release NativeAOT App publish, and visible App and Installer windows under strict ACG.
+- Verified: policy test, full suite, and a visible App under strict ACG. The Win32 installer passed headless GDI rendering and PE mitigation checks.
 - Verified: signed `1.0.1-test-09` upgraded the installed test release on its first run and opened normally.
 - Installed runtime testing confirmed active ACG, hardened payloads, valid signatures, protected files, and fake Broker caller rejection.
 - A same-user process still injected an unsigned disk DLL into the unelevated UI. ACG blocked RWX allocation inside that DLL.
@@ -345,7 +353,7 @@ The app corresponds to the PC, not a profile. Implemented:
   Program Files, elevation required). Per-user Setup.exe and portable zip are
   not shipped.
 - **Installer shipped 2026-09-01** (`src/ThisIsMyPC.Installer`): the download is
-  `ThisIsMyPC-Installer.exe`, an elevated NativeAOT Avalonia launcher with the MSI
+  `ThisIsMyPC-Installer.exe`, an elevated NativeAOT Win32 launcher with the MSI
   inside. Reason: a bare per-machine MSI gets its UAC prompt parked in the
   taskbar and its follow-up dialog can land off screen (Sam, 4K display), and
   the Velopack wizard has no options. Pages: Welcome, GPLv3 license with
