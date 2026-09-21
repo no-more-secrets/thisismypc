@@ -52,6 +52,10 @@ Expected: one installed application, working launch, and matching choices.
 7. Install the newer test version again.
 8. Check that the saved theme remains.
 
+Repeat removal from an older test installer while the newer app is installed.
+This covers removing an existing version before installing a lower test version.
+The installer must not display Velopack's generic error 1.
+
 Expected: cancellation keeps the installation; removal keeps user settings and history.
 
 ## Keyboard, screen reader, and display size
@@ -75,5 +79,6 @@ Expected: cancellation keeps the installation; removal keeps user settings and h
 - Narrator output from the signed elevated installer.
 - In-app update from the unelevated application. This is a separate release check.
 
-The host release preflight on 2026-09-21 stops at the Visual Studio version mismatch.
-These checks remain pending until a package built under the pinned environment is available.
+The host release toolchain was restored on 2026-09-21. A complete unsigned build passes.
+The signed 0.1.2-test-01 launcher exposed incorrect updater-based removal; the new MSI
+removal route and standard Windows wizard need a newly signed package for live acceptance.

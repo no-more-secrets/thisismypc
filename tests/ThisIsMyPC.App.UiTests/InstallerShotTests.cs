@@ -202,6 +202,10 @@ public class InstallerShotTests
         };
         using var window = new InstallerWindow(viewModel);
         window.CreatePreview(720, 640);
+        var license = NativeMethods.GetDlgItem(window.WindowHandle, 1001);
+        Assert.True((long)NativeMethods.SendMessage(license, 0xBA, 0, 0) > 100); // EM_GETLINECOUNT.
+        Assert.Equal("License Agreement", WindowText(NativeMethods.GetDlgItem(window.WindowHandle, 3020)));
+        Assert.Equal(1, (long)NativeMethods.GetWindowLongPtr(window.ControlHandle(InstallerWindow.HitTarget.Primary), -16) & 0xf);
         var accepted = window.ControlHandle(InstallerWindow.HitTarget.LicenseAccepted);
         Assert.NotEqual(window.WindowHandle, accepted);
         Assert.Contains("I accept", WindowText(accepted));
@@ -221,10 +225,25 @@ public class InstallerShotTests
         _ = NativeMethods.SendMessage(folder, 0xB1, (nuint)path.Length, (nint)path.Length); // EM_SETSEL.
         _ = NativeMethods.SendMessage(folder, 0x102, 'X', 0); // WM_CHAR exercises native edit input and EN_CHANGE.
         Assert.Equal(path + "X", viewModel.InstallFolder);
-        var options = window.ControlHandle(InstallerWindow.HitTarget.OptionsTab);
-        Assert.Equal((nint)1, NativeMethods.SendMessage(options, NativeMethods.BM_GETCHECK, 0, 0));
-        Assert.Equal("Options", WindowText(options));
         Save(viewModel, "native-options-edited-200-percent", 1440, 1280);
+    }
+
+    [AvaloniaFact]
+    public void BusyPage_UsesNativeProgressControl()
+    {
+        using var visualStyles = new VisualStyles();
+        var viewModel = new InstallerViewModel(new FakeEngine(), License, installed: null, existing: null)
+        {
+            Step = InstallStep.Installing,
+            StatusText = "Installing ThisIsMyPC...",
+        };
+        using var window = new InstallerWindow(viewModel);
+        window.CreatePreview(720, 640);
+        var progress = NativeMethods.GetDlgItem(window.WindowHandle, 3030);
+        Assert.NotEqual(nint.Zero, progress);
+        Assert.True(NativeMethods.IsWindowVisible(progress));
+        Assert.False(viewModel.CanCancel);
+        Save(viewModel, "installing");
     }
 
     private static string WindowText(nint hwnd)
@@ -257,8 +276,7 @@ public class InstallerShotTests
             void Key(int key) => Assert.True(NativeMethods.PostMessage(hwnd, NativeMethods.WM_KEYDOWN, (nuint)key, nint.Zero));
             Key(NativeMethods.VK_RETURN);
             await WaitForAsync(() => viewModel.IsLicense);
-            foreach (var target in new[] { InstallerWindow.HitTarget.WelcomeTab, InstallerWindow.HitTarget.LicenseTab,
-                         InstallerWindow.HitTarget.LicenseEdit, InstallerWindow.HitTarget.LicenseAccepted })
+            foreach (var target in new[] { InstallerWindow.HitTarget.LicenseEdit, InstallerWindow.HitTarget.LicenseAccepted })
             {
                 Key(NativeMethods.VK_TAB);
                 for (var attempt = 0; attempt < 100 && window.KeyboardFocus != target; attempt++)
@@ -302,6 +320,12 @@ public class InstallerShotTests
     private static void Save(InstallerViewModel viewModel, string name, int width = Width, int height = Height,
         InstallerWindow.HitTarget keyboardFocus = InstallerWindow.HitTarget.None)
     {
+        if (width == Width && height == Height)
+        {
+            Save(viewModel, name + "-150-percent", 1080, 960, keyboardFocus);
+            Save(viewModel, name + "-200-percent", 1440, 1280, keyboardFocus);
+        }
+        using var visualStyles = new VisualStyles();
         var pixels = InstallerWindow.RenderPreviewBgra(viewModel, width, height, keyboardFocus);
         Assert.Equal(width * height * 4, pixels.Length);
         using var bitmap = new WriteableBitmap(
@@ -324,6 +348,32 @@ public class InstallerShotTests
         var directory = Path.Combine(FindRepoRoot(), "artifacts", "ui-shots", "installer-win32");
         Directory.CreateDirectory(directory);
         bitmap.Save(Path.Combine(directory, name + ".png"));
+    }
+
+    // Testhost has its own manifest. Activate the production manifest while creating and printing HWND controls.
+    private sealed class VisualStyles : IDisposable
+    {
+        private readonly nint _context;
+        private readonly nuint _cookie;
+
+        internal VisualStyles()
+        {
+            var source = Marshal.StringToHGlobalUni(Path.Combine(FindRepoRoot(), "src", "ThisIsMyPC.Installer", "app.manifest"));
+            try
+            {
+                var context = new NativeMethods.ACTCTX { Size = (uint)Marshal.SizeOf<NativeMethods.ACTCTX>(), Source = source };
+                _context = NativeMethods.CreateActCtx(in context);
+                Assert.NotEqual((nint)(-1), _context);
+                Assert.True(NativeMethods.ActivateActCtx(_context, out _cookie));
+            }
+            finally { Marshal.FreeHGlobal(source); }
+        }
+
+        public void Dispose()
+        {
+            _ = NativeMethods.DeactivateActCtx(0, _cookie);
+            NativeMethods.ReleaseActCtx(_context);
+        }
     }
 
     private static async Task WaitForAsync(Func<bool> condition,

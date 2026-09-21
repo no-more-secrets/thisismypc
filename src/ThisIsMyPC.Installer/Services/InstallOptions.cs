@@ -24,7 +24,7 @@ public interface IInstallEngine
     /// <summary>Runs the MSI quietly with the chosen folder, then applies the other choices.</summary>
     Task<InstallOutcome> InstallAsync(InstallOptions options, IProgress<string> progress, CancellationToken cancellationToken);
 
-    /// <summary>Runs Velopack's uninstaller (Update.exe in the install folder) and waits for it.</summary>
+    /// <summary>Removes the verified machine MSI product and returns its result and log path.</summary>
     Task<InstallOutcome> UninstallAsync(InstalledApp installed, IProgress<string> progress, CancellationToken cancellationToken);
 
     /// <summary>Starts the installed app (the Velopack stub in the install folder).</summary>

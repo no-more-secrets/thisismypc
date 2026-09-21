@@ -78,7 +78,7 @@ Workers do not commit, push, change global focus, alter live Windows settings, o
 The Win32/GDI installer is merged on main at `829f27a`. Finish this work before starting another module.
 
 - [x] Replace Avalonia in the installer and restore keyboard navigation.
-- [x] Use native controls and labels with names, roles, and checked states. The themed paint preserves native accessibility behavior.
+- [x] Use standard Windows controls and system colors with native names, roles, and checked states. Replace custom cards and tabs with wizard navigation.
 - [x] Keep required controls reachable on smaller displays at higher scaling through scrolling and focus visibility.
 - [x] Fix clipped installed-version text and inaccurate removal copy.
 - [x] Verify native controls, rendered pages, the full test suite, and guarded NativeAOT output after these changes.

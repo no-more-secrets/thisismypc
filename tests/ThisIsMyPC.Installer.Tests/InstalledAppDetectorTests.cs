@@ -14,6 +14,48 @@ public class InstalledAppDetectorTests
         Assert.All(locations, location => Assert.Equal(RegistryHive.LocalMachine, location.Hive));
     }
 
+    [Theory]
+    [InlineData("msiexec.exe /x {848B2C9B-0F24-38FC-5511-470BD8B9F13A}")]
+    [InlineData("MsiExec.exe /X{848B2C9B-0F24-38FC-5511-470BD8B9F13A}")]
+    [InlineData("\"C:\\Windows\\System32\\msiexec.exe\" /x {848b2c9b-0f24-38fc-5511-470bd8b9f13a}")]
+    public void ParseMsiProductCode_ReadsMachineUninstallFormats(string command)
+    {
+        Assert.Equal("{848B2C9B-0F24-38FC-5511-470BD8B9F13A}", InstalledAppDetector.ParseMsiProductCode(command));
+    }
+
+    [Theory]
+    [InlineData("cmd.exe /c msiexec.exe /x {848B2C9B-0F24-38FC-5511-470BD8B9F13A}")]
+    [InlineData("msiexec.exe /x {848B2C9B-0F24-38FC-5511-470BD8B9F13A} /i attacker.msi")]
+    [InlineData("msiexec.exe /i {848B2C9B-0F24-38FC-5511-470BD8B9F13A}")]
+    [InlineData("msiexec.exe /x {00000000-0000-0000-0000-000000000000}")]
+    [InlineData("msiexec.exe /x {NOT-A-GUID}")]
+    [InlineData(null)]
+    public void ParseMsiProductCode_RejectsInjectedOrNonRemovalCommands(string? command)
+    {
+        Assert.Null(InstalledAppDetector.ParseMsiProductCode(command));
+    }
+
+    [Fact]
+    public void IsMatchingMsiFolder_RequiresThisAppAndTheSameFolder()
+    {
+        const string folder = @"C:\Program Files\NMS\ThisIsMyPC";
+        Assert.True(InstalledAppDetector.IsMatchingMsiFolder(folder, folder.ToUpperInvariant() + "\\", "ThisIsMyPC"));
+        Assert.False(InstalledAppDetector.IsMatchingMsiFolder(folder, folder + "-old", "ThisIsMyPC"));
+        Assert.False(InstalledAppDetector.IsMatchingMsiFolder(folder, folder, "Different app"));
+        Assert.False(InstalledAppDetector.IsMatchingMsiFolder(folder, null, "ThisIsMyPC"));
+    }
+
+    [Fact]
+    [Trait("Category", "Diagnostic")]
+    public void InstalledMachineMsiRegistration_ResolvesWithoutRunningRemoval()
+    {
+        var installed = InstalledAppDetector.Detect();
+        Assert.NotNull(installed);
+        var code = InstalledAppDetector.FindMsiProductCode(installed.InstallFolder);
+        Assert.True(Guid.TryParseExact(code, "B", out var guid));
+        Assert.NotEqual(Guid.Empty, guid);
+    }
+
     private const string SqVersion = """
         <?xml version="1.0" encoding="utf-8"?>
         <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">

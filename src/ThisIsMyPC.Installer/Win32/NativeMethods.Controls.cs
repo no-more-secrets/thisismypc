@@ -89,30 +89,54 @@ internal static unsafe partial class NativeMethods
     [LibraryImport("user32.dll")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static partial nint GetDlgItem(nint hwnd, int id);
+    [LibraryImport("user32.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    internal static partial uint GetSysColor(int index);
+
+    [LibraryImport("user32.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    internal static partial nint GetSysColorBrush(int index);
     [StructLayout(LayoutKind.Sequential)]
-    internal struct HIGHCONTRAST
+    internal struct INITCOMMONCONTROLSEX
     {
-        internal uint cbSize;
-        internal uint dwFlags;
-        internal nint lpszDefaultScheme;
+        internal uint Size;
+        internal uint Classes;
     }
 
-    [LibraryImport("user32.dll", EntryPoint = "SystemParametersInfoW")]
+    [LibraryImport("comctl32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    internal static partial bool GetHighContrast(uint action, uint size, ref HIGHCONTRAST value, uint flags);
+    internal static partial bool InitCommonControlsEx(in INITCOMMONCONTROLSEX controls);
 
-    [LibraryImport("comctl32.dll")]
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct ACTCTX
+    {
+        internal uint Size;
+        internal uint Flags;
+        internal nint Source;
+        internal ushort ProcessorArchitecture;
+        internal ushort LanguageId;
+        internal nint AssemblyDirectory;
+        internal nint ResourceName;
+        internal nint ApplicationName;
+        internal nint Module;
+    }
+
+    [LibraryImport("kernel32.dll", EntryPoint = "CreateActCtxW", SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    internal static partial nint CreateActCtx(in ACTCTX context);
+
+    [LibraryImport("kernel32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    internal static partial bool SetWindowSubclass(nint hwnd, nint callback, nuint id, nuint data);
+    internal static partial bool ActivateActCtx(nint context, out nuint cookie);
 
-    [LibraryImport("comctl32.dll")]
+    [LibraryImport("kernel32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    internal static partial bool RemoveWindowSubclass(nint hwnd, nint callback, nuint id);
+    internal static partial bool DeactivateActCtx(uint flags, nuint cookie);
 
-    [LibraryImport("comctl32.dll")]
+    [LibraryImport("kernel32.dll")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    internal static partial nint DefSubclassProc(nint hwnd, uint message, nuint wParam, nint lParam);
+    internal static partial void ReleaseActCtx(nint context);
 }

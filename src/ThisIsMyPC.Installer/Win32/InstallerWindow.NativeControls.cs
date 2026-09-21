@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using ThisIsMyPC.Installer.ViewModels;
 
@@ -8,8 +7,6 @@ namespace ThisIsMyPC.Installer.Win32;
 internal sealed unsafe partial class InstallerWindow
 {
     private readonly Dictionary<int, NativeControl> _nativeControls = new();
-    private nint _cardBrush;
-    private nint _backgroundBrush;
     private bool _preview;
     private bool _updatingScroll;
     private int _scrollX;
@@ -30,15 +27,10 @@ internal sealed unsafe partial class InstallerWindow
             => controls.Add(new(id, text, UiRect.FromEdges(left, top, right, bottom)));
         void Button(HitTarget target, string text, int left, int top, int right, int bottom, bool enabled = true, bool? check = null)
             => controls.Add(new(2000 + (int)target, text, UiRect.FromEdges(left, top, right, bottom), target, enabled, check));
-        Button(HitTarget.WelcomeTab, "Welcome", 38, 85, vm.ShowInstallTabs ? 177 : 328, 114, vm.CanOpenWelcome, vm.IsWelcome);
-        if (vm.ShowInstallTabs)
-        {
-            Button(HitTarget.LicenseTab, "License", 207, 85, 334, 114, vm.CanOpenLicense, vm.IsLicense);
-            Button(HitTarget.OptionsTab, "Options", 363, 85, 491, 114, vm.CanOpenOptions, vm.IsOptions);
-            Label(3010, vm.IsInInstallTab ? vm.StepCaption : "Install", 521, 85, 641, 114);
-        }
-        else
-            Label(3010, vm.IsInRemoveTab ? vm.StepCaption : "Remove", 359, 85, 641, 114);
+        Label(3020, vm.IsWelcome ? "Welcome to ThisIsMyPC Setup" : vm.IsLicense ? "License Agreement" :
+            vm.IsOptions ? "Installation Options" : vm.IsConfirmUninstall ? "Remove ThisIsMyPC" :
+            vm.IsBusy ? vm.StepCaption : vm.Failed ? "Setup Failed" : "Setup Complete", 32, 30, 688, 60);
+        Label(3021, $"ThisIsMyPC {InstallerViewModel.AppVersion}", 32, 70, 688, 96);
         if (vm.IsWelcome)
         {
             Label(3000, "Welcome to the installer for ThisIsMyPC.", 57, 155, 663, 185);
@@ -72,7 +64,10 @@ internal sealed unsafe partial class InstallerWindow
             Label(3004, "Both can be changed later in Settings inside the app.", 83, y + 180, 663, y + 207);
         }
         else if (vm.IsBusy)
-            Label(3000, vm.StatusText, 180, 303, 600, 330);
+        {
+            Label(3000, vm.StatusText, 57, 200, 663, 245);
+            Label(3030, "", 57, 260, 663, 283);
+        }
         else if (vm.IsConfirmUninstall)
         {
             Label(3000, "Remove ThisIsMyPC from this PC? The app, its shortcuts, and its entry in Installed apps go away.", 57, 153, 663, 195);
@@ -120,25 +115,25 @@ internal sealed unsafe partial class InstallerWindow
                 var style = NativeMethods.WS_CHILD;
                 if (spec.Target != HitTarget.None)
                     style |= NativeMethods.WS_TABSTOP | 0x2000u | // BS_MULTILINE.
-                        (spec.Target is HitTarget.WelcomeTab or HitTarget.LicenseTab or HitTarget.OptionsTab
-                            ? 0x1002u : spec.Checked.HasValue ? 2u : 0u); // BS_PUSHLIKE | BS_CHECKBOX preserves selection without radio focus activation.
+                        (spec.Checked.HasValue ? 2u : spec.Target == HitTarget.Primary ? 1u : 0u);
                 else
-                    style |= spec.Id == 3010 ? 0x281u : 0x80u; // SS_NOPREFIX; tab status also centers horizontally and vertically.
-                var handle = NativeMethods.CreateWindowEx(0, spec.Target == HitTarget.None ? "STATIC" : "BUTTON", spec.Text,
+                    style |= 0x80u; // SS_NOPREFIX.
+                if (spec.Id == 3030)
+                    style = NativeMethods.WS_CHILD | 8u; // PBS_MARQUEE.
+                var handle = NativeMethods.CreateWindowEx(0, spec.Id == 3030 ? "msctls_progress32" : spec.Target == HitTarget.None ? "STATIC" : "BUTTON", spec.Text,
                     style, 0, 0, 0, 0, _hwnd, (nint)spec.Id, NativeMethods.GetModuleHandle(null), 0);
                 if (handle == nint.Zero)
                     throw new Win32Exception(Marshal.GetLastWin32Error(), "Windows could not create an installer control.");
                 control = new(handle, spec);
                 _nativeControls.Add(spec.Id, control);
-                if (spec.Target != HitTarget.None && !NativeMethods.SetWindowSubclass(handle,
-                    (nint)(delegate* unmanaged[Stdcall]<nint, uint, nuint, nint, nuint, nuint, nint>)&ButtonProcedure,
-                    1, (nuint)GCHandle.ToIntPtr(_selfHandle)))
-                    throw new Win32Exception("Windows could not style an installer control.");
+
             }
             if (control.Spec.Text != spec.Text)
                 _ = NativeMethods.SetWindowText(control.Handle, spec.Text);
             _nativeControls[spec.Id] = control with { Spec = spec };
-            _ = NativeMethods.SendMessage(control.Handle, NativeMethods.WM_SETFONT, (nuint)_bodyFont, 1);
+            _ = NativeMethods.SendMessage(control.Handle, NativeMethods.WM_SETFONT, (nuint)(spec.Id == 3020 ? _headingFont : _bodyFont), 1);
+            if (spec.Id == 3030)
+                _ = NativeMethods.SendMessage(control.Handle, 0x40A, 1, 30); // PBM_SETMARQUEE.
             _ = NativeMethods.EnableWindow(control.Handle, spec.Enabled);
             if (spec.Checked.HasValue)
                 _ = NativeMethods.SendMessage(control.Handle, NativeMethods.BM_SETCHECK, spec.Checked.Value ? 1u : 0u, 0);
@@ -277,64 +272,4 @@ internal sealed unsafe partial class InstallerWindow
         Invalidate();
     }
 
-    private static bool UsesHighContrast()
-    {
-        var contrast = new NativeMethods.HIGHCONTRAST { cbSize = (uint)sizeof(NativeMethods.HIGHCONTRAST) };
-        return NativeMethods.GetHighContrast(0x42, contrast.cbSize, ref contrast, 0) && (contrast.dwFlags & 1) != 0;
-    }
-
-    // Only drawing is replaced. Windows retains button input, focus, accessibility, and check state.
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
-    private static nint ButtonProcedure(nint hwnd, uint message, nuint wParam, nint lParam, nuint id, nuint data)
-    {
-        try
-        {
-            return HandleButtonMessage(hwnd, message, wParam, lParam, id, data);
-        }
-#pragma warning disable CA1031 // Reverse P/Invoke must never propagate a managed exception into Windows.
-        catch (Exception)
-        {
-            return NativeMethods.DefSubclassProc(hwnd, message, wParam, lParam);
-        }
-#pragma warning restore CA1031
-    }
-
-    private static nint HandleButtonMessage(nint hwnd, uint message, nuint wParam, nint lParam, nuint id, nuint data)
-    {
-        if (message == 0x82) // WM_NCDESTROY occurs before the parent's GCHandle is released.
-        {
-            _ = NativeMethods.RemoveWindowSubclass(hwnd,
-                (nint)(delegate* unmanaged[Stdcall]<nint, uint, nuint, nint, nuint, nuint, nint>)&ButtonProcedure, id);
-            return NativeMethods.DefSubclassProc(hwnd, message, wParam, lParam);
-        }
-        if (message is NativeMethods.WM_PAINT or NativeMethods.WM_PRINT or 0x318 or 0x14 && !UsesHighContrast())
-        {
-            if (message == 0x14) // WM_ERASEBKGND. The paint covers the whole control.
-                return 1;
-            if (GCHandle.FromIntPtr((nint)data).Target is InstallerWindow window)
-            {
-                var control = window._nativeControls.Values.FirstOrDefault(item => item.Handle == hwnd);
-                if (control is not null)
-                {
-                    var paint = default(NativeMethods.PAINTSTRUCT);
-                    var dc = message == NativeMethods.WM_PAINT ? NativeMethods.BeginPaint(hwnd, out paint) : (nint)wParam;
-                    try
-                    {
-                        _ = NativeMethods.GetClientRect(hwnd, out var rect);
-                        var state = unchecked((uint)NativeMethods.SendMessage(hwnd, 0xF2, 0, 0)); // BM_GETSTATE.
-                        InstallerRenderer.DrawNativeButton(dc, control.Spec.Text, rect, window._dpi / 96d,
-                            control.Spec.Target, control.Spec.Enabled, control.Spec.Checked, (state & 0x204) != 0,
-                            (state & 8) != 0);
-                    }
-                    finally
-                    {
-                        if (message == NativeMethods.WM_PAINT)
-                            _ = NativeMethods.EndPaint(hwnd, in paint);
-                    }
-                    return 0;
-                }
-            }
-        }
-        return NativeMethods.DefSubclassProc(hwnd, message, wParam, lParam);
-    }
 }

@@ -5,16 +5,17 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 ## Win32 installer completion (active 2026-09-21)
 
 Current priority: validate the complete signed installer. See the explicit checklist in [the v1 plan](v1-completion-plan.md#current-priority-finish-the-installer-2026-09-21).
-- DONE: native buttons, checkbox state, page selection, and text labels replace inaccessible painted controls. Static native callbacks preserve themed painting and native input/accessibility behavior.
-- DONE: monitor work-area sizing, scrolling, and focus visibility keep required controls reachable. Keyboard navigation no longer changes tabs on focus.
+- DONE: standard Windows buttons, checkboxes, edit fields, and labels replace the custom dark skin. The wizard uses Back/Next/Cancel navigation without page tabs.
+- DONE: monitor work-area sizing, scrolling, and focus visibility keep required controls reachable.
 - DONE: installed-version text has room to wrap; removal copy correctly describes retained settings without naming the old storage location.
 - DONE: screenshots print the production native controls, including real EDIT fields and license scrollbars. Preview windows stay offscreen and do not activate.
-- Verified: Release build, 2,608 CI-safe tests, a native keyboard workflow with a fake engine and small viewport, native names/check state/folder input, and inspected 100%/150%/200% screenshots. Fresh-context review passed.
-- Verified: guarded NativeAOT publishes one executable, 7,313,408 bytes without its MSI payload. Every PE mitigation check passes.
+- Verified: Release build, 2,623 CI-safe tests, a native keyboard workflow with a fake engine and small viewport, native names/check state/folder input, and inspected 100%/150%/200% screenshots. Fresh-context review passed.
+- Verified: guarded NativeAOT publishes one executable, 7,304,704 bytes without its MSI payload. Every PE mitigation check passes.
 - Pending: Narrator/UIA discovery, high-contrast rendering, mixed-monitor dragging, and signed live install/upgrade/reinstall/removal. Compiling NativeAOT does not verify its signed runtime.
 - DONE: restored Build Tools `18.9.12120.119` and linker `14.51.36256.0` beside the newer IDE. Original release preflight passes without changing pins. A frozen local update channel and verified 3.67 GB offline archive preserve recovery. See [pinned toolchain](../release/pinned-toolchain.md).
 - Fixed Windows PowerShell 5.1 JSON array nesting that passed both installed instance IDs to the developer shell. Discovery, repeated initialization, and archive validation pass in PowerShell 5.1 and 7.
 - Verified a complete unsigned release build in Windows PowerShell 5.1, including MSI, bundled installer, and hardening gates. Release publishes exclude stale NativeAOT PDBs without weakening the installer's one-file gate. Signed installation remains pending.
+- Fixed removal error 1: Velopack refuses updater-based removal of MSI installs. Resolve the matching machine product registration and call system msiexec with a GUID and protected log. The read-only registration test resolves the installed product. No installed app was removed during development.
 
 ## Win32 installer integration (2026-09-11)
 

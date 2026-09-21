@@ -109,6 +109,7 @@ public sealed class MsiInstallEngine : IInstallEngine
                 null);
         }
 
+        string? logPath = null;
         try
         {
             if (!File.Exists(installed.UninstallerPath))
@@ -128,29 +129,32 @@ public sealed class MsiInstallEngine : IInstallEngine
             }
 
             progress.Report("Removing ThisIsMyPC...");
-            // Velopack's own uninstall: shortcuts, the install folder, the
-            // Apps entry. --silent because this window already asked.
+            // Update.exe refuses MSI-managed installs. Read the product code
+            // from its protected HKLM registration, never execute registry text.
+            var productCode = InstalledAppDetector.FindMsiProductCode(installed.InstallFolder);
+            if (productCode is null)
+                return new InstallOutcome(false, false,
+                    "The Windows Installer registration could not be verified. Remove ThisIsMyPC from Settings, Apps, Installed apps.", null);
+            var logDirectory = HardenedDataDirectory.EnsureChildDirectory("logs");
+            logPath = Path.Combine(logDirectory, $"uninstall-{DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture)}.log");
             var start = new ProcessStartInfo
             {
-                FileName = installed.UninstallerPath,
-                Arguments = "uninstall --silent",
-                WorkingDirectory = installed.InstallFolder,
+                FileName = Path.Combine(Environment.SystemDirectory, "msiexec.exe"),
+                Arguments = BuildMsiUninstallArguments(productCode, logPath),
+                WorkingDirectory = Environment.SystemDirectory,
                 UseShellExecute = false,
                 CreateNoWindow = true,
             };
             using var process = Process.Start(start)
                 ?? throw new InvalidOperationException("The uninstaller did not start.");
             await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
-            if (process.ExitCode != 0)
-                return new InstallOutcome(false, false, $"The uninstaller stopped with error {process.ExitCode}.", null);
-
-            // Velopack removes the folder; the stub can linger for a moment
-            // while Explorer lets go of it, so the folder itself is the check.
-            return new InstallOutcome(true, false, null, null);
+            var result = MsiExitCodes.Describe(process.ExitCode);
+            return new InstallOutcome(result.Succeeded, result.RebootRequired,
+                result.Succeeded ? null : $"Windows Installer could not remove ThisIsMyPC (error {process.ExitCode}). See the removal log for details.", logPath);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or Win32Exception or InvalidOperationException)
         {
-            return new InstallOutcome(false, false, ex.Message, null);
+            return new InstallOutcome(false, false, ex.Message, logPath);
         }
     }
 
@@ -187,6 +191,16 @@ public sealed class MsiInstallEngine : IInstallEngine
         var folder = installFolder.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         var reinstallArgs = reinstall ? " REINSTALL=ALL REINSTALLMODE=vomus" : string.Empty;
         return $"/i \"{msiPath}\" /qn /norestart VELOPACK_INSTALLDIR=\"{folder}\" TIPC_ALLOW_EQUAL_VERSION_UPGRADE=1{reinstallArgs} /l*v \"{logPath}\"";
+    }
+
+    internal static string BuildMsiUninstallArguments(string productCode, string logPath)
+    {
+        if (!Guid.TryParseExact(productCode, "B", out var code) || code == Guid.Empty)
+            throw new ArgumentException("A registered MSI product code is required.", nameof(productCode));
+        ArgumentException.ThrowIfNullOrWhiteSpace(logPath);
+        if (logPath.Contains('"', StringComparison.Ordinal))
+            throw new ArgumentException("The log path cannot contain quotes.", nameof(logPath));
+        return $"/x {code:B} /qn /norestart /l*v \"{logPath}\"";
     }
 
     internal static bool IsExpectedUninstaller(InstalledApp installed)

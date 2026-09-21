@@ -26,8 +26,10 @@ The app corresponds to the PC, not a user profile (AGENTS.md). Packaging follows
   current\sq.version supplies the version. Stale MSI DisplayVersion values are
   never used for package selection.
   Welcome names its version and folder and offers Uninstall behind a confirm
-  page; that runs Velopack's own `Update.exe uninstall --silent`, which is
-  the uninstaller for this app (there is no unins000.exe). An older version
+  page. Removal runs the system `msiexec.exe /x` with the installed product code
+  and a verbose log in the protected data directory. The code comes from the
+  matching machine registration; registry command text is never executed.
+  Velopack's `Update.exe` refuses to uninstall MSI-managed products. An older version
   updates in place (folder locked, button reads Update), the same full version
   reinstalls (REINSTALL=ALL REINSTALLMODE=vomus, or msiexec answers 1638),
   and a newer one blocks Next until it is removed. Prerelease labels are part

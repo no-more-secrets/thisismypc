@@ -6,6 +6,23 @@ namespace ThisIsMyPC.Installer.Tests;
 public class MsiInstallEngineTests
 {
     [Fact]
+    public void BuildMsiUninstallArguments_RemovesOnlyTheProductWithoutRestartAndCapturesLog()
+    {
+        var args = MsiInstallEngine.BuildMsiUninstallArguments(
+            "{848B2C9B-0F24-38FC-5511-470BD8B9F13A}", @"C:\ProgramData\ThisIsMyPC\logs\uninstall.log");
+        Assert.Equal(@"/x {848b2c9b-0f24-38fc-5511-470bd8b9f13a} /qn /norestart /l*v ""C:\ProgramData\ThisIsMyPC\logs\uninstall.log""", args);
+    }
+
+    [Theory]
+    [InlineData("{848B2C9B-0F24-38FC-5511-470BD8B9F13A} /i attacker.msi")]
+    [InlineData("{00000000-0000-0000-0000-000000000000}")]
+    [InlineData("attacker.msi")]
+    public void BuildMsiUninstallArguments_RejectsNonProductInput(string productCode)
+    {
+        Assert.Throws<ArgumentException>(() => MsiInstallEngine.BuildMsiUninstallArguments(productCode, @"C:\log.txt"));
+    }
+
+    [Fact]
     public void IsExpectedUninstaller_RejectsPathSubstitution()
     {
         var folder = InstallFolderRules.DefaultFolder;
