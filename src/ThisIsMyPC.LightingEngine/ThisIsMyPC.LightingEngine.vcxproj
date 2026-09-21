@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   ThisIsMyPC lighting engine: OpenRGB's device core and every controller, built
-  from the pinned submodule at third-party/OpenRGB without the Qt GUI, the plugin
+  from the pinned submodule at third-party/OpenRGB (OpenRGB 1.0) without the Qt GUI, the plugin
   loader, or the suspend hook. The entry point is main.cpp in this folder; the
   host talks to it over stdin/stdout and the OpenRGB SDK socket on loopback.
   Sources are globbed from the submodule so a tag bump needs no edits here.
@@ -159,6 +159,8 @@
     <!-- SinowealthControllerDetect.cpp includes this .cpp textually; compiling it too duplicates every symbol. -->
     <ClCompile Remove="$(OpenRgbRoot)Controllers\SinowealthController\GenesisXenon200Controller\GenesisXenon200Controller.cpp" />
     <ClCompile Include="$(OpenRgbRoot)Controllers\**\*_Windows*.cpp" Exclude="@(ClCompile)" />
+    <!-- Controllers submitted upstream and carried here until the pin includes them (controllers/README.md). -->
+    <ClCompile Include="$(MSBuildThisFileDirectory)controllers\**\*.cpp" />
     <!-- OpenRGB common sources (OpenRGB.pro SOURCES) without the GUI, PluginManager, and startup. -->
     <!-- hsv.cpp lives under qt/ but is plain C++; eighteen controllers use it. -->
     <ClCompile Include="$(OpenRgbRoot)qt\hsv.cpp" />
@@ -166,6 +168,9 @@
     <ClCompile Include="$(OpenRgbRoot)dependencies\libe131\src\e131.c" />
     <ClCompile Include="$(OpenRgbRoot)dependencies\NVFC\nvapi.cpp" />
     <ClCompile Include="$(OpenRgbRoot)cli.cpp" />
+    <ClCompile Include="$(OpenRgbRoot)DetectionManager.cpp" />
+    <ClCompile Include="$(OpenRgbRoot)JsonUtils.cpp" />
+    <!-- OpenRGBPluginAPI.cpp is the plugin surface and pulls QtPlugin; nothing outside qt/ uses it. -->
     <ClCompile Include="$(OpenRgbRoot)dmiinfo\dmiinfo.cpp" />
     <ClCompile Include="$(OpenRgbRoot)LogManager.cpp" />
     <ClCompile Include="$(OpenRgbRoot)NetworkClient.cpp" />
@@ -196,7 +201,7 @@
   <ItemGroup>
     <!-- OpenRGB's controllers include each other by bare file name, so every controller
          folder is an include directory, exactly as OpenRGB.pro does it. -->
-    <ControllerHeaders Include="$(OpenRgbRoot)Controllers\**\*.h" />
+    <ControllerHeaders Include="$(OpenRgbRoot)Controllers\**\*.h;$(MSBuildThisFileDirectory)controllers\**\*.h" />
     <EngineRuntimeFiles Include="$(OpenRgbRoot)dependencies\hidapi-win\x64\hidapi.dll" />
     <EngineRuntimeFiles Include="$(OpenRgbRoot)dependencies\libusb-1.0.27\VS2019\MS64\dll\libusb-1.0.dll" />
     <EngineRuntimeFiles Include="$(OpenRgbRoot)dependencies\PawnIO\PawnIOLib.dll" />

@@ -27,6 +27,7 @@
 #include <chrono>
 
 #include "cli.h"
+#include "DetectionManager.h"
 #include "LogManager.h"
 #include "NetworkServer.h"
 #include "ResourceManager.h"
@@ -62,6 +63,14 @@ static void RaiseTimerResolution()
 
 static volatile bool stop_requested = false;
 
+/*---------------------------------------------------------*| The order OpenRGB's own service uses on stop.             |
+\*---------------------------------------------------------*/
+static void Shutdown()
+{
+    ResourceManager::get()->ServiceShutdown();
+    DetectionManager::get()->Cleanup();
+}
+
 static BOOL WINAPI ConsoleHandler(DWORD)
 {
     stop_requested = true;
@@ -93,26 +102,24 @@ int main(int argc, char* argv[])
     flags |= RET_FLAG_START_SERVER | RET_FLAG_NO_AUTO_CONNECT;
     flags &= ~(unsigned int)RET_FLAG_START_GUI;
 
-    NetworkServer* server = ResourceManager::get()->GetServer();
-    if(!server)
-    {
-        Announce("error no SDK server");
-        return EXIT_FAILURE;
-    }
-    server->SetHost("127.0.0.1");
-
+    /*-----------------------------------------------------*    | OpenRGB 1.0 creates the server inside Initialize from  |
+    | the --server-host and --server-port defaults the      |
+    | parser recorded; the host passes both.                |
+    \*-----------------------------------------------------*/
     ResourceManager::get()->Initialize(
         false,
         !(flags & RET_FLAG_NO_DETECT),
         true,
-        (flags & RET_FLAG_CLI_POST_DETECTION) != 0);
+        (flags & RET_FLAG_CLI_POST_DETECTION) != 0,
+        false);
     ResourceManager::get()->WaitForInitialization();
-    ResourceManager::get()->WaitForDeviceDetection();
+    ResourceManager::get()->WaitForDetection();
 
-    if(!server->GetOnline())
+    NetworkServer* server = ResourceManager::get()->GetServer();
+    if(!server || !server->GetOnline())
     {
         Announce("error SDK server did not come online");
-        ResourceManager::get()->Cleanup();
+        Shutdown();
         return EXIT_FAILURE;
     }
 
@@ -137,7 +144,7 @@ int main(int argc, char* argv[])
             if(strncmp(line, "rescan", 6) == 0)
             {
                 ResourceManager::get()->RescanDevices();
-                ResourceManager::get()->WaitForDeviceDetection();
+                ResourceManager::get()->WaitForDetection();
                 Announce("detected");
             }
         }
@@ -150,7 +157,7 @@ int main(int argc, char* argv[])
     }
 
     LOG_INFO("[engine] Stopping");
-    ResourceManager::get()->Cleanup();
+    Shutdown();
     /*-----------------------------------------------------*\
     | The reader may still block in fgets when a console     |
     | event stopped us; the process ends without joining it. |

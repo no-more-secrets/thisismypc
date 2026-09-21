@@ -54,12 +54,21 @@ copies it into staging, and gates it through the same hardening check
 (`/guard:cf`, CET, `/Brepro`) as the other first-party executables. CI builds
 it with the runner's toolset; the release toolchain uses the pinned one.
 
+## Controllers pending upstream
+
+`src/ThisIsMyPC.LightingEngine/controllers/` holds controllers we wrote and
+submitted to OpenRGB, compiled into the engine until the pin includes the
+merge. Its README lists each folder with its merge request and head commit.
+Today: the Royal Kludge R98 Pro (OpenRGB !3568). Keep the copies identical to
+the merge request; fix upstream first, then refresh the copy.
+
 ## Update the pin
 
 1. Move the submodule: `git -C third-party/OpenRGB fetch --depth 1 origin <commit>` and `git -C third-party/OpenRGB checkout <commit>`.
 2. Set the commit, date, and version text in `src/ThisIsMyPC.LightingEngine/engine_version.h`.
-3. Build. A new file OpenRGB compiles only on Windows, or one it textually includes elsewhere (`SinowealthControllerDetect.cpp` includes `GenesisXenon200Controller.cpp`), shows up as a link error; adjust the `Remove` list in the project.
-4. Run `LightingEngineHostTests` (Diagnostic): it starts the engine, lists devices over the SDK, rescans, and stops it.
+3. Drop any folder under `src/ThisIsMyPC.LightingEngine/controllers/` whose merge request the new pin includes; a duplicate detector registration at link time is the sign.
+4. Build. A new file OpenRGB compiles only on Windows, or one it textually includes elsewhere (`SinowealthControllerDetect.cpp` includes `GenesisXenon200Controller.cpp`), shows up as a link error; adjust the `Remove` list in the project.
+5. Run `LightingEngineHostTests` (Diagnostic): it starts the engine, lists devices over the SDK, rescans, and stops it.
 
 ## What needs elevation
 

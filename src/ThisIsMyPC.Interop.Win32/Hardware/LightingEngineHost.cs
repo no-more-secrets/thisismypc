@@ -15,7 +15,7 @@ namespace ThisIsMyPC.Interop.Win32.Hardware;
 /// detected and its server listens; "rescan" on stdin makes it detect again and
 /// answer "detected"; closing stdin or "stop" shuts it down.
 /// </summary>
-public sealed class LightingEngineHost : ILightingEngine, IDisposable
+public sealed partial class LightingEngineHost : ILightingEngine, IDisposable
 {
     private const string EngineFileName = "ThisIsMyPC-LightingEngine.exe";
     private const int NoteCapacity = 40;
@@ -99,6 +99,8 @@ public sealed class LightingEngineHost : ILightingEngine, IDisposable
             };
             startInfo.ArgumentList.Add("--config");
             startInfo.ArgumentList.Add(_configDirectory);
+            startInfo.ArgumentList.Add("--server-host");
+            startInfo.ArgumentList.Add("127.0.0.1");
             startInfo.ArgumentList.Add("--server-port");
             startInfo.ArgumentList.Add(port.ToString(System.Globalization.CultureInfo.InvariantCulture));
             startInfo.ArgumentList.Add("--loglevel");
@@ -248,7 +250,8 @@ public sealed class LightingEngineHost : ILightingEngine, IDisposable
     /// </summary>
     private void Note(string line)
     {
-        var trimmed = line.Trim();
+        // OpenRGB 1.0 prefixes "[   179][Error  ]"; the tab wants the message, deduplicated across timestamps.
+        var trimmed = LogPrefix().Replace(line, string.Empty).Trim();
         if (trimmed.Length == 0 || trimmed.StartsWith('<')
             || trimmed.StartsWith("ready ", StringComparison.Ordinal) || trimmed.StartsWith("detected", StringComparison.Ordinal))
             return;
@@ -261,6 +264,9 @@ public sealed class LightingEngineHost : ILightingEngine, IDisposable
                 _notes.Dequeue();
         }
     }
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"^\s*\[\s*\d+\s*\]\[[A-Za-z ]+\]")]
+    private static partial System.Text.RegularExpressions.Regex LogPrefix();
 
     private static int FindFreePort()
     {
