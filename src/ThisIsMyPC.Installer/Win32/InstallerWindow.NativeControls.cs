@@ -29,76 +29,76 @@ internal sealed unsafe partial class InstallerWindow
             => controls.Add(new(2000 + (int)target, text, UiRect.FromEdges(left, top, right, bottom), target, enabled, check));
         Label(3020, vm.IsWelcome ? "Welcome to ThisIsMyPC Setup" : vm.IsLicense ? "License Agreement" :
             vm.IsOptions ? "Installation Options" : vm.IsConfirmUninstall ? "Remove ThisIsMyPC" :
-            vm.IsBusy ? vm.StepCaption : vm.Failed ? "Setup Failed" : "Setup Complete", 32, 30, 688, 60);
-        Label(3021, InstallerViewModel.BuildLabel, 32, 70, 688, 96);
+            vm.IsBusy ? vm.StepCaption : vm.Failed ? "Setup Failed" : "Setup Complete", 20, 14, 580, 36);
+        Label(3021, InstallerViewModel.BuildLabel, 20, 40, 580, 60);
         if (vm.IsWelcome)
         {
-            Label(3000, "Welcome to the installer for ThisIsMyPC.", 57, 155, 663, 185);
-            Label(3001, "This program will be installed for everybody who uses this PC. This installer has administrator permissions.", 57, 195, 663, 240);
+            Label(3000, "Welcome to the installer for ThisIsMyPC.", 28, 90, 572, 114);
+            Label(3001, "This program will be installed for everybody who uses this PC. This installer has administrator permissions.", 28, 124, 572, 170);
             if (vm.IsInstalled)
             {
-                Label(3002, vm.InstalledSummary, 57, 260, 663, 365);
-                Button(HitTarget.Uninstall, "Uninstall ThisIsMyPC", 57, 380, 663, 412, check: vm.UninstallMode);
+                Label(3002, vm.InstalledSummary, 28, 188, 572, 286);
+                Button(HitTarget.Uninstall, "Uninstall ThisIsMyPC", 28, 294, 572, 324, check: vm.UninstallMode);
             }
             if (vm.ShowWelcomeHint)
-                Label(3003, vm.WelcomeHint, 350, 516, 663, 542);
+                Label(3003, vm.WelcomeHint, 28, 380, 572, 404);
         }
         else if (vm.IsLicense)
         {
-            Label(3000, "GNU General Public License, version 3. You may use, share, and change ThisIsMyPC under these terms.", 57, 153, 663, 190);
-            Button(HitTarget.LicenseAccepted, "I accept the terms of the GNU General Public License, version 3", 57, 514, 663, 543, check: vm.LicenseAccepted);
+            Label(3000, "GNU General Public License, version 3. You may use, share, and change ThisIsMyPC under these terms.", 28, 84, 572, 122);
+            Button(HitTarget.LicenseAccepted, "I accept the terms of the GNU General Public License, version 3", 28, 384, 572, 413, check: vm.LicenseAccepted);
         }
         else if (vm.IsOptions)
         {
-            Label(3000, "Install folder", 57, 151, 578, 174);
-            Button(HitTarget.Browse, "Browse...", 586, 178, 663, 211, vm.CanChooseFolder);
+            Label(3000, "Install folder", 28, 84, 472, 104);
+            Button(HitTarget.Browse, "Browse...", 480, 105, 572, 133, vm.CanChooseFolder);
             var detail = string.Join("\r\n", new[] { vm.CanChooseFolder ? null : "Updates go into the folder the app is already in.", vm.FolderError ?? vm.FolderWarning }.Where(text => text is not null));
-            Label(3001, detail, 57, 218, 663, OptionsShortcutsY(vm) - 4);
+            Label(3001, detail, 28, 140, 572, OptionsShortcutsY(vm) - 4);
             var y = OptionsShortcutsY(vm);
-            Label(3002, "Shortcuts", 57, y, 663, y + 22);
-            Button(HitTarget.StartMenu, "Add ThisIsMyPC to the Start menu", 57, y + 19, 663, y + 47, check: vm.StartMenuShortcut);
-            Button(HitTarget.Desktop, "Add a shortcut on the Desktop", 57, y + 48, 663, y + 76, check: vm.DesktopShortcut);
-            Label(3003, "Behavior", 57, y + 98, 663, y + 120);
-            Button(HitTarget.StartWithWindows, "Start with Windows, in the tray", 57, y + 117, 663, y + 145, check: vm.StartWithWindows);
-            Button(HitTarget.CheckForUpdates, "Check for updates automatically", 57, y + 146, 663, y + 174, check: vm.CheckForUpdates);
-            Label(3004, "Both can be changed later in Settings inside the app.", 83, y + 180, 663, y + 207);
+            Label(3002, "Shortcuts", 28, y, 572, y + 20);
+            Button(HitTarget.StartMenu, "Add ThisIsMyPC to the Start menu", 28, y + 20, 572, y + 44, check: vm.StartMenuShortcut);
+            Button(HitTarget.Desktop, "Add a shortcut on the Desktop", 28, y + 46, 572, y + 70, check: vm.DesktopShortcut);
+            Label(3003, "Behavior", 28, y + 82, 572, y + 102);
+            Button(HitTarget.StartWithWindows, "Start with Windows, in the tray", 28, y + 102, 572, y + 126, check: vm.StartWithWindows);
+            Button(HitTarget.CheckForUpdates, "Check for updates automatically", 28, y + 128, 572, y + 152, check: vm.CheckForUpdates);
+            Label(3004, "Both can be changed later in Settings inside the app.", 48, y + 157, 572, y + 189);
         }
         else if (vm.IsBusy)
         {
-            Label(3000, vm.StatusText, 57, 200, 663, 245);
-            Label(3030, "", 57, 260, 663, 283);
+            Label(3000, vm.StatusText, 28, 104, 572, 150);
+            Label(3030, "", 28, 168, 572, 188);
         }
         else if (vm.IsConfirmUninstall)
         {
-            Label(3000, "Remove ThisIsMyPC from this PC? The app, its shortcuts, and its entry in Installed apps go away.", 57, 153, 663, 195);
-            Label(3001, "Your settings and change history stay on this PC for a later install. Changes you applied to Windows stay as they are. Undo them in the app first if you want them reverted.", 57, 205, 663, 290);
-            Label(3002, "Choose Remove to continue, or Back to keep it.", 57, 307, 663, 335);
+            Label(3000, "Remove ThisIsMyPC from this PC? The app, its shortcuts, and its entry in Installed apps go away.", 28, 90, 572, 138);
+            Label(3001, "Your settings and change history stay on this PC for a later install. Changes you applied to Windows stay as they are. Undo them in the app first if you want them reverted.", 28, 150, 572, 240);
+            Label(3002, "Choose Remove to continue, or Back to keep it.", 28, 270, 572, 296);
         }
         else if (vm.IsDone)
         {
             if (vm.Failed)
             {
-                Label(3000, vm.ErrorText!, 57, 153, 663, 320);
+                Label(3000, vm.ErrorText!, 28, 90, 572, 230);
                 if (vm.HasLogPath)
-                    Label(3001, "Details were saved to " + vm.LogPath, 57, 340, 663, 450);
+                    Label(3001, "Details were saved to " + vm.LogPath, 28, 250, 572, 370);
             }
             else if (vm.Removed)
-                Label(3000, "ThisIsMyPC was removed. Your settings and change history stay on this PC in case you install it again.", 57, 153, 663, 230);
+                Label(3000, "ThisIsMyPC was removed. Your settings and change history stay on this PC in case you install it again.", 28, 90, 572, 160);
             else
             {
-                Label(3000, "ThisIsMyPC is installed. Windows asks for permission only when a change needs administrator access.", 57, 153, 663, 191);
+                Label(3000, "ThisIsMyPC is installed. Windows asks for permission only when a change needs administrator access.", 28, 90, 572, 134);
                 if (vm.RebootRequired)
-                    Label(3001, "Windows asked for a restart to finish. Restart when convenient.", 57, 195, 663, 225);
-                var y = vm.RebootRequired ? 232 : 203;
-                Button(HitTarget.Launch, "Open ThisIsMyPC when I choose Finish", 57, y - 5, 663, y + 24, check: vm.LaunchWhenDone);
+                    Label(3001, "Windows asked for a restart to finish. Restart when convenient.", 28, 142, 572, 178);
+                var y = vm.RebootRequired ? 190 : 146;
+                Button(HitTarget.Launch, "Open ThisIsMyPC when I choose Finish", 28, y, 572, y + 28, check: vm.LaunchWhenDone);
             }
         }
         if (vm.CanGoBack)
-            Button(HitTarget.Back, "< Back", 358, 583, 454, 621);
-        var left = !vm.CanGoBack && !vm.CanCancel ? 592 : 464;
-        Button(HitTarget.Primary, vm.PrimaryButtonText.Trim(), left, 583, left + 96, 621, vm.CanGoPrimary);
+            Button(HitTarget.Back, "< Back", 296, 439, 384, 467);
+        var left = !vm.CanGoBack && !vm.CanCancel ? 492 : 394;
+        Button(HitTarget.Primary, vm.PrimaryButtonText.Trim(), left, 439, left + 88, 467, vm.CanGoPrimary);
         if (vm.CanCancel)
-            Button(HitTarget.Cancel, "Cancel", 592, 583, 688, 621);
+            Button(HitTarget.Cancel, "Cancel", 492, 439, 580, 467);
         return controls;
     }
 
@@ -198,9 +198,9 @@ internal sealed unsafe partial class InstallerWindow
         foreach (var spec in DescribeControls())
             Print(_nativeControls[spec.Id].Handle, spec.Bounds.Left, spec.Bounds.Top);
         if (_viewModel.IsLicense)
-            Print(_licenseEdit, 57, 200);
+            Print(_licenseEdit, 28, 130);
         if (_viewModel.IsOptions)
-            Print(_folderEdit, 57, 178);
+            Print(_folderEdit, 28, 105);
     }
 
     private static NativeMethods.RECT GetWorkArea(nint hwnd)

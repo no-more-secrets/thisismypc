@@ -2,6 +2,15 @@
 
 ## Local unsigned testing
 
+For UI work, run `tools/preview-installer.ps1`. It builds only the managed installer
+and opens a clearly titled preview. Install and Finish use a fake engine with no
+system changes. The preview activates the production native-control manifest;
+it needs no MSI, signing, NativeAOT publish, or elevation. `-BuildOnly` checks the
+preview build without opening a window. Preview entry is compiled only in Debug.
+
+The UI uses a compact 600 by 480 logical-pixel Windows dialog, pale blue surfaces,
+navy text, a thin content border, and native Windows controls. It adds no UI framework.
+
 The launcher offers three build modes:
 
 | Mode | Signature checks at runtime | Purpose |

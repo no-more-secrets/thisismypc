@@ -27,6 +27,16 @@ sealed class Program
 #pragma warning disable CA1031 // Last resort: a crash must show words, not vanish (NativeAOT fail-fasts silently).
         try
         {
+#if DEBUG
+            if (args.Contains("--preview", StringComparer.Ordinal))
+            {
+                using var styles = new PreviewVisualStyles();
+                var preview = new InstallerViewModel(new PreviewInstallEngine(),
+                    EmbeddedPackage.LoadLicenseText(), installed: null, existing: null);
+                using var previewWindow = new InstallerWindow(preview);
+                return previewWindow.Run("ThisIsMyPC installer preview (no changes)");
+            }
+#endif
 #if !DEBUG && !TIPC_DEBUG_RELEASE
             var executablePath = Environment.ProcessPath
                 ?? throw new InvalidOperationException("The installer executable path is unavailable.");

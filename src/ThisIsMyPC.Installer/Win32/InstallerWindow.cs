@@ -10,8 +10,8 @@ namespace ThisIsMyPC.Installer.Win32;
 internal sealed unsafe partial class InstallerWindow : IDisposable
 {
     private const string WindowClassName = "ThisIsMyPC.NativeInstaller";
-    private const int LogicalWidth = 720;
-    private const int LogicalHeight = 640;
+    private const int LogicalWidth = 600;
+    private const int LogicalHeight = 480;
     private const int LicenseEditId = 1001;
     private const int FolderEditId = 1002;
     private const uint WindowStyle = NativeMethods.WS_OVERLAPPED | NativeMethods.WS_CAPTION |
@@ -29,6 +29,8 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
     private nint _bodyFont;
     private nint _monoFont;
     private nint _headingFont;
+    private readonly nint _dialogBrush = NativeMethods.CreateSolidBrush(InstallerRenderer.DialogColor);
+    private readonly nint _panelBrush = NativeMethods.CreateSolidBrush(InstallerRenderer.PanelColor);
     private int _dpi = 96;
     private bool _updatingFolder;
     private bool _disposed;
@@ -42,7 +44,7 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
         _viewModel = viewModel;
     }
 
-    internal int Run()
+    internal int Run(string title = "Install ThisIsMyPC")
     {
         _ = NativeMethods.SetProcessDpiAwarenessContext(NativeMethods.DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
         EnsureWindowClass();
@@ -66,7 +68,7 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
             _hwnd = NativeMethods.CreateWindowEx(
                 0,
                 WindowClassName,
-                "Install ThisIsMyPC",
+                title,
                 WindowStyle,
                 x,
                 y,
@@ -273,9 +275,9 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
                 if (lParam == _folderEdit)
                     break;
                 var header = _nativeControls.Values.Any(control => control.Handle == lParam && control.Spec.Id is 3020 or 3021);
-                _ = NativeMethods.SetTextColor((nint)wParam, NativeMethods.GetSysColor(header ? 8 : 18));
-                _ = NativeMethods.SetBkColor((nint)wParam, NativeMethods.GetSysColor(header ? 5 : 15));
-                return NativeMethods.GetSysColorBrush(header ? 5 : 15);
+                _ = NativeMethods.SetTextColor((nint)wParam, InstallerRenderer.TextColor);
+                _ = NativeMethods.SetBkColor((nint)wParam, header ? InstallerRenderer.DialogColor : InstallerRenderer.PanelColor);
+                return header ? _dialogBrush : _panelBrush;
             case NativeMethods.WM_APP_CALLBACK:
                 _context.Drain();
                 return nint.Zero;
@@ -376,7 +378,7 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
             NativeMethods.DEFAULT_CHARSET, 0, 0, NativeMethods.CLEARTYPE_QUALITY, 0, "Consolas");
         if (bodyFont == nint.Zero || monoFont == nint.Zero)
             throw new Win32Exception(Marshal.GetLastWin32Error(), "Windows could not create the installer fonts.");
-        _headingFont = NativeMethods.CreateFont(-Scale(16, scale), 0, 0, 0, NativeMethods.FW_BOLD, 0, 0, 0,
+        _headingFont = NativeMethods.CreateFont(-Scale(14, scale), 0, 0, 0, NativeMethods.FW_BOLD, 0, 0, 0,
             NativeMethods.DEFAULT_CHARSET, 0, 0, NativeMethods.CLEARTYPE_QUALITY, 0, "Segoe UI");
         _bodyFont = bodyFont;
         _monoFont = monoFont;
@@ -513,38 +515,13 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
 
     private List<(HitTarget Target, UiRect Bounds)> KeyboardTargets()
     {
-        var result = new List<(HitTarget Target, UiRect Bounds)>();
-        void Add(HitTarget target, int left, int top, int right, int bottom, bool enabled = true)
-        {
-            if (enabled)
-                result.Add((target, UiRect.FromEdges(left, top, right, bottom)));
-        }
-        if (_viewModel.IsWelcome)
-            Add(HitTarget.Uninstall, 57, 380, 663, 412, _viewModel.IsInstalled);
+        var result = DescribeControls()
+            .Where(control => control.Target != HitTarget.None && control.Enabled)
+            .Select(control => (control.Target, control.Bounds)).ToList();
         if (_viewModel.IsLicense)
-        {
-            Add(HitTarget.LicenseEdit, 57, 200, 663, 508);
-            Add(HitTarget.LicenseAccepted, 56, 514, 650, 543);
-        }
-        if (_viewModel.IsOptions)
-        {
-            Add(HitTarget.FolderEdit, 57, 178, 578, 211, _viewModel.CanChooseFolder);
-            Add(HitTarget.Browse, 585, 177, 664, 213, _viewModel.CanChooseFolder);
-            var y = OptionsShortcutsY(_viewModel);
-            Add(HitTarget.StartMenu, 56, y + 19, 450, y + 47);
-            Add(HitTarget.Desktop, 56, y + 48, 450, y + 76);
-            Add(HitTarget.StartWithWindows, 56, y + 117, 450, y + 145);
-            Add(HitTarget.CheckForUpdates, 56, y + 146, 450, y + 174);
-        }
-        if (_viewModel.IsDone && _viewModel.DoneInstalled)
-        {
-            var y = _viewModel.RebootRequired ? 232 : 203;
-            Add(HitTarget.Launch, 56, y - 5, 450, y + 24);
-        }
-        Add(HitTarget.Back, 358, 583, 454, 621, _viewModel.CanGoBack);
-        var left = !_viewModel.CanGoBack && !_viewModel.CanCancel ? 592 : 464;
-        Add(HitTarget.Primary, left, 583, left + 96, 621, _viewModel.CanGoPrimary);
-        Add(HitTarget.Cancel, 592, 583, 688, 621, _viewModel.CanCancel);
+            result.Insert(0, (HitTarget.LicenseEdit, UiRect.FromEdges(28, 130, 572, 376)));
+        if (_viewModel.IsOptions && _viewModel.CanChooseFolder)
+            result.Insert(0, (HitTarget.FolderEdit, UiRect.FromEdges(28, 105, 472, 133)));
         return result;
     }
 
@@ -560,38 +537,7 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
     }
 
     private HitTarget HitTest(int x, int y)
-    {
-        if (_viewModel.IsWelcome && _viewModel.IsInstalled && UiRect.FromEdges(57, 380, 663, 412).Contains(x, y))
-            return HitTarget.Uninstall;
-        if (_viewModel.IsLicense && UiRect.FromEdges(56, 514, 650, 543).Contains(x, y))
-            return HitTarget.LicenseAccepted;
-        if (_viewModel.IsOptions)
-        {
-            var shortcutsY = OptionsShortcutsY(_viewModel);
-            var behaviorY = shortcutsY + 98;
-            if (UiRect.FromEdges(585, 177, 664, 213).Contains(x, y) && _viewModel.CanChooseFolder)
-                return HitTarget.Browse;
-            if (UiRect.FromEdges(56, shortcutsY + 19, 450, shortcutsY + 47).Contains(x, y))
-                return HitTarget.StartMenu;
-            if (UiRect.FromEdges(56, shortcutsY + 48, 450, shortcutsY + 76).Contains(x, y))
-                return HitTarget.Desktop;
-            if (UiRect.FromEdges(56, behaviorY + 19, 450, behaviorY + 47).Contains(x, y))
-                return HitTarget.StartWithWindows;
-            if (UiRect.FromEdges(56, behaviorY + 48, 450, behaviorY + 76).Contains(x, y))
-                return HitTarget.CheckForUpdates;
-        }
-        var launchY = _viewModel.RebootRequired ? 232 : 203;
-        if (_viewModel.IsDone && _viewModel.DoneInstalled && UiRect.FromEdges(56, launchY - 5, 450, launchY + 24).Contains(x, y))
-            return HitTarget.Launch;
-        if (_viewModel.CanGoBack && UiRect.FromEdges(358, 583, 454, 621).Contains(x, y))
-            return HitTarget.Back;
-        var primaryLeft = !_viewModel.CanGoBack && !_viewModel.CanCancel ? 592 : 464;
-        if (UiRect.FromEdges(primaryLeft, 583, primaryLeft + 96, 621).Contains(x, y) && _viewModel.CanGoPrimary)
-            return HitTarget.Primary;
-        if (_viewModel.CanCancel && UiRect.FromEdges(592, 583, 688, 621).Contains(x, y))
-            return HitTarget.Cancel;
-        return HitTarget.None;
-    }
+        => KeyboardTargets().FirstOrDefault(item => item.Bounds.Contains(x, y)).Target;
 
     private void Refresh()
     {
@@ -612,10 +558,10 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
         _ = NativeMethods.ShowWindow(_licenseEdit, showLicense ? NativeMethods.SW_SHOWNA : NativeMethods.SW_HIDE);
         _ = NativeMethods.ShowWindow(_folderEdit, showFolder ? NativeMethods.SW_SHOWNA : NativeMethods.SW_HIDE);
         if (showLicense)
-            _ = NativeMethods.MoveWindow(_licenseEdit, Scale(57, scale) - _scrollX, Scale(200, scale) - _scrollY, Scale(606, scale), Scale(308, scale), true);
+            _ = NativeMethods.MoveWindow(_licenseEdit, Scale(28, scale) - _scrollX, Scale(130, scale) - _scrollY, Scale(544, scale), Scale(246, scale), true);
         if (showFolder)
         {
-            _ = NativeMethods.MoveWindow(_folderEdit, Scale(57, scale) - _scrollX, Scale(178, scale) - _scrollY, Scale(521, scale), Scale(33, scale), true);
+            _ = NativeMethods.MoveWindow(_folderEdit, Scale(28, scale) - _scrollX, Scale(105, scale) - _scrollY, Scale(444, scale), Scale(28, scale), true);
             _ = NativeMethods.EnableWindow(_folderEdit, _viewModel.CanChooseFolder);
             var current = ReadWindowText(_folderEdit);
             if (!string.Equals(current, _viewModel.InstallFolder, StringComparison.Ordinal))
@@ -665,12 +611,12 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
     private int Logical(int physical) => (int)Math.Round(physical * 96d / _dpi);
     private static int OptionsShortcutsY(InstallerViewModel viewModel)
     {
-        var detailY = 218;
+        var detailY = 140;
         if (!viewModel.CanChooseFolder)
             detailY += 24;
         if (viewModel.HasFolderError || viewModel.HasFolderWarning)
             detailY += 28;
-        return Math.Max(238, detailY + 10);
+        return Math.Max(148, detailY + 8);
     }
     private static int Scale(int logical, double scale) => (int)Math.Round(logical * scale);
     private static int SignedLowWord(nint value) => unchecked((short)((long)value & 0xffff));
@@ -685,6 +631,8 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
             _ = NativeMethods.DestroyWindow(_hwnd);
         if (_headingFont != nint.Zero)
             _ = NativeMethods.DeleteObject(_headingFont);
+        _ = NativeMethods.DeleteObject(_dialogBrush);
+        _ = NativeMethods.DeleteObject(_panelBrush);
         if (_bodyFont != nint.Zero)
             _ = NativeMethods.DeleteObject(_bodyFont);
         if (_monoFont != nint.Zero)
@@ -742,16 +690,22 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
 
 internal static class InstallerRenderer
 {
+    // COLORREF uses BGR. Pale blue surfaces keep native themed controls legible.
+    internal const uint DialogColor = 0xF8E9DF;
+    internal const uint PanelColor = 0xFCF3ED;
+    internal const uint TextColor = 0x663B19;
+
     internal static void Draw(nint dc, int width, int height, double scale)
     {
-        var background = new NativeMethods.RECT(0, 0, width, height);
-        _ = NativeMethods.FillRect(dc, in background, NativeMethods.GetSysColorBrush(15));
-        var heading = new NativeMethods.RECT(0, 0, width, (int)Math.Round(120 * scale));
-        _ = NativeMethods.FillRect(dc, in heading, NativeMethods.GetSysColorBrush(5));
-        foreach (var y in new[] { 120, 566 })
+        void Fill(NativeMethods.RECT bounds, uint color)
         {
-            var line = new NativeMethods.RECT(0, (int)Math.Round(y * scale), width, (int)Math.Round(y * scale) + 1);
-            _ = NativeMethods.FillRect(dc, in line, NativeMethods.GetSysColorBrush(16));
+            var brush = NativeMethods.CreateSolidBrush(color);
+            try { _ = NativeMethods.FillRect(dc, in bounds, brush); }
+            finally { _ = NativeMethods.DeleteObject(brush); }
         }
+        int Px(int value) => (int)Math.Round(value * scale);
+        Fill(new(0, 0, width, height), DialogColor);
+        Fill(new(Px(12), Px(72), Px(588), Px(424)), 0xCCA98C);
+        Fill(new(Px(12) + 1, Px(72) + 1, Px(588) - 1, Px(424) - 1), PanelColor);
     }
 }
