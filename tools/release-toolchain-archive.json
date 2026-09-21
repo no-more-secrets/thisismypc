@@ -1,0 +1,9 @@
+{
+  "archiveRoot": "C:\\ProgramData\\ThisIsMyPC-ReleaseTools",
+  "inventorySha256": "9EAB24667BFD3388A1827E10B10682344D3008E04F8F4AA3019A2177602E58FB",
+  "visualStudioVersion": "18.9.12120.119",
+  "bootstrapperUrl": "https://download.visualstudio.microsoft.com/download/pr/fe4fb3e6-ea32-4ae3-b154-72821a274f0d/b52864e9195541aba56592a897f3f7e07e6c96208c8bce78b2123ab3029c7f1e/vs_BuildTools.exe",
+  "bootstrapperSha256": "B52864E9195541ABA56592A897F3F7E07E6C96208C8BCE78B2123AB3029C7F1E",
+  "dotnetSdkUrl": "https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.400/dotnet-sdk-10.0.400-win-x64.zip",
+  "dotnetSdkSha512": "9B8B88590E4DA131BFD0DA7AA089D0FC04D5418D5F8607EC13D55DC5A17B4399AFD54D496C12657FA05C6C6546DC5EAB930F26AC6C50F2D3A7712C0FB378C366"
+}

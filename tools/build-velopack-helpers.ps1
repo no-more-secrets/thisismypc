@@ -99,19 +99,8 @@ if ($actualManagedHash -ne $managedAssemblyHash) {
 New-Item -ItemType Directory -Force -Path $libraryRoot | Out-Null
 [IO.File]::Copy($managedAssembly, (Join-Path $libraryRoot $managedAssemblyName), $true)
 
-$vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
-if (-not (Test-Path -LiteralPath $vswhere -PathType Leaf)) {
-    throw 'vswhere.exe is missing. Install Visual Studio C++ build tools.'
-}
-$vsPath = & $vswhere -latest -products * `
-    -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-$instance = & $vswhere -latest -products * `
-    -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property instanceId
-if ([string]::IsNullOrWhiteSpace($vsPath) -or [string]::IsNullOrWhiteSpace($instance)) {
-    throw 'Visual Studio C++ build tools are missing.'
-}
-Import-Module (Join-Path $vsPath 'Common7\Tools\Microsoft.VisualStudio.DevShell.dll')
-Enter-VsDevShell $instance -SkipAutomaticLocation -DevCmdArguments '-arch=x64 -host_arch=x64'
+Import-Module (Join-Path $PSScriptRoot 'ReleaseToolchain.psm1') -Force
+$releaseToolchain = Enter-PinnedReleaseToolchain
 
 $env:RUSTFLAGS = "-C target-feature=+crt-static -C control-flow-guard=yes -C link-arg=/CETCOMPAT -C link-arg=/Brepro --remap-path-prefix=$sourceRoot=/src/velopack"
 $env:CARGO_TARGET_DIR = $targetRoot

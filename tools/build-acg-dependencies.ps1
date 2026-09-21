@@ -41,21 +41,15 @@ function Get-VerifiedFile([string]$url, [string]$fileName, [string]$hash) {
 }
 
 function Get-NativeToolchain {
-    $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
-    if (-not (Test-Path -LiteralPath $vswhere -PathType Leaf)) {
-        throw 'vswhere.exe is missing. Install Visual Studio C++ build tools.'
-    }
-    $json = & $vswhere -latest -prerelease -products * `
-        -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -format json
-    Assert-LastExitCode 'vswhere could not locate the C++ build tools.'
-    $installations = @($json | ConvertFrom-Json)
-    if ($installations.Count -ne 1) { throw 'vswhere did not return one latest C++ toolchain.' }
-
-    $installationPath = $installations[0].installationPath
+    Import-Module (Join-Path $PSScriptRoot 'ReleaseToolchain.psm1') -Force
+    $installationPath = (Enter-PinnedReleaseToolchain).installationPath
     $manifest = Get-Content (Join-Path $PSScriptRoot 'reproducible-build-environment.json') -Raw |
         ConvertFrom-Json
     $msvcRoot = Join-Path $installationPath "VC\Tools\MSVC\$($manifest.msvcToolsVersion)"
     return [pscustomobject]@{
+        VcRoot = Join-Path $installationPath 'VC'
+        MsvcVersion = $manifest.msvcToolsVersion
+        WindowsSdkVersion = $manifest.windowsSdkVersion
         VcVars = Join-Path $installationPath 'VC\Auxiliary\Build\vcvarsall.bat'
         MSBuild = Join-Path $installationPath 'MSBuild\Current\Bin\MSBuild.exe'
         Llvm = Join-Path $installationPath 'VC\Tools\Llvm\x64'
@@ -259,7 +253,8 @@ Push-Location $skiaSource
 try {
     dotnet cake native/windows/build.cake --target=libSkiaSharp `
         --configuration=Release --buildarch=x64 --supportVulkan=false `
-        "--llvm=$($toolchain.Llvm)" --vcToolsetVersion=14.5
+        "--llvm=$($toolchain.Llvm)" "--vcToolsetVersion=$($toolchain.MsvcVersion)" `
+        "--gnArgs=win_vc='$($toolchain.VcRoot.Replace('\', '/'))' win_toolchain_version='$($toolchain.MsvcVersion)' win_sdk_version='$($toolchain.WindowsSdkVersion)'"
     Assert-LastExitCode 'Native SkiaSharp build failed.'
 }
 finally { Pop-Location }
@@ -289,7 +284,8 @@ Assert-LastExitCode 'HarfBuzzSharp native hardening patch failed.'
 & $toolchain.MSBuild `
     (Join-Path $harfBuzzSource 'native\windows\libHarfBuzzSharp\libHarfBuzzSharp.sln') `
     /m:1 /t:Rebuild /p:Configuration=Release /p:Platform=x64 `
-    /p:PlatformToolset=v145 /p:WindowsTargetPlatformVersion=10.0 /p:Deterministic=true `
+    /p:PlatformToolset=v145 "/p:VCToolsVersion=$($toolchain.MsvcVersion)" `
+    "/p:WindowsTargetPlatformVersion=$($toolchain.WindowsSdkVersion)" /p:Deterministic=true `
     /p:ImportDirectoryBuildProps=false /p:ImportDirectoryBuildTargets=false
 Assert-LastExitCode 'Native HarfBuzzSharp build failed.'
 $harfBuzzNativeBinary = Join-Path $harfBuzzSource `
@@ -308,7 +304,7 @@ Remove-Item -LiteralPath `
     (Join-Path $sqliteSource 'e_sqlite3.exp'), `
     (Join-Path $sqliteSource 'e_sqlite3.lib') `
     -Force -ErrorAction SilentlyContinue
-$sqliteBuildCommand = "`"$($toolchain.VcVars)`" amd64 >nul && " +
+$sqliteBuildCommand = "`"$($toolchain.VcVars)`" amd64 $($toolchain.WindowsSdkVersion) -vcvars_ver=$($toolchain.MsvcVersion) >nul && " +
     "cd /d `"$sqliteSource`" && " +
     'cl.exe @sqlite-x64.rsp && ' +
     'cl.exe /nologo /c /O2 /GL /Brepro /GS /guard:cf /MT /DNDEBUG /Fosqlite-key-stubs.obj sqlite-key-stubs.c && ' +

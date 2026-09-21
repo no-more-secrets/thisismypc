@@ -12,7 +12,7 @@ Current priority: validate the complete signed installer. See the explicit check
 - Verified: Release build, 2,608 CI-safe tests, a native keyboard workflow with a fake engine and small viewport, native names/check state/folder input, and inspected 100%/150%/200% screenshots. Fresh-context review passed.
 - Verified: guarded NativeAOT publishes one executable, 7,313,408 bytes without its MSI payload. Every PE mitigation check passes.
 - Pending: Narrator/UIA discovery, high-contrast rendering, mixed-monitor dragging, and signed live install/upgrade/reinstall/removal. Compiling NativeAOT does not verify its signed runtime.
-- Release preflight found Visual Studio `18.10.12201.205` and linker `14.51.36257.0`, while their pins remain `18.9.12120.119` and `14.51.36256.0`. The release gate remains unchanged. Pinned signing tools passed verification.
+- DONE: restored Build Tools `18.9.12120.119` and linker `14.51.36256.0` beside the newer IDE. Original release preflight passes without changing pins. A frozen local update channel and verified 3.67 GB offline archive preserve recovery. See [pinned toolchain](../release/pinned-toolchain.md).
 
 ## Win32 installer integration (2026-09-11)
 
@@ -20,7 +20,7 @@ Current priority: validate the complete signed installer. See the explicit check
 - Integration review identified missing keyboard access to painted choices. Tab traversal, Shift+Tab, Space/Enter activation, and visible focus are included in this merge.
 - Verified: Release build, 2,607 CI-safe tests, real HWND keyboard workflow against a fake install engine, 100%/150% GDI screenshots, guarded NativeAOT publish (7,285,760 bytes, one executable), and all PE mitigation checks.
 - Release signature checks, ACG, DLL search hardening, embedded MSI verification, and hardened extraction remain in place.
-- Pending: screen-reader semantics for painted controls, live elevated install/uninstall, signing, and a complete package under the exact release toolchain. The Visual Studio version currently differs from the pinned reproducibility manifest.
+- Follow-up: native control semantics and the pinned compiler are restored as described above. Signed runtime and live acceptance remain pending.
 
 ## FanControl profile editing (2026-09-10)
 

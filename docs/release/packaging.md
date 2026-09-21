@@ -307,6 +307,7 @@ an existing release.
 The Win32 installer needs its own signed install, upgrade, reinstall, and removal evidence.
 Earlier Avalonia installer runs do not close this gate. Use [installer acceptance](installer-acceptance.md) for the checks.
 Keep the release environment separate from the everyday IDE so automatic Visual Studio updates cannot change the release inputs.
+The [pinned toolchain](pinned-toolchain.md) now has a separate Build Tools instance, a frozen local update channel, and a verified offline recovery archive.
 
 - Publisher line is `NMS` (Sam, 2026-09-01), the short form of No More
   Secrets, LLC: the `-Authors` default in build-release.ps1 and the assembly

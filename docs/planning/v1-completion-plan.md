@@ -86,10 +86,10 @@ The Win32/GDI installer is merged on main at `829f27a`. Finish this work before 
 - [ ] Build a complete signed test package under the pinned release toolchain.
 - [ ] Verify fresh installation, upgrade, same-version reinstall, downgrade refusal, and removal with preserved user data.
 
-Release preflight on 2026-09-21 found Visual Studio `18.10.12201.205`; the manifest requires `18.9.12120.119`.
-The linker also changed from `14.51.36256.0` to `14.51.36257.0`. CKA 1.1.2 and CodeSignTool 1.3.3 passed their pinned checks.
-Do not loosen the gate or change the manifest merely to match this host. Use the pinned environment for release evidence.
-Alternatively, qualify a deliberate toolchain upgrade with repeatable builds and the release checks before changing the pins.
+The exact Build Tools `18.9.12120.119` and linker `14.51.36256.0` are restored beside the newer development IDE.
+Original release preflight passes. Release scripts select the exact tools; a frozen local update channel preserves their version.
+The verified offline archive also preserves SDK recovery. See [pinned toolchain](../release/pinned-toolchain.md).
+CKA 1.1.2 and CodeSignTool 1.3.3 passed their pinned checks. No release pins changed.
 Signing requires the owner's secure credential prompt. Automated tests do not substitute for the installed release checks.
 Use [installer acceptance](../release/installer-acceptance.md) for the package and user-facing verification steps.
 

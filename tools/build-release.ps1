@@ -115,10 +115,13 @@ if (Test-Path $output) { Remove-Item $output -Recurse -Force }
 New-Item -ItemType Directory -Force $staging | Out-Null
 New-Item -ItemType Directory -Force $output | Out-Null
 
-# The native link step finds the C++ toolchain through vswhere in the Visual
-# Studio installer directory. Release builds are always NativeAOT.
-$env:PATH = "$env:PATH;${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer"
-$aotArgs = @('-p:AotPublish=true', '-p:OS=Windows_NT')
+# NativeAOT's default discovery picks the newest IDE. Use the verified release
+# environment instead, even when a newer development IDE is installed.
+Import-Module (Join-Path $PSScriptRoot 'ReleaseToolchain.psm1') -Force
+$releaseToolchain = Enter-PinnedReleaseToolchain
+$nativeBin = Join-Path $env:VCToolsInstallDir 'bin\Hostx64\x64'
+$aotArgs = @('-p:AotPublish=true', '-p:OS=Windows_NT', '-p:IlcUseEnvironmentalTools=true',
+    "-p:CppLinker=$nativeBin\link.exe", "-p:CppLibCreator=$nativeBin\lib.exe")
 $guardedAotArgs = @($aotArgs) + '-p:DynamicCodeGuard=true'
 $appAotArgs = @($guardedAotArgs) + '-p:CodeIntegrityGuard=true'
 

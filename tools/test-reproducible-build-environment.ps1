@@ -23,28 +23,11 @@ if ($actualWindowsInstaller -ne $expected.windowsInstallerFileVersion) {
     throw "Expected Windows Installer $($expected.windowsInstallerFileVersion); found $actualWindowsInstaller."
 }
 
-$vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
-if (-not (Test-Path $vswhere -PathType Leaf)) {
-    throw 'vswhere.exe is missing. Install Visual Studio C++ build tools.'
-}
-$installationJson = & $vswhere -latest -prerelease -products * `
-    -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -format json
-if ($LASTEXITCODE -ne 0) { throw 'vswhere could not locate the C++ build tools.' }
-$installations = @($installationJson | ConvertFrom-Json)
-if ($installations.Count -ne 1) { throw 'vswhere did not return one latest C++ toolchain.' }
-$installation = $installations[0]
-if ($installation.installationVersion -ne $expected.visualStudioVersion) {
-    throw "Expected Visual Studio $($expected.visualStudioVersion); found $($installation.installationVersion)."
-}
-
-$vcvarsall = Join-Path $installation.installationPath 'VC\Auxiliary\Build\vcvarsall.bat'
-if (-not (Test-Path $vcvarsall -PathType Leaf)) { throw "vcvarsall.bat is missing: $vcvarsall" }
-$probeCommand = "`"$vcvarsall`" amd64 >nul && set VCToolsVersion && set WindowsSdkVersion && where link.exe"
-$probeLines = @(& cmd.exe /d /s /c $probeCommand)
-if ($LASTEXITCODE -ne 0) { throw 'vcvarsall failed while probing the native toolchain.' }
-$actualMsvc = ($probeLines | Where-Object { $_ -like 'VCToolsVersion=*' } | Select-Object -First 1) -replace '^VCToolsVersion=', ''
-$actualWindowsSdk = (($probeLines | Where-Object { $_ -like 'WindowsSdkVersion=*' } | Select-Object -First 1) -replace '^WindowsSdkVersion=', '').TrimEnd('\')
-$linkerPath = $probeLines | Where-Object { $_ -match '\\link\.exe$' } | Select-Object -First 1
+Import-Module (Join-Path $PSScriptRoot 'ReleaseToolchain.psm1') -Force
+$installation = Enter-PinnedReleaseToolchain
+$actualMsvc = $env:VCToolsVersion.TrimEnd('\')
+$actualWindowsSdk = $env:WindowsSDKVersion.TrimEnd('\')
+$linkerPath = (Get-Command link.exe -CommandType Application -ErrorAction Stop).Source
 if ($actualMsvc -ne $expected.msvcToolsVersion) {
     throw "Expected MSVC tools $($expected.msvcToolsVersion); found $actualMsvc."
 }
