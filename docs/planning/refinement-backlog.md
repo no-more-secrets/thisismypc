@@ -30,7 +30,8 @@ See the explicit checklists in [the v1 plan](v1-completion-plan.md#active-applic
 - Reproduced the Privacy walkthrough timeout: an offscreen sidebar click hit the fixed Settings button. Explicit wheel scrolling reaches the intended module.
 - Verified both complete walkthroughs and inspected Privacy in both themes. Policy enforcement across editions remains unverified.
 - Verified 2,629 CI-safe tests and four focused navigation tests, including both complete walkthroughs. Independent review passed after a partial-clipping fix.
-- Remaining: map the 148-entry private policy export, verify organization-managed behavior, and expand policy coverage in bounded batches.
+- Mapped all 148 private policy records: 14 direct routes, one partial route, 16 related controls, and 117 gaps. See [sanitized coverage](../research/configured-policy-coverage.md).
+- Remaining: verify edition/scope enforcement and organization-managed behavior, resolve contradictory export metadata, and expand policy coverage in bounded batches.
 
 ## Win32 installer integration (2026-09-11)
 
