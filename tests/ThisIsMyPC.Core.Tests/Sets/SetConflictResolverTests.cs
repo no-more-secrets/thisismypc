@@ -238,18 +238,18 @@ public sealed class SetConflictResolverTests
     }
 
     [Fact]
-    public void UnknownSkuOrNoDetector_NoNotice()
+    public void UnknownSkuOrNoDetector_RestrictedSettingShowsUnverifiedNotice()
     {
         var withUnknownSku = new SetConflictResolver(
             [SkuRestrictedInspector(WindowsSku.Pro)],
             _ => new ModuleAvailability(IsAvailable: true),
             new StubCapabilityDetector { Sku = null });
-        Assert.Null(withUnknownSku.Resolve(Definition(Entry()), []).Single().SkuNotice);
+        Assert.Contains("unverified", withUnknownSku.Resolve(Definition(Entry()), []).Single().SkuNotice, StringComparison.Ordinal);
 
         var withoutDetector = new SetConflictResolver(
             [SkuRestrictedInspector(WindowsSku.Pro)],
             _ => new ModuleAvailability(IsAvailable: true));
-        Assert.Null(withoutDetector.Resolve(Definition(Entry()), []).Single().SkuNotice);
+        Assert.Contains("unverified", withoutDetector.Resolve(Definition(Entry()), []).Single().SkuNotice, StringComparison.Ordinal);
     }
 
     [Fact]

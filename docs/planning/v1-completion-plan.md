@@ -75,7 +75,8 @@ Workers do not commit, push, change global focus, alter live Windows settings, o
 
 ## Current priority: finish the installer (2026-09-21)
 
-The Win32/GDI installer is merged on main at `829f27a`. Finish this work before starting another module.
+The Win32/GDI installer is merged on main at `829f27a`. Claude Code owns the remaining installer work.
+The four workstreams below proceed independently. Installed release validation depends on the completed package.
 
 - [x] Replace Avalonia in the installer and restore keyboard navigation.
 - [x] Use standard Windows controls and system colors with native names, roles, and checked states. Replace custom cards and tabs with wizard navigation.
@@ -92,6 +93,27 @@ The verified offline archive also preserves SDK recovery. See [pinned toolchain]
 CKA 1.1.2 and CodeSignTool 1.3.3 passed their pinned checks. No release pins changed.
 Signing requires the owner's secure credential prompt. Automated tests do not substitute for the installed release checks.
 Use [installer acceptance](../release/installer-acceptance.md) for the package and user-facing verification steps.
+
+## Active application workstreams (2026-09-21)
+
+Sam approved these four workstreams while Claude Code finishes the installer.
+
+1. **Cooling activation.** Add profile activation after saving, with evidence that FanControl loaded the intended settings.
+   Verify active curve assignments and physical fan response, then restore the original configuration.
+   A successful process exit or `CACHE.CurrentConfigFileName` is not acknowledgement.
+   Preserve calibration, capture the previous runtime selection where possible, and report unsupported versions or service modes explicitly.
+2. **Monitoring.** Connect the hardware tab to a read-only sensor backend and build the curated sensor interface.
+   Verify LibreHardwareMonitor compatibility with NativeAOT and release security before selecting its integration boundary.
+   Include current/minimum/maximum/average readings, short history, and honest unavailable states. Do not add fan control writes.
+3. **System modules.** Audit policy coverage and edition behavior, then finish settings presentation.
+   Reproduce and resolve the recorded Privacy & Telemetry walkthrough timeout.
+   Map the private policy export without committing machine data or treating registry writes as proof of enforcement.
+4. **Installed release checks.** Use Claude Code's completed package to verify hardware operations, Owner Mode, undo, and module behavior.
+   Test under production security restrictions; DebugRelease results do not establish signed-release behavior.
+   Record exact build identity, before-state, observed result, and restoration for each live mutation.
+
+Implementation batches require focused tests, UI screenshots where applicable, and independent review before committing.
+Keep installer files outside these application batches. Track findings and completion in `refinement-backlog.md`.
 
 ## Tracking
 

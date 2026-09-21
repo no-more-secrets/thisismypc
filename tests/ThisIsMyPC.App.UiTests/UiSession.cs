@@ -220,6 +220,39 @@ public sealed class UiSession : IDisposable
         Click(interactive!);
     }
 
+    /// <summary>Scrolls the click target into its nearest viewport with wheel input, then clicks it.</summary>
+    public void ScrollAndClickText(string text)
+    {
+        var caption = FindText(text);
+        var target = caption.GetVisualAncestors().OfType<Button>().FirstOrDefault() ?? caption;
+        var scroller = target.GetVisualAncestors().OfType<ScrollViewer>().FirstOrDefault();
+        if (scroller is not null)
+        {
+            for (var attempt = 0; attempt < 50; attempt++)
+            {
+                var point = target.TranslatePoint(new Point(target.Bounds.Width / 2, target.Bounds.Height / 2), scroller)
+                    ?? throw new InvalidOperationException("Scroll target is disconnected.");
+                if (point.Y >= 0 && point.Y < scroller.Viewport.Height)
+                {
+                    Click(target);
+                    return;
+                }
+
+                var offset = scroller.Offset;
+                var wheelPoint = CenterOf(scroller);
+                Window.MouseMove(wheelPoint);
+                Window.MouseWheel(wheelPoint, new Vector(0, point.Y < 0 ? 3 : -3));
+                Pump();
+                if (scroller.Offset == offset)
+                    break;
+            }
+
+            throw new InvalidOperationException($"Could not scroll '{text}' into its viewport.");
+        }
+
+        Click(target);
+    }
+
     /// <summary>Clicks into a control and types, keystroke by keystroke.</summary>
     public void Type(Visual target, string text)
     {

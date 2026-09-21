@@ -62,6 +62,28 @@ public class SettingCardPageShotTests
         => vm.CardGroups.SelectMany(g => g.Cards);
 
     [AvaloniaFact]
+    public void UnknownEdition_ShowsUnverifiedSupport_InBothThemesAndCompactMode()
+    {
+        using var vm = Annoyances(new PendingChangesService());
+        var restricted = AllCards(vm).First(card => card.Model.SkuRestriction is not null);
+        vm.SearchText = restricted.DisplayName;
+        using var session = UiSession.ForView(Card(new SettingCardPageView()), vm, "card-pages", width: 800, height: 650);
+        foreach (var theme in new[] { ThemeVariant.Dark, ThemeVariant.Light })
+        {
+            session.SetTheme(theme);
+            foreach (var compact in new[] { false, true })
+            {
+                vm.IsCompact = compact;
+                session.Pump();
+                Assert.True(restricted.HasSkuNotice);
+                Assert.True(restricted.IsControlEnabled);
+                Assert.True(session.IsTextVisible("Windows edition is unknown. Support for this setting is unverified."));
+                session.Screenshot($"unknown-edition-{theme.Key}-{(compact ? "compact" : "full")}");
+            }
+        }
+    }
+
+    [AvaloniaFact]
     public void EveryCardPage_HasOneTabPerSection_InBothThemesAndWidths()
     {
         var pending = new PendingChangesService();

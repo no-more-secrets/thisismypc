@@ -40,6 +40,7 @@ anything here; `planning/refinement-backlog.md` is the plan and status.
 | [research/context-menu-scanner-rationale.md](research/context-menu-scanner-rationale.md) | Why the context menu scanner enumerates the surfaces it does, how handlers are classified, what the background-surface probe can and cannot detect. |
 | [research/startup-scanner-rationale.md](research/startup-scanner-rationale.md) | The Startup module's two views: the curated tabs, and the Autoruns tab with every location it reads and how it parks disabled items the way Autoruns does. |
 | [research/sku-restriction-audit.md](research/sku-restriction-audit.md) | Which policies apply on Home, Pro, Enterprise, and Education. Referenced from the change factories. |
+| [research/hardware-integration-boundaries.md](research/hardware-integration-boundaries.md) | FanControl activation evidence, LibreHardwareMonitor compatibility constraints, and the installed release baseline. |
 | [research/ExplorerPatcher-STUDY.md](research/ExplorerPatcher-STUDY.md) | Study of ExplorerPatcher (GPLv2): its hooks, registry patterns, and what this project ported or deliberately did not. Conclusion: integrate the recipes, never the hooking. |
 
 ## Deep research

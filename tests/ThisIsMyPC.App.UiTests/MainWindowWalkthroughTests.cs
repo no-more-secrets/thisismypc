@@ -32,7 +32,7 @@ public class MainWindowWalkthroughTests
 
         foreach (var name in moduleNames)
         {
-            session.ClickText(name);
+            session.ScrollAndClickText(name);
             await session.WaitForAsync(
                 () => viewModel.CurrentContent is not null && viewModel.ContentTitle == name,
                 timeoutMs: 120_000,
@@ -64,7 +64,7 @@ public class MainWindowWalkthroughTests
 
             foreach (var name in moduleNames)
             {
-                session.ClickText(name);
+                session.ScrollAndClickText(name);
                 await session.WaitForAsync(
                     () => viewModel.CurrentContent is not null && viewModel.ContentTitle == name,
                     timeoutMs: 120_000,

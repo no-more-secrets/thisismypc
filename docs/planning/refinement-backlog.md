@@ -4,7 +4,8 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 
 ## Win32 installer completion (active 2026-09-21)
 
-Current priority: validate the complete signed installer. See the explicit checklist in [the v1 plan](v1-completion-plan.md#current-priority-finish-the-installer-2026-09-21).
+Claude Code owns installer completion. Application work continues on Cooling activation, Monitoring, System modules, and installed release validation.
+See the explicit checklists in [the v1 plan](v1-completion-plan.md#active-application-workstreams-2026-09-21).
 - DONE 2026-09-21: the installer draws its own frame (custom title bar with icon, caption, minimize and close, DWM rounded corners and shadow), the license box wraps instead of scrolling sideways and both text fields carry a drawn outline, and Browse opens the modern `IFileOpenDialog` folder picker instead of `SHBrowseForFolder`. Verified headless screenshots at 100%/150%/200%, the native keyboard walkthrough, a dialog vtable test, and the CI-safe suite.
 - DONE 2026-09-21: branded wizard chrome. White header with a 20px semibold title, muted version line, and the wordmark tinted from a generated coverage mask (`tools/render-installer-wordmark.ps1`); pale body; footer band under a rule; the app icon from the exe's own resource on the Welcome and Done pages. Verified screenshots at 100%/150%/200%, the native keyboard walkthrough, and 2,624 CI-safe tests.
 - DONE: native buttons paint transparent edges against the correct blue surface, removing the white fringe. Verified before/after renders and 2,624 CI-safe tests.
@@ -21,6 +22,15 @@ Current priority: validate the complete signed installer. See the explicit check
 - Fixed Windows PowerShell 5.1 JSON array nesting that passed both installed instance IDs to the developer shell. Discovery, repeated initialization, and archive validation pass in PowerShell 5.1 and 7.
 - Verified a complete unsigned release build in Windows PowerShell 5.1, including MSI, bundled installer, and hardening gates. Release publishes exclude stale NativeAOT PDBs without weakening the installer's one-file gate. Signed installation remains pending.
 - Fixed removal error 1: Velopack refuses updater-based removal of MSI installs. Resolve the matching machine product registration and call system msiexec with a GUID and protected log. The read-only registration test resolves the installed product. No installed app was removed during development.
+
+## System verification and edition notices (2026-09-21)
+
+- Unknown Windows editions now show unverified support on tagged setting cards and set previews. Settings remain available for staging and undo.
+- Corrected the SKU audit documentation: tags specify minimum tiers, with Enterprise and Education equivalent.
+- Reproduced the Privacy walkthrough timeout: an offscreen sidebar click hit the fixed Settings button. Explicit wheel scrolling reaches the intended module.
+- Verified both complete walkthroughs and inspected Privacy in both themes. Policy enforcement across editions remains unverified.
+- Verified 2,629 CI-safe tests and four focused navigation tests, including both complete walkthroughs. Independent review passed after a partial-clipping fix.
+- Remaining: map the 148-entry private policy export, verify organization-managed behavior, and expand policy coverage in bounded batches.
 
 ## Win32 installer integration (2026-09-11)
 
@@ -96,7 +106,7 @@ Replaces the bundled OpenRGB of the same day (Sam: "native is the better choice,
 - Verified: Release build, the CI-safe suite, and rendered dark/light page states (available, install, queued, discarded, no winget, conflict, unavailable, pending with override, disabled Open). The full-app walkthrough on Sam's desktop found FanControl by process and task with a saved configuration, OpenRGB installed and not running, chassis type 3 and platform role Desktop. Edge geometry reads ContentL 25 and ContentT 17 on all four pages.
 - Not verified: an ASUS laptop (G-Helper path), Armoury Crate and SignalRGB service and process names, the OpenRGB SDK probe against a running server, and a real Open or Install click in the installed build.
 - Review follow-ups kept for later: one companion table shared with the inventory (the module layer merges the inventory's sightings for now), table-driven companion specs, one process snapshot per pass, and an async SDK probe.
-- Open: the walkthrough times out on Privacy & Telemetry after the Hardware pages; unrelated to this batch, observed on 2026-09-09, not investigated. Next batches: Monitoring's LibreHardwareMonitor backend, then Cooling presets and G-Helper model verification.
+- Resolved 2026-09-21: the Privacy walkthrough timeout was a clipped sidebar click in the test harness. Both complete walkthroughs pass after scrolling.
 
 ## NativeAOT ACG renderer compatibility (2026-09-08)
 

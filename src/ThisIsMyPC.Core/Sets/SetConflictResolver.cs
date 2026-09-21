@@ -101,13 +101,15 @@ public sealed class SetConflictResolver
     }
 
     /// <summary>
-    /// Informational only (architecture FR129): a SkuRestriction matching the current
-    /// SKU means the write succeeds but Windows ignores the value on this edition.
+    /// Informational only: distinguish unknown edition support from a known
+    /// minimum-tier restriction. Neither notice prevents staging or undo.
     /// </summary>
     private string? BuildSkuNotice(ChangeGroup stageable)
     {
-        if (_capabilityDetector is null)
-            return null;
+        if (_capabilityDetector?.Sku is null)
+            return stageable.Changes.Any(c => c.Enforcement?.SkuRestriction is not null)
+                ? "Windows edition is unknown. Support for this setting is unverified."
+                : null;
 
         var restricted = stageable.Changes.Any(
             c => _capabilityDetector.IsSkuRestricted(c.Enforcement?.SkuRestriction));

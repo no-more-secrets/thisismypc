@@ -127,7 +127,6 @@ public sealed class SettingCardBadgeTests
     [Theory]
     [InlineData(WindowsSku.Pro)]       // meets the minimum
     [InlineData(WindowsSku.Education)] // above the minimum
-    [InlineData(null)]                 // unknown edition
     public void SkuAtOrAboveTheMinimum_NoNotice(WindowsSku? detectedSku)
     {
         var vm = CreateVm(
@@ -138,11 +137,34 @@ public sealed class SettingCardBadgeTests
     }
 
     [Fact]
-    public void NullDetector_NoSkuNotice()
+    public void NullDetector_RestrictedSettingShowsUnverifiedNotice()
     {
         var vm = CreateVm(skuRestriction: WindowsSku.Pro, detector: null);
 
+        Assert.True(vm.HasSkuNotice);
+        Assert.Contains("unverified", vm.SkuNotice, StringComparison.Ordinal);
+        Assert.True(vm.IsControlEnabled);
+    }
+
+    [Fact]
+    public void UnknownEdition_RestrictedSettingShowsUnverifiedNoticeInCompactMode()
+    {
+        var vm = CreateVm(skuRestriction: WindowsSku.Pro, detector: new StubDetector { Sku = null });
+        vm.IsCompact = true;
+
+        Assert.True(vm.HasSkuNotice);
+        Assert.True(vm.HasVisibleContent);
+        Assert.Contains("unverified", vm.SkuNotice, StringComparison.Ordinal);
+        Assert.True(vm.IsControlEnabled);
+    }
+
+    [Fact]
+    public void UnknownEdition_UnrestrictedSettingHasNoNotice()
+    {
+        var vm = CreateVm(detector: new StubDetector { Sku = null });
+
         Assert.False(vm.HasSkuNotice);
+        Assert.Null(vm.SkuNotice);
     }
 
     [Fact]

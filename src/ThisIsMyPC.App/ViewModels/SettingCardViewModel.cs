@@ -230,9 +230,14 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
         _capabilityDetector = capabilityDetector;
         Model = source.Model;
 
-        // SKU callout only when the detected edition sits below the minimum tier
-        // (IsSkuRestricted handles null/unknown as not-restricted).
-        if (capabilityDetector?.IsSkuRestricted(Model.SkuRestriction) == true)
+        // Unknown edition is not proof of policy support. Keep the setting available
+        // but distinguish unverified support from a known minimum-tier restriction.
+        if (Model.SkuRestriction is not null && capabilityDetector?.Sku is null)
+        {
+            HasSkuNotice = true;
+            SkuNotice = "Windows edition is unknown. Support for this setting is unverified.";
+        }
+        else if (capabilityDetector?.IsSkuRestricted(Model.SkuRestriction) == true)
         {
             HasSkuNotice = true;
             var required = Model.SkuRestriction == Core.Modules.WindowsSku.Education
