@@ -13,7 +13,7 @@ namespace ThisIsMyPC.App.UiTests;
 public class InstallerShotTests
 {
     private const int Width = 600;
-    private const int Height = 480;
+    private const int Height = 512;
 
     private sealed class FakeEngine : IInstallEngine
     {
@@ -47,7 +47,7 @@ public class InstallerShotTests
         using var window = new InstallerWindow(viewModel);
 
         Save(viewModel, "welcome");
-        Save(viewModel, "welcome-150-percent", 900, 720);
+        Save(viewModel, "welcome-150-percent", 900, 768);
         Assert.True(viewModel.CanGoPrimary);
         Assert.False(viewModel.CanGoBack);
 
@@ -201,7 +201,7 @@ public class InstallerShotTests
             Step = InstallStep.License,
         };
         using var window = new InstallerWindow(viewModel);
-        window.CreatePreview(600, 480);
+        window.CreatePreview(600, 512);
         var license = NativeMethods.GetDlgItem(window.WindowHandle, 1001);
         Assert.True((long)NativeMethods.SendMessage(license, 0xBA, 0, 0) > 100); // EM_GETLINECOUNT.
         Assert.Equal("License Agreement", WindowText(NativeMethods.GetDlgItem(window.WindowHandle, 3020)));
@@ -225,7 +225,7 @@ public class InstallerShotTests
         _ = NativeMethods.SendMessage(folder, 0xB1, (nuint)path.Length, (nint)path.Length); // EM_SETSEL.
         _ = NativeMethods.SendMessage(folder, 0x102, 'X', 0); // WM_CHAR exercises native edit input and EN_CHANGE.
         Assert.Equal(path + "X", viewModel.InstallFolder);
-        Save(viewModel, "native-options-edited-200-percent", 1200, 960);
+        Save(viewModel, "native-options-edited-200-percent", 1200, 1024);
     }
 
     [AvaloniaFact]
@@ -238,7 +238,7 @@ public class InstallerShotTests
             StatusText = "Installing ThisIsMyPC...",
         };
         using var window = new InstallerWindow(viewModel);
-        window.CreatePreview(600, 480);
+        window.CreatePreview(600, 512);
         var progress = NativeMethods.GetDlgItem(window.WindowHandle, 3030);
         Assert.NotEqual(nint.Zero, progress);
         Assert.True(NativeMethods.IsWindowVisible(progress));
@@ -322,8 +322,8 @@ public class InstallerShotTests
     {
         if (width == Width && height == Height)
         {
-            Save(viewModel, name + "-150-percent", 900, 720, keyboardFocus);
-            Save(viewModel, name + "-200-percent", 1200, 960, keyboardFocus);
+            Save(viewModel, name + "-150-percent", 900, 768, keyboardFocus);
+            Save(viewModel, name + "-200-percent", 1200, 1024, keyboardFocus);
         }
         using var visualStyles = new VisualStyles();
         var pixels = InstallerWindow.RenderPreviewBgra(viewModel, width, height, keyboardFocus);

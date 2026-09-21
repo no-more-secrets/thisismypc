@@ -7,6 +7,7 @@ namespace ThisIsMyPC.Installer.Win32;
 internal sealed unsafe partial class InstallerWindow
 {
     private readonly Dictionary<int, NativeControl> _nativeControls = new();
+    private readonly HashSet<nint> _clippedControls = new();
     private bool _preview;
     private bool _updatingScroll;
     private int _scrollX;
@@ -141,8 +142,11 @@ internal sealed unsafe partial class InstallerWindow
             if (spec.Checked.HasValue)
                 _ = NativeMethods.SendMessage(control.Handle, NativeMethods.BM_SETCHECK, spec.Checked.Value ? 1u : 0u, 0);
             var scale = _dpi / 96d;
-            _ = NativeMethods.MoveWindow(control.Handle, Scale(spec.Bounds.Left, scale) - _scrollX, Scale(spec.Bounds.Top, scale) - _scrollY,
-                Scale(spec.Bounds.Right - spec.Bounds.Left, scale), Scale(spec.Bounds.Bottom - spec.Bounds.Top, scale), true);
+            var top = Scale(spec.Bounds.Top + TitleBarHeight, scale) - _scrollY;
+            var height = Scale(spec.Bounds.Bottom - spec.Bounds.Top, scale);
+            _ = NativeMethods.MoveWindow(control.Handle, Scale(spec.Bounds.Left, scale) - _scrollX, top,
+                Scale(spec.Bounds.Right - spec.Bounds.Left, scale), height, true);
+            ClipToPage(control.Handle, top, height);
             _ = NativeMethods.ShowWindow(control.Handle, NativeMethods.SW_SHOWNA);
         }
         // Native EDIT accessibility obtains the field name from the preceding STATIC sibling.
@@ -153,6 +157,20 @@ internal sealed unsafe partial class InstallerWindow
             if (_viewModel.IsLicense)
                 _ = NativeMethods.SetWindowPos(_licenseEdit, label.Handle, 0, 0, 0, 0, 0x13);
         }
+    }
+
+    // A scrolled control may slide under the fixed title bar; its window region hides that part.
+    private void ClipToPage(nint handle, int top, int height)
+    {
+        var overlap = Scale(TitleBarHeight, _dpi / 96d) - top;
+        if (overlap <= 0)
+        {
+            if (_clippedControls.Remove(handle))
+                _ = NativeMethods.SetWindowRgn(handle, nint.Zero, true);
+            return;
+        }
+        _ = NativeMethods.SetWindowRgn(handle, NativeMethods.CreateRectRgn(0, overlap, short.MaxValue, Math.Max(overlap, height)), true);
+        _clippedControls.Add(handle);
     }
 
     private void Activate(HitTarget target)
@@ -193,7 +211,7 @@ internal sealed unsafe partial class InstallerWindow
             var saved = NativeMethods.SaveDC(dc);
             try
             {
-                _ = NativeMethods.SetViewportOrgEx(dc, Scale(x, scale), Scale(y, scale), 0);
+                _ = NativeMethods.SetViewportOrgEx(dc, Scale(x, scale), Scale(y + TitleBarHeight, scale), 0);
                 _ = NativeMethods.SendMessage(handle, NativeMethods.WM_PRINT, (nuint)dc, 0x0E);
             }
             finally { _ = NativeMethods.RestoreDC(dc, saved); }
@@ -201,9 +219,9 @@ internal sealed unsafe partial class InstallerWindow
         foreach (var spec in DescribeControls())
             Print(_nativeControls[spec.Id].Handle, spec.Bounds.Left, spec.Bounds.Top);
         if (_viewModel.IsLicense)
-            Print(_licenseEdit, 28, 130);
+            Print(_licenseEdit, 28, InstallerRenderer.LicenseTop);
         if (_viewModel.IsOptions)
-            Print(_folderEdit, 28, 105);
+            Print(_folderEdit, 28, InstallerRenderer.FolderTop);
     }
 
     private static NativeMethods.RECT GetWorkArea(nint hwnd)
@@ -233,7 +251,7 @@ internal sealed unsafe partial class InstallerWindow
             {
                 _ = NativeMethods.GetClientRect(_hwnd, out var client);
                 SetBar(0, Scale(LogicalWidth, _dpi / 96d), client.Right, ref _scrollX);
-                SetBar(1, Scale(LogicalHeight, _dpi / 96d), client.Bottom, ref _scrollY);
+                SetBar(1, Scale(LogicalHeight, _dpi / 96d), client.Bottom - Scale(TitleBarHeight, _dpi / 96d), ref _scrollY);
             }
             UpdateChildControls();
             UpdateNativeControls();
@@ -269,8 +287,9 @@ internal sealed unsafe partial class InstallerWindow
             return;
         _ = NativeMethods.GetClientRect(_hwnd, out var client);
         var scale = _dpi / 96d;
+        var visibleBottom = client.Bottom - Scale(TitleBarHeight, scale);
         _scrollX = Math.Max(Scale(item.Bounds.Right, scale) - client.Right, Math.Min(_scrollX, Scale(item.Bounds.Left, scale)));
-        _scrollY = Math.Max(Scale(item.Bounds.Bottom, scale) - client.Bottom, Math.Min(_scrollY, Scale(item.Bounds.Top, scale)));
+        _scrollY = Math.Max(Scale(item.Bounds.Bottom, scale) - visibleBottom, Math.Min(_scrollY, Scale(item.Bounds.Top, scale)));
         UpdateScrollBars();
         Invalidate();
     }

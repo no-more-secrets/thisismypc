@@ -220,6 +220,8 @@ dotnet test tests/ThisIsMyPC.App.UiTests --configuration Release --filter "Categ
 ### Native installer UI
 
 - Keep the installer lean: Win32 controls and GDI only. Do not add Avalonia, Skia, or another UI framework.
+- The window draws its own frame: `WM_NCCALCSIZE` gives the whole rectangle to the client, the top 32 logical px are the title bar (`WM_NCHITTEST` returns `HTCAPTION` there, except over the two caption buttons), and DWM keeps the shadow and rounded corners. Page coordinates start under the title bar; scrolled controls are clipped with window regions so they never slide over it.
+- The folder picker is `IFileOpenDialog` in folder mode over raw vtables (`FolderDialog` in `Services/StorageFolderPicker.cs`); `FolderDialogTests` covers every slot except Show.
 - Branding: the header wordmark is `src/ThisIsMyPC.Installer/Assets/wordmark.alpha`, an 8-bit coverage mask rendered from `assets/ThisIsMyPC-Logo-Black_v1.svg` by `tools/render-installer-wordmark.ps1` (needs Inkscape). Regenerate it only when the logo changes. The Welcome and Done pages draw the exe's own icon resource; never embed a second copy of the icon.
 - Use `tools/preview-installer.ps1` for interactive UI checks without rebuilding the release package. Add `-BuildOnly` to compile without opening it.
 - The Debug-only preview uses a fake engine. Never replace it with the live install engine for visual checks.

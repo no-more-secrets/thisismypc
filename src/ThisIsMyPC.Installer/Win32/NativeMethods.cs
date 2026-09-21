@@ -93,12 +93,6 @@ internal static unsafe partial class NativeMethods
     internal const uint TME_LEAVE = 0x00000002;
     internal const uint BI_RGB = 0;
     internal const uint DIB_RGB_COLORS = 0;
-    internal const uint BFFM_INITIALIZED = 1;
-    internal const uint BFFM_SETSELECTIONW = 0x467;
-    internal const uint BIF_RETURNONLYFSDIRS = 0x0001;
-    internal const uint BIF_NEWDIALOGSTYLE = 0x0040;
-    internal const uint BIF_EDITBOX = 0x0010;
-    internal const uint BIF_USENEWUI = BIF_NEWDIALOGSTYLE | BIF_EDITBOX;
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     internal struct WNDCLASSEXW
@@ -211,19 +205,6 @@ internal static unsafe partial class NativeMethods
     {
         internal BITMAPINFOHEADER bmiHeader;
         internal uint bmiColors;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct BROWSEINFOW
-    {
-        internal nint hwndOwner;
-        internal nint pidlRoot;
-        internal nint pszDisplayName;
-        internal nint lpszTitle;
-        internal uint ulFlags;
-        internal nint lpfn;
-        internal nint lParam;
-        internal int iImage;
     }
 
     [LibraryImport("kernel32.dll", EntryPoint = "GetModuleHandleW", StringMarshalling = StringMarshalling.Utf16)]
@@ -462,19 +443,6 @@ internal static unsafe partial class NativeMethods
     [LibraryImport("gdi32.dll", EntryPoint = "CreateDIBSection")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static partial nint CreateDIBSection(nint hdc, in BITMAPINFO info, uint usage, out nint bits, nint section, uint offset);
-
-    [LibraryImport("shell32.dll", EntryPoint = "SHBrowseForFolderW")]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    internal static partial nint SHBrowseForFolder(ref BROWSEINFOW info);
-
-    [LibraryImport("shell32.dll", EntryPoint = "SHGetPathFromIDListW")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    internal static partial bool SHGetPathFromIDList(nint itemIdList, char* path);
-
-    [LibraryImport("ole32.dll", EntryPoint = "CoTaskMemFree")]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    internal static partial void CoTaskMemFree(nint memory);
 
     [LibraryImport("ole32.dll", EntryPoint = "OleInitialize")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]

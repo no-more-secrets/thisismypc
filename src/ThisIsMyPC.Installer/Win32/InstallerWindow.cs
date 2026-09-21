@@ -11,7 +11,10 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
 {
     private const string WindowClassName = "ThisIsMyPC.NativeInstaller";
     private const int LogicalWidth = 600;
+    /// <summary>Page area below the title bar. Page coordinates start under the title bar.</summary>
     private const int LogicalHeight = 480;
+    internal const int TitleBarHeight = InstallerRenderer.TitleBarHeight;
+    private const int ClientHeight = LogicalHeight + TitleBarHeight;
     private const int LicenseEditId = 1001;
     private const int FolderEditId = 1002;
     private const uint WindowStyle = NativeMethods.WS_OVERLAPPED | NativeMethods.WS_CAPTION |
@@ -36,6 +39,9 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
     private bool _updatingFolder;
     private bool _disposed;
     private HitTarget _keyboardFocus;
+    private string _caption = "Install ThisIsMyPC";
+    private CaptionButton _hoverButton;
+    private bool _trackingMouse;
     internal HitTarget KeyboardFocus => _keyboardFocus;
     internal nint WindowHandle => _hwnd;
 
@@ -48,6 +54,7 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
     internal int Run(string title = "Install ThisIsMyPC")
     {
         _ = NativeMethods.SetProcessDpiAwarenessContext(NativeMethods.DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+        _caption = title;
         EnsureWindowClass();
         var oleInitialized = NativeMethods.OleInitialize(nint.Zero) >= 0;
         var previousContext = SynchronizationContext.Current;
@@ -56,13 +63,10 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
             var instance = NativeMethods.GetModuleHandle(null);
             _dpi = checked((int)NativeMethods.GetDpiForSystem());
             var scale = _dpi / 96d;
-            var bounds = new NativeMethods.RECT(0, 0, Scale(LogicalWidth, scale), Scale(LogicalHeight, scale));
-            if (!NativeMethods.AdjustWindowRectExForDpi(ref bounds, WindowStyle, false, 0, (uint)_dpi))
-                throw new Win32Exception(Marshal.GetLastWin32Error(), "Windows could not size the installer window.");
-
+            // The window draws its own frame: WM_NCCALCSIZE hands the whole rectangle to the client area.
             var work = GetWorkArea(nint.Zero);
-            var width = Math.Min(bounds.Right - bounds.Left, work.Right - work.Left);
-            var height = Math.Min(bounds.Bottom - bounds.Top, work.Bottom - work.Top);
+            var width = Math.Min(Scale(LogicalWidth, scale), work.Right - work.Left);
+            var height = Math.Min(Scale(ClientHeight, scale), work.Bottom - work.Top);
             var x = work.Left + (work.Right - work.Left - width) / 2;
             var y = work.Top + (work.Bottom - work.Top - height) / 2;
             _selfHandle = GCHandle.Alloc(this);
@@ -82,6 +86,8 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
             if (_hwnd == nint.Zero)
                 throw new Win32Exception(Marshal.GetLastWin32Error(), "Windows could not create the installer window.");
 
+            var corners = NativeMethods.DWMWCP_ROUND;
+            _ = NativeMethods.DwmSetWindowAttribute(_hwnd, NativeMethods.DWMWA_WINDOW_CORNER_PREFERENCE, in corners, sizeof(int));
             ReplaceControlFonts();
             _context.Attach(_hwnd);
             SynchronizationContext.SetSynchronizationContext(_context);
@@ -155,9 +161,13 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
         {
             using var preview = new InstallerWindow(viewModel) { _keyboardFocus = keyboardFocus, _preview = true };
             preview.CreatePreview(width, height);
-            InstallerRenderer.Draw(dc, width, height, width / (double)LogicalWidth, preview.ShowsAppIcon);
+            var scale = width / (double)LogicalWidth;
+            _ = NativeMethods.SetViewportOrgEx(dc, 0, Scale(TitleBarHeight, scale), nint.Zero);
+            InstallerRenderer.Draw(dc, width, Scale(LogicalHeight, scale), scale, viewModel);
             preview.PrintControls(dc);
             preview.DrawKeyboardFocus(dc);
+            _ = NativeMethods.SetViewportOrgEx(dc, 0, 0, nint.Zero);
+            preview.DrawTitleBar(dc, width);
             var pixels = new byte[checked(width * height * 4)];
             Marshal.Copy(bits, pixels, 0, pixels.Length);
             for (var index = 3; index < pixels.Length; index += 4)
@@ -243,6 +253,23 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
                 if (_hwnd != nint.Zero && !_preview)
                     UpdateScrollBars();
                 return nint.Zero;
+            case NativeMethods.WM_NCCALCSIZE:
+                // No stock frame: the client area covers the window and the title bar is drawn here.
+                if (wParam != 0)
+                    return nint.Zero;
+                break;
+            case NativeMethods.WM_NCHITTEST:
+                return HitTestFrame(hwnd, message, wParam, lParam);
+            case NativeMethods.WM_NCACTIVATE:
+                // -1 keeps DefWindowProc from repainting a non-client area this window does not have.
+                return NativeMethods.DefWindowProc(hwnd, message, wParam, -1);
+            case NativeMethods.WM_MOUSEMOVE:
+                TrackHover(SignedLowWord(lParam), SignedHighWord(lParam));
+                return nint.Zero;
+            case NativeMethods.WM_MOUSELEAVE:
+                _trackingMouse = false;
+                SetHover(CaptionButton.None);
+                return nint.Zero;
             case NativeMethods.WM_VSCROLL:
             case NativeMethods.WM_HSCROLL:
                 Scroll(message == NativeMethods.WM_HSCROLL, unchecked((int)(wParam & 0xffff)));
@@ -260,9 +287,9 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
                 try
                 {
                     // Keep the origin Windows mapped from the child into parent coordinates.
-                    _ = NativeMethods.OffsetViewportOrgEx(backgroundDc, -_scrollX, -_scrollY, 0);
+                    _ = NativeMethods.OffsetViewportOrgEx(backgroundDc, -_scrollX, Scale(TitleBarHeight, _dpi / 96d) - _scrollY, 0);
                     InstallerRenderer.Draw(backgroundDc, Scale(LogicalWidth, _dpi / 96d),
-                        Scale(LogicalHeight, _dpi / 96d), _dpi / 96d, ShowsAppIcon);
+                        Scale(LogicalHeight, _dpi / 96d), _dpi / 96d, _viewModel);
                 }
                 finally { _ = NativeMethods.RestoreDC(backgroundDc, saved); }
                 return 1;
@@ -270,7 +297,13 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
                 HandleCommand(wParam, lParam);
                 return nint.Zero;
             case NativeMethods.WM_LBUTTONUP:
-                HandleClick(SignedLowWord(lParam), SignedHighWord(lParam));
+                var button = CaptionButtonAt(SignedLowWord(lParam), SignedHighWord(lParam));
+                if (button == CaptionButton.Close)
+                    _ = NativeMethods.PostMessage(hwnd, NativeMethods.WM_CLOSE, 0, nint.Zero);
+                else if (button == CaptionButton.Minimize)
+                    _ = NativeMethods.ShowWindow(hwnd, NativeMethods.SW_MINIMIZE);
+                else
+                    HandleClick(SignedLowWord(lParam), SignedHighWord(lParam));
                 return nint.Zero;
             case NativeMethods.WM_DPICHANGED:
                 ApplyDpiChange(wParam, lParam);
@@ -322,19 +355,20 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
             throw new Win32Exception(Marshal.GetLastWin32Error());
         _bodyFont = NativeMethods.CreateFont(-Scale(14, scale), 0, 0, 0, NativeMethods.FW_NORMAL, 0, 0, 0,
             NativeMethods.DEFAULT_CHARSET, 0, 0, NativeMethods.CLEARTYPE_QUALITY, 0, "Segoe UI");
-        _monoFont = NativeMethods.CreateFont(-Scale(13, scale), 0, 0, 0, NativeMethods.FW_NORMAL, 0, 0, 0,
+        _monoFont = NativeMethods.CreateFont(-Scale(MonoFontSize, scale), 0, 0, 0, NativeMethods.FW_NORMAL, 0, 0, 0,
             NativeMethods.DEFAULT_CHARSET, 0, 0, NativeMethods.CLEARTYPE_QUALITY, 0, "Consolas");
         var instance = NativeMethods.GetModuleHandle(null);
+        // The license wraps instead of scrolling sideways; the renderer outlines both fields.
         _licenseEdit = NativeMethods.CreateWindowEx(
-            NativeMethods.WS_EX_CLIENTEDGE,
+            0,
             "EDIT",
             _viewModel.LicenseText.ReplaceLineEndings("\r\n"),
-            NativeMethods.WS_CHILD | NativeMethods.WS_VSCROLL | NativeMethods.WS_HSCROLL |
+            NativeMethods.WS_CHILD | NativeMethods.WS_VSCROLL |
                 NativeMethods.ES_LEFT | NativeMethods.ES_MULTILINE | NativeMethods.ES_AUTOVSCROLL |
-                NativeMethods.ES_AUTOHSCROLL | NativeMethods.ES_READONLY | NativeMethods.WS_TABSTOP,
+                NativeMethods.ES_READONLY | NativeMethods.WS_TABSTOP,
             0, 0, 0, 0, hwnd, (nint)LicenseEditId, instance, nint.Zero);
         _folderEdit = NativeMethods.CreateWindowEx(
-            NativeMethods.WS_EX_CLIENTEDGE,
+            0,
             "EDIT",
             _viewModel.InstallFolder,
             NativeMethods.WS_CHILD | NativeMethods.ES_LEFT | NativeMethods.ES_AUTOHSCROLL | NativeMethods.WS_TABSTOP,
@@ -345,7 +379,8 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
         _ = NativeMethods.SendMessage(_folderEdit, NativeMethods.WM_SETFONT, (nuint)_bodyFont, (nint)1);
         _ = NativeMethods.SendMessage(_folderEdit, NativeMethods.EM_SETMARGINS,
             NativeMethods.EC_LEFTMARGIN | NativeMethods.EC_RIGHTMARGIN, (nint)((6 << 16) | 6));
-
+        _ = NativeMethods.SendMessage(_licenseEdit, NativeMethods.EM_SETMARGINS,
+            NativeMethods.EC_LEFTMARGIN | NativeMethods.EC_RIGHTMARGIN, (nint)((6 << 16) | 6));
     }
 
     private void Paint(nint hwnd)
@@ -356,9 +391,12 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
             _ = NativeMethods.GetClientRect(hwnd, out var bounds);
             var width = Scale(LogicalWidth, _dpi / 96d);
             var height = Scale(LogicalHeight, _dpi / 96d);
-            _ = NativeMethods.SetViewportOrgEx(dc, -_scrollX, -_scrollY, nint.Zero);
-            InstallerRenderer.Draw(dc, width, height, _dpi / 96d, ShowsAppIcon);
+            _ = NativeMethods.SetViewportOrgEx(dc, -_scrollX, Scale(TitleBarHeight, _dpi / 96d) - _scrollY, nint.Zero);
+            InstallerRenderer.Draw(dc, width, height, _dpi / 96d, _viewModel);
             DrawKeyboardFocus(dc);
+            // The title bar stays put while the page scrolls under it.
+            _ = NativeMethods.SetViewportOrgEx(dc, 0, 0, nint.Zero);
+            DrawTitleBar(dc, bounds.Right);
         }
         finally
         {
@@ -392,7 +430,7 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
         var oldHeadingFont = _headingFont;
         var bodyFont = NativeMethods.CreateFont(-Scale(14, scale), 0, 0, 0, NativeMethods.FW_NORMAL, 0, 0, 0,
             NativeMethods.DEFAULT_CHARSET, 0, 0, NativeMethods.CLEARTYPE_QUALITY, 0, "Segoe UI");
-        var monoFont = NativeMethods.CreateFont(-Scale(13, scale), 0, 0, 0, NativeMethods.FW_NORMAL, 0, 0, 0,
+        var monoFont = NativeMethods.CreateFont(-Scale(MonoFontSize, scale), 0, 0, 0, NativeMethods.FW_NORMAL, 0, 0, 0,
             NativeMethods.DEFAULT_CHARSET, 0, 0, NativeMethods.CLEARTYPE_QUALITY, 0, "Consolas");
         if (bodyFont == nint.Zero || monoFont == nint.Zero)
             throw new Win32Exception(Marshal.GetLastWin32Error(), "Windows could not create the installer fonts.");
@@ -424,7 +462,62 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
     }
 
     private void HandleClick(int physicalX, int physicalY)
-        => HandleLogicalClick(Logical(physicalX + _scrollX), Logical(physicalY + _scrollY));
+        => HandleLogicalClick(Logical(physicalX + _scrollX), Logical(physicalY + _scrollY - Scale(TitleBarHeight, _dpi / 96d)));
+
+    private nint HitTestFrame(nint hwnd, uint message, nuint wParam, nint lParam)
+    {
+        var hit = NativeMethods.DefWindowProc(hwnd, message, wParam, lParam);
+        if (hit != NativeMethods.HTCLIENT || !NativeMethods.GetWindowRect(hwnd, out var window))
+            return hit;
+        // Client and window origins coincide: the frame is zero-sized and scrollbars sit right and bottom.
+        var x = SignedLowWord(lParam) - window.Left;
+        var y = SignedHighWord(lParam) - window.Top;
+        return y >= 0 && y < Scale(TitleBarHeight, _dpi / 96d) && CaptionButtonAt(x, y) == CaptionButton.None
+            ? NativeMethods.HTCAPTION
+            : NativeMethods.HTCLIENT;
+    }
+
+    private CaptionButton CaptionButtonAt(int physicalX, int physicalY)
+    {
+        var scale = _dpi / 96d;
+        if (physicalY < 0 || physicalY >= Scale(TitleBarHeight, scale) || _hwnd == nint.Zero ||
+            !NativeMethods.GetClientRect(_hwnd, out var client))
+            return CaptionButton.None;
+        var buttonWidth = Scale(InstallerRenderer.CaptionButtonWidth, scale);
+        if (physicalX >= client.Right - buttonWidth && physicalX < client.Right)
+            return CaptionButton.Close;
+        if (physicalX >= client.Right - 2 * buttonWidth && physicalX < client.Right - buttonWidth)
+            return CaptionButton.Minimize;
+        return CaptionButton.None;
+    }
+
+    private void TrackHover(int physicalX, int physicalY)
+    {
+        if (!_trackingMouse && _hwnd != nint.Zero)
+        {
+            var track = new NativeMethods.TRACKMOUSEEVENT
+            {
+                cbSize = (uint)sizeof(NativeMethods.TRACKMOUSEEVENT),
+                dwFlags = NativeMethods.TME_LEAVE,
+                hwndTrack = _hwnd,
+            };
+            _trackingMouse = NativeMethods.TrackMouseEvent(ref track);
+        }
+        SetHover(CaptionButtonAt(physicalX, physicalY));
+    }
+
+    private void SetHover(CaptionButton button)
+    {
+        if (_hoverButton == button)
+            return;
+        _hoverButton = button;
+        Invalidate();
+    }
+
+    private bool CloseEnabled => _viewModel.CanCancel || _viewModel.IsFinished;
+
+    private void DrawTitleBar(nint dc, int clientWidth)
+        => InstallerRenderer.DrawTitleBar(dc, clientWidth, _dpi / 96d, _bodyFont, _caption, _hoverButton, CloseEnabled);
 
     internal void HandleLogicalClick(int x, int y)
     {
@@ -576,10 +669,16 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
         _ = NativeMethods.ShowWindow(_licenseEdit, showLicense ? NativeMethods.SW_SHOWNA : NativeMethods.SW_HIDE);
         _ = NativeMethods.ShowWindow(_folderEdit, showFolder ? NativeMethods.SW_SHOWNA : NativeMethods.SW_HIDE);
         if (showLicense)
-            _ = NativeMethods.MoveWindow(_licenseEdit, Scale(28, scale) - _scrollX, Scale(130, scale) - _scrollY, Scale(544, scale), Scale(246, scale), true);
+        {
+            var top = Scale(InstallerRenderer.LicenseTop + TitleBarHeight, scale) - _scrollY;
+            _ = NativeMethods.MoveWindow(_licenseEdit, Scale(28, scale) - _scrollX, top, Scale(544, scale), Scale(InstallerRenderer.LicenseHeight, scale), true);
+            ClipToPage(_licenseEdit, top, Scale(InstallerRenderer.LicenseHeight, scale));
+        }
         if (showFolder)
         {
-            _ = NativeMethods.MoveWindow(_folderEdit, Scale(28, scale) - _scrollX, Scale(105, scale) - _scrollY, Scale(444, scale), Scale(28, scale), true);
+            var top = Scale(InstallerRenderer.FolderTop + TitleBarHeight, scale) - _scrollY;
+            _ = NativeMethods.MoveWindow(_folderEdit, Scale(28, scale) - _scrollX, top, Scale(444, scale), Scale(InstallerRenderer.FolderHeight, scale), true);
+            ClipToPage(_folderEdit, top, Scale(InstallerRenderer.FolderHeight, scale));
             _ = NativeMethods.EnableWindow(_folderEdit, _viewModel.CanChooseFolder);
             var current = ReadWindowText(_folderEdit);
             if (!string.Equals(current, _viewModel.InstallFolder, StringComparison.Ordinal))
@@ -626,7 +725,7 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
             _ = NativeMethods.InvalidateRect(_hwnd, nint.Zero, false);
     }
 
-    private bool ShowsAppIcon => _viewModel.IsWelcome || (_viewModel.IsDone && !_viewModel.Failed && !_viewModel.Removed);
+    private const int MonoFontSize = 12;
     private int Logical(int physical) => (int)Math.Round(physical * 96d / _dpi);
     private static int OptionsShortcutsY(InstallerViewModel viewModel)
     {
@@ -659,6 +758,13 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
             _ = NativeMethods.DeleteObject(_monoFont);
         if (_selfHandle.IsAllocated)
             _selfHandle.Free();
+    }
+
+    internal enum CaptionButton
+    {
+        None,
+        Minimize,
+        Close,
     }
 
     internal enum HitTarget
@@ -715,13 +821,23 @@ internal static unsafe class InstallerRenderer
     internal const uint PanelColor = 0xFCF3ED;
     internal const uint DialogColor = 0xF8E9DF;
     internal const uint LineColor = 0xE6D6C8;
+    internal const uint FieldBorderColor = 0xC8B0A0;
     internal const uint TextColor = 0x663B19;
     internal const uint SubtitleColor = 0x856B5A;
+    internal const uint DisabledGlyphColor = 0xB8B8B8;
+    internal const uint CloseHoverColor = 0x1C2BC4;
+    internal const uint MinimizeHoverColor = 0xE9E9E9;
+    internal const int TitleBarHeight = 32;
+    internal const int CaptionButtonWidth = 46;
     internal const int HeaderHeight = 80;
     internal const int FooterTop = 424;
     internal const int AppIconLeft = 28;
     internal const int AppIconTop = 92;
     internal const int AppIconSize = 80;
+    internal const int LicenseTop = 130;
+    internal const int LicenseHeight = 246;
+    internal const int FolderTop = 105;
+    internal const int FolderHeight = 28;
     private const int WordmarkTop = 16;
     private const int WordmarkHeight = 48;
     private const int WordmarkRight = 572;
@@ -736,7 +852,8 @@ internal static unsafe class InstallerRenderer
     private static int _wordmarkWidth;
     private static int _wordmarkHeight;
 
-    internal static void Draw(nint dc, int width, int height, double scale, bool showAppIcon)
+    /// <summary>Draws the page chrome in page coordinates: the caller's viewport origin sits under the title bar.</summary>
+    internal static void Draw(nint dc, int width, int height, double scale, InstallerViewModel viewModel)
     {
         int Px(int value) => (int)Math.Round(value * scale);
         var line = Math.Max(1, Px(1));
@@ -748,8 +865,62 @@ internal static unsafe class InstallerRenderer
         Fill(dc, new(0, footerTop, width, footerTop + line), LineColor);
         Fill(dc, new(0, footerTop + line, width, height), DialogColor);
         DrawWordmark(dc, Px(WordmarkRight), Px(WordmarkTop), Px(WordmarkHeight));
-        if (showAppIcon)
+        if (viewModel.IsWelcome || (viewModel.IsDone && !viewModel.Failed && !viewModel.Removed))
             DrawAppIcon(dc, Px(AppIconLeft), Px(AppIconTop), Px(AppIconSize));
+        if (viewModel.IsLicense)
+            Outline(dc, new(Px(28), Px(LicenseTop), Px(28 + 544), Px(LicenseTop + LicenseHeight)), line);
+        if (viewModel.IsOptions)
+            Outline(dc, new(Px(28), Px(FolderTop), Px(28 + 444), Px(FolderTop + FolderHeight)), line);
+    }
+
+    /// <summary>Draws the title bar in client coordinates: icon, caption, and the minimize and close buttons.</summary>
+    internal static void DrawTitleBar(nint dc, int clientWidth, double scale, nint font, string caption,
+        InstallerWindow.CaptionButton hover, bool closeEnabled)
+    {
+        int Px(int value) => (int)Math.Round(value * scale);
+        var height = Px(TitleBarHeight);
+        var buttonWidth = Px(CaptionButtonWidth);
+        Fill(dc, new(0, 0, clientWidth, height), HeaderColor);
+        DrawAppIcon(dc, Px(12), Px(8), Px(16));
+        var textBounds = new NativeMethods.RECT(Px(36), 0, Math.Max(Px(36), clientWidth - 2 * buttonWidth - Px(8)), height);
+        var previousFont = NativeMethods.SelectObject(dc, font);
+        _ = NativeMethods.SetBkMode(dc, NativeMethods.TRANSPARENT);
+        _ = NativeMethods.SetTextColor(dc, TextColor);
+        _ = NativeMethods.DrawText(dc, caption, -1, ref textBounds,
+            NativeMethods.DT_LEFT | NativeMethods.DT_VCENTER | NativeMethods.DT_SINGLELINE | NativeMethods.DT_NOPREFIX | NativeMethods.DT_END_ELLIPSIS);
+        _ = NativeMethods.SelectObject(dc, previousFont);
+
+        var close = new NativeMethods.RECT(clientWidth - buttonWidth, 0, clientWidth, height);
+        var minimize = new NativeMethods.RECT(clientWidth - 2 * buttonWidth, 0, clientWidth - buttonWidth, height);
+        var closeHot = closeEnabled && hover == InstallerWindow.CaptionButton.Close;
+        if (closeHot)
+            Fill(dc, close, CloseHoverColor);
+        if (hover == InstallerWindow.CaptionButton.Minimize)
+            Fill(dc, minimize, MinimizeHoverColor);
+        var reach = Px(5);
+        var pen = NativeMethods.CreatePen(NativeMethods.PS_SOLID, Math.Max(1, Px(1)), closeHot ? HeaderColor : closeEnabled ? TextColor : DisabledGlyphColor);
+        var previousPen = NativeMethods.SelectObject(dc, pen);
+        try
+        {
+            var cx = (close.Left + close.Right) / 2;
+            var cy = height / 2;
+            _ = NativeMethods.MoveToEx(dc, cx - reach, cy - reach, nint.Zero);
+            _ = NativeMethods.LineTo(dc, cx + reach + 1, cy + reach + 1);
+            _ = NativeMethods.MoveToEx(dc, cx + reach, cy - reach, nint.Zero);
+            _ = NativeMethods.LineTo(dc, cx - reach - 1, cy + reach + 1);
+            _ = NativeMethods.SelectObject(dc, previousPen);
+            _ = NativeMethods.DeleteObject(pen);
+            pen = NativeMethods.CreatePen(NativeMethods.PS_SOLID, Math.Max(1, Px(1)), TextColor);
+            _ = NativeMethods.SelectObject(dc, pen);
+            cx = (minimize.Left + minimize.Right) / 2;
+            _ = NativeMethods.MoveToEx(dc, cx - reach, cy, nint.Zero);
+            _ = NativeMethods.LineTo(dc, cx + reach + 1, cy);
+        }
+        finally
+        {
+            _ = NativeMethods.SelectObject(dc, previousPen);
+            _ = NativeMethods.DeleteObject(pen);
+        }
     }
 
     private static void Fill(nint dc, NativeMethods.RECT bounds, uint color)
@@ -757,6 +928,15 @@ internal static unsafe class InstallerRenderer
         var brush = NativeMethods.CreateSolidBrush(color);
         try { _ = NativeMethods.FillRect(dc, in bounds, brush); }
         finally { _ = NativeMethods.DeleteObject(brush); }
+    }
+
+    // A one-line frame just outside a field, so the field itself needs no client edge.
+    private static void Outline(nint dc, NativeMethods.RECT field, int line)
+    {
+        Fill(dc, new(field.Left - line, field.Top - line, field.Right + line, field.Top), FieldBorderColor);
+        Fill(dc, new(field.Left - line, field.Bottom, field.Right + line, field.Bottom + line), FieldBorderColor);
+        Fill(dc, new(field.Left - line, field.Top, field.Left, field.Bottom), FieldBorderColor);
+        Fill(dc, new(field.Right, field.Top, field.Right + line, field.Bottom), FieldBorderColor);
     }
 
     // The wordmark ships as an 8-bit coverage mask, tinted over the header at draw time.
