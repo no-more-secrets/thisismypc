@@ -98,6 +98,15 @@ dotnet test --filter "Category!=Integration&Category!=Diagnostic"   # what CI ru
   `tests/ThisIsMyPC.Core.Tests/Fakes/`; `Category=Integration|Diagnostic` traits for anything
   touching the live system (excluded from CI).
 - The TIPC001 analyzer (`analyzers/`) auto-applies to every project.
+- **Lighting engine** (`src/ThisIsMyPC.LightingEngine`, C++): OpenRGB's device
+  core and every controller from the `third-party/OpenRGB` submodule, compiled
+  without Qt into `ThisIsMyPC-LightingEngine.exe`. It is not in the .NET
+  solution: build it with MSBuild from a Visual Studio developer prompt
+  (`msbuild src\ThisIsMyPC.LightingEngine\ThisIsMyPC.LightingEngine.vcxproj /p:Configuration=Release /p:Platform=x64`);
+  output lands in `artifacts/lighting-engine/Release/`, where a Debug app run
+  finds it. `Setup.ps1` checks the submodule out. Details, the host protocol,
+  and the pin-bump procedure: `docs/lighting-controllers.md`. Never add Qt,
+  OpenRGB plugins, or OpenRGB as an installed dependency.
 - **All build and test output goes under one gitignored root, `artifacts/`,
   shaped `artifacts/<type>/<build>/`.** One folder per type, one per build
   within it. Types: `releases/<version>` (shippable outputs),
@@ -319,6 +328,9 @@ ExplorerEdgeTabShotTests and ModuleEdgeTabShotTests check card bounds, wrapped s
 - **Enforcement routing**: `Enforcement != null` → `IEnforcementExecutor`; `null` → module
   delegate directly. No other heuristics; never route everything through the executor; the
   executor never calls modules directly (delegate pattern).
+- **Lighting** goes through the bundled engine over the SDK socket on loopback
+  (`EngineLightingBackend` over `ILightingEngine`); the two C# controller ports
+  in `ThisIsMyPC.Lighting` are only the fallback for a build without the engine.
 - **Modules**: implement `IModule` (`Core/Modules/IModule.cs`), registered explicitly in
   `App/App.axaml.cs` via `AddSingleton<IModule, X>()` (NativeAOT-safe, no reflection
   scanning). `Modules.Shell` is the reference implementation for custom-view modules;

@@ -1,51 +1,84 @@
-# Built-in lighting controllers
+# Lighting engine
 
-The Lighting tab drives RGB devices itself. The device protocols are ports of
-OpenRGB's controllers (GPL-2.0-or-later, taken under this repo's GPLv3;
-[why-gplv3.md](why-gplv3.md)). No OpenRGB binary ships with the app and none is
-launched. This page says where the code lives, how a device gets found, and
-how to port the next controller family.
+The Lighting tab drives every RGB device OpenRGB supports without OpenRGB being
+installed. The engine is OpenRGB's device core, built from the pinned source in
+`third-party/OpenRGB` (GPL-2.0-or-later, taken under this repo's GPLv3;
+[why-gplv3.md](why-gplv3.md)) without its Qt GUI, plugin loader, or suspend
+hook, and shipped beside the app as `lighting-engine\ThisIsMyPC-LightingEngine.exe`.
+The app runs it as a hidden child process and talks to it over the OpenRGB SDK
+protocol on loopback. Nothing is downloaded, nothing else is installed, and no
+OpenRGB process is launched.
 
 ## Layout
 
-| Project | What lives there |
+| Path | What lives there |
 | --- | --- |
-| `src/ThisIsMyPC.Core/Hardware/Lighting/` | The device model (`LightingDevice`, `LightingMode`, `LightingZone`, `RgbColor`), the `ILightingSession` and `ILightingBackend` contracts, and the OpenRGB SDK wire codec kept for diagnostics. |
-| `src/ThisIsMyPC.Lighting/` | Pure: transport interfaces, the detector registry, the ported controllers, and `NativeLightingBackend`. No Win32 calls; every device access goes through `IHidTransport` or `II2cBus`, so the controllers run against fakes in `tests/ThisIsMyPC.Lighting.Tests`. |
-| `src/ThisIsMyPC.Interop.Win32/Hardware/Hid/` | `WindowsHidTransport`: setupapi.dll and hid.dll with hidapi's Windows behavior (one entry per top-level collection, zero-access enumeration handles, shared read/write opens). |
-| `src/ThisIsMyPC.Interop.Win32/Hardware/I2c/` | `NvApiI2cBusProvider`: one I2C bus per NVIDIA GPU over `NvAPI_I2CReadEx`/`WriteEx`, SMBus transactions shaped as OpenRGB's `i2c_smbus_nvapi.cpp` shapes them. |
-| `src/ThisIsMyPC.App/Services/VendorNativeDependencyLoader.cs` | Maps `nvapi64.dll` from System32 before Code Integrity Guard closes image loading, after checking its NVIDIA signature. Optional and never fatal. |
+| `third-party/OpenRGB/` | Git submodule pinned to the OpenRGB commit the engine is built from. Never edited; a bump moves the pin. |
+| `src/ThisIsMyPC.LightingEngine/` | The C++ project. `ThisIsMyPC.LightingEngine.vcxproj` globs OpenRGB's `Controllers/**` and core sources from the submodule and excludes `qt/`, `PluginManager`, `SuspendResume`, `startup/`, and the Linux, macOS, and FreeBSD files, exactly as `OpenRGB.pro` does on Windows. `main.cpp` is the headless entry point. `engine_version.h` pins the version macros OpenRGB derives from git. `engine.rc` is the version resource. |
+| `src/ThisIsMyPC.Core/Hardware/Lighting/` | The device model, `ILightingSession` and `ILightingBackend`, the SDK wire codec, `ILightingEngine`, and `EngineLightingBackend`, which starts the engine and lists and drives devices through the SDK. |
+| `src/ThisIsMyPC.Interop.Win32/Hardware/LightingEngineHost.cs` | Runs the engine: loopback port chosen per start, configuration under the user's data folder, no window, redirected stdio, and a kill-on-close job so the engine never outlives the app. `OpenRgbSdkClient.cs` beside it is the SDK client. |
+| `src/ThisIsMyPC.Lighting/` | The two C# controller ports (Sinowealth mice, ENE on NVIDIA GPU I2C) and `NativeLightingBackend`. A build without the engine falls back to them. |
 
-Detection order inside `NativeLightingBackend.Detect`: enumerate HID collections, run every `HidDetector` whose vendor, product, interface, usage page and usage match (unset fields match anything, the same as OpenRGB's `HID_*_ANY`); then enumerate I2C buses and run every `I2cPciDetector` whose PCI vendor, device, subsystem vendor and subsystem device match the bus's host, at the detector's address. One pass at a time, cached until a refresh; the page's sessions share the controllers the pass found, and every controller call runs off the UI thread under that controller's own lock.
+## Host protocol
 
-## Ported families
+The engine takes OpenRGB's own options; the host passes `--config <dir>`,
+`--server-port <n>`, and `--loglevel <n>`. It always starts the SDK server on
+127.0.0.1 and never auto-connects to another OpenRGB.
 
-| Family | OpenRGB source | Transport | Devices |
-| --- | --- | --- | --- |
-| Sinowealth (`Controllers/Sinowealth/`) | `Controllers/SinowealthController/` | HID feature reports on two vendor collections | Glorious Model O / O-, Model D / D-, Everest GT-100 |
-| ENE SMBus (`Controllers/Ene/`) | `Controllers/ENESMBusController/` (`ENESMBusInterface_i2c_smbus`, `RGBController_ENESMBus`) | SMBus register protocol over `II2cBus` | ASUS graphics cards at 0x67 (`EneGpuDetectors.g.cs`, 172 PCI ids) |
+| Direction | Line | Meaning |
+| --- | --- | --- |
+| engine to host, stdout | `ready <port>` | Devices detected and the server listens. |
+| engine to host, stdout | `error <text>` | The server did not come up; the engine exits. |
+| host to engine, stdin | `rescan` | Detect again; the engine answers `detected` when the pass ends. |
+| host to engine, stdin | `stop` or end of input | Clean shutdown. |
 
-Not ported yet: ENE on the chipset SMBus (ASUS motherboards, RGB memory) needs a
-PawnIO-backed `II2cBus`, which needs administrator rights and the driver; AMD
-GPUs need an ADL-backed bus; everything else in OpenRGB's catalog.
+The engine's own log goes to `lighting-engine\logs\` under the user's data
+folder, with OpenRGB's `OpenRGB.json` beside it.
 
-## Port another device family
+## Build
 
-1. Fetch the source. `tools/fetch-openrgb-controller.ps1 -Controller <FolderName>` downloads `Controllers/<FolderName>/` from the OpenRGB GitLab tree into `artifacts/openrgb-src/<revision>/`, plus `pci_ids.h` and the shared headers the detector files include. It prints the revision it fetched; record it in the controller's summary comment.
-2. Read `RGBController_<X>.cpp` for the mode table (names, flags, ranges, color modes) and `<X>Controller.cpp` for the bytes on the wire. Port both into one `ILightingController` under `src/ThisIsMyPC.Lighting/Controllers/<Family>/`. Keep OpenRGB's mode values and register offsets verbatim; keep the color byte order they use (ENE stores R, B, G; Sinowealth writes R, B, G). Product copy in mode names may be fixed ("Seamless Breathing").
-3. Port the detector. HID families: one `HidDetector` per `REGISTER_HID_DETECTOR*` line, in a static list the registry references. Detectors that gather several collections of one device get the enumeration from the matched collection onward (`remaining`) and must apply the same remainder rule OpenRGB's `DetectUsages` applies, or the device is found once per collection. I2C PCI families: run `tools/import-openrgb-pci-detectors.ps1` over the detector file to generate the id table; commit the generated file; write the detect method it names.
-4. Register it in `LightingDetectors` (`Detection/LightingDetectors.cs`). The backend, the policy and the evidence list learn about the family from that list alone.
-5. Test it against a fake. `tests/ThisIsMyPC.Lighting.Tests/Fakes/` has a scripted HID transport and a simulated ENE chip; add what the family needs. Assert the exact bytes for at least one mode write, the detection remainder rule where it applies, and a refused transport call.
-6. Try it on real hardware with `NativeLightingLiveTests` (Diagnostic; `Detect_ListsThisPcsDevices` reads only, `PerLedColor_WritesAndRestores` writes when `TIPC_LIGHTING_WRITE=1`). A vendor library the family needs must be Microsoft-signed, or added to `VendorNativeDependencyLoader.Optional` with its signer, or the release build cannot load it.
+The engine is not in the .NET solution; `dotnet build` never touches it. Build
+it with MSBuild from any Visual Studio 2026 developer prompt:
 
-Reading OpenRGB's `RGBController.cpp` is the fastest way to learn the model: `SetupZones`, `DeviceUpdateMode`, `DeviceUpdateLEDs` map one to one onto `Describe`, `SetMode`, `SetLeds` here.
+```
+msbuild src\ThisIsMyPC.LightingEngine\ThisIsMyPC.LightingEngine.vcxproj /p:Configuration=Release /p:Platform=x64
+```
+
+Output lands in `artifacts/lighting-engine/Release/`: the engine, the prebuilt
+`hidapi.dll`, `libusb-1.0.dll`, and `PawnIOLib.dll` from OpenRGB's tree, the
+PawnIO SMBus modules (`Smbus*.bin`, `LpcIO.bin`), and the four VC++ runtime
+DLLs the prebuilt mbedtls forces (`vcruntime140*.dll`, `msvcp140*.dll`). A Debug
+app run finds the engine there; a release finds it in `lighting-engine\` beside
+`ThisIsMyPC.App.exe`. `tools/build-release.ps1` builds it with the pinned MSVC,
+copies it into staging, and gates it through the same hardening check
+(`/guard:cf`, CET, `/Brepro`) as the other first-party executables. CI builds
+it with the runner's toolset; the release toolchain uses the pinned one.
+
+## Update the pin
+
+1. Move the submodule: `git -C third-party/OpenRGB fetch --depth 1 origin <commit>` and `git -C third-party/OpenRGB checkout <commit>`.
+2. Set the commit, date, and version text in `src/ThisIsMyPC.LightingEngine/engine_version.h`.
+3. Build. A new file OpenRGB compiles only on Windows, or one it textually includes elsewhere (`SinowealthControllerDetect.cpp` includes `GenesisXenon200Controller.cpp`), shows up as a link error; adjust the `Remove` list in the project.
+4. Run `LightingEngineHostTests` (Diagnostic): it starts the engine, lists devices over the SDK, rescans, and stops it.
+
+## What needs elevation
+
+The app hosts the engine unelevated, so it reaches every USB, HID, and GPU
+device: motherboards with Aura USB, keyboards, mice, GPUs over NVIDIA and AMD
+I2C, network lights. Devices on the chipset SMBus (RGB memory, some
+motherboards) need the PawnIO driver and administrator rights; the engine
+carries the modules, and an elevated host under the Owner Mode service plus
+a bundled PawnIO installer are the open items in the backlog.
+
+A separately running OpenRGB owns whatever devices it opened first. The
+Hardware facts already record that it is running; the tab says so.
 
 ## Rules
 
-- Controllers write nothing the person did not ask for. Detection is reads only (the ENE probe reads registers; the Sinowealth probe sends the configuration-read command).
-- Every write goes through the tab's live decision (`WriteDevices`); the controllers never see the override.
-- Each device has a settings gear. Save to device defaults on when a separate save command is supported. The preference uses the device identity, not its enumeration index, and persists in user settings. Serial identifies a device when present; otherwise its connection location does. Moving a device without a serial may reset its preference.
-- Controls edit a draft. Apply writes the mode and LED colors, then saves once when enabled and supported. Slider movements, loading, and opening settings write nothing. Automatic-save modes receive no extra save command and devices with only those modes have no save toggle. Unsupported modes never receive a save command.
-- Apply reports a failed save separately from an applied change. Every device operation checks the live permission gate; closing the card prevents later operations in an unfinished apply.
-- Sam verified the existing ENE save command on his ASUS ROG STRIX RTX 4080: lighting stayed Off through shutdown and startup. This is evidence for that card, not every ENE device.
-- A misbehaving device fails its own detection with a note; it never hides the others.
+- Controllers write nothing the person did not ask for. Detection is reads only.
+- Every write goes through the tab's live decision (`WriteDevices`); the engine never sees the override.
+- Each device has a settings gear. Save to device defaults on when a separate save command is supported. The preference uses the device identity, not its enumeration index, and persists in user settings. Serial identifies a device when present; otherwise its connection location does.
+- Controls edit a draft. Apply writes the mode and LED colors, then saves once when enabled and supported. Slider movements, loading, and opening settings write nothing.
+- Apply reports a failed save separately from an applied change. Every device operation checks the live permission gate.
+- A misbehaving device fails its own detection inside the engine; it never hides the others.
+- No Qt, no OpenRGB plugins, no second copy of OpenRGB, and never OpenRGB as an installed dependency.

@@ -11,6 +11,9 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          submodules: true
+          # third-party/OpenRGB: the lighting engine's pinned source.
 
       - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
@@ -28,6 +31,15 @@ jobs:
         # TIPC001 Roslyn analyzer runs automatically via Directory.Build.props.
         # Any [LibraryImport] or [DllImport] missing [DefaultDllImportSearchPaths(System32)]
         # will fail the build as an error (NFR30).
+
+      - name: Build lighting engine
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $msbuild = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -find MSBuild\**\Bin\amd64\MSBuild.exe | Select-Object -First 1
+          & $msbuild src/ThisIsMyPC.LightingEngine/ThisIsMyPC.LightingEngine.vcxproj /p:Configuration=Release /p:Platform=x64 /m /nologo /v:m
+          if ($LASTEXITCODE -ne 0) { throw 'Lighting engine build failed' }
+        # OpenRGB's device core compiled without Qt; the runner's toolset stands in for the pinned one.
 
       - name: Test
         run: dotnet test --configuration Release --no-restore --no-build --filter "Category!=Integration&Category!=Diagnostic"

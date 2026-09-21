@@ -373,4 +373,10 @@ so the terms stay the ones in LICENSE. Open source makes the code
 inspectable; it is not a substitute for an audit. See
 [docs/why-gplv3.md](docs/why-gplv3.md).
 
+The Lighting tab is built on [OpenRGB](https://openrgb.org) (GPL-2.0-or-later),
+compiled from the pinned source in `third-party/OpenRGB` into the bundled
+lighting engine; see [docs/lighting-controllers.md](docs/lighting-controllers.md).
+The engine carries the [PawnIO](https://pawnio.eu) SMBus modules for chipset
+devices.
+
 Copyright (c) 2026 No More Secrets, LLC. See [NOTICE](NOTICE).

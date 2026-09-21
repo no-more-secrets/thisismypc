@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ThisIsMyPC lighting engine: OpenRGB's device core and every controller, built
+  from the pinned submodule at third-party/OpenRGB without the Qt GUI, the plugin
+  loader, or the suspend hook. The entry point is main.cpp in this folder; the
+  host talks to it over stdin/stdout and the OpenRGB SDK socket on loopback.
+  Sources are globbed from the submodule so a tag bump needs no edits here.
+-->
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <!-- The repo-wide props wire every project to the C# analyzer and .NET settings; a C++ project takes neither. -->
+    <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
+    <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{7C0A9B7E-5A1D-4F6B-9C2E-1B8D3E6F0A21}</ProjectGuid>
+    <RootNamespace>ThisIsMyPC.LightingEngine</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <RepoRoot>$(MSBuildThisFileDirectory)..\..\</RepoRoot>
+    <OpenRgbRoot>$(RepoRoot)third-party\OpenRGB\</OpenRgbRoot>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+
+  <PropertyGroup Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <!-- The pinned release toolchain selects its own VS instance, whose default toolset is the pinned one. -->
+    <PlatformToolset Condition="'$(PlatformToolset)' == ''">$(DefaultPlatformToolset)</PlatformToolset>
+    <UseDebugLibraries Condition="'$(Configuration)' == 'Debug'">true</UseDebugLibraries>
+    <UseDebugLibraries Condition="'$(Configuration)' == 'Release'">false</UseDebugLibraries>
+    <WholeProgramOptimization Condition="'$(Configuration)' == 'Release'">true</WholeProgramOptimization>
+  </PropertyGroup>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+
+  <PropertyGroup>
+    <TargetName>ThisIsMyPC-LightingEngine</TargetName>
+    <!-- All build output lives under artifacts/, never beside the sources. -->
+    <OutDir>$(RepoRoot)artifacts\lighting-engine\$(Configuration)\</OutDir>
+    <IntDir>$(RepoRoot)artifacts\lighting-engine\obj\$(Configuration)\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
+    <GenerateManifest>true</GenerateManifest>
+  </PropertyGroup>
+
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <!-- /Brepro and the trimmed file paths keep two builds of one tag byte-identical. -->
+      <AdditionalOptions>/utf-8 /bigobj /Zc:__cplusplus /Brepro /d1trimfile:$(RepoRoot) %(AdditionalOptions)</AdditionalOptions>
+      <ControlFlowGuard>Guard</ControlFlowGuard>
+      <BufferSecurityCheck>true</BufferSecurityCheck>
+      <WarningLevel>Level1</WarningLevel>
+      <SDLCheck>false</SDLCheck>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <!-- The prebuilt mbedtls libraries expect the dynamic CRT (MSVCRT). -->
+      <RuntimeLibrary Condition="'$(Configuration)' == 'Release'">MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeLibrary Condition="'$(Configuration)' == 'Debug'">MultiThreadedDebugDLL</RuntimeLibrary>
+      <Optimization Condition="'$(Configuration)' == 'Release'">MaxSpeed</Optimization>
+      <FunctionLevelLinking Condition="'$(Configuration)' == 'Release'">true</FunctionLevelLinking>
+      <IntrinsicFunctions Condition="'$(Configuration)' == 'Release'">true</IntrinsicFunctions>
+      <Optimization Condition="'$(Configuration)' == 'Debug'">Disabled</Optimization>
+      <ForcedIncludeFiles>$(MSBuildThisFileDirectory)engine_version.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <!-- OpenRGB.pro's win32 defines: MBCS, no UNICODE. -->
+      <PreprocessorDefinitions>USE_HID_USAGE;_MBCS;WIN32;_CRT_SECURE_NO_WARNINGS;_WINSOCK_DEPRECATED_NO_WARNINGS;WIN32_LEAN_AND_MEAN;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)' == 'Debug'">_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)' == 'Release'">NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <UndefinePreprocessorDefinitions>UNICODE;_UNICODE;%(UndefinePreprocessorDefinitions)</UndefinePreprocessorDefinitions>
+      <AdditionalIncludeDirectories>
+        $(MSBuildThisFileDirectory);
+        $(OpenRgbRoot);
+        $(OpenRgbRoot)dependencies\ColorWheel;
+        $(OpenRgbRoot)dependencies\CRCpp;
+        $(OpenRgbRoot)dependencies\hueplusplus-1.2.0\include;
+        $(OpenRgbRoot)dependencies\hueplusplus-1.2.0\include\hueplusplus;
+        $(OpenRgbRoot)dependencies\httplib;
+        $(OpenRgbRoot)dependencies\json;
+        $(OpenRgbRoot)dependencies\mdns;
+        $(OpenRgbRoot)dependencies\stb;
+        $(OpenRgbRoot)dependencies\libe131\src;
+        $(OpenRgbRoot)dependencies\display-library\include;
+        $(OpenRgbRoot)dependencies\hidapi-win\include;
+        $(OpenRgbRoot)dependencies\libusb-1.0.27\include;
+        $(OpenRgbRoot)dependencies\mbedtls-3.2.1\include;
+        $(OpenRgbRoot)dependencies\NVFC;
+        $(OpenRgbRoot)dependencies\PawnIO;
+        $(OpenRgbRoot)dmiinfo;
+        $(OpenRgbRoot)hidapi_wrapper;
+        $(OpenRgbRoot)i2c_smbus;
+        $(OpenRgbRoot)i2c_smbus\Windows;
+        $(OpenRgbRoot)i2c_tools;
+        $(OpenRgbRoot)interop;
+        $(OpenRgbRoot)net_port;
+        $(OpenRgbRoot)pci_ids;
+        $(OpenRgbRoot)scsiapi;
+        $(OpenRgbRoot)serial_port;
+        $(OpenRgbRoot)super_io;
+        $(OpenRgbRoot)wmi;
+        $(OpenRgbRoot)AutoStart;
+        $(OpenRgbRoot)KeyboardLayoutManager;
+        $(OpenRgbRoot)RGBController;
+        $(OpenRgbRoot)SPDAccessor;
+        $(OpenRgbRoot)qt;
+        %(AdditionalIncludeDirectories)
+      </AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <!-- Release ships no symbols and carries no PDB path, like the NativeAOT binaries. -->
+      <GenerateDebugInformation Condition="'$(Configuration)' == 'Release'">false</GenerateDebugInformation>
+      <GenerateDebugInformation Condition="'$(Configuration)' == 'Debug'">true</GenerateDebugInformation>
+      <EnableCOMDATFolding Condition="'$(Configuration)' == 'Release'">true</EnableCOMDATFolding>
+      <OptimizeReferences Condition="'$(Configuration)' == 'Release'">true</OptimizeReferences>
+      <AdditionalLibraryDirectories>
+        $(OpenRgbRoot)dependencies\libusb-1.0.27\VS2019\MS64\dll;
+        $(OpenRgbRoot)dependencies\hidapi-win\x64;
+        $(OpenRgbRoot)dependencies\mbedtls-3.2.1\lib\x64;
+        $(OpenRgbRoot)dependencies\PawnIO;
+        %(AdditionalLibraryDirectories)
+      </AdditionalLibraryDirectories>
+      <AdditionalDependencies>ws2_32.lib;iphlpapi.lib;setupapi.lib;wbemuuid.lib;ole32.lib;oleaut32.lib;advapi32.lib;shell32.lib;user32.lib;winmm.lib;winhttp.lib;libusb-1.0.lib;hidapi.lib;mbedcrypto.lib;mbedtls.lib;mbedx509.lib;PawnIOLib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <!-- Every first-party binary carries the same mitigations as the app. -->
+      <AdditionalOptions>/CETCOMPAT /guard:cf /DYNAMICBASE /HIGHENTROPYVA /NXCOMPAT /Brepro %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+  </ItemDefinitionGroup>
+
+  <PropertyGroup>
+    <!-- The release script passes the product version; a local build carries zeros. -->
+    <EngineVersion Condition="'$(EngineVersion)' == ''">0.0.0</EngineVersion>
+    <EngineVersionNumeric>$([System.Text.RegularExpressions.Regex]::Replace($(EngineVersion), '-.*$', ''))</EngineVersionNumeric>
+    <EngineFileVersion>$([System.Version]::Parse($(EngineVersionNumeric)).Major),$([System.Version]::Parse($(EngineVersionNumeric)).Minor),$([System.Version]::Parse($(EngineVersionNumeric)).Build),0</EngineFileVersion>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ResourceCompile>
+      <PreprocessorDefinitions>ENGINE_FILE_VERSION=$(EngineFileVersion);ENGINE_VERSION_TEXT=$(EngineVersion);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+
+  <ItemGroup>
+    <ResourceCompile Include="$(MSBuildThisFileDirectory)engine.rc" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)main.cpp" />
+    <!-- Every controller, minus the files OpenRGB.pro drops on Windows. A name with both
+         suffixes (for example _Windows_Linux) is a Windows file and comes back below. -->
+    <ClCompile Include="$(OpenRgbRoot)Controllers\**\*.cpp" />
+    <ClCompile Remove="$(OpenRgbRoot)Controllers\**\*_Linux*.cpp;$(OpenRgbRoot)Controllers\**\*_MacOS*.cpp;$(OpenRgbRoot)Controllers\**\*_FreeBSD*.cpp" />
+    <!-- SinowealthControllerDetect.cpp includes this .cpp textually; compiling it too duplicates every symbol. -->
+    <ClCompile Remove="$(OpenRgbRoot)Controllers\SinowealthController\GenesisXenon200Controller\GenesisXenon200Controller.cpp" />
+    <ClCompile Include="$(OpenRgbRoot)Controllers\**\*_Windows*.cpp" Exclude="@(ClCompile)" />
+    <!-- OpenRGB common sources (OpenRGB.pro SOURCES) without the GUI, PluginManager, and startup. -->
+    <!-- hsv.cpp lives under qt/ but is plain C++; eighteen controllers use it. -->
+    <ClCompile Include="$(OpenRgbRoot)qt\hsv.cpp" />
+    <ClCompile Include="$(OpenRgbRoot)dependencies\hueplusplus-1.2.0\src\*.cpp" Exclude="$(OpenRgbRoot)dependencies\hueplusplus-1.2.0\src\LinHttpHandler.cpp;$(OpenRgbRoot)dependencies\hueplusplus-1.2.0\src\Rule.cpp" />
+    <ClCompile Include="$(OpenRgbRoot)dependencies\libe131\src\e131.c" />
+    <ClCompile Include="$(OpenRgbRoot)dependencies\NVFC\nvapi.cpp" />
+    <ClCompile Include="$(OpenRgbRoot)cli.cpp" />
+    <ClCompile Include="$(OpenRgbRoot)dmiinfo\dmiinfo.cpp" />
+    <ClCompile Include="$(OpenRgbRoot)LogManager.cpp" />
+    <ClCompile Include="$(OpenRgbRoot)NetworkClient.cpp" />
+    <ClCompile Include="$(OpenRgbRoot)NetworkProtocol.cpp" />
+    <ClCompile Include="$(OpenRgbRoot)NetworkServer.cpp" />
+    <ClCompile Include="$(OpenRgbRoot)ProfileManager.cpp" />
+    <ClCompile Include="$(OpenRgbRoot)ResourceManager.cpp" />
+    <ClCompile Include="$(OpenRgbRoot)SettingsManager.cpp" />
+    <ClCompile Include="$(OpenRgbRoot)MathUtils.cpp" />
+    <ClCompile Include="$(OpenRgbRoot)StringUtils.cpp" />
+    <ClCompile Include="$(OpenRgbRoot)SPDAccessor\*.cpp" />
+    <ClCompile Include="$(OpenRgbRoot)i2c_smbus\i2c_smbus.cpp" />
+    <ClCompile Include="$(OpenRgbRoot)i2c_smbus\Windows\*.cpp" />
+    <ClCompile Include="$(OpenRgbRoot)i2c_tools\i2c_tools.cpp" />
+    <ClCompile Include="$(OpenRgbRoot)interop\*.cpp" />
+    <ClCompile Include="$(OpenRgbRoot)net_port\net_port.cpp" />
+    <ClCompile Include="$(OpenRgbRoot)serial_port\serial_port.cpp" />
+    <ClCompile Include="$(OpenRgbRoot)serial_port\find_usb_serial_port_win.cpp" />
+    <ClCompile Include="$(OpenRgbRoot)scsiapi\scsiapi_windows.c" />
+    <ClCompile Include="$(OpenRgbRoot)super_io\super_io_pawnio.cpp" />
+    <ClCompile Include="$(OpenRgbRoot)wmi\wmi.cpp" />
+    <ClCompile Include="$(OpenRgbRoot)AutoStart\AutoStart.cpp" />
+    <ClCompile Include="$(OpenRgbRoot)AutoStart\AutoStart-Windows.cpp" />
+    <ClCompile Include="$(OpenRgbRoot)KeyboardLayoutManager\KeyboardLayoutManager.cpp" />
+    <ClCompile Include="$(OpenRgbRoot)RGBController\*.cpp" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- OpenRGB's controllers include each other by bare file name, so every controller
+         folder is an include directory, exactly as OpenRGB.pro does it. -->
+    <ControllerHeaders Include="$(OpenRgbRoot)Controllers\**\*.h" />
+    <EngineRuntimeFiles Include="$(OpenRgbRoot)dependencies\hidapi-win\x64\hidapi.dll" />
+    <EngineRuntimeFiles Include="$(OpenRgbRoot)dependencies\libusb-1.0.27\VS2019\MS64\dll\libusb-1.0.dll" />
+    <EngineRuntimeFiles Include="$(OpenRgbRoot)dependencies\PawnIO\PawnIOLib.dll" />
+    <EngineRuntimeFiles Include="$(OpenRgbRoot)dependencies\PawnIO\modules\*.bin" />
+    <!-- The dynamic CRT the prebuilt mbedtls forces, app-local from the same toolchain that compiled the engine. -->
+    <EngineRuntimeFiles Include="$(VCInstallDir)Redist\MSVC\$(VCToolsVersion)\x64\Microsoft.VC$(PlatformToolsetVersion).CRT\vcruntime140.dll" />
+    <EngineRuntimeFiles Include="$(VCInstallDir)Redist\MSVC\$(VCToolsVersion)\x64\Microsoft.VC$(PlatformToolsetVersion).CRT\vcruntime140_1.dll" />
+    <EngineRuntimeFiles Include="$(VCInstallDir)Redist\MSVC\$(VCToolsVersion)\x64\Microsoft.VC$(PlatformToolsetVersion).CRT\msvcp140.dll" />
+    <EngineRuntimeFiles Include="$(VCInstallDir)Redist\MSVC\$(VCToolsVersion)\x64\Microsoft.VC$(PlatformToolsetVersion).CRT\msvcp140_codecvt_ids.dll" />
+  </ItemGroup>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+
+  <Target Name="AddControllerIncludeDirectories" BeforeTargets="ClCompile">
+    <PropertyGroup>
+      <ControllerIncludeDirectories>@(ControllerHeaders->'%(RootDir)%(Directory)'->Distinct())</ControllerIncludeDirectories>
+    </PropertyGroup>
+    <ItemGroup>
+      <ClCompile>
+        <AdditionalIncludeDirectories>%(ClCompile.AdditionalIncludeDirectories);$(ControllerIncludeDirectories)</AdditionalIncludeDirectories>
+      </ClCompile>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="CopyEngineRuntimeFiles" AfterTargets="Link">
+    <Copy SourceFiles="@(EngineRuntimeFiles)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+  </Target>
+</Project>

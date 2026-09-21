@@ -1,0 +1,44 @@
+// Version resource for the lighting engine. The build passes EngineVersion
+// (numeric, four parts) and EngineVersionText (the product version string).
+#include <winver.h>
+
+#ifndef ENGINE_FILE_VERSION
+#define ENGINE_FILE_VERSION 0,0,0,0
+#endif
+// The build passes the version as bare tokens (quotes do not survive the
+// resource compiler's command line); stringizing turns them into the text.
+#ifndef ENGINE_VERSION_TEXT
+#define ENGINE_VERSION_TEXT 0.0.0
+#endif
+#define ENGINE_STRINGIZE2(x) #x
+#define ENGINE_STRINGIZE(x) ENGINE_STRINGIZE2(x)
+#define ENGINE_VERSION_STRING ENGINE_STRINGIZE(ENGINE_VERSION_TEXT)
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION ENGINE_FILE_VERSION
+ PRODUCTVERSION ENGINE_FILE_VERSION
+ FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
+ FILEFLAGS 0
+ FILEOS VOS_NT_WINDOWS32
+ FILETYPE VFT_APP
+ FILESUBTYPE VFT2_UNKNOWN
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904B0"
+        BEGIN
+            VALUE "CompanyName", "NMS"
+            VALUE "FileDescription", "ThisIsMyPC lighting engine (OpenRGB device core)"
+            VALUE "FileVersion", ENGINE_VERSION_STRING
+            VALUE "InternalName", "ThisIsMyPC-LightingEngine.exe"
+            VALUE "LegalCopyright", "Copyright (c) 2026 No More Secrets, LLC. GPLv3. Built on OpenRGB, GPL-2.0-or-later."
+            VALUE "OriginalFilename", "ThisIsMyPC-LightingEngine.exe"
+            VALUE "ProductName", "ThisIsMyPC"
+            VALUE "ProductVersion", ENGINE_VERSION_STRING
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END

@@ -472,7 +472,7 @@ public class LightingControlsShotTests
         s.Screenshot("no-devices-dark");
 
         Assert.True(s.IsTextVisible("Not available"));
-        Assert.True(s.IsTextVisible("No supported lighting device was found on this PC. Lighting drives the devices it has a built-in controller for."));
+        Assert.True(s.IsTextVisible("No supported lighting device was found on this PC. Lighting drives every device its engine supports."));
         Assert.False(vm.HasAction);
         Assert.Null(s.TryFind<Button>(b => b.Content is string content && (content.StartsWith("Install", StringComparison.Ordinal) || content.StartsWith("Open", StringComparison.Ordinal))));
         Assert.Null(vm.Lighting);

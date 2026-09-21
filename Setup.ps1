@@ -65,6 +65,11 @@ $elevated = (New-Object Security.Principal.WindowsPrincipal $identity).IsInRole(
 if ($elevated) { Ok 'Elevated shell (Integration and Diagnostic tests can run here)' }
 else { Warn 'Not elevated. Fine for setup and CI-safe tests; the app and the Integration/Diagnostic tiers need an admin terminal.' }
 
+Step 'Submodules'
+# third-party/OpenRGB is the lighting engine's pinned source (docs/lighting-controllers.md).
+& git -C $repoRoot submodule update --init --depth 1
+if ($LASTEXITCODE -eq 0) { Ok 'third-party/OpenRGB checked out at its pinned commit' } else { Fail 'git submodule update failed' }
+
 Step 'Git hooks'
 & (Join-Path $repoRoot 'tools\install-git-hooks.ps1')
 

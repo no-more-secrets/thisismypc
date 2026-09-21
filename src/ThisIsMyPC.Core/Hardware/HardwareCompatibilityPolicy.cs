@@ -131,22 +131,22 @@ public static class HardwareCompatibilityPolicy
         if (formFactor.FormFactor == MachineFormFactor.Laptop)
             evidence.Add("Laptop: lighting depends on which controllers answer; laptops are not excluded.");
 
-        // The tab drives devices through the built-in controllers; no companion
-        // is installed or opened for it. OpenRGB only matters as a program that
-        // may be driving the same devices (the conflict pass below).
+        // The tab drives devices through the bundled lighting engine; no companion
+        // is installed or opened for it. A separately running OpenRGB only matters
+        // as a program that may be driving the same devices (the conflict pass below).
         Draft draft;
         var devices = facts.LightingDevices;
         if (devices is null)
         {
             draft = new Draft(HardwareAvailability.Unknown,
                 "Lighting devices were not checked for yet, so Lighting cannot say what it can do here.", null);
-            evidence.Add("Built-in lighting controllers: not run.");
+            evidence.Add("Lighting engine: not run.");
         }
         else if (devices.Count == 0)
         {
             draft = new Draft(HardwareAvailability.Unavailable,
-                "No supported lighting device was found on this PC. Lighting drives the devices it has a built-in controller for.", null);
-            evidence.Add("Built-in lighting controllers: no supported device answered.");
+                "No supported lighting device was found on this PC. Lighting drives every device its engine supports.", null);
+            evidence.Add("Lighting engine: no supported device answered.");
         }
         else
         {
@@ -156,7 +156,7 @@ public static class HardwareCompatibilityPolicy
                     ? $"Lighting drives {names[0]} directly."
                     : $"Lighting drives {devices.Count.ToString(CultureInfo.InvariantCulture)} devices directly: {string.Join(", ", names)}.",
                 null);
-            evidence.Add($"Built-in lighting controllers: {devices.Count.ToString(CultureInfo.InvariantCulture)} device(s).");
+            evidence.Add($"Lighting engine: {devices.Count.ToString(CultureInfo.InvariantCulture)} device(s).");
             foreach (var device in devices)
                 evidence.Add($"{device.Name} ({LightingDevice.DescribeType(device.Type)}) via {device.Controller}, {device.Location}.");
         }

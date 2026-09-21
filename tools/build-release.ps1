@@ -189,6 +189,35 @@ if ($sqliteFileVersion -ne '3.53.3.0') {
 
 # Version blocks read English (United States) instead of Language Neutral
 # (the compiler cannot be told otherwise). Before vpk pack, which signs them.
+# Lighting engine: OpenRGB's device core from the pinned submodule, compiled by
+# the same pinned MSVC without Qt (docs/lighting-controllers.md). It ships beside
+# the app in lighting-engine\ with its prebuilt HID, USB, and PawnIO libraries,
+# the PawnIO SMBus modules, and the app-local CRT the prebuilt mbedtls requires.
+Write-Host 'Building the lighting engine (C++, pinned MSVC)...'
+if (-not (Test-Path (Join-Path $repoRoot 'third-party\OpenRGB\OpenRGB.pro'))) {
+    throw 'third-party/OpenRGB is empty. Run: git submodule update --init --depth 1'
+}
+$engineProject = Join-Path $repoRoot 'src\ThisIsMyPC.LightingEngine\ThisIsMyPC.LightingEngine.vcxproj'
+$msbuild = Join-Path $releaseToolchain.installationPath 'MSBuild\Current\Bin\amd64\MSBuild.exe'
+& $msbuild $engineProject /p:Configuration=Release /p:Platform=x64 "/p:EngineVersion=$Version" /m /nologo /v:m /nodeReuse:false
+if ($LASTEXITCODE -ne 0) { throw 'Lighting engine build failed' }
+$engineOutput = Join-Path $repoRoot 'artifacts\lighting-engine\Release'
+$engineStaging = Join-Path $staging 'lighting-engine'
+New-Item -ItemType Directory -Force $engineStaging | Out-Null
+Get-ChildItem $engineOutput -File | Where-Object { $_.Extension -in '.exe', '.dll', '.bin' } |
+    Copy-Item -Destination $engineStaging
+$engineExe = Join-Path $engineStaging 'ThisIsMyPC-LightingEngine.exe'
+if (-not (Test-Path $engineExe)) {
+    throw 'ThisIsMyPC-LightingEngine.exe missing from staging; Lighting would fall back to two built-in controllers'
+}
+foreach ($required in 'hidapi.dll', 'libusb-1.0.dll', 'PawnIOLib.dll', 'SmbusPIIX4.bin', 'vcruntime140.dll', 'msvcp140.dll') {
+    if (-not (Test-Path (Join-Path $engineStaging $required))) { throw "$required missing from the lighting engine staging" }
+}
+$engineVersionInfo = (Get-Item -LiteralPath $engineExe).VersionInfo
+if ($engineVersionInfo.OriginalFilename -ne 'ThisIsMyPC-LightingEngine.exe' -or $engineVersionInfo.ProductVersion -ne $Version) {
+    throw "The lighting engine version resource is wrong: OriginalFilename '$($engineVersionInfo.OriginalFilename)', ProductVersion '$($engineVersionInfo.ProductVersion)'."
+}
+
 foreach ($exe in 'ThisIsMyPC.App.exe', 'ThisIsMyPC.Service.exe', 'ThisIsMyPC.Broker.exe') {
     & (Join-Path $PSScriptRoot 'set-version-language.ps1') -Path (Join-Path $staging $exe)
 }
@@ -291,8 +320,8 @@ Add-InstallerPayload -StubPath $installerExe -PayloadPath $msiPath -OutputPath $
 Write-Host 'Checking exploit mitigations on the shipped binaries...'
 & (Join-Path $PSScriptRoot 'check-binary-hardening.ps1') `
     (Join-Path $staging 'ThisIsMyPC.App.exe') (Join-Path $staging 'ThisIsMyPC.Service.exe') `
-    (Join-Path $staging 'ThisIsMyPC.Broker.exe') $installerAsset `
-    -Require 'ThisIsMyPC.App.exe', 'ThisIsMyPC.Service.exe', 'ThisIsMyPC.Broker.exe', (Split-Path $installerAsset -Leaf)
+    (Join-Path $staging 'ThisIsMyPC.Broker.exe') (Join-Path $staging 'lighting-engine\ThisIsMyPC-LightingEngine.exe') $installerAsset `
+    -Require 'ThisIsMyPC.App.exe', 'ThisIsMyPC.Service.exe', 'ThisIsMyPC.Broker.exe', 'ThisIsMyPC-LightingEngine.exe', (Split-Path $installerAsset -Leaf)
 if ($LASTEXITCODE -ne 0) { throw 'A shipped binary is missing an exploit mitigation; see the table above.' }
 
 if ($SignThumbprint) {

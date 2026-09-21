@@ -228,13 +228,23 @@ public partial class App : Application
         services.AddSingleton<IModule, PowerModule>();
         services.AddSingleton<IModule, ThisIsMyPC.Modules.Display.DisplayModule>();
 
-        // Lighting: the built-in controllers (docs/lighting-controllers.md)
-        // over HID (hid.dll) and GPU I2C (NvAPI, mapped before CIG by
-        // Program). One backend for the life of the app: detection runs once
-        // per pass and the page's sessions share the controllers it found.
-        services.AddSingleton<Core.Hardware.Lighting.ILightingBackend>(_ => new ThisIsMyPC.Lighting.NativeLightingBackend(
-            new ThisIsMyPC.Interop.Win32.Hardware.Hid.WindowsHidTransport(),
-            new ThisIsMyPC.Interop.Win32.Hardware.I2c.NvApiI2cBusProvider()));
+        // Lighting: the bundled engine (docs/lighting-controllers.md), OpenRGB's
+        // device core built from the pinned submodule and run as a child process
+        // that serves the SDK protocol on loopback. Every device it supports is a
+        // ThisIsMyPC device. A build without the engine falls back to the two
+        // built-in controllers over HID and GPU I2C.
+        services.AddSingleton<Core.Hardware.Lighting.ILightingEngine>(_ => new ThisIsMyPC.Interop.Win32.Hardware.LightingEngineHost(
+            Path.Combine(AppConstants.UserDataDirectoryPath, "lighting-engine")));
+        services.AddSingleton<Core.Hardware.Lighting.IOpenRgbClient, ThisIsMyPC.Interop.Win32.Hardware.OpenRgbSdkClient>();
+        services.AddSingleton<Core.Hardware.Lighting.ILightingBackend>(sp =>
+        {
+            var engine = sp.GetRequiredService<Core.Hardware.Lighting.ILightingEngine>();
+            return engine.IsAvailable
+                ? new Core.Hardware.Lighting.EngineLightingBackend(engine, sp.GetRequiredService<Core.Hardware.Lighting.IOpenRgbClient>())
+                : new ThisIsMyPC.Lighting.NativeLightingBackend(
+                    new ThisIsMyPC.Interop.Win32.Hardware.Hid.WindowsHidTransport(),
+                    new ThisIsMyPC.Interop.Win32.Hardware.I2c.NvApiI2cBusProvider());
+        });
         // Hardware tabs (v1 plan section 5): the module-level facts layer over
         // the shared inventory. It adds what the tabs need and the inventory
         // leaves unobserved: companion launch paths and ownership, the OpenRGB
