@@ -271,7 +271,7 @@ public sealed partial class PowerViewModel : ObservableObject, ISearchNavigation
     /// Pending creations the queue no longer holds were discarded or applied.
     /// After an apply the copies exist now; scan once and list them.
     /// </summary>
-    private void SyncPendingCreations(bool isApplying)
+    private void SyncPendingCreations()
     {
         var gone = PendingCreations
             .Where(c => !_pendingChangesService.PendingGroups.Any(g => g.GroupId == c.GroupId))
@@ -282,7 +282,7 @@ public sealed partial class PowerViewModel : ObservableObject, ISearchNavigation
         foreach (var creation in gone)
             PendingCreations.Remove(creation);
 
-        if (!isApplying || _powerService is null)
+        if (!gone.Any(c => _pendingChangesService.WasApplied(c.GroupId)) || _powerService is null)
             return;
 
         var scanner = new Modules.Power.Services.PowerPlanScanner(_powerService);
@@ -709,17 +709,17 @@ public sealed partial class PowerViewModel : ObservableObject, ISearchNavigation
 
     private void HandlePendingGroupsChanged()
     {
-        var isApplying = _pendingChangesService.IsApplying;
-        SyncPendingCreations(isApplying);
+        SyncPendingCreations();
 
         // Active-plan switch removed externally (review-panel discard or apply)
         if (_stagedGroupId is not null &&
             !_pendingChangesService.PendingGroups.Any(g => g.GroupId == _stagedGroupId))
         {
+            var switched = _pendingChangesService.WasApplied(_stagedGroupId);
             _stagedGroupId = null;
             var pendingTarget = Plans.FirstOrDefault(p => p.IsPendingTarget);
 
-            if (isApplying && pendingTarget is not null && _activePlanLockedByPolicy)
+            if (switched && pendingTarget is not null && _activePlanLockedByPolicy)
             {
                 // Applied, but the power service holds its startup pin: Windows
                 // switches at the next restart, and the live plan stays active.
@@ -727,7 +727,7 @@ public sealed partial class PowerViewModel : ObservableObject, ISearchNavigation
                 foreach (var row in Plans)
                     row.IsActiveAfterRestart = row.Plan.PlanGuid == pendingTarget.Plan.PlanGuid && !row.IsActive;
             }
-            else if (isApplying && pendingTarget is not null)
+            else if (switched && pendingTarget is not null)
             {
                 // The switch was applied; the pending target is now the live active plan
                 _liveActivePlan = pendingTarget.Plan;
@@ -747,9 +747,10 @@ public sealed partial class PowerViewModel : ObservableObject, ISearchNavigation
         if (_modernStandbyGroupId is not null &&
             !_pendingChangesService.PendingGroups.Any(g => g.GroupId == _modernStandbyGroupId))
         {
+            var standbyApplied = _pendingChangesService.WasApplied(_modernStandbyGroupId);
             _modernStandbyGroupId = null;
             _suppressModernStandby = true;
-            IsModernStandbyDisabled = isApplying
+            IsModernStandbyDisabled = standbyApplied
                 ? IsModernStandbyDisabled // applied; the toggle already shows the new state
                 : ReadModernStandbyOverride() == 0;
             _suppressModernStandby = false;
@@ -760,7 +761,7 @@ public sealed partial class PowerViewModel : ObservableObject, ISearchNavigation
         foreach (var group in SettingsGroups)
         {
             foreach (var row in group.Settings)
-                row.OnPendingGroupsChanged(_pendingChangesService, isApplying);
+                row.OnPendingGroupsChanged(_pendingChangesService);
         }
     }
 
@@ -1166,21 +1167,21 @@ public sealed partial class PowerSettingItemViewModel : ObservableObject
     }
 
     /// <summary>Called by the parent when PendingGroups changed externally (apply or review-panel discard).</summary>
-    public void OnPendingGroupsChanged(IPendingChangesService pending, bool isApplying)
+    public void OnPendingGroupsChanged(IPendingChangesService pending)
     {
-        ReconcileScope(pending, isApplying, ac: true, ref _acGroupId);
-        ReconcileScope(pending, isApplying, ac: false, ref _dcGroupId);
+        ReconcileScope(pending, ac: true, ref _acGroupId);
+        ReconcileScope(pending, ac: false, ref _dcGroupId);
         UpdatePendingFlags();
     }
 
-    private void ReconcileScope(IPendingChangesService pending, bool isApplying, bool ac, ref string? groupId)
+    private void ReconcileScope(IPendingChangesService pending, bool ac, ref string? groupId)
     {
         var currentGroupId = groupId;
         if (currentGroupId is null || pending.PendingGroups.Any(g => g.GroupId == currentGroupId))
             return;
         groupId = null;
 
-        if (isApplying)
+        if (pending.WasApplied(currentGroupId))
         {
             // Applied; the editor value is now the live value
             var text = ac ? AcText : DcText;

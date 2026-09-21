@@ -345,9 +345,10 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
         if (_stagedGroupId is not null &&
             !_pendingChangesService.PendingGroups.Any(g => g.GroupId == _stagedGroupId))
         {
+            var applied = _pendingChangesService.WasApplied(_stagedGroupId);
             _stagedGroupId = null;
 
-            if (_pendingChangesService.IsApplying)
+            if (applied)
             {
                 // Applied; keep toggle position, adopt as new baseline.
                 _registryIsEnabled = IsEnabled;

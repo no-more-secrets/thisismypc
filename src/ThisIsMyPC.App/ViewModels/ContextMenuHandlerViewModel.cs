@@ -423,9 +423,10 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
         if (_stagedGroupId is not null &&
             !_pendingChangesService.PendingGroups.Any(g => g.GroupId == _stagedGroupId))
         {
+            var applied = _pendingChangesService.WasApplied(_stagedGroupId);
             _stagedGroupId = null;
 
-            if (_pendingChangesService.IsApplying)
+            if (applied)
             {
                 // Change was applied; keep toggle position, update baseline to match
                 _registryIsEnabled = IsEnabled;

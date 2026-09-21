@@ -290,8 +290,9 @@ public sealed partial class AutorunItemViewModel : ObservableObject, IDisposable
         if (_stagedGroupId is null || _pendingChangesService.PendingGroups.Any(g => g.GroupId == _stagedGroupId))
             return;
 
+        var applied = _pendingChangesService.WasApplied(_stagedGroupId);
         _stagedGroupId = null;
-        if (_pendingChangesService.IsApplying)
+        if (applied)
             _liveIsEnabled = IsEnabled;
         else
         {

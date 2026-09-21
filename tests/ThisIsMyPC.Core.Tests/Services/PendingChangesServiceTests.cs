@@ -77,6 +77,31 @@ public class PendingChangesServiceTests
     }
 
     [Fact]
+    public async Task WasApplied_ReportsTheOutcomeAfterTheApplyingFlagClears()
+    {
+        var service = new PendingChangesService();
+        service.Stage(CreateTestGroup("applied", CreateTestChange("a")));
+        service.Stage(CreateTestGroup("discarded", CreateTestChange("b")));
+        service.Unstage("discarded");
+        Assert.False(service.WasApplied("applied"));
+        Assert.False(service.WasApplied("discarded"));
+
+        await service.ApplyAllAsync(
+            applyFunc: _ => Task.FromResult(OperationResult<bool>.Success(true)),
+            revertFunc: _ => Task.FromResult(OperationResult<bool>.Success(true)));
+
+        Assert.False(service.IsApplying);
+        Assert.True(service.WasApplied("applied"));
+        Assert.False(service.WasApplied("discarded"));
+
+        // Staging the same id again starts a new life for it.
+        service.Stage(CreateTestGroup("applied", CreateTestChange("c")));
+        Assert.False(service.WasApplied("applied"));
+        service.DiscardAll();
+        Assert.False(service.WasApplied("applied"));
+    }
+
+    [Fact]
     public async Task ApplyAll_CallsApplyForEachPendingChangeInOrder()
     {
         var service = new PendingChangesService();

@@ -134,9 +134,10 @@ public partial class PathEditorViewModel : ViewModelBase, IDisposable
         if (_stagedGroupId is not null &&
             !_pendingChangesService.PendingGroups.Any(g => g.GroupId == _stagedGroupId))
         {
+            var applied = _pendingChangesService.WasApplied(_stagedGroupId);
             _stagedGroupId = null;
 
-            if (_pendingChangesService.IsApplying)
+            if (applied)
             {
                 // Change was applied; update baseline to the applied path
                 _originalPath = string.Join(';', Entries.Select(e => e.Path));

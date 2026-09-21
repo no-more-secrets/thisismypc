@@ -57,6 +57,16 @@ public sealed class PendingChangesService : IPendingChangesService
         get { lock (_lock) return _pendingGroups.ToList().AsReadOnly(); }
     }
 
+    private readonly HashSet<string> _appliedGroupIds = new(StringComparer.Ordinal);
+
+    public bool WasApplied(string groupId)
+    {
+        lock (_lock)
+        {
+            return _appliedGroupIds.Contains(groupId);
+        }
+    }
+
     public bool IsApplying
     {
         get { lock (_lock) return _isApplying; }
@@ -126,6 +136,7 @@ public sealed class PendingChangesService : IPendingChangesService
             }
 
             _pendingGroups.Add(group);
+            _appliedGroupIds.Remove(group.GroupId);
         }
 
         OnPropertyChanged(nameof(PendingCount));
@@ -493,6 +504,8 @@ public sealed class PendingChangesService : IPendingChangesService
         lock (_lock)
         {
             _pendingGroups.RemoveAll(groups.Contains);
+            foreach (var group in groups)
+                _appliedGroupIds.Add(group.GroupId);
         }
 
         OnPropertyChanged(nameof(PendingCount));

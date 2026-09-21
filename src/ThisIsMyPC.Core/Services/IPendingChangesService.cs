@@ -11,6 +11,14 @@ public interface IPendingChangesService : INotifyPropertyChanged
     bool IsApplying { get; }
 
     /// <summary>
+    /// True when the group left the queue because every change in it applied.
+    /// Queue notifications arrive on the UI thread after <see cref="IsApplying"/>
+    /// may already be false, so consumers decide applied-versus-discarded by id.
+    /// Stays true until the same id is staged again.
+    /// </summary>
+    bool WasApplied(string groupId) => false;
+
+    /// <summary>
     /// Staged groups whose live state is unknown after a batch stopped inside
     /// them. They stay in <see cref="PendingGroups"/> so the person can see and
     /// discard them, but no batch applies while any is staged. Cleared only by
