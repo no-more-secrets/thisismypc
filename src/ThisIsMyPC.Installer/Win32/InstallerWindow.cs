@@ -1072,22 +1072,19 @@ internal static unsafe class InstallerRenderer
     }
 
     // The icon is this executable's own resource. Test and preview hosts run the IL assembly under
-    // another process, so they read the resource from the assembly file instead of the host module.
+    // dotnet.exe or testhost.exe beside the unrenamed IL file, so they read the resource from that
+    // file. The published exe carries the resource itself whatever the download is called.
     private static nint IconModule()
     {
         if (_iconModuleResolved)
             return _iconModule;
         _iconModuleResolved = true;
-        var process = Environment.ProcessPath;
-        if (process is not null && string.Equals(Path.GetFileName(process), InstallerFileName, StringComparison.OrdinalIgnoreCase))
-            _iconModule = NativeMethods.GetModuleHandle(null);
-        else
-        {
-            var assembly = Path.Combine(AppContext.BaseDirectory, InstallerFileName);
-            if (File.Exists(assembly))
-                _iconModule = NativeMethods.LoadLibraryEx(assembly, nint.Zero,
-                    NativeMethods.LOAD_LIBRARY_AS_DATAFILE | NativeMethods.LOAD_LIBRARY_AS_IMAGE_RESOURCE);
-        }
+        var assembly = Path.Combine(AppContext.BaseDirectory, InstallerFileName);
+        var hosted = File.Exists(assembly) &&
+            !string.Equals(Path.GetFullPath(assembly), Environment.ProcessPath, StringComparison.OrdinalIgnoreCase);
+        _iconModule = hosted
+            ? NativeMethods.LoadLibraryEx(assembly, nint.Zero, NativeMethods.LOAD_LIBRARY_AS_DATAFILE | NativeMethods.LOAD_LIBRARY_AS_IMAGE_RESOURCE)
+            : NativeMethods.GetModuleHandle(null);
         return _iconModule;
     }
 }
