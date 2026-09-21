@@ -252,6 +252,19 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
             case NativeMethods.WM_PAINT:
                 Paint(hwnd);
                 return nint.Zero;
+            case 0x14: // WM_ERASEBKGND.
+            case 0x318: // WM_PRINTCLIENT: themed buttons request the surface behind their transparent edges.
+                var backgroundDc = (nint)wParam;
+                var saved = NativeMethods.SaveDC(backgroundDc);
+                try
+                {
+                    // Keep the origin Windows mapped from the child into parent coordinates.
+                    _ = NativeMethods.OffsetViewportOrgEx(backgroundDc, -_scrollX, -_scrollY, 0);
+                    InstallerRenderer.Draw(backgroundDc, Scale(LogicalWidth, _dpi / 96d),
+                        Scale(LogicalHeight, _dpi / 96d), _dpi / 96d);
+                }
+                finally { _ = NativeMethods.RestoreDC(backgroundDc, saved); }
+                return 1;
             case NativeMethods.WM_COMMAND:
                 HandleCommand(wParam, lParam);
                 return nint.Zero;
@@ -274,7 +287,8 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
                 }
                 if (lParam == _folderEdit)
                     break;
-                var header = _nativeControls.Values.Any(control => control.Handle == lParam && control.Spec.Id is 3020 or 3021);
+                var header = _nativeControls.Values.Any(control => control.Handle == lParam &&
+                    (control.Spec.Id is 3020 or 3021 || control.Spec.Bounds.Top >= 424));
                 _ = NativeMethods.SetTextColor((nint)wParam, InstallerRenderer.TextColor);
                 _ = NativeMethods.SetBkColor((nint)wParam, header ? InstallerRenderer.DialogColor : InstallerRenderer.PanelColor);
                 return header ? _dialogBrush : _panelBrush;

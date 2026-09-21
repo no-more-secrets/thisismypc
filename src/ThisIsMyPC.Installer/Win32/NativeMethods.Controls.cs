@@ -73,6 +73,11 @@ internal static unsafe partial class NativeMethods
     internal static partial bool SetViewportOrgEx(nint dc, int x, int y, nint previous);
 
     [LibraryImport("gdi32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    internal static partial bool OffsetViewportOrgEx(nint dc, int x, int y, nint previous);
+
+    [LibraryImport("gdi32.dll")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static partial int SaveDC(nint dc);
 
