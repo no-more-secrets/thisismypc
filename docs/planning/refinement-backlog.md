@@ -5,6 +5,7 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 ## Win32 installer completion (active 2026-09-21)
 
 Current priority: validate the complete signed installer. See the explicit checklist in [the v1 plan](v1-completion-plan.md#current-priority-finish-the-installer-2026-09-21).
+- DONE 2026-09-21: branded wizard chrome. White header with a 20px semibold title, muted version line, and the wordmark tinted from a generated coverage mask (`tools/render-installer-wordmark.ps1`); pale body; footer band under a rule; the app icon from the exe's own resource on the Welcome and Done pages. Verified screenshots at 100%/150%/200%, the native keyboard walkthrough, and 2,624 CI-safe tests.
 - DONE: native buttons paint transparent edges against the correct blue surface, removing the white fringe. Verified before/after renders and 2,624 CI-safe tests.
 - DONE: compact blue Win32 dialog, with shared geometry for controls, mouse targets, and keyboard focus. `tools/preview-installer.ps1` opens a safe managed preview without packaging the app. Verified 2,624 CI-safe tests, native preview startup/close, and screenshots at 100%/150%/200%.
 - DONE: `DebugRelease` build mode produces a runnable unsigned local package in separate output directories. Compile-time signature exclusions do not change normal releases. Embedded metadata prevents accidental production signing.

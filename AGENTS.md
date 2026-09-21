@@ -220,6 +220,7 @@ dotnet test tests/ThisIsMyPC.App.UiTests --configuration Release --filter "Categ
 ### Native installer UI
 
 - Keep the installer lean: Win32 controls and GDI only. Do not add Avalonia, Skia, or another UI framework.
+- Branding: the header wordmark is `src/ThisIsMyPC.Installer/Assets/wordmark.alpha`, an 8-bit coverage mask rendered from `assets/ThisIsMyPC-Logo-Black_v1.svg` by `tools/render-installer-wordmark.ps1` (needs Inkscape). Regenerate it only when the logo changes. The Welcome and Done pages draw the exe's own icon resource; never embed a second copy of the icon.
 - Use `tools/preview-installer.ps1` for interactive UI checks without rebuilding the release package. Add `-BuildOnly` to compile without opening it.
 - The Debug-only preview uses a fake engine. Never replace it with the live install engine for visual checks.
 - Run `InstallerShotTests` and inspect `artifacts/ui-shots/installer-win32/` at 100%, 150%, and 200% scaling after native UI changes.

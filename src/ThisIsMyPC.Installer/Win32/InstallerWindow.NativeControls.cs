@@ -12,6 +12,8 @@ internal sealed unsafe partial class InstallerWindow
     private int _scrollX;
     private int _scrollY;
 
+    private const int IconTextLeft = InstallerRenderer.AppIconLeft + InstallerRenderer.AppIconSize + 20;
+
     private sealed record ControlSpec(int Id, string Text, UiRect Bounds, HitTarget Target = HitTarget.None,
         bool Enabled = true, bool? Checked = null);
     private sealed record NativeControl(nint Handle, ControlSpec Spec);
@@ -29,19 +31,20 @@ internal sealed unsafe partial class InstallerWindow
             => controls.Add(new(2000 + (int)target, text, UiRect.FromEdges(left, top, right, bottom), target, enabled, check));
         Label(3020, vm.IsWelcome ? "Welcome to ThisIsMyPC Setup" : vm.IsLicense ? "License Agreement" :
             vm.IsOptions ? "Installation Options" : vm.IsConfirmUninstall ? "Remove ThisIsMyPC" :
-            vm.IsBusy ? vm.StepCaption : vm.Failed ? "Setup Failed" : "Setup Complete", 20, 14, 580, 36);
-        Label(3021, InstallerViewModel.BuildLabel, 20, 40, 580, 60);
+            vm.IsBusy ? vm.StepCaption : vm.Failed ? "Setup Failed" : "Setup Complete", 28, 16, 470, 44);
+        Label(3021, InstallerViewModel.BuildLabel, 28, 48, 470, 68);
         if (vm.IsWelcome)
         {
-            Label(3000, "Welcome to the installer for ThisIsMyPC.", 28, 90, 572, 114);
-            Label(3001, "This program will be installed for everybody who uses this PC. This installer has administrator permissions.", 28, 124, 572, 170);
+            // The app icon sits at the left of the welcome and done pages; text starts beside it.
+            Label(3000, "Welcome to the installer for ThisIsMyPC.", IconTextLeft, 92, 572, 116);
+            Label(3001, "This program will be installed for everybody who uses this PC. This installer has administrator permissions.", IconTextLeft, 126, 572, 172);
             if (vm.IsInstalled)
             {
-                Label(3002, vm.InstalledSummary, 28, 188, 572, 286);
-                Button(HitTarget.Uninstall, "Uninstall ThisIsMyPC", 28, 294, 572, 324, check: vm.UninstallMode);
+                Label(3002, vm.InstalledSummary, IconTextLeft, 188, 572, 286);
+                Button(HitTarget.Uninstall, "Uninstall ThisIsMyPC", IconTextLeft, 294, 572, 324, check: vm.UninstallMode);
             }
             if (vm.ShowWelcomeHint)
-                Label(3003, vm.WelcomeHint, 28, 380, 572, 404);
+                Label(3003, vm.WelcomeHint, IconTextLeft, 380, 572, 404);
         }
         else if (vm.IsLicense)
         {
@@ -86,11 +89,11 @@ internal sealed unsafe partial class InstallerWindow
                 Label(3000, "ThisIsMyPC was removed. Your settings and change history stay on this PC in case you install it again.", 28, 90, 572, 160);
             else
             {
-                Label(3000, "ThisIsMyPC is installed. Windows asks for permission only when a change needs administrator access.", 28, 90, 572, 134);
+                Label(3000, "ThisIsMyPC is installed. Windows asks for permission only when a change needs administrator access.", IconTextLeft, 92, 572, 136);
                 if (vm.RebootRequired)
-                    Label(3001, "Windows asked for a restart to finish. Restart when convenient.", 28, 142, 572, 178);
-                var y = vm.RebootRequired ? 190 : 146;
-                Button(HitTarget.Launch, "Open ThisIsMyPC when I choose Finish", 28, y, 572, y + 28, check: vm.LaunchWhenDone);
+                    Label(3001, "Windows asked for a restart to finish. Restart when convenient.", IconTextLeft, 144, 572, 180);
+                var y = vm.RebootRequired ? 192 : 148;
+                Button(HitTarget.Launch, "Open ThisIsMyPC when I choose Finish", IconTextLeft, y, 572, y + 28, check: vm.LaunchWhenDone);
             }
         }
         if (vm.CanGoBack)

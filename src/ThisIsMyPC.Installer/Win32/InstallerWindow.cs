@@ -29,6 +29,7 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
     private nint _bodyFont;
     private nint _monoFont;
     private nint _headingFont;
+    private readonly nint _headerBrush = NativeMethods.CreateSolidBrush(InstallerRenderer.HeaderColor);
     private readonly nint _dialogBrush = NativeMethods.CreateSolidBrush(InstallerRenderer.DialogColor);
     private readonly nint _panelBrush = NativeMethods.CreateSolidBrush(InstallerRenderer.PanelColor);
     private int _dpi = 96;
@@ -154,7 +155,7 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
         {
             using var preview = new InstallerWindow(viewModel) { _keyboardFocus = keyboardFocus, _preview = true };
             preview.CreatePreview(width, height);
-            InstallerRenderer.Draw(dc, width, height, width / (double)LogicalWidth);
+            InstallerRenderer.Draw(dc, width, height, width / (double)LogicalWidth, preview.ShowsAppIcon);
             preview.PrintControls(dc);
             preview.DrawKeyboardFocus(dc);
             var pixels = new byte[checked(width * height * 4)];
@@ -261,7 +262,7 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
                     // Keep the origin Windows mapped from the child into parent coordinates.
                     _ = NativeMethods.OffsetViewportOrgEx(backgroundDc, -_scrollX, -_scrollY, 0);
                     InstallerRenderer.Draw(backgroundDc, Scale(LogicalWidth, _dpi / 96d),
-                        Scale(LogicalHeight, _dpi / 96d), _dpi / 96d);
+                        Scale(LogicalHeight, _dpi / 96d), _dpi / 96d, ShowsAppIcon);
                 }
                 finally { _ = NativeMethods.RestoreDC(backgroundDc, saved); }
                 return 1;
@@ -287,11 +288,14 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
                 }
                 if (lParam == _folderEdit)
                     break;
-                var header = _nativeControls.Values.Any(control => control.Handle == lParam &&
-                    (control.Spec.Id is 3020 or 3021 || control.Spec.Bounds.Top >= 424));
-                _ = NativeMethods.SetTextColor((nint)wParam, InstallerRenderer.TextColor);
-                _ = NativeMethods.SetBkColor((nint)wParam, header ? InstallerRenderer.DialogColor : InstallerRenderer.PanelColor);
-                return header ? _dialogBrush : _panelBrush;
+                var owner = _nativeControls.Values.FirstOrDefault(control => control.Handle == lParam);
+                var surface = owner is null ? InstallerRenderer.PanelColor :
+                    owner.Spec.Id is 3020 or 3021 ? InstallerRenderer.HeaderColor :
+                    owner.Spec.Bounds.Top >= InstallerRenderer.FooterTop ? InstallerRenderer.DialogColor : InstallerRenderer.PanelColor;
+                _ = NativeMethods.SetTextColor((nint)wParam, owner?.Spec.Id == 3021 ? InstallerRenderer.SubtitleColor : InstallerRenderer.TextColor);
+                _ = NativeMethods.SetBkColor((nint)wParam, surface);
+                return surface == InstallerRenderer.HeaderColor ? _headerBrush :
+                    surface == InstallerRenderer.DialogColor ? _dialogBrush : _panelBrush;
             case NativeMethods.WM_APP_CALLBACK:
                 _context.Drain();
                 return nint.Zero;
@@ -353,7 +357,7 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
             var width = Scale(LogicalWidth, _dpi / 96d);
             var height = Scale(LogicalHeight, _dpi / 96d);
             _ = NativeMethods.SetViewportOrgEx(dc, -_scrollX, -_scrollY, nint.Zero);
-            InstallerRenderer.Draw(dc, width, height, _dpi / 96d);
+            InstallerRenderer.Draw(dc, width, height, _dpi / 96d, ShowsAppIcon);
             DrawKeyboardFocus(dc);
         }
         finally
@@ -392,7 +396,7 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
             NativeMethods.DEFAULT_CHARSET, 0, 0, NativeMethods.CLEARTYPE_QUALITY, 0, "Consolas");
         if (bodyFont == nint.Zero || monoFont == nint.Zero)
             throw new Win32Exception(Marshal.GetLastWin32Error(), "Windows could not create the installer fonts.");
-        _headingFont = NativeMethods.CreateFont(-Scale(14, scale), 0, 0, 0, NativeMethods.FW_BOLD, 0, 0, 0,
+        _headingFont = NativeMethods.CreateFont(-Scale(20, scale), 0, 0, 0, NativeMethods.FW_SEMIBOLD, 0, 0, 0,
             NativeMethods.DEFAULT_CHARSET, 0, 0, NativeMethods.CLEARTYPE_QUALITY, 0, "Segoe UI");
         _bodyFont = bodyFont;
         _monoFont = monoFont;
@@ -622,6 +626,7 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
             _ = NativeMethods.InvalidateRect(_hwnd, nint.Zero, false);
     }
 
+    private bool ShowsAppIcon => _viewModel.IsWelcome || (_viewModel.IsDone && !_viewModel.Failed && !_viewModel.Removed);
     private int Logical(int physical) => (int)Math.Round(physical * 96d / _dpi);
     private static int OptionsShortcutsY(InstallerViewModel viewModel)
     {
@@ -645,6 +650,7 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
             _ = NativeMethods.DestroyWindow(_hwnd);
         if (_headingFont != nint.Zero)
             _ = NativeMethods.DeleteObject(_headingFont);
+        _ = NativeMethods.DeleteObject(_headerBrush);
         _ = NativeMethods.DeleteObject(_dialogBrush);
         _ = NativeMethods.DeleteObject(_panelBrush);
         if (_bodyFont != nint.Zero)
@@ -702,24 +708,184 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
     }
 }
 
-internal static class InstallerRenderer
+internal static unsafe class InstallerRenderer
 {
-    // COLORREF uses BGR. Pale blue surfaces keep native themed controls legible.
-    internal const uint DialogColor = 0xF8E9DF;
+    // COLORREF uses BGR. A white header band, a pale body, and a deeper footer keep native themed controls legible.
+    internal const uint HeaderColor = 0xFFFFFF;
     internal const uint PanelColor = 0xFCF3ED;
+    internal const uint DialogColor = 0xF8E9DF;
+    internal const uint LineColor = 0xE6D6C8;
     internal const uint TextColor = 0x663B19;
+    internal const uint SubtitleColor = 0x856B5A;
+    internal const int HeaderHeight = 80;
+    internal const int FooterTop = 424;
+    internal const int AppIconLeft = 28;
+    internal const int AppIconTop = 92;
+    internal const int AppIconSize = 80;
+    private const int WordmarkTop = 16;
+    private const int WordmarkHeight = 48;
+    private const int WordmarkRight = 572;
+    private const string InstallerFileName = "ThisIsMyPC-Installer.exe";
 
-    internal static void Draw(nint dc, int width, int height, double scale)
+    private static readonly object CacheLock = new();
+    private static readonly Dictionary<int, nint> Icons = new();
+    private static nint _iconModule;
+    private static bool _iconModuleResolved;
+    private static byte[]? _wordmarkPixels;
+    private static bool _wordmarkLoaded;
+    private static int _wordmarkWidth;
+    private static int _wordmarkHeight;
+
+    internal static void Draw(nint dc, int width, int height, double scale, bool showAppIcon)
     {
-        void Fill(NativeMethods.RECT bounds, uint color)
-        {
-            var brush = NativeMethods.CreateSolidBrush(color);
-            try { _ = NativeMethods.FillRect(dc, in bounds, brush); }
-            finally { _ = NativeMethods.DeleteObject(brush); }
-        }
         int Px(int value) => (int)Math.Round(value * scale);
-        Fill(new(0, 0, width, height), DialogColor);
-        Fill(new(Px(12), Px(72), Px(588), Px(424)), 0xCCA98C);
-        Fill(new(Px(12) + 1, Px(72) + 1, Px(588) - 1, Px(424) - 1), PanelColor);
+        var line = Math.Max(1, Px(1));
+        var headerBottom = Px(HeaderHeight);
+        var footerTop = Px(FooterTop);
+        Fill(dc, new(0, 0, width, headerBottom), HeaderColor);
+        Fill(dc, new(0, headerBottom, width, headerBottom + line), LineColor);
+        Fill(dc, new(0, headerBottom + line, width, footerTop), PanelColor);
+        Fill(dc, new(0, footerTop, width, footerTop + line), LineColor);
+        Fill(dc, new(0, footerTop + line, width, height), DialogColor);
+        DrawWordmark(dc, Px(WordmarkRight), Px(WordmarkTop), Px(WordmarkHeight));
+        if (showAppIcon)
+            DrawAppIcon(dc, Px(AppIconLeft), Px(AppIconTop), Px(AppIconSize));
+    }
+
+    private static void Fill(nint dc, NativeMethods.RECT bounds, uint color)
+    {
+        var brush = NativeMethods.CreateSolidBrush(color);
+        try { _ = NativeMethods.FillRect(dc, in bounds, brush); }
+        finally { _ = NativeMethods.DeleteObject(brush); }
+    }
+
+    // The wordmark ships as an 8-bit coverage mask, tinted over the header at draw time.
+    private static void DrawWordmark(nint dc, int right, int top, int height)
+    {
+        var pixels = WordmarkPixels();
+        if (pixels is null || height <= 0)
+            return;
+        var width = (int)Math.Round(height * (double)_wordmarkWidth / _wordmarkHeight);
+        var info = new NativeMethods.BITMAPINFO
+        {
+            bmiHeader = new NativeMethods.BITMAPINFOHEADER
+            {
+                biSize = (uint)sizeof(NativeMethods.BITMAPINFOHEADER),
+                biWidth = _wordmarkWidth,
+                biHeight = -_wordmarkHeight,
+                biPlanes = 1,
+                biBitCount = 32,
+                biCompression = NativeMethods.BI_RGB,
+            },
+        };
+        _ = NativeMethods.SetStretchBltMode(dc, NativeMethods.HALFTONE);
+        _ = NativeMethods.SetBrushOrgEx(dc, 0, 0, nint.Zero);
+        fixed (byte* bits = pixels)
+            _ = NativeMethods.StretchDIBits(dc, right - width, top, width, height, 0, 0, _wordmarkWidth, _wordmarkHeight,
+                bits, in info, NativeMethods.DIB_RGB_COLORS, NativeMethods.SRCCOPY);
+    }
+
+    private static byte[]? WordmarkPixels()
+    {
+        lock (CacheLock)
+        {
+            if (_wordmarkLoaded)
+                return _wordmarkPixels;
+            _wordmarkLoaded = true;
+            try
+            {
+                using var stream = typeof(InstallerRenderer).Assembly.GetManifestResourceStream("wordmark.alpha");
+                if (stream is null)
+                    return null;
+                Span<byte> header = stackalloc byte[8];
+                stream.ReadExactly(header);
+                var width = System.Buffers.Binary.BinaryPrimitives.ReadInt32LittleEndian(header);
+                var height = System.Buffers.Binary.BinaryPrimitives.ReadInt32LittleEndian(header[4..]);
+                if (width is <= 0 or > 4096 || height is <= 0 or > 4096)
+                    return null;
+                var alpha = new byte[width * height];
+                using (var deflate = new System.IO.Compression.DeflateStream(stream, System.IO.Compression.CompressionMode.Decompress))
+                    deflate.ReadExactly(alpha);
+                var pixels = new byte[alpha.Length * 4];
+                for (var index = 0; index < alpha.Length; index++)
+                {
+                    var coverage = alpha[index];
+                    pixels[index * 4] = Blend(HeaderColor, TextColor, 16, coverage);
+                    pixels[index * 4 + 1] = Blend(HeaderColor, TextColor, 8, coverage);
+                    pixels[index * 4 + 2] = Blend(HeaderColor, TextColor, 0, coverage);
+                    pixels[index * 4 + 3] = byte.MaxValue;
+                }
+                _wordmarkWidth = width;
+                _wordmarkHeight = height;
+                _wordmarkPixels = pixels;
+            }
+            catch (Exception exception) when (exception is IOException or InvalidDataException)
+            {
+                // A damaged resource costs the wordmark, never the installer.
+            }
+            return _wordmarkPixels;
+        }
+    }
+
+    private static byte Blend(uint background, uint tint, int shift, byte coverage)
+    {
+        var from = (int)((background >> shift) & 0xFF);
+        var to = (int)((tint >> shift) & 0xFF);
+        return (byte)(from + (to - from) * coverage / 255);
+    }
+
+    private static void DrawAppIcon(nint dc, int left, int top, int size)
+    {
+        var icon = AppIcon(size);
+        if (icon != nint.Zero)
+            _ = NativeMethods.DrawIconEx(dc, left, top, icon, size, size, 0, nint.Zero, NativeMethods.DI_NORMAL);
+    }
+
+    private static nint AppIcon(int size)
+    {
+        lock (CacheLock)
+        {
+            if (Icons.TryGetValue(size, out var cached))
+                return cached;
+            var module = IconModule();
+            var icon = nint.Zero;
+            if (module != nint.Zero)
+            {
+                // The smooth scaler lives in comctl32 v6 only; a host without that activation context gets the plain loader.
+                try
+                {
+                    if (NativeMethods.LoadIconWithScaleDown(module, NativeMethods.IDI_APPLICATION, size, size, out icon) < 0)
+                        icon = nint.Zero;
+                }
+                catch (Exception exception) when (exception is EntryPointNotFoundException or DllNotFoundException)
+                {
+                    icon = nint.Zero;
+                }
+                if (icon == nint.Zero)
+                    icon = NativeMethods.LoadImage(module, NativeMethods.IDI_APPLICATION, NativeMethods.IMAGE_ICON, size, size, 0);
+            }
+            Icons[size] = icon;
+            return icon;
+        }
+    }
+
+    // The icon is this executable's own resource. Test and preview hosts run the IL assembly under
+    // another process, so they read the resource from the assembly file instead of the host module.
+    private static nint IconModule()
+    {
+        if (_iconModuleResolved)
+            return _iconModule;
+        _iconModuleResolved = true;
+        var process = Environment.ProcessPath;
+        if (process is not null && string.Equals(Path.GetFileName(process), InstallerFileName, StringComparison.OrdinalIgnoreCase))
+            _iconModule = NativeMethods.GetModuleHandle(null);
+        else
+        {
+            var assembly = Path.Combine(AppContext.BaseDirectory, InstallerFileName);
+            if (File.Exists(assembly))
+                _iconModule = NativeMethods.LoadLibraryEx(assembly, nint.Zero,
+                    NativeMethods.LOAD_LIBRARY_AS_DATAFILE | NativeMethods.LOAD_LIBRARY_AS_IMAGE_RESOURCE);
+        }
+        return _iconModule;
     }
 }

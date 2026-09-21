@@ -39,6 +39,8 @@
   <ItemGroup>
     <!-- The license page shows the repo LICENSE verbatim. -->
     <EmbeddedResource Include="..\..\LICENSE" LogicalName="LICENSE" />
+    <!-- Wordmark coverage mask for the header; tools/render-installer-wordmark.ps1 regenerates it. -->
+    <EmbeddedResource Include="Assets\wordmark.alpha" LogicalName="wordmark.alpha" />
   </ItemGroup>
 
   <ItemGroup>
