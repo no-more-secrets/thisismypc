@@ -57,8 +57,12 @@ Then check the actual installed tools:
 
 ```powershell
 .\tools\test-reproducible-build-environment.ps1
-.\tools\test-release-toolchain-selection.ps1
+.\tools\test-release-toolchain-selection.ps1 -CheckInstalled
 ```
+
+Selection, repeated initialization, and archive checks pass in Windows
+PowerShell 5.1 and PowerShell 7. The installed check covers JSON discovery of
+multiple Visual Studio instances, including a newer Community installation.
 
 The full check also pins Windows and Windows Installer versions. This archive
 preserves build tools, not a Windows image. A later OS update can still require

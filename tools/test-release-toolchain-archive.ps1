@@ -8,7 +8,7 @@ $inventoryPath = Join-Path $ArchiveRoot 'inventory.sha256.json'
 if ((Get-FileHash -LiteralPath $inventoryPath -Algorithm SHA256).Hash -ne $source.inventorySha256) {
     throw 'The release archive inventory does not match the repository pin.'
 }
-$inventory = @(Get-Content $inventoryPath -Raw | ConvertFrom-Json)
+$inventory = Get-Content $inventoryPath -Raw | ConvertFrom-Json
 foreach ($entry in $inventory) {
     $path = [IO.Path]::GetFullPath((Join-Path $ArchiveRoot $entry.path))
     if (-not $path.StartsWith("$ArchiveRoot\", [StringComparison]::OrdinalIgnoreCase)) {

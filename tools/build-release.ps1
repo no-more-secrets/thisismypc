@@ -120,7 +120,9 @@ New-Item -ItemType Directory -Force $output | Out-Null
 Import-Module (Join-Path $PSScriptRoot 'ReleaseToolchain.psm1') -Force
 $releaseToolchain = Enter-PinnedReleaseToolchain
 $nativeBin = Join-Path $env:VCToolsInstallDir 'bin\Hostx64\x64'
+# NativeAOT otherwise copies old PDBs left by earlier symbol-enabled builds.
 $aotArgs = @('-p:AotPublish=true', '-p:OS=Windows_NT', '-p:IlcUseEnvironmentalTools=true',
+    '-p:CopyOutputSymbolsToPublishDirectory=false',
     "-p:CppLinker=$nativeBin\link.exe", "-p:CppLibCreator=$nativeBin\lib.exe")
 $guardedAotArgs = @($aotArgs) + '-p:DynamicCodeGuard=true'
 $appAotArgs = @($guardedAotArgs) + '-p:CodeIntegrityGuard=true'

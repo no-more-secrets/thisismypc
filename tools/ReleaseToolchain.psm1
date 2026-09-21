@@ -17,7 +17,10 @@ function Get-PinnedVisualStudio {
     if (-not (Test-Path -LiteralPath $vswhere -PathType Leaf)) { throw 'vswhere.exe is missing.' }
     $json = & $vswhere -prerelease -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -format json
     if ($LASTEXITCODE -ne 0) { throw 'vswhere could not locate the C++ build tools.' }
-    return Select-PinnedVisualStudio -Installations @($json | ConvertFrom-Json) -Version $manifest.visualStudioVersion
+    # Windows PowerShell 5.1 emits the JSON array as one pipeline object.
+    # Direct assignment preserves its elements without adding an outer array.
+    $installations = $json | ConvertFrom-Json
+    return Select-PinnedVisualStudio -Installations $installations -Version $manifest.visualStudioVersion
 }
 
 function Enter-PinnedReleaseToolchain {

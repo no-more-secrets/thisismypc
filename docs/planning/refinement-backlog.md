@@ -13,6 +13,8 @@ Current priority: validate the complete signed installer. See the explicit check
 - Verified: guarded NativeAOT publishes one executable, 7,313,408 bytes without its MSI payload. Every PE mitigation check passes.
 - Pending: Narrator/UIA discovery, high-contrast rendering, mixed-monitor dragging, and signed live install/upgrade/reinstall/removal. Compiling NativeAOT does not verify its signed runtime.
 - DONE: restored Build Tools `18.9.12120.119` and linker `14.51.36256.0` beside the newer IDE. Original release preflight passes without changing pins. A frozen local update channel and verified 3.67 GB offline archive preserve recovery. See [pinned toolchain](../release/pinned-toolchain.md).
+- Fixed Windows PowerShell 5.1 JSON array nesting that passed both installed instance IDs to the developer shell. Discovery, repeated initialization, and archive validation pass in PowerShell 5.1 and 7.
+- Verified a complete unsigned release build in Windows PowerShell 5.1, including MSI, bundled installer, and hardening gates. Release publishes exclude stale NativeAOT PDBs without weakening the installer's one-file gate. Signed installation remains pending.
 
 ## Win32 installer integration (2026-09-11)
 
