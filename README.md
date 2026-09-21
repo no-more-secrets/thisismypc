@@ -315,6 +315,7 @@ src/
   ThisIsMyPC.Core            Module contract, change pipeline, history, sets. No Win32 calls
   ThisIsMyPC.Interop.Win32   CsWin32 P/Invoke: SCM, power, DDC/CI, restore points
   ThisIsMyPC.Interop.Com     Task Scheduler, shell extension probing
+  ThisIsMyPC.Interop.Sensors Read-only memory, battery, and supported NVIDIA sensors
   ThisIsMyPC.Interop.Wmi     WMI queries
   ThisIsMyPC.Modules.*       Shell, Startup, Power, Annoyances, WindowsUpdate, Privacy, Software, Display
   ThisIsMyPC.Service         Owner Mode service (Session 0)
@@ -333,14 +334,19 @@ disabled with the reason, not hidden. Reference implementations:
 
 ## Status
 
-Feature work for the first release is complete. Remaining before the first
-public release: release-key ceremony, code-signing certificate, and store
-distribution. Current list:
+The first release is still in development. Cooling profile activation, wider
+sensor coverage, System policy verification, and installed release checks remain.
+Release signing and the release-key ceremony are in place. Current list:
 [docs/planning/refinement-backlog.md](docs/planning/refinement-backlog.md).
 
-Not built, tracked for later: OEM hardware modules (ASUS platform tuning,
-RGB, fan control, drivers), network and firewall, exportable PC profiles,
-OneDrive and Edge removal, hardware sensors.
+Hardware work includes native Lighting, saved FanControl profile editing, and
+read-only Monitoring. Monitoring shows memory, supported NVIDIA GPU sensors,
+and basic battery readings, with statistics and short history graphs.
+CPU, motherboard, storage, AMD and Intel GPU sensors remain unavailable.
+G-Helper and FanControl remain maintained companion applications.
+
+Further work includes network and firewall, exportable PC profiles, and
+OneDrive and Edge removal. See the backlog for scope and verification limits.
 
 ## Contributing
 

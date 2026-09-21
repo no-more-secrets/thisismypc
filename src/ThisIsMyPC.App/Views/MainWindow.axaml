@@ -524,7 +524,10 @@
                             <DataTemplate DataType="{x:Type vm:DisplayViewModel}">
                                 <views:DisplayView />
                             </DataTemplate>
-                            <!-- System Control, Lighting, Cooling, and Monitoring share one page -->
+                            <DataTemplate DataType="{x:Type vm:MonitoringSensorsViewModel}">
+                                <views:MonitoringSensorsView />
+                            </DataTemplate>
+                            <!-- System Control, Lighting, and Cooling share one page -->
                             <DataTemplate DataType="{x:Type vm:HardwareTabViewModel}">
                                 <views:HardwareTabView />
                             </DataTemplate>

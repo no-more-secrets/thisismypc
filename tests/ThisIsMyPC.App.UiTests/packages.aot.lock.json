@@ -271,9 +271,6 @@
       "ThisIsMyPC-Installer": {
         "type": "Project",
         "dependencies": {
-          "Avalonia": "[11.3.12, )",
-          "Avalonia.Desktop": "[11.3.12, )",
-          "Avalonia.Themes.Fluent": "[11.3.12, )",
           "CommunityToolkit.Mvvm": "[8.4.0, )",
           "ThisIsMyPC.Core": "[1.0.0, )",
           "ThisIsMyPC.Interop.Win32": "[1.0.0, )"
@@ -291,6 +288,7 @@
           "Microsoft.Extensions.DependencyInjection": "[10.0.0, )",
           "NLog": "[6.2.0, )",
           "ThisIsMyPC.Core": "[1.0.0, )",
+          "ThisIsMyPC.Interop.Sensors": "[1.0.0, )",
           "ThisIsMyPC.Interop.Win32": "[1.0.0, )",
           "ThisIsMyPC.Ipc.Contracts": "[1.0.0, )",
           "ThisIsMyPC.Modules.Annoyances": "[1.0.0, )",
@@ -315,6 +313,13 @@
         "type": "Project",
         "dependencies": {
           "ThisIsMyPC.Core": "[1.0.0, )"
+        }
+      },
+      "thisismypc.interop.sensors": {
+        "type": "Project",
+        "dependencies": {
+          "ThisIsMyPC.Core": "[1.0.0, )",
+          "ThisIsMyPC.Interop.Win32": "[1.0.0, )"
         }
       },
       "thisismypc.interop.win32": {

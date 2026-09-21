@@ -227,6 +227,13 @@
           "ThisIsMyPC.Core": "[1.0.0, )"
         }
       },
+      "thisismypc.interop.sensors": {
+        "type": "Project",
+        "dependencies": {
+          "ThisIsMyPC.Core": "[1.0.0, )",
+          "ThisIsMyPC.Interop.Win32": "[1.0.0, )"
+        }
+      },
       "thisismypc.interop.win32": {
         "type": "Project",
         "dependencies": {

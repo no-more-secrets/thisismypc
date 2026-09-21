@@ -5,6 +5,7 @@
     <Project Path="src/ThisIsMyPC.Core/ThisIsMyPC.Core.csproj" />
     <Project Path="src/ThisIsMyPC.Installer/ThisIsMyPC.Installer.csproj" />
     <Project Path="src/ThisIsMyPC.Interop.Com/ThisIsMyPC.Interop.Com.csproj" />
+    <Project Path="src/ThisIsMyPC.Interop.Sensors/ThisIsMyPC.Interop.Sensors.csproj" />
     <Project Path="src/ThisIsMyPC.Interop.Win32/ThisIsMyPC.Interop.Win32.csproj" />
     <Project Path="src/ThisIsMyPC.Interop.Wmi/ThisIsMyPC.Interop.Wmi.csproj" />
     <Project Path="src/ThisIsMyPC.Ipc.Contracts/ThisIsMyPC.Ipc.Contracts.csproj" />

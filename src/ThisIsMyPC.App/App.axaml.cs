@@ -258,6 +258,9 @@ public partial class App : Application
         services.AddSingleton<IModule, ThisIsMyPC.Modules.Hardware.LightingModule>();
         services.AddSingleton<IModule, ThisIsMyPC.Modules.Hardware.CoolingModule>();
         services.AddSingleton<IModule, ThisIsMyPC.Modules.Hardware.MonitoringModule>();
+        // Construct and release the read-only backend with the Monitoring page.
+        services.AddSingleton<Func<Core.Hardware.Sensors.IHardwareSensorBackend>>(
+            _ => () => new ThisIsMyPC.Interop.Sensors.LibreHardwareSensorBackend());
 
         // Update services. GPG manifest verification (tm2:54): fail-closed,
         // offline release key, public key hardcoded in the verifier.

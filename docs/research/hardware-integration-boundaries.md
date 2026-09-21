@@ -1,6 +1,6 @@
 # Hardware integration boundaries
 
-Investigated on 2026-09-21 for Cooling activation and Monitoring. These are implementation constraints, not completed features.
+Investigated on 2026-09-21 for Cooling activation and Monitoring. This records constraints and verified implementation boundaries.
 
 ## Cooling
 
@@ -31,7 +31,7 @@ Sources: [command documentation](https://getfancontrol.com/docs/),
 ## Monitoring
 
 Reviewed LibreHardwareMonitor source at commit `dc51e75bd97b15ce17ded0885e67bad47be0765b`.
-The existing Hardware tab is a placeholder. `Core.Monitoring` tracks startup changes and is unrelated to sensor sampling.
+The Hardware tab now uses a narrow read-only source port. `Core.Monitoring` tracks startup changes and is unrelated to sensor sampling.
 
 Unmodified LibreHardwareMonitor is not compatible with the current release restrictions:
 
@@ -48,7 +48,15 @@ Do not substitute fabricated values or relax ACG/CIG to make the library load.
 The patched NativeAOT probe passed three live samples with ACG and CIG enabled before and after sampling.
 It read memory and RTX 4080 sensors without driver installation or fan-control writes.
 CPU, motherboard, storage, actual battery hardware, and AMD/Intel GPUs remain unverified.
-The broad upstream project still produces warnings from unused dependencies. Production integration requires a narrower dependency closure.
+The broad upstream project still produces warnings from unused dependencies. It remains diagnostic-only.
+
+Production integration compiles selected NvAPI/NVML declarations and read-only queries in `Interop.Sensors`, without new NuGet dependencies.
+Windows APIs supply memory and basic battery readings. The backend does not install drivers, generate executable code, or call control setters.
+Its separate NativeAOT probe passed three samples with ACG/CIG enabled throughout and no IL2xxx/IL3xxx warnings.
+Verified fields include memory use, GPU temperatures, clocks, load, RPM, VRAM, voltage, and power.
+NVML loaded after CIG on the tested NVIDIA driver; rejected vendor libraries leave their sensors unavailable.
+The port ships its MPL license, attribution, and upstream notices. See [the retained-source record](../../third-party/librehardwaremonitor/README.md).
+This proves the narrowed backend on the tested hardware, not the complete signed installed app or other hardware families.
 
 Initial sampling should use memory and supported GPU readings, then expand after guarded runtime checks.
 Missing PawnIO or inaccessible motherboard sensors must not hide unrelated working sensors.

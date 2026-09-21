@@ -105,6 +105,8 @@ Sam approved these four workstreams while Claude Code finishes the installer.
 2. **Monitoring.** Connect the hardware tab to a read-only sensor backend and build the curated sensor interface.
    Verify LibreHardwareMonitor compatibility with NativeAOT and release security before selecting its integration boundary.
    Include current/minimum/maximum/average readings, short history, and honest unavailable states. Do not add fan control writes.
+   The initial implementation uses a narrow LibreHardwareMonitor source port for NVIDIA, plus Windows memory and battery APIs.
+   Its guarded NativeAOT probe passes. CPU, motherboard, storage, AMD/Intel GPU coverage and physical battery checks remain pending.
 3. **System modules.** Audit policy coverage and edition behavior, then finish settings presentation.
    Reproduce and resolve the recorded Privacy & Telemetry walkthrough timeout.
    Map the private policy export without committing machine data or treating registry writes as proof of enforcement.

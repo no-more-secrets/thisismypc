@@ -57,6 +57,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IPrivilegeBrokerClient? _privilegeBroker;
     private readonly Services.HardwareCompanionActions? _hardwareActions;
     private readonly Core.Hardware.Lighting.ILightingBackend? _lightingBackend;
+    private readonly Func<Core.Hardware.Sensors.IHardwareSensorBackend>? _sensorBackendFactory;
     private IPrivilegeBrokerSession? _activeBrokerSession;
 
     // --- 9-3 monitoring review (Home section) ---
@@ -252,7 +253,7 @@ public partial class MainWindowViewModel : ViewModelBase
     /// <summary>Whether the current page owns its card edge and content padding.</summary>
     public bool UsesEdgeTabs => CurrentContent is ShellViewModel or EnvironmentViewModel or SettingsViewModel
         or SoftwareViewModel or ContextMenuViewModel or StartupViewModel or PowerViewModel or SettingCardPageViewModel
-        or DebugViewModel;
+        or DebugViewModel or MonitoringSensorsViewModel;
 
     [ObservableProperty]
     private bool _isSidebarCollapsed;
@@ -357,12 +358,14 @@ public partial class MainWindowViewModel : ViewModelBase
         IPrivilegeBrokerClient? privilegeBroker = null,
         Core.Hardware.IHardwareDetectionService? hardwareDetection = null,
         Services.HardwareCompanionActions? hardwareActions = null,
-        Core.Hardware.Lighting.ILightingBackend? lightingBackend = null)
+        Core.Hardware.Lighting.ILightingBackend? lightingBackend = null,
+        Func<Core.Hardware.Sensors.IHardwareSensorBackend>? sensorBackendFactory = null)
     {
         _hardwareDetection = hardwareDetection;
         _privilegeBroker = privilegeBroker;
         _hardwareActions = hardwareActions;
         _lightingBackend = lightingBackend;
+        _sensorBackendFactory = sensorBackendFactory;
         _deliberateChanges = deliberateChanges;
         _wingetService = wingetService;
         _autorunEnrichment = autorunEnrichment;
@@ -692,6 +695,16 @@ public partial class MainWindowViewModel : ViewModelBase
                         CurrentContent = null;
                         SetStatus(scanResult.ErrorMessage ?? "Failed to scan displays", StatusSeverity.Error);
                     }
+                });
+            }
+            else if (current?.Module is Modules.Hardware.MonitoringModule && _sensorBackendFactory is not null)
+            {
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    if (epoch != _contentEpoch) return;
+                    ContentTitle = current.Module.Info.Name;
+                    ContentDescription = current.Module.Info.Description;
+                    CurrentContent = new MonitoringSensorsViewModel(_sensorBackendFactory());
                 });
             }
             else if (current?.Module is Modules.Hardware.HardwareCompanionModule hardwareModule)
@@ -1405,6 +1418,8 @@ public partial class MainWindowViewModel : ViewModelBase
     public async Task PrepareForShutdownAsync()
     {
         _shutdownRequested = true;
+        if (CurrentContent is MonitoringSensorsViewModel sensors)
+            sensors.Dispose();
         _deliberateChanges?.StopAcceptingChanges();
         ApplyAllCommand.Cancel();
         var tasks = new[] { ApplyAllCommand.ExecutionTask, ChangeHistory.RestoreCommand.ExecutionTask, ChangeHistory.RedoCommand.ExecutionTask };

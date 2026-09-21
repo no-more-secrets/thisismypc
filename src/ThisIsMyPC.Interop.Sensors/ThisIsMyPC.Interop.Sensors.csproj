@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../ThisIsMyPC.Core/ThisIsMyPC.Core.csproj" />
+    <ProjectReference Include="../ThisIsMyPC.Interop.Win32/ThisIsMyPC.Interop.Win32.csproj" />
+    <Compile Include="../../third-party/librehardwaremonitor/NvApi.cs" Link="LibreHardwareMonitor/NvApi.cs" />
+    <Compile Include="../../third-party/librehardwaremonitor/NvmlReadOnly.cs" Link="LibreHardwareMonitor/NvmlReadOnly.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="../../third-party/librehardwaremonitor/LICENSE;../../third-party/librehardwaremonitor/THIRD-PARTY-NOTICES.txt;../../third-party/librehardwaremonitor/README.md"
+             Link="ThirdPartyNotices/LibreHardwareMonitor/%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

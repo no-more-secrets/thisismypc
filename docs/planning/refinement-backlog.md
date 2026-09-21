@@ -33,6 +33,19 @@ See the explicit checklists in [the v1 plan](v1-completion-plan.md#active-applic
 - Mapped all 148 private policy records: 14 direct routes, one partial route, 16 related controls, and 117 gaps. See [sanitized coverage](../research/configured-policy-coverage.md).
 - Remaining: verify edition/scope enforcement and organization-managed behavior, resolve contradictory export metadata, and expand policy coverage in bounded batches.
 
+## Initial Monitoring sensors (2026-09-21)
+
+- Replaced the companion placeholder with read-only Memory, GPU, and Battery tabs. Rows expand into bounded statistics and history graphs.
+- The backend uses a narrow LibreHardwareMonitor NvAPI/NVML source port, with Windows APIs for memory and basic battery readings.
+- No new NuGet dependencies, sensor driver installation, generated executable code, or hardware-control writes.
+- Verified the production backend through three NativeAOT samples with ACG/CIG enabled throughout and zero IL2xxx/IL3xxx warnings.
+- Verified memory and RTX 4080 temperatures, clocks, load, RPM, VRAM, voltage, and power. Actual battery hardware remains unverified.
+- CPU, motherboard, storage, AMD and Intel GPU sensors remain unavailable. These gaps do not hide working sensors.
+- Licenses and source attribution ship with the backend. See [integration boundaries](../research/hardware-integration-boundaries.md).
+- Verified 2,643 CI-safe tests, final navigation/shutdown checks, both themes, and host edges at 25/23/59 with a 10px scrollbar lane.
+- Independent review resolved stale blocked reads and extreme-value graph/statistics overflow. Sampling stops when leaving Monitoring.
+- Installed signed-app validation remains separate: [current evidence and acceptance matrix](../research/installed-release-validation-2026-09-21.md).
+
 ## Win32 installer integration (2026-09-11)
 
 - Merged the native Win32/GDI installer from `codex/win32-installer` into main. Avalonia, Skia, and HarfBuzz are removed from the installer.

@@ -1,0 +1,77 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ThisIsMyPC.App.ViewModels"
+             xmlns:controls="using:ThisIsMyPC.App.Controls"
+             x:Class="ThisIsMyPC.App.Views.MonitoringSensorsView"
+             x:DataType="vm:MonitoringSensorsViewModel">
+    <UserControl.Styles>
+        <Style Selector="TextBlock.sensor-note">
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+            <Setter Property="FontSize" Value="12" />
+        </Style>
+        <Style Selector="Border.sensor-card">
+            <Setter Property="Background" Value="{DynamicResource RaisedBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource OutlineBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="14" />
+        </Style>
+    </UserControl.Styles>
+    <TabControl Theme="{StaticResource EdgeTabControlTheme}"
+                ItemsSource="{Binding Components}" SelectedItem="{Binding SelectedComponent}">
+        <TabControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:MonitoringComponentViewModel">
+                <TextBlock Text="{Binding Name}" />
+            </DataTemplate>
+        </TabControl.ItemTemplate>
+        <TabControl.ContentTemplate>
+            <DataTemplate x:DataType="vm:MonitoringComponentViewModel">
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="12" Margin="0,0,16,24">
+                        <Border Classes="sensor-card">
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="{Binding $parent[UserControl].((vm:MonitoringSensorsViewModel)DataContext).StatusText}"
+                                           TextWrapping="Wrap" FontWeight="SemiBold" />
+                                <TextBlock Classes="sensor-note" Text="{Binding $parent[UserControl].((vm:MonitoringSensorsViewModel)DataContext).UpdatedText}" />
+                                <TextBlock Classes="sensor-note" Text="{Binding $parent[UserControl].((vm:MonitoringSensorsViewModel)DataContext).CoverageNotes}" />
+                            </StackPanel>
+                        </Border>
+                        <TextBlock Text="{Binding EmptyMessage}" TextWrapping="Wrap" IsVisible="{Binding IsEmpty}" />
+                        <ItemsControl ItemsSource="{Binding Sensors}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:MonitoringSensorRowViewModel">
+                                    <Border Classes="sensor-card" Margin="0,0,0,10" Padding="0">
+                                        <Expander IsExpanded="{Binding IsExpanded}" HorizontalAlignment="Stretch"
+                                                  HorizontalContentAlignment="Stretch" Background="Transparent" BorderThickness="0">
+                                            <Expander.Header>
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                                                    <StackPanel>
+                                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                                        <TextBlock Classes="sensor-note" Text="{Binding DeviceName}" />
+                                                    </StackPanel>
+                                                    <TextBlock Grid.Column="1" Text="{Binding Current}" FontWeight="SemiBold"
+                                                               VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="160" />
+                                                </Grid>
+                                            </Expander.Header>
+                                            <StackPanel Spacing="8" Margin="14,0,14,14">
+                                                <WrapPanel>
+                                                    <TextBlock Classes="sensor-note" Text="{Binding Minimum}" Margin="0,0,20,4" />
+                                                    <TextBlock Classes="sensor-note" Text="{Binding Maximum}" Margin="0,0,20,4" />
+                                                    <TextBlock Classes="sensor-note" Text="{Binding Average}" Margin="0,0,20,4" />
+                                                </WrapPanel>
+                                                <controls:SensorHistoryGraph Samples="{Binding History}" Height="64"
+                                                                             Stroke="{DynamicResource TextPrimaryBrush}" />
+                                                <TextBlock Classes="sensor-note" Text="Last 120 readings. Gaps mean no reading was available." />
+                                            </StackPanel>
+                                        </Expander>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+            </DataTemplate>
+        </TabControl.ContentTemplate>
+    </TabControl>
+</UserControl>
