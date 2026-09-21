@@ -103,6 +103,52 @@ public class SinowealthControllerTests
     }
 
     [Fact]
+    public void Describe_ReportsOff_WhenTheMouseLightingIsOff()
+    {
+        var (transport, _, _, configuration) = Mouse();
+        configuration[0x35] = 0x00;
+        var (entries, _) = new NativeLightingBackend(transport, i2c: null).Detect();
+
+        var device = entries[0].Controller.Describe(0);
+
+        Assert.Equal("Off", device.ActiveMode?.Name);
+    }
+
+    [Fact]
+    public void Describe_ReadsTheStoredStaticBrightnessAndColor()
+    {
+        var (transport, _, _, configuration) = Mouse();
+        configuration[0x35] = 0x02;
+        configuration[0x38] = 0x40;
+        configuration[0x39] = 0x11;
+        configuration[0x3A] = 0x33;
+        configuration[0x3B] = 0x22;
+        var (entries, _) = new NativeLightingBackend(transport, i2c: null).Detect();
+
+        var device = entries[0].Controller.Describe(0);
+
+        Assert.Equal("Static", device.ActiveMode?.Name);
+        Assert.Equal(4u, device.ActiveMode!.Brightness);
+        Assert.Equal(new RgbColor(0x11, 0x22, 0x33), device.Colors[0]);
+    }
+
+    [Fact]
+    public void Describe_ReadsRainbowSpeedAndDirection_AndKeepsDefaultsForBadLevels()
+    {
+        var (transport, _, _, configuration) = Mouse();
+        configuration[0x35] = 0x01;
+        configuration[0x36] = 0xF3;
+        configuration[0x37] = 0x01;
+        var (entries, _) = new NativeLightingBackend(transport, i2c: null).Detect();
+
+        var device = entries[0].Controller.Describe(0);
+
+        Assert.Equal("Rainbow", device.ActiveMode?.Name);
+        Assert.Equal(3u, device.ActiveMode!.Speed);
+        Assert.Equal(LightingDirection.Up, device.ActiveMode.Direction);
+    }
+
+    [Fact]
     public void SetLeds_InStaticMode_WritesTheColorAsRedBlueGreen_OverTheReadConfiguration()
     {
         var (transport, _, data, configuration) = Mouse();

@@ -63,7 +63,77 @@ public sealed class SinowealthController : ILightingController
         _serial = command.Info.SerialNumber ?? string.Empty;
         _version = ReadFirmwareVersion();
         _modes = BuildModes();
+        ReadState();
     }
+
+    /// <summary>
+    /// The mouse keeps its lighting in the same configuration blob that <see cref="WriteMode"/>
+    /// patches, so the active mode and its levels come from the same offsets. Without this the
+    /// page opened on Static at default brightness whatever the mouse was showing.
+    /// </summary>
+    private void ReadState()
+    {
+        if (ReadProfile() < ConfigSizeMin)
+            return;
+        var index = _modes.FindIndex(candidate => candidate.Value == _configuration[0x35]);
+        if (index < 0)
+            return;
+        _activeMode = index;
+        var mode = _modes[index];
+        switch ((byte)mode.Value)
+        {
+            case ModeRainbow:
+                mode = WithLevel(mode, _configuration[0x36]) with
+                {
+                    Direction = _configuration[0x37] == DirectionUp ? LightingDirection.Up : LightingDirection.Down,
+                };
+                break;
+            case ModeStatic:
+                mode = WithLevel(mode, _configuration[0x38]);
+                _color = GetColor(_configuration, 0x39);
+                break;
+            case ModeSpectrumBreathing:
+                mode = WithLevel(mode, _configuration[0x3C]) with
+                {
+                    Colors = Enumerable.Range(0, 7).Select(i => GetColor(_configuration, 0x3E + (3 * i))).ToList(),
+                };
+                break;
+            case ModeTail:
+                mode = WithLevel(mode, _configuration[0x53]);
+                break;
+            case ModeSpectrumCycle:
+                mode = WithLevel(mode, _configuration[0x54]);
+                break;
+            case ModeRave:
+                mode = WithLevel(mode, _configuration[0x74]) with
+                {
+                    Colors = [GetColor(_configuration, 0x75), GetColor(_configuration, 0x78)],
+                };
+                break;
+            case ModeWave:
+                mode = WithLevel(mode, _configuration[0x7C]);
+                break;
+            case ModeBreathing:
+                mode = WithLevel(mode, _configuration[0x7D]) with { Colors = [GetColor(_configuration, 0x7E)] };
+                break;
+        }
+        _modes[index] = mode;
+    }
+
+    /// <summary>A level byte packs brightness in the high nibble and speed in the low one; out-of-range values keep the default.</summary>
+    private static LightingMode WithLevel(LightingMode mode, byte level)
+    {
+        var brightness = (uint)(level >> 4);
+        var speed = (uint)(level & 0xF);
+        return mode with
+        {
+            Brightness = mode.HasBrightness && brightness >= mode.BrightnessRange.Low && brightness <= mode.BrightnessRange.High
+                ? brightness : mode.Brightness,
+            Speed = mode.HasSpeed && speed >= mode.SpeedRange.Low && speed <= mode.SpeedRange.High ? speed : mode.Speed,
+        };
+    }
+
+    private static RgbColor GetColor(byte[] report, int offset) => new(report[offset], report[offset + 2], report[offset + 1]);
 
     public string Family => "Sinowealth";
 
