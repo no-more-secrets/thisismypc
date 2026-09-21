@@ -13,6 +13,11 @@ internal static unsafe partial class NativeMethods
     internal const uint DWMWA_WINDOW_CORNER_PREFERENCE = 33;
     internal const int DWMWCP_ROUND = 2;
 
+    [LibraryImport("gdi32.dll", EntryPoint = "GetTextExtentPoint32W", StringMarshalling = StringMarshalling.Utf16)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    internal static partial bool GetTextExtentPoint32(nint dc, string text, int length, out POINT size);
+
     [LibraryImport("gdi32.dll", EntryPoint = "CreateRectRgn")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static partial nint CreateRectRgn(int left, int top, int right, int bottom);

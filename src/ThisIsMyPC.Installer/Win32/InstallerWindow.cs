@@ -375,12 +375,35 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
             0, 0, 0, 0, hwnd, (nint)FolderEditId, instance, nint.Zero);
         if (_licenseEdit == nint.Zero || _folderEdit == nint.Zero)
             throw new Win32Exception(Marshal.GetLastWin32Error(), "Windows could not create the installer fields.");
+        ApplyEditFonts();
+    }
+
+    // The license keeps exactly one blank column before its text so its 78-column lines still fit unwrapped.
+    private void ApplyEditFonts()
+    {
+        var scale = _dpi / 96d;
         _ = NativeMethods.SendMessage(_licenseEdit, NativeMethods.WM_SETFONT, (nuint)_monoFont, (nint)1);
         _ = NativeMethods.SendMessage(_folderEdit, NativeMethods.WM_SETFONT, (nuint)_bodyFont, (nint)1);
+        var inset = Scale(6, scale);
         _ = NativeMethods.SendMessage(_folderEdit, NativeMethods.EM_SETMARGINS,
-            NativeMethods.EC_LEFTMARGIN | NativeMethods.EC_RIGHTMARGIN, (nint)((6 << 16) | 6));
+            NativeMethods.EC_LEFTMARGIN | NativeMethods.EC_RIGHTMARGIN, (nint)((inset << 16) | inset));
         _ = NativeMethods.SendMessage(_licenseEdit, NativeMethods.EM_SETMARGINS,
-            NativeMethods.EC_LEFTMARGIN | NativeMethods.EC_RIGHTMARGIN, (nint)((6 << 16) | 6));
+            NativeMethods.EC_LEFTMARGIN | NativeMethods.EC_RIGHTMARGIN, (nint)MonoColumnWidth());
+    }
+
+    private int MonoColumnWidth()
+    {
+        var dc = NativeMethods.CreateCompatibleDC(nint.Zero);
+        if (dc == nint.Zero)
+            return Scale(MonoFontSize / 2, _dpi / 96d);
+        try
+        {
+            var previous = NativeMethods.SelectObject(dc, _monoFont);
+            var measured = NativeMethods.GetTextExtentPoint32(dc, "M", 1, out var size);
+            _ = NativeMethods.SelectObject(dc, previous);
+            return measured && size.X > 0 ? size.X : Scale(MonoFontSize / 2, _dpi / 96d);
+        }
+        finally { _ = NativeMethods.DeleteDC(dc); }
     }
 
     private void Paint(nint hwnd)
@@ -438,8 +461,7 @@ internal sealed unsafe partial class InstallerWindow : IDisposable
             NativeMethods.DEFAULT_CHARSET, 0, 0, NativeMethods.CLEARTYPE_QUALITY, 0, "Segoe UI");
         _bodyFont = bodyFont;
         _monoFont = monoFont;
-        _ = NativeMethods.SendMessage(_licenseEdit, NativeMethods.WM_SETFONT, (nuint)_monoFont, (nint)1);
-        _ = NativeMethods.SendMessage(_folderEdit, NativeMethods.WM_SETFONT, (nuint)_bodyFont, (nint)1);
+        ApplyEditFonts();
         if (oldHeadingFont != nint.Zero)
             _ = NativeMethods.DeleteObject(oldHeadingFont);
         if (oldBodyFont != nint.Zero)
