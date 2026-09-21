@@ -10,6 +10,35 @@ preview build without opening a window. Preview entry is compiled only in Debug.
 
 The UI uses a compact 600 by 480 logical-pixel Windows dialog, pale blue surfaces,
 navy text, a thin content border, and native Windows controls. It adds no UI framework.
+The palette is currently light blue only; it does not follow the Windows dark theme.
+
+### Installer UI verification
+
+Run the preview from the repository root:
+
+```powershell
+.\tools\preview-installer.ps1
+```
+
+The script rebuilds the preview under `artifacts/diagnostics/installer-preview`.
+Close an older preview before rebuilding. This workflow does not rebuild the packaged installer.
+
+Render the native controls and exercise the fake-engine keyboard workflow:
+
+```powershell
+dotnet test tests/ThisIsMyPC.App.UiTests --configuration Release --filter "FullyQualifiedName~InstallerShotTests" -m:4 /nodeReuse:false
+```
+
+Inspect `artifacts/ui-shots/installer-win32/` at 100%, 150%, and 200% scaling.
+Check whole pages, focus outlines, and button edges against both blue surfaces.
+The renderer handles `WM_ERASEBKGND` and `WM_PRINTCLIENT` so themed button edges receive the correct parent background.
+Painting preserves the mapped DC origin and applies the scroll offset before restoring DC state.
+Footer controls use the dialog brush; controls inside the content panel use its brush.
+
+These checks use a fake engine. They do not validate signed startup, UAC, or actual installation and removal.
+Follow [installer acceptance](installer-acceptance.md) for live release checks.
+
+### Package build modes
 
 The launcher offers three build modes:
 

@@ -217,6 +217,18 @@ dotnet test tests/ThisIsMyPC.App.UiTests --configuration Release --filter "Categ
 - The harness evolves with the UI/UX chapter: as the visual feedback and
   interaction loop improves, update this section to match.
 
+### Native installer UI
+
+- Keep the installer lean: Win32 controls and GDI only. Do not add Avalonia, Skia, or another UI framework.
+- Use `tools/preview-installer.ps1` for interactive UI checks without rebuilding the release package. Add `-BuildOnly` to compile without opening it.
+- The Debug-only preview uses a fake engine. Never replace it with the live install engine for visual checks.
+- Run `InstallerShotTests` and inspect `artifacts/ui-shots/installer-win32/` at 100%, 150%, and 200% scaling after native UI changes.
+- Preserve shared control geometry for rendering, mouse targets, and keyboard navigation.
+- Themed buttons need the correct parent surface for transparent edges. Preserve `WM_ERASEBKGND` and `WM_PRINTCLIENT` background painting.
+- Preserve the child-to-parent DC origin and scroll offset. Restore DC state after painting; use the correct panel or footer brush.
+- Inspect full-page renders as well as edge crops. Background fixes must not erase other controls or break focus outlines.
+- Preview and screenshots do not verify UAC, signing, or live installation. Use the release acceptance checklist for those checks.
+
 ### Shared region review (Debug builds)
 
 Ctrl+Shift+A toggles frozen annotation and live navigation. Each drag adds a figure
