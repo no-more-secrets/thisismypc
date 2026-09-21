@@ -102,6 +102,8 @@ Sam approved these four workstreams while Claude Code finishes the installer.
    Verify active curve assignments and physical fan response, then restore the original configuration.
    A successful process exit or `CACHE.CurrentConfigFileName` is not acknowledgement.
    Preserve calibration, capture the previous runtime selection where possible, and report unsupported versions or service modes explicitly.
+   Approved fallback implemented: request the saved profile switch, then require the user to inspect and confirm FanControl's curves.
+   Automatic active-curve readback remains unavailable. File undo does not restore an unknown running profile.
 2. **Monitoring.** Connect the hardware tab to a read-only sensor backend and build the curated sensor interface.
    Verify LibreHardwareMonitor compatibility with NativeAOT and release security before selecting its integration boundary.
    Include current/minimum/maximum/average readings, short history, and honest unavailable states. Do not add fan control writes.

@@ -3,6 +3,7 @@ using ThisIsMyPC.Core.Results;
 using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Modules.Software.Actions;
 using ThisIsMyPC.Modules.Software.Services;
+using ThisIsMyPC.Modules.Hardware.Cooling;
 
 namespace ThisIsMyPC.App.Services;
 
@@ -12,9 +13,9 @@ namespace ThisIsMyPC.App.Services;
 /// before-state, applied from the review panel like any other install). Open
 /// launches the companion as the signed-in desktop user, never from an
 /// elevated token. Lighting has no companion: its devices are driven by the
-/// built-in controllers through the tab's own session. None of this touches
-/// hardware; the tabs check the policy's permitted operations before calling
-/// any of it.
+/// built-in controllers through the tab's own session. Explicit FanControl
+/// profile launches can change running fans. The user verifies those requests
+/// in FanControl; the tabs check the policy's permitted operations first.
 /// </summary>
 public sealed class HardwareCompanionActions
 {
@@ -71,6 +72,20 @@ public sealed class HardwareCompanionActions
     }
 
     public bool CanOpen => _user is not null;
+
+    /// <summary>Requests a saved profile switch. Launch success is not FanControl acknowledgement.</summary>
+    public async Task<OperationResult<bool>> RequestFanControlProfileAsync(FanControlProfileStore profiles, string name)
+    {
+        if (_user is null)
+            return OperationResult<bool>.Failure("Opening apps is not available in this session.", ErrorCategory.ServiceUnavailable);
+        var target = await profiles.ResolveActivationTargetAsync(name).ConfigureAwait(false);
+        if (!target.IsSuccess)
+            return OperationResult<bool>.Failure(target.ErrorMessage ?? "The saved profile is unavailable.", ErrorCategory.ServiceUnavailable);
+        // The store only accepts a local .json leaf with no quotes or traversal.
+        // Opening an existing window alone would not send the requested configuration.
+        return await Task.Run(() => _user.LaunchAsUser(target.Value!.ExecutablePath,
+            "-c \"" + target.Value.ProfilePath + "\" -w")).ConfigureAwait(false);
+    }
 
     public OperationResult<bool> Open(string executablePath)
     {

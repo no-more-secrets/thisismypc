@@ -334,7 +334,7 @@ disabled with the reason, not hidden. Reference implementations:
 
 ## Status
 
-The first release is still in development. Cooling profile activation, wider
+The first release is still in development. Cooling runtime verification, wider
 sensor coverage, System policy verification, and installed release checks remain.
 Release signing and the release-key ceremony are in place. Current list:
 [docs/planning/refinement-backlog.md](docs/planning/refinement-backlog.md).

@@ -75,14 +75,24 @@ New copies use a flushed temporary file and a move that refuses existing targets
 Replacing an existing profile holds exclusive access and restores bytes after an I/O failure; it is not atomic across process termination.
 
 Saving does not load the profile or change the running fan controls.
-Open FanControl and load the saved profile there. File history cannot restore an unknown runtime selection.
+After applying the save, select the saved profile and request activation from Cooling.
+The request uses the documented `-c` option and `-w` to open FanControl's window.
+It checks current compatibility, the detected installation, and the saved version 226 file before launching.
+It uses the desktop-user launcher. FanControl may show its own permission prompt; the broker does not launch it.
+
+A successful launch means only that the switch was requested. Confirm the loaded curves in FanControl,
+then use the confirmation button in Cooling. The result is a user confirmation, not automatic runtime verification.
+If FanControl did not switch, load the saved file through its own interface and check it there.
+Cancelled permission prompts and launch failures remain failures. No CACHE value or process exit is treated as acknowledgement.
+File or editor changes clear the confirmation. Changing profiles elsewhere or closing FanControl cannot be detected through this workflow.
+File history cannot restore an unknown runtime selection. Restore the desired running profile through FanControl separately.
 FanControl can save its own loaded profile, so prefer copies and reload the editor after external changes.
 
 Remaining verification:
 
 1. Verify active curve changes with physical observations and a tested restoration path.
 2. Check other FanControl versions and its newer service mode before claiming support.
-3. Add reliable profile activation independently from CACHE and process exit status.
+3. Add automatic active-curve verification if a supported runtime readback becomes available.
 
 The plugin API remains useful for sensors and controls but does not expose existing curve editing.
 A plugin could provide a narrow window-activation interface through its supported application-control hook, subject to separate implementation and verification.

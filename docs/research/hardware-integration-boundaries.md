@@ -17,6 +17,8 @@ It did not establish active curve behavior. `CACHE.CurrentConfigFileName` remain
 Neither that cache value nor process exit zero can serve as activation acknowledgement.
 
 Reliable automatic activation still needs an independent observation of runtime state.
+Sam approved a user-confirmation fallback on 2026-09-21: request the profile switch, then have the user inspect FanControl's curves.
+The Cooling workflow reports the request separately from that confirmation. It does not claim automatic verification.
 UI Automation is a candidate for a version-specific diagnostic, not yet a supported production contract.
 An elevated FanControl instance also requires handling the caller privilege boundary.
 Do not broaden the privileged broker into an arbitrary executable launcher.

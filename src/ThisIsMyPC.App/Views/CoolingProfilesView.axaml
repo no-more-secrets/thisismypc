@@ -121,7 +121,17 @@
                 <Button Content="{Binding StageLabel}" Classes.staged-save="{Binding HasStagedProfile}" Command="{Binding StageCommand}" IsEnabled="{Binding CanStage}" HorizontalAlignment="Left" />
             </StackPanel>
             <TextBlock Classes="hint" Classes.error="{Binding Failed}" Text="{Binding Message}" />
-            <TextBlock Classes="hint" Text="After Apply, open FanControl and use Load configuration to choose the saved profile. Undo restores the file, not the running fan settings." />
+            <TextBlock Text="Load a saved profile in FanControl" FontSize="18" FontWeight="SemiBold" />
+            <TextBlock Classes="hint" Text="This requests the saved file, not unsaved editor changes. Apply pending profile saves first. FanControl may not accept the request, so check its loaded curves." />
+            <ComboBox ItemsSource="{Binding ActivationProfiles}" SelectedItem="{Binding ActivationProfile}" HorizontalAlignment="Stretch" IsEnabled="{Binding !IsBusy}" />
+            <Button Content="Request saved profile switch" Command="{Binding RequestActivationCommand}" IsEnabled="{Binding CanRequestActivation}" HorizontalAlignment="Left" />
+            <TextBlock Classes="hint" Text="{Binding ActivationStatus}" />
+            <TextBlock Classes="hint" IsVisible="{Binding ConfirmedByUser}" Text="{Binding ConfirmationDetail}" />
+            <StackPanel Spacing="8" IsVisible="{Binding ActivationRequested}">
+                <Button Content="I checked the curves in FanControl" Command="{Binding ConfirmActivationCommand}" IsEnabled="{Binding CanConfirmActivation}" HorizontalAlignment="Left" />
+                <Button Content="It did not load" Command="{Binding RejectActivationCommand}" HorizontalAlignment="Left" />
+            </StackPanel>
+            <TextBlock Classes="hint" Text="If the switch did not load, open FanControl and use Load configuration to choose the saved profile. Check fan assignments and curves there. Undo restores the file, not the running fan settings." />
         </StackPanel>
     </Border>
 </UserControl>

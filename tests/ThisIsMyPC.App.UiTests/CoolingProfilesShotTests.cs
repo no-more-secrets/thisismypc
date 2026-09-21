@@ -6,6 +6,7 @@ using ThisIsMyPC.App.ViewModels;
 using ThisIsMyPC.App.Views;
 using ThisIsMyPC.Core.Hardware;
 using ThisIsMyPC.Core.Services;
+using ThisIsMyPC.Core.Results;
 using ThisIsMyPC.Modules.Hardware.Cooling;
 using ThisIsMyPC.Modules.Hardware.Models;
 
@@ -13,6 +14,113 @@ namespace ThisIsMyPC.App.UiTests;
 
 public sealed class CoolingProfilesShotTests
 {
+    [AvaloniaFact]
+    public async Task Activation_RequestsSavedBytes_RequiresUserCheck_AndInvalidatesChanges()
+    {
+        using var fixture = new Fixture();
+        var requests = new List<string>();
+        using var vm = new CoolingProfilesViewModel(fixture.Store, fixture.Pending, false, name =>
+        {
+            requests.Add(name);
+            return Task.FromResult(OperationResult<bool>.Success(true));
+        });
+        using var session = UiSession.ForView(new ScrollViewer { Content = new CoolingProfilesView { DataContext = vm } }, vm,
+            "cooling-activation", width: 900, height: 676);
+        await vm.RefreshCommand.ExecuteAsync(null);
+        vm.SelectedFan!.Nickname = "Unsaved name";
+        await vm.RequestActivationCommand.ExecuteAsync(null);
+        Assert.Equal(["Quiet.json"], requests);
+        Assert.DoesNotContain("Unsaved name", await File.ReadAllTextAsync(Path.Combine(fixture.Root, "Configurations", "Quiet.json")));
+        Assert.True(vm.ActivationRequested);
+        Assert.False(vm.ConfirmedByUser);
+        session.ScrollAndClickText("I checked the curves in FanControl");
+        await session.WaitForAsync(() => vm.ConfirmedByUser);
+        Assert.Equal("Confirmed by you", vm.ActivationStatus);
+        session.Screenshot("confirmed-dark");
+        session.SetTheme(ThemeVariant.Light);
+        session.Screenshot("confirmed-light");
+        await File.WriteAllTextAsync(Path.Combine(fixture.Root, "Configurations", "Quiet.json"), Profile.Replace("Case fans", "External change"));
+        Assert.False(await vm.ValidateActivationAsync());
+        Assert.False(vm.ConfirmedByUser);
+        await vm.RequestActivationCommand.ExecuteAsync(null);
+        await vm.ConfirmActivationCommand.ExecuteAsync(null);
+        vm.SelectedCurve!.Percent = 42;
+        Assert.False(vm.ConfirmedByUser);
+        Assert.False(vm.ActivationRequested);
+        await vm.RequestActivationCommand.ExecuteAsync(null);
+        vm.ActivationProfile = "Second.json";
+        Assert.False(vm.ActivationRequested);
+        await vm.RequestActivationCommand.ExecuteAsync(null);
+        vm.RejectActivationCommand.Execute(null);
+        Assert.False(vm.ActivationRequested);
+        Assert.Contains("Not loaded", vm.ActivationStatus);
+    }
+
+    [AvaloniaFact]
+    public async Task Activation_BlocksPendingSave_AndSelectsAppliedCopy()
+    {
+        using var fixture = new Fixture();
+        var requests = new List<string>();
+        using var vm = new CoolingProfilesViewModel(fixture.Store, fixture.Pending, false, name =>
+        {
+            requests.Add(name);
+            return Task.FromResult(OperationResult<bool>.Success(true));
+        });
+        using var session = UiSession.ForView(new CoolingProfilesView(), vm, "cooling-activation");
+        await vm.RefreshCommand.ExecuteAsync(null);
+        await vm.StageCommand.ExecuteAsync(null);
+        Assert.False(vm.CanRequestActivation);
+        await vm.RequestActivationCommand.ExecuteAsync(null);
+        Assert.Empty(requests);
+        await fixture.Pending.ApplyAllAsync(fixture.Store.ApplyAsync, fixture.Store.ApplyAsync, CancellationToken.None);
+        await session.WaitForAsync(() => vm.ActivationProfile == "Quiet - Edited.json");
+        Assert.Contains(vm.ActivationProfile, vm.ActivationProfiles);
+        await vm.RequestActivationCommand.ExecuteAsync(null);
+        Assert.Equal(["Quiet - Edited.json"], requests);
+        Assert.False(vm.ConfirmedByUser);
+    }
+
+    [AvaloniaFact]
+    public async Task Activation_RejectsMissingFile_Failure_Cancellation_AndRacingEdit()
+    {
+        using var fixture = new Fixture();
+        var mode = 0;
+        var calls = 0;
+        var pending = new TaskCompletionSource<OperationResult<bool>>();
+        using var vm = new CoolingProfilesViewModel(fixture.Store, fixture.Pending, false, _ =>
+        {
+            calls++;
+            return mode switch
+            {
+                0 => Task.FromResult(OperationResult<bool>.Success(false)),
+                1 => Task.FromException<OperationResult<bool>>(new OperationCanceledException()),
+                2 => Task.FromException<OperationResult<bool>>(new IOException("Test failure")),
+                _ => pending.Task
+            };
+        });
+        await vm.RefreshCommand.ExecuteAsync(null);
+        await vm.RequestActivationCommand.ExecuteAsync(null);
+        Assert.False(vm.ActivationRequested);
+        mode = 1;
+        await vm.RequestActivationCommand.ExecuteAsync(null);
+        Assert.Contains("canceled", vm.ActivationStatus);
+        mode = 2;
+        await vm.RequestActivationCommand.ExecuteAsync(null);
+        Assert.Contains("Test failure", vm.ActivationStatus);
+        File.Delete(Path.Combine(fixture.Root, "Configurations", "Quiet.json"));
+        await vm.RequestActivationCommand.ExecuteAsync(null);
+        Assert.Equal(3, calls);
+        Assert.False(vm.ActivationRequested);
+        await File.WriteAllTextAsync(Path.Combine(fixture.Root, "Configurations", "Quiet.json"), Profile);
+        mode = 3;
+        var request = vm.RequestActivationCommand.ExecuteAsync(null);
+        vm.SelectedFan!.Nickname = "Changed while requesting";
+        pending.SetResult(OperationResult<bool>.Success(true));
+        await request;
+        Assert.False(vm.ActivationRequested);
+        Assert.False(vm.IsBusy);
+    }
+
     private const string Profile = """
         {"__VERSION__":"226","Main":{"Controls":[{"Identifier":"fan/1","Name":"Fan 1","NickName":"Case fans","Enable":true,"ManualControl":false,"ManualControlValue":40,"Calibration":{"20":600},"SelectedFanCurve":{"Name":"Quiet","CommandMode":0,"Percent":40}}],"FanCurves":[{"Name":"Quiet","CommandMode":0,"Percent":40},{"Name":"CPU curve","CommandMode":0,"MinimumTemperature":20,"MaximumTemperature":100,"MaximumCommand":100,"Points":["20,30","60,60","100,100"],"SelectedTempSource":{"Identifier":"cpu/temp","Name":"CPU package"}}]},"Sensors":{"Unknown":123}}
         """;

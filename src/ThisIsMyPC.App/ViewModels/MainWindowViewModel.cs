@@ -730,7 +730,9 @@ public partial class MainWindowViewModel : ViewModelBase
                             lightingBackend: _lightingBackend,
                             settings: _settingsService,
                             cooling: hardwareModule is Modules.Hardware.CoolingModule coolingModule
-                                ? new CoolingProfilesViewModel(coolingModule.Profiles, _pendingChangesService) : null);
+                                ? new CoolingProfilesViewModel(coolingModule.Profiles, _pendingChangesService,
+                                    requestActivation: _hardwareActions is null ? null
+                                        : name => _hardwareActions.RequestFanControlProfileAsync(coolingModule.Profiles, name)) : null);
                     }
                     else
                     {

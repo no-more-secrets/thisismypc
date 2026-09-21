@@ -63,7 +63,13 @@ See the explicit checklists in [the v1 plan](v1-completion-plan.md#active-applic
 - The editor retains drafts while switching profiles. Reload profiles explicitly discards drafts.
 - Verified: Release build and 2,585 CI-safe tests after native Lighting integration, native compare/delete tests, rendered editor interactions, and all four Hardware pages at 25/23/17 content edges.
 - Verified: Sam's version 226 profile with nine fan controls and six curves round-trips byte-for-byte. No live fan settings changed.
-- Saving does not load the profile. Load the saved file in FanControl; file undo does not restore runtime fan settings.
+- Saving does not load the profile. After Apply, Cooling can request activation and ask the user to inspect FanControl's curves.
+- Activation uses the desktop-user launcher with documented CLI arguments. Known ownership conflicts and invalid saved files block the request.
+- Launch success is not confirmation. The user confirms the curves separately; file/editor changes clear that confirmation.
+- File undo does not restore runtime fan settings. Automatic active-curve verification and live physical fan response remain unverified.
+- Verified launch validation, confirmation transitions, applied-copy selection, dark/light screenshots, and host edges at 25/23/17 with a 10px scrollbar lane.
+- The 2,658-test CI-safe run had one SQLite disposed-handle failure in a journal-import test. All 853 Core tests passed on isolated rerun.
+- Follow-up: investigate the intermittent journal-import SQLite disposal failure under parallel solution tests. No Cooling code touches that connection.
 - Pending: automatic profile activation with reliable acknowledgement, physical active-curve verification, other versions, and service mode.
 - Details: [FanControl configuration integration](../fancontrol-configuration.md).
 

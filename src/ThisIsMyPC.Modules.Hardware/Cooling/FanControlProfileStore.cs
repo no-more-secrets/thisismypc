@@ -7,6 +7,7 @@ using ThisIsMyPC.Core.Services;
 namespace ThisIsMyPC.Modules.Hardware.Cooling;
 
 public sealed record FanControlSavedProfile(string Name, byte[] Bytes, FanControlProfileDocument Document);
+public sealed record FanControlActivationTarget(string ExecutablePath, string ProfilePath);
 
 /// <summary>Reads and changes profiles beside the detected FanControl installation, without elevation.</summary>
 public sealed class FanControlProfileStore(IHardwareFactsProvider facts, IComparedFileDeletionService? deletion = null)
@@ -18,6 +19,28 @@ public sealed class FanControlProfileStore(IHardwareFactsProvider facts, ICompar
     public static bool IsProfileChange(ChangeDescriptor change) => change.ModuleId == CoolingModule.ModuleName
         && change.SettingId.StartsWith(SettingPrefix, StringComparison.Ordinal)
         && change.ValueType == ChangeValueType.File_Content && change.Enforcement is null;
+
+    /// <summary>Validates an existing saved profile for an explicit companion launch request.</summary>
+    public async Task<OperationResult<FanControlActivationTarget>> ResolveActivationTargetAsync(string name)
+    {
+        try
+        {
+            var snapshot = await _facts.GetAsync(refresh: true).ConfigureAwait(false);
+            var decision = HardwareCompatibilityPolicy.Decide(snapshot.Facts).For(HardwareDomain.Cooling);
+            if (decision.Availability != HardwareAvailability.Available
+                || !decision.Operations.HasFlag(HardwareOperations.OpenCompanion))
+                throw new IOException(decision.Explanation);
+            var directory = DirectoryOf(snapshot);
+            var path = ProfilePath(directory, name);
+            var executable = Path.Combine(Path.GetDirectoryName(directory)!, "FanControl.exe");
+            CheckAncestors(executable);
+            if (!File.Exists(executable)) throw new IOException("FanControl could not be found. Reload hardware detection and try again.");
+            var bytes = await Task.Run(() => ReadLocked(path)).ConfigureAwait(false);
+            FanControlProfileDocument.Parse(bytes);
+            return OperationResult<FanControlActivationTarget>.Success(new(executable, path));
+        }
+        catch (Exception ex) when (Expected(ex)) { return Fail<FanControlActivationTarget>(ex); }
+    }
 
     public async Task<OperationResult<IReadOnlyList<string>>> ListAsync()
     {
@@ -101,6 +124,11 @@ public sealed class FanControlProfileStore(IHardwareFactsProvider facts, ICompar
     private async Task<string> DirectoryAsync()
     {
         var snapshot = await _facts.GetAsync().ConfigureAwait(false);
+        return DirectoryOf(snapshot);
+    }
+
+    private static string DirectoryOf(HardwareDetectionSnapshot snapshot)
+    {
         var executable = snapshot.LaunchPathOf(CompanionApp.FanControl);
         if (string.IsNullOrWhiteSpace(executable) || !Path.IsPathFullyQualified(executable)
             || !string.Equals(Path.GetFileName(executable), "FanControl.exe", StringComparison.OrdinalIgnoreCase))

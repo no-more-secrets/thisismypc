@@ -1,18 +1,27 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Collections.Specialized;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ThisIsMyPC.Core.Services;
+using ThisIsMyPC.Core.Results;
 using ThisIsMyPC.Modules.Hardware.Cooling;
 
 namespace ThisIsMyPC.App.ViewModels;
 
-/// <summary>Edits a saved profile without changing the running FanControl configuration.</summary>
+/// <summary>Edits saved profiles and separately requests a FanControl switch with user confirmation.</summary>
 public sealed partial class CoolingProfilesViewModel : ViewModelBase, IDisposable
 {
     private readonly FanControlProfileStore _store;
     private readonly IPendingChangesService _pending;
+    private readonly Func<string, Task<OperationResult<bool>>>? _requestActivation;
+    private readonly Dictionary<string, (string Name, byte[] Bytes)> _stagedSaves = [];
+    private readonly HashSet<INotifyPropertyChanged> _editorSubscriptions = [];
+    private readonly DispatcherTimer _activationTimer = new() { Interval = TimeSpan.FromSeconds(1) };
+    private byte[]? _requestedBytes;
+    private int _activationEpoch;
+    private bool _validatingActivation;
     private FanControlSavedProfile? _loaded;
     private int _loadEpoch;
     private bool _disposed;
@@ -21,15 +30,138 @@ public sealed partial class CoolingProfilesViewModel : ViewModelBase, IDisposabl
     private sealed record EditorDraft(FanControlSavedProfile Profile, CoolingFanEditorViewModel[] Fans,
         CoolingCurveEditorViewModel[] Curves, string SaveName, bool ReplaceSelected);
 
-    public CoolingProfilesViewModel(FanControlProfileStore store, IPendingChangesService pending, bool loadOnOpen = true)
+    public CoolingProfilesViewModel(FanControlProfileStore store, IPendingChangesService pending, bool loadOnOpen = true,
+        Func<string, Task<OperationResult<bool>>>? requestActivation = null)
     {
         _store = store;
         _pending = pending;
+        _requestActivation = requestActivation;
+        _activationTimer.Tick += OnActivationTick;
         _pending.PropertyChanged += OnPendingChanged;
         if (loadOnOpen) _ = RefreshAsync();
     }
 
     public ObservableCollection<string> Profiles { get; } = [];
+    public ObservableCollection<string> ActivationProfiles { get; } = [];
+    [ObservableProperty] private string? _activationProfile;
+    [ObservableProperty] private string _activationStatus = "No profile switch requested.";
+    [ObservableProperty] private bool _activationRequested;
+    [ObservableProperty] private bool _confirmedByUser;
+    [ObservableProperty] private string? _confirmationDetail;
+    private bool HasPendingProfileSave => _pending.PendingGroups.Any(group => group.Changes.Any(FanControlProfileStore.IsProfileChange));
+    public bool CanRequestActivation => !_disposed && !IsBusy && !_pending.IsApplying && !HasPendingProfileSave
+        && _requestActivation is not null && ActivationProfile is not null;
+    public bool CanConfirmActivation => CanRequestActivation && ActivationRequested && !ConfirmedByUser;
+
+    partial void OnActivationProfileChanged(string? value) => InvalidateActivation();
+    partial void OnActivationRequestedChanged(bool value) => NotifyActivation();
+    partial void OnConfirmedByUserChanged(bool value) => NotifyActivation();
+    private void NotifyActivation()
+    {
+        OnPropertyChanged(nameof(CanRequestActivation));
+        OnPropertyChanged(nameof(CanConfirmActivation));
+    }
+
+    private void InvalidateActivation(string message = "No profile switch requested.")
+    {
+        _activationEpoch++;
+        _requestedBytes = null;
+        ActivationRequested = false;
+        ConfirmedByUser = false;
+        ConfirmationDetail = null;
+        ActivationStatus = message;
+        _activationTimer.Stop();
+        NotifyActivation();
+    }
+
+    [RelayCommand]
+    private async Task RequestActivationAsync()
+    {
+        if (!CanRequestActivation) return;
+        InvalidateActivation();
+        var epoch = _activationEpoch;
+        var name = ActivationProfile!;
+        IsBusy = true;
+        try
+        {
+            var saved = await _store.ReadAsync(name);
+            if (_disposed || epoch != _activationEpoch) return;
+            if (!saved.IsSuccess) { InvalidateActivation(saved.ErrorMessage ?? "Saved profile is unavailable."); return; }
+            var result = await _requestActivation!(name);
+            if (_disposed || epoch != _activationEpoch) return;
+            if (!result.IsSuccess || !result.Value)
+            {
+                InvalidateActivation(result.ErrorMessage ?? "FanControl did not accept the request. Load the saved configuration in FanControl.");
+                return;
+            }
+            _requestedBytes = saved.Value!.Bytes.ToArray();
+            ActivationRequested = true;
+            if (!await ValidateActivationAsync()) return;
+            ActivationStatus = "Switch requested. Check the loaded curves in FanControl, then confirm below.";
+            _activationTimer.Start();
+        }
+        catch (OperationCanceledException) { if (epoch == _activationEpoch) InvalidateActivation("Profile switch request canceled."); }
+        catch (Exception ex) { if (epoch == _activationEpoch) InvalidateActivation("Profile switch request failed: " + ex.Message); }
+        finally { IsBusy = false; }
+    }
+
+    public async Task<bool> ValidateActivationAsync()
+    {
+        if (!ActivationRequested || _requestedBytes is null || ActivationProfile is null || _disposed) return false;
+        var epoch = _activationEpoch;
+        var result = await _store.ReadAsync(ActivationProfile);
+        if (_disposed || epoch != _activationEpoch) return false;
+        if (!result.IsSuccess || !result.Value!.Bytes.AsSpan().SequenceEqual(_requestedBytes))
+        {
+            InvalidateActivation("The saved profile changed or is unavailable. Request the switch again and check the curves.");
+            return false;
+        }
+        return true;
+    }
+
+    [RelayCommand]
+    private async Task ConfirmActivationAsync()
+    {
+        if (!CanConfirmActivation) return;
+        if (!await ValidateActivationAsync() || !CanConfirmActivation) return;
+        ConfirmedByUser = true;
+        ActivationStatus = "Confirmed by you";
+        ConfirmationDetail = $"Your check at {DateTime.Now:t}. ThisIsMyPC cannot detect later profile switches in FanControl.";
+    }
+
+    [RelayCommand]
+    private void RejectActivation() => InvalidateActivation("Not loaded. In FanControl, use Load configuration to choose the saved profile, then request and check again.");
+
+    private async void OnActivationTick(object? sender, EventArgs e)
+    {
+        if (_validatingActivation) return;
+        _validatingActivation = true;
+        try { await ValidateActivationAsync(); }
+        finally { _validatingActivation = false; }
+    }
+
+    private void OnEditorChanged(object? sender, PropertyChangedEventArgs e) => InvalidateActivation("Editor changed. Save and apply edits before requesting the saved profile.");
+    private void OnPointsChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        OnEditorChanged(sender, new(null));
+        AttachEditorEvents();
+    }
+    private void AttachEditorEvents()
+    {
+        foreach (var curve in Curves)
+        {
+            curve.Points.CollectionChanged -= OnPointsChanged;
+            curve.Points.CollectionChanged += OnPointsChanged;
+        }
+        foreach (var item in Fans.Cast<INotifyPropertyChanged>().Concat(Curves).Concat(Curves.SelectMany(curve => curve.Points)))
+            if (_editorSubscriptions.Add(item)) item.PropertyChanged += OnEditorChanged;
+    }
+    private void DetachEditorEvents()
+    {
+        foreach (var item in _editorSubscriptions) item.PropertyChanged -= OnEditorChanged;
+        _editorSubscriptions.Clear();
+        foreach (var curve in Curves) curve.Points.CollectionChanged -= OnPointsChanged;
+    }
     public ObservableCollection<CoolingFanEditorViewModel> Fans { get; } = [];
     public ObservableCollection<CoolingCurveEditorViewModel> Curves { get; } = [];
     [ObservableProperty] private string? _selectedProfile;
@@ -49,28 +181,33 @@ public sealed partial class CoolingProfilesViewModel : ViewModelBase, IDisposabl
 
     partial void OnSaveNameChanged(string value)
     {
+        InvalidateActivation();
         OnPropertyChanged(nameof(HasStagedProfile));
         OnPropertyChanged(nameof(StageLabel));
     }
 
     partial void OnSelectedProfileChanged(string? value)
     {
+        InvalidateActivation();
+        ActivationProfile = value;
         if (value is not null && !_suppressSelectionLoad) _ = LoadAsync(value);
     }
 
     partial void OnReplaceSelectedChanged(bool value)
     {
+        InvalidateActivation();
         if (_loaded is not null)
             SaveName = value ? _loaded.Name : Path.GetFileNameWithoutExtension(_loaded.Name) + " - Edited.json";
     }
 
-    partial void OnIsBusyChanged(bool value) => OnPropertyChanged(nameof(CanStage));
+    partial void OnIsBusyChanged(bool value) { OnPropertyChanged(nameof(CanStage)); NotifyActivation(); }
     partial void OnHasProfileChanged(bool value) => OnPropertyChanged(nameof(CanStage));
 
     [RelayCommand]
     private async Task RefreshAsync()
     {
         if (IsBusy) return;
+        InvalidateActivation();
         IsBusy = true;
         var result = await _store.ListAsync();
         if (_disposed) return;
@@ -86,7 +223,8 @@ public sealed partial class CoolingProfilesViewModel : ViewModelBase, IDisposabl
         _loaded = null;
         _suppressSelectionLoad = true;
         Profiles.Clear();
-        foreach (var name in result.Value!) Profiles.Add(name);
+        ActivationProfiles.Clear();
+        foreach (var name in result.Value!) { Profiles.Add(name); ActivationProfiles.Add(name); }
         SelectedProfile = selection is not null && Profiles.Contains(selection) ? selection : Profiles.FirstOrDefault();
         _suppressSelectionLoad = false;
         if (SelectedProfile is not null) await LoadAsync(SelectedProfile);
@@ -115,6 +253,7 @@ public sealed partial class CoolingProfilesViewModel : ViewModelBase, IDisposabl
             ReplaceSelected = draft.ReplaceSelected;
             SaveName = draft.SaveName;
             HasProfile = true;
+            AttachEditorEvents();
             IsBusy = false;
             Failed = false;
             Message = "Your edits are kept while you switch profiles. Reload profiles discards editor changes.";
@@ -139,11 +278,13 @@ public sealed partial class CoolingProfilesViewModel : ViewModelBase, IDisposabl
         ReplaceSelected = false;
         SaveName = Path.GetFileNameWithoutExtension(name) + " - Edited.json";
         HasProfile = true;
+        AttachEditorEvents();
         Message = "Edits stay here until you stage and apply them. FanControl keeps its current settings.";
     }
 
     private void ClearEditor()
     {
+        DetachEditorEvents();
         HasProfile = false;
         _loaded = null;
         SelectedFan = null;
@@ -166,8 +307,9 @@ public sealed partial class CoolingProfilesViewModel : ViewModelBase, IDisposabl
             Failed = !result.IsSuccess;
             if (result.IsSuccess)
             {
+                _stagedSaves[result.Value!.GroupId] = (SaveName.Trim(), Convert.FromBase64String(result.Value.Changes.Single().AfterValue!));
                 _pending.Stage(result.Value!);
-                Message = "Profile save staged. Apply pending changes, then use Load configuration in FanControl to select the saved profile.";
+                Message = "Profile save staged. Apply pending changes, then request the saved profile switch below.";
             }
             else Message = result.ErrorMessage;
         }
@@ -182,14 +324,36 @@ public sealed partial class CoolingProfilesViewModel : ViewModelBase, IDisposabl
             OnPropertyChanged(nameof(HasStagedProfile));
             OnPropertyChanged(nameof(StageLabel));
             OnPropertyChanged(nameof(CanStage));
+            if (HasPendingProfileSave || _pending.IsApplying) InvalidateActivation("Apply or discard pending profile saves before requesting a switch.");
+            foreach (var entry in _stagedSaves.ToArray())
+            {
+                if (_pending.PendingGroups.Any(group => group.GroupId == entry.Key)) continue;
+                if (_pending.WasApplied(entry.Key))
+                {
+                    _ = SelectAppliedProfileAsync(entry.Value.Name, entry.Value.Bytes);
+                }
+                _stagedSaves.Remove(entry.Key);
+            }
+            NotifyActivation();
         }
         if (Dispatcher.UIThread.CheckAccess()) Update();
         else Dispatcher.UIThread.Post(Update);
     }
 
+    private async Task SelectAppliedProfileAsync(string name, byte[] expectedBytes)
+    {
+        var result = await _store.ReadAsync(name);
+        if (_disposed || !result.IsSuccess || !result.Value!.Bytes.AsSpan().SequenceEqual(expectedBytes)) return;
+        if (!ActivationProfiles.Contains(name)) ActivationProfiles.Add(name);
+        ActivationProfile = name;
+    }
+
     public void Dispose()
     {
         _disposed = true;
+        InvalidateActivation();
+        _activationTimer.Tick -= OnActivationTick;
+        DetachEditorEvents();
         _loadEpoch++;
         _pending.PropertyChanged -= OnPendingChanged;
     }
