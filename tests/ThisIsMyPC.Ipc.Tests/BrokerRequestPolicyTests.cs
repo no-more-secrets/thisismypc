@@ -42,6 +42,24 @@ public sealed class BrokerRequestPolicyTests
     }
 
     [Fact]
+    public void LongPathValuesPassAndAbsurdOnesNameTheSetting()
+    {
+        // A developer PATH runs past 2,000 characters; the broker must carry it.
+        var longPath = string.Join(';', Enumerable.Range(0, 120).Select(index => $"C:/Tools/Package{index:D3}/bin"));
+        Assert.True(longPath.Length > 2400);
+        var change = EnvironmentVariableChangeFactory.CreateAdd(
+            "TEST_VARIABLE", longPath, "system", EnvironmentVariableReader.SystemEnvKeyPath);
+        Assert.True(BrokerRequestPolicy.Create(new() { Changes = [change] }).IsSuccess);
+
+        var absurd = BrokerRequestPolicy.Create(new()
+        {
+            Changes = [change with { AfterValue = new string('x', 40_000) }],
+        });
+        Assert.False(absurd.IsSuccess);
+        Assert.Contains(change.SettingId, absurd.ErrorMessage, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void MissingRequiredFieldsAreRejected()
     {
         Assert.False(BrokerRequestPolicy.Create(new()

@@ -11,7 +11,9 @@ namespace ThisIsMyPC.Broker;
 internal sealed class BrokerRequestPolicy
 {
     private const int MaximumOperations = 512;
-    private const int MaximumTextLength = 1024;
+    // Registry strings and environment variables run to 32,767 characters; PATH alone passes 2,000 on
+    // a developer PC. The pipe frame cap bounds the request as a whole.
+    private const int MaximumTextLength = 32767;
     private const int MaximumEnforcementTargets = 16;
     private const int OperationsPerConfirmation = 8;
 
@@ -76,7 +78,7 @@ internal sealed class BrokerRequestPolicy
                 || !Valid(change.AfterValue) || !Valid(change.BeforeDisplay) || !Valid(change.AfterDisplay)
                 || !Valid(change.Enforcement))
             {
-                return Failure("A change contains invalid or oversized text.");
+                return Failure($"Setting '{change.SettingId}' in '{change.ModuleId}' contains invalid or oversized text (limit {MaximumTextLength} characters).");
             }
             if (!BrokerOperationRules.Allows(change))
                 return Failure($"Setting '{change.SettingId}' is outside the '{change.ModuleId}' broker schema.");
@@ -90,7 +92,7 @@ internal sealed class BrokerRequestPolicy
                 || !ValidRequired(action.DisplayName) || !ValidRequired(action.Detail)
                 || !Valid(action.UndoHint))
             {
-                return Failure("An action contains invalid or oversized text.");
+                return Failure($"Action '{action.ActionId}' in '{action.ModuleId}' contains invalid or oversized text (limit {MaximumTextLength} characters).");
             }
             if (!BrokerOperationRules.Allows(action))
                 return Failure($"Action '{action.ActionId}' is outside the '{action.ModuleId}' broker schema.");

@@ -54,6 +54,11 @@ internal static class LegacyDataMigration
             logger.Info(
                 "Migrated {Count} legacy items from {Legacy} to {Machine}", copied, legacyDir, machineDataDir);
         }
+        catch (UnauthorizedAccessException)
+        {
+            // An old folder locked to administrators holds nothing the unelevated UI can read; it is not an error.
+            logger.Info("Legacy data folder is not readable from this account; skipping migration");
+        }
 #pragma warning disable CA1031 // Migration is best-effort; a failure must not block startup
         catch (Exception ex)
 #pragma warning restore CA1031
