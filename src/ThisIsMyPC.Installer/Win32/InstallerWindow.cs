@@ -7,7 +7,7 @@ using ThisIsMyPC.Installer.ViewModels;
 
 namespace ThisIsMyPC.Installer.Win32;
 
-internal sealed unsafe class InstallerWindow : IDisposable
+internal sealed unsafe partial class InstallerWindow : IDisposable
 {
     private const string WindowClassName = "ThisIsMyPC.NativeInstaller";
     private const int LogicalWidth = 720;
@@ -60,10 +60,11 @@ internal sealed unsafe class InstallerWindow : IDisposable
             if (!NativeMethods.AdjustWindowRectExForDpi(ref bounds, WindowStyle, false, 0, (uint)_dpi))
                 throw new Win32Exception(Marshal.GetLastWin32Error(), "Windows could not size the installer window.");
 
-            var width = bounds.Right - bounds.Left;
-            var height = bounds.Bottom - bounds.Top;
-            var x = Math.Max(0, (NativeMethods.GetSystemMetrics(0) - width) / 2);
-            var y = Math.Max(0, (NativeMethods.GetSystemMetrics(1) - height) / 2);
+            var work = GetWorkArea(nint.Zero);
+            var width = Math.Min(bounds.Right - bounds.Left, work.Right - work.Left);
+            var height = Math.Min(bounds.Bottom - bounds.Top, work.Bottom - work.Top);
+            var x = work.Left + (work.Right - work.Left - width) / 2;
+            var y = work.Top + (work.Bottom - work.Top - height) / 2;
             _selfHandle = GCHandle.Alloc(this);
             _hwnd = NativeMethods.CreateWindowEx(
                 0,
@@ -99,7 +100,7 @@ internal sealed unsafe class InstallerWindow : IDisposable
                     throw new Win32Exception(Marshal.GetLastWin32Error(), "The installer message loop stopped.");
                 if (message.message == NativeMethods.WM_KEYDOWN &&
                     (message.wParam is NativeMethods.VK_RETURN or NativeMethods.VK_ESCAPE or NativeMethods.VK_TAB ||
-                     (message.wParam == NativeMethods.VK_SPACE && message.hwnd == _hwnd)))
+                     (message.wParam == NativeMethods.VK_SPACE && message.hwnd != _folderEdit && message.hwnd != _licenseEdit)))
                 {
                     HandleKey(unchecked((int)message.wParam), NativeMethods.GetKeyState(NativeMethods.VK_SHIFT) < 0);
                     continue;
@@ -151,8 +152,10 @@ internal sealed unsafe class InstallerWindow : IDisposable
         var previous = NativeMethods.SelectObject(dc, bitmap);
         try
         {
-            InstallerRenderer.Draw(dc, viewModel, width, height, width / (double)LogicalWidth, HitTarget.None, 0, drawEditors: true);
-            using var preview = new InstallerWindow(viewModel) { _keyboardFocus = keyboardFocus, _dpi = Scale(96, width / (double)LogicalWidth) };
+            using var preview = new InstallerWindow(viewModel) { _keyboardFocus = keyboardFocus, _preview = true };
+            preview.CreatePreview(width, height);
+            InstallerRenderer.Draw(dc, viewModel, width, height, width / (double)LogicalWidth, HitTarget.None, 0, drawEditors: false);
+            preview.PrintControls(dc);
             preview.DrawKeyboardFocus(dc);
             var pixels = new byte[checked(width * height * 4)];
             Marshal.Copy(bits, pixels, 0, pixels.Length);
@@ -235,6 +238,17 @@ internal sealed unsafe class InstallerWindow : IDisposable
             case NativeMethods.WM_CREATE:
                 CreateChildControls(hwnd);
                 return nint.Zero;
+            case NativeMethods.WM_SIZE:
+                if (_hwnd != nint.Zero && !_preview)
+                    UpdateScrollBars();
+                return nint.Zero;
+            case NativeMethods.WM_VSCROLL:
+            case NativeMethods.WM_HSCROLL:
+                Scroll(message == NativeMethods.WM_HSCROLL, unchecked((int)(wParam & 0xffff)));
+                return nint.Zero;
+            case NativeMethods.WM_MOUSEWHEEL:
+                Scroll(false, SignedHighWord((nint)wParam) > 0 ? 0 : 1);
+                return nint.Zero;
             case NativeMethods.WM_PAINT:
                 Paint(hwnd);
                 return nint.Zero;
@@ -266,13 +280,23 @@ internal sealed unsafe class InstallerWindow : IDisposable
                 return nint.Zero;
             case NativeMethods.WM_CTLCOLOREDIT:
             case NativeMethods.WM_CTLCOLORSTATIC:
+            case NativeMethods.WM_CTLCOLORBTN:
+                if (UsesHighContrast())
+                    break;
                 if (lParam == _licenseEdit || lParam == _folderEdit)
                 {
                     _ = NativeMethods.SetTextColor((nint)wParam, InstallerRenderer.TextColor);
                     _ = NativeMethods.SetBkColor((nint)wParam, InstallerRenderer.FieldColor);
                     return _surfaceBrush;
                 }
-                break;
+                _ = NativeMethods.SetTextColor((nint)wParam, InstallerRenderer.TextColor);
+                if (_nativeControls.TryGetValue(3010, out var status) && lParam == status.Handle && !_viewModel.IsInInstallTab && !_viewModel.IsInRemoveTab)
+                {
+                    _ = NativeMethods.SetBkColor((nint)wParam, InstallerRenderer.BackgroundColor);
+                    return _backgroundBrush;
+                }
+                _ = NativeMethods.SetBkColor((nint)wParam, InstallerRenderer.CardColor);
+                return _cardBrush;
             case NativeMethods.WM_APP_CALLBACK:
                 _context.Drain();
                 return nint.Zero;
@@ -283,7 +307,8 @@ internal sealed unsafe class InstallerWindow : IDisposable
             case NativeMethods.WM_DESTROY:
                 _ = NativeMethods.KillTimer(hwnd, ProgressTimerId);
                 _hwnd = nint.Zero;
-                NativeMethods.PostQuitMessage(0);
+                if (!_preview)
+                    NativeMethods.PostQuitMessage(0);
                 return nint.Zero;
         }
 
@@ -295,6 +320,8 @@ internal sealed unsafe class InstallerWindow : IDisposable
         _dpi = checked((int)NativeMethods.GetDpiForWindow(hwnd));
         var scale = _dpi / 96d;
         _surfaceBrush = NativeMethods.CreateSolidBrush(InstallerRenderer.FieldColor);
+        _cardBrush = NativeMethods.CreateSolidBrush(InstallerRenderer.CardColor);
+        _backgroundBrush = NativeMethods.CreateSolidBrush(InstallerRenderer.BackgroundColor);
         _bodyFont = NativeMethods.CreateFont(-Scale(14, scale), 0, 0, 0, NativeMethods.FW_NORMAL, 0, 0, 0,
             NativeMethods.DEFAULT_CHARSET, 0, 0, NativeMethods.CLEARTYPE_QUALITY, 0, "Segoe UI");
         _monoFont = NativeMethods.CreateFont(-Scale(13, scale), 0, 0, 0, NativeMethods.FW_NORMAL, 0, 0, 0,
@@ -333,8 +360,9 @@ internal sealed unsafe class InstallerWindow : IDisposable
         try
         {
             _ = NativeMethods.GetClientRect(hwnd, out var bounds);
-            var width = bounds.Right - bounds.Left;
-            var height = bounds.Bottom - bounds.Top;
+            var width = Scale(LogicalWidth, _dpi / 96d);
+            var height = Scale(LogicalHeight, _dpi / 96d);
+            _ = NativeMethods.SetViewportOrgEx(dc, -_scrollX, -_scrollY, nint.Zero);
             InstallerRenderer.Draw(dc, _viewModel, width, height, _dpi / 96d, _hover, _progressFrame, drawEditors: false);
             DrawKeyboardFocus(dc);
         }
@@ -348,15 +376,17 @@ internal sealed unsafe class InstallerWindow : IDisposable
     {
         _dpi = checked((int)(wParam & 0xffff));
         var suggested = (NativeMethods.RECT*)lParam;
+        var work = GetWorkArea(*suggested);
         _ = NativeMethods.SetWindowPos(
             _hwnd,
             nint.Zero,
-            suggested->Left,
-            suggested->Top,
-            suggested->Right - suggested->Left,
-            suggested->Bottom - suggested->Top,
+            Math.Clamp(suggested->Left, work.Left, Math.Max(work.Left, work.Right - Math.Min(suggested->Right - suggested->Left, work.Right - work.Left))),
+            Math.Clamp(suggested->Top, work.Top, Math.Max(work.Top, work.Bottom - Math.Min(suggested->Bottom - suggested->Top, work.Bottom - work.Top))),
+            Math.Min(suggested->Right - suggested->Left, work.Right - work.Left),
+            Math.Min(suggested->Bottom - suggested->Top, work.Bottom - work.Top),
             NativeMethods.SWP_NOZORDER | NativeMethods.SWP_NOACTIVATE);
         ReplaceControlFonts();
+        UpdateScrollBars();
         Refresh();
     }
 
@@ -385,12 +415,17 @@ internal sealed unsafe class InstallerWindow : IDisposable
     {
         var id = unchecked((int)(wParam & 0xffff));
         var notification = unchecked((uint)((wParam >> 16) & 0xffff));
+        if (notification == 0 && _nativeControls.TryGetValue(id, out var control) && control.Handle == lParam && control.Spec.Target != HitTarget.None)
+        {
+            Activate(control.Spec.Target);
+            return;
+        }
         if (id == FolderEditId && notification == NativeMethods.EN_CHANGE && lParam == _folderEdit && !_updatingFolder)
             _viewModel.InstallFolder = ReadWindowText(_folderEdit);
     }
 
     private void HandleClick(int physicalX, int physicalY)
-        => HandleLogicalClick(Logical(physicalX), Logical(physicalY));
+        => HandleLogicalClick(Logical(physicalX + _scrollX), Logical(physicalY + _scrollY));
 
     internal void HandleLogicalClick(int x, int y)
     {
@@ -452,7 +487,7 @@ internal sealed unsafe class InstallerWindow : IDisposable
 
     private void HandleMouseMove(int physicalX, int physicalY)
     {
-        var target = HitTest(Logical(physicalX), Logical(physicalY));
+        var target = HitTest(Logical(physicalX + _scrollX), Logical(physicalY + _scrollY));
         if (target == _hover)
             return;
         _hover = target;
@@ -470,6 +505,9 @@ internal sealed unsafe class InstallerWindow : IDisposable
     {
         var targets = KeyboardTargets();
         var nativeFocus = _hwnd == nint.Zero ? nint.Zero : NativeMethods.GetFocus();
+        var focusedControl = _nativeControls.Values.FirstOrDefault(control => control.Handle == nativeFocus);
+        if (focusedControl is not null && focusedControl.Spec.Target != HitTarget.None)
+            _keyboardFocus = focusedControl.Spec.Target;
         if (nativeFocus != nint.Zero && nativeFocus == _folderEdit)
             _keyboardFocus = HitTarget.FolderEdit;
         else if (nativeFocus != nint.Zero && nativeFocus == _licenseEdit)
@@ -487,7 +525,8 @@ internal sealed unsafe class InstallerWindow : IDisposable
             _keyboardFocus = targets[index].Target;
             if (_hwnd != nint.Zero)
                 _ = NativeMethods.SetFocus(_keyboardFocus == HitTarget.FolderEdit ? _folderEdit :
-                    _keyboardFocus == HitTarget.LicenseEdit ? _licenseEdit : _hwnd);
+                    _keyboardFocus == HitTarget.LicenseEdit ? _licenseEdit : ControlHandle(_keyboardFocus));
+            EnsureFocusVisible(_keyboardFocus);
             Invalidate();
             return;
         }
@@ -500,7 +539,11 @@ internal sealed unsafe class InstallerWindow : IDisposable
                 var previousStep = _viewModel.Step;
                 HandleLogicalClick((item.Bounds.Left + item.Bounds.Right) / 2, (item.Bounds.Top + item.Bounds.Bottom) / 2);
                 if (_viewModel.Step == previousStep)
+                {
                     _keyboardFocus = item.Target;
+                    if (_hwnd != nint.Zero)
+                        _ = NativeMethods.SetFocus(ControlHandle(item.Target));
+                }
                 Invalidate();
             }
             return;
@@ -509,6 +552,7 @@ internal sealed unsafe class InstallerWindow : IDisposable
         {
             SyncFolderText();
             _viewModel.PrimaryCommand.Execute(null);
+            Refresh();
         }
         else if (key == NativeMethods.VK_ESCAPE && _viewModel.CancelCommand.CanExecute(null))
         {
@@ -530,10 +574,8 @@ internal sealed unsafe class InstallerWindow : IDisposable
             Add(HitTarget.LicenseTab, 207, 85, 334, 114, _viewModel.CanOpenLicense);
             Add(HitTarget.OptionsTab, 363, 85, 491, 114, _viewModel.CanOpenOptions);
         }
-        else
-            Add(HitTarget.RemoveTab, 359, 85, 641, 114, _viewModel.IsInRemoveTab);
         if (_viewModel.IsWelcome)
-            Add(HitTarget.Uninstall, 486, 265, 663, 306, _viewModel.IsInstalled);
+            Add(HitTarget.Uninstall, 57, 380, 663, 412, _viewModel.IsInstalled);
         if (_viewModel.IsLicense)
         {
             Add(HitTarget.LicenseEdit, 57, 200, 663, 508);
@@ -591,7 +633,7 @@ internal sealed unsafe class InstallerWindow : IDisposable
                 return HitTarget.RemoveTab;
         }
 
-        if (_viewModel.IsWelcome && _viewModel.IsInstalled && UiRect.FromEdges(486, 265, 663, 306).Contains(x, y))
+        if (_viewModel.IsWelcome && _viewModel.IsInstalled && UiRect.FromEdges(57, 380, 663, 412).Contains(x, y))
             return HitTarget.Uninstall;
         if (_viewModel.IsLicense && UiRect.FromEdges(56, 514, 650, 543).Contains(x, y))
             return HitTarget.LicenseAccepted;
@@ -628,6 +670,9 @@ internal sealed unsafe class InstallerWindow : IDisposable
         if (_hwnd == nint.Zero)
             return;
         UpdateChildControls();
+        UpdateNativeControls();
+        if (!_preview)
+            UpdateScrollBars();
         if (_viewModel.IsBusy)
             _ = NativeMethods.SetTimer(_hwnd, ProgressTimerId, 80, nint.Zero);
         else
@@ -643,10 +688,10 @@ internal sealed unsafe class InstallerWindow : IDisposable
         _ = NativeMethods.ShowWindow(_licenseEdit, showLicense ? NativeMethods.SW_SHOWNA : NativeMethods.SW_HIDE);
         _ = NativeMethods.ShowWindow(_folderEdit, showFolder ? NativeMethods.SW_SHOWNA : NativeMethods.SW_HIDE);
         if (showLicense)
-            _ = NativeMethods.MoveWindow(_licenseEdit, Scale(57, scale), Scale(200, scale), Scale(606, scale), Scale(308, scale), true);
+            _ = NativeMethods.MoveWindow(_licenseEdit, Scale(57, scale) - _scrollX, Scale(200, scale) - _scrollY, Scale(606, scale), Scale(308, scale), true);
         if (showFolder)
         {
-            _ = NativeMethods.MoveWindow(_folderEdit, Scale(57, scale), Scale(178, scale), Scale(521, scale), Scale(33, scale), true);
+            _ = NativeMethods.MoveWindow(_folderEdit, Scale(57, scale) - _scrollX, Scale(178, scale) - _scrollY, Scale(521, scale), Scale(33, scale), true);
             _ = NativeMethods.EnableWindow(_folderEdit, _viewModel.CanChooseFolder);
             var current = ReadWindowText(_folderEdit);
             if (!string.Equals(current, _viewModel.InstallFolder, StringComparison.Ordinal))
@@ -720,6 +765,10 @@ internal sealed unsafe class InstallerWindow : IDisposable
             _ = NativeMethods.DeleteObject(_monoFont);
         if (_surfaceBrush != nint.Zero)
             _ = NativeMethods.DeleteObject(_surfaceBrush);
+        if (_cardBrush != nint.Zero)
+            _ = NativeMethods.DeleteObject(_cardBrush);
+        if (_backgroundBrush != nint.Zero)
+            _ = NativeMethods.DeleteObject(_backgroundBrush);
         if (_selfHandle.IsAllocated)
             _selfHandle.Free();
     }
@@ -805,6 +854,13 @@ internal static class InstallerRenderer
         DrawTabs(dc, viewModel, objects, scale);
         Rounded(dc, objects.CardBrush, objects.OutlinePen, Rect(32, 126, 688, 563, scale), 7, scale);
 
+        if (!drawEditors)
+        {
+            if (viewModel.IsBusy)
+                DrawBusy(dc, viewModel, objects, scale, progressFrame);
+            return;
+        }
+
         if (viewModel.IsWelcome)
             DrawWelcome(dc, viewModel, objects, scale);
         else if (viewModel.IsLicense)
@@ -819,6 +875,41 @@ internal static class InstallerRenderer
             DrawDone(dc, viewModel, objects, scale);
 
         DrawFooter(dc, viewModel, objects, scale, hover);
+    }
+
+    internal static void DrawNativeButton(nint dc, string text, NativeMethods.RECT bounds, double scale,
+        InstallerWindow.HitTarget target, bool enabled, bool? isChecked, bool hot, bool focused)
+    {
+        using var objects = new GdiObjects(scale);
+        _ = NativeMethods.SetBkMode(dc, NativeMethods.TRANSPARENT);
+        var tab = target is InstallerWindow.HitTarget.WelcomeTab or InstallerWindow.HitTarget.LicenseTab or InstallerWindow.HitTarget.OptionsTab;
+        Fill(dc, bounds, isChecked.HasValue && !tab ? objects.CardBrush : objects.BackgroundBrush);
+        if (tab)
+        {
+            Rounded(dc, isChecked == true ? objects.CardBrush : hot ? objects.OutlineBrush : objects.BackgroundBrush,
+                objects.OutlinePen, bounds, 5, scale);
+            Text(dc, objects.BodyFont, enabled || isChecked == true ? TextColor : MutedTextColor, text, bounds,
+                NativeMethods.DT_CENTER | NativeMethods.DT_VCENTER | NativeMethods.DT_SINGLELINE);
+        }
+        else if (isChecked.HasValue)
+        {
+            var top = Math.Max(0, (bounds.Bottom - Scale(18, scale)) / 2);
+            var box = new NativeMethods.RECT(0, top, Scale(18, scale), top + Scale(18, scale));
+            var label = new NativeMethods.RECT(Scale(26, scale), 0, bounds.Right, bounds.Bottom);
+            CheckBox(dc, objects, box, isChecked.Value, text, label);
+        }
+        else
+            DrawButton(dc, objects, text, bounds, enabled, hot, target switch
+            {
+                InstallerWindow.HitTarget.Primary => ButtonKind.Primary,
+                InstallerWindow.HitTarget.Cancel => ButtonKind.Danger,
+                _ => ButtonKind.Neutral,
+            });
+        if (focused)
+        {
+            var focus = new NativeMethods.RECT(2, 2, bounds.Right - 2, bounds.Bottom - 2);
+            _ = NativeMethods.DrawFocusRect(dc, in focus);
+        }
     }
 
     private static void DrawTabs(nint dc, InstallerViewModel viewModel, GdiObjects objects, double scale)
@@ -947,7 +1038,7 @@ internal static class InstallerRenderer
             "Remove ThisIsMyPC from this PC? The app, its shortcuts, and its entry in Installed apps go away.",
             Rect(57, 153, 663, 184, scale), NativeMethods.DT_LEFT | NativeMethods.DT_WORDBREAK);
         Text(dc, objects.BodyFont, SecondaryTextColor,
-            "Your settings and change history stay in the ProgramData folder, so a later install picks them up. Changes you applied to Windows stay as they are; undo them in the app first if you want them reverted.",
+            "Your settings and change history stay on this PC, so a later install picks them up. Changes you applied to Windows stay as they are; undo them in the app first if you want them reverted.",
             Rect(57, 187, 663, 239, scale), NativeMethods.DT_LEFT | NativeMethods.DT_WORDBREAK);
         Text(dc, objects.CaptionFont, MutedTextColor, "Click Remove to continue, or Back to keep it.",
             Rect(57, 257, 663, 280, scale), NativeMethods.DT_LEFT | NativeMethods.DT_SINGLELINE);
@@ -966,7 +1057,7 @@ internal static class InstallerRenderer
         if (viewModel.Removed)
         {
             Text(dc, objects.BodyFont, SecondaryTextColor,
-                "ThisIsMyPC was removed. Your settings and change history are still in the ProgramData folder in case you install it again.",
+                "ThisIsMyPC was removed. Your settings and change history are still on this PC in case you install it again.",
                 Rect(57, 153, 663, 205, scale), NativeMethods.DT_LEFT | NativeMethods.DT_WORDBREAK);
             return;
         }

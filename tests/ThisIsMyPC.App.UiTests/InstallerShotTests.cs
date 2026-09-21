@@ -102,7 +102,7 @@ public class InstallerShotTests
         using var window = new InstallerWindow(viewModel);
 
         Save(viewModel, "welcome-installed");
-        window.HandleLogicalClick(560, 285);
+        window.HandleLogicalClick(360, 395);
         Save(viewModel, "welcome-uninstall-ticked");
         window.HandleLogicalClick(512, 602);
         Save(viewModel, "confirm-uninstall");
@@ -194,6 +194,47 @@ public class InstallerShotTests
     }
 
     [AvaloniaFact]
+    public void NativeControls_ExposeNamesRolesCheckedStatesAndEditableFolder()
+    {
+        var viewModel = new InstallerViewModel(new FakeEngine(), License, installed: null, existing: null)
+        {
+            Step = InstallStep.License,
+        };
+        using var window = new InstallerWindow(viewModel);
+        window.CreatePreview(720, 640);
+        var accepted = window.ControlHandle(InstallerWindow.HitTarget.LicenseAccepted);
+        Assert.NotEqual(window.WindowHandle, accepted);
+        Assert.Contains("I accept", WindowText(accepted));
+        Assert.Equal(2, (long)NativeMethods.GetWindowLongPtr(accepted, -16) & 0xf); // BS_CHECKBOX provides the native accessible role.
+        Assert.Equal(nint.Zero, NativeMethods.SendMessage(accepted, NativeMethods.BM_GETCHECK, 0, 0));
+        Assert.False(NativeMethods.IsWindowEnabled(window.ControlHandle(InstallerWindow.HitTarget.Primary)));
+        _ = NativeMethods.SendMessage(accepted, NativeMethods.BM_CLICK, 0, 0);
+        Assert.True(viewModel.LicenseAccepted);
+        Assert.Equal((nint)1, NativeMethods.SendMessage(accepted, NativeMethods.BM_GETCHECK, 0, 0));
+        Assert.True(NativeMethods.IsWindowEnabled(window.ControlHandle(InstallerWindow.HitTarget.Primary)));
+        _ = NativeMethods.SendMessage(window.ControlHandle(InstallerWindow.HitTarget.Primary), NativeMethods.BM_CLICK, 0, 0);
+        Assert.True(viewModel.IsOptions);
+        var folder = NativeMethods.GetDlgItem(window.WindowHandle, 1002);
+        var path = InstallFolderRules.DefaultFolder + "-keyboard";
+        Assert.True(NativeMethods.SetWindowText(folder, path));
+        Assert.Equal(path, viewModel.InstallFolder);
+        _ = NativeMethods.SendMessage(folder, 0xB1, (nuint)path.Length, (nint)path.Length); // EM_SETSEL.
+        _ = NativeMethods.SendMessage(folder, 0x102, 'X', 0); // WM_CHAR exercises native edit input and EN_CHANGE.
+        Assert.Equal(path + "X", viewModel.InstallFolder);
+        var options = window.ControlHandle(InstallerWindow.HitTarget.OptionsTab);
+        Assert.Equal((nint)1, NativeMethods.SendMessage(options, NativeMethods.BM_GETCHECK, 0, 0));
+        Assert.Equal("Options", WindowText(options));
+        Save(viewModel, "native-options-edited-200-percent", 1440, 1280);
+    }
+
+    private static string WindowText(nint hwnd)
+    {
+        var chars = new char[NativeMethods.GetWindowTextLength(hwnd) + 1];
+        var length = NativeMethods.GetWindowText(hwnd, chars, chars.Length);
+        return new string(chars, 0, length);
+    }
+
+    [AvaloniaFact]
     [Trait("Category", "Diagnostic")]
     public async Task NativeMessageLoop_KeyboardAcceptsLicenseAndCompletesFakeInstall()
     {
@@ -216,17 +257,38 @@ public class InstallerShotTests
             void Key(int key) => Assert.True(NativeMethods.PostMessage(hwnd, NativeMethods.WM_KEYDOWN, (nuint)key, nint.Zero));
             Key(NativeMethods.VK_RETURN);
             await WaitForAsync(() => viewModel.IsLicense);
-            for (var index = 0; index < 4; index++)
+            foreach (var target in new[] { InstallerWindow.HitTarget.WelcomeTab, InstallerWindow.HitTarget.LicenseTab,
+                         InstallerWindow.HitTarget.LicenseEdit, InstallerWindow.HitTarget.LicenseAccepted })
+            {
                 Key(NativeMethods.VK_TAB);
+                for (var attempt = 0; attempt < 100 && window.KeyboardFocus != target; attempt++)
+                    await Task.Delay(10);
+                Assert.Equal(target, window.KeyboardFocus);
+            }
             Key(NativeMethods.VK_SPACE);
             await WaitForAsync(() => viewModel.LicenseAccepted);
             Key(NativeMethods.VK_TAB);
             Key(NativeMethods.VK_TAB);
             Key(NativeMethods.VK_RETURN);
             await WaitForAsync(() => viewModel.IsOptions);
+            await WaitForAsync(() => NativeMethods.IsWindowVisible(NativeMethods.GetDlgItem(hwnd, 1002)));
+            Assert.Equal(InstallFolderRules.DefaultFolder, WindowText(NativeMethods.GetDlgItem(hwnd, 1002)));
             Key(NativeMethods.VK_RETURN);
             await WaitForAsync(() => viewModel.IsDone);
             Assert.NotNull(engine.Received);
+            // A small viewport must scroll the focused Finish button fully into view.
+            Assert.True(NativeMethods.SetWindowPos(hwnd, 0, 0, 0, 580, 420, 0x16));
+            Key(NativeMethods.VK_TAB);
+            Key(NativeMethods.VK_TAB);
+            await WaitForAsync(() => window.KeyboardFocus == InstallerWindow.HitTarget.Primary);
+            var primary = window.ControlHandle(InstallerWindow.HitTarget.Primary);
+            await WaitForAsync(() =>
+            {
+                return NativeMethods.GetWindowRect(hwnd, out var outer) &&
+                    NativeMethods.GetWindowRect(primary, out var button) &&
+                    button.Bottom <= outer.Bottom && button.Top >= outer.Top &&
+                    button.Right <= outer.Right && button.Left >= outer.Left;
+            });
         }
         finally
         {
@@ -264,11 +326,12 @@ public class InstallerShotTests
         bitmap.Save(Path.Combine(directory, name + ".png"));
     }
 
-    private static async Task WaitForAsync(Func<bool> condition)
+    private static async Task WaitForAsync(Func<bool> condition,
+        [System.Runtime.CompilerServices.CallerArgumentExpression(nameof(condition))] string? expression = null)
     {
         for (var attempt = 0; attempt < 100 && !condition(); attempt++)
             await Task.Delay(10);
-        Assert.True(condition());
+        Assert.True(condition(), "Timed out waiting for " + expression);
     }
 
     private static string FindRepoRoot()

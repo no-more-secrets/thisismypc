@@ -73,12 +73,35 @@ Sam authorizes Claude the same information access as the coordinator at coordina
 
 Workers do not commit, push, change global focus, alter live Windows settings, or expand their assigned scope. Coordinator reviews, verifies, and commits on main. Do not run broad concurrent edits against shared UI infrastructure. Respect unrelated local files. Research and planning do not authorize destructive security changes.
 
+## Current priority: finish the installer (2026-09-21)
+
+The Win32/GDI installer is merged on main at `829f27a`. Finish this work before starting another module.
+
+- [x] Replace Avalonia in the installer and restore keyboard navigation.
+- [x] Use native controls and labels with names, roles, and checked states. The themed paint preserves native accessibility behavior.
+- [x] Keep required controls reachable on smaller displays at higher scaling through scrolling and focus visibility.
+- [x] Fix clipped installed-version text and inaccurate removal copy.
+- [x] Verify native controls, rendered pages, the full test suite, and guarded NativeAOT output after these changes.
+- [ ] Verify Narrator/UIA discovery, high-contrast rendering, and dragging between monitors with different scaling in the signed installer.
+- [ ] Build a complete signed test package under the pinned release toolchain.
+- [ ] Verify fresh installation, upgrade, same-version reinstall, downgrade refusal, and removal with preserved user data.
+
+Release preflight on 2026-09-21 found Visual Studio `18.10.12201.205`; the manifest requires `18.9.12120.119`.
+The linker also changed from `14.51.36256.0` to `14.51.36257.0`. CKA 1.1.2 and CodeSignTool 1.3.3 passed their pinned checks.
+Do not loosen the gate or change the manifest merely to match this host. Use the pinned environment for release evidence.
+Alternatively, qualify a deliberate toolchain upgrade with repeatable builds and the release checks before changing the pins.
+Signing requires the owner's secure credential prompt. Automated tests do not substitute for the installed release checks.
+Use [installer acceptance](../release/installer-acceptance.md) for the package and user-facing verification steps.
+
 ## Tracking
 
 - [x] Save approved v1 plan.
 - [ ] Complete policy/SKU/System assessment.
 - [ ] Review implementation batches and shared contracts.
 - [ ] Complete System polish and policy coverage.
-- [ ] Complete shared hardware detection and Hardware modules. Detection and the four companion tabs landed 2026-09-09 ([hardware-compatibility.md](hardware-compatibility.md)); Lighting device controls, Monitoring sensors and Cooling presets remain.
+- [x] Complete shared hardware detection and the four companion tabs ([hardware-compatibility.md](hardware-compatibility.md)). Physical laptop coverage remains unverified.
+- [x] Add native Lighting controls for supported devices, a color picker, and per-device save preferences.
+- [x] Add Cooling profile editing with captured file contents for undo.
+- [ ] Complete Hardware validation, Cooling profile activation, and Monitoring sensors. Wider Lighting device support remains separately tracked.
 - [ ] Complete agreed Security and Network & Firewall scope.
 - [ ] Complete release validation and owner-gated release steps.

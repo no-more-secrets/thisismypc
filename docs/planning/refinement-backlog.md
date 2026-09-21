@@ -2,6 +2,18 @@
 
 Current release scope: [v1 completion plan](v1-completion-plan.md), approved 2026-09-06. It supersedes older post-release hardware assumptions below.
 
+## Win32 installer completion (active 2026-09-21)
+
+Current priority: validate the complete signed installer. See the explicit checklist in [the v1 plan](v1-completion-plan.md#current-priority-finish-the-installer-2026-09-21).
+- DONE: native buttons, checkbox state, page selection, and text labels replace inaccessible painted controls. Static native callbacks preserve themed painting and native input/accessibility behavior.
+- DONE: monitor work-area sizing, scrolling, and focus visibility keep required controls reachable. Keyboard navigation no longer changes tabs on focus.
+- DONE: installed-version text has room to wrap; removal copy correctly describes retained settings without naming the old storage location.
+- DONE: screenshots print the production native controls, including real EDIT fields and license scrollbars. Preview windows stay offscreen and do not activate.
+- Verified: Release build, 2,608 CI-safe tests, a native keyboard workflow with a fake engine and small viewport, native names/check state/folder input, and inspected 100%/150%/200% screenshots. Fresh-context review passed.
+- Verified: guarded NativeAOT publishes one executable, 7,313,408 bytes without its MSI payload. Every PE mitigation check passes.
+- Pending: Narrator/UIA discovery, high-contrast rendering, mixed-monitor dragging, and signed live install/upgrade/reinstall/removal. Compiling NativeAOT does not verify its signed runtime.
+- Release preflight found Visual Studio `18.10.12201.205` and linker `14.51.36257.0`, while their pins remain `18.9.12120.119` and `14.51.36256.0`. The release gate remains unchanged. Pinned signing tools passed verification.
+
 ## Win32 installer integration (2026-09-11)
 
 - Merged the native Win32/GDI installer from `codex/win32-installer` into main. Avalonia, Skia, and HarfBuzz are removed from the installer.

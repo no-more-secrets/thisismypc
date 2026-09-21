@@ -304,6 +304,10 @@ an existing release.
 
 ## Open items before first release
 
+The Win32 installer needs its own signed install, upgrade, reinstall, and removal evidence.
+Earlier Avalonia installer runs do not close this gate. Use [installer acceptance](installer-acceptance.md) for the checks.
+Keep the release environment separate from the everyday IDE so automatic Visual Studio updates cannot change the release inputs.
+
 - Publisher line is `NMS` (Sam, 2026-09-01), the short form of No More
   Secrets, LLC: the `-Authors` default in build-release.ps1 and the assembly
   Company in Directory.Build.props both use it, so the install path is
