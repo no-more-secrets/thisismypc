@@ -20,7 +20,7 @@ internal static class BrokerProcessTrust
                     "The callback pipe is not owned by the installed ThisIsMyPC UI.",
                     ErrorCategory.AccessDenied);
             }
-#if !DEBUG
+#if !DEBUG && !TIPC_DEBUG_RELEASE
             var trust = AuthenticodeVerifier.VerifyTrusted(expected, AppConstants.PublisherName, exactSignerName: true);
             if (!trust.IsSuccess)
                 return trust;

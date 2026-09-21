@@ -55,7 +55,7 @@ public sealed class PrivilegeBrokerClient : IPrivilegeBrokerClient
                 ErrorCategory.NotFound);
         }
 
-#if !DEBUG
+#if !DEBUG && !TIPC_DEBUG_RELEASE
         var trust = AuthenticodeVerifier.VerifyTrusted(_brokerPath, AppConstants.PublisherName, exactSignerName: true);
         if (!trust.IsSuccess)
         {

@@ -5,6 +5,7 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 ## Win32 installer completion (active 2026-09-21)
 
 Current priority: validate the complete signed installer. See the explicit checklist in [the v1 plan](v1-completion-plan.md#current-priority-finish-the-installer-2026-09-21).
+- DONE: `DebugRelease` build mode produces a runnable unsigned local package in separate output directories. Compile-time signature exclusions do not change normal releases. Embedded metadata prevents accidental production signing.
 - DONE: standard Windows buttons, checkboxes, edit fields, and labels replace the custom dark skin. The wizard uses Back/Next/Cancel navigation without page tabs.
 - DONE: monitor work-area sizing, scrolling, and focus visibility keep required controls reachable.
 - DONE: installed-version text has room to wrap; removal copy correctly describes retained settings without naming the old storage location.

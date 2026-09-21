@@ -5,7 +5,7 @@ param(
 
     [string]$Authors,
 
-    [ValidateSet('Signed', 'Unsigned')]
+    [ValidateSet('Signed', 'Unsigned', 'DebugRelease')]
     [string]$Mode,
 
     [ValidatePattern('^[0-9A-Fa-f]{40}$')]
@@ -96,17 +96,22 @@ if ([string]::IsNullOrWhiteSpace($Authors)) {
 }
 
 if ([string]::IsNullOrWhiteSpace($Mode)) {
-    $modeInput = Read-DefaultValue -Prompt 'Build mode: Signed or Unsigned' -DefaultValue 'Signed'
+    $modeInput = Read-DefaultValue -Prompt 'Build mode: Signed, Unsigned (sign later), or DebugRelease (run unsigned)' -DefaultValue 'Signed'
     $Mode = switch -Regex ($modeInput) {
         '^(?i:s|signed)$' { 'Signed'; break }
         '^(?i:u|unsigned)$' { 'Unsigned'; break }
-        default { throw 'Build mode must be Signed or Unsigned.' }
+        '^(?i:d|debugrelease)$' { 'DebugRelease'; break }
+        default { throw 'Build mode must be Signed, Unsigned, or DebugRelease.' }
     }
 }
 
 $buildParameters = @{
     Version = $Version
     Authors = $Authors
+}
+if ($Mode -eq 'DebugRelease') {
+    if ($SignThumbprint) { throw 'DebugRelease cannot be signed.' }
+    $buildParameters.DebugRelease = $true
 }
 
 if ($Mode -eq 'Signed') {
@@ -241,7 +246,8 @@ if ($confirmation -notmatch '^(?i:y|yes)$') {
 & (Join-Path $PSScriptRoot 'build-release.ps1') @buildParameters
 
 $repoRoot = Split-Path $PSScriptRoot -Parent
-$installer = Join-Path $repoRoot "artifacts\releases\$Version\ThisIsMyPC-Installer-$Version.exe"
+$buildName = if ($Mode -eq 'DebugRelease') { "debug-release_$Version" } else { $Version }
+$installer = Join-Path $repoRoot "artifacts\releases\$buildName\ThisIsMyPC-Installer-$Version.exe"
 Write-Host ''
 Write-Host "Release build completed: $installer" -ForegroundColor Green
 }

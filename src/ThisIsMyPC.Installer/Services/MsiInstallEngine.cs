@@ -57,7 +57,7 @@ public sealed class MsiInstallEngine : IInstallEngine
         {
             progress.Report("Unpacking...");
             var msiPath = _package.ExtractTo(scratch);
-#if !DEBUG
+#if !DEBUG && !TIPC_DEBUG_RELEASE
             var trust = AuthenticodeVerifier.VerifyTrusted(
                 msiPath,
                 "No More Secrets, LLC",
@@ -115,6 +115,7 @@ public sealed class MsiInstallEngine : IInstallEngine
             if (!File.Exists(installed.UninstallerPath))
                 return new InstallOutcome(false, false, "The uninstaller (Update.exe) is no longer in the install folder. Remove ThisIsMyPC from Settings, Apps, Installed apps.", null);
 
+#if !TIPC_DEBUG_RELEASE
             var trust = AuthenticodeVerifier.VerifyTrusted(
                 installed.UninstallerPath,
                 "No More Secrets, LLC",
@@ -128,6 +129,7 @@ public sealed class MsiInstallEngine : IInstallEngine
                     null);
             }
 
+#endif
             progress.Report("Removing ThisIsMyPC...");
             // Update.exe refuses MSI-managed installs. Read the product code
             // from its protected HKLM registration, never execute registry text.
@@ -167,9 +169,11 @@ public sealed class MsiInstallEngine : IInstallEngine
         var stub = Path.Combine(installFolder, "ThisIsMyPC.exe");
         if (!File.Exists(stub))
             return;
+#if !TIPC_DEBUG_RELEASE
         var trust = AuthenticodeVerifier.VerifyTrusted(stub, "No More Secrets, LLC", exactSignerName: true);
         if (!trust.IsSuccess)
             return;
+#endif
         using var process = Process.Start(new ProcessStartInfo(stub) { UseShellExecute = true, WorkingDirectory = installFolder });
     }
 

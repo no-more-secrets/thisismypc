@@ -30,7 +30,7 @@ internal sealed unsafe partial class InstallerWindow
         Label(3020, vm.IsWelcome ? "Welcome to ThisIsMyPC Setup" : vm.IsLicense ? "License Agreement" :
             vm.IsOptions ? "Installation Options" : vm.IsConfirmUninstall ? "Remove ThisIsMyPC" :
             vm.IsBusy ? vm.StepCaption : vm.Failed ? "Setup Failed" : "Setup Complete", 32, 30, 688, 60);
-        Label(3021, $"ThisIsMyPC {InstallerViewModel.AppVersion}", 32, 70, 688, 96);
+        Label(3021, InstallerViewModel.BuildLabel, 32, 70, 688, 96);
         if (vm.IsWelcome)
         {
             Label(3000, "Welcome to the installer for ThisIsMyPC.", 57, 155, 663, 185);

@@ -57,6 +57,7 @@ internal static class TrustedNativeDependencyLoader
                         ErrorCategory.AccessDenied);
                 }
 
+#if !TIPC_DEBUG_RELEASE
                 var trust = AuthenticodeVerifier.VerifyTrusted(
                     path,
                     AppConstants.PublisherName,
@@ -69,6 +70,7 @@ internal static class TrustedNativeDependencyLoader
                         trust.Exception);
                 }
 
+#endif
                 try
                 {
                     var handle = NativeLibrary.Load(path);

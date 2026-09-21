@@ -27,7 +27,7 @@ sealed class Program
 #pragma warning disable CA1031 // Last resort: a crash must show words, not vanish (NativeAOT fail-fasts silently).
         try
         {
-#if !DEBUG
+#if !DEBUG && !TIPC_DEBUG_RELEASE
             var executablePath = Environment.ProcessPath
                 ?? throw new InvalidOperationException("The installer executable path is unavailable.");
             var trust = AuthenticodeVerifier.VerifyTrusted(

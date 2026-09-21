@@ -25,6 +25,9 @@
          and a product version without the +commit suffix the SDK appends. -->
     <NeutralLanguage>en-US</NeutralLanguage>
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <!-- This is a compile-time local testing mode, never a runtime trust switch. -->
+    <DebugRelease Condition="'$(DebugRelease)' == ''">false</DebugRelease>
+    <DefineConstants Condition="'$(DebugRelease)' == 'true'">$(DefineConstants);TIPC_DEBUG_RELEASE</DefineConstants>
   </PropertyGroup>
 
   <!-- Avalonia's Cecil XAML rewrite regenerates portable-PDB identifiers on

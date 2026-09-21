@@ -1,5 +1,34 @@
 # Release packaging: machine scope
 
+## Local unsigned testing
+
+The launcher offers three build modes:
+
+| Mode | Signature checks at runtime | Purpose |
+| --- | --- | --- |
+| Signed | Required | Normal releases |
+| Unsigned | Required | Production binaries awaiting signing |
+| DebugRelease | First-party Authenticode checks omitted at compile time | Runnable local test package |
+
+Run `tools/start-release-build.ps1 -Mode DebugRelease`, or use the noninteractive
+`tools/build-release.ps1 -Version 0.1.2-test-01 -DebugRelease`.
+DebugRelease uses Release optimization, NativeAOT, ACG, CIG, and the pinned toolchain.
+Protected installation paths, native dependency hashes, module inventory, vendor
+signatures, IPC identity checks, and signed update verification remain enforced.
+There is no runtime switch that disables signature checks in normal releases.
+
+Outputs go to `artifacts/releases/debug-release_<version>`, staging uses the same
+prefix, and intermediate files use `artifacts/diagnostics/debug-release-build`.
+The installer displays `DebugRelease, unsigned`. Each first-party executable embeds
+`[DebugRelease unsigned]` in its file description. The signing script rejects that
+metadata even if the binary is copied without its `DEBUG-RELEASE.txt` marker.
+Windows still shows an unknown publisher in UAC. This mode does not bypass Windows trust.
+
+The package uses the same installed application identity and data as a normal release.
+Installing it replaces that copy; it is not a side-by-side testing installation.
+Do not publish it. Test the signing exclusion with `tools/test-debug-release-mode.ps1`
+and supply `-DebugInstaller` and `-ProductionInstaller` paths.
+
 The app corresponds to the PC, not a user profile (AGENTS.md). Packaging follows:
 
 - **Binaries in `C:\Program Files\`** (admin-only write; deep-research

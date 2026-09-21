@@ -1,0 +1,10 @@
+<Project>
+  <PropertyGroup Condition="'$(DebugRelease)' == 'true'">
+    <!-- Persist the mode inside every PE, including copied signing inputs. -->
+    <AssemblyTitle>$(AssemblyTitle) [DebugRelease unsigned]</AssemblyTitle>
+  </PropertyGroup>
+  <Target Name="ValidateDebugReleaseMode" BeforeTargets="PrepareForBuild"
+          Condition="'$(DebugRelease)' == 'true' and '$(Configuration)' != 'Release'">
+    <Error Text="DebugRelease requires Configuration=Release. Use tools/start-release-build.ps1 -Mode DebugRelease." />
+  </Target>
+</Project>

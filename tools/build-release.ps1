@@ -16,6 +16,10 @@ param(
     # carries the full name.
     [string]$Authors = 'NMS',
 
+    # Runnable unsigned local testing package. Normal unsigned builds retain
+    # production trust checks for the later signing step.
+    [switch]$DebugRelease,
+
     # SHA-1 thumbprint of the SSL.com OV code-signing certificate (No More
     # Secrets, LLC) exposed through eSigner CKA. When given, the script scans
     # and signs every first-party installed binary, the MSI, and the outer
@@ -44,6 +48,9 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if ($DebugRelease -and $SignThumbprint) {
+    throw 'DebugRelease is unsigned local testing only. It cannot be signed as a release.'
+}
 Import-Module Microsoft.PowerShell.Utility -ErrorAction Stop
 Import-Module Microsoft.PowerShell.Security -ErrorAction Stop
 if ([string]::IsNullOrWhiteSpace($ESignerUsername)) {
@@ -55,8 +62,10 @@ if (Test-Path Env:ESIGNER_PASSWORD) {
     throw 'Refusing to build with ESIGNER_PASSWORD in the environment. Build unsigned, then expose the secret only to sign-release-installer.ps1.'
 }
 $repoRoot = Split-Path $PSScriptRoot -Parent
-$staging = Join-Path $repoRoot "artifacts\staging\$Version"
-$output = Join-Path $repoRoot "artifacts\releases\$Version"
+$buildName = if ($DebugRelease) { "debug-release_$Version" } else { $Version }
+$staging = Join-Path $repoRoot "artifacts\staging\$buildName"
+$output = Join-Path $repoRoot "artifacts\releases\$buildName"
+$installerStaging = Join-Path $repoRoot "artifacts\staging\$buildName-installer"
 
 $toolManifest = Join-Path $repoRoot '.config\dotnet-tools.json'
 if (-not (Test-Path $toolManifest -PathType Leaf)) {
@@ -110,10 +119,20 @@ if ($SignThumbprint) {
 
 # Both directories are per-version scratch: vpk refuses to pack over an
 # existing release of the same version, so a rebuild starts clean.
+foreach ($target in @($staging, $output, $installerStaging)) {
+    $full = [IO.Path]::GetFullPath($target)
+    if (-not $full.StartsWith([IO.Path]::GetFullPath((Join-Path $repoRoot 'artifacts')) + '\', [StringComparison]::OrdinalIgnoreCase)) {
+        throw "Build output is outside artifacts: $full"
+    }
+}
 if (Test-Path $staging) { Remove-Item $staging -Recurse -Force }
 if (Test-Path $output) { Remove-Item $output -Recurse -Force }
 New-Item -ItemType Directory -Force $staging | Out-Null
 New-Item -ItemType Directory -Force $output | Out-Null
+if ($DebugRelease) {
+    Set-Content -LiteralPath (Join-Path $output 'DEBUG-RELEASE.txt') -Encoding ascii `
+        -Value 'Unsigned DebugRelease for local testing. First-party signature checks are disabled. Do not publish or sign.'
+}
 
 # NativeAOT's default discovery picks the newest IDE. Use the verified release
 # environment instead, even when a newer development IDE is installed.
@@ -124,6 +143,11 @@ $nativeBin = Join-Path $env:VCToolsInstallDir 'bin\Hostx64\x64'
 $aotArgs = @('-p:AotPublish=true', '-p:OS=Windows_NT', '-p:IlcUseEnvironmentalTools=true',
     '-p:CopyOutputSymbolsToPublishDirectory=false',
     "-p:CppLinker=$nativeBin\link.exe", "-p:CppLibCreator=$nativeBin\lib.exe")
+$aotArgs += "-p:DebugRelease=$($DebugRelease.IsPresent.ToString().ToLowerInvariant())"
+if ($DebugRelease) {
+    # Never reuse unsigned testing intermediates in a production release.
+    $aotArgs += @('--artifacts-path', (Join-Path $repoRoot 'artifacts\diagnostics\debug-release-build'))
+}
 $guardedAotArgs = @($aotArgs) + '-p:DynamicCodeGuard=true'
 $appAotArgs = @($guardedAotArgs) + '-p:CodeIntegrityGuard=true'
 
@@ -234,7 +258,6 @@ if (Test-Path $assetsJson) {
 # options the Velopack wizard cannot (folder, shortcuts, start with Windows,
 # update checks). NativeAOT always: one small native exe around the MSI.
 Write-Host 'Publishing the installer (ThisIsMyPC-Installer.exe) around the MSI...'
-$installerStaging = Join-Path $repoRoot "artifacts\staging\$Version-installer"
 if (Test-Path $installerStaging) { Remove-Item $installerStaging -Recurse -Force }
 $msiPath = Join-Path $output 'ThisIsMyPC-win.msi'
 if (-not (Test-Path $msiPath)) { throw 'ThisIsMyPC-win.msi missing from the vpk output' }
@@ -287,10 +310,19 @@ if ($SignThumbprint) {
         -TimestampUrl $TimestampUrl
 } else {
     Write-Host 'Writing SHA256SUMS...'
-    & (Join-Path $PSScriptRoot 'new-release-manifest.ps1') -AssetDirectory $output
+    if ($DebugRelease) {
+        & (Join-Path $PSScriptRoot 'new-release-manifest.ps1') -AssetDirectory $output 6>$null
+    } else {
+        & (Join-Path $PSScriptRoot 'new-release-manifest.ps1') -AssetDirectory $output
+    }
 }
 
 Write-Host ''
+if ($DebugRelease) {
+    Write-Host "Unsigned DebugRelease ready for local testing: $installerAsset"
+    Write-Host 'This package uses the same installed application identity. It is not a side-by-side installation.'
+    return
+}
 Write-Host "Release assets in $output. Next steps (docs/release/update-signing.md):"
 Write-Host '  1. Sign SHA256SUMS offline with either release YubiKey:'
 Write-Host '     gpg --local-user <full fingerprint> --armor --detach-sign SHA256SUMS'

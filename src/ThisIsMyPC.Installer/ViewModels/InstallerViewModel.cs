@@ -66,6 +66,12 @@ public sealed partial class InstallerViewModel : ObservableObject
 
     public static string AppVersion { get; } = ReadVersion();
 
+#if TIPC_DEBUG_RELEASE
+    public static string BuildLabel => $"ThisIsMyPC {AppVersion} (DebugRelease, unsigned)";
+#else
+    public static string BuildLabel => $"ThisIsMyPC {AppVersion}";
+#endif
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsInstalled), nameof(InstalledSummary), nameof(CanChooseFolder))]
     private InstalledApp? _installed;
