@@ -42,6 +42,42 @@ public class HeaderShotTests
         session.Screenshot("settings-from-gear");
     }
 
+    /// <summary>
+    /// Restart Explorer is a permanent header button on the Explorer page and
+    /// nowhere else. Never clicked here: the real service would restart Sam's shell.
+    /// </summary>
+    [AvaloniaFact(Timeout = 120_000)]
+    public async Task RestartExplorerButton_LivesInTheExplorerPageHeader()
+    {
+        using var session = UiSession.ForMainWindow("header-restart-explorer");
+        var vm = (MainWindowViewModel)session.Window.DataContext!;
+        await session.WaitForAsync(() => vm.SidebarGroups.Count > 0, timeoutMs: 30_000, what: "sidebar population");
+
+        // Find only sees visible controls: on Home there is no such button to see.
+        Assert.Null(session.TryFind<Button>(b => b.Name == "RestartExplorerButton"));
+        Assert.False(vm.IsExplorerPageOpen);
+
+        session.OpenModule("Explorer");
+        await session.WaitForAsync(() => vm.CurrentContent is ShellViewModel && !vm.IsModuleLoading, timeoutMs: 120_000, what: "Explorer page");
+        Assert.True(vm.IsExplorerPageOpen);
+        var button = session.Find<Button>(b => b.Name == "RestartExplorerButton");
+        Assert.True(button.IsEffectivelyVisible);
+        Assert.DoesNotContain("accent", button.Classes);
+        session.Screenshot("explorer-restart-button");
+
+        // Applied changes waiting for the restart make it the loud button.
+        vm.IsRestartActionAvailable = true;
+        session.Pump();
+        Assert.Contains("accent", button.Classes);
+        session.Screenshot("explorer-restart-button-owed");
+        vm.IsRestartActionAvailable = false;
+
+        session.OpenModule("Display");
+        await session.WaitForAsync(() => vm.CurrentContent is DisplayViewModel, timeoutMs: 60_000, what: "Display page");
+        Assert.False(button.IsEffectivelyVisible);
+        Assert.Null(session.TryFind<Button>(b => b.Name == "RestartExplorerButton"));
+    }
+
     /// <summary>The title row's refresh rebuilds the page: Home stays Home, Display rescans into a fresh view model.</summary>
     [AvaloniaFact(Timeout = 120_000)]
     public async Task RefreshButton_RebuildsTheCurrentPage()

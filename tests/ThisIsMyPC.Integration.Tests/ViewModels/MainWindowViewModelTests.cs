@@ -266,6 +266,35 @@ public class MainWindowViewModelTests
 
         Assert.True(vm.IsRestartNotificationVisible);
         Assert.Contains("Explorer restart required", vm.RestartNotificationMessage);
+
+        // The notice is a sticky toast, never a bar that moves the page; dismissing closes it.
+        var toast = Assert.Single(vm.ToastStack.Toasts);
+        Assert.Equal("Explorer restart needed", toast.Title);
+        Assert.Equal(vm.RestartNotificationMessage, toast.Message);
+        Assert.True(toast.IsSticky);
+        Assert.True(toast.IsWarning);
+        vm.DismissRestartNotificationCommand.Execute(null);
+        Assert.Empty(vm.ToastStack.Toasts);
+    }
+
+    [Fact]
+    public async Task ApplyAllCommand_SecondNotice_ReplacesTheFirstToast()
+    {
+        var fakeModule = new Fakes.FakeModule("TestModule", _ =>
+            Task.FromResult(OperationResult<bool>.Success(true)));
+        var vm = CreateViewModel(out var service, fakeModule);
+        await vm.InitializeAsync();
+
+        service.Stage(CreateTestChange("TestModule", "one") with { RestartRequirement = RestartRequirement.ExplorerRefresh });
+        await vm.ApplyAllCommand.ExecuteAsync(null);
+        var refresh = Assert.Single(vm.ToastStack.Toasts);
+        Assert.False(refresh.IsSticky);
+
+        service.Stage(CreateTestChange("TestModule", "two") with { RestartRequirement = RestartRequirement.Reboot });
+        await vm.ApplyAllCommand.ExecuteAsync(null);
+        var reboot = Assert.Single(vm.ToastStack.Toasts);
+        Assert.Equal("Reboot required", reboot.Title);
+        Assert.True(reboot.IsSticky);
     }
 
     [Fact]
@@ -370,6 +399,7 @@ public class MainWindowViewModelTests
         var vm = CreateViewModel(out _, out var restartService);
         vm.IsRestartNotificationVisible = true;
         vm.RestartNotificationMessage = "Explorer restart required";
+        vm.ToastStack.Show("Explorer restart needed", vm.RestartNotificationMessage, ToastSeverity.Warning, sticky: true, key: "restart-notice");
 
         await vm.RestartExplorerCommand.ExecuteAsync(null);
 
@@ -377,6 +407,7 @@ public class MainWindowViewModelTests
         Assert.False(vm.IsRestartNotificationVisible);
         Assert.False(vm.IsRestartingExplorer);
         Assert.Equal("Explorer restarted successfully", vm.StatusMessage);
+        Assert.Empty(vm.ToastStack.Toasts);
     }
 
     [Fact]

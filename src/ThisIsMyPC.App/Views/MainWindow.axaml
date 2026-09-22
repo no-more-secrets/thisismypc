@@ -274,6 +274,16 @@
                             Command="{Binding DownloadOrRestartUpdateCommand}"
                             ToolTip.Tip="{Binding UpdateBadgeText}"
                             Padding="12,6" />
+                    <!-- Explorer page only: always there, loud while applied changes wait for it. -->
+                    <Button x:Name="RestartExplorerButton"
+                            Content="Restart Explorer"
+                            Classes.accent="{Binding IsRestartActionAvailable}"
+                            IsVisible="{Binding IsExplorerPageOpen}"
+                            IsEnabled="{Binding !IsRestartingExplorer}"
+                            Command="{Binding RestartExplorerCommand}"
+                            ToolTip.Tip="Restarts Explorer so applied changes take effect. Open File Explorer windows close."
+                            AutomationProperties.Name="Restart Explorer"
+                            Padding="12,6" />
                     <Button Classes="bar-icon"
                             Command="{Binding RefreshPageCommand}"
                             IsEnabled="{Binding !IsModuleLoading}"
@@ -308,37 +318,8 @@
                            TextTrimming="CharacterEllipsis" />
             </DockPanel>
 
-            <!-- Restart notification bar -->
-            <Border DockPanel.Dock="Bottom"
-                    Margin="0,16,0,0"
-                    Padding="16,10"
-                    CornerRadius="8"
-                    Background="{DynamicResource RaisedBrush}"
-                    Classes.notification-restart="{Binding IsRestartActionAvailable}"
-                    Classes.notification-refresh="{Binding !IsRestartActionAvailable}"
-                    BorderThickness="1"
-                    IsVisible="{Binding IsRestartNotificationVisible}">
-                <DockPanel>
-                    <StackPanel DockPanel.Dock="Right"
-                                Orientation="Horizontal"
-                                Spacing="8">
-                        <Button Classes="apply-bar-apply"
-                                Content="Restart Explorer Now"
-                                Command="{Binding RestartExplorerCommand}"
-                                IsEnabled="{Binding !IsRestartingExplorer}"
-                                IsVisible="{Binding IsRestartActionAvailable}" />
-                        <Button Classes="apply-bar-discard"
-                                Content="Dismiss"
-                                Command="{Binding DismissRestartNotificationCommand}" />
-                    </StackPanel>
-                    <TextBlock Text="{Binding RestartNotificationMessage}"
-                               VerticalAlignment="Center"
-                               Classes.notification-restart="{Binding IsRestartActionAvailable}"
-                               Classes.notification-refresh="{Binding !IsRestartActionAvailable}"
-                               FontSize="13"
-                               TextWrapping="Wrap" />
-                </DockPanel>
-            </Border>
+            <!-- Restart and reboot notices are sticky toasts (ToastStack), never a
+                 bar here: nothing docked may move the page. -->
 
             <!-- Simulated mode bar (Debug page): loud, with the way out on it -->
             <Border DockPanel.Dock="Bottom"

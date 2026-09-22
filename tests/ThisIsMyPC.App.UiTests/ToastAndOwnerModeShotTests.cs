@@ -35,6 +35,32 @@ public class ToastAndOwnerModeShotTests
     }
 
     [AvaloniaFact]
+    public void StickyToast_StaysThroughEvictions_UntilItsKeyIsDismissed()
+    {
+        var stack = new ToastStackViewModel(lifetime: TimeSpan.Zero);
+        stack.Show("Reboot required", "A reboot is required for some changes to take effect.", ToastSeverity.Warning, sticky: true, key: "restart-notice");
+        for (var i = 1; i <= 5; i++)
+            stack.Show($"Result {i}", "Applied", ToastSeverity.Success);
+
+        using var session = UiSession.ForView(new ToastHostControl(), stack, "toast-host", width: 420, height: 500);
+        session.Screenshot("sticky-reboot-notice");
+
+        // Four transient cards plus the sticky one; the oldest result yielded, the notice did not.
+        Assert.Equal(5, stack.Toasts.Count);
+        Assert.True(session.IsTextVisible("Reboot required"));
+        Assert.False(session.IsTextVisible("Result 1"));
+
+        // A second notice under the same key replaces the first rather than stacking.
+        stack.Show("Explorer restart needed", "Use Restart Explorer on the Explorer page.", ToastSeverity.Warning, sticky: true, key: "restart-notice");
+        Assert.Single(stack.Toasts, t => t.IsSticky);
+        Assert.False(session.IsTextVisible("Reboot required"));
+
+        stack.Dismiss("restart-notice");
+        Assert.DoesNotContain(stack.Toasts, t => t.IsSticky);
+        Assert.Equal(4, stack.Toasts.Count);
+    }
+
+    [AvaloniaFact]
     public void ToastStack_LightTheme()
     {
         var stack = new ToastStackViewModel(lifetime: TimeSpan.Zero);

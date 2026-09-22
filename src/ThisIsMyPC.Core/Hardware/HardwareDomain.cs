@@ -9,7 +9,7 @@ public enum HardwareDomain
     /// <summary>Laptop performance modes, battery limits, keyboard and platform controls (G-Helper territory).</summary>
     SystemControl,
 
-    /// <summary>RGB lighting through OpenRGB.</summary>
+    /// <summary>RGB lighting through the bundled lighting engine.</summary>
     Lighting,
 
     /// <summary>Fan control through FanControl.</summary>

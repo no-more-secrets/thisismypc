@@ -130,7 +130,7 @@ public sealed class LightingModule : HardwareCompanionModule
         : base(facts, settings, new ModuleInfo(
             Name: ModuleName,
             Icon: "lighting",
-            Description: "RGB device colors, brightness and modes through OpenRGB.",
+            Description: "RGB device colors, brightness and modes, with every device the built-in lighting engine supports.",
             RequiredCapabilities: [],
             Group: ModuleGroup.Hardware,
             LoadOrder: 30), HardwareDomain.Lighting)

@@ -1029,6 +1029,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     partial void OnCurrentContentChanged(object? value)
     {
+        OnPropertyChanged(nameof(IsExplorerPageOpen));
         if (_refreshTabState is { } refresh)
         {
             if (refresh.Epoch != _contentEpoch)
@@ -2164,27 +2165,24 @@ public partial class MainWindowViewModel : ViewModelBase
             // deferring the reboot doesn't leave Explorer-bound changes inactive.
             var alsoExplorer = restarts.Contains(RestartRequirement.ExplorerRestart);
             RestartNotificationMessage = alsoExplorer
-                ? "A reboot is required for some changes; others take effect after an Explorer restart."
+                ? "A reboot is required for some changes; others take effect after Restart Explorer on the Explorer page."
                 : "A reboot is required for some changes to take effect.";
             IsRestartActionAvailable = alsoExplorer;
-            IsRestartNotificationVisible = true;
-            return "Reboot required";
+            return Notice("Reboot required", sticky: true);
         }
 
         if (restarts.Contains(RestartRequirement.SignOut))
         {
             RestartNotificationMessage = "Sign out and back in for some changes to take effect.";
             IsRestartActionAvailable = false;
-            IsRestartNotificationVisible = true;
-            return "Sign-out required";
+            return Notice("Sign-out required", sticky: true);
         }
 
         if (restarts.Contains(RestartRequirement.ExplorerRestart))
         {
-            RestartNotificationMessage = "Explorer restart required for changes to take effect. Open file explorer windows may close.";
+            RestartNotificationMessage = "Explorer restart required for changes to take effect. Use Restart Explorer on the Explorer page; open File Explorer windows close.";
             IsRestartActionAvailable = true;
-            IsRestartNotificationVisible = true;
-            return "Explorer restart needed";
+            return Notice("Explorer restart needed", sticky: true);
         }
 
         if (restarts.Contains(RestartRequirement.ExplorerRefresh))
@@ -2194,12 +2192,34 @@ public partial class MainWindowViewModel : ViewModelBase
 
             RestartNotificationMessage = "Explorer preferences updated. Open windows may need F5 to refresh";
             IsRestartActionAvailable = false;
-            IsRestartNotificationVisible = true;
-            return "Explorer refresh may be needed";
+            return Notice("Explorer refresh may be needed", sticky: false);
         }
 
         return null;
+
+        // The notice is a toast over the page, never a bar docked in the window:
+        // nothing may move the page. A restart or reboot notice stays until closed
+        // or done; a refresh note fades like any other result.
+        string Notice(string title, bool sticky)
+        {
+            IsRestartNotificationVisible = true;
+            ToastStack.Show(title, RestartNotificationMessage, sticky ? ToastSeverity.Warning : ToastSeverity.Success,
+                sticky, RestartToastKey);
+            return title;
+        }
     }
+
+    private const string RestartToastKey = "restart-notice";
+
+    /// <summary>Dismissing the notice, or restarting Explorer, closes its toast too.</summary>
+    partial void OnIsRestartNotificationVisibleChanged(bool value)
+    {
+        if (!value)
+            ToastStack.Dismiss(RestartToastKey);
+    }
+
+    /// <summary>The Explorer page carries a permanent Restart Explorer button in its header.</summary>
+    public bool IsExplorerPageOpen => CurrentContent is ShellViewModel;
 
     /// <summary>
     /// The status line for a batch that did not finish, written for the person

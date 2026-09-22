@@ -21,16 +21,25 @@ public sealed partial class ToastViewModel : ViewModelBase
     public string Message { get; }
     public ToastSeverity Severity { get; }
 
+    /// <summary>Stays until closed by hand or replaced by its key; never auto-dismissed, never evicted.</summary>
+    public bool IsSticky { get; }
+
+    /// <summary>Names a toast a later call may replace or close (the restart notice).</summary>
+    public string? Key { get; }
+
     public bool IsInfo => Severity == ToastSeverity.Info;
     public bool IsSuccess => Severity == ToastSeverity.Success;
     public bool IsWarning => Severity == ToastSeverity.Warning;
 
-    public ToastViewModel(string title, string message, ToastSeverity severity, Action<ToastViewModel> dismiss)
+    public ToastViewModel(string title, string message, ToastSeverity severity, Action<ToastViewModel> dismiss,
+        bool sticky = false, string? key = null)
     {
         ArgumentNullException.ThrowIfNull(dismiss);
         Title = title;
         Message = message;
         Severity = severity;
+        IsSticky = sticky;
+        Key = key;
         _dismiss = dismiss;
     }
 
@@ -40,7 +49,8 @@ public sealed partial class ToastViewModel : ViewModelBase
 
 /// <summary>
 /// The in-app toast surface (UI/UX chapter): transient notification cards stacked
-/// top-right over the content area. UI-thread only; callers marshal.
+/// top-right over the content area. UI-thread only; callers marshal. Nothing here
+/// takes layout space, so a notice never moves the page under it.
 /// </summary>
 public sealed class ToastStackViewModel
 {
@@ -60,16 +70,32 @@ public sealed class ToastStackViewModel
         _lifetime = lifetime ?? DefaultLifetime;
     }
 
-    public void Show(string title, string message, ToastSeverity severity)
+    /// <param name="sticky">Keep the card until it is closed or replaced: for a notice that must not be missed, such as a reboot.</param>
+    /// <param name="key">Replaces any card shown earlier under the same key, so one notice never stacks up.</param>
+    public void Show(string title, string message, ToastSeverity severity, bool sticky = false, string? key = null)
     {
-        // Newest wins the limited space; the oldest card yields.
-        while (Toasts.Count >= MaxVisible)
-            Toasts.RemoveAt(0);
+        if (key is not null)
+            Dismiss(key);
 
-        var toast = new ToastViewModel(title, message, severity, t => Toasts.Remove(t));
+        // Newest transient card wins the limited space; the oldest transient card
+        // yields. Sticky cards are not counted, never yield, and push nothing out.
+        while (!sticky && Toasts.Count(t => !t.IsSticky) >= MaxVisible)
+            Toasts.Remove(Toasts.First(t => !t.IsSticky));
+
+        var toast = new ToastViewModel(title, message, severity, t => Toasts.Remove(t), sticky, key);
         Toasts.Add(toast);
 
-        if (_lifetime > TimeSpan.Zero)
+        if (!sticky && _lifetime > TimeSpan.Zero)
             DispatcherTimer.RunOnce(() => Toasts.Remove(toast), _lifetime);
+    }
+
+    /// <summary>Closes the card shown under <paramref name="key"/>, if any.</summary>
+    public void Dismiss(string key)
+    {
+        for (var i = Toasts.Count - 1; i >= 0; i--)
+        {
+            if (Toasts[i].Key == key)
+                Toasts.RemoveAt(i);
+        }
     }
 }

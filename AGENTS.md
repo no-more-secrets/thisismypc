@@ -285,7 +285,10 @@ Run over every page before showing it; each line cost a correction once.
   Route a result through `IUserFeedback.Report` (toast) and a failure through
   `IUserFeedback.Fail` (status line); a card that keeps its failure shows the
   `issue-marker` icon beside its button, tooltip carrying the text. A refused
-  text box gets `Classes.invalid` and the reason as its tooltip.
+  text box gets `Classes.invalid` and the reason as its tooltip. Restart and
+  reboot notices are sticky toasts (`ToastStack.Show(..., sticky: true, key:)`),
+  never a bar docked in the window; Restart Explorer lives in the Explorer
+  page's header, always.
 - The sidebar is an accordion: the open module's group is open, the rest fold,
   and a folded header opens its first module. In tests use `OpenModule(name)`.
 - Before answering "not fixed", compare the running exe's build time with
