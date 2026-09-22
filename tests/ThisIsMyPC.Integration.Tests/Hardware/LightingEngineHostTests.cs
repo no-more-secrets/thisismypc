@@ -1,3 +1,6 @@
+using System.Diagnostics;
+using System.Net.Sockets;
+using System.Text;
 using ThisIsMyPC.Interop.Win32.Hardware;
 
 namespace ThisIsMyPC.Integration.Tests.Hardware;
@@ -24,17 +27,38 @@ public class LightingEngineHostTests(Xunit.Abstractions.ITestOutputHelper output
 
             var started = await host.StartAsync();
             Assert.True(started.IsSuccess, started.ErrorMessage + " | " + string.Join(" | ", host.Notes));
-            Assert.InRange(started.Value, 1024, 65535);
+            Assert.InRange(started.Value!.Port, 1024, 65535);
             var again = await host.StartAsync();
             Assert.Equal(started.Value, again.Value);
 
-            var connected = await new OpenRgbSdkClient().ConnectAsync(started.Value);
+            using (var unauthenticated = new TcpClient())
+            {
+                await unauthenticated.ConnectAsync("127.0.0.1", started.Value!.Port);
+                await unauthenticated.GetStream().WriteAsync(Encoding.ASCII.GetBytes(new string('0', 64)));
+                using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                var reply = new byte[1];
+                Assert.Equal(0, await unauthenticated.GetStream().ReadAsync(reply, timeout.Token));
+            }
+
+            using (var slowClient = new TcpClient())
+            {
+                await slowClient.ConnectAsync("127.0.0.1", started.Value!.Port);
+                await slowClient.GetStream().WriteAsync(Encoding.ASCII.GetBytes("0"));
+                var elapsed = Stopwatch.StartNew();
+                using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(6));
+                var reply = new byte[1];
+                Assert.Equal(0, await slowClient.GetStream().ReadAsync(reply, timeout.Token));
+                Assert.True(elapsed.Elapsed < TimeSpan.FromSeconds(5),
+                    "A partial credential held the OpenRGB accept thread too long.");
+            }
+
+            var connected = await new OpenRgbSdkClient().ConnectAsync(started.Value!);
             Assert.True(connected.IsSuccess, connected.ErrorMessage);
             using (var session = connected.Value!)
             {
                 var devices = await session.GetDevicesAsync();
                 Assert.True(devices.IsSuccess, devices.ErrorMessage);
-                output.WriteLine($"Engine on port {started.Value} lists {devices.Value!.Count} device(s):");
+                output.WriteLine($"Engine on port {started.Value!.Port} lists {devices.Value!.Count} device(s):");
                 foreach (var device in devices.Value)
                 {
                     Assert.False(string.IsNullOrWhiteSpace(device.Name));
@@ -48,7 +72,7 @@ public class LightingEngineHostTests(Xunit.Abstractions.ITestOutputHelper output
             Assert.True(rescanned.IsSuccess, rescanned.ErrorMessage);
 
             host.Stop();
-            var afterStop = await new OpenRgbSdkClient().ConnectAsync(started.Value);
+            var afterStop = await new OpenRgbSdkClient().ConnectAsync(started.Value!);
             Assert.False(afterStop.IsSuccess);
             Assert.True(File.Exists(Path.Combine(configDirectory, "OpenRGB.json")), "The engine keeps its settings under the folder it was given.");
         }

@@ -1287,7 +1287,8 @@ public partial class MainWindowViewModel : ViewModelBase
             appVersion: AppVersion,
             capabilityReport: _capabilityDetector?.GetCapabilityReport(),
             ownerMode: _ownerModeControl is { } ownerMode ? new OwnerModeSectionViewModel(ownerMode, _userFeedback) : null,
-            feedback: _userFeedback);
+            feedback: _userFeedback,
+            inAppUpdatesAvailable: _updateService?.SupportsInAppUpdate == true);
         IsSettingsActive = true;
         IsDebugActive = false;
         IsSetLoaderActive = false;

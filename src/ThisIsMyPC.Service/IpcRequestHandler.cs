@@ -25,13 +25,17 @@ public sealed class IpcRequestHandler
         _restoration = restoration;
     }
 
-    public async Task<IpcEnvelope> HandleAsync(IpcEnvelope request, CancellationToken token = default)
+    public async Task<IpcEnvelope> HandleAsync(IpcEnvelope request, string? clientSid = null,
+        bool clientIsElevated = false, CancellationToken token = default)
     {
         try
         {
         if (request.Type == IpcMessageTypes.RestorationHistory)
         {
-            var items = _restoration is null ? [] : await _restoration.GetHistoryAsync(token).ConfigureAwait(false);
+            if (!clientIsElevated && string.IsNullOrWhiteSpace(clientSid))
+                return MakeError(request.Nonce, "Restoration history requires a verified account.");
+            var items = _restoration is null ? [] : await _restoration.GetHistoryAsync(
+                clientIsElevated ? null : clientSid, token).ConfigureAwait(false);
             return new() { Type = request.Type, Nonce = request.Nonce,
                 PayloadJson = JsonSerializer.Serialize(new RestorationHistoryResponse { Items = items },
                     IpcJsonContext.Default.RestorationHistoryResponse) };

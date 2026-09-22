@@ -32,12 +32,14 @@ public partial class MainWindowViewModel
     private bool _automaticDownload;
     private CancellationTokenSource? _updateDownloadCancellation;
 
-    public string UpdateActionText => IsUpdateDownloading
-        ? $"Downloading {UpdateDownloadProgress}%"
+    public string UpdateActionText => _updateService?.SupportsInAppUpdate == false
+        ? "View release"
+        : IsUpdateDownloading ? $"Downloading {UpdateDownloadProgress}%"
         : IsUpdateReady ? "Restart ThisIsMyPC" : "Download update";
 
     private bool UpdateChecksEnabled => _settingsService?.GetAppBool(AppSettingKeys.UpdateCheck, true) ?? true;
     private bool AutomaticDownloadsEnabled => UpdateChecksEnabled
+        && _updateService?.SupportsInAppUpdate == true
         && (_settingsService?.GetAppBool(AppSettingKeys.AutoDownloadUpdates, false) ?? false);
 
     private void OnUpdateSettingChanged(object? sender, SettingChangedEventArgs e)
@@ -80,7 +82,9 @@ public partial class MainWindowViewModel
                 UpdateBadgeText = $"Update {version}";
                 IsUpdateBadgeVisible = true;
                 _notificationService?.Notify(NotificationType.UpdateAvailable,
-                    "Update available", $"ThisIsMyPC {version} is available. Use Download update in the page header.");
+                    "Update available", _updateService?.SupportsInAppUpdate == false
+                        ? $"ThisIsMyPC {version} is available. Open the releases page for the signed installer."
+                        : $"ThisIsMyPC {version} is available. Use Download update in the page header.");
                 if (AutomaticDownloadsEnabled)
                     await DownloadUpdateAsync(automatic: true).ConfigureAwait(true);
             }
@@ -106,6 +110,11 @@ public partial class MainWindowViewModel
     {
         if (!CanDownloadOrRestartUpdate())
             return;
+        if (_updateService?.SupportsInAppUpdate == false)
+        {
+            OpenReleasesPage();
+            return;
+        }
         if (!IsUpdateReady)
         {
             await DownloadUpdateAsync(automatic: false).ConfigureAwait(true);

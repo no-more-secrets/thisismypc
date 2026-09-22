@@ -10,5 +10,5 @@ namespace ThisIsMyPC.Core.Hardware.Lighting;
 /// </summary>
 public interface IOpenRgbClient
 {
-    Task<OperationResult<ILightingSession>> ConnectAsync(int port, CancellationToken cancellationToken = default);
+    Task<OperationResult<ILightingSession>> ConnectAsync(LightingEngineEndpoint endpoint, CancellationToken cancellationToken = default);
 }

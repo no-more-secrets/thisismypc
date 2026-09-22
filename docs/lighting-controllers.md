@@ -29,8 +29,15 @@ The engine takes OpenRGB's own options; the host passes `--config <dir>`,
 | --- | --- | --- |
 | engine to host, stdout | `ready <port>` | Devices detected and the server listens. |
 | engine to host, stdout | `error <text>` | The server did not come up; the engine exits. |
+| host to engine, stdin | `auth <64 hex characters>` | Set a new private SDK token before detection. |
 | host to engine, stdin | `rescan` | Detect again; the engine answers `detected` when the pass ends. |
 | host to engine, stdin | `stop` or end of input | Clean shutdown. |
+
+The host sends a 256-bit token through stdin. A client must send its 64 hex characters
+first and receive an acknowledgement before OpenRGB sees the socket. The token
+never enters the command line or log. `tools/patch-lighting-network-server.ps1`
+checks the pinned OpenRGB source hash and generates the guarded server under
+`artifacts/`; an upstream source change stops the native build.
 
 The engine's own log goes to `lighting-engine\logs\` under the user's data
 folder, with OpenRGB's `OpenRGB.json` beside it.

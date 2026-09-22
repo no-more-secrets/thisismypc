@@ -1,3 +1,4 @@
+using ThisIsMyPC.App.Services;
 using ThisIsMyPC.Core.Results;
 using ThisIsMyPC.Core.Services;
 
@@ -6,6 +7,18 @@ namespace ThisIsMyPC.Security.Tests;
 [Trait("Category", "Security")]
 public class UpdateIntegrityTests
 {
+    [Fact]
+    public async Task ProductionUpdaterRejectsInAppDownload()
+    {
+        using var service = new VelopackUpdateService(new Velopack.UpdateManager(
+            "https://example.invalid/releases",
+            locator: Velopack.Locators.VelopackLocator.CreateDefaultForPlatform()));
+        Assert.False(service.SupportsInAppUpdate);
+        var result = await service.DownloadUpdateAsync();
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorCategory.AccessDenied, result.ErrorCategory);
+    }
+
     [Fact]
     public void IUpdateVerifier_IsAsync_TakesVersionAndPackagePath()
     {

@@ -1,4 +1,5 @@
 using System.Net.Sockets;
+using System.Text;
 using ThisIsMyPC.Core.Hardware.Detection;
 using ThisIsMyPC.Core.Hardware.Lighting;
 using ThisIsMyPC.Core.Results;
@@ -19,14 +20,22 @@ public sealed class OpenRgbSdkClient : IOpenRgbClient
     private static readonly TimeSpan DeviceReplyTimeout = TimeSpan.FromSeconds(4);
     private const int MaxPayload = 8 * 1024 * 1024;
 
-    public async Task<OperationResult<ILightingSession>> ConnectAsync(int port, CancellationToken cancellationToken = default)
+    public async Task<OperationResult<ILightingSession>> ConnectAsync(LightingEngineEndpoint endpoint, CancellationToken cancellationToken = default)
     {
         var client = new TcpClient();
         try
         {
             using var connectTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             connectTimeout.CancelAfter(ConnectTimeout);
-            await client.ConnectAsync("127.0.0.1", port, connectTimeout.Token).ConfigureAwait(false);
+            await client.ConnectAsync("127.0.0.1", endpoint.Port, connectTimeout.Token).ConfigureAwait(false);
+            var token = Convert.FromHexString(endpoint.AuthenticationToken);
+            if (token.Length != 32)
+                throw new InvalidDataException("The lighting endpoint token has an invalid length.");
+            await client.GetStream().WriteAsync(Encoding.ASCII.GetBytes(endpoint.AuthenticationToken), connectTimeout.Token).ConfigureAwait(false);
+            var acknowledgement = new byte[1];
+            await client.GetStream().ReadExactlyAsync(acknowledgement, connectTimeout.Token).ConfigureAwait(false);
+            if (acknowledgement[0] != 1)
+                throw new InvalidDataException("The lighting engine rejected its private token.");
 
             var session = new Session(client);
             var handshake = await session.HandshakeAsync(cancellationToken).ConfigureAwait(false);
@@ -40,12 +49,12 @@ public sealed class OpenRgbSdkClient : IOpenRgbClient
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
             client.Dispose();
-            return OperationResult<ILightingSession>.Failure($"The lighting service did not accept a connection on port {port}.", ErrorCategory.ServiceUnavailable);
+            return OperationResult<ILightingSession>.Failure($"The lighting service did not accept a connection on port {endpoint.Port}.", ErrorCategory.ServiceUnavailable);
         }
-        catch (Exception ex) when (ex is SocketException or IOException)
+        catch (Exception ex) when (ex is SocketException or IOException or InvalidDataException or FormatException)
         {
             client.Dispose();
-            return OperationResult<ILightingSession>.Failure($"The lighting service is not answering on port {port}: {ex.Message}", ErrorCategory.ServiceUnavailable, ex);
+            return OperationResult<ILightingSession>.Failure($"The lighting service is not answering on port {endpoint.Port}: {ex.Message}", ErrorCategory.ServiceUnavailable, ex);
         }
     }
 
@@ -98,7 +107,7 @@ public sealed class OpenRgbSdkClient : IOpenRgbClient
                 Log.Info("OpenRGB SDK session open (server protocol {Server}, using {Used})", serverVersion, ProtocolVersion);
                 return OperationResult<bool>.Success(true);
             }
-            catch (Exception ex) when (ex is SocketException or IOException or ObjectDisposedException)
+            catch (Exception ex) when (ex is SocketException or IOException or InvalidDataException or FormatException or ObjectDisposedException)
             {
                 _broken = true;
                 return OperationResult<bool>.Failure($"The lighting service closed the connection during setup: {ex.Message}", ErrorCategory.ServiceUnavailable, ex);
@@ -205,7 +214,7 @@ public sealed class OpenRgbSdkClient : IOpenRgbClient
             {
                 return OperationResult<T>.Failure($"The lighting service sent data this app could not read: {ex.Message}", ErrorCategory.ServiceUnavailable, ex);
             }
-            catch (Exception ex) when (ex is SocketException or IOException or ObjectDisposedException)
+            catch (Exception ex) when (ex is SocketException or IOException or InvalidDataException or FormatException or ObjectDisposedException)
             {
                 _broken = true;
                 return OperationResult<T>.Failure($"The lighting service connection was lost: {ex.Message}", ErrorCategory.ServiceUnavailable, ex);

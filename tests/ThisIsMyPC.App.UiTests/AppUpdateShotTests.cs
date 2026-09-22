@@ -18,6 +18,7 @@ public class AppUpdateShotTests
     {
         public TaskCompletionSource<bool> Download { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public int Restarts { get; private set; }
+        public bool SupportsInAppUpdate { get; set; } = true;
         public int Downloads { get; private set; }
         public Task<OperationResult<UpdateCheckResult>> CheckForUpdateAsync() =>
             Task.FromResult(OperationResult<UpdateCheckResult>.Success(new UpdateCheckResult(true, "2.0.0", null)));
@@ -28,6 +29,28 @@ public class AppUpdateShotTests
             return OperationResult<bool>.Success(await Download.Task.WaitAsync(cancellationToken));
         }
         public void ApplyUpdateAndRestart() => Restarts++;
+    }
+
+    [AvaloniaFact(Timeout = 60_000)]
+    [Trait("Category", "Diagnostic")]
+    public async Task ManualInstallerPathShowsReleaseActionAndDisablesAutoDownload()
+    {
+        var updater = new FakeUpdater { SupportsInAppUpdate = false };
+        using var session = UiSession.ForMainWindow("update-manual-installer", services =>
+        {
+            services.RemoveAll<IUpdateService>();
+            services.AddSingleton<IUpdateService>(updater);
+        });
+        var vm = (MainWindowViewModel)session.Window.DataContext!;
+        await session.WaitForAsync(() => vm.IsUpdateBadgeVisible, what: "available update");
+        Assert.Equal("View release", vm.UpdateActionText);
+        session.ClickText("Settings");
+        var automatic = session.Find<ToggleSwitch>(t =>
+            t.DataContext is SettingToggleItemViewModel { DisplayName: "Automatically download updates" });
+        Assert.False(automatic.IsEffectivelyEnabled);
+        session.Screenshot("release-action");
+        Assert.Equal(0, updater.Downloads);
+        Assert.Equal(0, updater.Restarts);
     }
 
     [AvaloniaFact(Timeout = 60_000)]

@@ -48,7 +48,7 @@ public sealed class EngineLightingBackend : ILightingBackend, IDisposable
                     return OperationResult<LightingInventory>.Failure(rescanned.ErrorMessage ?? "The lighting engine did not rescan.", rescanned.ErrorCategory ?? ErrorCategory.ServiceUnavailable, rescanned.Exception);
             }
 
-            var connected = await _client.ConnectAsync(started.Value, cancellationToken).ConfigureAwait(false);
+            var connected = await _client.ConnectAsync(started.Value!, cancellationToken).ConfigureAwait(false);
             if (!connected.IsSuccess)
                 return OperationResult<LightingInventory>.Failure(connected.ErrorMessage ?? "The lighting engine did not answer.", connected.ErrorCategory ?? ErrorCategory.ServiceUnavailable, connected.Exception);
 
@@ -75,7 +75,7 @@ public sealed class EngineLightingBackend : ILightingBackend, IDisposable
         if (!started.IsSuccess)
             return OperationResult<ILightingSession>.Failure(started.ErrorMessage ?? "The lighting engine did not start.", started.ErrorCategory ?? ErrorCategory.ServiceUnavailable, started.Exception);
         _started = true;
-        return await _client.ConnectAsync(started.Value, cancellationToken).ConfigureAwait(false);
+        return await _client.ConnectAsync(started.Value!, cancellationToken).ConfigureAwait(false);
     }
 
     public void Dispose() => _gate.Dispose();

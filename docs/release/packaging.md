@@ -151,9 +151,11 @@ The app corresponds to the PC, not a user profile (AGENTS.md). Packaging follows
   those files as authority. Owner Mode consent, baseline, and journal state stay
   under the Administrators/SYSTEM-only `%ProgramData%\ThisIsMyPC` directory.
   `LegacyDataMigration` copies old `%APPDATA%\ThisIsMyPC` UI state once.
-- **Updates**: every download is verified against the GPG-signed manifest before
-  apply. Applying a per-machine update from the unelevated UI remains a required
-  live release test.
+- **Updates**: the app checks for new versions and opens the releases page for
+  the signed installer. In-app download and apply are disabled. Velopack 1.2.0
+  extracts an updater before the release-key check and opens a user-writable
+  package after verification. Protected staging is required before restoring
+  in-app apply. The release manifest and signed installer remain published.
 
 ## Building a release
 

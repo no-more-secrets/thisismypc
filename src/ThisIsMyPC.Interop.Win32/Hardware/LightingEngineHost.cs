@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
+using System.Security.Cryptography;
 using System.Threading.Channels;
 using ThisIsMyPC.Core.Hardware.Lighting;
 using ThisIsMyPC.Core.Results;
@@ -33,6 +34,7 @@ public sealed partial class LightingEngineHost : ILightingEngine, IDisposable
     private Channel<string>? _lines;
     private nint _job;
     private int _port;
+    private string? _authenticationToken;
     private bool _disposed;
 
     public LightingEngineHost(string configDirectory, string? enginePath = null)
@@ -74,20 +76,21 @@ public sealed partial class LightingEngineHost : ILightingEngine, IDisposable
         return null;
     }
 
-    public async Task<OperationResult<int>> StartAsync(CancellationToken cancellationToken = default)
+    public async Task<OperationResult<LightingEngineEndpoint>> StartAsync(CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             if (_process is { HasExited: false })
-                return OperationResult<int>.Success(_port);
+                return OperationResult<LightingEngineEndpoint>.Success(new(_port, _authenticationToken!));
             ReleaseProcess();
             if (_enginePath is null)
-                return OperationResult<int>.Failure("This build has no lighting engine.", ErrorCategory.ServiceUnavailable);
+                return OperationResult<LightingEngineEndpoint>.Failure("This build has no lighting engine.", ErrorCategory.ServiceUnavailable);
 
             Directory.CreateDirectory(_configDirectory);
             var port = FindFreePort();
+            var authenticationToken = RandomNumberGenerator.GetHexString(64);
             var startInfo = new ProcessStartInfo(_enginePath)
             {
                 UseShellExecute = false,
@@ -115,10 +118,21 @@ public sealed partial class LightingEngineHost : ILightingEngine, IDisposable
             catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException or IOException)
             {
                 Log.Warn(ex, "Lighting engine did not start");
-                return OperationResult<int>.Failure($"The lighting engine could not be started: {ex.Message}", ErrorCategory.ServiceUnavailable, ex);
+                return OperationResult<LightingEngineEndpoint>.Failure($"The lighting engine could not be started: {ex.Message}", ErrorCategory.ServiceUnavailable, ex);
             }
 
             _job = NativeJobObject.Adopt(process.Handle);
+            _process = process;
+            try
+            {
+                await process.StandardInput.WriteLineAsync("auth " + authenticationToken).ConfigureAwait(false);
+                await process.StandardInput.FlushAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch
+            {
+                Stop();
+                throw;
+            }
             process.OutputDataReceived += (_, args) =>
             {
                 if (args.Data is null)
@@ -133,7 +147,7 @@ public sealed partial class LightingEngineHost : ILightingEngine, IDisposable
             };
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
-            _process = process;
+            _authenticationToken = authenticationToken;
             _lines = lines;
 
             var announced = await WaitForLineAsync(line => line.StartsWith("ready ", StringComparison.Ordinal) || line.StartsWith("error ", StringComparison.Ordinal),
@@ -143,13 +157,13 @@ public sealed partial class LightingEngineHost : ILightingEngine, IDisposable
                 var reason = announced?[6..] ?? (process.HasExited ? $"it exited with code {process.ExitCode}" : "it did not answer in time");
                 Log.Warn("Lighting engine failed: {Reason}; last lines: {Lines}", reason, string.Join(" | ", Notes.TakeLast(5)));
                 Stop();
-                return OperationResult<int>.Failure($"The lighting engine did not start: {reason}.", ErrorCategory.ServiceUnavailable);
+                return OperationResult<LightingEngineEndpoint>.Failure($"The lighting engine did not start: {reason}.", ErrorCategory.ServiceUnavailable);
             }
 
             if (!int.TryParse(announced.AsSpan(6), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out _port))
                 _port = port;
             Log.Info("Lighting engine serving on 127.0.0.1:{Port}", _port);
-            return OperationResult<int>.Success(_port);
+            return OperationResult<LightingEngineEndpoint>.Success(new(_port, _authenticationToken!));
         }
         finally
         {
@@ -209,6 +223,7 @@ public sealed partial class LightingEngineHost : ILightingEngine, IDisposable
     {
         _process?.Dispose();
         _process = null;
+        _authenticationToken = null;
         _lines?.Writer.TryComplete();
         _lines = null;
         NativeJobObject.Close(_job);

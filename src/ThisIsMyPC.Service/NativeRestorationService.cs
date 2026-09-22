@@ -136,7 +136,8 @@ public sealed class NativeRestorationService(IRegistryService registry) : Backgr
             ? null : "No saved settings have unmanaged evidence. Existing policies may already control them.";
     }
 
-    public async Task<IReadOnlyList<ChangeHistoryEntry>> GetHistoryAsync(CancellationToken token = default)
+    public async Task<IReadOnlyList<ChangeHistoryEntry>> GetHistoryAsync(
+        string? requesterSid, CancellationToken token = default)
     {
         await _gate.WaitAsync(token).ConfigureAwait(false);
         try
@@ -144,6 +145,9 @@ public sealed class NativeRestorationService(IRegistryService registry) : Backgr
             using var session = new NativeRestorationSession(registry);
             var result = await session.Coordinator.RunAsync(TimeSpan.FromSeconds(5), async (lease, _) =>
             {
+                if (requesterSid is not null &&
+                    !string.Equals(requesterSid, session.Baseline.PrimaryUserSid, StringComparison.Ordinal))
+                    throw new UnauthorizedAccessException("This account does not own the saved restoration history.");
                 await new RestorationJournalImporter(session.History).ImportAsync(session.Journal, lease).ConfigureAwait(false);
                 return (IReadOnlyList<ChangeHistoryEntry>)(await session.History.GetAllAsync(100).ConfigureAwait(false))
                     .Where(e => e.OwnerAttemptId is not null).ToArray();

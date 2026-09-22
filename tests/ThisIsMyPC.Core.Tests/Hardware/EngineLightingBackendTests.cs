@@ -11,11 +11,11 @@ public class EngineLightingBackendTests
         public bool IsAvailable { get; set; } = true;
         public int Starts { get; private set; }
         public int Rescans { get; private set; }
-        public OperationResult<int> StartResult { get; set; } = OperationResult<int>.Success(6790);
+        public OperationResult<LightingEngineEndpoint> StartResult { get; set; } = OperationResult<LightingEngineEndpoint>.Success(new(6790, new string('A', 64)));
         public List<string> NoteList { get; } = ["engine line"];
         public IReadOnlyList<string> Notes => NoteList;
 
-        public Task<OperationResult<int>> StartAsync(CancellationToken cancellationToken = default)
+        public Task<OperationResult<LightingEngineEndpoint>> StartAsync(CancellationToken cancellationToken = default)
         {
             Starts++;
             return Task.FromResult(StartResult);
@@ -52,12 +52,14 @@ public class EngineLightingBackendTests
     private sealed class FakeClient : IOpenRgbClient
     {
         public List<int> Ports { get; } = [];
+        public List<string> Tokens { get; } = [];
         public Func<FakeSession> SessionFactory { get; set; } = () => new FakeSession();
         public FakeSession? Last { get; private set; }
 
-        public Task<OperationResult<ILightingSession>> ConnectAsync(int port, CancellationToken cancellationToken = default)
+        public Task<OperationResult<ILightingSession>> ConnectAsync(LightingEngineEndpoint endpoint, CancellationToken cancellationToken = default)
         {
-            Ports.Add(port);
+            Ports.Add(endpoint.Port);
+            Tokens.Add(endpoint.AuthenticationToken);
             Last = SessionFactory();
             return Task.FromResult(OperationResult<ILightingSession>.Success(Last));
         }
@@ -98,6 +100,7 @@ public class EngineLightingBackendTests
         Assert.Same(first.Value, second.Value);
         Assert.Equal(1, engine.Starts);
         Assert.Equal([6790], client.Ports);
+        Assert.Equal(new string('A', 64), Assert.Single(client.Tokens));
         Assert.True(client.Last!.Disposed);
     }
 
@@ -119,7 +122,7 @@ public class EngineLightingBackendTests
     [Fact]
     public async Task Detect_ReportsWhyTheEngineDidNotStart()
     {
-        var engine = new FakeEngine { StartResult = OperationResult<int>.Failure("The lighting engine did not start: it exited with code 1.", ErrorCategory.ServiceUnavailable) };
+        var engine = new FakeEngine { StartResult = OperationResult<LightingEngineEndpoint>.Failure("The lighting engine did not start: it exited with code 1.", ErrorCategory.ServiceUnavailable) };
         using var backend = new EngineLightingBackend(engine, new FakeClient());
 
         var result = await backend.DetectAsync();
@@ -141,6 +144,7 @@ public class EngineLightingBackendTests
         Assert.True(session.IsSuccess);
         Assert.Same(client.Last, session.Value);
         Assert.Equal([6790], client.Ports);
+        Assert.Equal(new string('A', 64), Assert.Single(client.Tokens));
     }
 
     [Fact]

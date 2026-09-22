@@ -175,7 +175,7 @@
     <ClCompile Include="$(OpenRgbRoot)LogManager.cpp" />
     <ClCompile Include="$(OpenRgbRoot)NetworkClient.cpp" />
     <ClCompile Include="$(OpenRgbRoot)NetworkProtocol.cpp" />
-    <ClCompile Include="$(OpenRgbRoot)NetworkServer.cpp" />
+    <ClCompile Include="$(IntDir)NetworkServer.secure.cpp" />
     <ClCompile Include="$(OpenRgbRoot)ProfileManager.cpp" />
     <ClCompile Include="$(OpenRgbRoot)ResourceManager.cpp" />
     <ClCompile Include="$(OpenRgbRoot)SettingsManager.cpp" />
@@ -214,6 +214,10 @@
   </ItemGroup>
 
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+
+  <Target Name="PatchLightingNetworkServer" BeforeTargets="ClCompile">
+    <Exec Command="powershell.exe -NoProfile -ExecutionPolicy Bypass -File &quot;$(RepoRoot)tools\patch-lighting-network-server.ps1&quot; -Source &quot;$(OpenRgbRoot)NetworkServer.cpp&quot; -Output &quot;$(IntDir)NetworkServer.secure.cpp&quot;" />
+  </Target>
 
   <Target Name="AddControllerIncludeDirectories" BeforeTargets="ClCompile">
     <PropertyGroup>

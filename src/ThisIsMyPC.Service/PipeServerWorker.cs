@@ -63,7 +63,10 @@ public sealed class PipeServerWorker : BackgroundService
                     : OperationResult<bool>.Failure(
                         peer.ErrorMessage ?? "The IPC client could not be identified.",
                         ErrorCategory.AccessDenied);
-                await ServeSessionAsync(pipe, elevated.IsSuccess && elevated.Value, stoppingToken).ConfigureAwait(false);
+                var sid = peer.IsSuccess ? ProcessTokenIdentity.GetUserSid(peer.Value) :
+                    OperationResult<string>.Failure("The IPC client could not be identified.", ErrorCategory.AccessDenied);
+                await ServeSessionAsync(pipe, elevated.IsSuccess && elevated.Value,
+                    sid.IsSuccess ? sid.Value : null, stoppingToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
@@ -77,7 +80,7 @@ public sealed class PipeServerWorker : BackgroundService
     }
 
     private async Task ServeSessionAsync(
-        NamedPipeServerStream pipe, bool clientIsElevated, CancellationToken token)
+        NamedPipeServerStream pipe, bool clientIsElevated, string? clientSid, CancellationToken token)
     {
         while (pipe.IsConnected && !token.IsCancellationRequested)
         {
@@ -103,7 +106,7 @@ public sealed class PipeServerWorker : BackgroundService
                 ? IpcRequestHandler.MakeError(string.Empty, "Unreadable request")
                 : !CanHandleRequest(request.Type, clientIsElevated)
                     ? IpcRequestHandler.MakeError(request.Nonce, "This control request requires an elevated broker.")
-                    : await _handler.HandleAsync(request, token).ConfigureAwait(false);
+                    : await _handler.HandleAsync(request, clientSid, clientIsElevated, token).ConfigureAwait(false);
 
             await IpcProtocol.WriteFrameAsync(pipe, IpcSerializer.SerializeEnvelope(response), token)
                 .ConfigureAwait(false);

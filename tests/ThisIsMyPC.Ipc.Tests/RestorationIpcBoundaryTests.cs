@@ -26,6 +26,24 @@ public sealed class RestorationIpcBoundaryTests
     }
 
     [Fact]
+    public async Task HistoryRequiresVerifiedAccountOrElevatedClient()
+    {
+        var handler = new ThisIsMyPC.Service.IpcRequestHandler(
+            new EmptyDrift(), DateTimeOffset.UtcNow, "test", new HistoryControl());
+        var request = new IpcEnvelope { Type = IpcMessageTypes.RestorationHistory, Nonce = "history" };
+        var denied = await handler.HandleAsync(request);
+        Assert.Equal(IpcMessageTypes.Error, denied.Type);
+        Assert.Equal("history", denied.Nonce);
+
+        var otherUser = await handler.HandleAsync(request, clientSid: "S-1-5-21-200");
+        Assert.Equal(IpcMessageTypes.Error, otherUser.Type);
+        var owner = await handler.HandleAsync(request, clientSid: "S-1-5-21-100");
+        Assert.Equal(IpcMessageTypes.RestorationHistory, owner.Type);
+        var elevated = await handler.HandleAsync(request, clientIsElevated: true);
+        Assert.Equal(IpcMessageTypes.RestorationHistory, elevated.Type);
+    }
+
+    [Fact]
     public async Task OldStatusPayloadCannotClaimRestorationSupport()
     {
         var result = await WithReply(client => client.GetStatusAsync(), request => request with
@@ -89,6 +107,20 @@ public sealed class RestorationIpcBoundaryTests
         Assert.Equal(IpcMessageTypes.Error, response.Type);
         Assert.Equal("test-nonce", response.Nonce);
         Assert.Contains("storage unavailable", response.PayloadJson);
+    }
+
+    private sealed class HistoryControl : ThisIsMyPC.Service.IRestorationServiceController
+    {
+        public RestorationStatusResponse GetStatus() => new();
+        public Task<RestorationStatusResponse> EnableAsync(CancellationToken token = default) =>
+            Task.FromResult(new RestorationStatusResponse());
+        public Task<RestorationStatusResponse> PauseAsync(CancellationToken token = default) =>
+            Task.FromResult(new RestorationStatusResponse());
+        public Task<IReadOnlyList<ThisIsMyPC.Core.Changes.ChangeHistoryEntry>> GetHistoryAsync(
+            string? requesterSid, CancellationToken token = default) =>
+            requesterSid is null or "S-1-5-21-100"
+                ? Task.FromResult<IReadOnlyList<ThisIsMyPC.Core.Changes.ChangeHistoryEntry>>([])
+                : throw new UnauthorizedAccessException("This account does not own the saved restoration history.");
     }
 
     private sealed class ThrowingControl : ThisIsMyPC.Service.IRestorationServiceController

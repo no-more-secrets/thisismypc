@@ -276,13 +276,8 @@ public partial class App : Application
         services.AddSingleton<Func<Core.Hardware.Sensors.IHardwareSensorBackend>>(
             _ => () => new ThisIsMyPC.Interop.Sensors.LibreHardwareSensorBackend());
 
-        // Update services. GPG manifest verification (tm2:54): fail-closed,
-        // offline release key, public key hardcoded in the verifier.
-        services.AddSingleton<IUpdateVerifier, GpgManifestUpdateVerifier>();
-        services.AddSingleton<IUpdateService>(sp =>
-            new VelopackUpdateService(
-                AppConstants.UpdateUrl,
-                sp.GetService<IUpdateVerifier>()));
+        // Discover releases. Installation uses the signed release installer.
+        services.AddSingleton<IUpdateService>(_ => new VelopackUpdateService(AppConstants.UpdateUrl));
 
         // Owner Mode IPC client (28-1); connects per request; a missing service
         // degrades to ServiceUnavailable, never an error dialog.

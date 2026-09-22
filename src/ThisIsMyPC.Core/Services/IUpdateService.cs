@@ -4,6 +4,7 @@ namespace ThisIsMyPC.Core.Services;
 
 public interface IUpdateService
 {
+    bool SupportsInAppUpdate => true;
     Task<OperationResult<UpdateCheckResult>> CheckForUpdateAsync();
     Task<OperationResult<bool>> DownloadUpdateAsync(
         IProgress<int>? progress = null, CancellationToken cancellationToken = default);

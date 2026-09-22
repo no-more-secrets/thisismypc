@@ -8,7 +8,8 @@
 |   Protocol with the host process:                         |
 |     stdout  "ready <port>"  once the server listens       |
 |             "error <text>"  when it cannot start          |
-|     stdin   "rescan"        detect devices again          |
+|     stdin   "auth <token>"  first line, before detection |
+|             "rescan"        detect devices again          |
 |             "stop" or EOF   clean shutdown                |
 |                                                           |
 |   Command line: OpenRGB's own options apply; the host     |
@@ -30,6 +31,8 @@
 #include "DetectionManager.h"
 #include "LogManager.h"
 #include "NetworkServer.h"
+
+void ThisIsMyPC_SetSdkToken(const std::string& token);
 #include "ResourceManager.h"
 
 using namespace std::chrono_literals;
@@ -88,6 +91,25 @@ int main(int argc, char* argv[])
 {
     SetConsoleCtrlHandler(ConsoleHandler, TRUE);
     RaiseTimerResolution();
+
+    // The host sends this secret through the child stdin pipe. It never appears
+    // on the command line, stdout, or in the OpenRGB log.
+    char credential[80] = {};
+    if(!fgets(credential, sizeof(credential), stdin) ||
+       strncmp(credential, "auth ", 5) != 0 ||
+       strlen(credential) != 70 ||
+       credential[69] != '\n')
+    {
+        Announce("error missing private SDK credential");
+        return EXIT_FAILURE;
+    }
+    std::string token(credential + 5, 64);
+    if(token.find_first_not_of("0123456789ABCDEF") != std::string::npos)
+    {
+        Announce("error invalid private SDK credential");
+        return EXIT_FAILURE;
+    }
+    ThisIsMyPC_SetSdkToken(token);
 
     /*-----------------------------------------------------*\
     | OpenRGB's parser reads --config, --server-port,       |

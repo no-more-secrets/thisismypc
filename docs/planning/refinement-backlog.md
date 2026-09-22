@@ -18,7 +18,7 @@ Sam's polish list after the engine landed: the side nav folds and opens by itsel
 Sam's requirement: every device works in our software, nothing installed separately, everything bundled and to our standards. Porting OpenRGB's 277 controller families to C# cannot get there, so the engine is OpenRGB itself.
 
 - DONE: `src/ThisIsMyPC.LightingEngine`, a C++ project that compiles OpenRGB's device core and every controller from the `third-party/OpenRGB` submodule (pinned at the 1.0 release, commit 81bbe18a) without Qt, plugins, or the suspend hook, into `ThisIsMyPC-LightingEngine.exe` with CFG, CET, and `/Brepro`. `main.cpp` is a headless host protocol over stdin/stdout; the SDK server binds loopback on a port the app picks.
-- DONE: `LightingEngineHost` runs it as a hidden child in a kill-on-close job; `EngineLightingBackend` lists and drives devices over the existing SDK client; the app registers the engine backend when the binary is present and falls back to the two C# ports otherwise. Release script builds, stages, version-checks, and hardening-gates the engine; CI builds it; `Setup.ps1` checks the submodule out; `verify-release.ps1` clones with submodules.
+- DONE: `LightingEngineHost` runs it as a hidden child in a kill-on-close job; `EngineLightingBackend` lists and drives devices over the existing SDK client; the app registers the engine backend when the binary is present and falls back to the two C# ports otherwise. The SDK socket requires a per-process token sent over the child stdin pipe before OpenRGB accepts a client. The pinned native source patch fails the build if upstream changes. Release script builds, stages, version-checks, and hardening-gates the engine; CI builds it; `Setup.ps1` checks the submodule out; `verify-release.ps1` clones with submodules.
 - DONE: Sam's Royal Kludge R98 Pro controller (OpenRGB !3568, still open upstream) is compiled into the engine from `src/ThisIsMyPC.LightingEngine/controllers/`, a verbatim copy of the merge request to drop once the pin includes it. The pin is the 1.0 release, which the request targets.
 - Verified: engine build and link on the pinned MSVC, five backend tests with fakes, the policy and facts tests, the Lighting page UI tests. `LightingEngineHostTests` (Diagnostic) exercises the real engine.
 - Open: host the engine under the Owner Mode service so SMBus devices (RGB memory, some boards) get PawnIO and administrator rights, and bundle the PawnIO installer; say on the tab when a separately running OpenRGB holds the devices; retire `NativeLightingBackend` once the engine has shipped in a package; a DebugRelease package with the engine for Sam's pass.
@@ -218,7 +218,7 @@ Replaces the bundled OpenRGB of the same day (Sam: "native is the better choice,
 - DONE: One-target restoration loop acquires once, rereads consent, journals intent, applies through pending changes, verifies, and imports history. Uncertain attempts block writes while completed outcomes can retry import. Shared time enforces a conservative three-attempt limit over seven days. Verified: 17 focused tests, full CI-safe suite, Release build, and fresh review. No production registration or live writes.
 - DONE: Deliberate app changes remove affected protected choices durably before writing, then save verified values after history. Catalog staging preserves absence. Pause confirms consent-off before releasing the lease and stopping SCM. Shutdown cancels waits and drains active commands. Verified: 14 coordinator tests, 5 Pause tests, 5 command/shutdown tests, 153 Annoyances tests, full CI-safe suite, Release build, fresh review, and rendered main/history views. Production app-only recovery leaves consent off; live restoration remains disabled.
 - DONE: Restoration status is separate from SCM state. IPC enable requires confirmed consent; Pause remains accessible with a stopped service. Old payloads, wrong nonces/types, timeouts, and control failures cannot report enable success. Verified: full CI-safe suite and Release build in an isolated copy using committed dependencies, fresh review, dark/light status screenshots, and Settings geometry. The shared tree has unrelated patched-package hash mismatches. See [service controls](../owner-mode-service-controls.md).
-- DONE: Native journal/database trust, management/profile evidence, shared recovery, Broker consent controls, and service/UI integration. Automatic restoration uses the strict single-owner store. Read-only IPC shows restoration history without granting generic undo. Installed-service live evaluation remains untested.
+- DONE: Native journal/database trust, management/profile evidence, shared recovery, Broker consent controls, and service/UI integration. Automatic restoration uses the strict single-owner store. Read-only IPC shows restoration history only to the saved owner or an elevated administrator, without granting generic undo. Installed-service live evaluation remains untested.
 - Design: [Owner Mode restoration](owner-mode-restoration.md).
 ## System pages and Settings organization (2026-09-06)
 
@@ -240,7 +240,7 @@ Windows Update 5, Power 1) + 5 built-in sets (59 entries) + the enumerative modu
 ## Logon and update controls (2026-09-06)
 
 - DONE: Start with Windows offers Disabled, Minimized, and Open at logon. Existing enabled settings remain Minimized.
-- DONE: Optional automatic downloads follow the update-check preference. Installation requires clicking Restart ThisIsMyPC in the page header. Download failures remain retryable; pending changes prevent restart.
+- SUPERSEDED 2026-09-22: Automatic downloads and in-app installation were disabled after the update integrity review. The app now opens the signed release installer page.
 - Verified: 1,929 CI-safe tests, Release build, three update UI workflows, scaling checks, dark/light screenshots, page edge measurements, and fresh review.
 - Untested: native Windows logon and installation of a real signed update.
 ## Shared Fluent icons (2026-09-06)
@@ -392,10 +392,17 @@ Consequences, verified against the code and upstream:
   publishes SHA256SUMS + detached SHA256SUMS.asc (offline key), the app embeds
   the public keys and fail-closes on everything (no manifest, bad signature,
   digest mismatch, unresolved package path; the old verify-own-binary fallback
-  is gone). The 2026-09-08 ceremony generated two independent RSA-4096 keys
-  inside separate YubiKey 5C NFC devices. Either key can sign a release; both
+  is gone). The verifier remains available for a future protected update flow.
+  In-app download and apply are disabled after a 2026-09-22 review found that
+  Velopack 1.2.0 extracts its updater before verification and reopens the
+  user-writable package after verification. The update button opens the signed
+  release installer page; automatic downloads are disabled in Settings.
+  The 2026-09-08 ceremony generated two independent RSA-4096 keys inside
+  separate YubiKey 5C NFC devices. Either key can sign a release; both
   fingerprints are pinned by a production test. Tooling:
   tools/new-release-manifest.ps1. Release tags must be v{version}.
+- Open: restore in-app updates only after a privileged component copies verified
+  package bytes into protected staging and applies them from that exact path.
 - **OV cert ISSUED AND VERIFIED 2026-09-03** through SSL.com eSigner for No More
   Secrets, LLC. CKA 1.1.2 Automated Production signing, mandatory CodeSignTool
   malware scanning, SignTool RFC 3161 timestamping, signature verification, and

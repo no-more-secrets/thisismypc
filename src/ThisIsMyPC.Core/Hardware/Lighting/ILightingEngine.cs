@@ -13,8 +13,8 @@ public interface ILightingEngine
     /// <summary>True when this build ships the engine binary.</summary>
     bool IsAvailable { get; }
 
-    /// <summary>Starts the engine if it is not running and returns the loopback port it serves on.</summary>
-    Task<OperationResult<int>> StartAsync(CancellationToken cancellationToken = default);
+    /// <summary>Starts the engine if it is not running and returns its private loopback endpoint.</summary>
+    Task<OperationResult<LightingEngineEndpoint>> StartAsync(CancellationToken cancellationToken = default);
 
     /// <summary>Asks a running engine to detect devices again and waits for that pass to finish.</summary>
     Task<OperationResult<bool>> RescanAsync(CancellationToken cancellationToken = default);

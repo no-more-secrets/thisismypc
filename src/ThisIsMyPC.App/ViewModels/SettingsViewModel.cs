@@ -210,7 +210,8 @@ public sealed partial class SettingsViewModel : ViewModelBase, ITabbedPage
         string? appVersion = null,
         IReadOnlyList<Core.Services.CapabilityReportRow>? capabilityReport = null,
         OwnerModeSectionViewModel? ownerMode = null,
-        Services.IUserFeedback? feedback = null)
+        Services.IUserFeedback? feedback = null,
+        bool inAppUpdatesAvailable = true)
     {
         OwnerMode = ownerMode;
         _feedback = feedback;
@@ -228,10 +229,12 @@ public sealed partial class SettingsViewModel : ViewModelBase, ITabbedPage
         var automaticDownloads = new SettingToggleItemViewModel(
             settings, null, AppSettingKeys.AutoDownloadUpdates,
             "Automatically download updates",
-            "Downloads updates when available. Install them with Restart ThisIsMyPC.",
+            inAppUpdatesAvailable
+                ? "Downloads updates when available. Install them with Restart ThisIsMyPC."
+                : "Install updates from the signed installer on the releases page.",
             settings.GetAppBool(AppSettingKeys.AutoDownloadUpdates, false))
         {
-            IsEnabled = settings.GetAppBool(AppSettingKeys.UpdateCheck, true),
+            IsEnabled = inAppUpdatesAvailable && settings.GetAppBool(AppSettingKeys.UpdateCheck, true),
         };
         ApplicationSection = new SettingsSectionViewModel
         {
@@ -266,7 +269,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, ITabbedPage
                     "Check for app updates",
                     "Compares the app version against GitHub Releases at launch. Only version numbers are sent; turn off for offline use.",
                     settings.GetAppBool(AppSettingKeys.UpdateCheck, true),
-                    enabled => automaticDownloads.IsEnabled = enabled),
+                    enabled => automaticDownloads.IsEnabled = enabled && inAppUpdatesAvailable),
                 automaticDownloads,
             ],
         };
