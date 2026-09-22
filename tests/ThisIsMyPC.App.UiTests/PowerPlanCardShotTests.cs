@@ -183,7 +183,7 @@ public class PowerPlanCardShotTests
         session.Type(nameBox, "Balanced");
         // A taken name never grows the form: the box turns red and carries the reason as its tooltip.
         Assert.False(session.IsTextVisible("A plan with this name already exists."));
-        Assert.True(nameBox.Classes.Contains("invalid"));
+        Assert.Contains("invalid", nameBox.Classes);
         Assert.Equal("A plan with this name already exists.", ToolTip.GetTip(nameBox));
         Assert.False(viewModel.CanConfirmCreatePlan);
         session.Screenshot("new-plan-name-taken");

@@ -371,7 +371,8 @@
                         BorderThickness="1"
                         Padding="16,10"
                         CornerRadius="8">
-                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                    <!-- One row, always: the status line shares it, so the bar never grows. -->
+                    <Grid ColumnDefinitions="*,Auto">
                         <!-- Right side: buttons -->
                         <StackPanel Grid.Column="1"
                                     Orientation="Horizontal"
@@ -407,8 +408,9 @@
                             </Button>
                         </StackPanel>
 
-                        <!-- Left side: history button + pending count text -->
-                        <Grid ColumnDefinitions="Auto,Auto,*" Margin="0,0,12,0" VerticalAlignment="Center">
+                        <!-- Left side: history button, pending count, then the status line in the
+                             space left over: one trimmed line with the full text as its tooltip. -->
+                        <Grid ColumnDefinitions="Auto,Auto,Auto,*" Margin="0,0,12,0" VerticalAlignment="Center">
                             <Button Classes="apply-bar-discard"
                                     Command="{Binding OpenHistoryPanelCommand}"
                                     Padding="10,6"
@@ -441,7 +443,7 @@
                                 </StackPanel>
                             </Button>
 
-                            <Button Grid.Column="2" Margin="12,0,0,0" HorizontalContentAlignment="Stretch"
+                            <Button Grid.Column="2" Margin="12,0,0,0"
                                     Classes="apply-bar-count"
                                     Command="{Binding OpenReviewPanelCommand}">
                                 <TextBlock TextTrimming="CharacterEllipsis" Text="{Binding PendingCountText}"
@@ -449,20 +451,17 @@
                                            FontSize="13" />
                             </Button>
 
-
+                            <TextBlock Grid.Column="3" Text="{Binding StatusMessage}"
+                                       FontSize="12"
+                                       Margin="12,0,0,0"
+                                       VerticalAlignment="Center"
+                                       TextTrimming="CharacterEllipsis"
+                                       ToolTip.Tip="{Binding StatusMessage}"
+                                       IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                       Classes.status-success="{Binding IsStatusSuccess}"
+                                       Classes.status-warning="{Binding IsStatusWarning}"
+                                       Classes.status-error="{Binding IsStatusError}" />
                         </Grid>
-
-                        <!-- Status message (fills remaining space, truncates with ellipsis) -->
-                        <TextBlock Grid.Row="1" Text="{Binding StatusMessage}"
-                                   FontSize="12"
-                                   VerticalAlignment="Center"
-                                   Margin="0,4,0,0"
-                                   TextTrimming="CharacterEllipsis"
-                                   ToolTip.Tip="{Binding StatusMessage}"
-                                   IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                                   Classes.status-success="{Binding IsStatusSuccess}"
-                                   Classes.status-warning="{Binding IsStatusWarning}"
-                                   Classes.status-error="{Binding IsStatusError}" />
                     </Grid>
                 </Border>
 

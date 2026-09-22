@@ -25,7 +25,7 @@ public class UnresolvedContentShotTests
         session.ClickText("Environment");
         await session.WaitForAsync(() => vm.CurrentContent is EnvironmentViewModel, timeoutMs: 60_000, what: "Environment page");
         var content = session.Find<ContentControl>(c => c.Content == vm.CurrentContent);
-        Assert.True(content.IsEffectivelyEnabled);
+        Assert.True(content.IsEffectivelyEnabled, "the page starts enabled");
 
         vm.StageDebugChange(ChangeCategory.Enable);
         await session.WaitForAsync(() => vm.HasPendingChanges, what: "sample change staged");
@@ -33,10 +33,10 @@ public class UnresolvedContentShotTests
         await vm.ApplyAllCommand.ExecuteAsync(null);
         session.Pump();
 
-        Assert.True(vm.HasUnresolvedGroups);
+        Assert.True(vm.HasUnresolvedGroups, "the debug apply leaves an unresolved group");
         Assert.False(vm.IsContentInteractive);
         Assert.False(content.IsEffectivelyEnabled);
-        Assert.True(session.IsTextVisible("Needs your attention"));
+        Assert.True(session.IsTextVisible("Needs your attention"), session.DescribeVisibleText());
         foreach (var theme in new[] { ThemeVariant.Dark, ThemeVariant.Light })
         {
             session.SetTheme(theme);

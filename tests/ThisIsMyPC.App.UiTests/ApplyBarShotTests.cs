@@ -1,5 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Microsoft.Extensions.DependencyInjection;
+using ThisIsMyPC.App.Services;
 using ThisIsMyPC.App.ViewModels;
 
 namespace ThisIsMyPC.App.UiTests;
@@ -24,6 +26,20 @@ public class ApplyBarShotTests
         await session.WaitForAsync(
             () => viewModel.CurrentContent is ShellViewModel, timeoutMs: 120_000, what: "Explorer content load");
         session.Screenshot("explorer-no-changes");
+
+        // The status line shares the button row: a message never makes the bar taller.
+        var bar = session.Find<Border>(b => b.Name == "ApplyBar");
+        var barHeight = bar.Bounds.Height;
+        var feedback = session.Services!.GetRequiredService<UserFeedbackHub>();
+        feedback.Fail("Explorer could not be restarted: the shell did not answer in time, so nothing was changed.");
+        session.Pump();
+        Assert.True(session.IsTextVisible("Explorer could not be restarted: the shell did not answer in time, so nothing was changed."));
+        Assert.Equal(barHeight, bar.Bounds.Height);
+        session.Screenshot("explorer-status-line");
+        feedback.Report("Explorer", "Explorer restarted successfully");
+        session.Pump();
+        Assert.Equal(barHeight, bar.Bounds.Height);
+        Assert.Single(viewModel.ToastStack.Toasts);
 
         var first = session.Find<ToggleSwitch>(_ => true);
         session.Click(first);
