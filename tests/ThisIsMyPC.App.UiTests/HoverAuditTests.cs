@@ -29,7 +29,12 @@ public class HoverAuditTests
         {
             session.SetTheme(variant);
 
-            session.HoverText("Explorer");
+            // The sidebar folds every group but the open module's, so open
+            // Explorer's group first and hover a sibling that is not active.
+            session.OpenModule("Explorer");
+            await session.WaitForAsync(
+                () => viewModel.ContentTitle == "Explorer", timeoutMs: 120_000, what: "explorer load");
+            session.HoverText("Environment");
             session.Screenshot($"sidebar-item-{suffix}");
 
             session.HoverText("Presets");
@@ -41,7 +46,7 @@ public class HoverAuditTests
             session.HoverText("Apply");
             session.Screenshot($"applybar-apply-{suffix}");
 
-            session.ClickText("Windows Annoyances");
+            session.OpenModule("Windows Annoyances");
             await session.WaitForAsync(
                 () => viewModel.ContentTitle == "Windows Annoyances",
                 timeoutMs: 60_000, what: "annoyances load");

@@ -22,7 +22,7 @@ public class EdgeGeometryShotTests
 
         foreach (var name in new[] { "Windows Annoyances", "Windows Update", "Privacy & Telemetry", "Software" })
         {
-            session.ClickText(name);
+            session.OpenModule(name);
             await session.WaitForAsync(
                 () => viewModel.CurrentContent is not null && viewModel.ContentTitle == name,
                 timeoutMs: 120_000,

@@ -3,9 +3,10 @@ using ThisIsMyPC.Core.Services;
 namespace ThisIsMyPC.App.Services;
 
 /// <summary>
-/// Optional slow facts about an autostart image. Production leaves both
-/// services absent because the application runs elevated. A future
-/// non-elevated helper can supply them. Tests use fakes for rendered examples.
+/// The slow facts about an autostart image, fetched after the page is up:
+/// its shell type icon and who signed it. The unelevated UI supplies both
+/// services; the elevated Broker never runs them. Either may be absent
+/// (tests, or a platform without it), in which case that fact stays null.
 /// Results are cached per path, with at most two operations running at once.
 /// </summary>
 public sealed class AutorunEnrichment

@@ -262,7 +262,7 @@ public class ExplorerEdgeTabShotTests
         session.Window.Height = 800;
         var vm = (MainWindowViewModel)session.Window.DataContext!;
         await session.WaitForAsync(() => vm.SidebarGroups.Count > 0, timeoutMs: 30_000, what: "sidebar");
-        session.ClickText("Explorer");
+        session.OpenModule("Explorer");
         await session.WaitForAsync(() => vm.CurrentContent is ShellViewModel, timeoutMs: 120_000, what: "Explorer");
         var card = session.Find<Border>(b => b.Name == "ModuleContentHost");
         Assert.Equal(default, card.Padding);
@@ -276,7 +276,7 @@ public class ExplorerEdgeTabShotTests
         }
         foreach (var name in new[] { "Environment", "Context Menus", "Startup & Services", "Software", "Settings" })
         {
-            session.ClickText(name);
+            session.OpenModule(name);
             await session.WaitForAsync(() => vm.CurrentContent is not null && vm.ContentTitle == name,
                 timeoutMs: 120_000, what: name);
             Assert.Equal(default, card.Padding);

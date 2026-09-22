@@ -18,7 +18,7 @@ public class ReloadTabShotTests
         await session.WaitForAsync(() => vm.SidebarGroups.Count > 0, what: "sidebar");
         foreach (var name in new[] { "Explorer", "Environment", "Context Menus", "Startup & Services", "Software", "Settings", "Power Plans", "Windows Annoyances", "Windows Update", "Privacy & Telemetry" })
         {
-            session.ClickText(name);
+            session.OpenModule(name);
             await session.WaitForAsync(() => vm.CurrentContent is ITabbedPage && vm.ContentTitle == name && !vm.IsModuleLoading,
                 timeoutMs: 120_000, what: name);
             if (vm.CurrentContent is PowerViewModel power)

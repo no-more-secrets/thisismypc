@@ -199,7 +199,11 @@ public partial class App : Application
         services.AddSingleton<ISecurityApi, SecurityApi>();
         services.AddSingleton<IRegistryService, RegistryService>();
         services.AddSingleton<Core.Hardware.IHardwareDetectionService, Interop.Win32.Hardware.HardwareDetectionService>();
-        services.AddSingleton(_ => new Services.AutorunEnrichment());
+        // The UI runs unelevated, so the shell type icon and Authenticode
+        // lookups for the Autoruns page live here; the Broker never runs them.
+        services.AddSingleton<IFileIconService, ThisIsMyPC.Interop.Win32.Shell.FileIconService>();
+        services.AddSingleton<IAuthenticodeService, AuthenticodeService>();
+        services.AddSingleton<Services.AutorunEnrichment>();
         services.AddSingleton<IShellExtensionService, ShellExtensionService>();
         services.AddSingleton<IContextMenuProbe, ContextMenuProbe>();
         services.AddSingleton<IInteractiveUserContext, DesktopUserContext>();

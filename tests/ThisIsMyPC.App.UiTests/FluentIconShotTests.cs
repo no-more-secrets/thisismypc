@@ -68,7 +68,8 @@ public class FluentIconShotTests
                 session.Pump();
                 foreach (var button in session.FindAll<Button>(b => b.Classes.Contains("sidebar-item")))
                 {
-                    var icon = button.GetVisualDescendants().OfType<FluentIcon>().Single();
+                    // A group header carries two chevrons and shows one; a module row has one icon.
+                    var icon = button.GetVisualDescendants().OfType<FluentIcon>().Single(i => i.IsVisible);
                     var center = icon.TranslatePoint(new Point(icon.Bounds.Width / 2, icon.Bounds.Height / 2), button)!.Value;
                     Assert.Equal(button.Bounds.Width / 2, center.X, 0.6);
                     Assert.Equal(button.Bounds.Height / 2, center.Y, 0.6);
