@@ -83,7 +83,7 @@ public sealed class UiSession : IDisposable
         var services = new ServiceCollection();
         App.ConfigureServices(services);
         services.RemoveAll<IPrivilegeBrokerClient>();
-        services.AddSingleton<IPrivilegeBrokerClient, UiDisabledPrivilegeBrokerClient>();
+        services.AddSingleton<IPrivilegeBrokerClient, UiInProcessPrivilegeBrokerClient>();
 
         var tempDataDir = Path.Combine(Path.GetTempPath(), "tipc-ui-tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempDataDir);
