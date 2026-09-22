@@ -209,9 +209,11 @@ public sealed partial class SettingsViewModel : ViewModelBase, ITabbedPage
         IReadOnlyCollection<string>? installedModuleIds = null,
         string? appVersion = null,
         IReadOnlyList<Core.Services.CapabilityReportRow>? capabilityReport = null,
-        OwnerModeSectionViewModel? ownerMode = null)
+        OwnerModeSectionViewModel? ownerMode = null,
+        Services.IUserFeedback? feedback = null)
     {
         OwnerMode = ownerMode;
+        _feedback = feedback;
         SystemCapabilityRows = (capabilityReport ?? [])
             .Select(r => new FirstLaunchRowViewModel(
                 r.DisplayName,
@@ -378,8 +380,11 @@ public sealed partial class SettingsViewModel : ViewModelBase, ITabbedPage
 
     // --- export/import ---
 
+    /// <summary>Outcome of the last export or import. A toast or the status line, never text under the buttons.</summary>
     [ObservableProperty]
     private string _transferStatus = string.Empty;
+
+    private readonly Services.IUserFeedback? _feedback;
 
     [ObservableProperty]
     private bool _hasImportPreview;
@@ -395,8 +400,11 @@ public sealed partial class SettingsViewModel : ViewModelBase, ITabbedPage
     public string DefaultExportFileName =>
         SettingsTransfer.DefaultExportFileName(DateTimeOffset.Now);
 
-    public void ReportExport(string filePath) =>
+    public void ReportExport(string filePath)
+    {
         TransferStatus = $"Settings exported to {filePath}";
+        _feedback?.Report("Settings", TransferStatus);
+    }
 
     /// <summary>False when the file is not a valid export.</summary>
     public bool LoadImportPreview(string json)
@@ -405,6 +413,7 @@ public sealed partial class SettingsViewModel : ViewModelBase, ITabbedPage
         if (document is null)
         {
             TransferStatus = "That file is not a ThisIsMyPC settings export.";
+            _feedback?.Fail(TransferStatus);
             return false;
         }
 
@@ -429,7 +438,8 @@ public sealed partial class SettingsViewModel : ViewModelBase, ITabbedPage
             return;
 
         var (applied, skipped) = SettingsTransfer.Apply(_settings, _pendingImport);
-        TransferStatus = $"Settings imported successfully - {applied} applied, {skipped} skipped. Reopen Settings to see the new values.";
+        TransferStatus = $"Settings imported: {applied} applied, {skipped} skipped. Reopen Settings to see the new values.";
+        _feedback?.Report("Settings", TransferStatus);
         ClearImportPreview();
     }
 

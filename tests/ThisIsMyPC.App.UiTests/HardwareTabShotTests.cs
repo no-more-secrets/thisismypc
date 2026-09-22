@@ -75,7 +75,10 @@ public class HardwareTabShotTests
         var actions = new HardwareCompanionActions(new PendingActionsService(), user);
         var data = Data(Facts(Desktop, CompanionObservation.Running(CompanionApp.FanControl, HardwareDomain.Cooling)),
             HardwareDomain.Cooling, launchPath: Environment.ProcessPath);
-        using var vm = new HardwareTabViewModel(data, actions);
+        var feedback = new UserFeedbackHub();
+        var reported = new List<(string Title, string Message)>();
+        feedback.Reported += (title, message) => reported.Add((title, message));
+        using var vm = new HardwareTabViewModel(data, actions, feedback: feedback);
 
         using var session = UiSession.ForView(new HardwareTabView(), vm, "hardware-tab", width: 976, height: 676);
         session.Screenshot("cooling-available-dark");
@@ -86,10 +89,16 @@ public class HardwareTabShotTests
         Assert.True(session.IsTextVisible("Open FanControl"));
         Assert.True(session.IsTextVisible("ASUSTeK COMPUTER INC. ROG STRIX X670E-E GAMING WIFI, desktop"));
 
+        var heightBefore = CardHeight();
         session.ClickText("Open FanControl");
         session.Pump();
         Assert.Equal([Environment.ProcessPath], user.Launched);
-        Assert.True(session.IsTextVisible("FanControl is opening."));
+        // The outcome is a toast, never text under the button: the card keeps its height.
+        Assert.Equal(("FanControl", "FanControl is opening."), Assert.Single(reported));
+        Assert.False(session.IsTextVisible("FanControl is opening."));
+        Assert.Equal(heightBefore, CardHeight());
+
+        double CardHeight() => session.Find<Border>(b => b.Classes.Contains("card")).Bounds.Height;
     }
 
     [AvaloniaFact]
@@ -97,21 +106,28 @@ public class HardwareTabShotTests
     {
         var queue = new PendingActionsService();
         var actions = new HardwareCompanionActions(queue, new FakeUser());
-        using var vm = new HardwareTabViewModel(Data(Facts(Desktop), HardwareDomain.Cooling), actions);
+        var feedback = new UserFeedbackHub();
+        var reported = new List<(string Title, string Message)>();
+        feedback.Reported += (title, message) => reported.Add((title, message));
+        using var vm = new HardwareTabViewModel(Data(Facts(Desktop), HardwareDomain.Cooling), actions, feedback: feedback);
 
         using var session = UiSession.ForView(new HardwareTabView(), vm, "hardware-tab", width: 976, height: 676);
         session.Screenshot("cooling-install-dark");
 
         Assert.True(session.IsTextVisible("Not available"));
         Assert.True(session.IsTextVisible("Install FanControl"));
+        var heightBefore = session.Find<Border>(b => b.Classes.Contains("card")).Bounds.Height;
 
         session.ClickText("Install FanControl");
         session.Pump();
         Assert.Single(queue.PendingActions);
         Assert.Equal("install:fancontrol", queue.PendingActions[0].ActionId);
         Assert.True(session.IsTextVisible("FanControl queued for install"));
-        Assert.True(session.IsTextVisible("FanControl is queued. Apply the queued changes to install it."));
+        // The outcome is a toast, never text under the button: the card keeps its height.
+        Assert.Equal(("FanControl", "FanControl is queued. Apply the queued changes to install it."), Assert.Single(reported));
+        Assert.False(session.IsTextVisible("FanControl is queued. Apply the queued changes to install it."));
         Assert.False(session.IsTextVisible("Apply the queued changes to run the install."));
+        Assert.Equal(heightBefore, session.Find<Border>(b => b.Classes.Contains("card")).Bounds.Height);
         session.Screenshot("cooling-install-queued-dark");
 
         // Clicking again is a no-op: the button is disabled once queued.

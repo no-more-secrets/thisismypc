@@ -8,14 +8,18 @@ internal sealed class FakeModule : IModule
 {
     private readonly Func<ChangeDescriptor, Task<OperationResult<bool>>>? _applyOverride;
 
-    public FakeModule(string name = "FakeModule", Func<ChangeDescriptor, Task<OperationResult<bool>>>? applyOverride = null)
+    private readonly bool _available;
+
+    public FakeModule(string name = "FakeModule", Func<ChangeDescriptor, Task<OperationResult<bool>>>? applyOverride = null,
+        ModuleGroup group = ModuleGroup.Core, bool available = true)
     {
+        _available = available;
         Info = new ModuleInfo(
             Name: name,
             Icon: "test",
             Description: "Fake module for testing",
             RequiredCapabilities: [],
-            Group: ModuleGroup.Core,
+            Group: group,
             LoadOrder: 0);
         _applyOverride = applyOverride;
     }
@@ -26,7 +30,9 @@ internal sealed class FakeModule : IModule
     public int ScanCount { get; private set; }
 
     public Task<ModuleAvailability> CheckAvailabilityAsync()
-        => Task.FromResult(new ModuleAvailability(IsAvailable: true));
+        => Task.FromResult(_available
+            ? new ModuleAvailability(IsAvailable: true)
+            : new ModuleAvailability(IsAvailable: false, Reason: "Not on this PC."));
 
     public Task<OperationResult<object>> ScanSystemStateAsync()
     {

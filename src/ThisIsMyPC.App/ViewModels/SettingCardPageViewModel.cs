@@ -53,7 +53,8 @@ public abstract partial class SettingCardPageViewModel
         IPendingChangesService pendingChangesService,
         DisplayModePreferencesStore? displayModeStore,
         ICapabilityDetector? capabilityDetector,
-        Services.IOwnerModeLifecycle? ownerMode)
+        Services.IOwnerModeLifecycle? ownerMode,
+        Services.IUserFeedback? feedback = null)
     {
         ArgumentNullException.ThrowIfNull(sources);
         ArgumentNullException.ThrowIfNull(sectionSubtitles);
@@ -61,7 +62,7 @@ public abstract partial class SettingCardPageViewModel
         _displayModeStore = displayModeStore;
 
         var cards = sources
-            .Select(source => new SettingCardViewModel(source, pendingChangesService, capabilityDetector, ownerMode))
+            .Select(source => new SettingCardViewModel(source, pendingChangesService, capabilityDetector, ownerMode, feedback))
             .ToList();
 
         // Group by GroupId in first-appearance order (provider order is authoritative).

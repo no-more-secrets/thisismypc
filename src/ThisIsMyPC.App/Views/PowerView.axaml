@@ -85,8 +85,11 @@
                                    Foreground="{DynamicResource TextSecondaryBrush}"
                                    TextWrapping="Wrap" />
                         <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                            <!-- A taken name turns the box red and tells the status line why; the form never grows. -->
                             <TextBox Grid.Column="0"
                                      Text="{Binding NewPlanName}"
+                                     Classes.invalid="{Binding HasNewPlanNameError}"
+                                     ToolTip.Tip="{Binding NewPlanNameError}"
                                      Watermark="Plan name" />
                             <TextBlock Grid.Column="1" Text="Copy of"
                                        FontSize="12"
@@ -103,10 +106,6 @@
                                 </ComboBox.ItemTemplate>
                             </ComboBox>
                         </Grid>
-                        <TextBlock Text="{Binding NewPlanNameError}"
-                                   IsVisible="{Binding HasNewPlanNameError}"
-                                   FontSize="12"
-                                   Foreground="{DynamicResource DangerBrush}" />
                         <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
                             <Button Content="Cancel"
                                     Padding="12,6" FontSize="12"

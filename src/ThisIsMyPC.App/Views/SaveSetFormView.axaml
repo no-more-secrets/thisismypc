@@ -7,14 +7,9 @@
     <!-- Shared custom-set metadata form (8.5), embedded by the review panel
          ("Save as Set") and the history panel ("Create Set from Selection").
          The trigger button stays in the host view - its label and enablement
-         are host-specific. -->
+         are host-specific. The outcome is a toast or the status line, never
+         text in the form. -->
     <StackPanel Spacing="8">
-        <TextBlock Text="{Binding SuccessMessage}"
-                   FontSize="12"
-                   TextWrapping="Wrap"
-                   Foreground="{DynamicResource TextSecondaryBrush}"
-                   IsVisible="{Binding SuccessMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-
         <StackPanel Spacing="6" IsVisible="{Binding IsOpen}">
             <TextBox Text="{Binding SetName}"
                      Watermark="Preset name"
@@ -25,11 +20,6 @@
             <CheckBox IsChecked="{Binding IsOptimizationPack}"
                       Content="Optimization pack (comprehensive bundle)"
                       FontSize="12" />
-            <TextBlock Text="{Binding ErrorMessage}"
-                       FontSize="12"
-                       TextWrapping="Wrap"
-                       Foreground="{DynamicResource DangerBrush}"
-                       IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
             <DockPanel>
                 <Button DockPanel.Dock="Left"
                         Classes="apply-bar-discard"

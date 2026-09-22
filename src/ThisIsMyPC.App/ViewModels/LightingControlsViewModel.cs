@@ -49,13 +49,16 @@ public sealed partial class LightingControlsViewModel : ViewModelBase, IDisposab
             device.NotifyPermissionsChanged();
     }
 
-    public LightingControlsViewModel(ILightingBackend backend, Func<bool> writesAllowed, ISettingsService? settings = null)
+    private readonly Services.IUserFeedback? _feedback;
+
+    public LightingControlsViewModel(ILightingBackend backend, Func<bool> writesAllowed, ISettingsService? settings = null, Services.IUserFeedback? feedback = null)
     {
         ArgumentNullException.ThrowIfNull(backend);
         ArgumentNullException.ThrowIfNull(writesAllowed);
         _backend = backend;
         _writeGate = writesAllowed;
         _settings = settings;
+        _feedback = feedback;
         // The observable copy starts from the gate so the first render is right.
         _writesAllowed = writesAllowed();
     }
@@ -126,7 +129,7 @@ public sealed partial class LightingControlsViewModel : ViewModelBase, IDisposab
             old.Dispose();
         Devices.Clear();
         foreach (var device in devices.Value)
-            Devices.Add(new LightingDeviceViewModel(device, _session, _writeGate, _settings));
+            Devices.Add(new LightingDeviceViewModel(device, _session, _writeGate, _settings, _feedback));
         OnPropertyChanged(nameof(HasDevices));
         Status = Devices.Count == 0 ? "No supported lighting device answered on this PC." : null;
     }
@@ -170,13 +173,16 @@ public sealed partial class LightingDeviceViewModel : ViewModelBase, IDisposable
     private LightingMode _mode;
     private bool _syncing;
 
-    public LightingDeviceViewModel(LightingDevice device, ILightingSession session, Func<bool> writesAllowed, ISettingsService? settings = null)
+    private readonly Services.IUserFeedback? _feedback;
+
+    public LightingDeviceViewModel(LightingDevice device, ILightingSession session, Func<bool> writesAllowed, ISettingsService? settings = null, Services.IUserFeedback? feedback = null)
     {
         ArgumentNullException.ThrowIfNull(device);
         _device = device;
         _session = session;
         _writesAllowed = writesAllowed;
         _settings = settings;
+        _feedback = feedback;
         // Never use the enumeration index: it can change on the next scan.
         var identity = string.Join("\n", device.Type, device.Vendor, device.Name,
             string.IsNullOrWhiteSpace(device.Serial) ? device.Location : device.Serial);
@@ -209,8 +215,27 @@ public sealed partial class LightingDeviceViewModel : ViewModelBase, IDisposable
     [NotifyCanExecuteChangedFor(nameof(ApplyCommand))]
     private bool _isApplying;
 
+    /// <summary>Outcome of the last Apply. Shown as a toast, never inside the card.</summary>
     [ObservableProperty]
     private string? _applyStatus;
+
+    /// <summary>The controls differ from what the device shows: Apply is the loud accent button until they match again.</summary>
+    [ObservableProperty]
+    private bool _hasDraft;
+
+    partial void OnApplyStatusChanged(string? value)
+    {
+        if (!string.IsNullOrEmpty(value))
+            _feedback?.Report(Name, value);
+    }
+
+    // The card keeps its height: a failure is an icon beside Apply and text on the status line.
+    partial void OnLastErrorChanged(string? value)
+    {
+        OnPropertyChanged(nameof(HasLastError));
+        if (!string.IsNullOrEmpty(value))
+            _feedback?.Fail(value);
+    }
 
     public bool CanEdit => !IsApplying && !_disposed;
     public bool CanApply => CanEdit && WritesAllowed;
@@ -359,7 +384,8 @@ public sealed partial class LightingDeviceViewModel : ViewModelBase, IDisposable
     private void MarkDraft()
     {
         LastError = null;
-        ApplyStatus = "Not applied";
+        ApplyStatus = null;
+        HasDraft = true;
     }
 
     /// <summary>Updates the draft LED table while preserving untouched LEDs and zones.</summary>
@@ -418,6 +444,7 @@ public sealed partial class LightingDeviceViewModel : ViewModelBase, IDisposable
                     return;
                 }
             }
+            HasDraft = false;
             ApplyStatus = save ? "Applied and saved to device" : "Applied";
         }
         catch (Exception ex) when (ex is IOException or InvalidOperationException or OperationCanceledException)
@@ -555,7 +582,6 @@ public sealed partial class LightingDeviceViewModel : ViewModelBase, IDisposable
         OnPropertyChanged(nameof(HasColors));
     }
 
-    partial void OnLastErrorChanged(string? value) => OnPropertyChanged(nameof(HasLastError));
 
     public void Dispose()
     {

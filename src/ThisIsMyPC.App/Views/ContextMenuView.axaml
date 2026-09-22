@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="using:ThisIsMyPC.App.Controls"
+             xmlns:icons="using:ThisIsMyPC.App.Icons"
              xmlns:vm="using:ThisIsMyPC.App.ViewModels"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -241,13 +242,13 @@
                                               IsEnabled="{Binding IsScopeEditable}"
                                               MinWidth="200" />
                                 </StackPanel>
-                                <TextBlock Text="{Binding FormError}"
-                                           Foreground="{DynamicResource DangerBrush}"
-                                           FontSize="12"
-                                           IsVisible="{Binding FormError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                <!-- A refused form never grows: the icon carries the reason, the status line shows it. -->
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <Button Content="Stage Change" Command="{Binding SubmitCommand}" />
                                     <Button Content="Cancel" Command="{Binding CancelFormCommand}" />
+                                    <icons:FluentIcon Classes="issue-marker" Symbol="Info"
+                                                      ToolTip.Tip="{Binding FormError}"
+                                                      IsVisible="{Binding FormError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                                 </StackPanel>
                             </StackPanel>
                         </Border>

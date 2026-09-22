@@ -142,8 +142,17 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
     [NotifyCanExecuteChangedFor(nameof(TurnOnOwnerModeCommand))]
     private bool _isEnablingOwnerMode;
 
+    /// <summary>Why the last Turn on Owner Mode click failed; the card shows it as an icon, the status line as text.</summary>
     [ObservableProperty]
     private string? _ownerModeError;
+
+    private readonly Services.IUserFeedback? _feedback;
+
+    partial void OnOwnerModeErrorChanged(string? value)
+    {
+        if (!string.IsNullOrEmpty(value))
+            _feedback?.Fail(value);
+    }
 
     [RelayCommand(CanExecute = nameof(CanExecuteTurnOnOwnerMode))]
     private async Task TurnOnOwnerModeAsync()
@@ -221,13 +230,15 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
         SettingCardSource source,
         IPendingChangesService pendingChangesService,
         ICapabilityDetector? capabilityDetector = null,
-        IOwnerModeLifecycle? ownerMode = null)
+        IOwnerModeLifecycle? ownerMode = null,
+        Services.IUserFeedback? feedback = null)
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(pendingChangesService);
         _source = source;
         _pendingChangesService = pendingChangesService;
         _capabilityDetector = capabilityDetector;
+        _feedback = feedback;
         Model = source.Model;
 
         // Unknown edition is not proof of policy support. Keep the setting available

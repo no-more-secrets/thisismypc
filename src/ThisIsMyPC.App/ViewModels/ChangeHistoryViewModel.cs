@@ -67,7 +67,8 @@ public partial class ChangeHistoryViewModel : ViewModelBase
         Func<ChangeDescriptor, Task<OperationResult<bool>>> applyFunc,
         ICustomSetWriter customSetWriter,
         Func<Services.MutationLease>? beginMutation = null,
-        Func<Task<IReadOnlyList<ChangeHistoryEntry>>>? ownerHistory = null)
+        Func<Task<IReadOnlyList<ChangeHistoryEntry>>>? ownerHistory = null,
+        Services.IUserFeedback? feedback = null)
     {
         _historyService = historyService;
         _revertFunc = revertFunc;
@@ -75,7 +76,17 @@ public partial class ChangeHistoryViewModel : ViewModelBase
         _customSetWriter = customSetWriter;
         _beginMutation = beginMutation ?? Services.MutationLease.Open;
         _ownerHistory = ownerHistory;
-        SaveSetForm = new SaveSetFormViewModel(CreateSetFromSelection);
+        _feedback = feedback;
+        SaveSetForm = new SaveSetFormViewModel(CreateSetFromSelection, feedback);
+    }
+
+    private readonly Services.IUserFeedback? _feedback;
+
+    // The panel keeps its height: a failure goes to the status line, not under the list.
+    partial void OnErrorMessageChanged(string? value)
+    {
+        if (!string.IsNullOrEmpty(value))
+            _feedback?.Fail(value);
     }
 
     private CustomSetWriteResult CreateSetFromSelection(CustomSetMetadata metadata)

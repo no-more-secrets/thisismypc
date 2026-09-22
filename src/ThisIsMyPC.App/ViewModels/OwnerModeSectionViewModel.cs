@@ -41,12 +41,22 @@ public partial class OwnerModeSectionViewModel : ViewModelBase
         "Restores supported settings to your saved choices. Protected changes made outside " +
         "ThisIsMyPC will also be restored. Pause before changing them in another app.";
 
-    public OwnerModeSectionViewModel(IOwnerModeServiceControl ownerMode)
+    private readonly Services.IUserFeedback? _feedback;
+
+    public OwnerModeSectionViewModel(IOwnerModeServiceControl ownerMode, Services.IUserFeedback? feedback = null)
     {
         ArgumentNullException.ThrowIfNull(ownerMode);
         _ownerMode = ownerMode;
+        _feedback = feedback;
         RefreshState();
         Initialization = RefreshRestorationAsync();
+    }
+
+    // The card keeps its height: a failed enable or pause is an icon here and text on the status line.
+    partial void OnErrorTextChanged(string value)
+    {
+        if (!string.IsNullOrEmpty(value))
+            _feedback?.Fail(value);
     }
 
     public Task Initialization { get; }

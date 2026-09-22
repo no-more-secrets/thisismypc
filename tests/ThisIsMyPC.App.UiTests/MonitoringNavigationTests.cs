@@ -27,7 +27,7 @@ public sealed class MonitoringNavigationTests
         await session.WaitForAsync(() => main.SidebarGroups.Count > 0, what: "sidebar population");
         Assert.Empty(backends);
 
-        session.ScrollAndClickText("Monitoring");
+        session.OpenModule("Monitoring");
         await session.WaitForAsync(() => main.CurrentContent is MonitoringSensorsViewModel sensors
             && sensors.Components[0].Sensors.Count == 1, what: "live monitoring reading");
         var monitoring = Assert.IsType<MonitoringSensorsViewModel>(main.CurrentContent);
@@ -42,7 +42,7 @@ public sealed class MonitoringNavigationTests
         Assert.True(Assert.Single(backends).Disposed);
         Assert.True(monitoring.SamplingTask.IsCompletedSuccessfully);
 
-        session.ScrollAndClickText("Monitoring");
+        session.OpenModule("Monitoring");
         await session.WaitForAsync(() => main.CurrentContent is MonitoringSensorsViewModel sensors
             && sensors.Components[0].Sensors.Count == 1, what: "fresh monitoring visit");
         Assert.Equal(2, backends.Count);

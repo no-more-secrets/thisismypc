@@ -16,6 +16,8 @@ namespace ThisIsMyPC.App.ViewModels;
 /// </summary>
 public sealed partial class DisplayViewModel : ViewModelBase
 {
+    private readonly Services.IUserFeedback? _feedback;
+
     public ObservableCollection<MonitorItemViewModel> Monitors { get; } = [];
 
     public string? ScanError { get; }
@@ -44,13 +46,15 @@ public sealed partial class DisplayViewModel : ViewModelBase
         DisplayScanData data,
         IMonitorService monitorService,
         IPowerService powerService,
-        Func<Task<OperationResult<DisplayScanData>>>? refresh = null)
+        Func<Task<OperationResult<DisplayScanData>>>? refresh = null,
+        Services.IUserFeedback? feedback = null)
     {
         _monitorService = monitorService;
+        _feedback = feedback;
         _panel = new InternalPanelService(powerService);
         ScanError = data.ScanError;
         foreach (var device in data.Monitors)
-            Monitors.Add(new MonitorItemViewModel(device, monitorService, _panel, OnMonitorBrightnessChanged));
+            Monitors.Add(new MonitorItemViewModel(device, monitorService, _panel, OnMonitorBrightnessChanged, feedback));
 
         CanLinkBrightness = Monitors.Count(m => m.SupportsDdc) >= 2;
 
@@ -88,7 +92,7 @@ public sealed partial class DisplayViewModel : ViewModelBase
         {
             Monitors.Clear();
             foreach (var device in data.Monitors)
-                Monitors.Add(new MonitorItemViewModel(device, _monitorService, _panel, OnMonitorBrightnessChanged));
+                Monitors.Add(new MonitorItemViewModel(device, _monitorService, _panel, OnMonitorBrightnessChanged, _feedback));
         }
         else
         {
@@ -98,7 +102,7 @@ public sealed partial class DisplayViewModel : ViewModelBase
                 if (Monitors[i].HasSameShape(fresh))
                     Monitors[i].ApplyValues(fresh);
                 else
-                    Monitors[i] = new MonitorItemViewModel(fresh, _monitorService, _panel, OnMonitorBrightnessChanged);
+                    Monitors[i] = new MonitorItemViewModel(fresh, _monitorService, _panel, OnMonitorBrightnessChanged, _feedback);
             }
         }
 
@@ -137,6 +141,7 @@ public sealed partial class MonitorItemViewModel : ViewModelBase
     private readonly IMonitorService _monitors;
     private readonly InternalPanelService _panel;
     private readonly Action<MonitorItemViewModel, double>? _brightnessChanged;
+    private readonly Services.IUserFeedback? _feedback;
 
     // Latest-wins write coalescing: a moving slider produces values faster
     // than DDC accepts them; one write runs at a time and only the newest
@@ -154,12 +159,14 @@ public sealed partial class MonitorItemViewModel : ViewModelBase
         MonitorDevice device,
         IMonitorService monitors,
         InternalPanelService panel,
-        Action<MonitorItemViewModel, double>? brightnessChanged = null)
+        Action<MonitorItemViewModel, double>? brightnessChanged = null,
+        Services.IUserFeedback? feedback = null)
     {
         _device = device;
         _monitors = monitors;
         _panel = panel;
         _brightnessChanged = brightnessChanged;
+        _feedback = feedback;
         _brightness = device.Brightness;
         _contrast = device.Contrast ?? 0;
         _selectedInput = device.InputSources.FirstOrDefault(i => i.Value == device.CurrentInput);
@@ -296,7 +303,13 @@ public sealed partial class MonitorItemViewModel : ViewModelBase
         _ = PushAsync((int)value, brightness: false);
     }
 
-    partial void OnLastErrorChanged(string value) => OnPropertyChanged(nameof(HasError));
+    // The card keeps its height: a failed write is an icon on the card and text on the status line.
+    partial void OnLastErrorChanged(string value)
+    {
+        OnPropertyChanged(nameof(HasError));
+        if (value.Length > 0)
+            _feedback?.Fail(value);
+    }
 
     [RelayCommand]
     private async Task SetInputAsync()

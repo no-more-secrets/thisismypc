@@ -281,6 +281,13 @@ Run over every page before showing it; each line cost a correction once.
 - Big lists get a tab per category, no Everything tab, search that replaces
   the tabs, virtualized rows.
 - Descriptions are terse product copy, not instructions.
+- A click's outcome never appears inside the card: cards keep their height.
+  Route a result through `IUserFeedback.Report` (toast) and a failure through
+  `IUserFeedback.Fail` (status line); a card that keeps its failure shows the
+  `issue-marker` icon beside its button, tooltip carrying the text. A refused
+  text box gets `Classes.invalid` and the reason as its tooltip.
+- The sidebar is an accordion: the open module's group is open, the rest fold,
+  and a folded header opens its first module. In tests use `OpenModule(name)`.
 - Before answering "not fixed", compare the running exe's build time with
   the last commit: Visual Studio runs the last successful build when the
   app was still running and locked the output.

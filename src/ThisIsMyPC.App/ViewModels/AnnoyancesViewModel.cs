@@ -28,7 +28,8 @@ public sealed class AnnoyancesViewModel : SettingCardPageViewModel
         IRegistryService registryService,
         DisplayModePreferencesStore? displayModeStore = null,
         ICapabilityDetector? capabilityDetector = null,
-        Services.IOwnerModeLifecycle? ownerMode = null)
+        Services.IOwnerModeLifecycle? ownerMode = null,
+        Services.IUserFeedback? feedback = null)
         : base(
             "annoyances",
             // Factories re-read live state at stage time; a scan-time snapshot would bake
@@ -38,7 +39,8 @@ public sealed class AnnoyancesViewModel : SettingCardPageViewModel
             pendingChangesService,
             displayModeStore,
             capabilityDetector,
-            ownerMode)
+            ownerMode,
+            feedback)
     {
     }
 }

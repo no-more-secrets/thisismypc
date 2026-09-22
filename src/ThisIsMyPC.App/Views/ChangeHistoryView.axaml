@@ -60,16 +60,6 @@
                 </DockPanel>
             </Border>
 
-            <!-- Error message -->
-            <Border DockPanel.Dock="Bottom"
-                    Padding="16,8"
-                    IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                <TextBlock Text="{Binding ErrorMessage}"
-                           FontSize="12"
-                           TextWrapping="Wrap"
-                           Foreground="{DynamicResource DangerBrush}" />
-            </Border>
-
             <!-- Create Set from Selection (8.5) -->
             <Border DockPanel.Dock="Bottom"
                     Padding="16,10"

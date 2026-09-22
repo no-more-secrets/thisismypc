@@ -25,7 +25,8 @@ public sealed class PrivacyViewModel : SettingCardPageViewModel
         IRegistryService registryService,
         DisplayModePreferencesStore? displayModeStore = null,
         ICapabilityDetector? capabilityDetector = null,
-        Services.IOwnerModeLifecycle? ownerMode = null)
+        Services.IOwnerModeLifecycle? ownerMode = null,
+        Services.IUserFeedback? feedback = null)
         : base(
             "privacy",
             // Factories re-read live state at stage time; a scan-time snapshot would bake
@@ -35,7 +36,8 @@ public sealed class PrivacyViewModel : SettingCardPageViewModel
             pendingChangesService,
             displayModeStore,
             capabilityDetector,
-            ownerMode)
+            ownerMode,
+            feedback)
     {
     }
 }

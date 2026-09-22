@@ -35,12 +35,18 @@ public sealed partial class HardwareTabViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private bool _isRefreshing;
 
-    /// <summary>Outcome of the last companion action, shown under the button.</summary>
+    /// <summary>
+    /// Outcome of the last companion action. Never drawn under the button
+    /// (the card would grow): a result is a toast, a failure is the status
+    /// line plus an icon beside the button whose tooltip carries this text.
+    /// </summary>
     [ObservableProperty]
     private string? _actionMessage;
 
     [ObservableProperty]
     private bool _actionFailed;
+
+    private readonly Services.IUserFeedback? _feedback;
 
     /// <summary>The Lighting device controls; null on the other tabs and while Lighting cannot show controls.</summary>
     [ObservableProperty]
@@ -56,7 +62,8 @@ public sealed partial class HardwareTabViewModel : ViewModelBase, IDisposable
         bool refreshOnOpen = true,
         ILightingBackend? lightingBackend = null,
         CoolingProfilesViewModel? cooling = null,
-        ISettingsService? settings = null)
+        ISettingsService? settings = null,
+        Services.IUserFeedback? feedback = null)
     {
         ArgumentNullException.ThrowIfNull(data);
         _data = data;
@@ -65,6 +72,7 @@ public sealed partial class HardwareTabViewModel : ViewModelBase, IDisposable
         _refresh = refresh;
         _lightingBackend = lightingBackend;
         _settings = settings;
+        _feedback = feedback;
         Cooling = cooling;
         if (_actions is not null)
             _actions.QueueChanged += OnQueueChanged;
@@ -189,7 +197,11 @@ public sealed partial class HardwareTabViewModel : ViewModelBase, IDisposable
             ? action.Kind == CompanionActionKind.Install
                 ? $"{CompanionNames.Of(action.App)} is queued. Apply the queued changes to install it."
                 : $"{CompanionNames.Of(action.App)} is opening."
-            : result.ErrorMessage;
+            : result.ErrorMessage ?? "This action failed.";
+        if (ActionFailed)
+            _feedback?.Fail(ActionMessage);
+        else
+            _feedback?.Report(CompanionNames.Of(action.App), ActionMessage);
         NotifyActionState();
     }
 
@@ -234,7 +246,7 @@ public sealed partial class HardwareTabViewModel : ViewModelBase, IDisposable
         }
         if (Lighting is null)
         {
-            Lighting = new LightingControlsViewModel(_lightingBackend, () => Decision.LiveWritesAllowed, _settings);
+            Lighting = new LightingControlsViewModel(_lightingBackend, () => Decision.LiveWritesAllowed, _settings, _feedback);
             _ = Lighting.LoadAsync();
         }
         else

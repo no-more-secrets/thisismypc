@@ -52,6 +52,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IReadOnlyList<Core.Search.ISearchSettingsContributor> _searchContributors;
     private Core.Search.SettingsSearchService? _searchService;
     private readonly Core.Notifications.INotificationService? _notificationService;
+    private readonly Services.UserFeedbackHub? _userFeedback;
     private readonly Core.Monitoring.MonitoringService? _monitoringService;
     private readonly IRestorePointService _restorePointService;
     private readonly IPrivilegeBrokerClient? _privilegeBroker;
@@ -223,6 +224,24 @@ public partial class MainWindowViewModel : ViewModelBase
                 ToastStack.Show(notification.Title, notification.Message, severity));
     }
 
+    // Card outcomes never sit inside the card (they would change its height):
+    // a result is a toast, a failure is the status line.
+    private void OnFeedbackReported(string title, string message)
+    {
+        if (Dispatcher.UIThread.CheckAccess())
+            ToastStack.Show(title, message, ToastSeverity.Success);
+        else
+            Dispatcher.UIThread.Post(() => ToastStack.Show(title, message, ToastSeverity.Success));
+    }
+
+    private void OnFeedbackFailed(string message)
+    {
+        if (Dispatcher.UIThread.CheckAccess())
+            SetStatus(message, StatusSeverity.Error);
+        else
+            Dispatcher.UIThread.Post(() => SetStatus(message, StatusSeverity.Error));
+    }
+
     // FR64: auto restore point when a batch stages this many individual changes
     private const int AutoRestorePointThreshold = 5;
 
@@ -359,8 +378,15 @@ public partial class MainWindowViewModel : ViewModelBase
         Core.Hardware.IHardwareDetectionService? hardwareDetection = null,
         Services.HardwareCompanionActions? hardwareActions = null,
         Core.Hardware.Lighting.ILightingBackend? lightingBackend = null,
-        Func<Core.Hardware.Sensors.IHardwareSensorBackend>? sensorBackendFactory = null)
+        Func<Core.Hardware.Sensors.IHardwareSensorBackend>? sensorBackendFactory = null,
+        Services.UserFeedbackHub? userFeedback = null)
     {
+        _userFeedback = userFeedback;
+        if (_userFeedback is not null)
+        {
+            _userFeedback.Reported += OnFeedbackReported;
+            _userFeedback.Failed += OnFeedbackFailed;
+        }
         _hardwareDetection = hardwareDetection;
         _privilegeBroker = privilegeBroker;
         _hardwareActions = hardwareActions;
@@ -416,7 +442,8 @@ public partial class MainWindowViewModel : ViewModelBase
             {
                 var response = await ipcClient.GetRestorationHistoryAsync().ConfigureAwait(false);
                 return response.IsSuccess && response.Value?.Items is { } items ? items : [];
-            });
+            },
+            _userFeedback);
 
         _pendingChangesService.PropertyChanged += OnPendingChangesPropertyChanged;
         _navigationService.PropertyChanged += OnNavigationPropertyChanged;
@@ -555,7 +582,7 @@ public partial class MainWindowViewModel : ViewModelBase
                     {
                         ContentTitle = current.Module.Info.Name;
                         ContentDescription = current.Module.Info.Description;
-                        CurrentContent = new ContextMenuViewModel(handlers, _pendingChangesService, _registryService);
+                        CurrentContent = new ContextMenuViewModel(handlers, _pendingChangesService, _registryService, feedback: _userFeedback);
                     }
                     else
                     {
@@ -577,7 +604,7 @@ public partial class MainWindowViewModel : ViewModelBase
                         ContentDescription = current.Module.Info.Description;
                         CurrentContent = new WindowsUpdateViewModel(
                             updateData, _pendingChangesService, _registryService,
-                            _displayModeStore, _capabilityDetector, _ownerModeControl);
+                            _displayModeStore, _capabilityDetector, _ownerModeControl, _userFeedback);
                     }
                     else
                     {
@@ -599,7 +626,7 @@ public partial class MainWindowViewModel : ViewModelBase
                         ContentDescription = current.Module.Info.Description;
                         CurrentContent = new PrivacyViewModel(
                             privacyData, _pendingChangesService, _registryService,
-                            _displayModeStore, _capabilityDetector, _ownerModeControl);
+                            _displayModeStore, _capabilityDetector, _ownerModeControl, _userFeedback);
                     }
                     else
                     {
@@ -621,7 +648,7 @@ public partial class MainWindowViewModel : ViewModelBase
                         ContentDescription = current.Module.Info.Description;
                         CurrentContent = new AnnoyancesViewModel(
                             annoyancesData, _pendingChangesService, _registryService,
-                            _displayModeStore, _capabilityDetector, _ownerModeControl);
+                            _displayModeStore, _capabilityDetector, _ownerModeControl, _userFeedback);
                     }
                     else
                     {
@@ -663,7 +690,7 @@ public partial class MainWindowViewModel : ViewModelBase
                         ContentDescription = current.Module.Info.Description;
                         CurrentContent = new PowerViewModel(
                             powerData, _pendingChangesService, _powerService, _registryService,
-                            _pendingActionsService);
+                            _pendingActionsService, _userFeedback);
                     }
                     else
                     {
@@ -688,7 +715,7 @@ public partial class MainWindowViewModel : ViewModelBase
                         // Snapshot or quick scan on screen now; the full scan
                         // runs behind it and fills the cards in.
                         CurrentContent = new DisplayViewModel(
-                            displayData, _monitorService, _powerService, displayModule.RefreshAsync);
+                            displayData, _monitorService, _powerService, displayModule.RefreshAsync, _userFeedback);
                     }
                     else
                     {
@@ -729,6 +756,7 @@ public partial class MainWindowViewModel : ViewModelBase
                             refreshOnOpen: hardwareData.RefreshInBackground,
                             lightingBackend: _lightingBackend,
                             settings: _settingsService,
+                            feedback: _userFeedback,
                             cooling: hardwareModule is Modules.Hardware.CoolingModule coolingModule
                                 ? new CoolingProfilesViewModel(coolingModule.Profiles, _pendingChangesService,
                                     requestActivation: _hardwareActions is null ? null
@@ -909,9 +937,12 @@ public partial class MainWindowViewModel : ViewModelBase
 
         foreach (var group in groups)
         {
+            // Accordion: one group open at a time, the one holding the open
+            // module; until a module opens, the first group.
             var groupVm = new SidebarGroupViewModel
             {
-                GroupName = group.Key.ToString().ToUpperInvariant()
+                GroupName = group.Key.ToString().ToUpperInvariant(),
+                IsExpanded = SidebarGroups.Count == 0,
             };
 
             foreach (var registration in group.OrderBy(m => m.Module.Info.LoadOrder))
@@ -1254,7 +1285,8 @@ public partial class MainWindowViewModel : ViewModelBase
             installedModuleIds: _navigationService.Modules.Select(m => m.Module.Info.Name).ToList(),
             appVersion: AppVersion,
             capabilityReport: _capabilityDetector?.GetCapabilityReport(),
-            ownerMode: _ownerModeControl is { } ownerMode ? new OwnerModeSectionViewModel(ownerMode) : null);
+            ownerMode: _ownerModeControl is { } ownerMode ? new OwnerModeSectionViewModel(ownerMode, _userFeedback) : null,
+            feedback: _userFeedback);
         IsSettingsActive = true;
         IsDebugActive = false;
         IsSetLoaderActive = false;
@@ -1295,7 +1327,7 @@ public partial class MainWindowViewModel : ViewModelBase
             return; // the user navigated away meanwhile
 
         if (scan.IsSuccess && scan.Value is Modules.Display.Models.DisplayScanData data)
-            CurrentContent = new DisplayViewModel(data, _monitorService, _powerService, module.RefreshAsync);
+            CurrentContent = new DisplayViewModel(data, _monitorService, _powerService, module.RefreshAsync, _userFeedback);
     }
 
     /// <summary>
@@ -2285,6 +2317,32 @@ public partial class MainWindowViewModel : ViewModelBase
             SelectedModule = SidebarGroups
                 .SelectMany(g => g.Items)
                 .FirstOrDefault(i => i.Module == current.Module);
+            ExpandGroupOf(SelectedModule);
         }
+    }
+
+    /// <summary>
+    /// The sidebar is an accordion: the group holding the open module is the
+    /// one open, every other group folds. Home, Presets, and Settings leave the
+    /// last group open so the sidebar never shows only headers.
+    /// </summary>
+    private void ExpandGroupOf(SidebarItemViewModel? item)
+    {
+        var owner = item is null ? null : SidebarGroups.FirstOrDefault(g => g.Items.Contains(item));
+        if (owner is null)
+            return;
+        foreach (var group in SidebarGroups)
+            group.IsExpanded = ReferenceEquals(group, owner);
+    }
+
+    /// <summary>A folded group header opens its first available module, which opens the group.</summary>
+    [RelayCommand]
+    private void OpenSidebarGroup(SidebarGroupViewModel? group)
+    {
+        if (group is null || group.IsExpanded)
+            return;
+        var first = group.Items.FirstOrDefault(i => i.IsAvailable);
+        if (first is not null)
+            NavigateToModule(first);
     }
 }

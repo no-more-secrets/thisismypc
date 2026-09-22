@@ -2,6 +2,15 @@
 
 Current release scope: [v1 completion plan](v1-completion-plan.md), approved 2026-09-06. It supersedes older post-release hardware assumptions below.
 
+## Sidebar accordion and card outcomes (2026-09-21)
+
+Sam's polish list after the engine landed: the side nav folds and opens by itself, and no card changes height when text appears after a click.
+
+- DONE: the sidebar is an accordion. The group holding the open module is open and every other group folds; a folded header opens that group's first available module; Home, Presets, and Settings keep the last group open. Nobody folds or opens a group by hand (`SidebarGroupViewModel.HeaderDescription`, `MainWindowViewModel.OpenSidebarGroup`).
+- DONE: a click's outcome never sits inside the card. `IUserFeedback` (`App/Services`) routes a result to a toast titled after the thing acted on and a failure to the window status line, which now carries its full text as a tooltip. A card that keeps its failure marks it with a red `issue-marker` icon beside the button, tooltip carrying the text. Converted: Lighting Apply (an unapplied edit makes Apply the accent button), companion Install and Open, Display writes, the Owner Mode card and the card-level Turn on Owner Mode, the custom context menu form, the new power plan name (the box turns red), Save as Preset, Settings export and import, the History panel.
+- Verified: `MainWindowViewModelFeedbackTests`, the sidebar Diagnostic shots, the full walkthrough, and the view suites for every converted card; card heights are asserted equal before and after the click.
+- Open: the Lighting tab's top status line and the scan error lines on Display, Environment, and Startup still appear at load time above the cards; they do not change after a click, so they stay.
+
 ## Lighting engine (2026-09-21)
 
 Sam's requirement: every device works in our software, nothing installed separately, everything bundled and to our standards. Porting OpenRGB's 277 controller families to C# cannot get there, so the engine is OpenRGB itself.
@@ -163,9 +172,7 @@ Replaces the bundled OpenRGB of the same day (Sam: "native is the better choice,
 
 ## Sidebar module groups (2026-09-06)
 
-- Module groups collapse independently in both sidebar widths. Headers support mouse and keyboard input, with named tooltips in the narrow sidebar.
-- Group state survives sidebar width changes within the session. Closing the active group keeps its page open. Scrolling remains available when open groups exceed the window height.
-- Verified: full CI-safe suite, Release build, and dark/light rendered interactions including short windows.
+- Superseded 2026-09-21 by the accordion above: groups no longer fold or open by hand. Headers keep mouse and keyboard input and their named tooltips in the narrow sidebar; group state still survives sidebar width changes.
 
 ## Annotation follow-up: toolbar and tabs (2026-09-06)
 

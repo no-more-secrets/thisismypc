@@ -110,6 +110,10 @@
                                             <TextBlock Text="Built-in" FontSize="11"
                                                        Foreground="{DynamicResource InfoBrush}" />
                                         </Border>
+                                        <!-- A failed write never grows the card: the icon carries the text, the status line shows it. -->
+                                        <icons:FluentIcon Classes="issue-marker" Symbol="Info"
+                                                          ToolTip.Tip="{Binding LastError}"
+                                                          IsVisible="{Binding HasError}" />
                                     </StackPanel>
 
                                     <TextBlock Text="{Binding DdcError}"
@@ -168,9 +172,6 @@
                                         </ItemsControl>
                                     </StackPanel>
 
-                                    <TextBlock Text="{Binding LastError}"
-                                               Classes="status-error" FontSize="12" TextWrapping="Wrap"
-                                               IsVisible="{Binding HasError}" />
                                 </StackPanel>
 
                                 <!-- Footer: input switch left, screen off right, on the

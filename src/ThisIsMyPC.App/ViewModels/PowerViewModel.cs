@@ -65,12 +65,14 @@ public sealed partial class PowerViewModel : ObservableObject, ISearchNavigation
         IPendingChangesService pendingChangesService,
         IPowerService? powerService = null,
         IRegistryService? registryService = null,
-        Core.Services.IPendingActionsService? pendingActionsService = null)
+        Core.Services.IPendingActionsService? pendingActionsService = null,
+        Services.IUserFeedback? feedback = null)
     {
         _pendingChangesService = pendingChangesService;
         _powerService = powerService;
         _registryService = registryService;
         _pendingActionsService = pendingActionsService;
+        _feedback = feedback;
         ScanError = scanData.ScanError;
         _liveActivePlan = scanData.Plans.FirstOrDefault(p => p.IsActive);
         _activePlanLockedByPolicy = scanData.ActivePlanLockedByPolicy;
@@ -240,6 +242,19 @@ public sealed partial class PowerViewModel : ObservableObject, ISearchNavigation
     }
 
     public bool HasNewPlanNameError => NewPlanNameError is not null;
+
+    private readonly Services.IUserFeedback? _feedback;
+    private bool _planNameErrorShown;
+
+    // The form keeps its height: the name box turns red and the status line says why, once per
+    // slip rather than once per keystroke.
+    partial void OnNewPlanNameChanged(string value)
+    {
+        var error = NewPlanNameError;
+        if (error is not null && !_planNameErrorShown)
+            _feedback?.Fail(error);
+        _planNameErrorShown = error is not null;
+    }
 
     public bool CanConfirmCreatePlan =>
         IsCreatingPlan && NewPlanName.Trim().Length > 0 && NewPlanNameError is null && NewPlanSource is not null;

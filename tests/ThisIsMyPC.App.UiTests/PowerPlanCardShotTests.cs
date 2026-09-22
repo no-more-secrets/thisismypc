@@ -179,9 +179,15 @@ public class PowerPlanCardShotTests
         session.Pump();
 
         var nameBox = session.Find<TextBox>(t => t.Watermark == "Plan name");
+        var formHeight = session.Find<Border>(b => b.Classes.Contains("card") && b.IsVisible && UiSession.IsTextVisibleIn(b, "New power plan")).Bounds.Height;
         session.Type(nameBox, "Balanced");
-        Assert.True(session.IsTextVisible("A plan with this name already exists."));
+        // A taken name never grows the form: the box turns red and carries the reason as its tooltip.
+        Assert.False(session.IsTextVisible("A plan with this name already exists."));
+        Assert.True(nameBox.Classes.Contains("invalid"));
+        Assert.Equal("A plan with this name already exists.", ToolTip.GetTip(nameBox));
         Assert.False(viewModel.CanConfirmCreatePlan);
+        session.Screenshot("new-plan-name-taken");
+        Assert.Equal(formHeight, session.Find<Border>(b => b.Classes.Contains("card") && b.IsVisible && UiSession.IsTextVisibleIn(b, "New power plan")).Bounds.Height);
 
         nameBox.Text = string.Empty;
         session.Type(nameBox, "Gaming");

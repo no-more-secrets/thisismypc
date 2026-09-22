@@ -57,7 +57,7 @@ public class HeaderShotTests
         Assert.Equal("Home", vm.ContentTitle);
         Assert.NotSame(homeBefore, vm.CurrentContent);
 
-        session.ClickText("Display");
+        session.OpenModule("Display");
         await session.WaitForAsync(() => vm.CurrentContent is DisplayViewModel && !vm.IsModuleLoading, timeoutMs: 60_000, what: "Display");
         var displayBefore = vm.CurrentContent;
         session.Click(refresh);

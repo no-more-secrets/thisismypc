@@ -184,11 +184,13 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:SidebarGroupViewModel">
                                 <StackPanel>
-                                    <!-- Group state belongs to the group, independent of sidebar width. -->
+                                    <!-- Accordion header: the group with the open module is open, the
+                                         rest fold; clicking a folded header opens its first module. -->
                                     <Button Classes="sidebar-item sidebar-group-toggle"
-                                            Command="{Binding ToggleExpansionCommand}"
-                                            ToolTip.Tip="{Binding ToggleDescription}"
-                                            AutomationProperties.Name="{Binding ToggleDescription}">
+                                            Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).OpenSidebarGroupCommand}"
+                                            CommandParameter="{Binding}"
+                                            ToolTip.Tip="{Binding HeaderDescription}"
+                                            AutomationProperties.Name="{Binding HeaderDescription}">
                                         <StackPanel Orientation="Horizontal" Spacing="8">
                                             <icons:FluentIcon Symbol="ChevronDown" Width="12" Height="12"
                                                               IsVisible="{Binding IsExpanded}" />
@@ -456,6 +458,7 @@
                                    VerticalAlignment="Center"
                                    Margin="0,4,0,0"
                                    TextTrimming="CharacterEllipsis"
+                                   ToolTip.Tip="{Binding StatusMessage}"
                                    IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                    Classes.status-success="{Binding IsStatusSuccess}"
                                    Classes.status-warning="{Binding IsStatusWarning}"

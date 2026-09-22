@@ -139,12 +139,13 @@ public partial class ContextMenuViewModel : ViewModelBase, ISearchNavigationTarg
         IReadOnlyList<ContextMenuHandler> handlers,
         IPendingChangesService pendingChangesService,
         IRegistryService registryService,
-        ContextMenuScanner? scanner = null)
+        ContextMenuScanner? scanner = null,
+        Services.IUserFeedback? feedback = null)
     {
         _pendingChangesService = pendingChangesService;
         _registryService = registryService;
         _scanner = scanner;
-        Custom = new CustomVerbSectionViewModel(pendingChangesService, registryService);
+        Custom = new CustomVerbSectionViewModel(pendingChangesService, registryService, feedback);
 
         WindowsEntries = Modules.Shell.Changes.WindowsEntriesChangeFactory.Catalog
             .Select(entry => new ShellSettingViewModel(

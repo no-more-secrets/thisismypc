@@ -444,6 +444,26 @@
         <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}" />
     </Style>
 
+    <!-- A card's failure marker: sits in an existing row beside the button it
+         belongs to, so the card keeps its height; the tooltip carries the text
+         that the status line also shows. -->
+    <Style Selector="icons|FluentIcon.issue-marker">
+        <Setter Property="Width" Value="16" />
+        <Setter Property="Height" Value="16" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
+        <Setter Property="Cursor" Value="Help" />
+    </Style>
+
+    <!-- A text box whose value the page refuses (a taken name); the reason is
+         its tooltip and the status line, never a line under the box. -->
+    <Style Selector="TextBox.invalid /template/ Border#PART_BorderElement">
+        <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}" />
+    </Style>
+    <Style Selector="TextBox.invalid:pointerover /template/ Border#PART_BorderElement, TextBox.invalid:focus /template/ Border#PART_BorderElement">
+        <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}" />
+    </Style>
+
     <!-- Status bar text; class picked by MainWindowViewModel.StatusSeverity -->
     <Style Selector="TextBlock.status-success">
         <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}" />

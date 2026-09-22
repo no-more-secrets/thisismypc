@@ -62,12 +62,13 @@ public partial class ReviewPanelViewModel : ViewModelBase, IDisposable
     public ReviewPanelViewModel(
         IPendingChangesService pendingChangesService,
         ICustomSetWriter customSetWriter,
-        IPendingActionsService? pendingActionsService = null)
+        IPendingActionsService? pendingActionsService = null,
+        Services.IUserFeedback? feedback = null)
     {
         _pendingChangesService = pendingChangesService;
         _pendingActionsService = pendingActionsService;
         SaveSetForm = new SaveSetFormViewModel(metadata =>
-            customSetWriter.WriteFromPendingGroups(metadata, _pendingChangesService.PendingGroups));
+            customSetWriter.WriteFromPendingGroups(metadata, _pendingChangesService.PendingGroups), feedback);
         _pendingChangesService.PropertyChanged += OnPendingChangesPropertyChanged;
         if (_pendingActionsService is not null)
             _pendingActionsService.PropertyChanged += OnPendingActionsPropertyChanged;

@@ -19,7 +19,7 @@ public class LightingLiveShotTests
         var viewModel = (MainWindowViewModel)session.Window.DataContext!;
         await session.WaitForAsync(() => viewModel.SidebarGroups.Count > 0, timeoutMs: 30_000, what: "sidebar population");
 
-        session.ClickText("Lighting");
+        session.OpenModule("Lighting");
         await session.WaitForAsync(
             () => viewModel.CurrentContent is HardwareTabViewModel && viewModel.ContentTitle == "Lighting",
             timeoutMs: 60_000, what: "Lighting content load");

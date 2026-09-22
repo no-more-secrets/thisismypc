@@ -47,14 +47,24 @@ public partial class CustomVerbSectionViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isScopeEditable = true;
 
+    /// <summary>Why Stage Change refused the form; the form shows it as an icon, the status line as text.</summary>
     [ObservableProperty]
     private string _formError = "";
 
-    public CustomVerbSectionViewModel(IPendingChangesService pendingChanges, IRegistryService registry)
+    private readonly Services.IUserFeedback? _feedback;
+
+    public CustomVerbSectionViewModel(IPendingChangesService pendingChanges, IRegistryService registry, Services.IUserFeedback? feedback = null)
     {
         _pendingChanges = pendingChanges;
+        _feedback = feedback;
         _service = new CustomVerbService(registry);
         Refresh();
+    }
+
+    partial void OnFormErrorChanged(string value)
+    {
+        if (!string.IsNullOrEmpty(value))
+            _feedback?.Fail(value);
     }
 
     [RelayCommand]

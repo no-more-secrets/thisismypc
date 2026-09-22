@@ -220,11 +220,38 @@ public sealed class UiSession : IDisposable
         Click(interactive!);
     }
 
+    /// <summary>
+    /// Opens a module from the sidebar the way a person does: the sidebar is an
+    /// accordion, so a module in a folded group is reached by clicking that
+    /// group's header first (which opens the group on its first module), then
+    /// the module itself.
+    /// </summary>
+    public void OpenModule(string name)
+    {
+        if (Window.DataContext is ViewModels.MainWindowViewModel main)
+        {
+            var group = main.SidebarGroups.FirstOrDefault(g => g.Items.Any(i => i.Name == name));
+            if (group is { IsExpanded: false })
+            {
+                ScrollAndClick(Find<Button>(button =>
+                    button.Classes.Contains("sidebar-group-toggle") && ReferenceEquals(button.DataContext, group)), group.GroupName);
+                if (main.SelectedModule?.Name == name)
+                    return;
+            }
+        }
+        ScrollAndClickText(name);
+    }
+
     /// <summary>Scrolls the click target into its nearest viewport with wheel input, then clicks it.</summary>
     public void ScrollAndClickText(string text)
     {
         var caption = FindText(text);
         var target = caption.GetVisualAncestors().OfType<Button>().FirstOrDefault() ?? caption;
+        ScrollAndClick(target, text);
+    }
+
+    private void ScrollAndClick(Visual target, string what)
+    {
         var scroller = target.GetVisualAncestors().OfType<ScrollViewer>().FirstOrDefault();
         if (scroller is not null)
         {
@@ -247,7 +274,7 @@ public sealed class UiSession : IDisposable
                     break;
             }
 
-            throw new InvalidOperationException($"Could not scroll '{text}' into its viewport.");
+            throw new InvalidOperationException($"Could not scroll '{what}' into its viewport.");
         }
 
         Click(target);

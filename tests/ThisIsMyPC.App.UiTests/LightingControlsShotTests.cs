@@ -223,12 +223,24 @@ public class LightingControlsShotTests
 
         // Editing is a draft, including devices which persist every hardware write.
         var board = vm.Lighting!.Devices[0];
+        var cardHeight = s.Find<Border>(b => b.Classes.Contains("card") && ReferenceEquals(b.DataContext, board)).Bounds.Height;
+        Assert.False(board.HasDraft);
         board.Brightness = 40;
         board.Colors.Single(c => c.Label == "Chipset").Hex = "#00FF00";
         s.Pump();
         Assert.Empty(session.Writes);
-        s.Click(s.Find<Button>(button => button.Content is "Apply" && ReferenceEquals(button.DataContext, board)));
+        // Unapplied edits make Apply the accent button; nothing else on the card moves.
+        var apply = s.Find<Button>(button => button.Content is "Apply" && ReferenceEquals(button.DataContext, board));
+        Assert.True(board.HasDraft);
+        Assert.Contains("accent", apply.Classes);
+        s.Screenshot("draft-dark");
+        s.Click(apply);
         await s.WaitForAsync(() => board.ApplyStatus == "Applied", what: "apply");
+        // The outcome is a toast, never text under the button: the card keeps its height.
+        Assert.False(board.HasDraft);
+        Assert.DoesNotContain("accent", apply.Classes);
+        Assert.False(s.IsTextVisible("Applied"));
+        Assert.Equal(cardHeight, s.Find<Border>(b => b.Classes.Contains("card") && ReferenceEquals(b.DataContext, board)).Bounds.Height);
         Assert.Equal(2, session.Writes.Count);
         Assert.Equal(Enumerable.Repeat(new RgbColor(255, 0, 0), 4)
             .Concat(Enumerable.Repeat(new RgbColor(0, 255, 0), 6)), session.LastColors);

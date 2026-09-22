@@ -23,7 +23,7 @@ public class DisplayLoadTimingTests
         for (var pass = 0; pass < 3; pass++)
         {
             var sw = Stopwatch.StartNew();
-            session.ClickText("Display");
+            session.OpenModule("Display");
             await session.WaitForAsync(
                 () => vm.CurrentContent is DisplayViewModel && !vm.IsModuleLoading,
                 timeoutMs: 120_000, what: "Display content");

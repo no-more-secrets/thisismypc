@@ -17,6 +17,10 @@ public class SidebarGroupSpacingShotTests
         session.Window.Width = 1078;
         session.Window.Height = 816;
         vm.ChangeZoom(-1);
+        // The accordion opens one group at a time; this measures the rows of
+        // every group, so open them all for the measurement.
+        foreach (var group in vm.SidebarGroups)
+            group.IsExpanded = true;
         foreach (var theme in new[] { ThemeVariant.Dark, ThemeVariant.Light })
         {
             session.SetTheme(theme);

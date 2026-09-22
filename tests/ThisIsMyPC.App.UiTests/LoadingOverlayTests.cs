@@ -51,7 +51,7 @@ public class LoadingOverlayTests
         await session.WaitForAsync(
             () => viewModel.SidebarGroups.Count > 0, timeoutMs: 30_000, what: "sidebar population");
 
-        session.ClickText("Software");
+        session.OpenModule("Software");
         await session.WaitForAsync(() => viewModel.IsModuleLoading, timeoutMs: 10_000, what: "overlay showing");
         session.Screenshot("scan-overlay");
         Assert.True(session.IsTextVisible("Scanning Software..."));

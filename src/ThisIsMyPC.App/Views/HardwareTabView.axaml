@@ -184,16 +184,16 @@
 
                     </StackPanel>
 
-                    <StackPanel Spacing="8">
-                        <Button Content="Apply" Command="{Binding ApplyCommand}" Padding="12,5" />
-                        <TextBlock Text="{Binding ApplyStatus}" FontSize="12" TextWrapping="Wrap"
-                                   Foreground="{DynamicResource TextSecondaryBrush}"
-                                   IsVisible="{Binding ApplyStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    <!-- The outcome never sits under Apply (the card would grow): applied is a
+                         toast, a failure is the icon here plus the status line. Unapplied edits
+                         make Apply the accent button. -->
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Apply" Command="{Binding ApplyCommand}" Padding="12,5"
+                                Classes.accent="{Binding HasDraft}" />
+                        <icons:FluentIcon Classes="issue-marker" Symbol="Info"
+                                          ToolTip.Tip="{Binding LastError}"
+                                          IsVisible="{Binding HasLastError}" />
                     </StackPanel>
-
-                    <TextBlock Text="{Binding LastError}" Classes="status-error"
-                               FontSize="12" TextWrapping="Wrap"
-                               IsVisible="{Binding HasLastError}" />
                 </StackPanel>
             </Border>
         </DataTemplate>
@@ -260,21 +260,22 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
+                    <!-- The click's outcome is a toast or the status line, never text under the
+                         button; a failure also marks the row with an icon that carries the text. -->
                     <StackPanel Spacing="4" IsVisible="{Binding HasAction}">
-                        <Button Content="{Binding ActionLabel}"
-                                Classes="accent"
-                                Command="{Binding RunActionCommand}"
-                                HorizontalAlignment="Left"
-                                Padding="14,6" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="{Binding ActionLabel}"
+                                    Classes="accent"
+                                    Command="{Binding RunActionCommand}"
+                                    Padding="14,6" />
+                            <icons:FluentIcon Classes="issue-marker" Symbol="Info"
+                                              ToolTip.Tip="{Binding ActionMessage}"
+                                              IsVisible="{Binding ActionFailed}" />
+                        </StackPanel>
                         <TextBlock Text="{Binding ActionHint}"
                                    FontSize="12" TextWrapping="Wrap"
                                    Foreground="{DynamicResource TextTertiaryBrush}"
                                    IsVisible="{Binding HasActionHint}" />
-                        <TextBlock Text="{Binding ActionMessage}"
-                                   FontSize="12" TextWrapping="Wrap"
-                                   Classes.status-error="{Binding ActionFailed}"
-                                   Classes.status-success="{Binding !ActionFailed}"
-                                   IsVisible="{Binding ActionMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                     </StackPanel>
                 </StackPanel>
             </Border>

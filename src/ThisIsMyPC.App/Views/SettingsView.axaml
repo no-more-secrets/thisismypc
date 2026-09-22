@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ThisIsMyPC.App.ViewModels"
+             xmlns:icons="using:ThisIsMyPC.App.Icons"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="700"
@@ -178,13 +179,11 @@
                     <ProgressBar IsIndeterminate="True" Width="80" Height="2"
                                  VerticalAlignment="Center"
                                  IsVisible="{Binding IsBusy}" />
+                    <!-- A failed enable or pause never grows the card: the icon carries the text, the status line shows it. -->
+                    <icons:FluentIcon Classes="issue-marker" Symbol="Info"
+                                      ToolTip.Tip="{Binding ErrorText}"
+                                      IsVisible="{Binding ErrorText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                 </StackPanel>
-                <TextBlock Text="{Binding ErrorText}"
-                           FontSize="12"
-                           Foreground="{DynamicResource DangerBrush}"
-                           TextWrapping="Wrap"
-                           Margin="0,8,0,0"
-                           IsVisible="{Binding ErrorText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
               </StackPanel>
             </Border>
             <TextBlock Text="The Owner Mode service is not available in this build."
@@ -289,12 +288,6 @@
                     </StackPanel>
                 </StackPanel>
 
-                <TextBlock Text="{Binding TransferStatus}"
-                           FontSize="12"
-                           Foreground="{DynamicResource TextSecondaryBrush}"
-                           TextWrapping="Wrap"
-                           Margin="0,10,0,0"
-                           IsVisible="{Binding TransferStatus, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
               </StackPanel>
             </Border>
           </StackPanel>

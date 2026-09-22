@@ -182,7 +182,10 @@ public class SettingsTabsShotTests
         foreach (var theme in new[] { ThemeVariant.Dark, ThemeVariant.Light })
         {
             var service = new FakeServiceControl { State = ThisIsMyPC.App.Services.OwnerModeState.Running };
-            var section = new OwnerModeSectionViewModel(service);
+            var feedback = new ThisIsMyPC.App.Services.UserFeedbackHub();
+            var failures = new List<string>();
+            feedback.Failed += failures.Add;
+            var section = new OwnerModeSectionViewModel(service, feedback);
             var vm = Model(withModules: false, section);
             using var session = UiSession.ForView(Card(new SettingsView()), vm, "settings-tabs", width: 1200, height: 800);
             session.SetTheme(theme);
@@ -210,14 +213,21 @@ public class SettingsTabsShotTests
             Assert.True(session.Find<ProgressBar>(_ => true).IsEffectivelyVisible);
             session.Screenshot($"owner-mode-busy-{theme.Key}");
 
-            // The enable fails: the error sits inline and the state stays real.
+            // The enable fails: the card keeps its height. The failure goes to the
+            // status line and an icon beside the buttons carries the text.
+            var cardHeight = OwnerModeCard().Bounds.Height;
             service.Pending.SetResult(Core.Results.OperationResult<bool>.Failure(
                 "Service binary not found at C:\\Program Files\\ThisIsMyPC\\ThisIsMyPC.Service.exe. Reinstall ThisIsMyPC to restore it.",
                 Core.Results.ErrorCategory.NotFound));
             await session.WaitForAsync(() => !section.IsBusy, what: "enable finished");
             Assert.False(section.IsRunning);
             Assert.StartsWith("Service binary not found", section.ErrorText, StringComparison.Ordinal);
-            Assert.True(session.IsTextVisible(section.ErrorText));
+            Assert.False(session.IsTextVisible(section.ErrorText));
+            Assert.Equal(section.ErrorText, Assert.Single(failures));
+            var marker = session.Find<ThisIsMyPC.App.Icons.FluentIcon>(icon => icon.Classes.Contains("issue-marker"));
+            Assert.True(marker.IsEffectivelyVisible);
+            Assert.Equal(section.ErrorText, ToolTip.GetTip(marker));
+            Assert.Equal(cardHeight, OwnerModeCard().Bounds.Height);
             session.Screenshot($"owner-mode-error-{theme.Key}");
 
             // A second enable succeeds and clears the error.
@@ -227,6 +237,9 @@ public class SettingsTabsShotTests
             Assert.Equal("", section.ErrorText);
             Assert.True(session.IsTextVisible("Service running"));
             session.Screenshot($"owner-mode-enabled-{theme.Key}");
+
+            Border OwnerModeCard() => session.Find<Border>(b =>
+                b.Classes.Contains("card") && b.Child is StackPanel { DataContext: OwnerModeSectionViewModel });
         }
     }
 

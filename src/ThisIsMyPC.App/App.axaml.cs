@@ -335,6 +335,8 @@ public partial class App : Application
         services.AddSingleton<Core.Settings.ISettingsService>(_ => new Core.Settings.SettingsService(
             Path.Combine(AppConstants.UserDataDirectoryPath, "settings.json")));
         services.AddSingleton<Core.Notifications.INotificationService, Core.Notifications.NotificationService>();
+        services.AddSingleton<Services.UserFeedbackHub>();
+        services.AddSingleton<Services.IUserFeedback>(sp => sp.GetRequiredService<Services.UserFeedbackHub>());
         services.AddSingleton<Core.Monitoring.IMonitoringSnapshotProvider, MonitoringSnapshotProvider>();
         services.AddSingleton(sp => new Core.Monitoring.MonitoringService(
             sp.GetRequiredService<Core.Settings.ISettingsService>(),

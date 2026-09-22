@@ -12,10 +12,25 @@ namespace ThisIsMyPC.App.ViewModels;
 public partial class SaveSetFormViewModel : ViewModelBase
 {
     private readonly Func<CustomSetMetadata, CustomSetWriteResult> _write;
+    private readonly Services.IUserFeedback? _feedback;
 
-    public SaveSetFormViewModel(Func<CustomSetMetadata, CustomSetWriteResult> write)
+    public SaveSetFormViewModel(Func<CustomSetMetadata, CustomSetWriteResult> write, Services.IUserFeedback? feedback = null)
     {
         _write = write;
+        _feedback = feedback;
+    }
+
+    // The form never grows to hold its outcome: saved is a toast, failed is the status line.
+    partial void OnSuccessMessageChanged(string? value)
+    {
+        if (!string.IsNullOrEmpty(value))
+            _feedback?.Report("Preset saved", value);
+    }
+
+    partial void OnErrorMessageChanged(string? value)
+    {
+        if (!string.IsNullOrEmpty(value))
+            _feedback?.Fail(value);
     }
 
     [ObservableProperty]
