@@ -61,8 +61,9 @@ $RECYCLE.BIN/
 # macOS
 .DS_Store
 
-# Claude Code
-.claude/settings.local.json
+# Local agent folders
+/.agents/
+/.claude/
 
 # Cursor / Windsurf
 .cursor/
