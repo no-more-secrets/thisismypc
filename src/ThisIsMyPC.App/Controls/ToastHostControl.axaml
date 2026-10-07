@@ -44,9 +44,9 @@
                                        FontSize="12"
                                        TextWrapping="Wrap"
                                        Foreground="{DynamicResource TextSecondaryBrush}" />
-                            <Button Content="{Binding ActionLabel}"
+                            <Button Classes="apply-bar-apply" Content="{Binding ActionLabel}"
                                     Command="{Binding ActionCommand}"
-                                    IsVisible="{Binding HasAction}"
+                                    IsVisible="{Binding IsActionVisible}"
                                     HorizontalAlignment="Left" Margin="0,6,0,0" />
                         </StackPanel>
                         <Button Grid.Column="2"

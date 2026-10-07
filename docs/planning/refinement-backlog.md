@@ -19,6 +19,8 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 - DONE: removed the Hardware Details subtitle and aligned toast top/right insets.
 - DONE: Explorer notices offer Restart Explorer. Success clears the notice and status; failures retain the action. Outstanding reboot/sign-out notices remain.
 - DONE: unverified Explorer restart notices and descriptions say "May require an Explorer restart."
+- DONE: restart buttons use the shared blue action style. The toast action hides on Explorer, where the header already offers it.
+- DONE: status messages have a dismiss button. Closing a message preserves the toast and the pending changes.
 - DONE: the legacy PowerShell entry is grey, read-only, and marked currently non-functional. Its note explains that it does not control Open in Terminal.
 - Verified: fake restart and staging tests, full-window inset checks, and screenshots in both themes. Live Explorer restart remains a manual acceptance check.
 

@@ -23,6 +23,11 @@ public sealed partial class ToastViewModel : ViewModelBase
     public string? ActionLabel { get; }
     public ICommand? ActionCommand { get; }
     public bool HasAction => ActionCommand is not null;
+    public bool IsActionVisible => HasAction && !IsActionSuppressed;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsActionVisible))]
+    private bool _isActionSuppressed;
     public ToastSeverity Severity { get; }
 
     /// <summary>Stays until closed by hand or replaced by its key; never auto-dismissed, never evicted.</summary>

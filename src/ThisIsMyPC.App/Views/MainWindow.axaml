@@ -277,11 +277,12 @@
                     <!-- Explorer page only: always there, loud while applied changes wait for it. -->
                     <Button x:Name="RestartExplorerButton"
                             Content="Restart Explorer"
-                            Classes.accent="{Binding IsRestartActionAvailable}"
+                            Height="32"
+                            Classes.apply-bar-apply="{Binding IsRestartActionAvailable}"
                             IsVisible="{Binding IsExplorerPageOpen}"
                             IsEnabled="{Binding !IsRestartingExplorer}"
                             Command="{Binding RestartExplorerCommand}"
-                            ToolTip.Tip="Restarts Explorer so applied changes take effect. Open File Explorer windows close."
+                            ToolTip.Tip="Restarts Explorer. Open File Explorer windows close."
                             AutomationProperties.Name="Restart Explorer"
                             Padding="12,6" />
                     <Button Classes="bar-icon"
@@ -432,16 +433,25 @@
                                            FontSize="13" />
                             </Button>
 
-                            <TextBlock Grid.Column="3" Text="{Binding StatusMessage}"
+                            <DockPanel Grid.Column="3" Margin="12,0,0,0"
+                                       IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                <Button x:Name="DismissStatusButton" DockPanel.Dock="Right"
+                                        Classes="bar-icon" Width="24" Height="24" Margin="6,0,0,0"
+                                        Command="{Binding DismissStatusCommand}"
+                                        ToolTip.Tip="Dismiss message"
+                                        AutomationProperties.Name="Dismiss message">
+                                    <icons:FluentIcon Symbol="Dismiss" Width="12" Height="12"
+                                                      Foreground="{DynamicResource TextSecondaryBrush}" />
+                                </Button>
+                                <TextBlock Text="{Binding StatusMessage}"
                                        FontSize="12"
-                                       Margin="12,0,0,0"
                                        VerticalAlignment="Center"
                                        TextTrimming="CharacterEllipsis"
                                        ToolTip.Tip="{Binding StatusMessage}"
-                                       IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                        Classes.status-success="{Binding IsStatusSuccess}"
                                        Classes.status-warning="{Binding IsStatusWarning}"
                                        Classes.status-error="{Binding IsStatusError}" />
+                            </DockPanel>
                         </Grid>
                     </Grid>
                 </Border>

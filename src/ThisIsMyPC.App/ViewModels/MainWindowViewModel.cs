@@ -1030,6 +1030,7 @@ public partial class MainWindowViewModel : ViewModelBase
     partial void OnCurrentContentChanged(object? value)
     {
         OnPropertyChanged(nameof(IsExplorerPageOpen));
+        UpdateRestartToastActionVisibility();
         if (_refreshTabState is { } refresh)
         {
             if (refresh.Epoch != _contentEpoch)
@@ -1759,6 +1760,9 @@ public partial class MainWindowViewModel : ViewModelBase
     public bool IsStatusWarning => StatusSeverity == StatusSeverity.Warning;
     public bool IsStatusError => StatusSeverity == StatusSeverity.Error;
 
+    [RelayCommand]
+    private void DismissStatus() => StatusMessage = string.Empty;
+
     /// <summary>Every status line is also a log line, so an error on screen can be copied from the log.</summary>
     private void SetStatus(string message, StatusSeverity severity)
     {
@@ -2217,12 +2221,22 @@ public partial class MainWindowViewModel : ViewModelBase
             ToastStack.Show(title, RestartNotificationMessage, sticky ? ToastSeverity.Warning : ToastSeverity.Success,
                 sticky, RestartToastKey, IsRestartActionAvailable ? "Restart Explorer" : null,
                 IsRestartActionAvailable ? RestartExplorerCommand : null);
+            UpdateRestartToastActionVisibility();
             return title;
         }
     }
 
     private const string RestartToastKey = "restart-notice";
     private RestartRequirement? _restartAfterExplorer;
+
+    private void UpdateRestartToastActionVisibility()
+    {
+        foreach (var toast in ToastStack.Toasts)
+        {
+            if (toast.Key == RestartToastKey)
+                toast.IsActionSuppressed = IsExplorerPageOpen;
+        }
+    }
 
     /// <summary>Dismissing the notice, or restarting Explorer, closes its toast too.</summary>
     partial void OnIsRestartNotificationVisibleChanged(bool value)

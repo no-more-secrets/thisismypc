@@ -83,6 +83,7 @@ public class RestartAnnotationShotTests
         session.OpenModule("Context Menus");
         await session.WaitForAsync(() => vm.CurrentContent is ContextMenuViewModel, what: "context menus");
         vm.IsRestartNotificationVisible = true;
+        vm.IsRestartActionAvailable = true;
         vm.ToastStack.Show("May require an Explorer restart", "Open File Explorer windows will close.",
             ToastSeverity.Warning, sticky: true, key: "restart-notice",
             actionLabel: "Restart Explorer", actionCommand: vm.RestartExplorerCommand);
@@ -95,6 +96,39 @@ public class RestartAnnotationShotTests
         var topGap = toastOrigin.Y - hostOrigin.Y;
         Assert.InRange(Math.Abs(rightGap - topGap), 0, 1);
         Assert.InRange(rightGap, 10, 14);
+        var notice = Assert.Single(vm.ToastStack.Toasts);
+        Assert.True(notice.IsActionVisible);
+        session.OpenModule("Explorer");
+        await session.WaitForAsync(() => vm.CurrentContent is ShellViewModel, what: "Explorer page");
+        Assert.False(notice.IsActionVisible);
+        var toastButton = toast.GetVisualDescendants().OfType<Button>()
+            .Single(b => Equals(b.Content, "Restart Explorer"));
+        Assert.False(toastButton.IsVisible);
+        var headerButton = session.Find<Button>(b => b.Name == "RestartExplorerButton");
+        Assert.True(headerButton.IsVisible);
+        session.Screenshot("explorer-header-dark");
+        var explorerHostOrigin = host.TranslatePoint(default, session.Window)!.Value;
+        Assert.InRange(Math.Abs(toastOrigin.Y - explorerHostOrigin.Y - rightGap), 0, 1);
+        session.SetTheme(ThemeVariant.Light);
+        session.Screenshot("explorer-header-light");
+        session.OpenModule("Context Menus");
+        await session.WaitForAsync(() => vm.CurrentContent is ContextMenuViewModel, what: "return to context menus");
+        Assert.True(notice.IsActionVisible);
+        Assert.True(toastButton.IsVisible);
+        vm.StatusMessage = "Changes applied. May require an Explorer restart";
+        vm.StatusSeverity = StatusSeverity.Warning;
+        session.Screenshot("context-toast-light");
+        session.SetTheme(ThemeVariant.Dark);
+        session.Screenshot("dismissible-status-dark");
+        var barHeight = session.Find<Border>(b => b.Name == "ApplyBar").Bounds.Height;
+        session.Click(session.Find<Button>(b => b.Name == "DismissStatusButton"));
+        Assert.Empty(vm.StatusMessage);
+        Assert.Same(notice, Assert.Single(vm.ToastStack.Toasts));
+        Assert.Equal(barHeight, session.Find<Border>(b => b.Name == "ApplyBar").Bounds.Height);
+        vm.StatusMessage = "Another message";
+        session.Pump();
+        session.Click(session.Find<Button>(b => b.Name == "DismissStatusButton"));
+        Assert.Empty(vm.StatusMessage);
         session.ClickText("Restart Explorer");
         await session.WaitForAsync(() => restart.Called && !vm.IsRestartingExplorer, what: "fake Explorer restart");
         Assert.Empty(vm.ToastStack.Toasts);

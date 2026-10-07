@@ -238,14 +238,21 @@ public class MainWindowViewModelTests
         Assert.Equal(string.Empty, vm.StatusMessage);
     }
 
-    [Fact]
-    public async Task ApplyAllCommand_ShowsRestartNotification_WhenExplorerRestartRequired()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ApplyAllCommand_ShowsRestartNotification_WhenExplorerRestartRequired(bool explorerPageOpen)
     {
         var fakeModule = new Fakes.FakeModule("Explorer", _ =>
             Task.FromResult(OperationResult<bool>.Success(true)));
 
         var vm = CreateViewModel(out var service, fakeModule);
         await vm.InitializeAsync();
+
+        using var shell = new ShellViewModel(new Modules.Shell.Models.ShellScanData([], new Modules.Shell.Models.TaskbarSettings(1, true, false, false)),
+            service, new Fakes.FakeRegistryService());
+        if (explorerPageOpen)
+            vm.CurrentContent = shell;
 
         service.Stage(new ChangeDescriptor
         {
@@ -275,7 +282,11 @@ public class MainWindowViewModelTests
         Assert.True(toast.IsWarning);
         Assert.Equal("Restart Explorer", toast.ActionLabel);
         Assert.Same(vm.RestartExplorerCommand, toast.ActionCommand);
+        Assert.Equal(!explorerPageOpen, toast.IsActionVisible);
+        vm.CurrentContent = explorerPageOpen ? null : shell;
+        Assert.Equal(explorerPageOpen, toast.IsActionVisible);
         vm.DismissRestartNotificationCommand.Execute(null);
+        vm.CurrentContent = null;
         Assert.Empty(vm.ToastStack.Toasts);
     }
 
