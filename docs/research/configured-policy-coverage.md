@@ -29,6 +29,34 @@ Registry names without a catalog route were not counted as coverage. Similar int
 
 ## Verification still required
 
+### Read-only detection tranche (2026-10-07)
+
+`PracticalPolicyCatalog` now maps seven single-DWORD policies. They are detection coverage, not additional editable routes.
+`LocalPolicyInspector` reads local computer, local user, applicable group, and current-account policy sources without enumerating profiles.
+`PolicyStateReader` compares saved instructions with typed registry values. Missing files and unreadable files remain distinct.
+Source order follows [Microsoft's local GPO order](https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2012-r2-and-2012/dn789197(v=ws.11)).
+Deletion handling follows the [registry extension processing specification](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-gpreg/57226664-ce00-4487-994e-a6b3820f3e49), including literal `**DelVals.` and REG_SZ deletion payloads.
+
+| ADMX identity | Verified scope | Destination |
+|---|---|---|
+| DisableWindowsConsumerFeatures | Machine | Windows Annoyances: Nag Screens & Suggestions |
+| DisableSoftLanding | Machine | Windows Annoyances: Nag Screens & Suggestions |
+| DisableThirdPartySuggestions | User | Windows Annoyances: Nag Screens & Suggestions |
+| DisableCloudOptimizedContent | Machine | Windows Annoyances: Nag Screens & Suggestions |
+| DisableConsumerAccountStateContent | Machine | Windows Annoyances: Nag Screens & Suggestions |
+| DisableTailoredExperiencesWithDiagnosticData | User | Windows Annoyances: Advertising & Tracking |
+| AllowSearchHighlights | Machine | Windows Annoyances: Bing Search & Edge |
+
+Every mapping was checked against installed CloudContent.admx or Search.admx, including key, value, scope, and enabled/disabled values.
+Microsoft's [Experience mappings](https://learn.microsoft.com/en-us/windows/client-management/mdm/policy-csp-experience) and
+[Search highlights mapping](https://learn.microsoft.com/en-us/windows/client-management/mdm/policy-csp-search#allowsearchhighlights) provide support references.
+The third-party suggestions definition is user-scoped; a same-named machine value does not establish that user policy's state.
+Registry-only values do not establish who wrote them. Matching saved and registry values do not prove runtime enforcement.
+GPO disable flags, domain/MDM provenance, and edition/build enforcement remain outside this read-only tranche.
+Policy controls, staged writes, refresh, and exact undo remain pending. The route totals above do not change.
+
+### Remaining inventory audit
+
 The scope column records the export's declared scope, not verified ADMX applicability.
 Every row carries E. This audit did not verify installed behavior across Home, Pro, and Enterprise/Education.
 

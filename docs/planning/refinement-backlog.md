@@ -9,6 +9,9 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 - Pending: integrate preferences and policy overrides in the relevant feature controls, including saved local policy rather than registry-only writes.
 - DONE: shared Registry.pol reader and encoder preserve record order, duplicate values, deletion instructions, unknown types, and exact data bytes.
 - Verified: 11 parser tests and a read-only check of the current local policy file, preserving all 94 records byte-for-byte.
+- DONE: seven policy definitions cover consumer promotions, Windows tips, third-party suggestions, cloud content, tailored experiences, and Search highlights.
+- DONE: read-only inspection separates saved local sources, policy scope, and current registry state. Missing, unreadable, wrong-type, and deletion states remain distinct.
+- Verified: all seven mappings match installed ADMX templates. Twenty state tests cover scope, source order, mismatches, and deletion instructions.
 - Pending: connect policy definitions and source scopes to feature controls, then add staged policy changes with exact undo and refresh handling.
 - Confirmed defect: Sticky Keys shortcut detection compares the complete Flags string with 506. Sam's value 26 already disables the shortcut.
 - Pending: fix Sticky Keys detection and writes to preserve unrelated bits, then audit each control for the same class of mistake.
