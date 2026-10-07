@@ -33,10 +33,10 @@
         <Setter Property="FontStyle" Value="Italic" />
     </Style>
     <Style Selector="Border.release-badge.beta TextBlock">
-        <Setter Property="Foreground" Value="#322405" />
+        <Setter Property="Foreground" Value="#5C420A" />
     </Style>
     <Style Selector="Border.release-badge.alpha TextBlock">
-        <Setter Property="Foreground" Value="#2C0E12" />
+        <Setter Property="Foreground" Value="#642229" />
     </Style>
     <Style Selector="Button.status-dismiss">
         <Setter Property="Background" Value="Transparent" />
