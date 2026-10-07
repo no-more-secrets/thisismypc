@@ -31,6 +31,9 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 
 ## Annotation feedback (2026-10-07)
 
+- DONE: Software shows three equal columns at the default 1200px window width. The catalog contains 91 apps, down from 236 (61% fewer), retaining all companion dependencies.
+- DONE: 86 bundled app icons work offline; five entries retain category symbols. Explicit installed-name aliases recognize uncorrelated ARP entries, including Chrome and Firefox, without merging editions, architectures, or version-specific packages.
+- Verified: real installed-app scan, dark/light catalog screenshots, three-column assertions, detection regressions, and edge measurements (25/23/59/10). Live installation and uninstallation were not exercised.
 - DONE: Presets uses two independent cards with an open gap and no enclosing card. Tweaks/Packs tabs belong only to the left selector card. The right card has compact searchable change rows with links to their feature controls.
 - DONE: removed the Presets footer's rounded partial border. Search preserves checked changes and stages them even when the filter hides them.
 - Verified: dark/light screenshots, card edge measurements, filtered staging, applied-state links, and navigation to Explorer and Startup entries.

@@ -234,7 +234,10 @@ public sealed class WingetService : IWingetService
             // Rows winget could not correlate to a source carry raw ARP ids
             // ("ARP\Machine\X86\Google Chrome") no install can target; keep the
             // display name so those installs still match the catalog by name.
-            var usableId = IsUsableId(id);
+            var usableId = IsUsableId(id)
+                && !id.StartsWith("ARP\\", StringComparison.OrdinalIgnoreCase)
+                && !id.StartsWith("MSIX\\", StringComparison.OrdinalIgnoreCase)
+                && !Guid.TryParse(id, out _);
             if (!usableId && name.Length == 0)
                 continue;
             if (!seen.Add(usableId ? id : $"name:{name}"))

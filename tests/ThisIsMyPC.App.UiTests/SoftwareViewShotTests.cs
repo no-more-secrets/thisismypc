@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Headless.XUnit;
 using ThisIsMyPC.App.ViewModels;
 using ThisIsMyPC.App.Views;
@@ -14,6 +15,30 @@ namespace ThisIsMyPC.App.UiTests;
 /// </summary>
 public class SoftwareViewShotTests
 {
+    [AvaloniaFact]
+    public void Catalog_DefaultContentWidthHasThreeColumnsAndBundledIcons()
+    {
+        var queue = new PendingActionsService();
+        var vm = new SoftwareViewModel(CreateScanData(), queue, new Fakes.UiFakeWingetService());
+        // The 1200px main window leaves 950px for its page card.
+        using var session = UiSession.ForView(new SoftwareView(), vm, "software-view", width: 950);
+        foreach (var theme in new[] { Avalonia.Styling.ThemeVariant.Dark, Avalonia.Styling.ThemeVariant.Light })
+        {
+            session.SetTheme(theme);
+            var cards = session.FindAll<Avalonia.Controls.Border>(b => b.Classes.Contains("card")
+                && b.DataContext is SoftwareAppViewModel { Category: "Browsers" }).Take(4).ToArray();
+            Assert.Equal(4, cards.Length);
+            var positions = cards.Select(c => c.TranslatePoint(default, session.Window)!.Value).ToArray();
+            Assert.Equal(positions[0].Y, positions[2].Y);
+            Assert.True(positions[0].X < positions[1].X && positions[1].X < positions[2].X);
+            Assert.True(positions[3].Y > positions[0].Y);
+            Assert.All(cards, c => Assert.True(((SoftwareAppViewModel)c.DataContext!).HasIcon));
+            session.Screenshot($"three-columns-{theme.Key}");
+        }
+        // Every shipped image must decode. Missing publisher artwork has a category fallback.
+        Assert.Equal(86, SoftwareCatalog.Entries.Count(e => Services.SoftwareIcons.Get(e.Id) is not null));
+    }
+
     private static SoftwareScanData CreateScanData() => new(
         Catalog: SoftwareCatalog.Entries,
         InstalledWingetIds: new HashSet<string>(StringComparer.OrdinalIgnoreCase)

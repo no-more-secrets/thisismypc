@@ -170,7 +170,7 @@ public sealed class WingetUpgradeParsingTests
 
         // Unusable ids (spaces, truncation) survive as name-only rows so the
         // catalog can still match them by display name.
-        Assert.Equal(["Google.Chrome", "OpenJS.NodeJS", "{A1B2C3D4-0000-0000-0000-000000000000}", "", "", "Vendor.Driver"],
+        Assert.Equal(["Google.Chrome", "OpenJS.NodeJS", "", "", "", "Vendor.Driver"],
             packages.Select(p => p.PackageId).ToArray());
         Assert.Equal("139.0.7258", packages[0].Version);
         Assert.Equal("Mystery App", packages[3].Name);

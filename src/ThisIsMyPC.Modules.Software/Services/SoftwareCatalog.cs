@@ -43,7 +43,12 @@ public static class SoftwareCatalog
                     ? WingetSource.MsStore
                     : WingetSource.Winget,
                 Link: app.GetProperty("link").GetString()!,
-                IsOpenSource: app.GetProperty("foss").GetBoolean()));
+                IsOpenSource: app.GetProperty("foss").GetBoolean())
+            {
+                InstalledNames = app.TryGetProperty("installedNames", out var names)
+                    ? names.EnumerateArray().Select(name => name.GetString()!).ToArray()
+                    : [],
+            });
         }
 
         return entries.AsReadOnly();

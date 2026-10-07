@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:icons="using:ThisIsMyPC.App.Icons"
+             xmlns:controls="using:ThisIsMyPC.App.Controls"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ThisIsMyPC.App.ViewModels"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -49,12 +50,12 @@
                                     <ItemsControl ItemsSource="{Binding Apps}">
                                         <ItemsControl.ItemsPanel>
                                             <ItemsPanelTemplate>
-                                                <WrapPanel />
+                                                <controls:ResponsiveColumnsPanel MinColumnWidth="290" ColumnGap="8" />
                                             </ItemsPanelTemplate>
                                         </ItemsControl.ItemsPanel>
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate x:DataType="vm:SoftwareAppViewModel">
-                                                <Border Width="300" Padding="10,7" Margin="0,0,8,8"
+                                                <Border Padding="10,7" Margin="0,0,0,8"
                                                         CornerRadius="4"
                                                         Classes="card"
                                                         ToolTip.Tip="{Binding Description}">
@@ -66,16 +67,21 @@
                                                                 HorizontalContentAlignment="Center"
                                                                 Content="{Binding ActionButtonText}"
                                                                 Command="{Binding ToggleQueueCommand}" />
-                                                        <icons:FluentIcon DockPanel.Dock="Left"
-                                                                  Width="20" Height="20"
-                                                                  Margin="0,0,9,0"
-                                                                  VerticalAlignment="Center"
-                                                                  Foreground="{DynamicResource TextTertiaryBrush}"
-                                                                  Symbol="{Binding Category, Converter={x:Static vm:CategoryIconConverter.Instance}}" />
+                                                        <Grid DockPanel.Dock="Left" Width="24" Height="24"
+                                                              Margin="0,0,9,0" VerticalAlignment="Center">
+                                                            <Border Background="#F4F4F4" CornerRadius="3" Padding="2"
+                                                                    IsVisible="{Binding HasIcon}">
+                                                                <Image Source="{Binding Icon}" Stretch="Uniform" />
+                                                            </Border>
+                                                            <icons:FluentIcon Width="20" Height="20"
+                                                                IsVisible="{Binding !HasIcon}"
+                                                                Foreground="{DynamicResource TextTertiaryBrush}"
+                                                                Symbol="{Binding Category, Converter={x:Static vm:CategoryIconConverter.Instance}}" />
+                                                        </Grid>
                                                         <StackPanel Margin="0,0,8,0"
                                                                     VerticalAlignment="Center">
-                                                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                                                <Ellipse Width="7" Height="7"
+                                                            <DockPanel>
+                                                                <Ellipse DockPanel.Dock="Left" Width="7" Height="7" Margin="0,0,6,0"
                                                                          VerticalAlignment="Center"
                                                                          Fill="{DynamicResource SuccessBrush}"
                                                                          IsVisible="{Binding IsInstalled}"
@@ -85,7 +91,7 @@
                                                                            FontSize="13"
                                                                            TextTrimming="CharacterEllipsis"
                                                                            Foreground="{DynamicResource TextPrimaryBrush}" />
-                                                            </StackPanel>
+                                                            </DockPanel>
                                                             <TextBlock Text="{Binding WingetId}"
                                                                        FontFamily="{StaticResource MonoFont}"
                                                                        FontSize="11"

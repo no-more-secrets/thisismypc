@@ -1,0 +1,518 @@
+[
+  {
+    "id": "1password",
+    "sha256": "B851E4D2A345AD6DF46B6F2A339C3980BDC6876C5A51B1BA5644EFFC3FACAE0F",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/1password.png"
+  },
+  {
+    "id": "7zip",
+    "sha256": "1A433FD51B5BA6AB1B08328E8A098AD6A4EC3E67312A0FB0389DE8CA127970DC",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/7zip.png"
+  },
+  {
+    "id": "OVirtualBox",
+    "sha256": "A12F8FABF6066ECFD5DD6D284B44016FB1D785890618B31A73A0890DEB22F609",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/virtualbox.png"
+  },
+  {
+    "id": "Paintdotnet",
+    "sha256": "11F092F8B40F7D15915C611E90D0E00BCB011D6990284DC34A2974256961DA56",
+    "source": "UniGetUI icon database",
+    "url": "https://community.chocolatey.org/content/packageimages/paint.net.5.0.2.png"
+  },
+  {
+    "id": "adobe",
+    "sha256": "B4D1C80167DFD19A020D1812AAB99924F64CDA9FFCD7BCDC412EF8A9CBEB4038",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/adobe.png"
+  },
+  {
+    "id": "anydesk",
+    "sha256": "A7053863F7654C6028DC01F40816E89B90F3A497808C498AC57EF24781B95696",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/anydesk.png"
+  },
+  {
+    "id": "audacity",
+    "sha256": "9C4F8FB1BBECCE6B59EA78C33CF8D356961E1B5AD9ED48C3E630AFD5CD8D393B",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/audacity.png"
+  },
+  {
+    "id": "autohotkey",
+    "sha256": "F79BD848255C20D5A0CEB57D7776FE0DCE06769D73CEE029C038B431B83B0460",
+    "source": "UniGetUI icon database",
+    "url": "https://raw.githubusercontent.com/Ixiko/AHK-Forum/master/images/AHK%20main%20icon.png"
+  },
+  {
+    "id": "bitwarden",
+    "sha256": "4ACC02C64FAC6EDED6512AB31F1D4F9BD9EAEFB5AE1DD4E8895CE20F168B8382",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/bitwarden.png"
+  },
+  {
+    "id": "blender",
+    "sha256": "E29310AEB047971E4AAF88B0D3DDDD4E96ED1D5E24269FC3984EF6B1FDAA135A",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/blender.png"
+  },
+  {
+    "id": "brave",
+    "sha256": "2E191AD8218734E1F32F9E0FCD45599089C5B224485207B5C08BA9F767B4E9C6",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/brave.png"
+  },
+  {
+    "id": "chatgpt",
+    "sha256": "F05DD6DC3F8B28CDBBAC37BE0C4377A2F71417CB79976BB1CF959337060203E4",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/chatgpt.png"
+  },
+  {
+    "id": "chrome",
+    "sha256": "142E715313FED7BB55194F8E83B4F479201FBFB72BA1DE8B5E27F917CADCF5D0",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/chrome.png"
+  },
+  {
+    "id": "claude",
+    "sha256": "6EC88CDF038845379464DA7D0FC3D13C19D3B49759DADB2A85FA60A92592F64D",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/claude-ai.png"
+  },
+  {
+    "id": "codex",
+    "sha256": "F05DD6DC3F8B28CDBBAC37BE0C4377A2F71417CB79976BB1CF959337060203E4",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/chatgpt.png"
+  },
+  {
+    "id": "cpuz",
+    "sha256": "1C8BA3ED1CC76C7AFCBB622D9586501728971189124DD51D3AEF8196404619A5",
+    "source": "UniGetUI icon database",
+    "url": "https://i.postimg.cc/fWjrdd4c/cpu-z.png"
+  },
+  {
+    "id": "crystaldiskmark",
+    "sha256": "9809D4593FEC15513EC103BED25DD40948E5C102D4FBA9277C374857328244DB",
+    "source": "UniGetUI icon database",
+    "url": "https://i.postimg.cc/NMsCG9zH/cmark-icon.png"
+  },
+  {
+    "id": "cursor",
+    "sha256": "AAE6FF732A1D338CFF01FFE9549D89649A2CDEACCE84C6D797BC6FE97372D7F6",
+    "source": "Publisher",
+    "url": "https://cursor.com/marketing-static/icon-192x192-light.png"
+  },
+  {
+    "id": "ddu",
+    "sha256": "95C1EBDFC0446AAA366A4BCE7C4171D25B92470A37BC13BC27BA48A895214CCE",
+    "source": "UniGetUI icon database",
+    "url": "https://community.chocolatey.org/content/packageimages/ddu.18.0.6.2023012901.png"
+  },
+  {
+    "id": "discord",
+    "sha256": "74D35AE7BF4A55E841556E0C0C8E32FCFF69CC053B5EAC7EF4BEA1FDF9EB8F7E",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/discord.png"
+  },
+  {
+    "id": "dockerdesktop",
+    "sha256": "E2DBCBAD077DEDC29410D9A62759D8C386C6A69E29D0CBF6E115F742F5569266",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/docker.png"
+  },
+  {
+    "id": "dotnet10",
+    "sha256": "48B401CED547415802C67ADE66B9B957C8D330676A287AC17F85014D209378E1",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/dotnet.png"
+  },
+  {
+    "id": "dropbox",
+    "sha256": "C594C4B485549DCB7F342FD0C9AEAA9F63717F34D2F93A1FDA4ADDB9C6AE1C43",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/dropbox.png"
+  },
+  {
+    "id": "eaapp",
+    "sha256": "B61FE82E46C48AB27C648727421A4B56989DC6D6F1E7B3C921FC98A66BC57D91",
+    "source": "UniGetUI icon database",
+    "url": "https://community.chocolatey.org/content/packageimages/ea-app.13.218.0.5731.png"
+  },
+  {
+    "id": "edge",
+    "sha256": "D05B0881D7226FF56FD0288C43C6C1E8E00A22F2C4751F323A55FB96786E0AD1",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/edge.png"
+  },
+  {
+    "id": "epicgames",
+    "sha256": "4EBC564ECF7F71CD41496897CEBC92B0E03DD6C1759D6271DD41325C4DA276FC",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/epic-games.png"
+  },
+  {
+    "id": "everything",
+    "sha256": "190296FD29B454A9AA2AD1538F88C38AF621779BDCF9F37B507FF83A880078E2",
+    "source": "UniGetUI icon database",
+    "url": "https://i.postimg.cc/rpwsh2hZ/everything-icon.png"
+  },
+  {
+    "id": "firefox",
+    "sha256": "CCBC9920F057D92672C6C398FBE1297CA133150EFC71FB476ED8BB6BCA430546",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/firefox.png"
+  },
+  {
+    "id": "g-helper",
+    "sha256": "79DC79373EE1F27D0AAC5FFC5D4E3FE3B451A2882B43E215F77CDA759A1615EB",
+    "source": "UniGetUI icon database",
+    "url": "https://i.ibb.co/PvLShmHH/ghelper.png"
+  },
+  {
+    "id": "gimp",
+    "sha256": "F46BB37387CF59E71D77A03FC16AC0A8294A9D8864916382D90604CD072387D9",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/gimp.png"
+  },
+  {
+    "id": "git",
+    "sha256": "7A593CB03FC3EF0B351EC29A5F0D9DC5838C042DD9EDAAF47FE84750830E82B2",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/git.png"
+  },
+  {
+    "id": "githubdesktop",
+    "sha256": "9D01F76C21C6DB0D53FC1A185CF855A57CC7098981315CC0813C0D1288FC2A5C",
+    "source": "UniGetUI icon database",
+    "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ae/Github-desktop-logo-symbol.svg/250px-Github-desktop-logo-symbol.svg.png"
+  },
+  {
+    "id": "gog",
+    "sha256": "6FF4011B5AC091257363CFA1CEC4F511406463D027D24A1A9BB6743BCF7DB1EF",
+    "source": "UniGetUI icon database",
+    "url": "https://community.chocolatey.org/content/packageimages/goggalaxy.2.0.58.4.png"
+  },
+  {
+    "id": "googledrive",
+    "sha256": "7BAB95CBED07B9A667696B243D61DA1603133A40431C5CC131091EAAC7A4F4C0",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/google-drive.png"
+  },
+  {
+    "id": "gpuz",
+    "sha256": "6BC31C3393B7EF934A0E7BFB6D451F9D06D75A23A231CF3FE8D6BB87DDACBE14",
+    "source": "UniGetUI icon database",
+    "url": "https://tpucdn.com/images/news/tpu-v1669381101081.png"
+  },
+  {
+    "id": "handbrake",
+    "sha256": "885CA62131E68607702E1B223FC6CE898495E1132C366031CD3E849AD8E38C04",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/handbrake.png"
+  },
+  {
+    "id": "hwinfo",
+    "sha256": "E46B51224E89A0A47AD4DF63319CFC4C0B10686A4162274C149D35FB122B0737",
+    "source": "UniGetUI icon database",
+    "url": "https://i.postimg.cc/MKfynM2J/HWiNFO64.png"
+  },
+  {
+    "id": "keepassxc",
+    "sha256": "9B225587870BC22B27935187EF99CBAF822F23ED2EC590CB336C0308D0956BB4",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/keepassxc.png"
+  },
+  {
+    "id": "kodi",
+    "sha256": "DD65E8E4D4B2400F8476A54A30F18A97CD78F16356E03FAA4587E5BA29E0D6EE",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/kodi.png"
+  },
+  {
+    "id": "librehardwaremonitor",
+    "sha256": "9327F84A7AAD84C03CBF32FBD7753284FE948F948AADCCEBEB8BD8C547E77C4E",
+    "source": "UniGetUI icon database",
+    "url": "https://community.chocolatey.org/content/packageimages/librehardwaremonitor.0.9.1.png"
+  },
+  {
+    "id": "libreoffice",
+    "sha256": "BB921BE498E50DB2A65A004088FE3CDE3FD1F14B1FF702FE67F37BF462E374B6",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/libreoffice.png"
+  },
+  {
+    "id": "localsend",
+    "sha256": "963F6EF53D4739D3128A23001335F7A61C13915A5A650A19C896A12F3690BF53",
+    "source": "UniGetUI icon database",
+    "url": "https://i.imgur.com/JZiGU2w.png"
+  },
+  {
+    "id": "msiafterburner",
+    "sha256": "1303E59C6332CF1093CD5459018452C11A3CC1BC638942A5EC8CF8EB185E4DBC",
+    "source": "UniGetUI icon database",
+    "url": "https://community.chocolatey.org/content/packageimages/msiafterburner.4.6.5.png"
+  },
+  {
+    "id": "nodejs",
+    "sha256": "922AC296391CAFDCDBDCACD26533065AC0D34414F6FCE7604E73567434B40667",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/nodejs.png"
+  },
+  {
+    "id": "notepadplus",
+    "sha256": "383B372373B8C5F2CB6CBD9D94A9657667213981E382904F939018D5ADE52D40",
+    "source": "UniGetUI icon database",
+    "url": "https://i.postimg.cc/j5vJ5ys8/notepadplusplus.png"
+  },
+  {
+    "id": "obs",
+    "sha256": "58B7F1F831FB7889DBCB3CE981A76911DBB7453E21719AE49411C50E5DBBD26A",
+    "source": "Publisher",
+    "url": "https://raw.githubusercontent.com/obsproject/obs-studio/39c2de975bb94058553fe8da85cb991c28b37202/frontend/cmake/linux/icons/obs-logo-128.png"
+  },
+  {
+    "id": "obsidian",
+    "sha256": "DEC0B91E5DBE54207A0B2A46C031A3B6594110E1771F84207F25C8D7C5D7754F",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/obsidian.png"
+  },
+  {
+    "id": "onedrive",
+    "sha256": "CAF7DD21E4D695C119A33EEE51463C5238AC7A7624D5304213573854877A8AF0",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/microsoft-onedrive.png"
+  },
+  {
+    "id": "openrgb",
+    "sha256": "D579D5F562ADCD06DCA94A8DA9739E907902E1FE275719DE6FCD7464E5CA807C",
+    "source": "UniGetUI icon database",
+    "url": "https://community.chocolatey.org/content/packageimages/openrgb.0.8.png"
+  },
+  {
+    "id": "plex",
+    "sha256": "C33F3DA3B80F20C5DB91A9BF2366FCEE5DBC6E72CE1DB3FA5C72CD0939BAB2C4",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/plex.png"
+  },
+  {
+    "id": "postman",
+    "sha256": "DB7F67CC60EB3DC96A846B99C4741FF33F398E00C58BE9C7996F8D7FA8853A3F",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/postman.png"
+  },
+  {
+    "id": "powershell",
+    "sha256": "B0ED7870176AC0E9FB4AF3E76C5FD64B8C3CB16B8544B49CD4FF558B68FEE79B",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/powershell.png"
+  },
+  {
+    "id": "powertoys",
+    "sha256": "C86BF0204BC8136125303991D4287D9A2B9C04A4D65CFD958018D964BD50D085",
+    "source": "UniGetUI icon database",
+    "url": "https://i.postimg.cc/DfmW7XGy/pticon.png"
+  },
+  {
+    "id": "protonvpn",
+    "sha256": "9B31A75AF81BB4ECE181EF74D119D9CA9E9008487B6302C96D9CCAD5DF894D0F",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/proton-vpn.png"
+  },
+  {
+    "id": "putty",
+    "sha256": "891D53FB0CB7B262E1AA914C725AF9276B7D2EBB0C461217B7990E2A639B2C6F",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/putty.png"
+  },
+  {
+    "id": "python3",
+    "sha256": "470B8277384EE0C95AF0CECDA1D8E0233066E0E1CB9D2CD813DA67015D95ACAA",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/python.png"
+  },
+  {
+    "id": "qbittorrent",
+    "sha256": "59C681336745F207F3DFDF5E57485D85E1B1D7DCFE5A61D77EE7784F7EECDE41",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/qbittorrent.png"
+  },
+  {
+    "id": "revo",
+    "sha256": "31E3BF46BF53F66808A6224D457AF81D7AB30157D14B72E715C3F1AFAE2688E5",
+    "source": "UniGetUI icon database",
+    "url": "https://i.postimg.cc/PqFKpK5s/Revouninstallerpro-512.png"
+  },
+  {
+    "id": "roblox",
+    "sha256": "C128386F036CB57401C5696C59A77BF3BAEEA7B2CAAA162750E5A30824797E72",
+    "source": "UniGetUI icon database",
+    "url": "https://i.ibb.co/ddqFLQ9/roblox.png"
+  },
+  {
+    "id": "rufus",
+    "sha256": "FC8F4795FDF2A3EA5DC09D07A069D8A3EF79A25DF360DDF5601AFF4EBD94DA02",
+    "source": "UniGetUI icon database",
+    "url": "https://i.postimg.cc/VsS0dxJn/Rufus.png"
+  },
+  {
+    "id": "sharex",
+    "sha256": "6EE5478FE8563ABFC01567F6881CF5050266281D51851013024093A65C496F9E",
+    "source": "UniGetUI icon database",
+    "url": "https://community.chocolatey.org/content/packageimages/sharex.16.1.0.png"
+  },
+  {
+    "id": "signal",
+    "sha256": "6F60DCE620A785C0A33A42DF4E40DC2644ECAD0FEDEE06A3581B9F877FA1DDD3",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/signal.png"
+  },
+  {
+    "id": "signalrgb",
+    "sha256": "323B1416195CC6C94AD02B3E018CAF4FA3EE8F640304746BE5959B0EEFF75CFB",
+    "source": "Publisher",
+    "url": "https://signalrgb.com/favicon.ico"
+  },
+  {
+    "id": "slack",
+    "sha256": "860AE78194E6877FE7E279A2A0064F5738F27283D438D023D772B83416AC0F14",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/slack.png"
+  },
+  {
+    "id": "steam",
+    "sha256": "E2BD23A91A1600730BBDF68D88ECB7F0E53DFD3830F3D9F02E6B76F1764E1B6E",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/steam.png"
+  },
+  {
+    "id": "sumatra",
+    "sha256": "D2F5C5469B515782E7C1A0128C85BC5FB269E891B667172A45D5F085035140CF",
+    "source": "UniGetUI icon database",
+    "url": "https://upload.wikimedia.org/wikipedia/commons/7/7b/Sumatra_PDF_logo.png"
+  },
+  {
+    "id": "tailscale",
+    "sha256": "59E8B2631FD5F9609563B667D0586DEA417571904C2BC01C74612652E3A7B9E8",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/tailscale.png"
+  },
+  {
+    "id": "teams",
+    "sha256": "C9A0F6EEECED3B30181B928EF0E472C25995209CB50D60BB06E082284126A5C4",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/microsoft-teams.png"
+  },
+  {
+    "id": "teamviewer",
+    "sha256": "307668F3B36D4944786107A79F2870DF4DCEB45E614E87C3A6472151E42F542B",
+    "source": "UniGetUI icon database",
+    "url": "https://i.imgur.com/2UWkAjM.png"
+  },
+  {
+    "id": "telegram",
+    "sha256": "D13AC91C6B045D9EEF8C18AEEF5413926C9BB2C519B173950496739EC2E78D38",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/telegram.png"
+  },
+  {
+    "id": "terminal",
+    "sha256": "4F260F8CE7C6C59901554782D0F7BF4089504AD9D6B8DC06C5E8C4460B68E6BB",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/terminal.png"
+  },
+  {
+    "id": "thunderbird",
+    "sha256": "3D6600B1EC12873C2CB9DA85A9E459D5C155993B8DAFC3C7F05A7DF6969F54C6",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/thunderbird.png"
+  },
+  {
+    "id": "tor",
+    "sha256": "C5EEC8629E8063E4864F2F2C2BD4D631476FA631F3B196DCB3B4B41FA7B57265",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/tor.png"
+  },
+  {
+    "id": "vc2015_32",
+    "sha256": "F173DEAF06A1B2878EF2F2C5532BFE35F05DB73CD4244D432A114A908E063DDE",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/microsoft.png"
+  },
+  {
+    "id": "vc2015_64",
+    "sha256": "F173DEAF06A1B2878EF2F2C5532BFE35F05DB73CD4244D432A114A908E063DDE",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/microsoft.png"
+  },
+  {
+    "id": "visualstudio2026",
+    "sha256": "5153E90E669AD4B1F4F9575525188118C8CF1BE740F957F1E50F169C9EE0CE4A",
+    "source": "UniGetUI icon database",
+    "url": "https://community.chocolatey.org/content/packageimages/visualstudio2022community.117.5.0.0.png"
+  },
+  {
+    "id": "vlc",
+    "sha256": "5FA1DB7F2AA8F447A4D79714D05D61D8C1F5ABF500DBC3E7F481B64F520EEDEC",
+    "source": "UniGetUI icon database",
+    "url": "https://i.imgur.com/k4W1Nm1.png"
+  },
+  {
+    "id": "vscode",
+    "sha256": "E134276657CBF5697F576AABBDDD42E00F28ADECEB6A67DAF29C662836CBE7EC",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/visual-studio-code.png"
+  },
+  {
+    "id": "whatsapp",
+    "sha256": "5095534B403842835EB35D5ACD02EFC639DC40E2EC1B201E2C45B62C583CAC0E",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/whatsapp.png"
+  },
+  {
+    "id": "winrar",
+    "sha256": "BC0D158AE301999CCE08721F4E90B9C2B90D326EA240C470E1C6712517EE156B",
+    "source": "UniGetUI icon database",
+    "url": "https://i.postimg.cc/mrqHDZxJ/winrar.png"
+  },
+  {
+    "id": "winscp",
+    "sha256": "5431878134D54307CEF4B35518D59C43F9EABDA802B89C9A96131F5111ADD6C9",
+    "source": "UniGetUI icon database",
+    "url": "https://i.postimg.cc/3xtGsCtK/icon.png"
+  },
+  {
+    "id": "wireguard",
+    "sha256": "9705A8E0DC822A522EEC91783922A1B2FEF3E8EE6CD10AA22E73EC98AB561460",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/wireguard.png"
+  },
+  {
+    "id": "wireshark",
+    "sha256": "D4C7EA613A1599398CEDA9E1C8E2052052185AF3A13D3004C050A8C11FBB11D9",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/wireshark.png"
+  },
+  {
+    "id": "wiztree",
+    "sha256": "D03F392D1545D058467183BFFA33B10C6608013120434577008C482E2ABC22D0",
+    "source": "UniGetUI icon database",
+    "url": "https://antibodysoftware-17031.kxcdn.com/images/wiztree445x.png"
+  },
+  {
+    "id": "zoom",
+    "sha256": "477A03D570CC44501C6D8F16F3494F26E85620877A37E940FB9D2466B453E9B6",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/zoom.png"
+  },
+  {
+    "id": "zotero",
+    "sha256": "90DB247DFBE554C98FEC03F16EA1C4697A1231023168BB27CCCBA5CADAD80E92",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/zotero.png"
+  }
+]

@@ -302,6 +302,8 @@ public sealed partial class SoftwareAppViewModel : ViewModelBase
     public string Name => _entry.Name;
     public string Description => _entry.Description;
     public string Category => _entry.Category;
+    public Avalonia.Media.Imaging.Bitmap? Icon => Services.SoftwareIcons.Get(_entry.Id);
+    public bool HasIcon => Icon is not null;
     public string WingetId => _entry.WingetId;
     public bool IsOpenSource => _entry.IsOpenSource;
 

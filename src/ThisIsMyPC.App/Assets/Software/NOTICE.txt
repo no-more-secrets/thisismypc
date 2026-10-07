@@ -1,0 +1,9 @@
+Application icons identify their respective products. Trademarks and artwork
+belong to their respective owners. Inclusion does not imply endorsement.
+
+sources.json records the download URL and SHA-256 of each bundled 64px PNG.
+Dashboard Icons assets are from homarr-labs/dashboard-icons at revision
+57e939e504eda0ea764098015da93aa666ad6f31, under the accompanying Apache 2.0 license.
+Other URLs were discovered through the UniGetUI icon database or publisher sites.
+Icons are bundled for offline display; the application makes no icon downloads.
+Entries without a bundled icon use their category symbol.

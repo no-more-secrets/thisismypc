@@ -11,4 +11,7 @@ public sealed record SoftwareCatalogEntry(
     string WingetId,
     WingetSource Source,
     string Link,
-    bool IsOpenSource);
+    bool IsOpenSource)
+{
+    public IReadOnlyList<string> InstalledNames { get; init; } = [];
+}

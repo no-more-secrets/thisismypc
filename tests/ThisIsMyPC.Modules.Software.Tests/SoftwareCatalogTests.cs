@@ -10,7 +10,7 @@ public class SoftwareCatalogTests
     {
         var entries = SoftwareCatalog.Entries;
 
-        Assert.True(entries.Count >= 200, $"Expected the ported winutil catalog, got {entries.Count} entries");
+        Assert.InRange(entries.Count, 71, 94); // A 60-70% reduction from the original 236 apps.
     }
 
     [Fact]

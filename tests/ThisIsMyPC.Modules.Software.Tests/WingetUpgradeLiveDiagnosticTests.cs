@@ -25,7 +25,7 @@ public sealed class WingetUpgradeLiveDiagnosticTests
         Assert.NotEmpty(result.Value!);
         foreach (var package in result.Value!)
         {
-            Assert.False(string.IsNullOrWhiteSpace(package.PackageId));
+            Assert.True(!string.IsNullOrWhiteSpace(package.PackageId) || !string.IsNullOrWhiteSpace(package.Name));
             Assert.DoesNotContain(' ', package.PackageId);
         }
     }
