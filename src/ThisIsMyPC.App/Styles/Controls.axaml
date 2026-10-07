@@ -28,9 +28,15 @@
         <Setter Property="BorderBrush" Value="#E16A73" />
     </Style>
     <Style Selector="Border.release-badge TextBlock">
-        <Setter Property="Foreground" Value="White" />
+        <Setter Property="FontWeight" Value="Bold" />
         <Setter Property="FontSize" Value="12" />
         <Setter Property="FontStyle" Value="Italic" />
+    </Style>
+    <Style Selector="Border.release-badge.beta TextBlock">
+        <Setter Property="Foreground" Value="#322405" />
+    </Style>
+    <Style Selector="Border.release-badge.alpha TextBlock">
+        <Setter Property="Foreground" Value="#2C0E12" />
     </Style>
     <Style Selector="Button.status-dismiss">
         <Setter Property="Background" Value="Transparent" />
