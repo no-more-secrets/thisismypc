@@ -1,6 +1,9 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia.Headless;
+using Avalonia.Input;
+using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.VisualTree;
 using CommunityToolkit.Mvvm.Input;
@@ -82,6 +85,9 @@ public class RestartAnnotationShotTests
         var vm = (MainWindowViewModel)session.Window.DataContext!;
         session.OpenModule("Context Menus");
         await session.WaitForAsync(() => vm.CurrentContent is ContextMenuViewModel, what: "context menus");
+        Assert.True(vm.IsCurrentFeatureAlpha);
+        Assert.True(session.IsTextVisible("Alpha"));
+        Assert.True(session.IsTextVisible("Beta"));
         vm.IsRestartNotificationVisible = true;
         vm.IsRestartActionAvailable = true;
         vm.ToastStack.Show("May require an Explorer restart", "Open File Explorer windows will close.",
@@ -100,6 +106,8 @@ public class RestartAnnotationShotTests
         Assert.True(notice.IsActionVisible);
         session.OpenModule("Explorer");
         await session.WaitForAsync(() => vm.CurrentContent is ShellViewModel, what: "Explorer page");
+        Assert.False(vm.IsCurrentFeatureAlpha);
+        Assert.False(session.IsTextVisible("Alpha"));
         Assert.False(notice.IsActionVisible);
         var toastButton = toast.GetVisualDescendants().OfType<Button>()
             .Single(b => Equals(b.Content, "Restart Explorer"));
@@ -127,8 +135,33 @@ public class RestartAnnotationShotTests
         Assert.Equal(barHeight, session.Find<Border>(b => b.Name == "ApplyBar").Bounds.Height);
         vm.StatusMessage = "Another message";
         session.Pump();
-        session.Click(session.Find<Button>(b => b.Name == "DismissStatusButton"));
+        var dismiss = session.Find<Button>(b => b.Name == "DismissStatusButton");
+        var message = session.Find<TextBlock>(b => b.Text == vm.StatusMessage);
+        var messageOrigin = message.TranslatePoint(default, session.Window)!.Value;
+        var dismissOrigin = dismiss.TranslatePoint(default, session.Window)!.Value;
+        Assert.InRange(dismissOrigin.X - messageOrigin.X - message.Bounds.Width, 5, 7);
+        session.Screenshot("short-status");
+        session.Hover(dismiss);
+        var glyph = dismiss.GetVisualDescendants().OfType<ThisIsMyPC.App.Icons.FluentIcon>().Single();
+        Assert.Equal(Colors.White, ((ISolidColorBrush)glyph.Foreground!).Color);
+        session.Screenshot("status-hover");
+        var point = dismissOrigin + new Point(12, 12);
+        session.Window.MouseDown(point, MouseButton.Left);
+        session.Pump();
+        Assert.True(glyph.RenderTransform!.Value.M11 < 1);
+        session.Screenshot("status-pressed");
+        session.Window.MouseUp(point, MouseButton.Left);
+        session.Pump();
         Assert.Empty(vm.StatusMessage);
+        session.Window.Width = 900;
+        vm.StatusMessage = new string('W', 200);
+        session.Pump();
+        Assert.True(dismiss.Bounds.Width > 0);
+        Assert.True(dismiss.TranslatePoint(default, session.Window)!.Value.X + dismiss.Bounds.Width < session.Window.Width);
+        session.Screenshot("long-status-narrow");
+        session.Click(dismiss);
+        session.Window.Width = 1280;
+        session.Pump();
         session.ClickText("Restart Explorer");
         await session.WaitForAsync(() => restart.Called && !vm.IsRestartingExplorer, what: "fake Explorer restart");
         Assert.Empty(vm.ToastStack.Toasts);

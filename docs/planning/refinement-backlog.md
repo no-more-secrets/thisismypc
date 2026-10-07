@@ -30,6 +30,8 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 - DONE: unverified Explorer restart notices and descriptions say "May require an Explorer restart."
 - DONE: restart buttons use the shared blue action style. The toast action hides on Explorer, where the header already offers it.
 - DONE: status messages have a dismiss button. Closing a message preserves the toast and the pending changes.
+- DONE: the dismiss button is a plain grey X directly beside the message, white on hover and smaller when pressed.
+- DONE: the title shows a gold Beta pill. Context Menus shows a red Alpha pill for its unfinished feature status.
 - DONE: the legacy PowerShell entry is grey, read-only, and marked currently non-functional. Its note explains that it does not control Open in Terminal.
 - Verified: fake restart and staging tests, full-window inset checks, and screenshots in both themes. Live Explorer restart remains a manual acceptance check.
 

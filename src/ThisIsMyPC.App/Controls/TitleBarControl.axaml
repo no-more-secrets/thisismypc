@@ -71,11 +71,16 @@
                    Width="48" Height="48"
                    VerticalAlignment="Center" />
             <StackPanel x:Name="BrandText" VerticalAlignment="Center">
-                <TextBlock Text="ThisIsMyPC"
-                           FontFamily="{StaticResource DisplayFont}"
-                           FontSize="20"
-                           FontWeight="SemiBold"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="ThisIsMyPC"
+                               FontFamily="{StaticResource DisplayFont}"
+                               FontSize="20"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <Border Classes="release-badge beta">
+                        <TextBlock Text="Beta" />
+                    </Border>
+                </StackPanel>
                 <TextBlock Text="{Binding #Root.Subtitle}"
                            IsVisible="{Binding #Root.Subtitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                            FontSize="11"

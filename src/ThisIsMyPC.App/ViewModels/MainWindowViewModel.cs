@@ -1030,6 +1030,7 @@ public partial class MainWindowViewModel : ViewModelBase
     partial void OnCurrentContentChanged(object? value)
     {
         OnPropertyChanged(nameof(IsExplorerPageOpen));
+        OnPropertyChanged(nameof(IsCurrentFeatureAlpha));
         UpdateRestartToastActionVisibility();
         if (_refreshTabState is { } refresh)
         {
@@ -2247,6 +2248,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     /// <summary>The Explorer page carries a permanent Restart Explorer button in its header.</summary>
     public bool IsExplorerPageOpen => CurrentContent is ShellViewModel;
+    public bool IsCurrentFeatureAlpha => CurrentContent is ContextMenuViewModel;
 
     /// <summary>
     /// The status line for a batch that did not finish, written for the person
