@@ -1641,7 +1641,10 @@ public partial class MainWindowViewModel : ViewModelBase
             {
                 IsRestartNotificationVisible = false;
                 IsRestartActionAvailable = false;
-                SetStatus("Explorer restarted successfully", StatusSeverity.Success);
+                RestartNotificationMessage = string.Empty;
+                var remaining = _restartAfterExplorer;
+                var notice = remaining is { } requirement ? ShowRestartNotice([requirement]) : null;
+                SetStatus(notice ?? string.Empty, notice is null ? StatusSeverity.Success : StatusSeverity.Warning);
             }
             else
             {
@@ -2160,13 +2163,18 @@ public partial class MainWindowViewModel : ViewModelBase
     /// </summary>
     private string? ShowRestartNotice(IReadOnlyList<RestartRequirement> restarts)
     {
+        // A later apply cannot satisfy an earlier reboot or sign-out requirement.
+        if (_restartAfterExplorer is { } outstanding && !restarts.Contains(outstanding))
+            restarts = [.. restarts, outstanding];
+
         if (restarts.Contains(RestartRequirement.Reboot))
         {
+            _restartAfterExplorer = RestartRequirement.Reboot;
             // Keep the Explorer-restart action when the batch also needs it, so
             // deferring the reboot doesn't leave Explorer-bound changes inactive.
             var alsoExplorer = restarts.Contains(RestartRequirement.ExplorerRestart);
             RestartNotificationMessage = alsoExplorer
-                ? "A reboot is required for some changes; others take effect after Restart Explorer on the Explorer page."
+                ? "A reboot is required for some changes. Others may require an Explorer restart; open File Explorer windows will close."
                 : "A reboot is required for some changes to take effect.";
             IsRestartActionAvailable = alsoExplorer;
             return Notice("Reboot required", sticky: true);
@@ -2174,6 +2182,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         if (restarts.Contains(RestartRequirement.SignOut))
         {
+            _restartAfterExplorer = RestartRequirement.SignOut;
             RestartNotificationMessage = "Sign out and back in for some changes to take effect.";
             IsRestartActionAvailable = false;
             return Notice("Sign-out required", sticky: true);
@@ -2181,9 +2190,10 @@ public partial class MainWindowViewModel : ViewModelBase
 
         if (restarts.Contains(RestartRequirement.ExplorerRestart))
         {
-            RestartNotificationMessage = "Explorer restart required for changes to take effect. Use Restart Explorer on the Explorer page; open File Explorer windows close.";
+            _restartAfterExplorer = null;
+            RestartNotificationMessage = "Open File Explorer windows will close.";
             IsRestartActionAvailable = true;
-            return Notice("Explorer restart needed", sticky: true);
+            return Notice("May require an Explorer restart", sticky: true);
         }
 
         if (restarts.Contains(RestartRequirement.ExplorerRefresh))
@@ -2205,12 +2215,14 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             IsRestartNotificationVisible = true;
             ToastStack.Show(title, RestartNotificationMessage, sticky ? ToastSeverity.Warning : ToastSeverity.Success,
-                sticky, RestartToastKey);
+                sticky, RestartToastKey, IsRestartActionAvailable ? "Restart Explorer" : null,
+                IsRestartActionAvailable ? RestartExplorerCommand : null);
             return title;
         }
     }
 
     private const string RestartToastKey = "restart-notice";
+    private RestartRequirement? _restartAfterExplorer;
 
     /// <summary>Dismissing the notice, or restarting Explorer, closes its toast too.</summary>
     partial void OnIsRestartNotificationVisibleChanged(bool value)

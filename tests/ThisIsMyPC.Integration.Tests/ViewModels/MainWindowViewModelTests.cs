@@ -265,14 +265,16 @@ public class MainWindowViewModelTests
         await vm.ApplyAllCommand.ExecuteAsync(null);
 
         Assert.True(vm.IsRestartNotificationVisible);
-        Assert.Contains("Explorer restart required", vm.RestartNotificationMessage);
+        Assert.Contains("Open File Explorer windows will close", vm.RestartNotificationMessage);
 
         // The notice is a sticky toast, never a bar that moves the page; dismissing closes it.
         var toast = Assert.Single(vm.ToastStack.Toasts);
-        Assert.Equal("Explorer restart needed", toast.Title);
+        Assert.Equal("May require an Explorer restart", toast.Title);
         Assert.Equal(vm.RestartNotificationMessage, toast.Message);
         Assert.True(toast.IsSticky);
         Assert.True(toast.IsWarning);
+        Assert.Equal("Restart Explorer", toast.ActionLabel);
+        Assert.Same(vm.RestartExplorerCommand, toast.ActionCommand);
         vm.DismissRestartNotificationCommand.Execute(null);
         Assert.Empty(vm.ToastStack.Toasts);
     }
@@ -342,6 +344,15 @@ public class MainWindowViewModelTests
         Assert.Contains("reboot", vm.RestartNotificationMessage, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Explorer", vm.RestartNotificationMessage, StringComparison.Ordinal);
         Assert.True(vm.IsRestartActionAvailable);
+
+        await vm.RestartExplorerCommand.ExecuteAsync(null);
+
+        Assert.True(vm.IsRestartNotificationVisible);
+        Assert.False(vm.IsRestartActionAvailable);
+        var remaining = Assert.Single(vm.ToastStack.Toasts);
+        Assert.Equal("Reboot required", remaining.Title);
+        Assert.False(remaining.HasAction);
+        Assert.Equal("Reboot required", vm.StatusMessage);
     }
 
     [Fact]
@@ -362,6 +373,27 @@ public class MainWindowViewModelTests
 
         Assert.True(vm.IsRestartNotificationVisible);
         Assert.Contains("Sign out", vm.RestartNotificationMessage, StringComparison.Ordinal);
+        Assert.False(vm.IsRestartActionAvailable);
+    }
+
+    [Theory]
+    [InlineData(RestartRequirement.Reboot, "Reboot required")]
+    [InlineData(RestartRequirement.SignOut, "Sign-out required")]
+    public async Task RestartExplorer_AfterAnotherApply_PreservesOutstandingRequirement(RestartRequirement requirement, string title)
+    {
+        var module = new Fakes.FakeModule("TestModule", _ => Task.FromResult(OperationResult<bool>.Success(true)));
+        var vm = CreateViewModel(out var service, module);
+        await vm.InitializeAsync();
+        service.Stage(CreateTestChange("TestModule", "first") with { RestartRequirement = requirement });
+        await vm.ApplyAllCommand.ExecuteAsync(null);
+        service.Stage(CreateTestChange("TestModule", "second") with { RestartRequirement = RestartRequirement.ExplorerRestart });
+        await vm.ApplyAllCommand.ExecuteAsync(null);
+
+        await vm.RestartExplorerCommand.ExecuteAsync(null);
+
+        Assert.Equal(title, Assert.Single(vm.ToastStack.Toasts).Title);
+        Assert.Equal(title, vm.StatusMessage);
+        Assert.True(vm.IsRestartNotificationVisible);
         Assert.False(vm.IsRestartActionAvailable);
     }
 
@@ -406,7 +438,8 @@ public class MainWindowViewModelTests
         Assert.True(restartService.WasCalled);
         Assert.False(vm.IsRestartNotificationVisible);
         Assert.False(vm.IsRestartingExplorer);
-        Assert.Equal("Explorer restarted successfully", vm.StatusMessage);
+        Assert.Empty(vm.StatusMessage);
+        Assert.Empty(vm.RestartNotificationMessage);
         Assert.Empty(vm.ToastStack.Toasts);
     }
 
@@ -416,6 +449,9 @@ public class MainWindowViewModelTests
         var vm = CreateViewModel(out _, out var restartService);
         restartService.ShouldSucceed = false;
         vm.IsRestartNotificationVisible = true;
+        vm.ToastStack.Show("May require an Explorer restart", "Open File Explorer windows will close.",
+            ToastSeverity.Warning, sticky: true, key: "restart-notice",
+            actionLabel: "Restart Explorer", actionCommand: vm.RestartExplorerCommand);
 
         await vm.RestartExplorerCommand.ExecuteAsync(null);
 
@@ -423,5 +459,7 @@ public class MainWindowViewModelTests
         Assert.True(vm.IsRestartNotificationVisible);
         Assert.False(vm.IsRestartingExplorer);
         Assert.Contains("Failed to restart Explorer", vm.StatusMessage);
+        Assert.Same(vm.RestartExplorerCommand, Assert.Single(vm.ToastStack.Toasts).ActionCommand);
+        Assert.True(vm.RestartExplorerCommand.CanExecute(null));
     }
 }

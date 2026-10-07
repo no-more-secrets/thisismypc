@@ -14,6 +14,14 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 - Tab widths, horizontal label positions, and source order remain stable. Selection changes trigger layout without requiring a resize.
 - Verified: focused screenshot tests cover mouse and programmatic selection, resizing, both themes, and 150% scaling.
 
+## Annotation feedback (2026-10-07)
+
+- DONE: removed the Hardware Details subtitle and aligned toast top/right insets.
+- DONE: Explorer notices offer Restart Explorer. Success clears the notice and status; failures retain the action. Outstanding reboot/sign-out notices remain.
+- DONE: unverified Explorer restart notices and descriptions say "May require an Explorer restart."
+- DONE: the legacy PowerShell entry is grey, read-only, and marked currently non-functional. Its note explains that it does not control Open in Terminal.
+- Verified: fake restart and staging tests, full-window inset checks, and screenshots in both themes. Live Explorer restart remains a manual acceptance check.
+
 ## Sidebar accordion and card outcomes (2026-09-21)
 
 Sam's polish list after the engine landed: the side nav folds and opens by itself, and no card changes height when text appears after a click.

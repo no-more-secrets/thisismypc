@@ -44,6 +44,10 @@
                                        FontSize="12"
                                        TextWrapping="Wrap"
                                        Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <Button Content="{Binding ActionLabel}"
+                                    Command="{Binding ActionCommand}"
+                                    IsVisible="{Binding HasAction}"
+                                    HorizontalAlignment="Left" Margin="0,6,0,0" />
                         </StackPanel>
                         <Button Grid.Column="2"
                                 Command="{Binding DismissCommand}"

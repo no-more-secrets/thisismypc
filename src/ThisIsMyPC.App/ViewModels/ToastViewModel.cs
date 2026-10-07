@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Windows.Input;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -19,6 +20,9 @@ public sealed partial class ToastViewModel : ViewModelBase
 
     public string Title { get; }
     public string Message { get; }
+    public string? ActionLabel { get; }
+    public ICommand? ActionCommand { get; }
+    public bool HasAction => ActionCommand is not null;
     public ToastSeverity Severity { get; }
 
     /// <summary>Stays until closed by hand or replaced by its key; never auto-dismissed, never evicted.</summary>
@@ -32,11 +36,13 @@ public sealed partial class ToastViewModel : ViewModelBase
     public bool IsWarning => Severity == ToastSeverity.Warning;
 
     public ToastViewModel(string title, string message, ToastSeverity severity, Action<ToastViewModel> dismiss,
-        bool sticky = false, string? key = null)
+        bool sticky = false, string? key = null, string? actionLabel = null, ICommand? actionCommand = null)
     {
         ArgumentNullException.ThrowIfNull(dismiss);
         Title = title;
         Message = message;
+        ActionLabel = actionLabel;
+        ActionCommand = actionCommand;
         Severity = severity;
         IsSticky = sticky;
         Key = key;
@@ -72,7 +78,8 @@ public sealed class ToastStackViewModel
 
     /// <param name="sticky">Keep the card until it is closed or replaced: for a notice that must not be missed, such as a reboot.</param>
     /// <param name="key">Replaces any card shown earlier under the same key, so one notice never stacks up.</param>
-    public void Show(string title, string message, ToastSeverity severity, bool sticky = false, string? key = null)
+    public void Show(string title, string message, ToastSeverity severity, bool sticky = false, string? key = null,
+        string? actionLabel = null, ICommand? actionCommand = null)
     {
         if (key is not null)
             Dismiss(key);
@@ -82,7 +89,7 @@ public sealed class ToastStackViewModel
         while (!sticky && Toasts.Count(t => !t.IsSticky) >= MaxVisible)
             Toasts.Remove(Toasts.First(t => !t.IsSticky));
 
-        var toast = new ToastViewModel(title, message, severity, t => Toasts.Remove(t), sticky, key);
+        var toast = new ToastViewModel(title, message, severity, t => Toasts.Remove(t), sticky, key, actionLabel, actionCommand);
         Toasts.Add(toast);
 
         if (!sticky && _lifetime > TimeSpan.Zero)

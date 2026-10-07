@@ -289,6 +289,7 @@ Run over every page before showing it; each line cost a correction once.
   reboot notices are sticky toasts (`ToastStack.Show(..., sticky: true, key:)`),
   never a bar docked in the window; Restart Explorer lives in the Explorer
   page's header, always.
+- Say "May require an Explorer restart" unless verified behavior establishes that a restart is required or unnecessary.
 - The sidebar is an accordion: the open module's group is open, the rest fold,
   and a folded header opens its first module. In tests use `OpenModule(name)`.
 - Before answering "not fixed", compare the running exe's build time with

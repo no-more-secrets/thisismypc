@@ -77,7 +77,7 @@ public sealed class MainWindowViewModelRefreshTests
         await vm.ApplyAllCommand.ExecuteAsync(null);
 
         Assert.True(vm.IsRestartNotificationVisible);
-        Assert.Contains("restart", vm.RestartNotificationMessage, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("May require an Explorer restart", Assert.Single(vm.ToastStack.Toasts).Title);
         Assert.True(vm.IsRestartActionAvailable);
         Assert.False(explorer.RefreshWasCalled);
     }
@@ -102,7 +102,7 @@ public sealed class MainWindowViewModelRefreshTests
 
         Assert.True(vm.IsRestartNotificationVisible);
         Assert.True(vm.IsRestartActionAvailable);
-        Assert.Contains("restart", vm.RestartNotificationMessage, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("May require an Explorer restart", Assert.Single(vm.ToastStack.Toasts).Title);
         Assert.DoesNotContain("F5", vm.RestartNotificationMessage);
         Assert.False(explorer.RefreshWasCalled);
     }

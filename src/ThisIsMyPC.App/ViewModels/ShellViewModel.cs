@@ -269,7 +269,7 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, ISearch
 
         TaskbarChoiceSettings.Add(new ShellChoiceSettingViewModel(
             label: "Taskbar search",
-            description: "How search appears on the taskbar (takes effect after Explorer restarts)",
+            description: "How search appears on the taskbar. May require an Explorer restart.",
             systemPath: $@"{Modules.Shell.ShellRegistryPaths.SearchKeyPath}\SearchboxTaskbarMode",
             options: TaskbarChangeFactory.SearchboxModeNames
                 .OrderBy(p => p.Key)
@@ -286,7 +286,7 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, ISearch
 
         TaskbarChoiceSettings.Add(new ShellChoiceSettingViewModel(
             label: "Combine taskbar buttons",
-            description: "When windows of the same app share one taskbar button (takes effect after Explorer restarts)",
+            description: "When windows of the same app share one taskbar button. May require an Explorer restart.",
             systemPath: $@"{AdvancedKeyPath}\TaskbarGlomLevel",
             options: TaskbarChangeFactory.ButtonCombiningNames
                 .OrderBy(p => p.Key)
@@ -305,7 +305,7 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, ISearch
         // it leads the General tab rather than trailing the read preferences.
         GeneralSettings.Insert(0, new ShellSettingViewModel(
             label: "Classic context menu",
-            description: "Use Windows 10-style full context menu instead of the compact Windows 11 menu (requires Explorer restart)",
+            description: "Use Windows 10-style full context menu instead of the compact Windows 11 menu. May require an Explorer restart.",
             systemPath: ClassicContextMenuKeyPath,
             isEnabled: taskbar.ClassicContextMenu,
             pendingChangesService: pendingChangesService,

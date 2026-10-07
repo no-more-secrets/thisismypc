@@ -209,7 +209,7 @@
             <TextBlock Classes="gallery-section" Text="Notification bars" />
             <StackPanel Spacing="6">
                 <Border Classes="notification-restart" Padding="10,8" CornerRadius="6">
-                    <TextBlock Classes="notification-restart" Text="Explorer restart needed for 3 changes" FontSize="12" />
+                    <TextBlock Classes="notification-restart" Text="May require an Explorer restart" FontSize="12" />
                 </Border>
                 <Border Classes="notification-refresh" Padding="10,8" CornerRadius="6">
                     <TextBlock Classes="notification-refresh" Text="Explorer preferences updated. Open windows may need F5 to refresh" FontSize="12" />

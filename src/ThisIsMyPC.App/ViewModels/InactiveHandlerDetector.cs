@@ -28,6 +28,9 @@ internal sealed class InactiveHandlerDetector
     /// </summary>
     public (bool IsInactive, string? Reason) Check(ContextMenuHandlerViewModel vm)
     {
+        if (vm.IsUnsupportedLegacyPowerShell)
+            return (true, vm.ToggleDisabledTooltip);
+
         // COM handlers; check by CLSID (case-insensitive)
         var clsid = vm.Clsid.ToUpperInvariant();
         return clsid switch

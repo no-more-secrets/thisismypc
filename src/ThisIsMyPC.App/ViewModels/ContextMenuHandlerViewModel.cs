@@ -80,6 +80,8 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
     public string? DualRegistrationNote { get; }
     public bool IsToggleEnabled { get; }
     public string? ToggleDisabledTooltip { get; }
+    public bool IsUnsupportedLegacyPowerShell => HandlerType == HandlerType.StaticVerb
+        && string.Equals(VerbInfo?.VerbName, "powershell", StringComparison.OrdinalIgnoreCase);
     public bool IsOrphaned { get; }
     public string? OrphanReason { get; }
     public bool IsInactive { get; internal set; }
@@ -141,6 +143,11 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
         {
             IsToggleEnabled = false;
             ToggleDisabledTooltip = "This handler's DLL is missing; use Clean Up to remove the orphaned registration";
+        }
+        else if (IsUnsupportedLegacyPowerShell)
+        {
+            IsToggleEnabled = false;
+            ToggleDisabledTooltip = "Currently non-functional. This legacy PowerShell entry does not control Open in Terminal.";
         }
         else if (handler.HandlerType == HandlerType.ModernPackaged)
         {
@@ -322,8 +329,8 @@ public sealed partial class ContextMenuHandlerViewModel : ViewModelBase, IDispos
         if (_suppressStaging)
             return;
 
-        // Modern packaged and drag-drop handlers cannot be toggled
-        if (_handler.HandlerType is HandlerType.ModernPackaged or HandlerType.DragDropHandler)
+        // Read-only rows must not stage changes, including through programmatic updates.
+        if (!IsToggleEnabled)
             return;
 
         _debounceCts?.Cancel();
