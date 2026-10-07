@@ -22,9 +22,16 @@
     <Window.Styles>
         <Style Selector="Border.module-content">
             <Setter Property="Padding" Value="24,12,6,24" />
+            <Setter Property="Background" Value="{DynamicResource RaisedBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
         </Style>
         <Style Selector="Border.module-content.edge-tabs">
             <Setter Property="Padding" Value="0" />
+        </Style>
+        <Style Selector="Border.module-content.separate-cards">
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
         </Style>
     </Window.Styles>
 
@@ -489,9 +496,8 @@
                  Both paths retain the 16px right margin beside the scrollbar. -->
             <Border x:Name="ModuleContentHost" Classes="module-content"
                     Classes.edge-tabs="{Binding UsesEdgeTabs}"
-                    Background="{DynamicResource RaisedBrush}"
+                    Classes.separate-cards="{Binding UsesSeparateContentCards}"
                     BorderBrush="{DynamicResource OutlineBrush}"
-                    BorderThickness="1"
                     CornerRadius="8">
                 <Panel>
                     <!-- Greyed out while a staged group is unresolved: its cards hold

@@ -267,12 +267,15 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(UsesEdgeTabs))]
+    [NotifyPropertyChangedFor(nameof(UsesSeparateContentCards))]
     private object? _currentContent;
 
     /// <summary>Whether the current page owns its card edge and content padding.</summary>
     public bool UsesEdgeTabs => CurrentContent is ShellViewModel or EnvironmentViewModel or SettingsViewModel
         or SoftwareViewModel or ContextMenuViewModel or StartupViewModel or PowerViewModel or SettingCardPageViewModel
-        or DebugViewModel or MonitoringSensorsViewModel or SetLoaderViewModel;
+        or DebugViewModel or MonitoringSensorsViewModel;
+
+    public bool UsesSeparateContentCards => CurrentContent is SetLoaderViewModel;
 
     [ObservableProperty]
     private bool _isSidebarCollapsed;

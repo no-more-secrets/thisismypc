@@ -129,64 +129,64 @@
                 </Border>
             </Button>
         </DataTemplate>
-        <DataTemplate x:Key="PresetContent" x:DataType="vm:SetLoaderViewModel">
-            <Grid ColumnDefinitions="260,16,*" Margin="0,0,16,0">
-                <Border x:Name="PresetBrowser" BorderBrush="{DynamicResource OutlineBrush}" BorderThickness="1"
-                        CornerRadius="8" Padding="12">
-                    <Panel>
-                        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-                            <ItemsControl ItemsSource="{Binding CurrentSets}" ItemTemplate="{StaticResource SetCardTemplate}"
-                                          Margin="0,0,16,0" />
-                        </ScrollViewer>
-                        <TextBlock Text="No presets in this category" IsVisible="{Binding HasNoCategorySets}"
-                                   TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
-                    </Panel>
-                </Border>
-                <Border x:Name="PresetDetails" Grid.Column="2" BorderBrush="{DynamicResource OutlineBrush}" BorderThickness="1"
-                        CornerRadius="8" Padding="12">
-                    <Panel>
-                        <TextBlock Text="Select a preset to preview its changes" IsVisible="{Binding HasNoSelection}"
-                                   TextWrapping="Wrap" VerticalAlignment="Center" HorizontalAlignment="Center"
-                                   Foreground="{DynamicResource TextSecondaryBrush}" />
-                        <Grid RowDefinitions="Auto,Auto,*,Auto" IsVisible="{Binding !HasNoSelection}">
-                            <TextBlock Text="{Binding SelectedSet.Name}" FontSize="18" FontWeight="SemiBold"
-                                       TextTrimming="CharacterEllipsis" Margin="0,0,16,10"
-                                       ToolTip.Tip="{Binding SelectedSet.Description}" />
-                            <TextBox Grid.Row="1" x:Name="PresetSearch" Text="{Binding SearchText, Mode=TwoWay}"
-                                     Watermark="Search changes" Margin="0,0,16,8" />
-                            <Panel Grid.Row="2">
-                                <ListBox x:Name="PresetChanges" ItemsSource="{Binding VisibleRows}" Background="Transparent"
-                                         BorderThickness="0" Padding="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                                    <ListBox.Styles>
-                                        <Style Selector="ListBoxItem">
-                                            <Setter Property="Padding" Value="0" />
-                                            <Setter Property="Margin" Value="0,0,16,0" />
-                                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                                        </Style>
-                                    </ListBox.Styles>
-                                </ListBox>
-                                <TextBlock Text="No matching changes" IsVisible="{Binding HasNoSearchResults}"
-                                           Margin="0,12,16,0" Foreground="{DynamicResource TextSecondaryBrush}" />
-                            </Panel>
-                            <Grid Grid.Row="3" ColumnDefinitions="*,Auto" Margin="0,10,16,0">
-                                <TextBlock Text="{Binding StageMessage}" FontSize="12" TextWrapping="Wrap"
-                                           Margin="0,0,12,0" VerticalAlignment="Center" Foreground="{DynamicResource SuccessBrush}" />
-                                <Button Grid.Column="1" Classes="apply-bar-apply" Content="{Binding StageButtonText}"
-                                        Command="{Binding StageIncludedCommand}" IsEnabled="{Binding HasIncludedEntries}" />
-                            </Grid>
-                        </Grid>
-                    </Panel>
-                </Border>
-            </Grid>
+        <DataTemplate x:Key="PresetBrowserContent" x:DataType="vm:SetLoaderViewModel">
+            <Panel>
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+                    <ItemsControl ItemsSource="{Binding CurrentSets}" ItemTemplate="{StaticResource SetCardTemplate}"
+                                  Margin="0,0,16,0" />
+                </ScrollViewer>
+                <TextBlock Text="No presets in this category" IsVisible="{Binding HasNoCategorySets}"
+                           TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
+            </Panel>
         </DataTemplate>
     </UserControl.Resources>
 
-    <TabControl Theme="{StaticResource EdgeTabControlTheme}" SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}">
-        <TabItem Header="Tweaks">
-            <ContentControl Content="{Binding}" ContentTemplate="{StaticResource PresetContent}" />
-        </TabItem>
-        <TabItem Header="Packs">
-            <ContentControl Content="{Binding}" ContentTemplate="{StaticResource PresetContent}" />
-        </TabItem>
-    </TabControl>
+    <Grid ColumnDefinitions="300,16,*">
+        <Border x:Name="PresetBrowser" BorderBrush="{DynamicResource OutlineBrush}" BorderThickness="1"
+                Background="{DynamicResource RaisedBrush}" CornerRadius="8">
+            <TabControl Theme="{StaticResource EdgeTabControlTheme}" SelectedIndex="{Binding SelectedTabIndex, Mode=TwoWay}">
+                <TabItem Header="Tweaks">
+                    <ContentControl Content="{Binding}" ContentTemplate="{StaticResource PresetBrowserContent}" />
+                </TabItem>
+                <TabItem Header="Packs">
+                    <ContentControl Content="{Binding}" ContentTemplate="{StaticResource PresetBrowserContent}" />
+                </TabItem>
+            </TabControl>
+        </Border>
+        <Border x:Name="PresetDetails" Grid.Column="2" BorderBrush="{DynamicResource OutlineBrush}" BorderThickness="1"
+                Background="{DynamicResource RaisedBrush}" CornerRadius="8" Padding="24,16,6,24">
+            <Panel>
+                <TextBlock Text="Select a preset to preview its changes" IsVisible="{Binding HasNoSelection}"
+                           TextWrapping="Wrap" VerticalAlignment="Center" HorizontalAlignment="Center"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <Grid RowDefinitions="Auto,Auto,*,Auto" IsVisible="{Binding !HasNoSelection}">
+                    <TextBlock Text="{Binding SelectedSet.Name}" FontSize="18" FontWeight="SemiBold"
+                               TextTrimming="CharacterEllipsis" Margin="0,0,16,10"
+                               ToolTip.Tip="{Binding SelectedSet.Description}" />
+                    <TextBox Grid.Row="1" x:Name="PresetSearch" Text="{Binding SearchText, Mode=TwoWay}"
+                             Watermark="Search changes" Margin="0,0,16,8" />
+                    <Panel Grid.Row="2">
+                        <ListBox x:Name="PresetChanges" ItemsSource="{Binding VisibleRows}" Background="Transparent"
+                                 BorderThickness="0" Padding="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                            <ListBox.Styles>
+                                <Style Selector="ListBoxItem">
+                                    <Setter Property="Padding" Value="0" />
+                                    <Setter Property="Margin" Value="0,0,16,0" />
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                </Style>
+                            </ListBox.Styles>
+                        </ListBox>
+                        <TextBlock Text="No matching changes" IsVisible="{Binding HasNoSearchResults}"
+                                   Margin="0,12,16,0" Foreground="{DynamicResource TextSecondaryBrush}" />
+                    </Panel>
+                    <Grid Grid.Row="3" ColumnDefinitions="*,Auto" Margin="0,10,16,0">
+                        <TextBlock Text="{Binding StageMessage}" FontSize="12" TextWrapping="Wrap"
+                                   Margin="0,0,12,0" VerticalAlignment="Center" Foreground="{DynamicResource SuccessBrush}" />
+                        <Button Grid.Column="1" Classes="apply-bar-apply" Content="{Binding StageButtonText}"
+                                Command="{Binding StageIncludedCommand}" IsEnabled="{Binding HasIncludedEntries}" />
+                    </Grid>
+                </Grid>
+            </Panel>
+        </Border>
+    </Grid>
 </UserControl>

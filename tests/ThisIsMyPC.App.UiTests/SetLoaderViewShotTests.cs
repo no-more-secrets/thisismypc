@@ -245,8 +245,22 @@ public class SetLoaderViewShotTests
         var card = session.Find<Border>(b => b.Name == "ModuleContentHost");
         Assert.Equal(default, card.Padding);
         var browser = session.Find<Border>(b => b.Name == "PresetBrowser");
-        Assert.Equal(25, browser.TranslatePoint(default, card)!.Value.X, 0.5);
-        session.Screenshot("dark-1200");
+        Assert.Equal(0, browser.TranslatePoint(default, card)!.Value.X, 0.5);
+        Assert.Equal(default, card.BorderThickness);
+        Assert.Equal(Avalonia.Media.Colors.Transparent, ((Avalonia.Media.ISolidColorBrush)card.Background!).Color);
+        var details = session.Find<Border>(b => b.Name == "PresetDetails");
+        var strip = session.Find<Border>(b => b.Name == "PART_Strip");
+        Assert.Equal(browser.Bounds.Width - 2, strip.Bounds.Width, 0.5);
+        Assert.Equal(session.TopOf(browser), session.TopOf(details), 0.5);
+        Assert.Equal(16, details.TranslatePoint(default, card)!.Value.X - browser.Bounds.Width, 0.5);
+        Assert.False(details.GetVisualDescendants().OfType<TabControl>().Any());
+        var screenshot = session.Screenshot("dark-1200");
+        using (var pixels = SkiaSharp.SKBitmap.Decode(screenshot))
+        {
+            var gapX = (int)(browser.TranslatePoint(default, session.Window)!.Value.X + browser.Bounds.Width + 8);
+            var gapY = (int)(session.TopOf(browser) + browser.Bounds.Height / 2);
+            Assert.Equal(new SkiaSharp.SKColor(26, 26, 46), pixels.GetPixel(gapX, gapY));
+        }
         session.SetTheme(ThemeVariant.Light);
         session.Screenshot("light-1200");
         session.SetTheme(ThemeVariant.Dark);
@@ -255,6 +269,9 @@ public class SetLoaderViewShotTests
         session.ClickText(row.SettingName);
         await session.WaitForAsync(() => main.CurrentContent is ShellViewModel { SearchText.Length: > 0 },
             timeoutMs: 120_000, what: "Explorer setting destination");
+        Assert.False(main.UsesSeparateContentCards);
+        Assert.Equal(new Thickness(1), card.BorderThickness);
+        Assert.Equal(default, card.Padding);
         session.Screenshot("explorer-destination");
     }
 }

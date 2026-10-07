@@ -31,7 +31,7 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 
 ## Annotation feedback (2026-10-07)
 
-- DONE: Presets has Tweaks/Packs tabs, separate selector and details panels, and compact searchable change rows. Setting names open their feature controls.
+- DONE: Presets uses two independent cards with an open gap and no enclosing card. Tweaks/Packs tabs belong only to the left selector card. The right card has compact searchable change rows with links to their feature controls.
 - DONE: removed the Presets footer's rounded partial border. Search preserves checked changes and stages them even when the filter hides them.
 - Verified: dark/light screenshots, card edge measurements, filtered staging, applied-state links, and navigation to Explorer and Startup entries.
 - DONE: removed the Hardware Details subtitle and aligned toast top/right insets.
