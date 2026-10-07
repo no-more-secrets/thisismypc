@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 using Microsoft.Win32;
 using ThisIsMyPC.Core.Drift;
 using ThisIsMyPC.Core.Drift.Eligibility;
+using ThisIsMyPC.Core.Policies;
 
 namespace ThisIsMyPC.Interop.Win32.Drift;
 
@@ -55,7 +56,7 @@ public sealed partial class NativeRestorationEvidence
                 try
                 {
                     using var stream = new FileStream(policy, FileMode.Open, FileAccess.Read, FileShare.Read);
-                    if (stream.Length > 4 * 1024 * 1024) return new(new(identity.UserSid, profile), new(identity, management));
+                    if (stream.Length > RegistryPolicyFile.MaximumFileBytes) return new(new(identity.UserSid, profile), new(identity, management));
                     var bytes = new byte[checked((int)stream.Length)];
                     stream.ReadExactly(bytes);
                     if (LocalPolicyTouchesTarget(bytes, identity.KeyPath))
@@ -81,41 +82,15 @@ public sealed partial class NativeRestorationEvidence
     /// <summary>Strict bounded Registry.pol parsing. Malformed input throws and remains unknown.</summary>
     public static bool LocalPolicyTouchesTarget(byte[] bytes, string keyPath)
     {
-        using var input = new MemoryStream(bytes, writable: false);
-        using var reader = new BinaryReader(input, System.Text.Encoding.Unicode);
-        if (reader.ReadUInt32() != 0x67655250 || reader.ReadUInt32() != 1) throw new InvalidDataException("Invalid local policy header.");
         var target = keyPath.StartsWith("HKCU\\", StringComparison.OrdinalIgnoreCase) ? keyPath[5..] : keyPath;
         var relevant = false;
-        while (input.Position < input.Length)
+        foreach (var entry in RegistryPolicyFile.Parse(bytes))
         {
-            Require('[');
-            var key = ReadText(); Require(';');
-            _ = ReadText(); Require(';');
-            _ = reader.ReadUInt32(); Require(';');
-            var size = reader.ReadUInt32(); Require(';');
-            if (size > input.Length - input.Position) throw new InvalidDataException("Invalid local policy data size.");
-            input.Position += size;
-            Require(']');
             // Related policy branches may supersede these preference choices. Conservatively treat the whole
             // related branch as managed, rather than assuming that only one policy value has an effect.
-            relevant |= Related(key, target) || RelatedPolicyKeys(keyPath).Any(policyKey => Related(key, policyKey));
+            relevant |= Related(entry.KeyPath, target) || RelatedPolicyKeys(keyPath).Any(policyKey => Related(entry.KeyPath, policyKey));
         }
         return relevant;
-        void Require(char expected)
-        {
-            if (reader.ReadUInt16() != expected) throw new InvalidDataException("Invalid local policy delimiter.");
-        }
-        string ReadText()
-        {
-            var value = new System.Text.StringBuilder();
-            for (var i = 0; i < 32768; i++)
-            {
-                var c = reader.ReadUInt16();
-                if (c == 0) return value.ToString();
-                value.Append((char)c);
-            }
-            throw new InvalidDataException("Local policy field exceeds limit.");
-        }
         static bool Related(string key, string targetKey) => string.Equals(key, targetKey, StringComparison.OrdinalIgnoreCase) ||
             key.StartsWith(targetKey + "\\", StringComparison.OrdinalIgnoreCase) || targetKey.StartsWith(key + "\\", StringComparison.OrdinalIgnoreCase);
     }

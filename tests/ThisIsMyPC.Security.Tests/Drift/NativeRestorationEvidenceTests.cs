@@ -1,6 +1,7 @@
 using System.Text;
 using System.Security.Principal;
 using ThisIsMyPC.Core.Drift;
+using ThisIsMyPC.Core.Policies;
 using ThisIsMyPC.Interop.Win32.Drift;
 
 namespace ThisIsMyPC.Security.Tests.Drift;
@@ -33,6 +34,42 @@ public sealed class NativeRestorationEvidenceTests
         }
         document[0] = 0;
         Assert.Throws<InvalidDataException>(() => NativeRestorationEvidence.LocalPolicyTouchesTarget(document, @"HKCU\Example"));
+    }
+
+    [Fact, Trait("Category", "Diagnostic")]
+    public void CurrentLocalPolicyFilesRoundTripWithoutWritingThem()
+    {
+        using var identity = WindowsIdentity.GetCurrent();
+        var system = Environment.GetFolderPath(Environment.SpecialFolder.System);
+        var roots = new[]
+        {
+            Path.Combine(system, "GroupPolicy", "Machine"),
+            Path.Combine(system, "GroupPolicy", "User"),
+            Path.Combine(system, "GroupPolicyUsers", identity.User!.Value, "User"),
+            Path.Combine(system, "GroupPolicyUsers", "S-1-5-32-544", "User"),
+            Path.Combine(system, "GroupPolicyUsers", "S-1-5-32-545", "User"),
+        };
+        var filesRead = 0;
+        var recordsRead = 0;
+        foreach (var root in roots)
+        {
+            var path = Path.Combine(root, "Registry.pol");
+            byte[] bytes;
+            try
+            {
+                using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+                Assert.InRange(stream.Length, 8, RegistryPolicyFile.MaximumFileBytes);
+                bytes = new byte[checked((int)stream.Length)];
+                stream.ReadExactly(bytes);
+            }
+            catch (FileNotFoundException) { continue; }
+            catch (DirectoryNotFoundException) { continue; }
+            var entries = RegistryPolicyFile.Parse(bytes);
+            Assert.Equal(bytes, RegistryPolicyFile.Serialize(entries));
+            filesRead++;
+            recordsRead += entries.Length;
+        }
+        Console.WriteLine($"Read-only policy check: {filesRead} files, {recordsRead} records preserved byte-for-byte.");
     }
 
     [Fact, Trait("Category", "Diagnostic")]

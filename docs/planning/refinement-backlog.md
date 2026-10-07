@@ -7,9 +7,12 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 - REQUIRED: editable coverage of Sam's practical configured policies and other important policies. See the October 7 requirement in the v1 plan.
 - Pending: classify all 148 policy records by feature, support, overlap, and current relevance; verify the 36 records with option fields.
 - Pending: integrate preferences and policy overrides in the relevant feature controls, including saved local policy rather than registry-only writes.
+- DONE: shared Registry.pol reader and encoder preserve record order, duplicate values, deletion instructions, unknown types, and exact data bytes.
+- Verified: 11 parser tests and a read-only check of the current local policy file, preserving all 94 records byte-for-byte.
+- Pending: connect policy definitions and source scopes to feature controls, then add staged policy changes with exact undo and refresh handling.
 - Confirmed defect: Sticky Keys shortcut detection compares the complete Flags string with 506. Sam's value 26 already disables the shortcut.
 - Pending: fix Sticky Keys detection and writes to preserve unrelated bits, then audit each control for the same class of mistake.
-- No policy controls or live Windows settings changed by this scope update.
+- The policy foundation does not yet add editable controls. No live Windows settings changed during development.
 
 ## Beta release environment (2026-10-07)
 
