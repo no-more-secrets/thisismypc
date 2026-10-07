@@ -2,6 +2,12 @@
 
 Current release scope: [v1 completion plan](v1-completion-plan.md), approved 2026-09-06. It supersedes older post-release hardware assumptions below.
 
+## Beta release environment (2026-10-07)
+
+- DONE: updated the Windows pins to Sam's current host: build `26300.9457` and Windows Installer `5.0.26100.9444`.
+- Verified: the full release environment check passes. Compiler and SDK pins are unchanged.
+- Pending: complete release build and reproducibility comparison under the updated Windows environment.
+
 ## Sidebar accordion and card outcomes (2026-09-21)
 
 Sam's polish list after the engine landed: the side nav folds and opens by itself, and no card changes height when text appears after a click.

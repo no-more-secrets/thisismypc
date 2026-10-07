@@ -1,7 +1,7 @@
 {
   "dotnetSdk": "10.0.400",
-  "windowsBuild": "26200.9168",
-  "windowsInstallerFileVersion": "5.0.26100.9168",
+  "windowsBuild": "26300.9457",
+  "windowsInstallerFileVersion": "5.0.26100.9444",
   "visualStudioVersion": "18.9.12120.119",
   "msvcToolsVersion": "14.51.36231",
   "linkerFileVersion": "14.51.36256.0",

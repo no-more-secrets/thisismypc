@@ -5,7 +5,10 @@ without replacing it. Release scripts select the exact manifest version, then
 explicitly select its MSVC and Windows SDK. NativeAOT receives absolute linker
 paths and disables its default newest-Visual-Studio discovery.
 
-The version pins in `tools/reproducible-build-environment.json` remain unchanged.
+The Windows pins in `tools/reproducible-build-environment.json` match Sam's host as of 2026-10-07:
+Windows build `26300.9457` and Windows Installer `5.0.26100.9444`.
+The compiler and SDK pins remain unchanged. The release environment check passes;
+a complete release build and reproducibility comparison with these Windows pins remain unverified.
 `global.json` still requires .NET SDK 10.0.400 with roll-forward disabled.
 
 ## Machine locations
