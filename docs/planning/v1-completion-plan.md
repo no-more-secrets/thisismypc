@@ -4,6 +4,39 @@ Approved direction: Sam Boland, 2026-09-06. This plan supersedes older notes tha
 
 Owner Mode scope update: [single-user completion checkpoints](owner-mode-single-user-plan.md). Near-term work targets one primary user; multi-profile restoration is deferred.
 
+## Policy coverage requirement (2026-10-07)
+
+Sam requires editable controls for all practical, useful policies already configured on his PC, plus other important policies.
+The 148-record export is the starting inventory, not a ceiling or a recommended configuration to copy.
+All 148 identities match installed ADMX definitions; 36 have additional option fields. Identity matching does not establish current enforcement.
+The existing source audit reports 14 direct routes, one partial route, 16 related preferences, and 117 missing routes.
+
+Place controls with their feature in the existing modules. A configured-policy index may link to the same controls.
+Represent overlapping preference and policy settings together, with their separate scopes and effects visible.
+Do not silently replace a user preference with a machine policy, or equate a missing preference with an enabled feature.
+
+Coverage includes promotions and suggestions, Search and Start, privacy and diagnostics, Windows Update and delivery,
+AI features, Explorer and desktop behavior, power, and supported security policies.
+Review important additions for update version control, delivery bandwidth, diagnostic data, advertising,
+cloud integration, application reputation, unwanted-app protection, ransomware protection, and firewall behavior.
+These are coverage candidates, not instructions to enable or disable them on Sam's PC.
+
+For every inventory record, record its feature destination and one disposition: supported control, equivalent existing control,
+obsolete, unsupported on this Windows version/edition, or unresolved pending evidence. Give a reason and source for exclusions.
+Low-level options may live under Details; complexity alone does not justify silently dropping a configured policy.
+
+Policy controls must support Not configured, Enabled, Disabled, and applicable options using verified policy semantics.
+Saved local policy and applied registry state must both be understood. A registry-only write must not be presented as an edit to saved Group Policy.
+Show policy source and conflicts where detectable; distinguish configured state from verified effective behavior.
+Changes use staging, exact before-state capture, and undo, including absent values and multi-value policies.
+Do not broaden Owner Mode's automatic restoration catalog as a side effect of adding policy controls.
+
+Audit each existing control's detection and writes alongside policy integration. Test alternate valid states, bit fields,
+missing values, policy overrides, unrelated-option preservation, and exact undo. Sticky Keys is a confirmed defect:
+the reader compares the entire Flags value with 506, and the writer replaces unrelated options with 506 or 510.
+
+Implementation remains pending. First resolve overlapping promotion, Search, and privacy controls; then expand the remaining feature groups.
+
 ## Product and release scope
 
 Finish the System experience, add the agreed Hardware modules, and complete release validation. The approved ownership pitch is at the top of README.md. Sam owns thisismypc.com.
@@ -24,7 +57,9 @@ Product groups are Home, Pro, and Enterprise/Education. Audit existing detection
 
 ### 4. Security and Network & Firewall
 
-Security starts with state inspection and selected understood reversible controls. DefenderRemover and the policy export are research inputs, not wholesale recipes to execute. Current instructions prohibit Defender-policy writes: resolve that design conflict explicitly before implementation. Wholesale removal of security components requires separate design and owner approval.
+Security starts with state inspection and understood reversible controls. The October 7 policy requirement includes supported security-policy controls.
+DefenderRemover and the policy export remain research inputs, not wholesale recipes to execute. Validate supported mechanisms and report tamper-protection refusals.
+Adding controls does not authorize changing live security settings during development. Wholesale removal of security components requires separate design and owner approval.
 
 Network & Firewall is one module with adapter, DNS, and firewall tabs. Candidate v1 controls include adapter state, DNS/DoH, network power settings, and scoped firewall-rule management. Validate mechanisms and supported scope before implementation.
 

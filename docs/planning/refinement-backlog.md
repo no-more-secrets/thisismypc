@@ -2,6 +2,15 @@
 
 Current release scope: [v1 completion plan](v1-completion-plan.md), approved 2026-09-06. It supersedes older post-release hardware assumptions below.
 
+## Policy coverage and control correctness (2026-10-07)
+
+- REQUIRED: editable coverage of Sam's practical configured policies and other important policies. See the October 7 requirement in the v1 plan.
+- Pending: classify all 148 policy records by feature, support, overlap, and current relevance; verify the 36 records with option fields.
+- Pending: integrate preferences and policy overrides in the relevant feature controls, including saved local policy rather than registry-only writes.
+- Confirmed defect: Sticky Keys shortcut detection compares the complete Flags string with 506. Sam's value 26 already disables the shortcut.
+- Pending: fix Sticky Keys detection and writes to preserve unrelated bits, then audit each control for the same class of mistake.
+- No policy controls or live Windows settings changed by this scope update.
+
 ## Beta release environment (2026-10-07)
 
 - DONE: updated the Windows pins to Sam's current host: build `26300.9457` and Windows Installer `5.0.26100.9444`.
