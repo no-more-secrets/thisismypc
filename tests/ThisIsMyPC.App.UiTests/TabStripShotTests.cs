@@ -122,7 +122,7 @@ public class TabStripShotTests
     }
 
     [AvaloniaFact]
-    public void MultirowStrip_KeepsItsRowsInPlace_AfterSelectionChanges()
+    public void MultirowStrip_PlacesSelectedRowLast_AfterSelectionChanges()
     {
         using var session = OpenNarrow(out var tabControl);
         var tabs = session.FindAll<TabItem>(_ => true).ToList();
@@ -132,16 +132,27 @@ public class TabStripShotTests
         Assert.Equal(3, tabs.Select(tab => Math.Round(session.TopOf(tab))).Distinct().Count());
         Assert.Equal(StripHeight + 2 * (ChipHeight + Float), strip.Bounds.Height, 0.5);
         Assert.All(tabs, tab => Assert.True(BottomOf(session, tab) <= BottomOf(session, strip) + 0.5));
-        var before = tabs.Select(tab => Math.Round(session.TopOf(tab), 1)).ToList();
+        AssertSelectedRowLast(session);
 
         session.Click(tabs[6]);
         tabs = session.FindAll<TabItem>(_ => true).ToList();
         session.Screenshot("network-selected");
 
-        // Rows never reorder: the row that held the selected tab stays where it was.
         Assert.Equal(6, tabControl.SelectedIndex);
-        Assert.Equal(before, tabs.Select(tab => Math.Round(session.TopOf(tab), 1)).ToList());
+        AssertSelectedRowLast(session);
+        Assert.Equal(StripHeight + 2 * (ChipHeight + Float), strip.Bounds.Height, 0.5);
         Assert.All(tabs.Where(tab => !tab.IsSelected), tab => Assert.Equal(ChipHeight, tab.Bounds.Height, 0.5));
+    }
+
+    private static void AssertSelectedRowLast(UiSession session)
+    {
+        var tabs = session.FindAll<TabItem>(tab => tab.IsEffectivelyVisible).ToArray();
+        var selected = Assert.Single(tabs, tab => tab.IsSelected);
+        Assert.Equal(tabs.Max(session.TopOf), session.TopOf(selected), 0.5);
+        var chrome = selected.GetVisualDescendants().OfType<ThisIsMyPC.App.Controls.SelectedTabChrome>().Single();
+        // Fractional scaling can round the strip border and chrome onto adjacent pixels.
+        Assert.Equal(BottomOf(session, Strip(session)), BottomOf(session, chrome),
+            Math.Max(0.5, 1 / session.Window.RenderScaling + 0.01));
     }
 
     /// <summary>Every chip and its label, in window pixels, for the whole strip.</summary>
@@ -158,12 +169,11 @@ public class TabStripShotTests
             .ToList();
 
     /// <summary>
-    /// Selecting a tab changes only how it looks. Every chip and every label
-    /// keeps its exact place and width through every selection, on a
-    /// one-row strip and on a wrapped three-row strip alike.
+    /// Selection keeps horizontal geometry and each label's position within its chip.
+    /// Wrapped rows move together so the selected row joins the content.
     /// </summary>
     [AvaloniaFact]
-    public void SelectingAnyTab_MovesNoChipAndNoLabel_OneRowAndWrapped()
+    public void SelectingAnyTab_KeepsHorizontalGeometry_AndMovesItsWholeRowLast()
     {
         using (var session = Open("tab-strip-immobile"))
         {
@@ -174,6 +184,7 @@ public class TabStripShotTests
                 session.Click(Tab(session, header));
                 session.Screenshot($"one-row-{header.ToLowerInvariant()}");
                 Assert.Equal(baseline, Layout(session));
+                AssertSelectedRowLast(session);
             }
         }
 
@@ -188,7 +199,39 @@ public class TabStripShotTests
                 Assert.Equal(i, tabControl.SelectedIndex);
                 if (i is 0 or 4 or 7)
                     session.Screenshot($"wrapped-{i}");
-                Assert.Equal(baseline, Layout(session));
+                var actual = Layout(session);
+                Assert.Equal(baseline.Select(b => (b.Header, b.Left, b.Width, b.TextLeft, Offset: Math.Round(b.TextTop - b.Top, 1))),
+                    actual.Select(b => (b.Header, b.Left, b.Width, b.TextLeft, Offset: Math.Round(b.TextTop - b.Top, 1))));
+                foreach (var row in baseline.GroupBy(b => b.Top))
+                    Assert.Single(actual.Where(a => row.Any(b => b.Header == a.Header)).Select(a => a.Top).Distinct());
+                AssertSelectedRowLast(session);
+            }
+        }
+    }
+
+    [AvaloniaFact]
+    public void SelectedRow_StaysLast_AfterResizeAndProgrammaticSelection_At150Percent()
+    {
+        using var session = OpenNarrow(out var tabControl);
+        var platform = session.Window.PlatformImpl!;
+        platform.GetType().GetField("<RenderScaling>k__BackingField",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.SetValue(platform, 1.5);
+        ((Action<double>)platform.GetType().GetProperty("ScalingChanged")!.GetValue(platform)!)(1.5);
+        foreach (var theme in new[] { ThemeVariant.Dark, ThemeVariant.Light })
+        {
+            session.SetTheme(theme);
+            foreach (var width in new[] { 300, 450, 1100, 300 })
+            {
+                session.Window.Width = width;
+                session.Pump();
+                AssertSelectedRowLast(session);
+                foreach (var index in new[] { 7, 0, 4, 1 })
+                {
+                    tabControl.SelectedIndex = index;
+                    session.Pump();
+                    AssertSelectedRowLast(session);
+                }
+                session.Screenshot($"selected-row-{theme.Key}-{width}-150");
             }
         }
     }

@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.VisualTree;
 
 namespace ThisIsMyPC.App.Controls;
 
@@ -50,6 +51,11 @@ public sealed class JustifiedWrapPanel : Panel
     static JustifiedWrapPanel()
     {
         AffectsMeasure<JustifiedWrapPanel>(GapProperty, RowGapProperty, PlaceSelectedRowLastProperty);
+        TabItem.IsSelectedProperty.Changed.AddClassHandler<TabItem>((tab, _) =>
+        {
+            if (tab.GetVisualParent() is JustifiedWrapPanel { PlaceSelectedRowLast: true } panel)
+                panel.InvalidateArrange();
+        });
     }
 
     protected override Size MeasureOverride(Size availableSize)

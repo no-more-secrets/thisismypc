@@ -8,6 +8,12 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 - Verified: the full release environment check passes. Compiler and SDK pins are unchanged.
 - Pending: complete release build and reproducibility comparison under the updated Windows environment.
 
+## Wrapped tab selection (2026-10-07)
+
+- DONE: the selected tab's entire row moves to the bottom of wrapped tab strips, beside the content.
+- Tab widths, horizontal label positions, and source order remain stable. Selection changes trigger layout without requiring a resize.
+- Verified: focused screenshot tests cover mouse and programmatic selection, resizing, both themes, and 150% scaling.
+
 ## Sidebar accordion and card outcomes (2026-09-21)
 
 Sam's polish list after the engine landed: the side nav folds and opens by itself, and no card changes height when text appears after a click.
