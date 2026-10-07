@@ -77,7 +77,7 @@
                               ToolTip.Tip="Include this change when staging" />
                     <StackPanel Grid.Column="1" Spacing="3">
                         <Button Classes="card-link" Command="{Binding OpenSettingCommand}"
-                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                                HorizontalAlignment="Left" HorizontalContentAlignment="Left"
                                 ToolTip.Tip="{Binding Entry.ModuleId, StringFormat='Open in {0}'}">
                             <TextBlock Text="{Binding SettingName}" FontSize="13" FontWeight="SemiBold"
                                        TextWrapping="Wrap" Foreground="{DynamicResource AccentBrush}" />
@@ -85,7 +85,7 @@
                         <Grid ColumnDefinitions="*,Auto,Auto" IsVisible="{Binding !IsSkipped}">
                             <TextBlock Text="{Binding ValuesSummary}" FontSize="12" TextWrapping="Wrap"
                                        Foreground="{DynamicResource TextSecondaryBrush}" />
-                            <TextBlock Grid.Column="1" Text="Applied" FontSize="11" Margin="12,0,0,0"
+                            <TextBlock Grid.Column="1" Text="{Binding AppliedLabel}" FontSize="11" Margin="12,0,0,0"
                                        Foreground="{DynamicResource SuccessBrush}" IsVisible="{Binding IsApplied}" />
                             <TextBlock Grid.Column="2" Text="Staged" FontSize="11" Margin="12,0,0,0"
                                        Foreground="{DynamicResource InfoBrush}" IsVisible="{Binding IsAlreadyStaged}" />
@@ -166,16 +166,10 @@
                     <TextBox Grid.Row="1" x:Name="PresetSearch" Text="{Binding SearchText, Mode=TwoWay}"
                              Watermark="Search changes" Margin="0,0,16,8" />
                     <Panel Grid.Row="2">
-                        <ListBox x:Name="PresetChanges" ItemsSource="{Binding VisibleRows}" Background="Transparent"
-                                 BorderThickness="0" Padding="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                            <ListBox.Styles>
-                                <Style Selector="ListBoxItem">
-                                    <Setter Property="Padding" Value="0" />
-                                    <Setter Property="Margin" Value="0,0,16,0" />
-                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                                </Style>
-                            </ListBox.Styles>
-                        </ListBox>
+                        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+                            <ItemsControl x:Name="PresetChanges" ItemsSource="{Binding VisibleRows}"
+                                          Margin="0,0,16,0" />
+                        </ScrollViewer>
                         <TextBlock Text="No matching changes" IsVisible="{Binding HasNoSearchResults}"
                                    Margin="0,12,16,0" Foreground="{DynamicResource TextSecondaryBrush}" />
                     </Panel>

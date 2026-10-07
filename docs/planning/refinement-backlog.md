@@ -31,6 +31,9 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 
 ## Annotation feedback (2026-10-07)
 
+- DONE: Presets change rows are plain content; only setting names navigate. Removed the selectable row outline and darkened Beta text slightly to #4F3909.
+- DONE: Presets recognizes NoAutoUpdate=1 and AllowTelemetry=0 as existing stricter policies. These rows show Already covered and cannot stage weaker preset values, including when pending changes conflict. Diagnostic-data controls also recognize policy value 0 as restricted.
+- Verified: current host policy reads, live Presets screenshots in both themes, name-only mouse navigation, policy value/restore tests, and pending-conflict staging regression. This does not establish full Group Policy or MDM precedence coverage.
 - DONE: Software shows three equal columns at the default 1200px window width. The catalog contains 91 apps, down from 236 (61% fewer), retaining all companion dependencies.
 - DONE: 86 bundled app icons work offline; five entries retain category symbols. Explicit installed-name aliases recognize uncorrelated ARP entries, including Chrome and Firefox, without merging editions, architectures, or version-specific packages.
 - Verified: real installed-app scan, dark/light catalog screenshots, three-column assertions, detection regressions, and edge measurements (25/23/59/10). Live installation and uninstallation were not exercised.

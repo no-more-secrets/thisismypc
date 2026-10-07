@@ -16,8 +16,11 @@ public sealed record SetEntryState
     public required string CurrentDisplay { get; init; }
 
     /// <summary>
-    /// True when the system already matches the entry's desired value. For group toggles
+    /// True when the system meets the entry's goal, including a stricter policy. For group toggles
     /// every constituent value must match; partial states are not applied.
     /// </summary>
     public required bool IsApplied { get; init; }
+
+    /// <summary>Why a stricter policy already covers this entry without writing its exact value.</summary>
+    public string? CoveredByPolicy { get; init; }
 }

@@ -48,14 +48,19 @@ public sealed class PrivacySetEntryInspector : ISetEntryInspector
             return null;
 
         var direction = Direction(entry, pref);
+        var stricterDiagnosticPolicy = pref.Id == "telemetry-level" && pref.CurrentValue == "0";
 
         return new SetEntryState
         {
             SettingDisplayName = pref.DisplayName,
             CurrentValue = pref.CurrentValue,
-            CurrentDisplay = pref.IsConfigured ? "Configured" : "Windows default",
+            CurrentDisplay = stricterDiagnosticPolicy ? "Diagnostic data policy set to Off"
+                : pref.IsConfigured ? "Configured" : "Windows default",
             IsApplied = direction is { } configure
                 && (configure ? pref.IsConfigured : pref.CurrentValue == pref.DefaultValue),
+            CoveredByPolicy = direction == true && stricterDiagnosticPolicy
+                ? "The existing diagnostic data policy is stricter than this preset. It will be kept."
+                : null,
         };
     }
 

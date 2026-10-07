@@ -20,5 +20,6 @@ public sealed record PrivacyPreference(
     string ConfiguredValue,
     string DefaultValue)
 {
-    public bool IsConfigured => CurrentValue == ConfiguredValue;
+    public bool IsConfigured => CurrentValue == ConfiguredValue
+        || (Id == "telemetry-level" && CurrentValue == "0");
 }

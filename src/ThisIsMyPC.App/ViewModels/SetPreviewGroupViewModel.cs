@@ -40,7 +40,8 @@ public sealed partial class SetEntryPreviewViewModel : ViewModelBase
     public SetEntry Entry => Resolution.Entry;
     public IRelayCommand OpenSettingCommand { get; }
     public string ValuesSummary => IsApplied ? $"Current: {CurrentDisplay}" : $"{CurrentDisplay} → {ProposedDisplay}";
-    public string DetailsTooltip => $"{Description}\n{RawValuesTooltip}";
+    public string DetailsTooltip => $"{Description}\n{Resolution.State?.CoveredByPolicy}\n{RawValuesTooltip}";
+    public string AppliedLabel => Resolution.State?.CoveredByPolicy is not null ? "Already covered" : "Applied";
 
     [ObservableProperty]
     private bool _isIncluded;
@@ -58,12 +59,14 @@ public sealed partial class SetEntryPreviewViewModel : ViewModelBase
     public bool IsApplied => Resolution.Conflict == SetEntryConflict.AlreadyApplied;
     public bool IsAlreadyStaged => Resolution.Conflict == SetEntryConflict.PendingSameValue;
     public bool HasConflict => Resolution.Conflict == SetEntryConflict.PendingDifferentValue;
-    public bool CanToggle => !IsSkipped;
+    public bool CanToggle => !IsSkipped && Resolution.State?.CoveredByPolicy is null;
     public string? SkuNotice => Resolution.SkuNotice;
     public bool HasSkuNotice => Resolution.SkuNotice is not null;
 
     public string ConflictText => HasConflict
-        ? $"Conflicts with a pending change: the set wants '{ProposedDisplay}', the pending change sets '{Resolution.PendingDisplay ?? Resolution.PendingValue}', the system currently has '{CurrentDisplay}'. Checking this row replaces the pending change when staged."
+        ? Resolution.State?.CoveredByPolicy is not null
+            ? "A pending change would replace the existing policy. Discard that change to keep the current policy."
+            : $"Conflicts with a pending change: the set wants '{ProposedDisplay}', the pending change sets '{Resolution.PendingDisplay ?? Resolution.PendingValue}', the system currently has '{CurrentDisplay}'. Checking this row replaces the pending change when staged."
         : string.Empty;
 
     /// <summary>Raw values for the row tooltip; display strings carry the row itself.</summary>

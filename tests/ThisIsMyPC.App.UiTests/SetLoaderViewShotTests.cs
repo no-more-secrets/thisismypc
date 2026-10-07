@@ -22,6 +22,78 @@ public class SetLoaderViewShotTests
 {
     private const double ContentEdge = 16;
 
+    [AvaloniaFact]
+    public void CoveredPolicy_PendingChangesCannotEnableWeakerPresetStaging()
+    {
+        foreach (var value in new[] { "", "0" })
+        {
+            var pending = new PendingChangesService();
+            var definition = Definition("Existing policy", SetCategory.TweakSet, 1, "Existing policy");
+            var group = new PreviewInspector().CreateChangeGroup(definition.Entries[0]);
+            pending.Stage(group with { Changes = [group.Changes[0] with { AfterValue = value }] });
+            using var vm = new SetLoaderViewModel(new SetLoadResult { Sets = [definition], Warnings = [] },
+                [new CoveredPolicyInspector()], _ => new(true), pending);
+            vm.SelectSetCommand.Execute(vm.TweakSets[0]);
+            var row = vm.PreviewGroups.Single().Entries.Single();
+            Assert.False(row.CanToggle);
+            row.IsIncluded = true;
+            vm.StageIncludedCommand.Execute(null);
+            Assert.Equal(value, Assert.Single(Assert.Single(pending.PendingGroups).Changes).AfterValue);
+        }
+    }
+
+    [AvaloniaFact]
+    public void PreviewRows_OnlyTheNameNavigates_AndCoveredPoliciesAreExcluded()
+    {
+        var pending = new PendingChangesService();
+        var navigations = 0;
+        using var vm = new SetLoaderViewModel(new SetLoadResult
+        {
+            Sets = [Definition("Existing policy", SetCategory.TweakSet, 3, "Preserve existing restrictions")], Warnings = [],
+        }, [new CoveredPolicyInspector()], _ => new(true), pending,
+            navigateToSetting: (_, _, _) => navigations++);
+        using var session = UiSession.ForView(new SetLoaderView(), vm, "preset-policy-feedback", width: 1000);
+        session.Click(Card(session, "Existing policy"));
+        var row = vm.PreviewGroups.Single().Entries[0];
+        Assert.True(row.IsApplied);
+        Assert.False(row.IsIncluded);
+        Assert.False(row.CanToggle);
+        Assert.Equal(0, vm.IncludedCount);
+        Assert.True(session.IsTextVisible("Already covered"));
+        foreach (var theme in new[] { ThemeVariant.Dark, ThemeVariant.Light })
+        {
+            session.SetTheme(theme);
+            var values = session.Find<TextBlock>(t => t.Text == "Current: Automatic updates disabled by policy");
+            session.Hover(values);
+            session.Click(values);
+            Assert.Equal(theme == ThemeVariant.Dark ? 0 : 1, navigations);
+            Assert.Empty(values.GetVisualAncestors().OfType<ListBoxItem>());
+            session.Screenshot($"{theme.Key}-row-hover");
+            var name = session.Find<TextBlock>(t => t.Text == "Notify before downloading updates");
+            var link = name.FindAncestorOfType<Button>()!;
+            Assert.InRange(link.Bounds.Width - name.Bounds.Width, 0, 4);
+            session.Hover(name);
+            session.Screenshot($"{theme.Key}-name-hover");
+            session.Click(name);
+        }
+        Assert.Equal(2, navigations);
+        row.IsIncluded = true; // Even a stale/programmatic selection must not stage a covered policy.
+        vm.StageIncludedCommand.Execute(null);
+        Assert.Empty(pending.PendingGroups);
+    }
+
+    private sealed class CoveredPolicyInspector : ISetEntryInspector
+    {
+        public string ModuleId => "Windows Annoyances";
+        public SetEntryState Inspect(SetEntry entry) => new()
+        {
+            SettingDisplayName = "Notify before downloading updates", CurrentValue = "",
+            CurrentDisplay = "Automatic updates disabled by policy", IsApplied = true,
+            CoveredByPolicy = "Automatic updates are already disabled by policy.",
+        };
+        public ChangeGroup CreateChangeGroup(SetEntry entry) => new PreviewInspector().CreateChangeGroup(entry);
+    }
+
     private static SetDefinition Definition(string name, SetCategory category, int entries, string description) => new()
     {
         Name = name,

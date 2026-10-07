@@ -15,10 +15,12 @@ namespace ThisIsMyPC.Modules.WindowsUpdate.Services;
 public sealed class WindowsUpdateSetEntryInspector : ISetEntryInspector
 {
     private readonly WindowsUpdateSettingsReader _reader;
+    private readonly IRegistryService _registryService;
 
     public WindowsUpdateSetEntryInspector(IRegistryService registryService)
     {
         _reader = new WindowsUpdateSettingsReader(registryService);
+        _registryService = registryService;
     }
 
     public string ModuleId => WindowsUpdateChangeFactory.ModuleId;
@@ -54,14 +56,21 @@ public sealed class WindowsUpdateSetEntryInspector : ISetEntryInspector
         // A value matching neither toggle direction is never "applied"; a bogus entry
         // must not preview as done just because the machine happens to hold that value.
         var direction = Direction(entry, setting);
+        var automaticUpdatesDisabled = setting.Id == "auto-update-mode"
+            && _registryService.ReadDWord(WindowsUpdateRegistryPaths.AuPoliciesKeyPath, "NoAutoUpdate")
+                is { IsSuccess: true, Value: 1 };
 
         return new SetEntryState
         {
             SettingDisplayName = setting.DisplayName,
             CurrentValue = setting.CurrentValue,
-            CurrentDisplay = setting.IsConfigured ? "Configured" : "Not configured",
+            CurrentDisplay = automaticUpdatesDisabled ? "Automatic updates disabled by policy"
+                : setting.IsConfigured ? "Configured" : "Not configured",
             IsApplied = direction is { } configure
-                && (configure ? setting.IsConfigured : setting.CurrentValue.Length == 0),
+                && (configure ? setting.IsConfigured || automaticUpdatesDisabled : setting.CurrentValue.Length == 0),
+            CoveredByPolicy = direction == true && automaticUpdatesDisabled
+                ? "Automatic updates are already disabled by policy. The notification preset is unnecessary."
+                : null,
         };
     }
 

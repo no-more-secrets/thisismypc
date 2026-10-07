@@ -118,7 +118,7 @@ public partial class SetLoaderViewModel : ViewModelBase, IDisposable, ITabbedPag
         {
             foreach (var row in PreviewGroups.SelectMany(g => g.Entries))
             {
-                if (!row.IsIncluded || row.IsSkipped)
+                if (!row.IsIncluded || !row.CanToggle)
                     continue;
 
                 // Fresh build at stage time: before-values must reflect the system NOW,
