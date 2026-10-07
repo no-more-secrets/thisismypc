@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using ThisIsMyPC.Core.Sets;
 
 namespace ThisIsMyPC.App.ViewModels;
@@ -25,15 +26,21 @@ public sealed partial class SetEntryPreviewViewModel : ViewModelBase
 {
     private readonly Action _includeChanged;
 
-    public SetEntryPreviewViewModel(SetEntryResolution resolution, Action includeChanged)
+    public SetEntryPreviewViewModel(SetEntryResolution resolution, Action includeChanged,
+        Action<string, string, string>? navigateToSetting = null)
     {
         Resolution = resolution;
         _includeChanged = includeChanged;
         _isIncluded = resolution.IncludedByDefault;
+        OpenSettingCommand = new RelayCommand(() => navigateToSetting?.Invoke(Entry.ModuleId, Entry.SettingId, SettingName),
+            () => navigateToSetting is not null && !IsSkipped);
     }
 
     public SetEntryResolution Resolution { get; }
     public SetEntry Entry => Resolution.Entry;
+    public IRelayCommand OpenSettingCommand { get; }
+    public string ValuesSummary => IsApplied ? $"Current: {CurrentDisplay}" : $"{CurrentDisplay} → {ProposedDisplay}";
+    public string DetailsTooltip => $"{Description}\n{RawValuesTooltip}";
 
     [ObservableProperty]
     private bool _isIncluded;

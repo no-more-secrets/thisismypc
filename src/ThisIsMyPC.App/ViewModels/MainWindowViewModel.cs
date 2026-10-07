@@ -272,7 +272,7 @@ public partial class MainWindowViewModel : ViewModelBase
     /// <summary>Whether the current page owns its card edge and content padding.</summary>
     public bool UsesEdgeTabs => CurrentContent is ShellViewModel or EnvironmentViewModel or SettingsViewModel
         or SoftwareViewModel or ContextMenuViewModel or StartupViewModel or PowerViewModel or SettingCardPageViewModel
-        or DebugViewModel or MonitoringSensorsViewModel;
+        or DebugViewModel or MonitoringSensorsViewModel or SetLoaderViewModel;
 
     [ObservableProperty]
     private bool _isSidebarCollapsed;
@@ -1216,7 +1216,9 @@ public partial class MainWindowViewModel : ViewModelBase
         ContentDescription = "Browse curated tweak presets and preview every change before applying";
         CurrentContent = new SetLoaderViewModel(
             loadResult, _setEntryInspectors, LookupModuleAvailability, _pendingChangesService,
-            _capabilityDetector);
+            _capabilityDetector,
+            (module, setting, name) => SelectSearchResult(new SearchResultViewModel(new(
+                new(module, setting, name, string.Empty, []), true, null))));
         IsSetLoaderActive = true;
         IsHomeActive = false;
         IsSettingsActive = false;

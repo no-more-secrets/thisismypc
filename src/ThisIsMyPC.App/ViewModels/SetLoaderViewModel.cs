@@ -12,12 +12,29 @@ namespace ThisIsMyPC.App.ViewModels;
 /// with its live current value, resolve conflicts, and stage the included entries into
 /// the standard pending-changes pipeline (8.3).
 /// </summary>
-public partial class SetLoaderViewModel : ViewModelBase, IDisposable
+public partial class SetLoaderViewModel : ViewModelBase, IDisposable, ITabbedPage
 {
     private readonly IReadOnlyList<ISetEntryInspector> _inspectors;
     private readonly SetConflictResolver _conflictResolver;
     private readonly IPendingChangesService _pendingChangesService;
     private bool _suppressPendingRefresh;
+    private readonly Action<string, string, string>? _navigateToSetting;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CurrentSets))]
+    [NotifyPropertyChangedFor(nameof(HasNoCategorySets))]
+    private int _selectedTabIndex;
+
+    [ObservableProperty]
+    private string _searchText = string.Empty;
+
+    public IReadOnlyList<object> VisibleRows { get; private set; } = [];
+    public bool HasNoSearchResults => !HasNoSelection && VisibleRows.Count == 0;
+    public ObservableCollection<SetItemViewModel> CurrentSets => SelectedTabIndex == 1 ? OptimizationPacks : TweakSets;
+    public bool HasNoCategorySets => CurrentSets.Count == 0;
+
+    partial void OnSelectedTabIndexChanged(int value) => SelectSet(null);
+    partial void OnSearchTextChanged(string value) => FilterPreview();
 
     public ObservableCollection<SetItemViewModel> TweakSets { get; } = [];
     public ObservableCollection<SetItemViewModel> OptimizationPacks { get; } = [];
@@ -49,11 +66,13 @@ public partial class SetLoaderViewModel : ViewModelBase, IDisposable
         IEnumerable<ISetEntryInspector> inspectors,
         Func<string, ModuleAvailability?> moduleAvailabilityLookup,
         IPendingChangesService pendingChangesService,
-        ICapabilityDetector? capabilityDetector = null)
+        ICapabilityDetector? capabilityDetector = null,
+        Action<string, string, string>? navigateToSetting = null)
     {
         _inspectors = inspectors.ToList();
         _conflictResolver = new SetConflictResolver(_inspectors, moduleAvailabilityLookup, capabilityDetector);
         _pendingChangesService = pendingChangesService;
+        _navigateToSetting = navigateToSetting;
 
         foreach (var set in loadResult.Sets.OrderBy(s => s.Name, StringComparer.OrdinalIgnoreCase))
         {
@@ -77,10 +96,13 @@ public partial class SetLoaderViewModel : ViewModelBase, IDisposable
     [RelayCommand]
     private void SelectSet(SetItemViewModel? item)
     {
+        if (item is not null)
+            SelectedTabIndex = item.Definition.Category == SetCategory.OptimizationPack ? 1 : 0;
         foreach (var set in TweakSets.Concat(OptimizationPacks))
             set.IsSelected = ReferenceEquals(set, item);
 
         SelectedSet = item;
+        SearchText = string.Empty;
         StageMessage = string.Empty;
         BuildPreview();
     }
@@ -139,6 +161,7 @@ public partial class SetLoaderViewModel : ViewModelBase, IDisposable
         if (SelectedSet is null)
         {
             RecountIncluded();
+            FilterPreview();
             return;
         }
 
@@ -156,11 +179,31 @@ public partial class SetLoaderViewModel : ViewModelBase, IDisposable
         {
             var groupVm = new SetPreviewGroupViewModel(group.Key);
             foreach (var (_, resolution) in group)
-                groupVm.Entries.Add(new SetEntryPreviewViewModel(resolution, RecountIncluded));
+                groupVm.Entries.Add(new SetEntryPreviewViewModel(resolution, RecountIncluded, _navigateToSetting));
             PreviewGroups.Add(groupVm);
         }
 
         RecountIncluded();
+        FilterPreview();
+    }
+
+    private void FilterPreview()
+    {
+        var query = SearchText.Trim();
+        var rows = new List<object>();
+        foreach (var group in PreviewGroups)
+        {
+            var entries = group.Entries.Where(row => query.Length == 0 ||
+                new[] { row.SettingName, row.Description, row.Entry.ModuleId, row.Entry.SettingId,
+                    row.CurrentDisplay, row.ProposedDisplay, group.GroupName }
+                    .Any(text => text.Contains(query, StringComparison.OrdinalIgnoreCase))).ToList();
+            if (entries.Count == 0) continue;
+            if (group.HasHeader) rows.Add(group);
+            rows.AddRange(entries);
+        }
+        VisibleRows = rows;
+        OnPropertyChanged(nameof(VisibleRows));
+        OnPropertyChanged(nameof(HasNoSearchResults));
     }
 
     private void RecountIncluded()

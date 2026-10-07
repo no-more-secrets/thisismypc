@@ -14,7 +14,7 @@ namespace ThisIsMyPC.App.ViewModels;
 /// background after the page is up; the Windows filter is re-applied once
 /// they are known.
 /// </summary>
-public sealed partial class StartupViewModel : ObservableObject, IDisposable, ITabbedPage
+public sealed partial class StartupViewModel : ObservableObject, IDisposable, ITabbedPage, ISearchNavigationTarget
 {
     [ObservableProperty]
     private int _selectedTabIndex;
@@ -70,6 +70,16 @@ public sealed partial class StartupViewModel : ObservableObject, IDisposable, IT
     public IReadOnlyList<AutorunTabViewModel> Tabs { get; }
 
     public bool IsSearching => AutorunFilterText.Trim().Length > 0;
+
+    public void NavigateToSearchResult(string settingId, string displayName)
+    {
+        ShowWindowsEntries = true;
+        ShowMicrosoftEntries = true;
+        var separator = settingId.IndexOf(':', StringComparison.Ordinal);
+        if (settingId.StartsWith("startup-entry:", StringComparison.Ordinal))
+            separator = settingId.IndexOf(':', separator + 1);
+        AutorunFilterText = separator >= 0 ? settingId[(separator + 1)..] : displayName;
+    }
 
     partial void OnAutorunFilterTextChanged(string value) => RebuildSearch();
 

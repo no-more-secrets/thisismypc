@@ -7,6 +7,8 @@ using ThisIsMyPC.App.ViewModels;
 using ThisIsMyPC.App.Views;
 using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Core.Sets;
+using ThisIsMyPC.Core.Changes;
+using ThisIsMyPC.Modules.Startup.Models;
 
 namespace ThisIsMyPC.App.UiTests;
 
@@ -14,8 +16,7 @@ namespace ThisIsMyPC.App.UiTests;
 /// The Presets page with fake sets: cards wear the shared clickable states
 /// (hover wash, active tint with the accent ring when chosen), and the list
 /// keeps the standard 16px edge beside the overlay scrollbar so the thumb
-/// never sits on a card. CI-safe: no inspectors, every entry previews as
-/// skipped.
+/// never sits on a card. Fake inspectors exercise staging without system writes.
 /// </summary>
 public class SetLoaderViewShotTests
 {
@@ -76,8 +77,8 @@ public class SetLoaderViewShotTests
         using var session = UiSession.ForView(new SetLoaderView(), viewModel, "set-loader");
 
         session.Screenshot("rest");
-        Assert.True(session.IsTextVisible("TWEAK SETS"));
-        Assert.True(session.IsTextVisible("OPTIMIZATION PACKS"));
+        Assert.True(session.IsTextVisible("Tweaks"));
+        Assert.True(session.IsTextVisible("Packs"));
 
         session.Hover(Card(session, "NukeCopilot"));
         session.Screenshot("nukecopilot-hovered");
@@ -90,7 +91,7 @@ public class SetLoaderViewShotTests
         Assert.True(cleanBoot.IsSelected);
         Assert.True(Card(session, "Clean Boot").Classes.Contains("selected"));
         Assert.False(Card(session, "NukeCopilot").Classes.Contains("selected"));
-        Assert.True(session.IsTextVisible("Change 1 of Clean Boot"));
+        Assert.True(session.IsTextVisible("setting-1"));
 
         // Selecting another card moves the tint; the pointer resting on it does not remove it.
         session.Click(Card(session, "NukeCopilot"));
@@ -103,7 +104,7 @@ public class SetLoaderViewShotTests
     [AvaloniaFact]
     public void List_KeepsTheContentEdgeBesideTheScrollbar()
     {
-        using var session = UiSession.ForView(new SetLoaderView(), Build(), "set-loader");
+        using var session = UiSession.ForView(new SetLoaderView(), Build(), "set-loader", height: 480);
 
         var card = Card(session, "Clean Boot");
         var scroller = card.FindAncestorOfType<ScrollViewer>()!;
@@ -130,5 +131,130 @@ public class SetLoaderViewShotTests
         {
             session.SetTheme(ThemeVariant.Dark);
         }
+    }
+
+    [AvaloniaFact]
+    public void Tabs_Search_Links_AndStaging_KeepTheirTargets()
+    {
+        var pending = new PendingChangesService();
+        (string Module, string Setting, string Name)? destination = null;
+        using var vm = new SetLoaderViewModel(new SetLoadResult
+        {
+            Sets = [Definition("Desktop", SetCategory.TweakSet, 12, "Desktop choices"),
+                Definition("Complete", SetCategory.OptimizationPack, 12, "All desktop choices")],
+            Warnings = [],
+        }, [new PreviewInspector()], _ => new(true), pending,
+            navigateToSetting: (module, setting, name) => destination = (module, setting, name));
+        using var session = UiSession.ForView(new SetLoaderView(), vm, "set-loader", width: 900);
+        session.ClickText("Packs");
+        Assert.Single(vm.CurrentSets);
+        Assert.Equal("Complete", vm.CurrentSets[0].Name);
+        session.Click(Card(session, "Complete"));
+        session.Screenshot("pack-compact");
+        var rows = vm.PreviewGroups.SelectMany(g => g.Entries).ToList();
+        Assert.True(rows[0].IsApplied);
+        Assert.Equal(11, vm.IncludedCount);
+        var search = session.Find<TextBox>(b => b.Name == "PresetSearch");
+        session.Type(search, "setting-1");
+        Assert.Equal(4, vm.VisibleRows.OfType<SetEntryPreviewViewModel>().Count());
+        session.ClickText("Desktop setting 1");
+        Assert.Equal(("Windows Annoyances", "setting-1", "Desktop setting 1"), destination);
+        rows[1].IsIncluded = false;
+        session.ClickText("Stage 10 changes");
+        Assert.Equal(10, pending.PendingGroups.Count);
+        Assert.DoesNotContain(pending.PendingGroups, g => g.GroupId == "setting-2");
+        Assert.Contains(pending.PendingGroups, g => g.GroupId == "setting-3");
+        search.Text = "no matching entry";
+        session.Pump();
+        Assert.True(session.IsTextVisible("No matching changes"));
+        session.Screenshot("search-empty");
+        search.Text = string.Empty;
+        session.SetTheme(ThemeVariant.Light);
+        session.Screenshot("pack-light");
+        session.ClickText("Tweaks");
+        Assert.Null(vm.SelectedSet);
+        Assert.Equal("Desktop", vm.CurrentSets.Single().Name);
+    }
+
+    private sealed class PreviewInspector : ISetEntryInspector
+    {
+        public string ModuleId => "Windows Annoyances";
+        public SetEntryState Inspect(SetEntry entry) => new()
+        {
+            SettingDisplayName = $"Desktop setting {entry.SettingId[8..]}",
+            CurrentValue = entry.SettingId == "setting-1" ? "0" : "1",
+            CurrentDisplay = entry.SettingId == "setting-1" ? "Off" : "On",
+            IsApplied = entry.SettingId == "setting-1",
+        };
+        public ChangeGroup CreateChangeGroup(SetEntry entry) => new()
+        {
+            GroupId = entry.SettingId, DisplayName = entry.SettingId, Description = entry.Description,
+            Changes = [new ChangeDescriptor
+            {
+                ModuleId = ModuleId, SettingId = entry.SettingId, DisplayName = entry.SettingId,
+                SystemLocation = "fake", BeforeValue = "1", AfterValue = "0",
+                BeforeDisplay = "On", AfterDisplay = "Off", ValueType = ChangeValueType.Registry_String,
+            }],
+        };
+    }
+
+    [AvaloniaFact]
+    public void StartupLinks_RevealHiddenServicesAndTasks()
+    {
+        using var vm = new StartupViewModel(new StartupScanData([], [], Autoruns:
+        [
+            new AutorunEntry { Category = AutorunCategory.Services, Kind = AutorunItemKind.Service,
+                Name = "DiagTrack", Location = @"HKLM\SYSTEM\CurrentControlSet\Services", Data = "",
+                Publisher = "Microsoft Windows", IsEnabled = true },
+            new AutorunEntry { Category = AutorunCategory.ScheduledTasks, Kind = AutorunItemKind.ScheduledTask,
+                Name = "Consolidator", Location = @"\Microsoft\Windows\Customer Experience Improvement Program\Consolidator",
+                Data = "", Publisher = "Microsoft Windows", IsEnabled = true },
+            new AutorunEntry { Category = AutorunCategory.Logon, Kind = AutorunItemKind.RegistryValue,
+                Name = "Example:Launcher", Location = @"HKCU\Software\Microsoft\Windows\CurrentVersion\Run",
+                Data = "", IsEnabled = true },
+        ]), new PendingChangesService());
+        using var session = UiSession.ForView(new StartupView(), vm, "set-loader-startup");
+        vm.NavigateToSearchResult("service-starttype:DiagTrack", "Connected User Experiences");
+        session.Pump();
+        Assert.True(vm.ShowWindowsEntries);
+        Assert.True(vm.ShowMicrosoftEntries);
+        Assert.Equal("DiagTrack", Assert.Single(vm.SearchResults.OfType<AutorunItemViewModel>()).Name);
+        vm.NavigateToSearchResult(@"scheduled-task:\Microsoft\Windows\Customer Experience Improvement Program\Consolidator", "Consolidator");
+        session.Pump();
+        Assert.Equal("Consolidator", Assert.Single(vm.SearchResults.OfType<AutorunItemViewModel>()).Name);
+        session.Screenshot("preset-task-destination");
+        vm.NavigateToSearchResult("startup-entry:CurrentUserRun:Example:Launcher", "Example launcher");
+        session.Pump();
+        Assert.Equal("Example:Launcher", Assert.Single(vm.SearchResults.OfType<AutorunItemViewModel>()).Name);
+    }
+
+    [AvaloniaFact(Timeout = 300_000)]
+    [Trait("Category", "Diagnostic")]
+    public async Task MainWindow_Presets_OpensTheCorrespondingSetting()
+    {
+        using var session = UiSession.ForMainWindow("presets-main");
+        session.Window.Width = 1200;
+        var main = (MainWindowViewModel)session.Window.DataContext!;
+        await session.WaitForAsync(() => main.SidebarGroups.Count > 0, timeoutMs: 30_000, what: "sidebar");
+        session.ClickText("Presets");
+        await session.WaitForAsync(() => main.CurrentContent is SetLoaderViewModel, what: "Presets");
+        var vm = (SetLoaderViewModel)main.CurrentContent!;
+        var preset = vm.OptimizationPacks.First(s => s.Definition.Entries.Any(e => e.ModuleId == "Explorer"));
+        session.ClickText("Packs");
+        session.ClickText(preset.Name);
+        var card = session.Find<Border>(b => b.Name == "ModuleContentHost");
+        Assert.Equal(default, card.Padding);
+        var browser = session.Find<Border>(b => b.Name == "PresetBrowser");
+        Assert.Equal(25, browser.TranslatePoint(default, card)!.Value.X, 0.5);
+        session.Screenshot("dark-1200");
+        session.SetTheme(ThemeVariant.Light);
+        session.Screenshot("light-1200");
+        session.SetTheme(ThemeVariant.Dark);
+        var row = vm.PreviewGroups.SelectMany(g => g.Entries).First(r => r.Entry.ModuleId == "Explorer" && !r.IsSkipped);
+        session.Type(session.Find<TextBox>(b => b.Name == "PresetSearch"), row.Entry.SettingId);
+        session.ClickText(row.SettingName);
+        await session.WaitForAsync(() => main.CurrentContent is ShellViewModel { SearchText.Length: > 0 },
+            timeoutMs: 120_000, what: "Explorer setting destination");
+        session.Screenshot("explorer-destination");
     }
 }
