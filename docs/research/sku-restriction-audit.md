@@ -11,7 +11,7 @@ and set-preview notices. Successful writes remain undoable but do not establish 
 Enterprise and Education are equivalent for this product. A Pro minimum excludes Home;
 an Enterprise or Education minimum excludes Home and Pro.
 
-Cards show the required edition and disable their switches below that tier. Descriptions remain readable.
+Cards show the required edition and disable their switches below that tier. The Pro label reads "Requires Windows Pro or higher". Descriptions remain readable.
 An unknown edition disables policy controls with an unverified-support notice.
 Presets skip restricted entries. The interactive queue checks every descriptor before staging and again before applying.
 Undo and the restoration executor remain separate from the interactive queue checks.

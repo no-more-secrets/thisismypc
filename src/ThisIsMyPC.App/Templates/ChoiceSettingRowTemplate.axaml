@@ -38,6 +38,7 @@
                 </Grid>
 
                 <ComboBox HorizontalAlignment="Stretch"
+                          IsEnabled="{Binding IsControlEnabled}"
                           ItemsSource="{Binding Options}"
                           SelectedItem="{Binding SelectedOption}">
                     <ComboBox.ItemTemplate>
@@ -46,6 +47,9 @@
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
                 </ComboBox>
+                <TextBlock Text="{Binding PolicyStateText}" FontSize="11" TextWrapping="Wrap"
+                           Foreground="{DynamicResource InfoBrush}"
+                           IsVisible="{Binding PolicyStateText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
             </StackPanel>
         </Border>
     </DataTemplate>

@@ -14,15 +14,18 @@ public sealed class SetConflictResolver
     private readonly IReadOnlyList<ISetEntryInspector> _inspectors;
     private readonly Func<string, ModuleAvailability?> _moduleAvailabilityLookup;
     private readonly ICapabilityDetector? _capabilityDetector;
+    private readonly Policies.PolicyControlStateReader? _policyStates;
 
     public SetConflictResolver(
         IEnumerable<ISetEntryInspector> inspectors,
         Func<string, ModuleAvailability?> moduleAvailabilityLookup,
-        ICapabilityDetector? capabilityDetector = null)
+        ICapabilityDetector? capabilityDetector = null,
+        Policies.PolicyControlStateReader? policyStates = null)
     {
         _inspectors = inspectors.ToList();
         _moduleAvailabilityLookup = moduleAvailabilityLookup;
         _capabilityDetector = capabilityDetector;
+        _policyStates = policyStates;
     }
 
     public IReadOnlyList<SetEntryResolution> Resolve(
@@ -66,6 +69,11 @@ public sealed class SetConflictResolver
             .FirstOrDefault(reason => reason is not null);
         if (skuNotice is not null)
             return Skipped(entry, skuNotice) with { State = state, SkuNotice = skuNotice };
+
+        var policy = stageable.Changes.Select(change => _policyStates?.Read(change))
+            .FirstOrDefault(state => state?.BlocksChanges == true);
+        if (policy is not null)
+            return Skipped(entry, policy.Message!) with { State = state with { CurrentDisplay = policy.Message!, CoveredByPolicy = policy.Message } };
 
         // First pending descriptor targeting the same setting. Factories list a group
         // toggle's primary value first, so the first match compares against the same

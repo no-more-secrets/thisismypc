@@ -36,6 +36,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly Services.AutorunEnrichment? _autorunEnrichment;
     private readonly IChangeHistoryService _changeHistoryService;
     private readonly IRegistryService _registryService;
+    private readonly Core.Policies.PolicyControlStateReader _policyStates;
     private readonly IPowerService? _powerService;
     private readonly IMonitorService? _monitorService;
     private readonly DisplayModePreferencesStore? _displayModeStore;
@@ -382,7 +383,8 @@ public partial class MainWindowViewModel : ViewModelBase
         Services.HardwareCompanionActions? hardwareActions = null,
         Core.Hardware.Lighting.ILightingBackend? lightingBackend = null,
         Func<Core.Hardware.Sensors.IHardwareSensorBackend>? sensorBackendFactory = null,
-        Services.UserFeedbackHub? userFeedback = null)
+        Services.UserFeedbackHub? userFeedback = null,
+        Core.Policies.PolicyControlStateReader? policyStates = null)
     {
         _userFeedback = userFeedback;
         if (_userFeedback is not null)
@@ -414,6 +416,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _pendingChangesService = pendingChangesService;
         _changeHistoryService = changeHistoryService;
         _registryService = registryService;
+        _policyStates = policyStates ?? new Core.Policies.PolicyControlStateReader(registryService);
         _explorerRestartService = explorerRestartService;
         _setProvider = setProvider;
         _setEntryInspectors = setEntryInspectors.ToList();
@@ -565,7 +568,7 @@ public partial class MainWindowViewModel : ViewModelBase
                     {
                         ContentTitle = current.Module.Info.Name;
                         ContentDescription = current.Module.Info.Description;
-                        CurrentContent = new ShellViewModel(scanData, _pendingChangesService, _registryService, _pendingActionsService);
+                        CurrentContent = new ShellViewModel(scanData, _pendingChangesService, _registryService, _pendingActionsService, _policyStates);
                     }
                     else
                     {
@@ -607,7 +610,7 @@ public partial class MainWindowViewModel : ViewModelBase
                         ContentDescription = current.Module.Info.Description;
                         CurrentContent = new WindowsUpdateViewModel(
                             updateData, _pendingChangesService, _registryService,
-                            _displayModeStore, _capabilityDetector, _ownerModeControl, _userFeedback);
+                            _displayModeStore, _capabilityDetector, _ownerModeControl, _userFeedback, _policyStates);
                     }
                     else
                     {
@@ -629,7 +632,7 @@ public partial class MainWindowViewModel : ViewModelBase
                         ContentDescription = current.Module.Info.Description;
                         CurrentContent = new PrivacyViewModel(
                             privacyData, _pendingChangesService, _registryService,
-                            _displayModeStore, _capabilityDetector, _ownerModeControl, _userFeedback);
+                            _displayModeStore, _capabilityDetector, _ownerModeControl, _userFeedback, _policyStates);
                     }
                     else
                     {
@@ -651,7 +654,7 @@ public partial class MainWindowViewModel : ViewModelBase
                         ContentDescription = current.Module.Info.Description;
                         CurrentContent = new AnnoyancesViewModel(
                             annoyancesData, _pendingChangesService, _registryService,
-                            _displayModeStore, _capabilityDetector, _ownerModeControl, _userFeedback);
+                            _displayModeStore, _capabilityDetector, _ownerModeControl, _userFeedback, _policyStates);
                     }
                     else
                     {
@@ -693,7 +696,7 @@ public partial class MainWindowViewModel : ViewModelBase
                         ContentDescription = current.Module.Info.Description;
                         CurrentContent = new PowerViewModel(
                             powerData, _pendingChangesService, _powerService, _registryService,
-                            _pendingActionsService, _userFeedback);
+                            _pendingActionsService, _userFeedback, _policyStates);
                     }
                     else
                     {
@@ -1221,7 +1224,7 @@ public partial class MainWindowViewModel : ViewModelBase
             loadResult, _setEntryInspectors, LookupModuleAvailability, _pendingChangesService,
             _capabilityDetector,
             (module, setting, name) => SelectSearchResult(new SearchResultViewModel(new(
-                new(module, setting, name, string.Empty, []), true, null))));
+                new(module, setting, name, string.Empty, []), true, null))), _policyStates);
         IsSetLoaderActive = true;
         IsHomeActive = false;
         IsSettingsActive = false;

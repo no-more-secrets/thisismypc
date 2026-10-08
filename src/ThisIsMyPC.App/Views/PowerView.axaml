@@ -343,6 +343,9 @@
                                            Foreground="{DynamicResource TextTertiaryBrush}" />
                             </StackPanel>
 
+                            <TextBlock Text="{Binding PolicyStateText}" FontSize="11" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource InfoBrush}"
+                                       IsVisible="{Binding PolicyStateText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                             <Grid ColumnDefinitions="Auto,220,16,Auto,220,Auto"
                                   VerticalAlignment="Center">
                                 <TextBlock Grid.Column="0" Text="Plugged in:"

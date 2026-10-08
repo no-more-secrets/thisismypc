@@ -67,10 +67,11 @@ public partial class SetLoaderViewModel : ViewModelBase, IDisposable, ITabbedPag
         Func<string, ModuleAvailability?> moduleAvailabilityLookup,
         IPendingChangesService pendingChangesService,
         ICapabilityDetector? capabilityDetector = null,
-        Action<string, string, string>? navigateToSetting = null)
+        Action<string, string, string>? navigateToSetting = null,
+        Core.Policies.PolicyControlStateReader? policyStates = null)
     {
         _inspectors = inspectors.ToList();
-        _conflictResolver = new SetConflictResolver(_inspectors, moduleAvailabilityLookup, capabilityDetector);
+        _conflictResolver = new SetConflictResolver(_inspectors, moduleAvailabilityLookup, capabilityDetector, policyStates);
         _pendingChangesService = pendingChangesService;
         _navigateToSetting = navigateToSetting;
 

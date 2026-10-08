@@ -32,6 +32,26 @@ Registry names without a catalog route were not counted as coverage. Similar int
 
 ## Verification still required
 
+### Existing control integration (2026-10-07)
+
+`PolicyControlStateReader` now feeds existing cards, Explorer rows, Power settings, presets, and the interactive queue.
+It compares typed registry values with applicable local policy files and checks again before writes.
+Matching saved policies block direct registry edits that policy refresh would replace. Mismatches and unreadable sources remain explicit.
+Deletion instructions use the existing ordered parser. Absent values do not imply enabled or disabled policy.
+
+The override catalog covers manual updates, diagnostic data Off, speech, launch tracking, advertisements, suggestions, game recording,
+recent documents, Widgets, taskbar search, active hours, and restart notifications. Power settings check AC and DC independently.
+Grouped controls inspect companion policy values. User-only location and error-reporting policies do not claim machine-wide coverage.
+Legacy taskbar grouping and broad Spotlight relationships remain informational where equivalent control behavior is unverified.
+
+Edition checks apply before reporting an override as effective. Pro notices read "Requires Windows Pro or higher".
+The specific [Experience policy tables](https://learn.microsoft.com/en-us/windows/client-management/mdm/policy-csp-experience)
+exclude Pro for Spotlight master, Settings, welcome, Action Center, and desktop-collection policies.
+They include Pro for third-party suggestions and tailored experiences. These remain distinct in the edition rules.
+
+This does not establish domain or MDM ownership, policy refresh success, or runtime enforcement on every Windows build.
+No new policy editor or Security tab is included. Installed ADMX mappings supply scope and value evidence, not proof of runtime behavior.
+
 ### Read-only detection tranche (2026-10-07)
 
 `PracticalPolicyCatalog` now maps seven single-DWORD policies. They are detection coverage, not additional editable routes.

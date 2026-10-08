@@ -157,7 +157,8 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, ISearch
         ShellScanData scanData,
         IPendingChangesService pendingChangesService,
         IRegistryService registryService,
-        IPendingActionsService? pendingActionsService = null)
+        IPendingActionsService? pendingActionsService = null,
+        Core.Policies.PolicyControlStateReader? policyStates = null)
     {
         // Explorer preferences, each on its own tab
         foreach (var pref in scanData.ExplorerPreferences)
@@ -315,6 +316,19 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, ISearch
                 var result = registryService.KeyExists(ClassicContextMenuKeyPath);
                 return result.IsSuccess && result.Value;
             }));
+        var policies = policyStates ?? new Core.Policies.PolicyControlStateReader(registryService);
+        foreach (var row in ToggleRows)
+        {
+            var id = scanData.ExplorerPreferences.FirstOrDefault(pref => $@"{pref.RegistryKeyPath}\{pref.RegistryValueName}" == row.SystemPath)?.Id
+                ?? (row.SystemPath.EndsWith("\\TaskbarDa", StringComparison.Ordinal) ? "taskbar-widgets" : "");
+            row.SetPolicySource(() => policies.Read("Explorer", id, row.SystemPath));
+        }
+        foreach (var row in ChoiceRows)
+        {
+            var id = row.SystemPath.EndsWith("\\SearchboxTaskbarMode", StringComparison.Ordinal) ? "taskbar-search-mode"
+                : row.SystemPath.EndsWith("\\TaskbarGlomLevel", StringComparison.Ordinal) ? "taskbar-button-combining" : "";
+            row.SetPolicySource(() => policies.Read("Explorer", id, row.SystemPath));
+        }
     }
 
     private void OnPendingActionsPropertyChanged(object? sender, PropertyChangedEventArgs e)

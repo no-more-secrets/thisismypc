@@ -13,10 +13,33 @@ public sealed partial class ShellSettingViewModel : ViewModelBase, IDisposable, 
     private static readonly NLog.Logger Log = NLog.LogManager.GetLogger("ThisIsMyPC.App.ViewModels.ShellSettingViewModel");
 
     // IToggleSettingRow members this row type never uses (template hides them).
-    public bool IsToggleEnabled => true;
+    public bool IsToggleEnabled => !_policyState.BlocksChanges;
     public bool IsInactive => false;
     public string? InactiveReason => null;
-    public string? WarningText => null;
+    public string? WarningText => _policyState.Message;
+    private Core.Policies.PolicyControlState _policyState = Core.Policies.PolicyControlState.None;
+    private Func<Core.Policies.PolicyControlState>? _readPolicyState;
+
+    public void SetPolicySource(Func<Core.Policies.PolicyControlState> read)
+    {
+        _readPolicyState = read;
+        RefreshPolicyState();
+        _suppressStaging = true;
+        IsEnabled = _policyState.ToggleState ?? IsEnabled;
+        _suppressStaging = false;
+    }
+
+    private bool RefreshPolicyState()
+    {
+        _policyState = _readPolicyState?.Invoke() ?? Core.Policies.PolicyControlState.None;
+        OnPropertyChanged(nameof(IsToggleEnabled));
+        OnPropertyChanged(nameof(WarningText));
+        if (!_policyState.BlocksChanges) return true;
+        _suppressStaging = true;
+        IsEnabled = _policyState.ToggleState ?? _registryIsEnabled;
+        _suppressStaging = false;
+        return false;
+    }
     public string? DisableMethodText => null;
     public bool CanMigrate => false;
     public System.Windows.Input.ICommand? MigrateCommand => null;
@@ -174,6 +197,7 @@ public sealed partial class ShellSettingViewModel : ViewModelBase, IDisposable, 
 
     partial void OnIsEnabledChanged(bool value)
     {
+        if (!_suppressStaging && !RefreshPolicyState()) return;
         if (_suppressStaging)
             return;
 
@@ -199,6 +223,8 @@ public sealed partial class ShellSettingViewModel : ViewModelBase, IDisposable, 
         {
             if (_disposed)
                 return;
+
+            if (!RefreshPolicyState()) return;
 
             // Refresh baseline from registry (source of truth)
             if (_readRegistryState is not null)
@@ -305,7 +331,7 @@ public sealed partial class ShellSettingViewModel : ViewModelBase, IDisposable, 
 
     private void UpdatePendingState()
     {
-        HasPendingChange = IsEnabled != _registryIsEnabled;
+        HasPendingChange = _stagedGroupId is not null;
         IsPendingEnable = HasPendingChange && IsEnabled;
         IsPendingDisable = HasPendingChange && !IsEnabled;
     }

@@ -34,6 +34,29 @@ public sealed partial class ShellChoiceSettingViewModel : ViewModelBase, IDispos
     public string Description { get; }
     public string SystemPath { get; }
     public IReadOnlyList<ShellChoiceOption> Options { get; }
+    private Func<Core.Policies.PolicyControlState>? _readPolicyState;
+    public string? PolicyStateText { get; private set; }
+    public bool IsControlEnabled { get; private set; } = true;
+
+    public void SetPolicySource(Func<Core.Policies.PolicyControlState> read)
+    {
+        _readPolicyState = read;
+        RefreshPolicyState();
+    }
+
+    private bool RefreshPolicyState()
+    {
+        var state = _readPolicyState?.Invoke() ?? Core.Policies.PolicyControlState.None;
+        PolicyStateText = state.Message;
+        IsControlEnabled = !state.BlocksChanges;
+        OnPropertyChanged(nameof(PolicyStateText));
+        OnPropertyChanged(nameof(IsControlEnabled));
+        if (IsControlEnabled) return true;
+        _suppressStaging = true;
+        SelectedOption = Options.FirstOrDefault(option => option.Value == (state.ChoiceValue ?? _registryValue));
+        _suppressStaging = false;
+        return false;
+    }
 
     [ObservableProperty]
     private ShellChoiceOption? _selectedOption;
@@ -114,6 +137,8 @@ public sealed partial class ShellChoiceSettingViewModel : ViewModelBase, IDispos
         if (_suppressStaging || value is null)
             return;
 
+        if (!RefreshPolicyState()) return;
+
         _debounceCts?.Cancel();
         _debounceCts?.Dispose();
         _debounceCts = new CancellationTokenSource();
@@ -135,6 +160,8 @@ public sealed partial class ShellChoiceSettingViewModel : ViewModelBase, IDispos
         {
             if (_disposed)
                 return;
+
+            if (!RefreshPolicyState()) return;
 
             _registryValue = _readRegistryValue();
 

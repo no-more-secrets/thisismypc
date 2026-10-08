@@ -21,6 +21,8 @@
                          Classes.pending-enable="{Binding IsPendingEnable}"
                          Classes.pending-disable="{Binding IsPendingDisable}">
         <StackPanel Spacing="2" IsVisible="{Binding HasVisibleContent}">
+            <TextBlock Text="{Binding PolicyStateText}" FontSize="11" TextWrapping="Wrap"
+                       Foreground="{DynamicResource InfoBrush}" IsVisible="{Binding HasPolicyState}" />
             <TextBlock Text="{Binding UnavailableReason}"
                        FontSize="11" TextWrapping="Wrap"
                        Foreground="{DynamicResource InfoBrush}"

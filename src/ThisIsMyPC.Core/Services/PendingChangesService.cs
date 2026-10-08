@@ -27,11 +27,14 @@ public sealed class PendingChangesService : IPendingChangesService
     private readonly IReversibleChangeExecutor _executor;
     private bool _isApplying;
     private readonly ICapabilityDetector? _capabilityDetector;
+    private readonly Policies.PolicyControlStateReader? _policyStates;
 
-    public PendingChangesService(IEnforcementExecutor? enforcementExecutor = null, ICapabilityDetector? capabilityDetector = null)
+    public PendingChangesService(IEnforcementExecutor? enforcementExecutor = null, ICapabilityDetector? capabilityDetector = null,
+        Policies.PolicyControlStateReader? policyStates = null)
         : this(new ReversibleChangeExecutor(enforcementExecutor))
     {
         _capabilityDetector = capabilityDetector;
+        _policyStates = policyStates;
     }
 
     private PendingChangesService(IReversibleChangeExecutor executor)
@@ -117,6 +120,8 @@ public sealed class PendingChangesService : IPendingChangesService
 
         foreach (var change in group.Changes)
         {
+            if (_policyStates?.Read(change) is { BlocksChanges: true } policy)
+                throw new InvalidOperationException(policy.Message);
             if (_capabilityDetector is not null
                 && SettingEditionSupport.BlockReason(_capabilityDetector.Sku, change) is { } editionReason)
                 throw new InvalidOperationException(editionReason);
@@ -267,6 +272,15 @@ public sealed class PendingChangesService : IPendingChangesService
             }
 
             snapshot = [.. _pendingGroups];
+            foreach (var change in snapshot.SelectMany(group => group.Changes))
+            {
+                if (_policyStates?.Read(change) is { BlocksChanges: true } policy)
+                    return new MutationResult
+                    {
+                        IsSuccess = false, Applied = [], RolledBack = [], Failed = change,
+                        ErrorMessage = policy.Message, ErrorCategory = ErrorCategory.ProtectedByPolicy,
+                    };
+            }
             if (_capabilityDetector is not null)
             {
                 foreach (var change in snapshot.SelectMany(group => group.Changes))

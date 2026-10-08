@@ -54,7 +54,8 @@ public abstract partial class SettingCardPageViewModel
         DisplayModePreferencesStore? displayModeStore,
         ICapabilityDetector? capabilityDetector,
         Services.IOwnerModeLifecycle? ownerMode,
-        Services.IUserFeedback? feedback = null)
+        Services.IUserFeedback? feedback = null,
+        Core.Policies.PolicyControlStateReader? policyStates = null)
     {
         ArgumentNullException.ThrowIfNull(sources);
         ArgumentNullException.ThrowIfNull(sectionSubtitles);
@@ -62,7 +63,7 @@ public abstract partial class SettingCardPageViewModel
         _displayModeStore = displayModeStore;
 
         var cards = sources
-            .Select(source => new SettingCardViewModel(source, pendingChangesService, capabilityDetector, ownerMode, feedback))
+            .Select(source => new SettingCardViewModel(source, pendingChangesService, capabilityDetector, ownerMode, feedback, policyStates))
             .ToList();
 
         // Group by GroupId in first-appearance order (provider order is authoritative).

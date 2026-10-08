@@ -219,7 +219,7 @@ public sealed class SetConflictResolverTests
         var resolution = resolver.Resolve(Definition(Entry()), []).Single();
 
         Assert.NotNull(resolution.SkuNotice);
-        Assert.Equal("Requires Windows Pro", resolution.SkuNotice);
+        Assert.Equal("Requires Windows Pro or higher", resolution.SkuNotice);
 
         // Unsupported entries remain visible, but cannot be selected.
         Assert.True(resolution.IsSkipped);

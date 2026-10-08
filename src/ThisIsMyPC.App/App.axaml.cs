@@ -198,6 +198,10 @@ public partial class App : Application
         // Interop services
         services.AddSingleton<ISecurityApi, SecurityApi>();
         services.AddSingleton<IRegistryService, RegistryService>();
+        services.AddSingleton(sp => new Core.Policies.PolicyControlStateReader(
+            sp.GetRequiredService<IRegistryService>(),
+            () => Interop.Win32.Policies.LocalPolicyInspector.ReadCurrentSources(),
+            sp.GetRequiredService<ICapabilityDetector>()));
         services.AddSingleton<Core.Hardware.IHardwareDetectionService, Interop.Win32.Hardware.HardwareDetectionService>();
         // The UI runs unelevated, so the shell type icon and Authenticode
         // lookups for the Autoruns page live here; the Broker never runs them.

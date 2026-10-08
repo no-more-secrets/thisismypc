@@ -49,6 +49,7 @@ public sealed partial class PowerViewModel : ObservableObject, ISearchNavigation
     private readonly IPendingChangesService _pendingChangesService;
     private readonly IPowerService? _powerService;
     private readonly IRegistryService? _registryService;
+    private readonly Core.Policies.PolicyControlStateReader? _policyStates;
     private Core.Services.IPendingActionsService? _pendingActionsService;
     private PowerPlan? _liveActivePlan;
     private string? _stagedGroupId;
@@ -66,11 +67,13 @@ public sealed partial class PowerViewModel : ObservableObject, ISearchNavigation
         IPowerService? powerService = null,
         IRegistryService? registryService = null,
         Core.Services.IPendingActionsService? pendingActionsService = null,
-        Services.IUserFeedback? feedback = null)
+        Services.IUserFeedback? feedback = null,
+        Core.Policies.PolicyControlStateReader? policyStates = null)
     {
         _pendingChangesService = pendingChangesService;
         _powerService = powerService;
         _registryService = registryService;
+        _policyStates = policyStates ?? (registryService is null ? null : new Core.Policies.PolicyControlStateReader(registryService));
         _pendingActionsService = pendingActionsService;
         _feedback = feedback;
         ScanError = scanData.ScanError;
@@ -436,6 +439,7 @@ public sealed partial class PowerViewModel : ObservableObject, ISearchNavigation
                 groupFactory: allow => PowerPlanChangeFactory.CreateAllowSleepToggle(lastKnownSleep, allow),
                 readRegistryState: ReadSleep,
                 rehydrateSettingId: PowerPlanChangeFactory.AllowSleepSettingId));
+            rows[^1].SetPolicySource(() => _policyStates?.Read("Power", "allow-sleep") ?? Core.Policies.PolicyControlState.None);
         }
 
         if (_registryService is not null && scanData.HibernateEnabled is { } hibernateAtScan)
@@ -481,6 +485,9 @@ public sealed partial class PowerViewModel : ObservableObject, ISearchNavigation
                 groupFactory: keep => WrapChange(PowerPlanChangeFactory.CreatePolicyPinToggle(pin, keep)),
                 readRegistryState: ReadPin,
                 rehydrateSettingId: PowerPlanChangeFactory.ActivePlanPolicyPinSettingId));
+            var location = rows[^1].SystemPath;
+            rows[^1].SetPolicySource(() => _policyStates?.Read("Power", PowerPlanChangeFactory.ActivePlanPolicyPinSettingId,
+                location, ChangeValueType.Registry_String) ?? Core.Policies.PolicyControlState.None);
         }
 
         return rows;
@@ -586,7 +593,7 @@ public sealed partial class PowerViewModel : ObservableObject, ISearchNavigation
                 {
                     var rows = subgroup
                         .Select(info => new PowerSettingItemViewModel(
-                            plan.Plan, PowerSetting.FromInfo(info), _pendingChangesService))
+                            plan.Plan, PowerSetting.FromInfo(info), _pendingChangesService, _policyStates))
                         .ToList();
                     SettingsGroups.Add(new PowerSettingGroupViewModel(rows[0].Setting.SubgroupName, rows));
                 }
@@ -990,6 +997,14 @@ public sealed class PowerSettingGroupViewModel
 /// </summary>
 public sealed partial class PowerSettingItemViewModel : ObservableObject
 {
+    private readonly Core.Policies.PolicyControlStateReader? _policyStates;
+    private Core.Policies.PolicyControlState _acPolicy = Core.Policies.PolicyControlState.None;
+    private Core.Policies.PolicyControlState _dcPolicy = Core.Policies.PolicyControlState.None;
+    public string? PolicyStateText => string.Join(" ", new[]
+    {
+        _acPolicy.Message is { } ac ? "Plugged in: " + ac : null,
+        _dcPolicy.Message is { } dc ? "On battery: " + dc : null,
+    }.Where(message => message is not null));
     private readonly IPendingChangesService _pendingChangesService;
     private readonly PowerPlan _plan;
     private uint? _liveAc;
@@ -998,10 +1013,13 @@ public sealed partial class PowerSettingItemViewModel : ObservableObject
     private string? _dcGroupId;
     private bool _suppressStaging;
 
-    public PowerSettingItemViewModel(PowerPlan plan, PowerSetting setting, IPendingChangesService pendingChangesService)
+    public PowerSettingItemViewModel(PowerPlan plan, PowerSetting setting, IPendingChangesService pendingChangesService,
+        Core.Policies.PolicyControlStateReader? policyStates = null)
     {
         _plan = plan;
         Setting = setting;
+        _policyStates = policyStates;
+        RefreshPolicyState();
         _pendingChangesService = pendingChangesService;
         _liveAc = setting.AcIndex;
         _liveDc = setting.DcIndex;
@@ -1029,8 +1047,8 @@ public sealed partial class PowerSettingItemViewModel : ObservableObject
 
     public bool IsEnumerated => !Setting.IsRange && Setting.PossibleValues.Count > 0;
     public bool IsRangeEditor => !IsEnumerated;
-    public bool CanEditAc => _liveAc is not null;
-    public bool CanEditDc => _liveDc is not null;
+    public bool CanEditAc => _liveAc is not null && !_acPolicy.BlocksChanges;
+    public bool CanEditDc => _liveDc is not null && !_dcPolicy.BlocksChanges;
 
     public IReadOnlyList<string> Options { get; } = [];
 
@@ -1118,6 +1136,15 @@ public sealed partial class PowerSettingItemViewModel : ObservableObject
 
     private void StageScope(bool ac, uint desired)
     {
+        RefreshPolicyState();
+        if (ac ? !CanEditAc : !CanEditDc)
+        {
+            _suppressStaging = true;
+            if (ac) { SelectedAcOptionIndex = PositionOf(_liveAc); AcText = _liveAc?.ToString() ?? string.Empty; }
+            else { SelectedDcOptionIndex = PositionOf(_liveDc); DcText = _liveDc?.ToString() ?? string.Empty; }
+            _suppressStaging = false;
+            return;
+        }
         var live = ac ? _liveAc : _liveDc;
         if (live is null)
             return;
@@ -1149,6 +1176,15 @@ public sealed partial class PowerSettingItemViewModel : ObservableObject
         }
 
         UpdatePendingFlags();
+    }
+
+    private void RefreshPolicyState()
+    {
+        _acPolicy = _policyStates?.ReadPowerSetting(Setting.SettingGuid, true) ?? Core.Policies.PolicyControlState.None;
+        _dcPolicy = _policyStates?.ReadPowerSetting(Setting.SettingGuid, false) ?? Core.Policies.PolicyControlState.None;
+        OnPropertyChanged(nameof(CanEditAc));
+        OnPropertyChanged(nameof(CanEditDc));
+        OnPropertyChanged(nameof(PolicyStateText));
     }
 
     private void Rehydrate(bool ac, ref string? groupId)

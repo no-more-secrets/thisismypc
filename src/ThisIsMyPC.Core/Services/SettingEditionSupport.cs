@@ -7,7 +7,9 @@ namespace ThisIsMyPC.Core.Services;
 public static class SettingEditionSupport
 {
     private static readonly string[] EnterpriseContentPolicies =
-        ["DisableWindowsConsumerFeatures", "DisableSoftLanding", "DisableCloudOptimizedContent", "DisableConsumerAccountStateContent"];
+        ["DisableWindowsConsumerFeatures", "DisableSoftLanding", "DisableCloudOptimizedContent", "DisableConsumerAccountStateContent",
+         "DisableWindowsSpotlightFeatures", "DisableWindowsSpotlightOnSettings", "DisableWindowsSpotlightWindowsWelcomeExperience",
+         "DisableWindowsSpotlightOnActionCenter", "DisableSpotlightCollectionOnDesktop"];
 
     public static WindowsSku? RequiredEdition(string? location, WindowsSku? declared, string? value = null)
     {
@@ -40,7 +42,7 @@ public static class SettingEditionSupport
 
     public static string? RequirementLabel(WindowsSku? required) => required switch
     {
-        WindowsSku.Pro => "Requires Windows Pro",
+        WindowsSku.Pro => "Requires Windows Pro or higher",
         WindowsSku.Enterprise or WindowsSku.Education => "Requires Windows Enterprise or Education",
         _ => null,
     };

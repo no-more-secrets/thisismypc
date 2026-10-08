@@ -21,6 +21,10 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
 
     private readonly IPendingChangesService _pendingChangesService;
     private readonly SettingCardSource _source;
+    private readonly Core.Policies.PolicyControlStateReader? _policyStates;
+    private Core.Policies.PolicyControlState _policyState = Core.Policies.PolicyControlState.None;
+    public string? PolicyStateText => _policyState.Message;
+    public bool HasPolicyState => PolicyStateText is not null;
     private readonly ICapabilityDetector? _capabilityDetector;
     private readonly IOwnerModeLifecycle? _ownerMode;
     private bool _registryIsEnabled;
@@ -68,7 +72,7 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
 
     /// <summary>The content slot has something to show; hidden otherwise so a compact card stays one line tall.</summary>
     public bool HasVisibleContent =>
-        ShowEnforcementBadge || ShowReversionRisks || HasSkuNotice || HasUnavailableReason || IsOwnerModeDegraded
+        ShowEnforcementBadge || ShowReversionRisks || HasSkuNotice || HasUnavailableReason || HasPolicyState || IsOwnerModeDegraded
         || ShowOwnerModeBadge || IsRegistryDataVisible;
 
     /// <summary>"DWord value, read as Suppressed at the last scan".</summary>
@@ -137,7 +141,7 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
     public bool HasUnavailableReason => Model.UnavailableReason is not null;
     public string? UnavailableReason => Model.UnavailableReason;
     /// <summary>Keep the card readable when its control cannot safely change the setting.</summary>
-    public bool IsControlEnabled => !IsOwnerModeDegraded && !HasUnavailableReason && !IsEditionBlocked;
+    public bool IsControlEnabled => !IsOwnerModeDegraded && !HasUnavailableReason && !IsEditionBlocked && !_policyState.BlocksChanges;
 
     /// <summary>The callout button needs the lifecycle service to act.</summary>
     public bool CanTurnOnOwnerMode => IsOwnerModeDegraded && _ownerMode is not null;
@@ -235,7 +239,8 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
         IPendingChangesService pendingChangesService,
         ICapabilityDetector? capabilityDetector = null,
         IOwnerModeLifecycle? ownerMode = null,
-        Services.IUserFeedback? feedback = null)
+        Services.IUserFeedback? feedback = null,
+        Core.Policies.PolicyControlStateReader? policyStates = null)
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(pendingChangesService);
@@ -244,6 +249,8 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
         _capabilityDetector = capabilityDetector;
         _feedback = feedback;
         Model = source.Model;
+        _policyStates = policyStates;
+        RefreshPolicyState();
 
         var required = SettingEditionSupport.RequiredEdition(SystemPath, Model.SkuRestriction);
         var editionReason = SettingEditionSupport.BlockReason(capabilityDetector?.Sku, SystemPath, Model.SkuRestriction);
@@ -265,7 +272,7 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
 
         _registryIsEnabled = Model.CurrentValue == "1";
         _suppressStaging = true;
-        IsEnabled = _registryIsEnabled;
+        IsEnabled = _policyState.ToggleState ?? _registryIsEnabled;
         _suppressStaging = false;
 
         _pendingChangesService.PropertyChanged += OnPendingChangesPropertyChanged;
@@ -278,10 +285,11 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
         if (_suppressStaging)
             return;
 
+        RefreshPolicyState();
         if (!IsControlEnabled)
         {
             _suppressStaging = true;
-            IsEnabled = _registryIsEnabled;
+            IsEnabled = _policyState.ToggleState ?? _registryIsEnabled;
             _suppressStaging = false;
             return;
         }
@@ -307,6 +315,15 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
         {
             if (_disposed)
                 return;
+
+            RefreshPolicyState();
+            if (!IsControlEnabled)
+            {
+                _suppressStaging = true;
+                IsEnabled = _policyState.ToggleState ?? _registryIsEnabled;
+                _suppressStaging = false;
+                return;
+            }
 
             var currentState = _source.ReadCurrentState();
 
@@ -387,9 +404,19 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
 
     private void UpdatePendingState()
     {
-        HasPendingChange = IsEnabled != _registryIsEnabled;
+        HasPendingChange = _stagedGroupId is not null;
         IsPendingEnable = HasPendingChange && IsEnabled;
         IsPendingDisable = HasPendingChange && !IsEnabled;
+    }
+
+    private void RefreshPolicyState()
+    {
+        _policyState = _policyStates?.Read(Model.ModuleId, Model.SettingId, SystemPath,
+            Enum.TryParse<Core.Changes.ChangeValueType>(Model.RegistryValueType, out var type) ? type : null) ?? Core.Policies.PolicyControlState.None;
+        OnPropertyChanged(nameof(PolicyStateText));
+        OnPropertyChanged(nameof(HasPolicyState));
+        OnPropertyChanged(nameof(HasVisibleContent));
+        OnPropertyChanged(nameof(IsControlEnabled));
     }
 
     public void Dispose()

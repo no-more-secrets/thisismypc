@@ -29,7 +29,8 @@ public sealed class AnnoyancesViewModel : SettingCardPageViewModel
         DisplayModePreferencesStore? displayModeStore = null,
         ICapabilityDetector? capabilityDetector = null,
         Services.IOwnerModeLifecycle? ownerMode = null,
-        Services.IUserFeedback? feedback = null)
+        Services.IUserFeedback? feedback = null,
+        Core.Policies.PolicyControlStateReader? policyStates = null)
         : base(
             "annoyances",
             // Factories re-read live state at stage time; a scan-time snapshot would bake
@@ -40,7 +41,8 @@ public sealed class AnnoyancesViewModel : SettingCardPageViewModel
             displayModeStore,
             capabilityDetector,
             ownerMode,
-            feedback)
+            feedback,
+            policyStates ?? new Core.Policies.PolicyControlStateReader(registryService, capabilityDetector: capabilityDetector))
     {
     }
 }

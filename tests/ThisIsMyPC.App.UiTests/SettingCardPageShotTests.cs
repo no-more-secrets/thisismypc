@@ -25,6 +25,35 @@ namespace ThisIsMyPC.App.UiTests;
 public class SettingCardPageShotTests
 {
     [AvaloniaFact]
+    public void ManualUpdates_ShowPolicyWithoutClaimingNotificationMode()
+    {
+        var registry = new UiFakeRegistryService();
+        registry.WriteString(@"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "EditionID", "Professional");
+        registry.WriteDWord(@"HKLM\Software\Policies\Microsoft\Windows\WindowsUpdate\AU", "NoAutoUpdate", 1);
+        var pending = new PendingChangesService();
+        using var vm = new WindowsUpdateViewModel(new WindowsUpdateSettingsReader(registry).ReadAll(), pending, registry,
+            capabilityDetector: new CapabilityDetector(registry));
+        var card = AllCards(vm).Single(card => card.Model.SettingId == "auto-update-mode");
+        vm.SearchText = card.DisplayName;
+        using var session = UiSession.ForView(Card(new SettingCardPageView()), vm, "card-pages", width: 800, height: 650);
+        foreach (var theme in new[] { ThemeVariant.Dark, ThemeVariant.Light })
+        {
+            session.SetTheme(theme);
+            foreach (var compact in new[] { false, true })
+            {
+                vm.IsCompact = compact;
+                session.Pump();
+                Assert.True(session.IsTextVisible(card.PolicyStateText!));
+                Assert.False(card.IsControlEnabled);
+                Assert.False(card.HasPendingChange);
+                card.IsEnabled = !card.IsEnabled;
+                Assert.Empty(pending.PendingGroups);
+                session.Screenshot($"manual-updates-{theme.Key}-{compact}");
+            }
+        }
+    }
+
+    [AvaloniaFact]
     public void HomePolicy_RemainsReadableButCannotBeToggled()
     {
         var registry = new UiFakeRegistryService();
@@ -43,7 +72,7 @@ public class SettingCardPageShotTests
                 vm.IsCompact = compact;
                 session.Pump();
                 Assert.True(session.IsTextVisible(policy.DisplayName));
-                Assert.True(session.IsTextVisible("Requires Windows Pro"));
+                Assert.True(session.IsTextVisible("Requires Windows Pro or higher"));
                 Assert.False(policy.IsControlEnabled);
                 var card = session.Find<ToggleCard>(card => card.Title == policy.DisplayName);
                 Assert.False(card.IsSwitchEnabled);
@@ -76,7 +105,7 @@ public class SettingCardPageShotTests
         using var vm = Annoyances(pending, detector);
         var bing = AllCards(vm).Single(card => card.Model.SettingId == "bing-search");
         Assert.False(bing.IsControlEnabled);
-        Assert.Equal("Requires Windows Pro", bing.SkuNotice);
+        Assert.Equal("Requires Windows Pro or higher", bing.SkuNotice);
         bing.IsEnabled = !bing.IsEnabled;
         Assert.Empty(pending.PendingGroups);
     }
