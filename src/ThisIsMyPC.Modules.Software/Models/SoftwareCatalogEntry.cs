@@ -15,4 +15,5 @@ public sealed record SoftwareCatalogEntry(
 {
     public IReadOnlyList<string> InstalledNames { get; init; } = [];
     public IReadOnlyList<string> InstalledIds { get; init; } = [];
+    public string? DownloadUrl { get; init; }
 }

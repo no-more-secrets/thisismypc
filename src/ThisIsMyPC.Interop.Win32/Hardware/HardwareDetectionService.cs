@@ -67,7 +67,8 @@ public sealed partial class HardwareDetectionService(IRegistryService registry) 
         {
             ObservedAt = DateTimeOffset.UtcNow, Facts = facts, Firmware = firmware,
             Chipset = ChipsetIdentityResolver.Resolve(firmware.BoardProduct, devices),
-            Devices = devices, Issues = issues.AsReadOnly(),
+            Devices = devices, Graphics = HomeHardwareReader.ReadGraphics(), Storage = HomeHardwareReader.ReadStorage(),
+            Issues = issues.AsReadOnly(),
         };
     }
 

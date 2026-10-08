@@ -173,6 +173,8 @@ public sealed class SoftwareModule : IActionModule
             return await _wingetService.UninstallInstalledAsync(match, entry.Source).ConfigureAwait(false);
         }
 
+        if (entry.DownloadUrl is not null)
+            return OperationResult<bool>.Failure("Download this app from its official website.", ErrorCategory.NotFound);
         return await _wingetService.InstallAsync(entry.WingetId, entry.Source).ConfigureAwait(false);
     }
 

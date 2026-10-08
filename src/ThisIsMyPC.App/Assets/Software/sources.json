@@ -514,5 +514,17 @@
     "sha256": "90DB247DFBE554C98FEC03F16EA1C4697A1231023168BB27CCCBA5CADAD80E92",
     "source": "Dashboard Icons",
     "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/zotero.png"
+  },
+  {
+    "id": "claude-code",
+    "sha256": "6EC88CDF038845379464DA7D0FC3D13C19D3B49759DADB2A85FA60A92592F64D",
+    "source": "Dashboard Icons",
+    "url": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/57e939e504eda0ea764098015da93aa666ad6f31/png/claude-ai.png"
+  },
+  {
+    "id": "spotifast",
+    "sha256": "492B34ECB9DCAED7CDAD6089E3F81E40335294B4B7B0DD84B976138BBA6D79D1",
+    "source": "Spotifast publisher artwork (MIT, original 1024px)",
+    "url": "https://raw.githubusercontent.com/crmne/spotifast/main/packaging/macos/icon-1024.png"
   }
 ]

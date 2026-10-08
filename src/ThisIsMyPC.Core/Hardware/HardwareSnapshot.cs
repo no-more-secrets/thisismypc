@@ -8,11 +8,16 @@ public sealed record HardwareSnapshot
     public FirmwareInventory Firmware { get; init; } = new();
     public ChipsetIdentity Chipset { get; init; } = ChipsetIdentity.Unknown;
     public IReadOnlyList<HardwareDevice> Devices { get; init; } = [];
+    public IReadOnlyList<GraphicsIdentity> Graphics { get; init; } = [];
+    public IReadOnlyList<StorageIdentity> Storage { get; init; } = [];
     public IReadOnlyList<string> Issues { get; init; } = [];
 }
 
 /// <summary>One present Plug and Play device. IDs are evidence, not executable paths.</summary>
 public sealed record HardwareDevice(string Name, string ClassName, IReadOnlyList<string> HardwareIds);
+
+public sealed record GraphicsIdentity(string Name, ulong DedicatedVideoMemoryBytes, bool IsSoftware);
+public sealed record StorageIdentity(string Name, int DiskNumber, bool? IsBootDrive);
 
 /// <summary>Firmware identity without serial numbers or UUIDs.</summary>
 public sealed record FirmwareInventory

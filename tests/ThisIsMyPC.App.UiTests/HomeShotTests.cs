@@ -62,6 +62,9 @@ public sealed class HomeShotTests
         Assert.True(session.IsTextVisible(viewModel.WindowsSummary));
         Assert.True(session.IsTextVisible("64 GB · DDR4 · 3200 MT/s"));
         Assert.True(session.IsTextVisible("Chipset: B550"));
+        Assert.Equal("NVIDIA GeForce RTX 4080 (16GB); Virtual Display Driver", viewModel.Identity.Gpu);
+        Assert.Equal("Samsung SSD 990 PRO 2TB", viewModel.BootDriveSummary);
+        Assert.Equal("WD_BLACK SN850X 4000GB", viewModel.AdditionalStorageSummary);
         Assert.True(session.IsTextVisible("BIOS: 3636 · 07/18/2025"));
         Assert.False(session.IsTextVisible("Model"));
         Assert.False(session.IsTextVisible("Unknown"));
@@ -101,7 +104,9 @@ public sealed class HomeShotTests
             Facts = new() { Identity = MachineIdentity.From("ASUSTeK COMPUTER INC.", model), FormFactor = new() { SmbiosChassisTypes = [3] } },
             Firmware = new() { BoardManufacturer = "ASUSTeK COMPUTER INC.", BoardProduct = "ROG STRIX B550-F GAMING (WI-FI)", BiosVersion = "3636", BiosDate = "07/18/2025", MemoryDevices = [new("DIMM_A2", 32UL * 1024 * 1024 * 1024, "DDR4", 3200)] },
             Chipset = new("B550", "Inferred from motherboard model"),
-            Devices = [new("NVIDIA GeForce RTX 4080", "Display", []), new("Samsung SSD 990 PRO 2TB", "DiskDrive", []), new("WD_BLACK SN850X 4000GB", "DiskDrive", [])],
+            Graphics = [new("NVIDIA GeForce RTX 4080", (ulong)(15.7 * 1073741824), false)],
+            Storage = [new("Samsung SSD 990 PRO 2TB", 0, true), new("WD_BLACK SN850X 4000GB", 1, false)],
+            Devices = [new("Virtual Display Driver", "Display", []), new("NVIDIA GeForce RTX 4080", "Display", []), new("Samsung SSD 990 PRO 2TB", "DiskDrive", []), new("WD_BLACK SN850X 4000GB", "DiskDrive", [])],
         });
         public Task<HardwareSnapshot> RefreshAsync(CancellationToken cancellationToken = default) => GetSnapshotAsync(cancellationToken);
     }

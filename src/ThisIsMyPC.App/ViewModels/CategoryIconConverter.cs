@@ -17,7 +17,7 @@ public sealed class CategoryIconConverter : IValueConverter
         ["Games"] = FluentSymbol.Games,
         ["Microsoft Tools"] = FluentSymbol.Window,
         ["Multimedia Tools"] = FluentSymbol.VideoClip,
-        ["Pro Tools"] = FluentSymbol.Briefcase,
+        ["Professional Tools"] = FluentSymbol.Briefcase,
         ["Selfhosted Tools"] = FluentSymbol.Server,
         ["Utilities"] = FluentSymbol.Wrench,
     };

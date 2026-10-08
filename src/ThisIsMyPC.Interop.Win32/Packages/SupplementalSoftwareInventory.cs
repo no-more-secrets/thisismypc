@@ -18,7 +18,19 @@ public static class SupplementalSoftwareInventory
         var npmRoots = (Environment.GetEnvironmentVariable("PATH") ?? "").Split(Path.PathSeparator)
             .Append(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "npm"))
             .Append(Environment.GetEnvironmentVariable("NVM_SYMLINK") ?? "");
-        return ReadLocations(dotnetRoots, npmRoots);
+        var result = ReadLocations(dotnetRoots, npmRoots).ToList();
+        var claude = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "bin", "claude.exe");
+        try
+        {
+            if (File.Exists(claude))
+            {
+                var version = System.Diagnostics.FileVersionInfo.GetVersionInfo(claude);
+                if (version.ProductName == "Claude Code")
+                    result.Add(new("Anthropic.ClaudeCode", version.ProductVersion, "Claude Code") { CanUninstall = false });
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException) { }
+        return result;
     }
 
     /// <summary>Reads known layouts without executing discovered programs or scripts.</summary>

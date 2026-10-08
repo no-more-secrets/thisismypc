@@ -93,7 +93,7 @@
                                                                            TextTrimming="CharacterEllipsis"
                                                                            Foreground="{DynamicResource TextPrimaryBrush}" />
                                                             </DockPanel>
-                                                            <TextBlock Text="{Binding WingetId}"
+                                                            <TextBlock Text="{Binding PackageLabel}"
                                                                        FontFamily="{StaticResource MonoFont}"
                                                                        FontSize="11"
                                                                        TextTrimming="CharacterEllipsis"

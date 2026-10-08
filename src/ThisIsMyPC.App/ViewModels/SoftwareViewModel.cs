@@ -76,7 +76,8 @@ public sealed partial class SoftwareViewModel : ViewModelBase, IDisposable, ITab
 
     public SoftwareViewModel(
         SoftwareScanData scanData, IPendingActionsService pendingActionsService,
-        Core.Packages.IWingetService? wingetService = null, Services.ISoftwareIconProvider? icons = null)
+        Core.Packages.IWingetService? wingetService = null, Services.ISoftwareIconProvider? icons = null,
+        Services.IUserFeedback? feedback = null)
     {
         ArgumentNullException.ThrowIfNull(scanData);
         _pendingActionsService = pendingActionsService;
@@ -105,7 +106,7 @@ public sealed partial class SoftwareViewModel : ViewModelBase, IDisposable, ITab
             .Select(entry => new SoftwareAppViewModel(
                 entry,
                 isInstalled: scanData.InstalledWingetIds.Contains(entry.WingetId),
-                pendingActionsService, externallyManaged: scanData.ExternallyManagedIds.Contains(entry.WingetId)))
+                pendingActionsService, externallyManaged: scanData.ExternallyManagedIds.Contains(entry.WingetId), feedback: feedback))
             .ToList();
 
         Categories = new[] { AllCategories }
@@ -304,15 +305,20 @@ public sealed class SoftwareCategoryGroupViewModel
 
 public sealed partial class SoftwareAppViewModel : ViewModelBase
 {
+    private readonly Services.IUserFeedback? _feedback;
+    private readonly Action<string>? _openDownload;
     private readonly bool _externallyManaged;
     private readonly SoftwareCatalogEntry _entry;
     private readonly IPendingActionsService _pendingActionsService;
 
     public SoftwareAppViewModel(
-        SoftwareCatalogEntry entry, bool isInstalled, IPendingActionsService pendingActionsService, bool externallyManaged = false)
+        SoftwareCatalogEntry entry, bool isInstalled, IPendingActionsService pendingActionsService, bool externallyManaged = false,
+        Services.IUserFeedback? feedback = null, Action<string>? openDownload = null)
     {
         ArgumentNullException.ThrowIfNull(pendingActionsService);
         _entry = entry;
+        _feedback = feedback;
+        _openDownload = openDownload;
         _externallyManaged = externallyManaged;
         _pendingActionsService = pendingActionsService;
         _isInstalled = isInstalled;
@@ -325,6 +331,7 @@ public sealed partial class SoftwareAppViewModel : ViewModelBase
     public Avalonia.Media.Imaging.Bitmap? Icon => Services.SoftwareIcons.Get(_entry.Id);
     public bool HasIcon => Icon is not null;
     public string WingetId => _entry.WingetId;
+    public string PackageLabel => _entry.DownloadUrl is null ? WingetId : "Official download";
     public bool IsOpenSource => _entry.IsOpenSource;
     public bool CanAct => !IsInstalled || !_externallyManaged;
     public string ActionHint => CanAct ? Description : "Installed. Manage this copy with its original installer or Windows Settings.";
@@ -345,12 +352,25 @@ public sealed partial class SoftwareAppViewModel : ViewModelBase
 
     public string ActionButtonText => IsQueued
         ? "Queued"
-        : IsInstalled ? (CanAct ? "Uninstall" : "Installed") : "Install";
+        : IsInstalled ? (CanAct ? "Uninstall" : "Installed") : _entry.DownloadUrl is not null ? "Download" : "Install";
 
     [RelayCommand]
     private void ToggleQueue()
     {
         if (!CanAct) return;
+        if (!IsInstalled && _entry.DownloadUrl is { } download)
+        {
+            try
+            {
+                if (!Uri.TryCreate(download, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps)
+                    throw new InvalidOperationException("The download address is invalid.");
+                if (_openDownload is not null) _openDownload(download);
+                else System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(download) { UseShellExecute = true });
+            }
+            catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
+            { _feedback?.Fail($"Could not open the download page for {Name}."); }
+            return;
+        }
         if (IsQueued)
         {
             _pendingActionsService.Unstage(ActionId);

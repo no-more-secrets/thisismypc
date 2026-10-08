@@ -45,6 +45,7 @@ public static class SoftwareCatalog
                 Link: app.GetProperty("link").GetString()!,
                 IsOpenSource: app.GetProperty("foss").GetBoolean())
             {
+                DownloadUrl = app.TryGetProperty("downloadUrl", out var download) ? download.GetString() : null,
                 InstalledNames = app.TryGetProperty("installedNames", out var names)
                     ? names.EnumerateArray().Select(name => name.GetString()!).ToArray()
                     : [],

@@ -36,7 +36,7 @@ public class SoftwareViewShotTests
             session.Screenshot($"three-columns-{theme.Key}");
         }
         // Every shipped image must decode. Missing publisher artwork has a category fallback.
-        Assert.Equal(88, SoftwareCatalog.Entries.Count(e => Services.SoftwareIcons.Get(e.Id) is not null));
+        Assert.Equal(90, SoftwareCatalog.Entries.Count(e => Services.SoftwareIcons.Get(e.Id) is not null));
     }
 
     private static SoftwareScanData CreateScanData() => new(

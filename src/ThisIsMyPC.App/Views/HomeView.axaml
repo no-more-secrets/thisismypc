@@ -168,7 +168,7 @@
                         <Button Grid.Column="1" Content="Refresh hardware" Command="{Binding RefreshHardwareCommand}"
                                 IsEnabled="{Binding CanRefreshHardware}" VerticalAlignment="Center" />
                     </Grid>
-                    <Grid ColumnDefinitions="112,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+                    <Grid ColumnDefinitions="112,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
                         <TextBlock Text="Manufacturer" Foreground="{DynamicResource TextTertiaryBrush}" />
                         <TextBlock Grid.Column="1" Text="{Binding Identity.Manufacturer}" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
                         <Grid Grid.Row="1" Grid.ColumnSpan="2" ColumnDefinitions="112,*" Margin="0,8,0,0" IsVisible="{Binding HasModel}">
@@ -185,10 +185,12 @@
                         <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding WindowsSummary}" Margin="0,8,0,0" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
                         <TextBlock Grid.Row="6" Text="Graphics" Margin="0,8,0,0" Foreground="{DynamicResource TextTertiaryBrush}" />
                         <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding Identity.Gpu}" Margin="0,8,0,0" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
-                        <TextBlock Grid.Row="7" Text="Storage" Margin="0,8,0,0" Foreground="{DynamicResource TextTertiaryBrush}" />
-                        <TextBlock Grid.Row="7" Grid.Column="1" Text="{Binding StorageSummary}" Margin="0,8,0,0" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
-                        <TextBlock Grid.Row="8" Text="Motherboard" Margin="0,8,0,0" Foreground="{DynamicResource TextTertiaryBrush}" />
-                        <StackPanel Grid.Row="8" Grid.Column="1" Spacing="4" Margin="0,8,0,0">
+                        <TextBlock Grid.Row="7" Text="Boot drive" Margin="0,8,0,0" Foreground="{DynamicResource TextTertiaryBrush}" />
+                        <TextBlock Grid.Row="7" Grid.Column="1" Text="{Binding BootDriveSummary}" Margin="0,8,0,0" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
+                        <TextBlock Grid.Row="8" Text="Additional storage" TextWrapping="Wrap" Margin="0,8,8,0" Foreground="{DynamicResource TextTertiaryBrush}" />
+                        <TextBlock Grid.Row="8" Grid.Column="1" Text="{Binding AdditionalStorageSummary}" Margin="0,8,0,0" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
+                        <TextBlock Grid.Row="9" Text="Motherboard" Margin="0,8,0,0" Foreground="{DynamicResource TextTertiaryBrush}" />
+                        <StackPanel Grid.Row="9" Grid.Column="1" Spacing="4" Margin="0,8,0,0">
                             <TextBlock Text="{Binding MotherboardSummary}" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
                             <TextBlock Text="{Binding ChipsetSummary, StringFormat='Chipset: {0}'}" TextWrapping="Wrap"
                                        Foreground="{DynamicResource TextSecondaryBrush}" ToolTip.Tip="{Binding ChipsetSource}" />

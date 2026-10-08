@@ -58,6 +58,11 @@ public sealed partial class HomeViewModel : ViewModelBase, IDisposable
     public string ChipsetSource => _hardware?.Chipset.Source ?? "Hardware detection has not finished";
     public string FirmwareSummary => _hardware is null ? "Not checked" : Join(_hardware.Firmware.BiosVersion, _hardware.Firmware.BiosDate);
     public string StorageSummary => _hardware is null ? "Not checked" : Join(_hardware.Devices.Where(d => d.ClassName.Equals("DiskDrive", StringComparison.OrdinalIgnoreCase)).Select(d => d.Name).Distinct().ToArray());
+    public string BootDriveSummary => _hardware is null ? "Not checked" : _hardware.Storage.Any(d => d.IsBootDrive == true)
+        ? Join(_hardware.Storage.Where(d => d.IsBootDrive == true).Select(d => d.Name).ToArray()) : "Not identified";
+    public string AdditionalStorageSummary => _hardware is null ? "Not checked" : _hardware.Storage.Count == 0
+        ? (StorageSummary == "Not reported" ? StorageSummary : StorageSummary + " (role unknown)") : _hardware.Storage.All(d => d.IsBootDrive == true) ? "None"
+        : Join(_hardware.Storage.Where(d => d.IsBootDrive != true).Select(d => d.IsBootDrive is null ? d.Name + " (role unknown)" : d.Name).ToArray());
     public string MemorySummary => Join(new[] { Identity.Ram }.Concat(_hardware?.Firmware.MemoryDevices
         .Where(m => m.SizeBytes is > 0 && (!string.IsNullOrWhiteSpace(m.Type) || m.ConfiguredSpeedMt is > 0))
         .Select(m => Join(m.Type, m.ConfiguredSpeedMt is > 0 ? $"{m.ConfiguredSpeedMt} MT/s" : null))
@@ -111,14 +116,20 @@ public sealed partial class HomeViewModel : ViewModelBase, IDisposable
             var snapshot = await (refresh ? _hardwareDetection!.RefreshAsync(token) : _hardwareDetection!.GetSnapshotAsync(token)).ConfigureAwait(true);
             token.ThrowIfCancellationRequested();
             _hardware = snapshot;
-            var adapters = snapshot.Devices.Where(d => d.ClassName.Equals("Display", StringComparison.OrdinalIgnoreCase)).Select(d => d.Name).Distinct().ToArray();
+            var graphics = snapshot.Graphics.Where(g => !g.IsSoftware).OrderByDescending(g => g.DedicatedVideoMemoryBytes).ToArray();
+            var adapters = graphics.Select(g => g.DedicatedVideoMemoryBytes > 0
+                ? $"{g.Name} ({Math.Round(g.DedicatedVideoMemoryBytes / 1073741824d, g.DedicatedVideoMemoryBytes >= 1073741824 ? 0 : 1):0.#}GB)" : g.Name)
+                .Concat(snapshot.Devices.Where(d => d.ClassName.Equals("Display", StringComparison.OrdinalIgnoreCase)
+                    && !graphics.Any(g => g.Name.Equals(d.Name, StringComparison.OrdinalIgnoreCase)))
+                    .OrderByDescending(d => d.HardwareIds.Any(id => id.StartsWith("PCI\\", StringComparison.OrdinalIgnoreCase)))
+                    .Select(d => d.Name)).Distinct().ToArray();
             Identity = Identity with
             {
                 Manufacturer = snapshot.Facts.Identity.Manufacturer ?? Identity.Manufacturer,
                 Model = snapshot.Facts.Identity.Model ?? Identity.Model,
                 Gpu = adapters.Length == 0 ? Identity.Gpu : string.Join("; ", adapters),
             };
-            foreach (var name in new[] { nameof(Identity), nameof(HasModel), nameof(WindowsSummary), nameof(FormFactorSummary), nameof(MotherboardSummary), nameof(ChipsetSummary), nameof(ChipsetSource), nameof(FirmwareSummary), nameof(MemorySummary), nameof(StorageSummary) }) OnPropertyChanged(name);
+            foreach (var name in new[] { nameof(Identity), nameof(HasModel), nameof(WindowsSummary), nameof(FormFactorSummary), nameof(MotherboardSummary), nameof(ChipsetSummary), nameof(ChipsetSource), nameof(FirmwareSummary), nameof(MemorySummary), nameof(StorageSummary), nameof(BootDriveSummary), nameof(AdditionalStorageSummary) }) OnPropertyChanged(name);
             HardwareStatus = snapshot.Issues.Count == 0 ? "" : "Some hardware details could not be read.";
         }
         catch (OperationCanceledException) { HardwareStatus = ""; }

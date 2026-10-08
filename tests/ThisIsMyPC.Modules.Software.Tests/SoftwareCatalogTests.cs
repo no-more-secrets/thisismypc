@@ -30,7 +30,8 @@ public class SoftwareCatalogTests
             Assert.False(string.IsNullOrWhiteSpace(e.Name));
             Assert.False(string.IsNullOrWhiteSpace(e.Description));
             Assert.False(string.IsNullOrWhiteSpace(e.Category));
-            Assert.False(string.IsNullOrWhiteSpace(e.WingetId));
+            if (e.DownloadUrl is null) Assert.False(string.IsNullOrWhiteSpace(e.WingetId));
+            else Assert.True(Uri.TryCreate(e.DownloadUrl, UriKind.Absolute, out var uri) && uri.Scheme == "https");
             // Winget ids never contain whitespace; a corrupted port would break installs.
             Assert.DoesNotContain(e.WingetId, c => char.IsWhiteSpace(c));
         });
