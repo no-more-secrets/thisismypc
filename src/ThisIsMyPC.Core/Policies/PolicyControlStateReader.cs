@@ -150,6 +150,8 @@ public sealed class PolicyControlStateReader(IRegistryService registry,
     {
         if (location.Equals(@"HKLM\SOFTWARE\Policies\Microsoft\Windows Defender\MpEngine\MpCloudBlockLevel", StringComparison.OrdinalIgnoreCase))
             return value is 0 or 1 or 2 or 4 or 6;
+        if (location.Equals(@"HKLM\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection\RealtimeScanDirection", StringComparison.OrdinalIgnoreCase))
+            return value is 0 or 1 or 2;
         if (location.EndsWith("\\PUAProtection", StringComparison.OrdinalIgnoreCase)
             || location.EndsWith("\\SpynetReporting", StringComparison.OrdinalIgnoreCase)
             || location.EndsWith("\\EnableNetworkProtection", StringComparison.OrdinalIgnoreCase)) return value is 0 or 1 or 2;

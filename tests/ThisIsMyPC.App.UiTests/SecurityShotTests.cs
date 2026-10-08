@@ -180,7 +180,7 @@ public sealed class SecurityShotTests
         card.Bind(Border.BackgroundProperty, card.GetResourceObservable("RaisedBrush"));
         card.Bind(Border.BorderBrushProperty, card.GetResourceObservable("OutlineBrush"));
         using var session = UiSession.ForView(card, vm, "security", width: 1040, height: 850);
-        Assert.Equal(28, vm.Rows.Count);
+        Assert.Equal(52, vm.Rows.Count);
         foreach (var theme in new[] { ThemeVariant.Dark, ThemeVariant.Light })
         {
             session.SetTheme(theme);

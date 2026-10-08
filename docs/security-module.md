@@ -1,6 +1,9 @@
 # Security module
 
-The Security page has six sections and 28 policy controls:
+The Security page has seven sections and 52 policy controls.
+They cover 50 of the 62 assessed Security policy candidates. Assessment records
+and controls differ because some policies share a control and three controls
+were added beyond that inventory.
 
 | Section | Controls |
 | --- | --- |
@@ -10,6 +13,48 @@ The Security page has six sections and 28 policy controls:
 | Threat updates | Intelligence updates on battery and at Defender service startup |
 | App protection | Downloaded app reputation, installation sources, phishing protection, malicious destination warnings, password reuse warnings, unsafe password storage warnings |
 | Notifications | All alerts, critical alerts only, or no alerts |
+| Policy overrides | Local list merging and preference precedence for six Defender features |
+
+The Defender section also includes startup priority, automatic remediation, and
+file hashes. Scanning includes file direction, schedule randomization, restore
+points before cleaning, catch-up scans, and scanning through file-system links.
+Threat updates include rapid intelligence, Microsoft Update, false-positive
+corrections, and scanning after updates. Notifications includes Defender diagnostic
+reports, enhanced notifications, and restart notices. App protection also controls
+whether users can edit exploit protection locally.
+
+### Remaining inventory
+
+Twelve assessed candidates remain: boot-driver initialization (row 2), two
+BitLocker startup policies (7, 8), exploit-protection XML (41), Secure Boot
+certificate deployment (51), Enhanced Storage activation (81), LSASS protection
+(82), attachment antivirus integration (91), cloud timeout (106), download scan
+size (115), intelligence catch-up interval (128), and intelligence update time (130).
+The first group needs dedicated protection/recovery workflows. Numeric limits and
+time choices need editors with validation, not a short list of arbitrary presets.
+TPM owner authorization (88) remains under investigation, outside these 62 candidates.
+
+### Expanded Defender policies, 2026-10-08
+
+Twenty-four additional controls cover rows 16, 20, 31, 35, 39, 40, 96, 97,
+98, 99, 101, 107, 110-114, 119, 121, 122, 124, 125, 131, and 143.
+Every mapping was checked against the installed WindowsDefender.admx and
+WindowsDefenderSecurityCenter.admx, including their English help. Independent
+fixtures test paths, positive-label polarity, and scan-direction values.
+
+Catch-up scan controls require an existing scan schedule; this page does not yet
+create schedules. Randomization uses the configured Windows window. Restore points
+depend on System Protection. MAPS features require cloud protection. Reboot notices
+apply to Defender's UI-only mode, not Windows Update. Reparse-point scanning can
+slow scans. The notification controls set different policies; Windows Security's
+all-alert suppression can still hide Defender activity notices.
+
+Policy overrides select a preference source, not protection state. Explicit local
+preference is 1; Group Policy is 0. These controls do not modify the preference.
+The feature cards continue to show configured policy, not the effective Defender
+preference. Local-list merging is separately inverse-valued: 0 merges lists,
+1 uses only policy lists. Exploit-protection editing also uses inverse values;
+it neither enables protection nor imports an exploit-protection configuration.
 
 ### Added Defender policies, 2026-10-08
 
@@ -107,6 +152,7 @@ without claiming they provide a distinct modern protection level.
 - [Microsoft: controlled folder access](https://learn.microsoft.com/en-us/defender-endpoint/customize-controlled-folders)
 - [Microsoft: Defender scan options](https://learn.microsoft.com/en-us/defender-endpoint/configure-advanced-scan-types-microsoft-defender-antivirus)
 - [Microsoft: cloud protection and blocking levels](https://learn.microsoft.com/en-us/defender-endpoint/cloud-protection-configure)
+- [Microsoft: Defender administrative-template policies](https://learn.microsoft.com/en-us/windows/client-management/mdm/policy-csp-admx-microsoftdefenderantivirus)
 
 Tests use a fake registry for writes, edition gating, before-state checks, undo,
 saved-policy transactions, Broker authorization, and preset export. The live screenshot

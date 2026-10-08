@@ -107,6 +107,53 @@ public static class SecurityCatalog
             [new(Notifications, "DisableNotifications"), new(Notifications, "DisableEnhancedNotifications")],
             [new("default", "Not configured", "", ""), new("all", "Show all alerts", "0", "0"),
              new("critical", "Show critical alerts only", "0", "1"), new("none", "Hide all alerts", "1", "1")]));
+        Single("defender-startup-priority", "Defender startup priority", "Normal priority starts Defender sooner but can compete with other startup tasks.",
+            "Defender", Defender, "AllowFastServiceStartup", [new("normal", "Normal", "1"), new("low", "Low", "0")]);
+        Single("automatic-remediation", "Act on detected threats automatically", "Off asks you to choose an action for detected threats. On lets Defender choose an action automatically.",
+            "Defender", Defender, "DisableRoutinelyTakingAction", Boolean(true));
+        Single("file-hash-computation", "Compute hashes for scanned files", "Calculates file fingerprints during Defender scans. This can add scan overhead.",
+            "Defender", Defender + @"\MpEngine", "EnableFileHashComputation", Boolean());
+        Single("scan-direction", "File monitoring direction", "Limits real-time file monitoring on NTFS volumes. Other file systems keep full monitoring.",
+            "Scanning", Defender + @"\Real-Time Protection", "RealtimeScanDirection",
+            [new("both", "Incoming and outgoing files", "0"), new("incoming", "Incoming files only", "1"), new("outgoing", "Outgoing files only", "2")]);
+        Single("randomize-schedules", "Randomize scheduled start times", "Varies scheduled scan and threat-update start times within the configured randomization window.",
+            "Scanning", Defender, "RandomizeScheduleTaskTimes", Boolean());
+        Single("restore-before-cleaning", "Create restore points before cleaning", "Requests a daily restore point before Defender removes threats. Requires System Protection support.",
+            "Scanning", Defender + @"\Scan", "DisableRestorePoint", Boolean(true));
+        Single("catchup-full-scan", "Catch up missed full scans", "Runs a catch-up scan after repeated missed full scans. Requires a full-scan schedule.",
+            "Scanning", Defender + @"\Scan", "DisableCatchupFullScan", Boolean(true));
+        Single("catchup-quick-scan", "Catch up missed quick scans", "Runs a catch-up scan after repeated missed quick scans. Requires a quick-scan schedule.",
+            "Scanning", Defender + @"\Scan", "DisableCatchupQuickScan", Boolean(true));
+        Single("reparse-point-scanning", "Scan through file-system links", "Follows reparse points such as directory junctions during scans. Following linked paths can slow scanning.",
+            "Scanning", Defender + @"\Scan", "DisableReparsePointScanning", Boolean(true));
+        Single("rapid-intelligence", "Receive rapid threat updates", "Receives threat-specific intelligence in response to cloud reports. Requires Microsoft MAPS cloud protection.",
+            "Threat updates", Defender + @"\Signature Updates", "RealtimeSignatureDelivery", Boolean());
+        Single("intelligence-from-microsoft-update", "Use Microsoft Update for threat updates", "Allows threat updates from Microsoft Update even when another update source is configured.",
+            "Threat updates", Defender + @"\Signature Updates", "ForceUpdateFromMU", Boolean());
+        Single("cloud-signature-corrections", "Accept cloud corrections for false detections", "Allows MAPS to disable individual threat signatures causing false detections. Requires cloud protection.",
+            "Threat updates", Defender + @"\Signature Updates", "SignatureDisableNotification", Boolean());
+        Single("scan-after-intelligence-update", "Scan after threat updates", "Starts an antivirus scan after a security intelligence update.",
+            "Threat updates", Defender + @"\Signature Updates", "DisableScanOnUpdate", Boolean(true));
+        Single("defender-error-reporting", "Send Defender error reports", "Sends Defender Watson diagnostic events to Microsoft. Separate from cloud threat reports.",
+            "Notifications", Defender + @"\Reporting", "DisableGenericRePorts", Boolean(true));
+        Single("defender-enhanced-notifications", "Show Defender activity notifications", "Allows Defender's enhanced notifications. Windows Security notification policies can still hide alerts.",
+            "Notifications", Defender + @"\Reporting", "DisableEnhancedNotifications", Boolean(true));
+        Single("defender-reboot-notifications", "Show Defender restart notifications", "Controls antimalware restart notices in Defender's UI-only mode. Does not control Windows Update restart notices.",
+            "Notifications", Defender + @"\UX Configuration", "SuppressRebootNotification", Boolean(true));
+        Single("allow-exploit-protection-edits", "Allow local exploit-protection edits", "Allows users to change exploit-protection settings in Windows Security. Does not turn protection on or off.",
+            "App protection", @"HKLM\SOFTWARE\Policies\Microsoft\Windows Defender Security Center\App and Browser protection",
+            "DisallowExploitProtectionOverride", Boolean(true));
+        Single("merge-local-defender-lists", "Merge local Defender lists with policy", "Includes local administrator exclusions and threat lists alongside Group Policy lists. Policy wins conflicts.",
+            "Policy overrides", Defender, "DisableLocalAdminMerge", Boolean(true));
+        void Override(string id, string title, string key, string name) => Single(id, title,
+            "Chooses whether the local preference or Group Policy takes priority. Does not change the preference itself.",
+            "Policy overrides", key, name, [new("policy", "Use Group Policy", "0"), new("local", "Use local preference", "1")]);
+        Override("override-cloud-protection", "Cloud protection preference source", Defender + @"\Spynet", "LocalSettingOverrideSpynetReporting");
+        Override("override-file-monitoring", "File monitoring preference source", Defender + @"\Real-Time Protection", "LocalSettingOverrideDisableOnAccessProtection");
+        Override("override-scan-direction", "File monitoring direction source", Defender + @"\Real-Time Protection", "LocalSettingOverrideRealtimeScanDirection");
+        Override("override-download-scanning", "Download scanning preference source", Defender + @"\Real-Time Protection", "LocalSettingOverrideDisableIOAVProtection");
+        Override("override-behavior-monitoring", "Behavior monitoring preference source", Defender + @"\Real-Time Protection", "LocalSettingOverrideDisableBehaviorMonitoring");
+        Override("override-real-time-protection", "Real-time protection preference source", Defender + @"\Real-Time Protection", "LocalSettingOverrideDisableRealtimeMonitoring");
         return settings;
     }
 
