@@ -50,14 +50,18 @@ public sealed partial class HomeViewModel : ViewModelBase, IDisposable
     private HardwareSnapshot? _hardware;
     private bool _disposed;
     public SystemIdentity Identity { get; private set; }
+    public bool HasModel => MachineIdentity.From(Identity.Manufacturer, Identity.Model).Model is not null;
+    public string WindowsSummary => Join(Identity.WindowsEdition, Identity.WindowsVersion, Identity.SystemType);
     public string FormFactorSummary => _hardware is null ? "Not checked" : FormFactorClassifier.Classify(_hardware.Facts.FormFactor).FormFactor.ToString();
     public string MotherboardSummary => _hardware is null ? "Not checked" : Join(_hardware.Firmware.BoardManufacturer, _hardware.Firmware.BoardProduct);
     public string ChipsetSummary => _hardware is null ? "Not checked" : _hardware.Chipset.Name ?? "Not identified";
     public string ChipsetSource => _hardware?.Chipset.Source ?? "Hardware detection has not finished";
     public string FirmwareSummary => _hardware is null ? "Not checked" : Join(_hardware.Firmware.BiosVersion, _hardware.Firmware.BiosDate);
     public string StorageSummary => _hardware is null ? "Not checked" : Join(_hardware.Devices.Where(d => d.ClassName.Equals("DiskDrive", StringComparison.OrdinalIgnoreCase)).Select(d => d.Name).Distinct().ToArray());
-    public string MemorySummary => _hardware is null ? "Not checked" : Join(_hardware.Firmware.MemoryDevices
-        .Where(m => m.SizeBytes is > 0).Select(m => Join(m.Type, m.ConfiguredSpeedMt is { } speed ? $"{speed} MT/s" : null)).Distinct().ToArray());
+    public string MemorySummary => Join(new[] { Identity.Ram }.Concat(_hardware?.Firmware.MemoryDevices
+        .Where(m => m.SizeBytes is > 0 && (!string.IsNullOrWhiteSpace(m.Type) || m.ConfiguredSpeedMt is > 0))
+        .Select(m => Join(m.Type, m.ConfiguredSpeedMt is > 0 ? $"{m.ConfiguredSpeedMt} MT/s" : null))
+        .Distinct() ?? []).ToArray());
     public string HardwareStatus { get; private set; } = "";
     public bool IsHardwareLoading { get; private set; }
     public bool CanRefreshHardware => _hardwareDetection is not null && !IsHardwareLoading && !_disposed;
@@ -114,7 +118,7 @@ public sealed partial class HomeViewModel : ViewModelBase, IDisposable
                 Model = snapshot.Facts.Identity.Model ?? Identity.Model,
                 Gpu = adapters.Length == 0 ? Identity.Gpu : string.Join("; ", adapters),
             };
-            foreach (var name in new[] { nameof(Identity), nameof(FormFactorSummary), nameof(MotherboardSummary), nameof(ChipsetSummary), nameof(ChipsetSource), nameof(FirmwareSummary), nameof(MemorySummary), nameof(StorageSummary) }) OnPropertyChanged(name);
+            foreach (var name in new[] { nameof(Identity), nameof(HasModel), nameof(WindowsSummary), nameof(FormFactorSummary), nameof(MotherboardSummary), nameof(ChipsetSummary), nameof(ChipsetSource), nameof(FirmwareSummary), nameof(MemorySummary), nameof(StorageSummary) }) OnPropertyChanged(name);
             HardwareStatus = snapshot.Issues.Count == 0 ? "" : "Some hardware details could not be read.";
         }
         catch (OperationCanceledException) { HardwareStatus = ""; }

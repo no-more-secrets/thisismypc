@@ -13,6 +13,23 @@ namespace ThisIsMyPC.App.UiTests;
 public sealed class HomeShotTests
 {
     [AvaloniaFact]
+    [Trait("Category", "Diagnostic")]
+    public async Task Overview_InMainWindow()
+    {
+        using var session = UiSession.ForMainWindow("home-window");
+        var main = (MainWindowViewModel)session.Window.DataContext!;
+        await session.WaitForAsync(() => main.CurrentContent is HomeViewModel, timeoutMs: 30_000);
+        var home = (HomeViewModel)main.CurrentContent!;
+        await session.WaitForAsync(() => !home.IsHardwareLoading, timeoutMs: 30_000);
+        if (home.FirstLaunchBanner?.IsVisible == true)
+            session.ClickText("Dismiss");
+        Assert.True(session.IsTextVisible(home.Identity.MachineName));
+        session.Screenshot("dark");
+        session.SetTheme(ThemeVariant.Light);
+        session.Screenshot("light");
+    }
+
+    [AvaloniaFact]
     public async Task Overview_FillsContent_AndShowsDetailedActivity_InBothThemes()
     {
         var history = new ShotHistoryService(
@@ -42,19 +59,46 @@ public sealed class HomeShotTests
         session.SetTheme(ThemeVariant.Light);
         session.Screenshot("light-expanded-content");
 
-        Assert.True(session.IsTextVisible("Windows 11 Education"));
-        Assert.True(session.IsTextVisible("64 GB"));
-        Assert.True(session.IsTextVisible("B550"));
-        Assert.True(session.IsTextVisible("Inferred from motherboard model"));
+        Assert.True(session.IsTextVisible(viewModel.WindowsSummary));
+        Assert.True(session.IsTextVisible("64 GB · DDR4 · 3200 MT/s"));
+        Assert.True(session.IsTextVisible("Chipset: B550"));
+        Assert.True(session.IsTextVisible("BIOS: 3636 · 07/18/2025"));
+        Assert.False(session.IsTextVisible("Model"));
+        Assert.False(session.IsTextVisible("Unknown"));
         Assert.True(session.IsTextVisible("Windows 11 to Windows 10"));
         Assert.False(session.IsTextVisible("Quick Actions"));
     }
 
-    private sealed class ShotHardware : IHardwareDetectionService
+    [AvaloniaFact]
+    public async Task ModelAppearsAfterHardwareScan_AndNarrowOverviewWraps()
+    {
+        var identity = new SystemIdentity
+        {
+            MachineName = "LAPTOP", Manufacturer = "ASUS", Model = "Unknown",
+            Cpu = "Intel Core laptop processor", Gpu = "NVIDIA GeForce laptop graphics",
+            Ram = "32 GB", WindowsEdition = "Windows 11 Pro",
+            WindowsVersion = "25H2 (OS build 26200.1234)",
+            SystemType = "64-bit operating system, x64-based processor",
+        };
+        using var vm = new HomeViewModel(identity, new ShotHistoryService([]), hardwareDetection: new ShotHardware("G615LP"));
+        using var session = UiSession.ForView(new HomeView(), vm, "home-model", width: 600, height: 676);
+        Assert.False(session.IsTextVisible("Model"));
+        Assert.Equal("32 GB", vm.MemorySummary);
+        await vm.RefreshHardwareCommand.ExecuteAsync(null);
+        session.Pump();
+        Assert.True(session.IsTextVisible("Model"));
+        Assert.True(session.IsTextVisible("G615LP"));
+        Assert.True(session.IsTextVisible(vm.WindowsSummary));
+        session.Screenshot("narrow-dark");
+        session.SetTheme(ThemeVariant.Light);
+        session.Screenshot("narrow-light");
+    }
+
+    private sealed class ShotHardware(string? model = null) : IHardwareDetectionService
     {
         public Task<HardwareSnapshot> GetSnapshotAsync(CancellationToken cancellationToken = default) => Task.FromResult(new HardwareSnapshot
         {
-            Facts = new() { Identity = MachineIdentity.From("ASUSTeK COMPUTER INC.", null), FormFactor = new() { SmbiosChassisTypes = [3] } },
+            Facts = new() { Identity = MachineIdentity.From("ASUSTeK COMPUTER INC.", model), FormFactor = new() { SmbiosChassisTypes = [3] } },
             Firmware = new() { BoardManufacturer = "ASUSTeK COMPUTER INC.", BoardProduct = "ROG STRIX B550-F GAMING (WI-FI)", BiosVersion = "3636", BiosDate = "07/18/2025", MemoryDevices = [new("DIMM_A2", 32UL * 1024 * 1024 * 1024, "DDR4", 3200)] },
             Chipset = new("B550", "Inferred from motherboard model"),
             Devices = [new("NVIDIA GeForce RTX 4080", "Display", []), new("Samsung SSD 990 PRO 2TB", "DiskDrive", []), new("WD_BLACK SN850X 4000GB", "DiskDrive", [])],

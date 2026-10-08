@@ -165,6 +165,7 @@ See the explicit checklists in [the v1 plan](v1-completion-plan.md#active-applic
 - DONE: Chipset names carry their evidence source. Board-model inference is labeled; generic PCI bridges do not become invented chipset identities.
 - DONE: Positive companion observations and ATKACPI interface presence feed the existing compatibility facts without claiming device ownership.
 - DONE: Home loads detailed inventory asynchronously and exposes Refresh hardware. Firmware placeholders no longer appear as real manufacturer/model names.
+- DONE: Home combines device and system details in one card, groups memory and Windows details, keeps motherboard/chipset/BIOS together, and hides unknown model rows while retaining real model identifiers.
 - Verified: Release build, 2,462 CI-safe tests, guarded NativeAOT App publish, fresh review, and read-only native detection on Sam's B550-F desktop.
 - Verified: dark/light Home screenshots with live hardware. Content edges measure 25px left, 23px right, and 17px top; content fits without a scrollbar.
 - Pending hardware coverage: physical laptops, other motherboard families, module SDK/device ownership probes, and sensor backend readiness.
