@@ -68,6 +68,9 @@ Adding controls does not authorize changing live security settings during develo
 
 Network & Firewall is one module with adapter, DNS, and firewall tabs. Candidate v1 controls include adapter state, DNS/DoH, network power settings, and scoped firewall-rule management. Validate mechanisms and supported scope before implementation.
 
+October 7 implementation: Connections, DNS, and Firewall now provide adapter state, IPv4 DNS, firewall profile switches, and read-only rule inspection.
+Remaining controls and live acceptance checks stay pending. See [Network & Firewall](../network-firewall.md).
+
 ### 5. Shared hardware detection
 
 Identify machine type, manufacturer/model, devices, and installed control software. Keep all Hardware tabs visible. Explain unavailable functions and provide companion-app actions when appropriate. Filter per device: external devices can remain useful on laptops. Prevent overlapping control. Settings > Advanced includes an off-by-default compatibility-filter override for debugging; it does not bypass drivers or conflict safeguards.

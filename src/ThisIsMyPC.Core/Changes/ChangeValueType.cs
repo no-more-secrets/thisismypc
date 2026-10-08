@@ -24,5 +24,6 @@ public enum ChangeValueType
     /// or "Disabled"; SystemLocation names the item (see AutorunTarget).
     /// </summary>
     Autorun_State,
-    Shell_NativeSetting
+    Shell_NativeSetting,
+    Network_Setting
 }

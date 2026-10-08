@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/ThisIsMyPC.Modules.Network/ThisIsMyPC.Modules.Network.csproj" />
     <Project Path="src/ThisIsMyPC.App/ThisIsMyPC.App.csproj" />
     <Project Path="src/ThisIsMyPC.Broker/ThisIsMyPC.Broker.csproj" />
     <Project Path="src/ThisIsMyPC.Core/ThisIsMyPC.Core.csproj" />
@@ -26,6 +27,7 @@
     <Project Path="analyzers/ThisIsMyPC.Analyzers/ThisIsMyPC.Analyzers.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/ThisIsMyPC.Modules.Network.Tests/ThisIsMyPC.Modules.Network.Tests.csproj" />
     <Project Path="tests/ThisIsMyPC.Analyzers.Tests/ThisIsMyPC.Analyzers.Tests.csproj" />
     <Project Path="tests/ThisIsMyPC.Core.Tests/ThisIsMyPC.Core.Tests.csproj" />
     <Project Path="tests/ThisIsMyPC.Installer.Tests/ThisIsMyPC.Installer.Tests.csproj" />

@@ -275,7 +275,7 @@ public partial class MainWindowViewModel : ViewModelBase
     /// <summary>Whether the current page owns its card edge and content padding.</summary>
     public bool UsesEdgeTabs => CurrentContent is ShellViewModel or EnvironmentViewModel or SettingsViewModel
         or SoftwareViewModel or ContextMenuViewModel or StartupViewModel or PowerViewModel or SettingCardPageViewModel or SecurityViewModel
-        or DebugViewModel or MonitoringSensorsViewModel;
+        or DebugViewModel or MonitoringSensorsViewModel or NetworkViewModel;
 
     public bool UsesSeparateContentCards => CurrentContent is SetLoaderViewModel;
 
@@ -821,6 +821,23 @@ public partial class MainWindowViewModel : ViewModelBase
                     {
                         CurrentContent = null;
                         SetStatus(scanResult.ErrorMessage ?? "Failed to scan environment variables", StatusSeverity.Error);
+                    }
+                });
+            }
+            else if (current?.Module is Modules.Network.NetworkModule)
+            {
+                var scanResult = await current.Module.ScanSystemStateAsync().ConfigureAwait(false);
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    if (epoch != _contentEpoch) return;
+                    ContentTitle = current.Module.Info.Name;
+                    ContentDescription = current.Module.Info.Description;
+                    if (scanResult.IsSuccess && scanResult.Value is Core.Network.NetworkScanData networkData)
+                        CurrentContent = new NetworkViewModel(networkData, _pendingChangesService, _userFeedback);
+                    else
+                    {
+                        CurrentContent = null;
+                        SetStatus(scanResult.ErrorMessage ?? "Failed to inspect network settings", StatusSeverity.Error);
                     }
                 });
             }

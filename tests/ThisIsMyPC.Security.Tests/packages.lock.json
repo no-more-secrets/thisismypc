@@ -265,6 +265,7 @@
           "ThisIsMyPC.Modules.Annoyances": "[1.0.0, )",
           "ThisIsMyPC.Modules.Display": "[1.0.0, )",
           "ThisIsMyPC.Modules.Hardware": "[1.0.0, )",
+          "ThisIsMyPC.Modules.Network": "[1.0.0, )",
           "ThisIsMyPC.Modules.Power": "[1.0.0, )",
           "ThisIsMyPC.Modules.Privacy": "[1.0.0, )",
           "ThisIsMyPC.Modules.Security": "[1.0.0, )",
@@ -333,6 +334,12 @@
         }
       },
       "thisismypc.modules.hardware": {
+        "type": "Project",
+        "dependencies": {
+          "ThisIsMyPC.Core": "[1.0.0, )"
+        }
+      },
+      "thisismypc.modules.network": {
         "type": "Project",
         "dependencies": {
           "ThisIsMyPC.Core": "[1.0.0, )"

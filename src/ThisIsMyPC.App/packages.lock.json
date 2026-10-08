@@ -272,6 +272,12 @@
           "ThisIsMyPC.Core": "[1.0.0, )"
         }
       },
+      "thisismypc.modules.network": {
+        "type": "Project",
+        "dependencies": {
+          "ThisIsMyPC.Core": "[1.0.0, )"
+        }
+      },
       "thisismypc.modules.power": {
         "type": "Project",
         "dependencies": {

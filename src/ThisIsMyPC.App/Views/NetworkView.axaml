@@ -1,0 +1,92 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ThisIsMyPC.App.ViewModels"
+             xmlns:network="using:ThisIsMyPC.Core.Network"
+             x:Class="ThisIsMyPC.App.Views.NetworkView" x:DataType="vm:NetworkViewModel">
+    <UserControl.Styles>
+        <Style Selector="TextBlock"><Setter Property="TextWrapping" Value="Wrap" /></Style>
+        <Style Selector="TextBlock.hint"><Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" /><Setter Property="FontSize" Value="12" /></Style>
+        <Style Selector="Border.network-card"><Setter Property="BorderBrush" Value="{DynamicResource OutlineBrush}" /><Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="8" /><Setter Property="Padding" Value="16" /><Setter Property="Margin" Value="0,0,0,10" /></Style>
+        <Style Selector="Border.network-card.staged"><Setter Property="Background" Value="{DynamicResource SuccessMutedBrush}" /></Style>
+        <Style Selector="Button.staged"><Setter Property="Background" Value="{DynamicResource SuccessMutedBrush}" /></Style>
+    </UserControl.Styles>
+    <UserControl.DataTemplates>
+        <DataTemplate DataType="vm:NetworkSettingRow">
+            <Border Classes="network-card" Classes.staged="{Binding IsStaged}">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="15" />
+                    <TextBlock Text="{Binding Summary}" Classes="hint" />
+                    <TextBlock Text="{Binding Current}" />
+                    <ToggleSwitch Content="Enable" IsChecked="{Binding Enabled}" IsEnabled="{Binding CanEdit}" IsVisible="{Binding !IsDns}" />
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" IsVisible="{Binding IsDns}">
+                        <TextBox Text="{Binding DnsText}" Watermark="Automatic" IsEnabled="{Binding CanEdit}" MaxLength="2048"
+                                 Classes.invalid="{Binding IsInvalid}" ToolTip.Tip="{Binding ValidationError}" />
+                        <Button Grid.Column="1" Content="Stage DNS" Command="{Binding SaveDnsCommand}" IsEnabled="{Binding CanEdit}" />
+                    </Grid>
+                    <TextBlock Text="{Binding Hint}" Classes="hint" />
+                    <Button Content="Discard change" Command="{Binding DiscardCommand}" IsEnabled="{Binding IsStaged}" Classes.staged="{Binding IsStaged}" />
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+    </UserControl.DataTemplates>
+    <TabControl Theme="{StaticResource EdgeTabControlTheme}" SelectedIndex="{Binding SelectedTabIndex}">
+        <TabItem Header="Connections">
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="0,0,16,24" Spacing="8">
+                    <TextBlock Text="{Binding AdapterError}" IsVisible="{Binding HasAdapterError}" />
+                    <TextBlock Text="No network adapters found." IsVisible="{Binding NoAdapters}" />
+                    <ItemsControl ItemsSource="{Binding Adapters}">
+                        <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:NetworkAdapterRow">
+                            <StackPanel Margin="0,0,0,12" Spacing="6">
+                                <ContentControl Content="{Binding Connection}" />
+                                <Expander Header="Connection details" HorizontalAlignment="Stretch"><TextBlock Text="{Binding Details}" Margin="0,8" /></Expander>
+                                <TextBlock Text="{Binding State.Error}" IsVisible="{Binding HasError}" Classes="hint" />
+                            </StackPanel>
+                        </DataTemplate></ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+        <TabItem Header="DNS">
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="0,0,16,24" Spacing="8">
+                    <TextBlock Text="{Binding AdapterError}" IsVisible="{Binding HasAdapterError}" />
+                    <TextBlock Text="No network adapters found." IsVisible="{Binding NoAdapters}" />
+                    <ItemsControl ItemsSource="{Binding Adapters}">
+                        <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:NetworkAdapterRow">
+                            <StackPanel><ContentControl Content="{Binding Dns}" /><TextBlock Text="{Binding State.Error}" IsVisible="{Binding HasError}" Classes="hint" Margin="0,0,0,10" /></StackPanel>
+                        </DataTemplate></ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+        <TabItem Header="Firewall">
+            <Grid RowDefinitions="Auto,Auto,Auto,Auto,*" Margin="0,0,0,24">
+                <TextBlock Text="{Binding FirewallError}" IsVisible="{Binding HasFirewallError}" Margin="0,0,16,10" />
+                <Expander Grid.Row="1" Header="Firewall profiles" HorizontalAlignment="Stretch" Margin="0,0,16,10">
+                    <ScrollViewer MaxHeight="280" HorizontalScrollBarVisibility="Disabled">
+                        <ItemsControl ItemsSource="{Binding Profiles}" Margin="0,10,16,0" />
+                    </ScrollViewer>
+                </Expander>
+                <TextBox Grid.Row="2" Classes="filter" Watermark="Search rules, applications, and services" Text="{Binding RuleSearch}" Margin="0,0,16,10" />
+                <TextBlock Grid.Row="3" Text="{Binding RuleCount}" Classes="hint" Margin="0,0,16,10" />
+                <ListBox Grid.Row="4" ItemsSource="{Binding Rules}" Background="Transparent" BorderThickness="0" Padding="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListBox.Styles><Style Selector="ListBoxItem"><Setter Property="Padding" Value="0" /><Setter Property="Margin" Value="0,0,16,8" /></Style></ListBox.Styles>
+                    <ListBox.ItemTemplate><DataTemplate x:DataType="network:FirewallRuleState">
+                        <Expander Header="{Binding Name}" HorizontalAlignment="Stretch">
+                            <StackPanel Spacing="5" Margin="0,8">
+                                <TextBlock Text="{Binding Application}" /><TextBlock Text="{Binding Service}" />
+                                <StackPanel Orientation="Horizontal" Spacing="12"><TextBlock Text="{Binding Direction}" /><TextBlock Text="{Binding Action}" /><TextBlock Text="{Binding Protocol}" /></StackPanel>
+                                <TextBlock Text="{Binding Enabled, StringFormat='Enabled: {0}'}" />
+                                <TextBlock Text="{Binding Profiles, StringFormat='Networks: {0}'}" />
+                                <TextBlock Text="{Binding LocalPorts, StringFormat='Local ports: {0}'}" /><TextBlock Text="{Binding RemotePorts, StringFormat='Remote ports: {0}'}" />
+                                <TextBlock Text="{Binding LocalAddresses, StringFormat='Local addresses: {0}'}" /><TextBlock Text="{Binding RemoteAddresses, StringFormat='Remote addresses: {0}'}" />
+                            </StackPanel>
+                        </Expander>
+                    </DataTemplate></ListBox.ItemTemplate>
+                </ListBox>
+                <TextBlock Grid.Row="4" Text="No matching firewall rules." IsVisible="{Binding NoRules}" Margin="0,8" IsHitTestVisible="False" />
+            </Grid>
+        </TabItem>
+    </TabControl>
+</UserControl>

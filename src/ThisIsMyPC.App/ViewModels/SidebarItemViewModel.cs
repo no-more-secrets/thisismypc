@@ -18,6 +18,7 @@ public partial class SidebarItemViewModel : ViewModelBase
         ["windows-update"] = FluentSymbol.ArrowSync,
         ["privacy"] = FluentSymbol.HandRight,
         ["security"] = FluentSymbol.Shield,
+        ["network"] = FluentSymbol.Globe,
         ["display"] = FluentSymbol.Desktop,
         ["software"] = FluentSymbol.ArrowDownload,
         ["system-control"] = FluentSymbol.Laptop,

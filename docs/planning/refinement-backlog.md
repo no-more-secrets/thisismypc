@@ -2,6 +2,15 @@
 
 Current release scope: [v1 completion plan](v1-completion-plan.md), approved 2026-09-06. It supersedes older post-release hardware assumptions below.
 
+## Network & Firewall initial tabs (2026-10-07)
+
+- DONE: Connections shows adapter details and stages administrative state changes. DNS stages static IPv4 servers or automatic configuration.
+- DONE: Firewall shows searchable rule details and stages profile enable changes. Rule inspection is read-only.
+- DONE: exact Broker targets, captured before-state checks, staged changes, undo routing, search navigation, and conservative policy blocking.
+- Verified: 3,076 CI-safe tests, focused screenshots and edge measurements, fresh review, and a read-only NativeAOT probe.
+- Pending: live elevated apply and undo, managed-machine checks, and signed release validation.
+- Pending: remaining connection and DNS controls, complete firewall rule editing, and the four later tabs. See [Network & Firewall](../network-firewall.md).
+
 ## Policy coverage and control correctness (2026-10-07)
 
 - DONE: edition requirements stay visible on shared setting cards. Home keeps policy controls visible with disabled switches; presets skip unavailable entries.

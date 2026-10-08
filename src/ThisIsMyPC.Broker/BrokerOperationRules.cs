@@ -116,6 +116,7 @@ internal static class BrokerOperationRules
             "Explorer" => AllowsExplorer(change),
             "Context Menus" => AllowsContextMenu(change),
             "Environment" => AllowsEnvironment(change),
+            "Network & Firewall" => Modules.Network.NetworkChanges.Allows(change),
             "Startup & Services" => AllowsStartup(change),
             "Windows Annoyances" => AllowsRegistryModule(change, AnnoyanceTargets),
             "Privacy & Telemetry" => AllowsRegistryModule(change, PrivacyTargets),

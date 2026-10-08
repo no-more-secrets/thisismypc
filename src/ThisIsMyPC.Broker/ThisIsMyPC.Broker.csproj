@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup><ProjectReference Include="..\ThisIsMyPC.Modules.Network\ThisIsMyPC.Modules.Network.csproj" /></ItemGroup>
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <UseAppHost Condition="'$(AotPublish)' == 'true'">false</UseAppHost>

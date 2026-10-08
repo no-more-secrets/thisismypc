@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup><ProjectReference Include="..\ThisIsMyPC.Modules.Network\ThisIsMyPC.Modules.Network.csproj" /></ItemGroup>
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <!-- NativeAOT copies the IL module name into the native version resource. -->

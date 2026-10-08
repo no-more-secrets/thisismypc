@@ -67,6 +67,9 @@ internal sealed class PrivilegedModuleHost : IAsyncDisposable
         services.AddSingleton<IModule, ShellModule>();
         services.AddSingleton<IModule, ContextMenuModule>();
         services.AddSingleton<IModule, EnvironmentModule>();
+        services.AddSingleton<Core.Network.INetworkAdapterService, Interop.Win32.Network.NetworkAdapterService>();
+        services.AddSingleton<Core.Network.IFirewallService, Interop.Com.Network.FirewallService>();
+        services.AddSingleton<IModule, Modules.Network.NetworkModule>();
         services.AddSingleton<IModule, StartupModule>();
         services.AddSingleton<IModule, AnnoyancesModule>();
         services.AddSingleton<IModule, PrivacyModule>();

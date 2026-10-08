@@ -22,6 +22,7 @@ internal sealed class BrokerRequestPolicy
         "Explorer",
         "Context Menus",
         "Environment",
+        "Network & Firewall",
         "Startup & Services",
         "Windows Annoyances",
         "Privacy & Telemetry",
