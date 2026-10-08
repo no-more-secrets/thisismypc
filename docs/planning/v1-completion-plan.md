@@ -8,6 +8,10 @@ Owner Mode scope update: [single-user completion checkpoints](owner-mode-single-
 
 Sam requires editable controls for all practical, useful policies already configured on his PC, plus other important policies.
 The 148-record export is the starting inventory, not a ceiling or a recommended configuration to copy.
+Use Sam's PC as a validation fixture for useful tweaks and alternate detection paths.
+Audit all installed policy definitions and configured values beyond the export, including browser policies and security settings outside ADMX.
+Do not wait for individual control failures before checking policy overrides across the other controls.
+The [expanded audit](../research/policy-audit-2026-10-07.md) records the first full installed-definition scan and remaining evidence gaps.
 All 148 identities match installed ADMX definitions; 36 have additional option fields. Identity matching does not establish current enforcement.
 The existing source audit reports 14 direct routes, one partial route, 16 related preferences, and 117 missing routes.
 

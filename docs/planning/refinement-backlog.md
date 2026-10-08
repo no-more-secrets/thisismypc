@@ -5,7 +5,11 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 ## Policy coverage and control correctness (2026-10-07)
 
 - REQUIRED: editable coverage of Sam's practical configured policies and other important policies. See the October 7 requirement in the v1 plan.
-- Pending: classify all 148 policy records by feature, support, overlap, and current relevance; verify the 36 records with option fields.
+- DONE: expanded read-only inventory across 224 installed ADMX files, 3,552 policy definitions, both applicable registry scopes, and conventional policy roots.
+- Found: eight additional ADMX candidates, 116 values without installed ADMX mappings, and eight exported records with scope mismatches. See [audit](../research/policy-audit-2026-10-07.md).
+- Pending: resolve those candidates, six access failures, non-ADMX security settings, browser templates, and management precedence. Presence alone does not establish configuration intent or enforcement.
+- DONE: assigned feature destinations and unresolved evidence requirements to all 148 records in the routing ledger.
+- Pending: resolve support, overlap, and current relevance for those records; verify the 36 records with option fields.
 - Pending: integrate preferences and policy overrides in the relevant feature controls, including saved local policy rather than registry-only writes.
 - DONE: shared Registry.pol reader and encoder preserve record order, duplicate values, deletion instructions, unknown types, and exact data bytes.
 - Verified: 11 parser tests and a read-only check of the current local policy file, preserving all 94 records byte-for-byte.

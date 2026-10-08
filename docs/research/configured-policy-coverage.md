@@ -6,6 +6,9 @@ No configured values, account names, computer names, domain names, export timest
 
 ## Result
 
+The [October 7 expanded scan](policy-audit-2026-10-07.md) extends beyond this export and checks installed scopes.
+The historical coverage counts below remain source-route counts, not verified policy support.
+
 Direct routes: 14. Partial routes: 1. Related controls only: 16. Gaps: 117.
 
 Direct means a matching registry address and staging route exist. It does not mean all options are exposed or enforcement is verified.
@@ -75,7 +78,7 @@ Owner Mode cannot add unsupported policy behavior. A successful write does not p
 
 | 1 | Display highly detailed status messages | <code>HKLM\Software\Microsoft\Windows\CurrentVersion\Policies\System</code><br><code>VerboseStatus</code> | Gap | No matching policy control found in current module catalogs or factories. | E |
 | 2 | Boot-Start Driver Initialization Policy | <code>HKLM\System\CurrentControlSet\Policies\EarlyLaunch</code><br><code>DriverLoadPolicy</code> | Gap | No matching policy control found in current module catalogs or factories. | E; S |
-| 3 | Restrict Internet communication | <code>HKLM\Software\Policies\Microsoft\InternetManagement</code><br><code>RestrictCommunication</code>, <code>NoAutoUpdate</code> | Gap | No matching policy control found in current module catalogs or factories. Export identity mismatch: declared RestrictCommunication key differs from its NoAutoUpdate entry under WindowsUpdate\AU. Resolve against ADMX first. | E |
+| 3 | Restrict Internet communication | <code>HKLM\Software\Policies\Microsoft\InternetManagement</code><br><code>RestrictCommunication</code>, <code>NoAutoUpdate</code> | Gap | No matching policy control. Installed ICM.admx includes NoAutoUpdate=0 in the disabled list, not the enabled list. A shared subordinate address does not establish this umbrella policy's state. | E |
 | 4 | Specify a custom active power plan | <code>HKLM\Software\Policies\Microsoft\Power\PowerSettings</code><br><code>ActivePowerScheme</code> | Direct | Power `active-plan-policy-pin` (P). Pins the selected plan; not a general policy editor. | E |
 | 5 | Turn off Power Throttling | <code>HKLM\System\CurrentControlSet\Control\Power\PowerThrottling</code><br><code>PowerThrottlingOff</code> | Gap | No matching policy control found in current module catalogs or factories. | E |
 | 6 | Require use of fast startup | <code>HKLM\Software\Policies\Microsoft\Windows\System</code><br><code>HiberbootEnabled</code> | Gap | No matching policy control found in current module catalogs or factories. | E |
@@ -224,7 +227,7 @@ Owner Mode cannot add unsupported policy behavior. A successful write does not p
 
 ## Next implementation batches
 
-1. Validate policy identity and current scope first. Record 3 has conflicting identifiers; records 137/148 share one app group, while 147 uses another scope.
+1. Validate current scope and full policy semantics first. Record 3 requires umbrella-list interpretation; record 137 exports a user-only policy under machine scope.
 2. Resolve related controls before adding duplicates. Preserve per-user preferences where they work; do not silently replace them with machine policies.
 3. Audit current promotion, clipboard, search, and AI policies against Microsoft documentation before choosing a small System expansion.
 4. Review Defender, BitLocker, Secure Boot, LSASS, and other security gaps separately. This inventory does not authorize security changes.
