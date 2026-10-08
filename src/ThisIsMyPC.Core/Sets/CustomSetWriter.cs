@@ -10,11 +10,13 @@ public sealed class CustomSetWriter : ICustomSetWriter
     private const int MaxFileNameAttempts = 1000;
 
     private readonly string _userDirectory;
+    private readonly IReadOnlyList<ISetValueEncoder> _encoders;
 
-    public CustomSetWriter(string userDirectory)
+    public CustomSetWriter(string userDirectory, IEnumerable<ISetValueEncoder>? encoders = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(userDirectory);
         _userDirectory = userDirectory;
+        _encoders = encoders?.ToList() ?? [];
     }
 
     public CustomSetWriteResult WriteFromPendingGroups(CustomSetMetadata metadata, IReadOnlyList<ChangeGroup> groups)
@@ -36,11 +38,15 @@ public sealed class CustomSetWriter : ICustomSetWriter
             }
 
             var primary = group.Changes[0];
+            var encoder = _encoders.FirstOrDefault(e => e.ModuleId == primary.ModuleId);
+            var value = encoder is null ? primary.AfterValue : encoder.Encode(primary.SettingId,
+                group.Changes.Select(c => new SetValue(c.SystemLocation, c.ValueType, c.AfterValue)).ToList());
+            if (value is null) { skipped++; continue; }
             entries.Add(new SetEntryDocument
             {
                 ModuleId = primary.ModuleId,
                 SettingId = primary.SettingId,
-                Value = primary.AfterValue,
+                Value = value,
                 Description = string.IsNullOrWhiteSpace(group.Description) ? group.DisplayName : group.Description,
                 DisplayValue = primary.AfterDisplay,
             });
@@ -58,7 +64,11 @@ public sealed class CustomSetWriter : ICustomSetWriter
         // way as pending groups. A null GroupId row stands alone.
         var documents = new List<SetEntryDocument>();
         var skipped = 0;
-        foreach (var batch in entries.GroupBy(e => e.GroupId ?? $"solo-{e.Id}"))
+        // History can assign one group id to the entire Apply batch. Encoded
+        // choices need their own complete tuple, even within that batch.
+        foreach (var batch in entries.GroupBy(e => e.GroupId ?? $"solo-{e.Id}")
+                     .SelectMany(group => group.GroupBy(entry => _encoders.Any(encoder => encoder.ModuleId == entry.ModuleId)
+                         ? (entry.ModuleId, entry.SettingId) : (string.Empty, string.Empty))))
         {
             if (batch.Any(entry => !entry.CanCreateCustomSet))
             {
@@ -76,11 +86,15 @@ public sealed class CustomSetWriter : ICustomSetWriter
                 continue;
             }
 
+            var encoder = _encoders.FirstOrDefault(e => e.ModuleId == primary.ModuleId);
+            var value = encoder is null ? primary.AfterValue : encoder.Encode(primary.SettingId,
+                batch.Select(c => new SetValue(c.SystemLocation, c.ValueType, c.AfterValue)).ToList());
+            if (value is null) { skipped++; continue; }
             documents.Add(new SetEntryDocument
             {
                 ModuleId = primary.ModuleId,
                 SettingId = primary.SettingId,
-                Value = primary.AfterValue,
+                Value = value,
                 Description = primary.DisplayName,
                 DisplayValue = primary.AfterDisplay,
             });

@@ -17,6 +17,7 @@
     <Project Path="src/ThisIsMyPC.Modules.Privacy/ThisIsMyPC.Modules.Privacy.csproj" />
     <Project Path="src/ThisIsMyPC.Modules.Software/ThisIsMyPC.Modules.Software.csproj" />
     <Project Path="src/ThisIsMyPC.Modules.Power/ThisIsMyPC.Modules.Power.csproj" />
+    <Project Path="src/ThisIsMyPC.Modules.Security/ThisIsMyPC.Modules.Security.csproj" />
     <Project Path="src/ThisIsMyPC.Modules.Shell/ThisIsMyPC.Modules.Shell.csproj" />
     <Project Path="src/ThisIsMyPC.Modules.Startup/ThisIsMyPC.Modules.Startup.csproj" />
     <Project Path="src/ThisIsMyPC.Modules.WindowsUpdate/ThisIsMyPC.Modules.WindowsUpdate.csproj" />
@@ -38,6 +39,7 @@
     <Project Path="tests/ThisIsMyPC.Modules.Software.Tests/ThisIsMyPC.Modules.Software.Tests.csproj" />
     <Project Path="tests/ThisIsMyPC.App.UiTests/ThisIsMyPC.App.UiTests.csproj" />
     <Project Path="tests/ThisIsMyPC.Modules.Power.Tests/ThisIsMyPC.Modules.Power.Tests.csproj" />
+    <Project Path="tests/ThisIsMyPC.Modules.Security.Tests/ThisIsMyPC.Modules.Security.Tests.csproj" />
     <Project Path="tests/ThisIsMyPC.Modules.Shell.Tests/ThisIsMyPC.Modules.Shell.Tests.csproj" />
     <Project Path="tests/ThisIsMyPC.Modules.Startup.Tests/ThisIsMyPC.Modules.Startup.Tests.csproj" />
     <Project Path="tests/ThisIsMyPC.Modules.WindowsUpdate.Tests/ThisIsMyPC.Modules.WindowsUpdate.Tests.csproj" />

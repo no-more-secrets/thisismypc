@@ -134,6 +134,11 @@ public sealed class PolicyControlStateReader(IRegistryService registry,
 
     private static bool IsKnownValue(string location, int value)
     {
+        if (location.EndsWith("\\PUAProtection", StringComparison.OrdinalIgnoreCase)
+            || location.EndsWith("\\SpynetReporting", StringComparison.OrdinalIgnoreCase)
+            || location.EndsWith("\\EnableNetworkProtection", StringComparison.OrdinalIgnoreCase)) return value is 0 or 1 or 2;
+        if (location.EndsWith("\\SubmitSamplesConsent", StringComparison.OrdinalIgnoreCase)) return value is >= 0 and <= 3;
+        if (location.EndsWith("\\EnableControlledFolderAccess", StringComparison.OrdinalIgnoreCase)) return value is >= 0 and <= 4;
         if (location.EndsWith("\\AUOptions", StringComparison.OrdinalIgnoreCase)) return value is 2 or 3 or 4 or 5 or 7;
         if (location.EndsWith("\\AllowTelemetry", StringComparison.OrdinalIgnoreCase)) return value is 0 or 1 or 3;
         if (location.EndsWith("\\DODownloadMode", StringComparison.OrdinalIgnoreCase)) return value is 0 or 1 or 2 or 3 or 99 or 100;

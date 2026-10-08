@@ -25,6 +25,7 @@ internal sealed class BrokerRequestPolicy
         "Startup & Services",
         "Windows Annoyances",
         "Privacy & Telemetry",
+        "Security",
         "Windows Update",
         "Power Plans",
     };

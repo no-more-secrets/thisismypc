@@ -516,6 +516,9 @@
                                 <views:EnvironmentView />
                             </DataTemplate>
                             <!-- Annoyances, Privacy, and Windows Update share one card page -->
+                            <DataTemplate DataType="{x:Type vm:SecurityViewModel}">
+                                <views:SecurityView />
+                            </DataTemplate>
                             <DataTemplate DataType="{x:Type vm:SettingCardPageViewModel}">
                                 <views:SettingCardPageView />
                             </DataTemplate>

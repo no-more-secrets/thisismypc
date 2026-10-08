@@ -34,6 +34,7 @@
     <ProjectReference Include="..\ThisIsMyPC.Modules.Software\ThisIsMyPC.Modules.Software.csproj" />
     <ProjectReference Include="..\ThisIsMyPC.Modules.Startup\ThisIsMyPC.Modules.Startup.csproj" />
     <ProjectReference Include="..\ThisIsMyPC.Modules.WindowsUpdate\ThisIsMyPC.Modules.WindowsUpdate.csproj" />
+    <ProjectReference Include="..\ThisIsMyPC.Modules.Security\ThisIsMyPC.Modules.Security.csproj" />
   </ItemGroup>
 
   <ItemGroup>

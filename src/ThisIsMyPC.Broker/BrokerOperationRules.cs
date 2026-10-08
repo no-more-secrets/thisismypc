@@ -119,6 +119,7 @@ internal static class BrokerOperationRules
             "Startup & Services" => AllowsStartup(change),
             "Windows Annoyances" => AllowsRegistryModule(change, AnnoyanceTargets),
             "Privacy & Telemetry" => AllowsRegistryModule(change, PrivacyTargets),
+            "Security" => Modules.Security.SecurityCatalog.Allows(change),
             "Windows Update" => AllowsRegistryModule(change, WindowsUpdateTargets),
             "Power Plans" => AllowsPower(change),
             _ => false,

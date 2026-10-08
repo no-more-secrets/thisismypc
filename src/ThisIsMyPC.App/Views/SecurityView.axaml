@@ -1,0 +1,58 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ThisIsMyPC.App.ViewModels"
+             xmlns:security="using:ThisIsMyPC.Modules.Security"
+             xmlns:controls="using:ThisIsMyPC.App.Controls"
+             x:Class="ThisIsMyPC.App.Views.SecurityView" x:DataType="vm:SecurityViewModel">
+    <UserControl.Resources>
+        <DataTemplate x:Key="SecurityRow" x:DataType="vm:SecurityRowViewModel">
+            <Border Classes="card" Classes.pending-enable="{Binding HasPendingChange}"
+                    Padding="14,10" Margin="0,0,0,8" CornerRadius="4" IsVisible="{Binding IsVisible}">
+                <StackPanel Spacing="6">
+                    <TextBlock Text="{Binding Setting.Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding Setting.Description}" FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
+                    <ComboBox ItemsSource="{Binding Choices}" SelectedItem="{Binding SelectedOption}"
+                              IsEnabled="{Binding IsControlEnabled}" HorizontalAlignment="Stretch"
+                              AutomationProperties.Name="{Binding Setting.Title}" PlaceholderText="Custom or unknown policy state">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="security:SecurityOption"><TextBlock Text="{Binding Label}" TextWrapping="Wrap" /></DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <TextBlock Text="{Binding StateText}" FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
+                    <TextBlock Text="{Binding PolicyText}" FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource InfoBrush}"
+                               IsVisible="{Binding PolicyText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    <TextBlock Text="{Binding EditionNotice}" FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource InfoBrush}" />
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+    </UserControl.Resources>
+    <controls:ModuleTabControl Theme="{StaticResource ModuleTabControlTheme}" ItemsSource="{Binding Sections}"
+                               SelectedIndex="{Binding SelectedTabIndex}" ShowTabs="{Binding !IsSearching}">
+        <controls:ModuleTabControl.Toolbar>
+            <StackPanel Margin="0,0,16,8" Spacing="8">
+                <TextBox Text="{Binding SearchText}" Watermark="Search security settings" MinHeight="40" />
+                <TextBlock Text="These controls show configured policies. Active protection can differ because of tamper protection or device management."
+                           FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
+            </StackPanel>
+        </controls:ModuleTabControl.Toolbar>
+        <controls:ModuleTabControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:SecuritySectionViewModel"><TextBlock Text="{Binding Header}" /></DataTemplate>
+        </controls:ModuleTabControl.ItemTemplate>
+        <controls:ModuleTabControl.ContentTemplate>
+            <DataTemplate x:DataType="vm:SecuritySectionViewModel">
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                    <ItemsControl Margin="0,4,16,24" ItemsSource="{Binding Rows}" ItemTemplate="{StaticResource SecurityRow}">
+                        <ItemsControl.ItemsPanel><ItemsPanelTemplate><controls:ResponsiveColumnsPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                    </ItemsControl>
+                </ScrollViewer>
+            </DataTemplate>
+        </controls:ModuleTabControl.ContentTemplate>
+        <controls:ModuleTabControl.AlternateContent>
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                <ItemsControl Margin="0,4,16,24" ItemsSource="{Binding Rows}" ItemTemplate="{StaticResource SecurityRow}">
+                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><controls:ResponsiveColumnsPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                </ItemsControl>
+            </ScrollViewer>
+        </controls:ModuleTabControl.AlternateContent>
+    </controls:ModuleTabControl>
+</UserControl>

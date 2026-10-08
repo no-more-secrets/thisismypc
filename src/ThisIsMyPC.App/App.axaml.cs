@@ -231,6 +231,7 @@ public partial class App : Application
         services.AddSingleton<IModule, StartupModule>();
         services.AddSingleton<IModule, ThisIsMyPC.Modules.Annoyances.AnnoyancesModule>();
         services.AddSingleton<IModule, ThisIsMyPC.Modules.Privacy.PrivacyModule>();
+        services.AddSingleton<IModule, ThisIsMyPC.Modules.Security.SecurityModule>();
         services.AddSingleton<IModule, ThisIsMyPC.Modules.WindowsUpdate.WindowsUpdateModule>();
         services.AddSingleton<IModule, ThisIsMyPC.Modules.Software.SoftwareModule>();
         services.AddSingleton<IModule, PowerModule>();
@@ -313,8 +314,9 @@ public partial class App : Application
             Path.Combine(AppContext.BaseDirectory, "sets"),
             Path.Combine(AppConstants.UserDataDirectoryPath, "sets")));
         // Custom set creation (8.5) writes into the same user sets directory.
-        services.AddSingleton<ICustomSetWriter>(_ => new CustomSetWriter(
-            Path.Combine(AppConstants.UserDataDirectoryPath, "sets")));
+        services.AddSingleton<ISetValueEncoder, ThisIsMyPC.Modules.Security.SecuritySetValueEncoder>();
+        services.AddSingleton<ICustomSetWriter>(sp => new CustomSetWriter(
+            Path.Combine(AppConstants.UserDataDirectoryPath, "sets"), sp.GetServices<ISetValueEncoder>()));
         // Per-tab display-mode persistence (10.2).
         services.AddSingleton(_ => new DisplayModePreferencesStore(
             Path.Combine(AppConstants.UserDataDirectoryPath, "display-modes.txt")));
@@ -323,12 +325,14 @@ public partial class App : Application
         services.AddSingleton<ISetEntryInspector, ThisIsMyPC.Modules.Shell.Services.ShellSetEntryInspector>();
         services.AddSingleton<ISetEntryInspector, ThisIsMyPC.Modules.Annoyances.Services.AnnoyancesSetEntryInspector>();
         services.AddSingleton<ISetEntryInspector, ThisIsMyPC.Modules.Privacy.Services.PrivacySetEntryInspector>();
+        services.AddSingleton<ISetEntryInspector, ThisIsMyPC.Modules.Security.SecuritySetEntryInspector>();
         services.AddSingleton<ISetEntryInspector, ThisIsMyPC.Modules.Startup.Services.StartupSetEntryInspector>();
         services.AddSingleton<ISetEntryInspector, ThisIsMyPC.Modules.WindowsUpdate.Services.WindowsUpdateSetEntryInspector>();
 
         // Cross-module search contributors (5-3)
         services.AddSingleton<Core.Search.ISearchSettingsContributor, ThisIsMyPC.Modules.Annoyances.Services.AnnoyancesSearchContributor>();
         services.AddSingleton<Core.Search.ISearchSettingsContributor, ThisIsMyPC.Modules.Privacy.Services.PrivacySearchContributor>();
+        services.AddSingleton<Core.Search.ISearchSettingsContributor, ThisIsMyPC.Modules.Security.SecuritySearchContributor>();
         services.AddSingleton<Core.Search.ISearchSettingsContributor, ThisIsMyPC.Modules.WindowsUpdate.Services.WindowsUpdateSearchContributor>();
         services.AddSingleton<Core.Search.ISearchSettingsContributor, ThisIsMyPC.Modules.Shell.Services.ExplorerSearchContributor>();
         services.AddSingleton<Core.Search.ISearchSettingsContributor, ThisIsMyPC.Modules.Shell.Services.ContextMenuSearchContributor>();

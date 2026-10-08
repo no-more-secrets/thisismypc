@@ -75,10 +75,8 @@ public sealed class SetConflictResolver
         if (policy is not null)
             return Skipped(entry, policy.Message!) with { State = state with { CurrentDisplay = policy.Message!, CoveredByPolicy = policy.Message } };
 
-        // First pending descriptor targeting the same setting. Factories list a group
-        // toggle's primary value first, so the first match compares against the same
-        // primary the entry's Value uses. Compare the resolved write, since factories
-        // can preserve unrelated bits instead of writing the preset's literal value.
+        // Compare every resolved write. Paired policies can share a primary value
+        // while selecting different behavior through their companion value.
         foreach (var group in pendingGroups)
         {
             foreach (var change in group.Changes)
@@ -86,7 +84,10 @@ public sealed class SetConflictResolver
                 if (change.ModuleId != entry.ModuleId || change.SettingId != entry.SettingId)
                     continue;
 
-                var sameValue = string.Equals(change.AfterValue, stageable.Changes[0].AfterValue, StringComparison.Ordinal);
+                var sameValue = stageable.Changes.All(expected => group.Changes.Any(queued =>
+                        queued.ModuleId == expected.ModuleId && queued.SettingId == expected.SettingId &&
+                        queued.SystemLocation.Equals(expected.SystemLocation, StringComparison.OrdinalIgnoreCase) &&
+                        queued.ValueType == expected.ValueType && queued.AfterValue == expected.AfterValue));
                 return new SetEntryResolution
                 {
                     Entry = entry,

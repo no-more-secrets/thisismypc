@@ -285,6 +285,12 @@
           "ThisIsMyPC.Core": "[1.0.0, )"
         }
       },
+      "thisismypc.modules.security": {
+        "type": "Project",
+        "dependencies": {
+          "ThisIsMyPC.Core": "[1.0.0, )"
+        }
+      },
       "thisismypc.modules.shell": {
         "type": "Project",
         "dependencies": {

@@ -273,7 +273,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     /// <summary>Whether the current page owns its card edge and content padding.</summary>
     public bool UsesEdgeTabs => CurrentContent is ShellViewModel or EnvironmentViewModel or SettingsViewModel
-        or SoftwareViewModel or ContextMenuViewModel or StartupViewModel or PowerViewModel or SettingCardPageViewModel
+        or SoftwareViewModel or ContextMenuViewModel or StartupViewModel or PowerViewModel or SettingCardPageViewModel or SecurityViewModel
         or DebugViewModel or MonitoringSensorsViewModel;
 
     public bool UsesSeparateContentCards => CurrentContent is SetLoaderViewModel;
@@ -618,6 +618,12 @@ public partial class MainWindowViewModel : ViewModelBase
                         SetStatus(scanResult.ErrorMessage ?? "Failed to scan Windows Update policies", StatusSeverity.Error);
                     }
                 });
+            }
+            else if (current?.Module is Modules.Security.SecurityModule)
+            {
+                ContentTitle = current.Module.Info.Name;
+                ContentDescription = current.Module.Info.Description;
+                CurrentContent = new SecurityViewModel(_registryService, _pendingChangesService, _capabilityDetector, _policyStates, _userFeedback);
             }
             else if (current?.Module is Modules.Privacy.PrivacyModule)
             {

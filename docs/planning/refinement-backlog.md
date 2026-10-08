@@ -8,8 +8,9 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 - DONE: the interactive queue checks every descriptor at staging and before applying. Microsoft policy paths default to Pro unless support is explicitly verified on Home.
 - DONE: conservative Defender gating, known consumer-content exclusions, and diagnostic data Off require Enterprise/Education. Required diagnostic data stays available on Pro.
 - DONE: shared policy evidence appears on existing Annoyances, Privacy, Windows Update, Explorer, and Power controls. Manual updates are detected through NoAutoUpdate even without AUOptions. Saved local policy, read failures, invalid values, and overrides are checked before staging and applying; presets use the same checks.
-- Pending: domain/MDM provenance, full runtime enforcement testing, and remaining unverified policy relationships. Security tab follows this detection work.
-- Pending: verify per-policy exceptions and build support, add policy editors, and connect Ctrl+Alt+Delete sign-in control.
+- DONE: Security page adds 16 choices across Sign-in, Defender, App protection, and Notifications. Includes Ctrl+Alt+Delete, typed before-state checks, staged apply/undo, exact Broker targets, edition gating, search, and complete preset export. See [Security](../security-module.md).
+- Pending: domain/MDM provenance, full runtime enforcement testing, and remaining unverified policy relationships.
+- Pending: verify per-policy exceptions and build support, and add writers for saved registry policy and the local security database. Security displays saved policy but blocks direct editing of its values.
 
 - REQUIRED: editable coverage of Sam's practical configured policies and other important policies. See the October 7 requirement in the v1 plan.
 - DONE: expanded read-only inventory across 224 installed ADMX files, 3,552 policy definitions, both applicable registry scopes, and conventional policy roots.

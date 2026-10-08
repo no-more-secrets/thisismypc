@@ -70,6 +70,7 @@ internal sealed class PrivilegedModuleHost : IAsyncDisposable
         services.AddSingleton<IModule, StartupModule>();
         services.AddSingleton<IModule, AnnoyancesModule>();
         services.AddSingleton<IModule, PrivacyModule>();
+        services.AddSingleton<IModule, Modules.Security.SecurityModule>();
         services.AddSingleton<IModule, WindowsUpdateModule>();
         services.AddSingleton<IModule, Modules.Software.SoftwareModule>();
         services.AddSingleton<IModule, PowerModule>();

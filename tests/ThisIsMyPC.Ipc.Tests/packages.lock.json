@@ -396,6 +396,7 @@
           "ThisIsMyPC.Modules.Annoyances": "[1.0.0, )",
           "ThisIsMyPC.Modules.Power": "[1.0.0, )",
           "ThisIsMyPC.Modules.Privacy": "[1.0.0, )",
+          "ThisIsMyPC.Modules.Security": "[1.0.0, )",
           "ThisIsMyPC.Modules.Shell": "[1.0.0, )",
           "ThisIsMyPC.Modules.Software": "[1.0.0, )",
           "ThisIsMyPC.Modules.Startup": "[1.0.0, )",
@@ -448,6 +449,12 @@
         }
       },
       "thisismypc.modules.privacy": {
+        "type": "Project",
+        "dependencies": {
+          "ThisIsMyPC.Core": "[1.0.0, )"
+        }
+      },
+      "thisismypc.modules.security": {
         "type": "Project",
         "dependencies": {
           "ThisIsMyPC.Core": "[1.0.0, )"
