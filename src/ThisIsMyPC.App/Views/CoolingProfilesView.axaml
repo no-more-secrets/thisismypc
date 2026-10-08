@@ -91,7 +91,7 @@
     <Border Classes="profile-card" Classes.staged="{Binding HasStagedProfile}">
         <StackPanel Spacing="14">
             <TextBlock Text="Cooling profiles" FontSize="18" FontWeight="SemiBold" />
-            <TextBlock Classes="hint" Text="Edit FanControl 226 profiles for this PC. Saving a profile does not load it or change running fans." />
+            <TextBlock Classes="hint" Text="Edit FanControl V226 profiles for this PC. Saving a profile does not load it or change running fans." />
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" IsEnabled="{Binding !IsBusy}">
                 <ComboBox ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfile}" PlaceholderText="Select a saved profile" HorizontalAlignment="Stretch" />
                 <Button Grid.Column="1" Content="Reload profiles" Command="{Binding RefreshCommand}" ToolTip.Tip="Discard editor changes and read saved profiles again." />
