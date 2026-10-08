@@ -3,6 +3,7 @@
              xmlns:vm="using:ThisIsMyPC.App.ViewModels"
              xmlns:security="using:ThisIsMyPC.Modules.Security"
              xmlns:controls="using:ThisIsMyPC.App.Controls"
+             xmlns:icons="using:ThisIsMyPC.App.Icons"
              x:Class="ThisIsMyPC.App.Views.SecurityView" x:DataType="vm:SecurityViewModel">
     <UserControl.Resources>
         <DataTemplate x:Key="SecurityRow" x:DataType="vm:SecurityRowViewModel">
@@ -18,10 +19,18 @@
                             <DataTemplate x:DataType="security:SecurityOption"><TextBlock Text="{Binding Label}" TextWrapping="Wrap" /></DataTemplate>
                         </ComboBox.ItemTemplate>
                     </ComboBox>
-                    <TextBlock Text="{Binding StateText}" FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
-                    <TextBlock Text="{Binding PolicyText}" FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource InfoBrush}"
-                               IsVisible="{Binding PolicyText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                     <TextBlock Text="{Binding EditionNotice}" FontSize="11" TextWrapping="Wrap" Foreground="{DynamicResource InfoBrush}" />
+                    <DockPanel IsVisible="{Binding PolicyText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                        <Border DockPanel.Dock="Right" Classes="info-icon" Margin="8,0,0,0"
+                                AutomationProperties.Name="Policy details">
+                            <ToolTip.Tip>
+                                <TextBlock Text="{Binding PolicyText}" MaxWidth="340" TextWrapping="Wrap" />
+                            </ToolTip.Tip>
+                            <icons:FluentIcon Classes="info-icon-glyph" Symbol="Info" />
+                        </Border>
+                        <TextBlock Text="{Binding PolicySummary}" FontSize="11" TextTrimming="CharacterEllipsis"
+                                   VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}" />
+                    </DockPanel>
                 </StackPanel>
             </Border>
         </DataTemplate>

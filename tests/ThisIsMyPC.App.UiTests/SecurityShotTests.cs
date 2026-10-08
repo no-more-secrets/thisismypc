@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Styling;
 using ThisIsMyPC.App.UiTests.Fakes;
@@ -16,6 +17,45 @@ namespace ThisIsMyPC.App.UiTests;
 
 public sealed class SecurityShotTests
 {
+    [AvaloniaFact]
+    public async Task ManagedPolicy_UsesShortNoticeAndInformationHover()
+    {
+        var registry = new UiFakeRegistryService();
+        registry.WriteString(@"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "EditionID", "Enterprise");
+        var setting = SecurityCatalog.Settings.Single(s => s.Id == "real-time-protection");
+        var target = setting.Targets[0];
+        registry.WriteDWord(target.Key, target.Name, 1);
+        var source = new PolicySourceSnapshot("Computer policy", PolicyScope.Machine, PolicyFileStatus.Loaded,
+            [new(target.Key[5..], target.Name, 4, [1, 0, 0, 0])]);
+        var policies = new PolicyControlStateReader(registry, () => [source]);
+        using var vm = new SecurityViewModel(registry, new PendingChangesService(), new CapabilityDetector(registry), policies);
+        vm.SearchText = setting.Title;
+        using var session = UiSession.ForView(new SecurityView(), vm, "security-copy", width: 650, height: 550);
+        var row = vm.Rows.Single(r => r.Setting.Id == setting.Id);
+        var info = session.Find<Border>(b => Avalonia.Automation.AutomationProperties.GetName(b) == "Policy details" && b.IsEffectivelyVisible);
+        Assert.False(row.IsControlEnabled);
+        Assert.True(session.IsTextVisible("Managed by local policy"));
+        Assert.False(session.IsTextVisible("Policy setting: Off"));
+        Assert.DoesNotContain("Application on Pro", row.EditionNotice, StringComparison.Ordinal);
+        foreach (var theme in new[] { ThemeVariant.Dark, ThemeVariant.Light })
+        {
+            session.SetTheme(theme);
+            session.Screenshot($"managed-{theme.Key}");
+            session.Hover(info);
+            ToolTip.SetIsOpen(info, true);
+            await Task.Delay(300);
+            session.Pump();
+            var detail = Assert.IsType<TextBlock>(ToolTip.GetTip(info));
+            Assert.Equal(row.PolicyText, detail.Text);
+            var popup = TopLevel.GetTopLevel(detail);
+            Assert.NotNull(popup);
+            using var frame = popup.CaptureRenderedFrame();
+            Assert.NotNull(frame);
+            frame.Save(System.IO.Path.Combine(UiSession.FindRepoRoot(), "artifacts", "ui-shots", "security-copy", $"tooltip-{theme.Key}.png"));
+            ToolTip.SetIsOpen(info, false);
+        }
+    }
+
     [AvaloniaFact]
     public void ChangingAChoice_DoesNotRescanUnrelatedPolicies()
     {
@@ -54,7 +94,6 @@ public sealed class SecurityShotTests
         var result = await pending.ApplyAllAsync(module.ApplyChangeAsync, module.RevertChangeAsync);
         Assert.True(result.IsSuccess);
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-        Assert.Equal("Policy setting: On", row.StateText);
         Assert.Equal("on", row.SelectedOption?.Id);
         Assert.False(row.HasPendingChange);
     }

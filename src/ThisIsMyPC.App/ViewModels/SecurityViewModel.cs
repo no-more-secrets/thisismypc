@@ -73,7 +73,7 @@ public sealed partial class SecurityRowViewModel : ObservableObject
     public string EditionNotice { get; }
     public bool IsControlEnabled => _blocked is null && !_pending.IsApplying && _pending.ReconciliationRequired.Count == 0;
     [ObservableProperty] private SecurityOption? _selectedOption;
-    [ObservableProperty] private string _stateText = "";
+    [ObservableProperty] private string? _policySummary;
     [ObservableProperty] private string? _policyText;
     [ObservableProperty] private bool _hasPendingChange;
     [ObservableProperty] private bool _isVisible = true;
@@ -84,8 +84,7 @@ public sealed partial class SecurityRowViewModel : ObservableObject
     {
         Setting = setting; _reader = reader; _pending = pending; _feedback = feedback;
         _editionBlock = SettingEditionSupport.BlockReason(capabilities?.Sku, setting.Edition);
-        EditionNotice = SettingEditionSupport.RequirementLabel(setting.Edition)!
-            + (setting.Edition == Core.Modules.WindowsSku.Enterprise ? ". Application on Pro is not verified." : "");
+        EditionNotice = SettingEditionSupport.RequirementLabel(setting.Edition)!;
         _snapshot = reader.Read(setting);
         Refresh();
     }
@@ -102,8 +101,10 @@ public sealed partial class SecurityRowViewModel : ObservableObject
             if (readLive) _snapshot = _reader.Read(Setting);
             var state = _snapshot;
             _blocked = _editionBlock ?? state.BlockReason;
-            StateText = "Policy setting: " + state.Display;
             PolicyText = state.BlockReason;
+            PolicySummary = state.BlockReason is null ? null
+                : state.BlockReason.StartsWith("Controlled by saved local policy.", StringComparison.Ordinal)
+                    ? "Managed by local policy" : "Policy state needs review";
             var existing = _pending.PendingGroups.FirstOrDefault(g => g.Changes.Any(c => c.ModuleId == SecurityCatalog.ModuleId && c.SettingId == Setting.Id));
             _groupId = existing?.GroupId;
             var values = state.Values.ToArray();

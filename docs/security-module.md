@@ -15,6 +15,9 @@ These are configured policies, not an antivirus health report. Missing values sh
 **Not configured**, never Off. Known values show their complete option. Paired
 values must match a complete choice; other readable combinations show a custom
 policy state. Wrong types, unknown values, and failed reads block editing.
+Cards show edition requirements and a short policy notice. Full source explanations
+appear behind the information hover. Do not repeat the selected policy value below
+its control or add an unverified-Pro caveat to each card.
 
 Choices enter the existing pending queue. Every target carries its exact typed
 before-value, including absence. The Broker accepts only catalogued addresses,
