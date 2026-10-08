@@ -4,6 +4,8 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 
 ## Network & Firewall initial tabs (2026-10-07)
 
+- DONE October 8: expanded adapter rows keep switches beside the header. Selection and hover no longer add gray or black fills or inner outlines.
+- Verified: regression screenshots cover expanded, selected, hovered, and staged rows in both themes, with fixed switch coordinates.
 - DONE October 8: compact adapter rows default to connections with assigned IP addresses. Filters expose disconnected and absent adapters; search covers all adapters.
 - DONE October 8: firewall rules group by application, service, or rule name, with Applications, Windows, and Other categories. Search crosses categories.
 - DONE October 8: switching back cancels a staged change. Staged switches remain usable; DNS supports replacement and an editor-only Revert button.

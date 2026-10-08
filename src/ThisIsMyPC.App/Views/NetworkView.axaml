@@ -9,8 +9,16 @@
         <Style Selector="Border.network-card"><Setter Property="BorderBrush" Value="{DynamicResource OutlineBrush}" /><Setter Property="BorderThickness" Value="1" /><Setter Property="CornerRadius" Value="6" /><Setter Property="Padding" Value="12,8" /></Style>
         <Style Selector="Border.network-card.staged"><Setter Property="Background" Value="{DynamicResource SuccessMutedBrush}" /></Style>
         <Style Selector="Border.network-card Expander /template/ ToggleButton"><Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" /></Style>
-        <Style Selector="ListBox.network-list"><Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" /><Setter Property="Padding" Value="0" /></Style>
-        <Style Selector="ListBox.network-list > ListBoxItem"><Setter Property="Padding" Value="0" /><Setter Property="Margin" Value="0,0,16,6" /></Style>
+        <Style Selector="Border.network-card Expander /template/ Border#ExpanderContent"><Setter Property="BorderThickness" Value="0" /></Style>
+        <Style Selector="Border.network-card Expander /template/ ToggleButton#ExpanderHeader:pointerover /template/ Border#ToggleButtonBackground, Border.network-card Expander /template/ ToggleButton#ExpanderHeader:pressed /template/ Border#ToggleButtonBackground">
+            <Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" />
+        </Style>
+        <Style Selector="ListBox.network-list"><Setter Property="Background" Value="Transparent" /><Setter Property="BorderThickness" Value="0" /><Setter Property="Padding" Value="0" /><Setter Property="KeyboardNavigation.TabNavigation" Value="Continue" /></Style>
+        <Style Selector="ListBox.network-list > ListBoxItem"><Setter Property="Padding" Value="0" /><Setter Property="Margin" Value="0,0,16,6" /><Setter Property="Focusable" Value="False" /></Style>
+        <Style Selector="ListBox.network-list > ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter, ListBox.network-list > ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter, ListBox.network-list > ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="ListBox.network-list > ListBoxItem:selected"><Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" /></Style>
     </UserControl.Styles>
     <UserControl.DataTemplates>
         <DataTemplate DataType="vm:NetworkSettingRow">
@@ -51,7 +59,7 @@
                                     <Expander.Header><StackPanel Spacing="2"><TextBlock Text="{Binding State.Name}" FontWeight="SemiBold" /><TextBlock Text="{Binding Summary}" Classes="hint" /></StackPanel></Expander.Header>
                                     <StackPanel><TextBlock Text="{Binding Details}" Margin="0,6" /><TextBlock Text="{Binding State.Error}" IsVisible="{Binding HasError}" Classes="hint" /></StackPanel>
                                 </Expander>
-                                <ToggleSwitch Grid.Column="1" AutomationProperties.Name="Enable adapter" IsChecked="{Binding Connection.Enabled, Mode=TwoWay}" IsEnabled="{Binding Connection.CanEdit}" ToolTip.Tip="{Binding Connection.Hint}" VerticalAlignment="Center" />
+                                <ToggleSwitch Grid.Column="1" AutomationProperties.Name="Enable adapter" IsChecked="{Binding Connection.Enabled, Mode=TwoWay}" IsEnabled="{Binding Connection.CanEdit}" ToolTip.Tip="{Binding Connection.Hint}" VerticalAlignment="Top" Margin="0,14,0,0" />
                             </Grid>
                         </Border>
                     </DataTemplate></ListBox.ItemTemplate>

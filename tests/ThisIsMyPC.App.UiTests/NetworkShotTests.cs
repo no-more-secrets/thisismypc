@@ -1,7 +1,9 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Styling;
+using Avalonia.VisualTree;
 using ThisIsMyPC.App.ViewModels;
 using ThisIsMyPC.App.Views;
 using ThisIsMyPC.Core.Network;
@@ -12,6 +14,51 @@ namespace ThisIsMyPC.App.UiTests;
 
 public sealed class NetworkShotTests
 {
+    [AvaloniaFact]
+    public void ExpandedAdapterStatesKeepHeaderGeometry()
+    {
+        using var vm = new NetworkViewModel(Data(), new PendingChangesService());
+        using var session = UiSession.ForView(new NetworkView(), vm, "network-expanded", 1000, 800);
+        foreach (var theme in new[] { ThemeVariant.Dark, ThemeVariant.Light })
+        {
+            session.SetTheme(theme);
+            var toggle = session.Find<ToggleSwitch>(t => t.IsEffectivelyVisible && t.IsEnabled);
+            var top = toggle.TranslatePoint(default, session.Window)!.Value.Y;
+            session.ClickText("Ethernet");
+            Assert.Equal(top, toggle.TranslatePoint(default, session.Window)!.Value.Y, 0.5);
+            var headerButton = session.Find<Avalonia.Controls.Primitives.ToggleButton>(b => b.Name == "ExpanderHeader" && b.IsEffectivelyVisible);
+            headerButton.Focus(Avalonia.Input.NavigationMethod.Tab);
+            session.Window.KeyPress(Avalonia.Input.Key.Space, Avalonia.Input.RawInputModifiers.None);
+            session.Window.KeyRelease(Avalonia.Input.Key.Space, Avalonia.Input.RawInputModifiers.None);
+            session.Pump();
+            Assert.False(session.Find<Expander>(e => e.IsEffectivelyVisible).IsExpanded);
+            session.Window.KeyPress(Avalonia.Input.Key.Tab, Avalonia.Input.RawInputModifiers.None);
+            session.Window.KeyRelease(Avalonia.Input.Key.Tab, Avalonia.Input.RawInputModifiers.None);
+            session.Pump();
+            Assert.True(toggle.IsFocused);
+            session.Screenshot($"keyboard-focus-{theme.Key}");
+            session.ClickText("Ethernet");
+            var content = session.Find<Border>(b => b.Name == "ExpanderContent" && b.IsEffectivelyVisible);
+            Assert.Equal(new Thickness(0), content.BorderThickness);
+            session.Click(content);
+            var row = session.Find<ListBoxItem>(r => r.IsEffectivelyVisible);
+            Assert.True(row.IsSelected);
+            var presenter = row.GetVisualDescendants().OfType<Avalonia.Controls.Presenters.ContentPresenter>().First();
+            Assert.Equal(Avalonia.Media.Colors.Transparent, Assert.IsAssignableFrom<Avalonia.Media.ISolidColorBrush>(presenter.Background).Color);
+            session.Screenshot($"expanded-selected-{theme.Key}");
+            session.HoverText("Ethernet");
+            var header = session.Find<Border>(b => b.Name == "ToggleButtonBackground" && b.IsEffectivelyVisible);
+            Assert.Equal(Avalonia.Media.Colors.Transparent, Assert.IsAssignableFrom<Avalonia.Media.ISolidColorBrush>(header.Background).Color);
+            session.Screenshot($"expanded-header-hover-{theme.Key}");
+            session.HoverText("Connections");
+            session.Screenshot($"expanded-idle-{theme.Key}");
+            session.Click(toggle);
+            session.Screenshot($"expanded-staged-{theme.Key}");
+            session.Click(toggle);
+            session.ClickText("Ethernet");
+            Assert.Equal(top, toggle.TranslatePoint(default, session.Window)!.Value.Y, 0.5);
+        }
+    }
     [AvaloniaFact, Trait("Category", "Diagnostic")]
     public async Task FullWindowReadsNetworkWithoutApplying()
     {
