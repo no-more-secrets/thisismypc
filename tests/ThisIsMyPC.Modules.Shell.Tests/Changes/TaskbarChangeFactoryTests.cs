@@ -170,7 +170,7 @@ public sealed class TaskbarChangeFactoryTests
         Assert.Equal("Icon only", change.AfterDisplay);
         Assert.Equal(ChangeValueType.Registry_DWord, change.ValueType);
         Assert.Equal(ChangeCategory.Modify, change.Category);
-        Assert.Equal(RestartRequirement.ExplorerRestart, change.RestartRequirement);
+        Assert.Equal(RestartRequirement.None, change.RestartRequirement);
     }
 
     [Fact]

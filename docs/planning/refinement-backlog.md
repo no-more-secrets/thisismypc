@@ -47,6 +47,10 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 
 ## Annotation feedback (2026-10-07)
 
+- DONE: Home labels additional drives as Storage and places chipset and BIOS details on one line, wrapping on narrow windows.
+- DONE: System Control, Cooling, and Monitoring show the same Alpha badge as Context Menus.
+- DONE: Taskbar search no longer requests an Explorer restart in its description or staged change. Sam confirmed that this control applies without restarting Explorer.
+
 - DONE: Explorer keeps unavailable Start menu controls visible with reasons and adds six missing Start options. Mirrored ExplorerPatcher values capture both original locations for Undo.
 - DONE: General offers ExplorerPatcher shell-extension registration and square window corners. Dependent File Explorer controls show the registration requirement and stay disabled until registration is applied and the page refreshes.
 - DONE: Taskbar offers automatic hiding through the Windows appbar API. Changes preserve the other appbar flag. The DWM service restores its previous configuration on failure or Undo.

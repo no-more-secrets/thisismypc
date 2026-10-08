@@ -11,6 +11,7 @@ using ThisIsMyPC.Core.Results;
 using ThisIsMyPC.Core.Modules;
 using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Modules.Hardware;
+using ThisIsMyPC.Core.Hardware;
 using ThisIsMyPC.Modules.Shell;
 using ThisIsMyPC.Modules.Shell.Models;
 using ContextMenuHandlerList = System.Collections.Generic.IReadOnlyList<ThisIsMyPC.Modules.Shell.Models.ContextMenuHandler>;
@@ -2268,7 +2269,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
     /// <summary>The Explorer page carries a permanent Restart Explorer button in its header.</summary>
     public bool IsExplorerPageOpen => CurrentContent is ShellViewModel;
-    public bool IsCurrentFeatureAlpha => CurrentContent is ContextMenuViewModel;
+    public bool IsCurrentFeatureAlpha => CurrentContent is ContextMenuViewModel or MonitoringSensorsViewModel
+        or HardwareTabViewModel { Domain: HardwareDomain.SystemControl or HardwareDomain.Cooling or HardwareDomain.Monitoring };
 
     /// <summary>
     /// The status line for a batch that did not finish, written for the person

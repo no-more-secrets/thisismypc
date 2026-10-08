@@ -66,6 +66,10 @@ public sealed class HomeShotTests
         Assert.Equal("Samsung SSD 990 PRO 2TB", viewModel.BootDriveSummary);
         Assert.Equal("WD_BLACK SN850X 4000GB", viewModel.AdditionalStorageSummary);
         Assert.True(session.IsTextVisible("BIOS: 3636 · 07/18/2025"));
+        Assert.True(session.IsTextVisible("Storage"));
+        var chipset = session.Find<Avalonia.Controls.TextBlock>(t => t.Text == "Chipset: B550");
+        var bios = session.Find<Avalonia.Controls.TextBlock>(t => t.Text == "BIOS: 3636 · 07/18/2025");
+        Assert.Equal(session.TopOf(chipset), session.TopOf(bios), 0.5);
         Assert.False(session.IsTextVisible("Model"));
         Assert.False(session.IsTextVisible("Unknown"));
         Assert.True(session.IsTextVisible("Windows 11 to Windows 10"));

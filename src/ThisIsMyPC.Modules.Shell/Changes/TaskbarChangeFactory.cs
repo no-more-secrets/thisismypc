@@ -71,7 +71,7 @@ public static class TaskbarChangeFactory
             AfterDisplay = SearchboxModeNames[newMode],
             ValueType = ChangeValueType.Registry_DWord,
             Category = ChangeCategory.Modify,
-            RestartRequirement = RestartRequirement.ExplorerRestart,
+            RestartRequirement = RestartRequirement.None,
         };
     }
 

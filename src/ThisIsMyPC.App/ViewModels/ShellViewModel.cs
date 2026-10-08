@@ -279,7 +279,7 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, ISearch
 
         TaskbarChoiceSettings.Add(new ShellChoiceSettingViewModel(
             label: "Taskbar search",
-            description: "How search appears on the taskbar. May require an Explorer restart.",
+            description: "How search appears on the taskbar.",
             systemPath: $@"{Modules.Shell.ShellRegistryPaths.SearchKeyPath}\SearchboxTaskbarMode",
             options: TaskbarChangeFactory.SearchboxModeNames
                 .OrderBy(p => p.Key)
