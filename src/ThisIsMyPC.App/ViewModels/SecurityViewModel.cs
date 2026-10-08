@@ -40,8 +40,14 @@ public sealed partial class SecurityViewModel : ViewModelBase, ITabbedPage, ISea
     {
         if (_disposed || e.PropertyName is not (nameof(IPendingChangesService.PendingGroups) or nameof(IPendingChangesService.IsApplying)
             or nameof(IPendingChangesService.ReconciliationRequired))) return;
-        if (!Dispatcher.UIThread.CheckAccess()) { Dispatcher.UIThread.Post(() => PendingChanged(sender, e)); return; }
-        foreach (var row in Rows) row.Refresh();
+        var readLive = e.PropertyName == nameof(IPendingChangesService.IsApplying) && !_pending.IsApplying;
+        if (!Dispatcher.UIThread.CheckAccess()) { Dispatcher.UIThread.Post(() => RefreshRows(readLive)); return; }
+        RefreshRows(readLive);
+    }
+    private void RefreshRows(bool readLive)
+    {
+        if (_disposed) return;
+        foreach (var row in Rows) row.Refresh(readLive);
     }
     public void Dispose()
     {
@@ -61,6 +67,7 @@ public sealed partial class SecurityRowViewModel : ObservableObject
     private string? _groupId;
     private string? _blocked;
     private SecurityOption? _displayed;
+    private SecuritySnapshot _snapshot;
     public SecuritySetting Setting { get; }
     public IReadOnlyList<SecurityOption> Choices => Setting.Choices;
     public string EditionNotice { get; }
@@ -79,16 +86,21 @@ public sealed partial class SecurityRowViewModel : ObservableObject
         _editionBlock = SettingEditionSupport.BlockReason(capabilities?.Sku, setting.Edition);
         EditionNotice = SettingEditionSupport.RequirementLabel(setting.Edition)!
             + (setting.Edition == Core.Modules.WindowsSku.Enterprise ? ". Application on Pro is not verified." : "");
+        _snapshot = reader.Read(setting);
         Refresh();
     }
 
-    public void Refresh()
+    public void Refresh(bool readLive = false)
     {
         if (_changing) return;
         _changing = true;
         try
         {
-            var state = _reader.Read(Setting);
+            // Staging and discarding only change the queue. Keep the displayed
+            // snapshot until Apply completes or the page is reloaded. Create and
+            // Stage still independently validate fresh state before accepting a choice.
+            if (readLive) _snapshot = _reader.Read(Setting);
+            var state = _snapshot;
             _blocked = _editionBlock ?? state.BlockReason;
             StateText = "Policy setting: " + state.Display;
             PolicyText = state.BlockReason;

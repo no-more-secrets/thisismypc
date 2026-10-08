@@ -22,6 +22,10 @@ types, values, and edition metadata. Apply checks the before-value again and
 reads the result back. History undo uses the same checks. A failed or uncertain
 mutation uses the existing reconciliation workflow.
 
+Queue edits reuse the displayed snapshot instead of scanning every policy again.
+Creating a choice and staging it still validate fresh policy state independently.
+The page refreshes live values after Apply finishes or when the page reloads.
+
 Preset export stores a complete choice identifier. This preserves companion
 values, such as SmartScreen Warn versus preventing bypass. History export splits
 Security choices within an Apply batch before encoding them.

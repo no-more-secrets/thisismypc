@@ -7,7 +7,7 @@ namespace ThisIsMyPC.Modules.Security;
 
 public sealed class SecurityModule(IRegistryService registry) : IModule
 {
-    public ModuleInfo Info { get; } = new(SecurityCatalog.ModuleId, "privacy",
+    public ModuleInfo Info { get; } = new(SecurityCatalog.ModuleId, "security",
         "Sign-in, antivirus, app protection, and security notifications", [SystemCapability.Registry], ModuleGroup.System, 4);
 
     public Task<ModuleAvailability> CheckAvailabilityAsync() => Task.FromResult(new ModuleAvailability(true));
