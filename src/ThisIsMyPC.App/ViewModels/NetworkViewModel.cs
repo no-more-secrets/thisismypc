@@ -13,7 +13,14 @@ public sealed partial class NetworkViewModel : ViewModelBase, ITabbedPage, ISear
 {
     [ObservableProperty] private int _selectedTabIndex;
     [ObservableProperty] private string _ruleSearch = "";
+    [ObservableProperty] private string _adapterSearch = "";
+    [ObservableProperty] private int _adapterScope;
+    [ObservableProperty] private int _ruleCategory;
+    public IReadOnlyList<string> AdapterScopes { get; } = ["In use", "Connected", "Disconnected", "Not present", "All adapters"];
+    public IReadOnlyList<string> RuleCategories { get; } = ["Applications", "Windows", "Other"];
     public IReadOnlyList<NetworkAdapterRow> Adapters { get; }
+    public ObservableCollection<NetworkAdapterRow> VisibleAdapters { get; } = [];
+    public ObservableCollection<NetworkRuleGroup> RuleGroups { get; } = [];
     public IReadOnlyList<NetworkSettingRow> Profiles { get; }
     public ObservableCollection<FirewallRuleState> Rules { get; } = [];
     private readonly IReadOnlyList<FirewallRuleState> _allRules;
@@ -21,9 +28,11 @@ public sealed partial class NetworkViewModel : ViewModelBase, ITabbedPage, ISear
     public string? FirewallError { get; }
     public bool HasAdapterError => AdapterError is not null;
     public bool HasFirewallError => FirewallError is not null;
-    public bool NoAdapters => Adapters.Count == 0 && !HasAdapterError;
+    public bool NoAdapters => VisibleAdapters.Count == 0 && !HasAdapterError;
     public bool NoRules => Rules.Count == 0 && !HasFirewallError;
-    public string RuleCount => $"{Rules.Count} of {_allRules.Count} rules";
+    public string RuleCount => $"{RuleGroups.Count} groups · {Rules.Count} of {_allRules.Count} rules";
+    public string AdapterCount => $"{VisibleAdapters.Count} of {Adapters.Count} adapters";
+    public bool IsBrowsingRules => string.IsNullOrWhiteSpace(RuleSearch);
 
     public NetworkViewModel(NetworkScanData data, IPendingChangesService pending, Services.IUserFeedback? feedback = null)
     {
@@ -35,21 +44,76 @@ public sealed partial class NetworkViewModel : ViewModelBase, ITabbedPage, ISear
             p.Enabled ? "true" : "false", p.CanModify, false, pending, feedback,
             p.CanModify ? "Disabling removes this profile's Windows Firewall protection." : "Managed firewall settings cannot be changed here.")).ToArray();
         _allRules = data.Firewall.Rules;
+        UpdateAdapters();
         OnRuleSearchChanged("");
     }
+    partial void OnAdapterSearchChanged(string value) => UpdateAdapters();
+    partial void OnAdapterScopeChanged(int value) => UpdateAdapters();
+    private void UpdateAdapters()
+    {
+        VisibleAdapters.Clear();
+        foreach (var row in Adapters.Where(a => !string.IsNullOrWhiteSpace(AdapterSearch)
+                     ? string.Join(' ', a.State.Name, a.State.Description, a.State.Addresses, a.State.LinkState).Contains(AdapterSearch, StringComparison.OrdinalIgnoreCase)
+                     : AdapterScope switch { 0 => a.State.LinkState == "Up" && !string.IsNullOrWhiteSpace(a.State.Addresses),
+                         1 => a.State.LinkState == "Up", 2 => a.State.LinkState is not "Up" and not "NotPresent", 3 => a.State.LinkState == "NotPresent", _ => true })
+                     .OrderByDescending(a => a.State.LinkState == "Up")
+                     .ThenByDescending(a => !string.IsNullOrWhiteSpace(a.State.Gateways))
+                     .ThenBy(a => a.State.Name, StringComparer.CurrentCultureIgnoreCase))
+            VisibleAdapters.Add(row);
+        OnPropertyChanged(nameof(NoAdapters));
+        OnPropertyChanged(nameof(AdapterCount));
+    }
+    partial void OnRuleCategoryChanged(int value) => OnRuleSearchChanged(RuleSearch);
     partial void OnRuleSearchChanged(string value)
     {
         Rules.Clear();
-        foreach (var rule in _allRules.Where(r => string.Join(' ', r.Name, r.Application, r.Service, r.Direction, r.Action, r.Protocol, r.Profiles)
-                     .Contains(value, StringComparison.OrdinalIgnoreCase))) Rules.Add(rule);
+        foreach (var rule in _allRules.Where(r => IsBrowsingRules ? NetworkRuleGroup.Category(r) == RuleCategory
+                     : string.Join(' ', r.Name, r.Application, r.Service, r.Direction, r.Action, r.Protocol, r.Profiles,
+                         r.LocalPorts, r.RemotePorts, r.LocalAddresses, r.RemoteAddresses, r.Enabled ? "Enabled" : "Disabled")
+                         .Contains(value.Trim(), StringComparison.OrdinalIgnoreCase))) Rules.Add(rule);
+        RuleGroups.Clear();
+        foreach (var group in Rules.GroupBy(NetworkRuleGroup.Key, StringComparer.OrdinalIgnoreCase)
+                     .Select(g => new NetworkRuleGroup(g.ToArray(), !IsBrowsingRules)).OrderBy(g => g.Name, StringComparer.CurrentCultureIgnoreCase))
+            RuleGroups.Add(group);
         OnPropertyChanged(nameof(RuleCount));
         OnPropertyChanged(nameof(NoRules));
+        OnPropertyChanged(nameof(IsBrowsingRules));
     }
     public void NavigateToSearchResult(string settingId, string displayName) => SelectedTabIndex = settingId switch { "dns" => 1, "firewall" => 2, _ => 0 };
     public void Dispose()
     {
         foreach (var row in Adapters) { row.Connection.Dispose(); row.Dns.Dispose(); }
         foreach (var row in Profiles) row.Dispose();
+    }
+}
+
+public sealed record NetworkRuleGroup(IReadOnlyList<FirewallRuleState> Rules, bool Expanded)
+{
+    public string Name => Label(Rules[0]);
+    public string Heading => $"{Name} · {Rules.Count} {(Rules.Count == 1 ? "rule" : "rules")}";
+    public string Identity => Key(Rules[0]);
+    public static string Key(FirewallRuleState rule) => !string.IsNullOrWhiteSpace(rule.Application)
+        ? "Application: " + rule.Application : !string.IsNullOrWhiteSpace(rule.Service)
+            ? "Service: " + rule.Service : "Rule: " + PackageName(rule.Name);
+    private static string Label(FirewallRuleState rule) => !string.IsNullOrWhiteSpace(rule.Application)
+        ? rule.Application.Replace('/', '\\').Split('\\').Last() : !string.IsNullOrWhiteSpace(rule.Service)
+            ? rule.Service : PackageName(rule.Name);
+    private static string PackageName(string name)
+    {
+        if (name.StartsWith("@{", StringComparison.Ordinal) && name.IndexOf('_', 2) is var end && end > 2)
+            return name[2..end];
+        return name;
+    }
+    // Categories aid browsing only. They are not publisher or trust assessments.
+    public static int Category(FirewallRuleState rule)
+    {
+        var path = rule.Application.Replace('/', '\\');
+        var windows = Environment.GetFolderPath(Environment.SpecialFolder.Windows).TrimEnd('\\');
+        if ((!string.IsNullOrEmpty(windows) && path.StartsWith(windows + "\\", StringComparison.OrdinalIgnoreCase))
+            || path.StartsWith("%SystemRoot%\\", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWith("%windir%\\", StringComparison.OrdinalIgnoreCase)
+            || rule.Name.StartsWith("@{Microsoft.", StringComparison.OrdinalIgnoreCase)) return 1;
+        return string.IsNullOrWhiteSpace(rule.Application) ? 2 : 0;
     }
 }
 
@@ -89,7 +153,7 @@ public sealed partial class NetworkSettingRow : ObservableObject, IDisposable
     public string Hint { get; }
     public bool Supported { get; }
     public bool IsDns { get; }
-    public bool CanEdit => Supported && !_pending.IsApplying && !IsStaged;
+    public bool CanEdit => Supported && !_pending.IsApplying;
     public string Current => Supported ? NetworkChanges.Display(_before) : "Unavailable";
     [ObservableProperty] private bool _enabled;
     [ObservableProperty] private string _dnsText = "";
@@ -124,10 +188,11 @@ public sealed partial class NetworkSettingRow : ObservableObject, IDisposable
     private void Stage(string after)
     {
         if (!CanEdit) { Synchronize(); return; }
-        if (after == _before) return;
+        if (after == _before) { _pending.Unstage(GroupId); Synchronize(); return; }
         try
         {
             var change = NetworkChanges.Create(_target, Name + (IsDns ? " DNS" : _target.StartsWith("firewall/", StringComparison.Ordinal) ? " firewall" : " adapter"), _before, after);
+            if (IsStaged) _pending.Unstage(GroupId);
             _pending.Stage(new ChangeGroup { GroupId = GroupId, DisplayName = change.DisplayName, Description = Hint, Changes = [change] });
             Synchronize();
         }
@@ -137,7 +202,8 @@ public sealed partial class NetworkSettingRow : ObservableObject, IDisposable
     {
         void Update()
         {
-            if (IsStaged || _pending.PendingGroups.Any(g => g.GroupId == GroupId)) Synchronize();
+            var group = _pending.PendingGroups.FirstOrDefault(g => g.GroupId == GroupId);
+            if (IsStaged != (group is not null) || group?.Changes[0].AfterValue != _stagedAfter) Synchronize();
             OnPropertyChanged(nameof(CanEdit));
         }
         if (Avalonia.Threading.Dispatcher.UIThread.CheckAccess()) Update();

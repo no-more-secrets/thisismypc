@@ -2,6 +2,22 @@
 
 The first implementation provides Connections, DNS, and Firewall tabs under System.
 
+## Browsing and editing
+
+Sam's October 8 interaction rule: switching back to the captured state cancels the staged change. Switches remain editable while staged.
+Do not add separate discard buttons to switch rows. The shared queue still provides Discard for the entire batch.
+DNS can replace its staged value or revert it inside the editor. Unchanged DNS rows have no revert button.
+
+Connections and DNS default to connected adapters with assigned IP addresses, labeled In use.
+The filter also offers Connected, Disconnected, Not present, and All adapters. Search covers every adapter regardless of the selected filter.
+Compact rows expand for details or DNS editing. Filtering never removes pending changes.
+
+Firewall browsing groups rules by full application path, service, or rule name. Unresolved package resources share their package-name group.
+Applications, Windows, and Other separate the browsing lists. Windows classification uses the Windows directory, Windows path variables, or Microsoft package identifiers.
+These categories are browsing hints, not verified publisher identities. Service-only rules remain under Other unless another field identifies their category.
+Search covers every category, including ports and addresses. Matching groups expand to show individual rule names.
+Both group lists and rule lists use virtualized rows. Original rule names and full paths remain available in the expanded details.
+
 ## Available controls
 
 - Connections shows adapter identity, link state, link speed, addresses, gateway, and hardware address. The switch changes administrative traffic state through IP Helper.
@@ -32,7 +48,11 @@ Core contains only data contracts and interfaces. Native access remains in the I
 - Full-window screenshots pass the shared edge measurements: left 25, right 23, content top 59, scrollbar lane 10.
 - A read-only NativeAOT executable read 43 adapters, three firewall profiles, and 1,074 firewall rules on the development host.
 - Fresh-context review found no remaining blockers after queue synchronization and profile scrolling fixes.
-- GitNexus change analysis reports high risk around shared Broker wiring. Its stale index omits new symbols; index refresh failed during worker startup.
+- October 8: the graph index refreshed successfully. Change analysis reports low risk for the compact network UI changes.
+
+October 8 verification passed 3,078 CI-safe tests and seven focused network tests, including read-only full-window screenshots.
+Mouse tests cover switching back before apply and after a simulated apply. A 1,100-rule fixture checks grouping and search across categories.
+The development host shows three adapters in the default view, out of 43 available adapters.
 
 Live elevated changes, actual undo, organization-managed machines, and the signed release build remain unverified.
 No live network or firewall settings changed during development.

@@ -4,6 +4,10 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 
 ## Network & Firewall initial tabs (2026-10-07)
 
+- DONE October 8: compact adapter rows default to connections with assigned IP addresses. Filters expose disconnected and absent adapters; search covers all adapters.
+- DONE October 8: firewall rules group by application, service, or rule name, with Applications, Windows, and Other categories. Search crosses categories.
+- DONE October 8: switching back cancels a staged change. Staged switches remain usable; DNS supports replacement and an editor-only Revert button.
+- Verified: 3,078 CI-safe tests, mouse reversal and simulated apply checks, 1,100-rule grouping/search tests, and dark/light screenshots. Live changes remain untested.
 - DONE: Connections shows adapter details and stages administrative state changes. DNS stages static IPv4 servers or automatic configuration.
 - DONE: Firewall shows searchable rule details and stages profile enable changes. Rule inspection is read-only.
 - DONE: exact Broker targets, captured before-state checks, staged changes, undo routing, search navigation, and conservative policy blocking.

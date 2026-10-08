@@ -71,7 +71,8 @@ public sealed class NetworkShotTests
         using var vm = new NetworkViewModel(Data(), pending);
         using var session = UiSession.ForView(new NetworkView(), vm, "network-actions");
         session.ClickText("DNS");
-        var box = session.Find<TextBox>(t => t.IsEffectivelyVisible && t.IsEnabled);
+        session.ClickText("Edit DNS");
+        var box = session.Find<TextBox>(t => t.IsEffectivelyVisible && t.IsEnabled && t.Watermark == "Automatic");
         session.Type(box, "1.1.1.1 8.8.8.8");
         Assert.Equal(0, pending.PendingCount);
         session.ClickText("Stage DNS");
@@ -79,13 +80,79 @@ public sealed class NetworkShotTests
         Assert.Equal(NetworkChanges.Automatic, pending.PendingGroups[0].Changes[0].BeforeValue);
         Assert.Equal("1.1.1.1,8.8.8.8", pending.PendingGroups[0].Changes[0].AfterValue);
         session.Screenshot("dns-staged");
-        session.ClickText("Discard change");
+        session.ClickText("Revert");
         Assert.Equal(0, pending.PendingCount);
         Assert.Equal("", vm.Adapters[0].Dns.DnsText);
         vm.Adapters[0].Dns.DnsText = "not-an-address";
         vm.Adapters[0].Dns.SaveDnsCommand.Execute(null);
         Assert.True(vm.Adapters[0].Dns.IsInvalid);
         Assert.Equal(0, pending.PendingCount);
+    }
+
+    [AvaloniaFact]
+    public async Task SwitchBackCancelsAndAppliedStateBecomesNewBaseline()
+    {
+        var pending = new PendingChangesService();
+        using var vm = new NetworkViewModel(Data(), pending);
+        using var session = UiSession.ForView(new NetworkView(), vm, "network-toggle");
+        session.Click(session.Find<ToggleSwitch>(t => t.IsEffectivelyVisible && t.IsEnabled));
+        Assert.Equal(1, pending.PendingCount);
+        Assert.True(vm.Adapters[0].Connection.CanEdit);
+        session.Screenshot("staged");
+        session.Click(session.Find<ToggleSwitch>(t => t.IsEffectivelyVisible && t.IsEnabled));
+        Assert.Equal(0, pending.PendingCount);
+        Assert.True(vm.Adapters[0].Connection.Enabled);
+        session.Click(session.Find<ToggleSwitch>(t => t.IsEffectivelyVisible && t.IsEnabled));
+        await pending.ApplyAllAsync(_ => Task.FromResult(ThisIsMyPC.Core.Results.OperationResult<bool>.Success(true)),
+            _ => Task.FromResult(ThisIsMyPC.Core.Results.OperationResult<bool>.Success(true)));
+        session.Pump();
+        Assert.False(vm.Adapters[0].Connection.Enabled);
+        session.Click(session.Find<ToggleSwitch>(t => t.IsEffectivelyVisible && t.IsEnabled));
+        Assert.Equal("false", pending.PendingGroups.Single().Changes.Single().BeforeValue);
+        session.Click(session.Find<ToggleSwitch>(t => t.IsEffectivelyVisible && t.IsEnabled));
+        Assert.Equal(0, pending.PendingCount);
+        vm.Profiles[1].Enabled = false;
+        Assert.Equal(1, pending.PendingCount);
+        vm.Profiles[1].Enabled = true;
+        Assert.Equal(0, pending.PendingCount);
+    }
+
+    [AvaloniaFact]
+    public void LargeInventoryGroupsWithoutLosingRulesAndSearchCrossesFilters()
+    {
+        var data = Data();
+        var rules = Enumerable.Range(0, 1100).Select(i => data.Firewall.Rules[0] with
+        {
+            Name = $"Rule {i}", Application = i < 1000 ? @"C:\Apps\Example\app.exe" : @"%SystemRoot%\System32\system.exe",
+            LocalPorts = i == 1099 ? "54321" : "443",
+        }).ToArray();
+        using var vm = new NetworkViewModel(data with { Firewall = data.Firewall with { Rules = rules } }, new PendingChangesService());
+        Assert.Single(vm.VisibleAdapters);
+        vm.AdapterSearch = "Wi-Fi";
+        Assert.Equal("Wi-Fi", Assert.Single(vm.VisibleAdapters).State.Name);
+        vm.AdapterSearch = "";
+        vm.AdapterScope = 4;
+        Assert.Equal(2, vm.VisibleAdapters.Count);
+        Assert.Single(vm.RuleGroups);
+        Assert.Equal(1000, vm.Rules.Count);
+        vm.RuleCategory = 1;
+        Assert.Equal(100, vm.Rules.Count);
+        vm.RuleCategory = 0;
+        vm.RuleSearch = "54321";
+        Assert.Equal("Rule 1099", Assert.Single(vm.Rules).Name);
+        Assert.True(Assert.Single(vm.RuleGroups).Expanded);
+        Assert.False(vm.IsBrowsingRules);
+        vm.RuleSearch = "Rule";
+        Assert.Equal(1100, vm.RuleGroups.Sum(g => g.Rules.Count));
+        vm.RuleSearch = "";
+        vm.SelectedTabIndex = 2;
+        using var session = UiSession.ForView(new NetworkView(), vm, "network-grouped", 1000, 800);
+        session.ClickText("app.exe · 1000 rules");
+        session.Screenshot("large-group");
+        session.Type(session.Find<TextBox>(t => t.IsEffectivelyVisible && t.Watermark!.StartsWith("Search all rules", StringComparison.Ordinal)), "54321");
+        Assert.Equal("Rule 1099", Assert.Single(vm.Rules).Name);
+        session.ClickText("Rule 1099");
+        session.Screenshot("cross-category-search");
     }
 
     [AvaloniaFact]
@@ -100,6 +167,13 @@ public sealed class NetworkShotTests
         pending.DiscardAll();
         Assert.Equal("9.9.9.9", dns.DnsText);
         Assert.False(vm.Adapters[1].Connection.Enabled);
+        dns.SaveDnsCommand.Execute(null);
+        dns.DnsText = "1.1.1.1";
+        vm.Adapters[1].Connection.Enabled = true;
+        Assert.Equal("1.1.1.1", dns.DnsText);
+        dns.SaveDnsCommand.Execute(null);
+        Assert.Equal("1.1.1.1", pending.PendingGroups.Single(g => g.GroupId == dns.GroupId).Changes.Single().AfterValue);
+        Assert.Equal(NetworkChanges.Automatic, pending.PendingGroups.Single(g => g.GroupId == dns.GroupId).Changes.Single().BeforeValue);
     }
 
     [AvaloniaFact]
