@@ -13,4 +13,7 @@ public sealed record SoftwareScanData(
     string? WingetVersion,
     IReadOnlyList<WindowsAppEntry> WindowsApps,
     IReadOnlySet<string> PresentAppxPackageIds,
-    bool AppxStateKnown);
+    bool AppxStateKnown)
+{
+    public IReadOnlySet<string> ExternallyManagedIds { get; init; } = new HashSet<string>();
+}

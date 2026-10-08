@@ -10,11 +10,17 @@ public static class InstalledSoftwareMatcher
     public static bool Matches(SoftwareCatalogEntry entry, IReadOnlyList<InstalledWingetPackage> installed)
         => installed.Any(package => Matches(entry, package));
 
+    public static InstalledWingetPackage? FindMatch(SoftwareCatalogEntry entry, IReadOnlyList<InstalledWingetPackage> installed)
+        => installed.Where(package => Matches(entry, package))
+            .OrderByDescending(package => package.CanUninstall && package.PackageId.Equals(entry.WingetId, StringComparison.OrdinalIgnoreCase))
+            .FirstOrDefault();
+
     private static bool Matches(SoftwareCatalogEntry entry, InstalledWingetPackage package)
     {
         if (package.PackageId.Length > 0)
         {
             if (package.PackageId.Equals(entry.WingetId, StringComparison.OrdinalIgnoreCase)) return true;
+            if (entry.InstalledIds.Contains(package.PackageId, StringComparer.OrdinalIgnoreCase)) return true;
             // Numeric version families only. Firefox.ESR and Chrome.Beta are different products.
             var prefix = entry.WingetId + ".";
             return package.PackageId.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)

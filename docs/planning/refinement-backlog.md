@@ -39,6 +39,11 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 
 ## Annotation feedback (2026-10-07)
 
+- DONE: doubled the footer status gap to 24px. Global search finds catalog and Windows apps and opens the matching Software tab.
+- DONE: detects ChatGPT desktop, npm Codex CLI, Zoom Workplace, and SDK-provided .NET Desktop Runtime 10. External copies cannot queue a winget uninstall.
+- DONE: labels PowerShell 7 separately from built-in Windows PowerShell 5.1. Added Inkscape under Multimedia Tools, bringing the catalog to 92 entries and 87 bundled icons.
+- DONE: Updates and Windows Apps show bundled or installed artwork, with a fallback when artwork is unavailable. Registered icon resource indices are preserved.
+- Verified: live read-only detection, global search clicks, dark/light screenshots, footer spacing, and Software edge measurements (25/23/59/10). Live installs and removals were not exercised.
 - DONE: Presets change rows are plain content; only setting names navigate. Removed the selectable row outline and darkened Beta text slightly to #4F3909.
 - DONE: Presets recognizes NoAutoUpdate=1 and AllowTelemetry=0 as existing stricter policies. These rows show Already covered and cannot stage weaker preset values, including when pending changes conflict. Diagnostic-data controls also recognize policy value 0 as restricted.
 - Verified: current host policy reads, live Presets screenshots in both themes, name-only mouse navigation, policy value/restore tests, and pending-conflict staging regression. This does not establish full Group Policy or MDM precedence coverage.

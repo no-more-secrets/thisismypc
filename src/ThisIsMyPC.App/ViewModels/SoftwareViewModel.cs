@@ -9,7 +9,7 @@ using ThisIsMyPC.Modules.Software.Models;
 
 namespace ThisIsMyPC.App.ViewModels;
 
-public sealed partial class SoftwareViewModel : ViewModelBase, IDisposable, ITabbedPage
+public sealed partial class SoftwareViewModel : ViewModelBase, IDisposable, ITabbedPage, ISearchNavigationTarget
 {
     [ObservableProperty]
     private int _selectedTabIndex;
@@ -18,6 +18,7 @@ public sealed partial class SoftwareViewModel : ViewModelBase, IDisposable, ITab
 
     private readonly IPendingActionsService _pendingActionsService;
     private readonly List<SoftwareAppViewModel> _allApps;
+    private readonly Services.ISoftwareIconProvider? _icons;
 
     /// <summary>Catalog grouped by category (winutil-style), post search/filter.</summary>
     public ObservableCollection<SoftwareCategoryGroupViewModel> FilteredGroups { get; } = [];
@@ -75,10 +76,11 @@ public sealed partial class SoftwareViewModel : ViewModelBase, IDisposable, ITab
 
     public SoftwareViewModel(
         SoftwareScanData scanData, IPendingActionsService pendingActionsService,
-        Core.Packages.IWingetService? wingetService = null)
+        Core.Packages.IWingetService? wingetService = null, Services.ISoftwareIconProvider? icons = null)
     {
         ArgumentNullException.ThrowIfNull(scanData);
         _pendingActionsService = pendingActionsService;
+        _icons = icons;
 
         InstalledStateKnown = scanData.InstalledStateKnown;
         AppxStateKnown = scanData.AppxStateKnown;
@@ -95,7 +97,7 @@ public sealed partial class SoftwareViewModel : ViewModelBase, IDisposable, ITab
             .Select(entry => new WindowsAppViewModel(
                 entry,
                 isPresent: scanData.PresentAppxPackageIds.Contains(entry.PackageId),
-                pendingActionsService))
+                pendingActionsService, icons))
             .ToList();
 
         _allApps = scanData.Catalog
@@ -103,7 +105,7 @@ public sealed partial class SoftwareViewModel : ViewModelBase, IDisposable, ITab
             .Select(entry => new SoftwareAppViewModel(
                 entry,
                 isInstalled: scanData.InstalledWingetIds.Contains(entry.WingetId),
-                pendingActionsService))
+                pendingActionsService, externallyManaged: scanData.ExternallyManagedIds.Contains(entry.WingetId)))
             .ToList();
 
         Categories = new[] { AllCategories }
@@ -134,7 +136,7 @@ public sealed partial class SoftwareViewModel : ViewModelBase, IDisposable, ITab
             }
 
             foreach (var package in result.Value!.OrderBy(p => p.Name, StringComparer.OrdinalIgnoreCase))
-                Updates.Add(new SoftwareUpdateViewModel(package, _pendingActionsService));
+                Updates.Add(new SoftwareUpdateViewModel(package, _pendingActionsService, _icons));
             RefreshUpdatesFilter();
 
             HasUpdates = Updates.Count > 0;
@@ -148,6 +150,22 @@ public sealed partial class SoftwareViewModel : ViewModelBase, IDisposable, ITab
     }
 
     partial void OnSearchTextChanged(string value) => RefreshFilter();
+
+    public void NavigateToSearchResult(string settingId, string displayName)
+    {
+        if (settingId.StartsWith("appx:", StringComparison.Ordinal))
+        {
+            SelectedTabIndex = 2;
+            WindowsAppsSearchText = displayName;
+        }
+        else
+        {
+            SelectedTabIndex = 0;
+            SelectedCategory = AllCategories;
+            SelectedInstallStateFilter = "All";
+            SearchText = displayName;
+        }
+    }
 
     partial void OnSelectedCategoryChanged(string value) => RefreshFilter();
 
@@ -286,14 +304,16 @@ public sealed class SoftwareCategoryGroupViewModel
 
 public sealed partial class SoftwareAppViewModel : ViewModelBase
 {
+    private readonly bool _externallyManaged;
     private readonly SoftwareCatalogEntry _entry;
     private readonly IPendingActionsService _pendingActionsService;
 
     public SoftwareAppViewModel(
-        SoftwareCatalogEntry entry, bool isInstalled, IPendingActionsService pendingActionsService)
+        SoftwareCatalogEntry entry, bool isInstalled, IPendingActionsService pendingActionsService, bool externallyManaged = false)
     {
         ArgumentNullException.ThrowIfNull(pendingActionsService);
         _entry = entry;
+        _externallyManaged = externallyManaged;
         _pendingActionsService = pendingActionsService;
         _isInstalled = isInstalled;
         _isQueued = pendingActionsService.IsStaged(ActionId);
@@ -306,9 +326,13 @@ public sealed partial class SoftwareAppViewModel : ViewModelBase
     public bool HasIcon => Icon is not null;
     public string WingetId => _entry.WingetId;
     public bool IsOpenSource => _entry.IsOpenSource;
+    public bool CanAct => !IsInstalled || !_externallyManaged;
+    public string ActionHint => CanAct ? Description : "Installed. Manage this copy with its original installer or Windows Settings.";
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ActionButtonText))]
+    [NotifyPropertyChangedFor(nameof(CanAct))]
+    [NotifyPropertyChangedFor(nameof(ActionHint))]
     private bool _isInstalled;
 
     [ObservableProperty]
@@ -321,11 +345,12 @@ public sealed partial class SoftwareAppViewModel : ViewModelBase
 
     public string ActionButtonText => IsQueued
         ? "Queued"
-        : IsInstalled ? "Uninstall" : "Install";
+        : IsInstalled ? (CanAct ? "Uninstall" : "Installed") : "Install";
 
     [RelayCommand]
     private void ToggleQueue()
     {
+        if (!CanAct) return;
         if (IsQueued)
         {
             _pendingActionsService.Unstage(ActionId);
@@ -361,16 +386,18 @@ public sealed partial class SoftwareUpdateViewModel : ViewModelBase
     private readonly IPendingActionsService _pendingActionsService;
 
     public SoftwareUpdateViewModel(
-        Core.Packages.UpgradableWingetPackage package, IPendingActionsService pendingActionsService)
+        Core.Packages.UpgradableWingetPackage package, IPendingActionsService pendingActionsService, Services.ISoftwareIconProvider? icons = null)
     {
         ArgumentNullException.ThrowIfNull(package);
         ArgumentNullException.ThrowIfNull(pendingActionsService);
         _package = package;
+        Artwork = new(package.PackageId, package.Name, false, icons);
         _pendingActionsService = pendingActionsService;
         _isQueued = pendingActionsService.IsStaged(ActionId);
     }
 
     public string Name => _package.Name;
+    public Services.SoftwareRowIcon Artwork { get; }
     public string PackageId => _package.PackageId;
     public string VersionText => $"{_package.InstalledVersion} to {_package.AvailableVersion}";
 
@@ -435,12 +462,13 @@ public sealed partial class WindowsAppViewModel : ViewModelBase
     private readonly IPendingActionsService _pendingActionsService;
 
     public WindowsAppViewModel(
-        WindowsAppEntry entry, bool isPresent, IPendingActionsService pendingActionsService)
+        WindowsAppEntry entry, bool isPresent, IPendingActionsService pendingActionsService, Services.ISoftwareIconProvider? icons = null)
     {
         ArgumentNullException.ThrowIfNull(pendingActionsService);
         _entry = entry;
         _pendingActionsService = pendingActionsService;
         _isPresent = isPresent;
+        Artwork = new(entry.PackageId, entry.Name, true, icons);
         _isQueued = pendingActionsService.IsStaged(ActionId);
     }
 
@@ -448,6 +476,7 @@ public sealed partial class WindowsAppViewModel : ViewModelBase
     public string Description => _entry.Description;
     public string Category => _entry.Category;
     public string PackageId => _entry.PackageId;
+    public Services.SoftwareRowIcon Artwork { get; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ActionButtonText))]

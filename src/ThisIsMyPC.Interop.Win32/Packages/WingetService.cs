@@ -75,7 +75,8 @@ public sealed class WingetService : IWingetService
                 ErrorCategory.ServiceUnavailable);
         }
 
-        return OperationResult<IReadOnlyList<InstalledWingetPackage>>.Success(packages);
+        return OperationResult<IReadOnlyList<InstalledWingetPackage>>.Success(
+            packages.Concat(SupplementalSoftwareInventory.Read()).ToArray());
     }
 
     // winget's "no installed package found matching input criteria"; the
@@ -246,7 +247,7 @@ public sealed class WingetService : IWingetService
             packages.Add(new InstalledWingetPackage(
                 PackageId: usableId ? id : string.Empty,
                 Version: cells[2],
-                Name: name.Length > 0 ? name : null));
+                Name: name.Length > 0 ? name : null) { CanUninstall = usableId });
         }
 
         return packages.AsReadOnly();

@@ -34,7 +34,7 @@ public class AppZoomShotTests
         await session.WaitForAsync(() => vm.CurrentContent is ShellViewModel, what: "Explorer");
         session.ClickText("Taskbar");
         var page = vm.CurrentContent;
-        var search = session.Find<TextBox>(b => b.Watermark == "Search settings...");
+        var search = session.Find<TextBox>(b => b.Watermark == "Search settings and apps...");
         search.Focus();
         session.Window.KeyPressQwerty(PhysicalKey.Equal, RawInputModifiers.Control);
         session.Pump();

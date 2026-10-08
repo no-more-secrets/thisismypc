@@ -24,6 +24,26 @@ public sealed partial class FileIconService : IFileIconService
     internal static uint FileTypeIconFlags => SHGFI_ICON | SHGFI_SMALLICON | SHGFI_USEFILEATTRIBUTES;
 
     public OperationResult<FileIcon> GetSmallIcon(string path)
+        => GetIcon(path, FileTypeIconFlags);
+
+    /// <summary>Reads an installed app's icon. Call only from the unelevated UI.</summary>
+    public OperationResult<FileIcon> GetApplicationIcon(string path, int resourceIndex = 0)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        nint small = 0;
+        try
+        {
+            if (ExtractIconExW(path, resourceIndex, 0, out small, 1) == 0 || small == 0)
+                return OperationResult<FileIcon>.Failure($"No icon for {path}", ErrorCategory.NotFound);
+            var icon = ReadIcon(small);
+            return icon is null
+                ? OperationResult<FileIcon>.Failure($"Icon for {path} could not be read", ErrorCategory.ServiceUnavailable)
+                : OperationResult<FileIcon>.Success(icon);
+        }
+        finally { if (small != 0) DestroyIcon(small); }
+    }
+
+    private static OperationResult<FileIcon> GetIcon(string path, uint flags)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         nint hIcon = 0;
@@ -37,7 +57,7 @@ public sealed partial class FileIconService : IFileIconService
                 FILE_ATTRIBUTE_NORMAL,
                 ref info,
                 (uint)Marshal.SizeOf<SHFILEINFOW>(),
-                FileTypeIconFlags);
+                flags);
             hIcon = info.hIcon;
             if (got == 0 || hIcon == 0)
                 return OperationResult<FileIcon>.Failure($"No icon for {path}", ErrorCategory.NotFound);
@@ -192,6 +212,10 @@ public sealed partial class FileIconService : IFileIconService
         public uint biClrUsed;
         public uint biClrImportant;
     }
+
+    [LibraryImport("shell32.dll", StringMarshalling = StringMarshalling.Utf16)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial uint ExtractIconExW(string file, int index, nint largeIcons, out nint smallIcon, uint count);
 
     [LibraryImport("shell32.dll", StringMarshalling = StringMarshalling.Utf16)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]

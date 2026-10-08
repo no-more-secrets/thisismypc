@@ -36,7 +36,7 @@ public class ReloadTabShotTests
                 var previous = vm.CurrentContent;
                 if (keyboard)
                 {
-                    session.Find<TextBox>(b => b.Watermark == "Search settings...").Focus();
+                    session.Find<TextBox>(b => b.Watermark == "Search settings and apps...").Focus();
                     session.Window.KeyPressQwerty(PhysicalKey.R, RawInputModifiers.Control);
                 }
                 else

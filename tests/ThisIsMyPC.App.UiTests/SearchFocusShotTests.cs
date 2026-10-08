@@ -18,7 +18,7 @@ public class SearchFocusShotTests
         using var session = UiSession.ForMainWindow("search-focus");
         var vm = (MainWindowViewModel)session.Window.DataContext!;
 
-        var searchBox = session.Find<TextBox>(t => t.Watermark == "Search settings...");
+        var searchBox = session.Find<TextBox>(t => t.Watermark == "Search settings and apps...");
         session.Type(searchBox, "copilot");
         await session.WaitForAsync(() => vm.HasSearchResults, what: "search results");
         session.Screenshot("results-open");

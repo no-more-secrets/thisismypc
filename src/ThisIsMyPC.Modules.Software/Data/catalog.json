@@ -2,6 +2,16 @@
  "_license": "Catalog data ported from CTT winutil (https://github.com/ChrisTitusTech/winutil), MIT License, Copyright (c) Chris Titus Tech.",
  "apps": [
   {
+   "id": "inkscape",
+   "name": "Inkscape",
+   "description": "Create and edit vector illustrations and SVG artwork.",
+   "category": "Multimedia Tools",
+   "wingetId": "Inkscape.Inkscape",
+   "source": "winget",
+   "link": "https://inkscape.org/",
+   "foss": true
+  },
+  {
    "id": "explorerpatcher",
    "name": "ExplorerPatcher",
    "description": "Brings the Windows 10 taskbar, Start menu, and other shell behaviours back to Windows 11. Open source (GPLv2).",
@@ -157,7 +167,8 @@
    "wingetId": "9NT1R1C2HH7J",
    "source": "msstore",
    "link": "https://openai.com/chatgpt/download/",
-   "foss": false
+   "foss": false,
+   "installedNames": ["ChatGPT"]
   },
   {
    "id": "chrome",
@@ -184,7 +195,7 @@
   },
   {
    "id": "codex",
-   "name": "Codex",
+   "name": "Codex CLI",
    "description": "Codex CLI is an OpenAI coding agent that runs locally in your terminal.",
    "category": "Development",
    "wingetId": "OpenAI.Codex",
@@ -639,8 +650,9 @@
   },
   {
    "id": "powershell",
-   "name": "PowerShell",
-   "description": "PowerShell is a task automation framework and scripting language designed for system administrators, offering powerful command-line capabilities.",
+   "name": "PowerShell 7",
+   "installedNames": ["PowerShell"],
+   "description": "Modern PowerShell, installed separately from the Windows PowerShell 5.1 included with Windows.",
    "category": "Microsoft Tools",
    "wingetId": "Microsoft.PowerShell",
    "source": "winget",
@@ -1031,7 +1043,8 @@
    "name": "Zoom",
    "description": "Zoom is a popular video conferencing and web conferencing service for online meetings, webinars, and collaborative projects.",
    "category": "Communications",
-   "wingetId": "Zoom.Zoom",
+   "wingetId": "Zoom.Zoom.EXE",
+   "installedIds": ["Zoom.Zoom"],
    "source": "winget",
    "link": "https://zoom.us/",
    "foss": false,

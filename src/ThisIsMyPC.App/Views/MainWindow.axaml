@@ -55,7 +55,7 @@
             <TextBox x:Name="SearchBox"
                      Classes="bar-search"
                      Text="{Binding SearchQuery, Mode=TwoWay}"
-                     Watermark="Search settings..."
+                     Watermark="Search settings and apps..."
                      Width="440">
                 <TextBox.InnerLeftContent>
                     <icons:FluentIcon Symbol="Search"
@@ -446,7 +446,7 @@
                                            FontSize="13" />
                             </Button>
 
-                            <DockPanel Grid.Column="3" Margin="12,0,0,0" HorizontalAlignment="Left"
+                            <DockPanel Grid.Column="3" Margin="24,0,0,0" HorizontalAlignment="Left"
                                        IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                                 <Button x:Name="DismissStatusButton" DockPanel.Dock="Right"
                                         Classes="status-dismiss" Width="24" Height="24" Margin="6,0,0,0"

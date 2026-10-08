@@ -14,4 +14,5 @@ public sealed record SoftwareCatalogEntry(
     bool IsOpenSource)
 {
     public IReadOnlyList<string> InstalledNames { get; init; } = [];
+    public IReadOnlyList<string> InstalledIds { get; init; } = [];
 }

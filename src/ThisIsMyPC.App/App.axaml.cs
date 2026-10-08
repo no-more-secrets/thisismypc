@@ -330,6 +330,7 @@ public partial class App : Application
         services.AddSingleton<Core.Search.ISearchSettingsContributor, ThisIsMyPC.Modules.Shell.Services.ContextMenuSearchContributor>();
         services.AddSingleton<Core.Search.ISearchSettingsContributor, ThisIsMyPC.Modules.Shell.Services.EnvironmentSearchContributor>();
         services.AddSingleton<Core.Search.ISearchSettingsContributor, ThisIsMyPC.Modules.Startup.Services.StartupSearchContributor>();
+        services.AddSingleton<Core.Search.ISearchSettingsContributor, ThisIsMyPC.Modules.Software.Services.SoftwareSearchContributor>();
         services.AddSingleton<Core.Search.ISearchSettingsContributor, ThisIsMyPC.Modules.Power.Services.PowerSearchContributor>();
         services.AddSingleton<Core.Settings.ISettingsService>(_ => new Core.Settings.SettingsService(
             Path.Combine(AppConstants.UserDataDirectoryPath, "settings.json")));

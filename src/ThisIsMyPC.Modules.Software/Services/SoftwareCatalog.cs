@@ -48,6 +48,9 @@ public static class SoftwareCatalog
                 InstalledNames = app.TryGetProperty("installedNames", out var names)
                     ? names.EnumerateArray().Select(name => name.GetString()!).ToArray()
                     : [],
+                InstalledIds = app.TryGetProperty("installedIds", out var ids)
+                    ? ids.EnumerateArray().Select(id => id.GetString()!).ToArray()
+                    : [],
             });
         }
 

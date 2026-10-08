@@ -66,7 +66,8 @@
                                                                 VerticalAlignment="Center"
                                                                 HorizontalContentAlignment="Center"
                                                                 Content="{Binding ActionButtonText}"
-                                                                Command="{Binding ToggleQueueCommand}" />
+                                                                Command="{Binding ToggleQueueCommand}"
+                                                                IsEnabled="{Binding CanAct}" ToolTip.Tip="{Binding ActionHint}" />
                                                         <Grid DockPanel.Dock="Left" Width="24" Height="24"
                                                               Margin="0,0,9,0" VerticalAlignment="Center">
                                                             <Border Background="#F4F4F4" CornerRadius="3" Padding="2"
@@ -161,6 +162,13 @@
                                                 Content="{Binding ActionButtonText}"
                                                 Command="{Binding ToggleQueueCommand}"
                                                 IsEnabled="{Binding CanAct}" />
+                                        <Grid DockPanel.Dock="Left" Width="32" Height="32" Margin="0,0,12,0" VerticalAlignment="Center">
+                                            <Border Background="#F4F4F4" CornerRadius="3" Padding="2" IsVisible="{Binding Artwork.HasIcon}">
+                                                <Image Source="{Binding Artwork.Icon}" Stretch="Uniform" />
+                                            </Border>
+                                            <icons:FluentIcon Symbol="Box" Width="24" Height="24" IsVisible="{Binding !Artwork.HasIcon}"
+                                                              Foreground="{DynamicResource TextTertiaryBrush}" />
+                                        </Grid>
                                         <StackPanel Spacing="2" Margin="0,0,12,0">
                                             <TextBlock Text="{Binding Name}"
                                                        FontWeight="SemiBold"
@@ -218,6 +226,13 @@
                                                 Content="{Binding ActionButtonText}"
                                                 Command="{Binding ToggleQueueCommand}"
                                                 IsEnabled="{Binding CanAct}" />
+                                        <Grid DockPanel.Dock="Left" Width="32" Height="32" Margin="0,0,12,0" VerticalAlignment="Center">
+                                            <Border Background="#F4F4F4" CornerRadius="3" Padding="2" IsVisible="{Binding Artwork.HasIcon}">
+                                                <Image Source="{Binding Artwork.Icon}" Stretch="Uniform" />
+                                            </Border>
+                                            <icons:FluentIcon Symbol="Box" Width="24" Height="24" IsVisible="{Binding !Artwork.HasIcon}"
+                                                              Foreground="{DynamicResource TextTertiaryBrush}" />
+                                        </Grid>
                                         <StackPanel Spacing="2" Margin="0,0,12,0">
                                             <StackPanel Orientation="Horizontal" Spacing="8">
                                                 <TextBlock Text="{Binding Name}"

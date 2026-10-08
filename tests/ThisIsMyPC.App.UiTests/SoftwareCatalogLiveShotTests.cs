@@ -38,5 +38,22 @@ public sealed class SoftwareCatalogLiveShotTests
         // Capture the detected catalog entries for a read-only comparison with winget list.
         File.WriteAllLines(Path.Combine(session.ShotDirectory, "installed.txt"),
             vm.FilteredApps.Where(a => a.IsInstalled).Select(a => a.WingetId));
+        foreach (var query in new[] { "ChatGPT", "Codex", "Zoom", ".NET Desktop Runtime 10", "PowerShell", "Inkscape" })
+        {
+            vm.SearchText = query;
+            session.Pump();
+            session.Screenshot("detected-" + query.Replace(' ', '-').Replace('.', '-'));
+        }
+        vm.SelectedTabIndex = 2;
+        await session.WaitForAsync(() => vm.WindowsApps.All(a => !a.Artwork.IsLoading), timeoutMs: 60_000, what: "installed Windows app artwork");
+        Assert.Contains(vm.WindowsApps, a => a.Name == "Calculator" && a.Artwork.HasIcon);
+        session.Screenshot("windows-app-icons");
+        vm.SelectedTabIndex = 1;
+        await session.WaitForAsync(() => !vm.IsUpdatesLoading, timeoutMs: 180_000, what: "updates");
+        await session.WaitForAsync(() => vm.Updates.All(a => !a.Artwork.IsLoading), timeoutMs: 60_000, what: "update artwork");
+        session.Screenshot("update-icons");
+        File.WriteAllLines(Path.Combine(session.ShotDirectory, "icons.txt"),
+            vm.WindowsApps.Where(a => a.Artwork.HasIcon).Select(a => "Windows: " + a.Name)
+                .Concat(vm.Updates.Where(a => a.Artwork.HasIcon).Select(a => "Update: " + a.Name)));
     }
 }

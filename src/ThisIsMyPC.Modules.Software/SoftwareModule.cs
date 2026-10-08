@@ -82,7 +82,14 @@ public sealed class SoftwareModule : IActionModule
             WingetVersion: version.IsSuccess ? version.Value : null,
             WindowsApps: WindowsAppsCatalog.Entries,
             PresentAppxPackageIds: presentAppxIds,
-            AppxStateKnown: appxPackages.IsSuccess);
+            AppxStateKnown: appxPackages.IsSuccess)
+        {
+            ExternallyManagedIds = installed.IsSuccess
+                ? SoftwareCatalog.Entries.Where(entry => InstalledSoftwareMatcher.FindMatch(entry, installed.Value!) is { } match
+                    && (!match.CanUninstall || !match.PackageId.Equals(entry.WingetId, StringComparison.OrdinalIgnoreCase)))
+                    .Select(entry => entry.WingetId).ToHashSet(StringComparer.OrdinalIgnoreCase)
+                : new HashSet<string>(),
+        };
 
         return OperationResult<object>.Success(scan);
     }
@@ -133,6 +140,17 @@ public sealed class SoftwareModule : IActionModule
         {
             return OperationResult<bool>.Failure(
                 $"App '{catalogId}' is not in the catalog.", ErrorCategory.NotFound);
+        }
+
+        if (!install)
+        {
+            var installed = await _wingetService.ListInstalledAsync().ConfigureAwait(false);
+            if (!installed.IsSuccess)
+                return OperationResult<bool>.Failure(installed.ErrorMessage ?? "Could not check the installed app.",
+                    installed.ErrorCategory ?? ErrorCategory.ServiceUnavailable, installed.Exception);
+            if (InstalledSoftwareMatcher.FindMatch(entry, installed.Value!) is { } match
+                && (!match.CanUninstall || !match.PackageId.Equals(entry.WingetId, StringComparison.OrdinalIgnoreCase)))
+                return OperationResult<bool>.Failure("Manage this installation with its original installer.", ErrorCategory.NotFound);
         }
 
         return install

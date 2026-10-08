@@ -785,7 +785,7 @@ public partial class MainWindowViewModel : ViewModelBase
                     {
                         ContentTitle = current.Module.Info.Name;
                         ContentDescription = current.Module.Info.Description;
-                        CurrentContent = new SoftwareViewModel(softwareData, _pendingActionsService, _wingetService);
+                        CurrentContent = new SoftwareViewModel(softwareData, _pendingActionsService, _wingetService, Services.SoftwareIconProvider.Instance);
                     }
                     else
                     {

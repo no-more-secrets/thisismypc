@@ -14,7 +14,11 @@ public enum WingetSource
 /// installs winget could not correlate to a source package (raw ARP rows);
 /// <see cref="Name"/> carries the display name for name-based matching.
 /// </summary>
-public sealed record InstalledWingetPackage(string PackageId, string? Version, string? Name = null);
+public sealed record InstalledWingetPackage(string PackageId, string? Version, string? Name = null)
+{
+    /// <summary>False for detected copies that winget cannot safely remove.</summary>
+    public bool CanUninstall { get; init; } = true;
+}
 
 /// <summary>A package winget reports as having an update available.</summary>
 public sealed record UpgradableWingetPackage(
