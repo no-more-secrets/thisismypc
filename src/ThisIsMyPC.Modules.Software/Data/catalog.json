@@ -168,7 +168,8 @@
    "source": "msstore",
    "link": "https://openai.com/chatgpt/download/",
    "foss": false,
-   "installedNames": ["ChatGPT"]
+   "installedNames": ["ChatGPT"],
+   "installedIds": ["9PLM9XGG6VKS"]
   },
   {
    "id": "chrome",

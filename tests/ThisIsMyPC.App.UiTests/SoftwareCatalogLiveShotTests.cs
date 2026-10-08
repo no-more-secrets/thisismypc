@@ -38,11 +38,18 @@ public sealed class SoftwareCatalogLiveShotTests
         // Capture the detected catalog entries for a read-only comparison with winget list.
         File.WriteAllLines(Path.Combine(session.ShotDirectory, "installed.txt"),
             vm.FilteredApps.Where(a => a.IsInstalled).Select(a => a.WingetId));
-        foreach (var query in new[] { "ChatGPT", "Codex", "Zoom", ".NET Desktop Runtime 10", "PowerShell", "Inkscape" })
+        foreach (var query in new[] { "ChatGPT", "Codex", "Zoom", ".NET Desktop Runtime 10", "PowerShell", "Inkscape", "FanControl", "Cursor" })
         {
             vm.SearchText = query;
             session.Pump();
             session.Screenshot("detected-" + query.Replace(' ', '-').Replace('.', '-'));
+            if (query is "FanControl" or "Cursor" or "ChatGPT")
+            {
+                var app = Assert.Single(vm.FilteredApps);
+                Assert.True(app.IsInstalled, query);
+                Assert.True(app.HasIcon, query);
+                if (query != "FanControl") Assert.True(app.CanAct, query);
+            }
         }
         vm.SelectedTabIndex = 2;
         await session.WaitForAsync(() => vm.WindowsApps.All(a => !a.Artwork.IsLoading), timeoutMs: 60_000, what: "installed Windows app artwork");

@@ -1817,6 +1817,8 @@ public partial class MainWindowViewModel : ViewModelBase
             // reversible thing in the app and deserves the restore point most.
             var brokerChanges = _pendingChangesService.PendingGroups.SelectMany(group => group.Changes)
                 .Where(change => !IsLocalCoolingProfile(change)).ToList();
+            var brokerActions = (_pendingActionsService?.PendingActions ?? [])
+                .Where(action => !Modules.Software.SoftwareModule.RunsAsDesktopUser(action)).ToList();
             var changeCount = brokerChanges.Count
                 + (_pendingActionsService?.PendingCount ?? 0);
             var restorePointDescription = changeCount >= AutoRestorePointThreshold && !_applyWithoutRestorePoint
@@ -1825,12 +1827,12 @@ public partial class MainWindowViewModel : ViewModelBase
 
             IPrivilegeBrokerSession? brokerSession = null;
             if (_privilegeBroker is not null && (brokerChanges.Count > 0
-                || (_pendingActionsService?.PendingCount ?? 0) > 0 || restorePointDescription is not null))
+                || brokerActions.Count > 0 || restorePointDescription is not null))
             {
                 var opened = await _privilegeBroker.OpenSessionAsync(new Ipc.Contracts.BrokerSessionRequest
                 {
                     Changes = brokerChanges,
-                    Actions = _pendingActionsService?.PendingActions ?? [],
+                    Actions = brokerActions,
                     RestorePointDescription = restorePointDescription,
                 }, cancellationToken).ConfigureAwait(true);
                 if (!opened.IsSuccess)
@@ -2128,6 +2130,10 @@ public partial class MainWindowViewModel : ViewModelBase
     private Task<OperationResult<bool>> ExecuteActionOnModule(Core.Actions.ActionDescriptor action) =>
         Logged("Action", action.ModuleId, action.ActionId, $"{action.DisplayName}: {action.Detail}", async () =>
         {
+            // User-scope uninstallers reject administrator tokens, even in mixed batches.
+            if (Modules.Software.SoftwareModule.RunsAsDesktopUser(action)
+                && ResolveModule(action.ModuleId) is Modules.Software.SoftwareModule software)
+                return await software.ExecuteActionAsync(action).ConfigureAwait(false);
             if (_activeBrokerSession is not null)
                 return await _activeBrokerSession.ExecuteActionAsync(action).ConfigureAwait(false);
             if (_privilegeBroker is not null)

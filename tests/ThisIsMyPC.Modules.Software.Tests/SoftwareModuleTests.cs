@@ -115,6 +115,7 @@ public class SoftwareModuleTests
     public async Task ExecuteAction_UninstallRoutesToWinget()
     {
         var fake = new FakeWingetService();
+        fake.InstalledPackages.Add(new(FirstEntry.WingetId, "1.0", FirstEntry.Name));
         var module = CreateModule(fake);
 
         var result = await module.ExecuteActionAsync(SoftwareActionFactory.CreateUninstall(FirstEntry));

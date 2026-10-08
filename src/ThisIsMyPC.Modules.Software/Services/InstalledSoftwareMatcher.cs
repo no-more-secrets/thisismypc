@@ -12,7 +12,8 @@ public static class InstalledSoftwareMatcher
 
     public static InstalledWingetPackage? FindMatch(SoftwareCatalogEntry entry, IReadOnlyList<InstalledWingetPackage> installed)
         => installed.Where(package => Matches(entry, package))
-            .OrderByDescending(package => package.CanUninstall && package.PackageId.Equals(entry.WingetId, StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(package => package.CanUninstall)
+            .ThenByDescending(package => package.PackageId.Equals(entry.WingetId, StringComparison.OrdinalIgnoreCase))
             .FirstOrDefault();
 
     private static bool Matches(SoftwareCatalogEntry entry, InstalledWingetPackage package)

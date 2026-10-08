@@ -3,6 +3,7 @@ using ThisIsMyPC.Core.Changes;
 using ThisIsMyPC.Core.Modules;
 using ThisIsMyPC.Core.Packages;
 using ThisIsMyPC.Core.Results;
+using ThisIsMyPC.Core.Hardware;
 using ThisIsMyPC.Modules.Software.Actions;
 using ThisIsMyPC.Modules.Software.Models;
 using ThisIsMyPC.Modules.Software.Services;
@@ -20,11 +21,14 @@ public sealed class SoftwareModule : IActionModule
 
     private readonly IWingetService _wingetService;
     private readonly IAppxPackageService _appxPackageService;
+    private readonly IHardwareFactsProvider? _hardwareFacts;
 
-    public SoftwareModule(IWingetService wingetService, IAppxPackageService appxPackageService)
+    public SoftwareModule(IWingetService wingetService, IAppxPackageService appxPackageService,
+        IHardwareFactsProvider? hardwareFacts = null)
     {
         _wingetService = wingetService;
         _appxPackageService = appxPackageService;
+        _hardwareFacts = hardwareFacts;
     }
 
     public ModuleInfo Info { get; } = new(
@@ -60,9 +64,16 @@ public sealed class SoftwareModule : IActionModule
         // Installed-state detection is best-effort: a failed listing still leaves
         // the catalog browsable, it just cannot mark what is already installed.
         var installed = await _wingetService.ListInstalledAsync().ConfigureAwait(false);
+        var packages = installed.IsSuccess ? installed.Value!.ToList() : [];
+        if (_hardwareFacts is not null)
+        {
+            var hardware = await _hardwareFacts.GetAsync().ConfigureAwait(false);
+            if (hardware.LaunchPathOf(CompanionApp.FanControl) is not null)
+                packages.Add(new("Rem0o.FanControl", null, "FanControl") { CanUninstall = false });
+        }
         var installedIds = installed.IsSuccess
             ? SoftwareCatalog.Entries
-                .Where(entry => InstalledSoftwareMatcher.Matches(entry, installed.Value!))
+                .Where(entry => InstalledSoftwareMatcher.Matches(entry, packages))
                 .Select(entry => entry.WingetId)
                 .ToHashSet(StringComparer.OrdinalIgnoreCase)
             : [];
@@ -85,8 +96,7 @@ public sealed class SoftwareModule : IActionModule
             AppxStateKnown: appxPackages.IsSuccess)
         {
             ExternallyManagedIds = installed.IsSuccess
-                ? SoftwareCatalog.Entries.Where(entry => InstalledSoftwareMatcher.FindMatch(entry, installed.Value!) is { } match
-                    && (!match.CanUninstall || !match.PackageId.Equals(entry.WingetId, StringComparison.OrdinalIgnoreCase)))
+                ? SoftwareCatalog.Entries.Where(entry => InstalledSoftwareMatcher.FindMatch(entry, packages) is { CanUninstall: false })
                     .Select(entry => entry.WingetId).ToHashSet(StringComparer.OrdinalIgnoreCase)
                 : new HashSet<string>(),
         };
@@ -97,6 +107,13 @@ public sealed class SoftwareModule : IActionModule
     /// <summary>Catalog PackageId is the AppX package name; the family name minus the publisher suffix.</summary>
     private static bool MatchesPackageId(AppxPackageInfo package, string packageId) =>
         package.PackageFamilyName.StartsWith(packageId + "_", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>winget runs as the desktop user and requests its own UAC when needed.</summary>
+    public static bool RunsAsDesktopUser(ActionDescriptor action) => action.ModuleId == ModuleName
+        && (action.ActionId.StartsWith(SoftwareActionFactory.InstallPrefix, StringComparison.Ordinal)
+            || action.ActionId.StartsWith(SoftwareActionFactory.UninstallPrefix, StringComparison.Ordinal)
+            || action.ActionId.StartsWith(SoftwareActionFactory.UpgradePrefix, StringComparison.Ordinal)
+            || action.ActionId.StartsWith(SoftwareActionFactory.AppxReinstallPrefix, StringComparison.Ordinal));
 
     public async Task<OperationResult<bool>> ExecuteActionAsync(ActionDescriptor action)
     {
@@ -148,14 +165,15 @@ public sealed class SoftwareModule : IActionModule
             if (!installed.IsSuccess)
                 return OperationResult<bool>.Failure(installed.ErrorMessage ?? "Could not check the installed app.",
                     installed.ErrorCategory ?? ErrorCategory.ServiceUnavailable, installed.Exception);
-            if (InstalledSoftwareMatcher.FindMatch(entry, installed.Value!) is { } match
-                && (!match.CanUninstall || !match.PackageId.Equals(entry.WingetId, StringComparison.OrdinalIgnoreCase)))
+            var match = InstalledSoftwareMatcher.FindMatch(entry, installed.Value!);
+            if (match is null)
+                return OperationResult<bool>.Failure("This installation was not found. Refresh the app list.", ErrorCategory.NotFound);
+            if (!match.CanUninstall)
                 return OperationResult<bool>.Failure("Manage this installation with its original installer.", ErrorCategory.NotFound);
+            return await _wingetService.UninstallInstalledAsync(match, entry.Source).ConfigureAwait(false);
         }
 
-        return install
-            ? await _wingetService.InstallAsync(entry.WingetId, entry.Source).ConfigureAwait(false)
-            : await _wingetService.UninstallAsync(entry.WingetId, entry.Source).ConfigureAwait(false);
+        return await _wingetService.InstallAsync(entry.WingetId, entry.Source).ConfigureAwait(false);
     }
 
     private async Task<OperationResult<bool>> RemoveWindowsAppAsync(string appId)

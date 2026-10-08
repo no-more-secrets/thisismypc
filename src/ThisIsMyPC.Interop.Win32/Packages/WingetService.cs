@@ -145,19 +145,59 @@ public sealed class WingetService : IWingetService
         string packageId, WingetSource source, CancellationToken cancellationToken = default) =>
         RunPackageOperationAsync(
             packageId,
-            ["uninstall", "--id", packageId, "--exact", "--source", SourceName(source),
-             "--silent", "--disable-interactivity"],
+            ["uninstall", "--id", packageId, "--exact", "--interactive",
+             "--accept-source-agreements", "--disable-interactivity"],
             $"winget uninstall {packageId}",
             cancellationToken);
 
-    private async Task<OperationResult<bool>> RunPackageOperationAsync(
+    public Task<OperationResult<bool>> UninstallInstalledAsync(
+        InstalledWingetPackage package, WingetSource source, CancellationToken cancellationToken = default)
+    {
+        var arguments = BuildUninstallArguments(package);
+        return arguments.IsSuccess
+            ? RunOperationAsync(arguments.Value!, $"Uninstall {package.Name ?? package.PackageId}", cancellationToken)
+            : Task.FromResult(OperationResult<bool>.Failure(arguments.ErrorMessage!, ErrorCategory.NotFound));
+    }
+
+    /// <summary>Uses a complete installed identity, or its exact name and version. Never a fuzzy search.</summary>
+    public static OperationResult<string[]> BuildUninstallArguments(InstalledWingetPackage package)
+    {
+        ArgumentNullException.ThrowIfNull(package);
+        if (!package.CanUninstall)
+            return OperationResult<string[]>.Failure("This copy has no registered uninstaller.", ErrorCategory.NotFound);
+        var id = package.UninstallId ?? package.PackageId;
+        var arguments = new List<string> { "uninstall" };
+        if (IsCompleteInstalledValue(id))
+            arguments.AddRange(["--id", id]);
+        else if (IsCompleteInstalledValue(package.Name))
+        {
+            arguments.AddRange(["--name", package.Name!]);
+            if (IsCompleteInstalledValue(package.Version) && !package.Version!.Equals("Unknown", StringComparison.OrdinalIgnoreCase))
+                arguments.AddRange(["--version", package.Version]);
+        }
+        else
+            return OperationResult<string[]>.Failure("The installed app identity is incomplete. Refresh the app list.", ErrorCategory.NotFound);
+        arguments.AddRange(["--exact", "--interactive", "--accept-source-agreements", "--disable-interactivity"]);
+        return OperationResult<string[]>.Success(arguments.ToArray());
+    }
+
+    private static bool IsCompleteInstalledValue(string? value) => !string.IsNullOrWhiteSpace(value)
+        && !value.TrimStart().StartsWith('-') && !value.Contains('…') && !value.Any(char.IsControl);
+
+    private static Task<OperationResult<bool>> RunPackageOperationAsync(
         string packageId, string[] arguments, string operationName, CancellationToken cancellationToken,
         int[]? benignExitCodes = null)
     {
         var idError = ValidatePackageId(packageId);
         if (idError is not null)
-            return OperationResult<bool>.Failure(idError, ErrorCategory.NotFound);
+            return Task.FromResult(OperationResult<bool>.Failure(idError, ErrorCategory.NotFound));
 
+        return RunOperationAsync(arguments, operationName, cancellationToken, benignExitCodes);
+    }
+
+    private static async Task<OperationResult<bool>> RunOperationAsync(
+        string[] arguments, string operationName, CancellationToken cancellationToken, int[]? benignExitCodes = null)
+    {
         var run = await RunWingetAsync(arguments, cancellationToken, OperationTimeout).ConfigureAwait(false);
         if (!run.IsSuccess)
             return OperationResult<bool>.Failure(run.ErrorMessage!, run.ErrorCategory!.Value);
@@ -218,7 +258,7 @@ public sealed class WingetService : IWingetService
     /// <summary>
     /// Parses the fixed-width table of <c>winget list</c> (Name, Id, Version,
     /// then Available and/or Source depending on the build). Rows whose id is
-    /// truncated or is an unmatchable ARP identifier are skipped. Exposed for tests.
+    /// truncated retain their complete display name for exact uninstall targeting. Exposed for tests.
     /// </summary>
     public static IReadOnlyList<InstalledWingetPackage> ParseListTable(string output)
     {
@@ -247,7 +287,11 @@ public sealed class WingetService : IWingetService
             packages.Add(new InstalledWingetPackage(
                 PackageId: usableId ? id : string.Empty,
                 Version: cells[2],
-                Name: name.Length > 0 ? name : null) { CanUninstall = usableId });
+                Name: name.Length > 0 ? name : null)
+            {
+                CanUninstall = IsCompleteInstalledValue(id) || IsCompleteInstalledValue(name),
+                UninstallId = IsCompleteInstalledValue(id) ? id : null,
+            });
         }
 
         return packages.AsReadOnly();

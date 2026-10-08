@@ -37,7 +37,7 @@ public static class SoftwareActionFactory
             ModuleId = SoftwareModule.ModuleName,
             ActionId = UninstallPrefix + entry.Id,
             DisplayName = $"Uninstall {entry.Name}",
-            Detail = $"winget: {entry.WingetId} (runs the app's own uninstaller)",
+            Detail = "Runs the installed app's registered uninstaller.",
             UndoHint = "Reinstall from the app catalog.",
         };
     }

@@ -40,8 +40,11 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 ## Annotation feedback (2026-10-07)
 
 - DONE: doubled the footer status gap to 24px. Global search finds catalog and Windows apps and opens the matching Software tab.
-- DONE: detects ChatGPT desktop, npm Codex CLI, Zoom Workplace, and SDK-provided .NET Desktop Runtime 10. External copies cannot queue a winget uninstall.
-- DONE: labels PowerShell 7 separately from built-in Windows PowerShell 5.1. Added Inkscape under Multimedia Tools, bringing the catalog to 92 entries and 87 bundled icons.
+- DONE: detects ChatGPT desktop, npm Codex CLI, Zoom Workplace, and SDK-provided .NET Desktop Runtime 10. Copies without registered uninstallers stay read-only.
+- DONE: registered apps uninstall by their actual installed identity or exact name/version, including ARP/MSIX entries and catalog aliases. Winget actions run as the desktop user even beside elevated actions, fixing Cursor's user-scope uninstall refusal.
+- DONE: Software reuses shared FanControl detection for portable copies and bundles its icon. The catalog now has 88 bundled icons.
+- Verified: fake routing tests keep installs, updates, and uninstalls local while a mixed batch sends Windows app removal to the broker. Live read-only scans and screenshots confirm FanControl, ChatGPT, and Cursor. Live uninstallers and UAC remain untested.
+- DONE: labels PowerShell 7 separately from built-in Windows PowerShell 5.1. Added Inkscape under Multimedia Tools, bringing the catalog to 92 entries.
 - DONE: Updates and Windows Apps show bundled or installed artwork, with a fallback when artwork is unavailable. Registered icon resource indices are preserved.
 - Verified: live read-only detection, global search clicks, dark/light screenshots, footer spacing, and Software edge measurements (25/23/59/10). Live installs and removals were not exercised.
 - DONE: Presets change rows are plain content; only setting names navigate. Removed the selectable row outline and darkened Beta text slightly to #4F3909.

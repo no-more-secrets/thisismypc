@@ -18,6 +18,8 @@ public sealed record InstalledWingetPackage(string PackageId, string? Version, s
 {
     /// <summary>False for detected copies that winget cannot safely remove.</summary>
     public bool CanUninstall { get; init; } = true;
+    /// <summary>Exact installed identity, including an uncorrelated ARP or MSIX identifier.</summary>
+    public string? UninstallId { get; init; }
 }
 
 /// <summary>A package winget reports as having an update available.</summary>
@@ -44,6 +46,11 @@ public interface IWingetService
 
     Task<OperationResult<bool>> UninstallAsync(
         string packageId, WingetSource source, CancellationToken cancellationToken = default);
+
+    /// <summary>Removes the detected installation, without restricting it to a catalog source.</summary>
+    Task<OperationResult<bool>> UninstallInstalledAsync(
+        InstalledWingetPackage package, WingetSource source, CancellationToken cancellationToken = default)
+        => UninstallAsync(package.UninstallId ?? package.PackageId, source, cancellationToken);
 
     /// <summary>Packages with an update available, from the <c>winget upgrade</c> table.</summary>
     Task<OperationResult<IReadOnlyList<UpgradableWingetPackage>>> ListUpgradableAsync(
