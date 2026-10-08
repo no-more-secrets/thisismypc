@@ -9,7 +9,9 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 - Found: eight additional ADMX candidates, 116 values without installed ADMX mappings, and eight exported records with scope mismatches. See [audit](../research/policy-audit-2026-10-07.md).
 - Pending: resolve those candidates, six access failures, non-ADMX security settings, browser templates, and management precedence. Presence alone does not establish configuration intent or enforcement.
 - DONE: assigned feature destinations and unresolved evidence requirements to all 148 records in the routing ledger.
-- Pending: resolve support, overlap, and current relevance for those records; verify the 36 records with option fields.
+- DONE: functional assessment of all 148 export records and eight additional ADMX candidates. Recommendations: 26 Add, 26 Extend, 52 Advanced, 35 Skip, nine Investigate. These count records, not controls. See [assessment](../research/policy-audit-2026-10-07.md#functional-assessment-and-proposed-controls) and [per-record decisions](../research/policy-function-assessment.csv).
+- Pending: verify build/edition enforcement, source precedence, and full option behavior before implementing those recommendations. Template descriptions alone are not runtime evidence.
+- REQUIRED: audit Recall controls for snapshot deletion and Copilot controls for obsolete policy identities. Policy-byte restoration cannot restore deleted snapshots.
 - Pending: integrate preferences and policy overrides in the relevant feature controls, including saved local policy rather than registry-only writes.
 - DONE: shared Registry.pol reader and encoder preserve record order, duplicate values, deletion instructions, unknown types, and exact data bytes.
 - Verified: 11 parser tests and a read-only check of the current local policy file, preserving all 94 records byte-for-byte.

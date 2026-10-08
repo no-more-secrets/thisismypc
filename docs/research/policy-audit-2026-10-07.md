@@ -121,3 +121,127 @@ Neither this scan nor an ADMX match proves Windows honors a setting on this buil
 For every control, verify supported scope and options, compare preference and policy sources, preserve unrelated fields,
 and test exact undo from missing, alternate, and conflicting states.
 Complete the unresolved ledger before claiming comprehensive policy coverage.
+
+## Functional assessment and proposed controls
+
+The [functional assessment](policy-function-assessment.csv) evaluates every exported record individually, including direct, partial, and related routes.
+Each row states the behavior, recommendation, reason, feature destination, template identity, and any additional web evidence.
+These are product recommendations, not new controls or proof that Windows currently enforces the exported setting.
+
+| Recommendation | Export records | Meaning |
+|---|---:|---|
+| Add | 26 | Useful behavior that deserves an editable control, after support and state verification. |
+| Extend | 26 | Integrate policy or missing options into an existing feature rather than create a duplicate card. |
+| Advanced | 52 | Potentially useful specialist behavior; keep behind its feature's advanced options or a dedicated workflow. |
+| Skip | 35 | Do not add an editor for this identity: obsolete, inapplicable, internal bookkeeping, or no useful desktop workflow. |
+| Investigate | 9 | Functional identity or current applicability remains uncertain; do not ship a guessed control. |
+
+Counts measure records, not controls. Several rows should share one editor.
+The 117 historical gaps remain the original route count; the recommendations also evaluate 31 records with some existing coverage.
+Recognize unsupported and skipped records in inspection results where useful, without offering misleading toggles.
+An Add decision recommends exposing a choice. It does not recommend enabling or disabling that choice by default.
+
+### Evidence and limits
+
+All 148 descriptions and option definitions were read from installed Microsoft ADMX/ADML files.
+The [template manifest](policy-template-evidence.csv) records SHA-256 hashes for the 39 template pairs used by the exported records.
+Template paths are relative to `%WINDIR%/PolicyDefinitions`.
+No private configured values are included.
+
+Installed templates establish intended semantics, not actual enforcement on every Windows edition or build.
+Microsoft's current documentation was checked for material deprecation, destructive effects, and ambiguous support.
+CSP applicability is evidence about that delivery route; it must not automatically become a claim about Group Policy support.
+Where CSP and installed template support differ, feature availability and edition/build support remain implementation gates.
+
+This assessment covers the 148 export records and the eight additional installed-template candidates below.
+The 116 unmapped values and six unreadable locations remain separate inventory work, not silently assessed policies.
+No policies were applied. Apply, restart, management precedence, and undo require controlled tests before shipping an editor.
+
+### First implementation group
+
+Fix source-aware state and existing controls before adding broad coverage.
+The existing seven-definition policy reader gives suggestions and personalization a concrete starting point.
+Use saved policy, registry state, and actual feature state as separate evidence; do not reduce them to one unchecked boolean.
+
+| Feature | Recommended change | Export rows |
+|---|---|---|
+| Suggestions and personalization | Integrate tips, consumer content, third-party Spotlight, Search highlights, and tailored-experience policies. Keep different effects separately selectable. | 9-12, 92, 135, 146 |
+| Windows Update | Complete automatic-update modes and scheduling, then add feature/quality deadlines and policy-aware active hours. | 64-67 |
+| Widgets | Distinguish feature permission, Board availability, lock-screen Widgets, and taskbar button visibility. Gate preview-only support. | 52-54 |
+| AI | Add individual Paint AI choices and a supported Settings agent option. Audit Recall deletion and obsolete Copilot claims first. | 56-58, 132-134, 137, 147-148 |
+| Privacy | Add clipboard history, cloud search, compatibility inventory, and Find My Device. Reconcile speech, location, and clipboard-sync policies with preferences. | 43, 73, 83-84, 89, 93-94 |
+| Power and Explorer | Add power throttling and detailed status messages. Integrate Fast Startup policy with its preference rather than invert its meaning. | 1, 5-6 |
+
+These groups are implementation order, not a requirement to delay beta until every candidate is complete.
+Build and edition support must determine availability. Sam's preview build is not evidence of support on the minimum release build.
+
+### Security choices worth adding
+
+Expose a focused Security surface for unwanted-app protection, real-time protection, cloud protection, sample submission, and Block at First Sight.
+Add Controlled Folder Access, malicious-domain protection, SmartScreen modes, phishing warnings, app-source restrictions, and scan priority.
+Windows Security notification modes should distinguish informational messages from critical alerts.
+Rows 17, 19, 23, 102-105, 118, 138-141, and 145 describe these choices.
+
+Controlled Folder Access needs allowed-app and protected-folder management, not an isolated toggle that leaves blocked applications unexplained.
+Cloud features need dependency checks; turning samples off can disable Block at First Sight.
+The scan-priority setting changes scheduling priority, not a percentage CPU limit.
+Notifications, exclusions, local overrides, and schedules should share their feature editor rather than produce dozens of unrelated cards.
+
+Use supported Defender management and observed protection state.
+Tamper protection can block Group Policy changes even when a management tool appears successful.
+The older DisableAntiSpyware switch is not a reliable consumer control.
+See Microsoft's [tamper-protection behavior](https://learn.microsoft.com/en-us/defender-endpoint/tamper-protection-troubleshoot)
+and [legacy DisableAntiSpyware guidance](https://learn.microsoft.com/en-us/windows-hardware/customize/desktop/unattend/security-malware-windows-defender-disableantispyware).
+
+### Findings that change the proposed scope
+
+- Rows 61 and 63, immediate installation and recommended updates, have no effect on Windows 10 or 11.
+  Do not add them. See Microsoft's [legacy update policy guidance](https://learn.microsoft.com/en-us/windows/deployment/update/avoid-legacy-policy-configurations).
+- Current deadline behavior differs from older template wording. Patched Windows 11 respects automatic-update scheduling before expiry, then overrides it.
+  See [deadline behavior](https://learn.microsoft.com/en-us/windows/deployment/update/wufb-compliancedeadlines).
+- Row 6 does not offer symmetric Fast Startup on/off behavior. Disabled means use the local setting.
+- Rows 56, 58, and 147 can delete Recall snapshots. Restoring policy bytes cannot recover those snapshots.
+  Separate the reversible configuration from any destructive consequence and obtain informed confirmation before applying it.
+  See [Recall component availability](https://learn.microsoft.com/en-us/windows/client-management/mdm/policy-csp-windowsai#allowrecallenablement)
+  and [snapshot policy](https://learn.microsoft.com/en-us/windows/client-management/mdm/policy-csp-windowsai#disableaidataanalysis).
+- Row 51 deploys Secure Boot certificates to firmware. Installed help explicitly says Windows cannot undo the deployment.
+  It requires a maintenance workflow, not the reversible-changes pipeline.
+- Rows 137 and 148 target legacy integrated Copilot. They must not stand in for management of the current app.
+  See [current Copilot management](https://learn.microsoft.com/en-us/windows/client-management/manage-windows-copilot).
+- Rows 74-78 target pre-Vista Active Desktop. They do not control Windows 11 desktop icons or wallpaper.
+- Row 79 targets the old Internet Connection Firewall, replaced by Windows Firewall in XP SP2.
+- Row 100 controls Windows Server automatic exclusions, not this client app's target.
+- Rows 86-87 describe historical activity-history cloud behavior. Windows 11 stopped sending that history after January 2024 updates.
+  Skip the upload editor and verify any remaining local Activity Feed consumer before extending that control.
+  See [activity-history changes](https://support.microsoft.com/en-us/windows/privacy/windows-activity-history-and-your-privacy).
+- Row 90 disables the manually used, deprecated Steps Recorder. It is not a background activity-recording service.
+  See [Windows deprecations](https://learn.microsoft.com/en-us/windows/whats-new/deprecated-features).
+- Row 60 belongs to legacy Windows Media Player. Its title and registry name indicate updates, but both template and online help describe first-run dialogs.
+  Keep it unresolved rather than implement either interpretation. See the [conflicting Microsoft entry](https://learn.microsoft.com/en-us/windows/client-management/mdm/policy-csp-admx-windowsmediaplayer#disableautoupdate).
+- Rows 53-55 and 57 need explicit availability gates. Current CSP pages label several as preview features; Recall export is EEA-only.
+  See [Widgets policies](https://learn.microsoft.com/en-us/windows/client-management/mdm/policy-csp-newsandinterests)
+  and [Windows AI policies](https://learn.microsoft.com/en-us/windows/client-management/mdm/policy-csp-windowsai).
+
+### Additional installed-template candidates
+
+These eight candidates are outside the 148-record count. Their template explanations were also read individually.
+
+| Candidate | Functional effect | Recommendation |
+|---|---|---|
+| Win32 long paths | Permits paths beyond the traditional limit for applications that support long paths. | Add to Explorer; do not promise every application or shell operation supports them. |
+| Built-in active power plan | Forces one of the standard Windows power plans. | Extend the existing plan selector; shares the custom-plan policy address. |
+| Plugged-in standby permission | Permits or prohibits S1-S3 standby while plugged in. | Extend existing Power detection; do not claim it universally controls Modern Standby. |
+| Battery standby permission | Permits or prohibits S1-S3 standby while on battery. | Same Power control with separate AC/DC state. |
+| Default printer management | Stops Windows managing the default printer when enabled. | Add to printer behavior; it is a preference and does not itself choose a printer. |
+| Svchost process mitigations | Requires Microsoft-signed loaded binaries and blocks dynamic code in applicable service hosts. | Advanced security option only after service compatibility and recovery testing. |
+| Stateless IP autoconfiguration limits | Caps autoconfigured addresses and routes; disabling removes those limits. | Skip ordinary editor; no demonstrated personal-PC workflow requiring it. |
+| Explorer SmartScreen definition | Describes the same downloaded-app reputation behavior as row 141. | Use one SmartScreen editor; do not duplicate the policy. |
+
+### Acceptance gates for proposed controls
+
+Every editor needs correct scope, valid option ranges, supported build/edition, source precedence, and an effective-state reader.
+Preserve missing values, value types, unrelated options, saved policy records, and exact before-state for undo.
+Allow Not configured where it returns control to preferences; do not translate it universally into Disabled.
+Distinguish allowed, enabled, unavailable, blocked by policy, and unknown.
+Do not claim a restart is required without evidence; use the established conditional wording otherwise.
+Destructive consequences require their own workflow and cannot inherit a reversible label from a registry write.
