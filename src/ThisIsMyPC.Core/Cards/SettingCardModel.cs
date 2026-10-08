@@ -22,6 +22,9 @@ public record SettingCardModel
     /// <summary>Human-readable rendering of CurrentValue, e.g. "Left", "Enabled".</summary>
     public string? CurrentDisplayValue { get; init; }
 
+    /// <summary>When present, show the reason and prevent changes from an unknown snapshot.</summary>
+    public string? UnavailableReason { get; init; }
+
     /// <summary>Value/display pairs for dropdowns.</summary>
     public IReadOnlyList<SettingOption>? AvailableOptions { get; init; }
 

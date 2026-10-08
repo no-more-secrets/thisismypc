@@ -36,8 +36,9 @@ Changes use staging, exact before-state capture, and undo, including absent valu
 Do not broaden Owner Mode's automatic restoration catalog as a side effect of adding policy controls.
 
 Audit each existing control's detection and writes alongside policy integration. Test alternate valid states, bit fields,
-missing values, policy overrides, unrelated-option preservation, and exact undo. Sticky Keys is a confirmed defect:
-the reader compares the entire Flags value with 506, and the writer replaces unrelated options with 506 or 510.
+missing values, policy overrides, unrelated-option preservation, and exact undo.
+Sticky Keys and Filter Keys now preserve unrelated flags and detect the shortcut bit, with automated state and rollback checks.
+The remaining control audit is tracked in [correctness checks](../research/control-correctness-checks.md).
 
 Implementation remains pending. First resolve overlapping promotion, Search, and privacy controls; then expand the remaining feature groups.
 

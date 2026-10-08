@@ -49,7 +49,7 @@ public sealed class AnnoyancesSettingsReaderTests
         Assert.All(prefs, p =>
         {
             var target = Core.Drift.RestorationCatalog.Default.FindByLocation(p.RegistryKeyPath, p.RegistryValueName);
-            Assert.Equal(target is null ? p.DefaultValue : string.Empty, p.CurrentValue);
+            Assert.Equal(target is null && p.ToggleBitMask is null ? p.DefaultValue : string.Empty, p.CurrentValue);
             Assert.False(p.IsSuppressed);
         });
     }

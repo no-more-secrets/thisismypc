@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Headless.XUnit;
 using Avalonia.Styling;
+using Avalonia.VisualTree;
 using ThisIsMyPC.App.Controls;
 using ThisIsMyPC.App.UiTests.Fakes;
 using ThisIsMyPC.App.ViewModels;
@@ -60,6 +61,72 @@ public class SettingCardPageShotTests
 
     private static IEnumerable<SettingCardViewModel> AllCards(SettingCardPageViewModel vm)
         => vm.CardGroups.SelectMany(g => g.Cards);
+
+    [AvaloniaFact]
+    public void UnreadableKeyboardOptions_DisableShortcut_InBothThemesAndModes()
+    {
+        var pending = new PendingChangesService();
+        using var vm = Annoyances(pending);
+        vm.SearchText = "StickyKeys";
+        var shortcut = AllCards(vm).Single(c => c.Model.SettingId == "sticky-keys-shortcut");
+        using var session = UiSession.ForView(Card(new SettingCardPageView()), vm, "card-pages", width: 800, height: 650);
+        foreach (var theme in new[] { ThemeVariant.Dark, ThemeVariant.Light })
+        {
+            session.SetTheme(theme);
+            foreach (var compact in new[] { false, true })
+            {
+                vm.IsCompact = compact;
+                session.Pump();
+                Assert.False(shortcut.IsControlEnabled);
+                Assert.True(session.IsTextVisible(shortcut.UnavailableReason!));
+                Assert.False(session.Find<ToggleCard>(c => c.Title == shortcut.DisplayName).IsSwitchEnabled);
+                shortcut.IsEnabled = true;
+                Assert.False(shortcut.IsEnabled);
+                Assert.Empty(pending.PendingGroups);
+                session.Screenshot($"keyboard-unavailable-{theme.Key}-{compact}");
+            }
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task CustomizedKeyboardOptions_StageLatestBits_AndDiscardRestoresToggle()
+    {
+        var registry = new UiFakeRegistryService();
+        const string key = @"HKCU\Control Panel\Accessibility\StickyKeys";
+        registry.WriteString(key, "Flags", "26");
+        var reader = new AnnoyancesSettingsReader(registry);
+        var scan = new AnnoyancesScanData(reader.ReadAll(), reader.ReadBingSearch(), reader.ReadSettingsSuggestedContent(),
+            reader.ReadCopilotPolicy(), reader.ReadRecall(), reader.ReadLockScreenAds(), reader.ReadPreinstalledApps(),
+            reader.ReadEdgeDebloat(), reader.ReadActivityHistory());
+        var pending = new PendingChangesService();
+        using var vm = new AnnoyancesViewModel(scan, pending, registry);
+        vm.SearchText = "StickyKeys";
+        var shortcut = AllCards(vm).Single(c => c.Model.SettingId == "sticky-keys-shortcut");
+        using var session = UiSession.ForView(Card(new SettingCardPageView()), vm, "card-pages", width: 800, height: 650);
+        Assert.True(shortcut.IsEnabled);
+        Assert.True(shortcut.IsControlEnabled);
+        // An unrelated option changes after the initial scan. Staging must read it again.
+        registry.WriteString(key, "Flags", "27");
+        var card = session.Find<ToggleCard>(c => c.Title == shortcut.DisplayName);
+        session.Click(card.GetVisualDescendants().OfType<ToggleSwitch>().Single());
+        await session.WaitForAsync(() => pending.PendingGroups.Count == 1);
+        var group = Assert.Single(pending.PendingGroups);
+        var change = Assert.Single(group.Changes);
+        Assert.Equal("27", change.BeforeValue);
+        Assert.Equal("31", change.AfterValue);
+        // Failed reversal keeps the queued state visible, rather than resetting the switch alone.
+        registry.WriteString(key, "Flags", "invalid");
+        shortcut.IsEnabled = true;
+        await session.WaitForAsync(() => !shortcut.IsEnabled);
+        Assert.Equal(group.GroupId, Assert.Single(pending.PendingGroups).GroupId);
+        Assert.True(shortcut.HasPendingChange);
+        Assert.True(shortcut.IsPendingDisable);
+        registry.WriteString(key, "Flags", "27");
+        pending.Unstage(group.GroupId);
+        session.Pump();
+        Assert.True(shortcut.IsEnabled);
+        session.Screenshot("keyboard-customized");
+    }
 
     [AvaloniaFact]
     public void UnknownEdition_ShowsUnverifiedSupport_InBothThemesAndCompactMode()

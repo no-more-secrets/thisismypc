@@ -65,7 +65,8 @@ public sealed class SetConflictResolver
 
         // First pending descriptor targeting the same setting. Factories list a group
         // toggle's primary value first, so the first match compares against the same
-        // primary the entry's Value uses.
+        // primary the entry's Value uses. Compare the resolved write, since factories
+        // can preserve unrelated bits instead of writing the preset's literal value.
         foreach (var group in pendingGroups)
         {
             foreach (var change in group.Changes)
@@ -73,7 +74,7 @@ public sealed class SetConflictResolver
                 if (change.ModuleId != entry.ModuleId || change.SettingId != entry.SettingId)
                     continue;
 
-                var sameValue = string.Equals(change.AfterValue, entry.Value, StringComparison.Ordinal);
+                var sameValue = string.Equals(change.AfterValue, stageable.Changes[0].AfterValue, StringComparison.Ordinal);
                 return new SetEntryResolution
                 {
                     Entry = entry,

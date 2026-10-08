@@ -180,6 +180,7 @@ public sealed class AnnoyancesSettingsReader
                 valueType: ChangeValueType.Registry_String,
                 suppressedValue: "506",
                 defaultValue: "510",
+                toggleBitMask: 4,
                 // Raw registry Flags edits are read at logon; live toggling goes through
                 // SystemParametersInfo, which this module deliberately doesn't use.
                 restart: RestartRequirement.SignOut),
@@ -194,6 +195,7 @@ public sealed class AnnoyancesSettingsReader
                 valueType: ChangeValueType.Registry_String,
                 suppressedValue: "122",
                 defaultValue: "126",
+                toggleBitMask: 4,
                 restart: RestartRequirement.SignOut),
 
             ReadPreference(
@@ -499,13 +501,25 @@ public sealed class AnnoyancesSettingsReader
         ChangeValueType valueType = ChangeValueType.Registry_DWord,
         string suppressedValue = "0",
         string defaultValue = "1",
-        RestartRequirement restart = RestartRequirement.None)
+        RestartRequirement restart = RestartRequirement.None,
+        uint? toggleBitMask = null)
     {
         // Default shape: DWORD, 1 = annoyance active (the Windows default when the value
         // is missing), 0 = suppressed. HAGS (1/2) and the accessibility Flags strings
         // override the value type and pair.
         string currentValue;
-        if (valueType == ChangeValueType.Registry_String)
+        string? unavailableReason = null;
+        uint flags = 0;
+        if (toggleBitMask is not null)
+        {
+            var read = _registryService.ReadValue(keyPath, valueName);
+            currentValue = read.IsSuccess ? read.Value!.Data : string.Empty;
+            if (!read.IsSuccess || read.Value!.Kind != RegistryValueDataKind.String ||
+                !uint.TryParse(currentValue, System.Globalization.NumberStyles.None,
+                    System.Globalization.CultureInfo.InvariantCulture, out flags))
+                unavailableReason = "The current keyboard options could not be read. Refresh before changing this shortcut.";
+        }
+        else if (valueType == ChangeValueType.Registry_String)
         {
             var read = _registryService.ReadString(keyPath, valueName);
             currentValue = read.IsSuccess ? read.Value! : defaultValue;
@@ -531,7 +545,12 @@ public sealed class AnnoyancesSettingsReader
             CurrentValue: currentValue,
             SuppressedValue: suppressedValue,
             DefaultValue: defaultValue,
-            IsSuppressed: currentValue == suppressedValue,
-            RestartRequirement: restart);
+            IsSuppressed: unavailableReason is null && (toggleBitMask is { } mask
+                ? (flags & mask) == 0 : currentValue == suppressedValue),
+            RestartRequirement: restart)
+        {
+            ToggleBitMask = toggleBitMask,
+            UnavailableReason = unavailableReason,
+        };
     }
 }

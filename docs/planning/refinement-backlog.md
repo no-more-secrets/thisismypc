@@ -17,8 +17,10 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 - DONE: read-only inspection separates saved local sources, policy scope, and current registry state. Missing, unreadable, wrong-type, and deletion states remain distinct.
 - Verified: all seven mappings match installed ADMX templates. Twenty state tests cover scope, source order, mismatches, and deletion instructions.
 - Pending: connect policy definitions and source scopes to feature controls, then add staged policy changes with exact undo and refresh handling.
-- Confirmed defect: Sticky Keys shortcut detection compares the complete Flags string with 506. Sam's value 26 already disables the shortcut.
-- Pending: fix Sticky Keys detection and writes to preserve unrelated bits, then audit each control for the same class of mistake.
+- DONE: Sticky Keys and Filter Keys read the shortcut bit and change only that bit. Customized options and exact undo are preserved.
+- DONE: presets compare shortcut intent and resolved pending writes; unavailable keyboard snapshots disable the control and cannot stage changes.
+- Verified: 1,024 flag combinations per shortcut, high-bit and malformed values, wrong registry types, exact rollback, preset conflicts, and card staging/discard/failure behavior.
+- Pending: audit the other controls for alternate states, missing-value undo, and policy overrides. See [correctness checks](../research/control-correctness-checks.md).
 - The policy foundation does not yet add editable controls. No live Windows settings changed during development.
 
 ## Beta release environment (2026-10-07)

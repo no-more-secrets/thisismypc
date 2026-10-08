@@ -12,7 +12,13 @@ namespace ThisIsMyPC.Modules.Annoyances.Tests;
 /// </summary>
 public class SkuRestrictionTagTests
 {
-    private static AnnoyancesSettingsReader Reader() => new(new FakeRegistryService());
+    private static AnnoyancesSettingsReader Reader()
+    {
+        var registry = new FakeRegistryService();
+        registry.SetString(AnnoyancesRegistryPaths.StickyKeysKeyPath, "Flags", "510");
+        registry.SetString(AnnoyancesRegistryPaths.KeyboardResponseKeyPath, "Flags", "126");
+        return new(registry);
+    }
 
     [Fact]
     public void CopilotPolicy_CarriesHomeTag_OnSuppressOnly()

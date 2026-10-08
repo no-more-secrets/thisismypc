@@ -28,6 +28,7 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
     private bool _isStagingChange;
     private bool _disposed;
     private string? _stagedGroupId;
+    private bool _stagedToggleState;
     private CancellationTokenSource? _debounceCts;
 
     public SettingCardModel Model { get; }
@@ -67,7 +68,7 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
 
     /// <summary>The content slot has something to show; hidden otherwise so a compact card stays one line tall.</summary>
     public bool HasVisibleContent =>
-        ShowEnforcementBadge || ShowReversionRisks || HasSkuNotice || IsOwnerModeDegraded
+        ShowEnforcementBadge || ShowReversionRisks || HasSkuNotice || HasUnavailableReason || IsOwnerModeDegraded
         || ShowOwnerModeBadge || IsRegistryDataVisible;
 
     /// <summary>"DWord value, read as Suppressed at the last scan".</summary>
@@ -132,8 +133,10 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
     /// <summary>Subtle badge when Owner Mode is required AND available; informational, so Compact folds it away.</summary>
     public bool ShowOwnerModeBadge => Model.OwnerModeRequired && !IsOwnerModeDegraded && !IsCompact;
 
-    /// <summary>The only thing degradation disables is the control itself.</summary>
-    public bool IsControlEnabled => !IsOwnerModeDegraded;
+    public bool HasUnavailableReason => Model.UnavailableReason is not null;
+    public string? UnavailableReason => Model.UnavailableReason;
+    /// <summary>Keep the card readable when its control cannot safely change the setting.</summary>
+    public bool IsControlEnabled => !IsOwnerModeDegraded && !HasUnavailableReason;
 
     /// <summary>The callout button needs the lifecycle service to act.</summary>
     public bool CanTurnOnOwnerMode => IsOwnerModeDegraded && _ownerMode is not null;
@@ -281,8 +284,16 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
     {
         // Degraded cards must never stage, even via programmatic IsEnabled writes;
         // the disabled ToggleSwitch only blocks UI input.
-        if (_suppressStaging || !IsControlEnabled)
+        if (_suppressStaging)
             return;
+
+        if (!IsControlEnabled)
+        {
+            _suppressStaging = true;
+            IsEnabled = _registryIsEnabled;
+            _suppressStaging = false;
+            return;
+        }
 
         _debounceCts?.Cancel();
         _debounceCts?.Dispose();
@@ -306,9 +317,10 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
             if (_disposed)
                 return;
 
-            _registryIsEnabled = _source.ReadCurrentState();
+            var currentState = _source.ReadCurrentState();
 
             var group = _source.CreateToggleGroup(desiredState);
+            _registryIsEnabled = currentState;
 
             _isStagingChange = true;
             try
@@ -323,6 +335,7 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
                 {
                     _pendingChangesService.Stage(group);
                     _stagedGroupId = group.GroupId;
+                    _stagedToggleState = desiredState;
                 }
             }
             finally
@@ -335,6 +348,11 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
         catch (Exception ex)
         {
             Log.Error(ex, "Toggle staging failed for {Setting}", DisplayName);
+            _suppressStaging = true;
+            IsEnabled = _stagedGroupId is not null ? _stagedToggleState : _registryIsEnabled;
+            _suppressStaging = false;
+            UpdatePendingState();
+            _feedback?.Fail($"Could not change {DisplayName}: {ex.Message}");
         }
     }
 

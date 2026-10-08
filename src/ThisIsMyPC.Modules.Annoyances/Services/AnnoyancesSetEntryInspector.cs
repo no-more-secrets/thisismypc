@@ -47,7 +47,7 @@ public sealed class AnnoyancesSetEntryInspector : ISetEntryInspector
         }
 
         var pref = _reader.ReadAll().FirstOrDefault(p => p.Id == entry.SettingId);
-        if (pref is null)
+        if (pref is null || pref.UnavailableReason is not null)
             return null;
 
         return new SetEntryState
@@ -55,7 +55,9 @@ public sealed class AnnoyancesSetEntryInspector : ISetEntryInspector
             SettingDisplayName = pref.DisplayName,
             CurrentValue = pref.CurrentValue,
             CurrentDisplay = pref.IsSuppressed ? "Suppressed" : "Windows default",
-            IsApplied = string.Equals(pref.CurrentValue, entry.Value, StringComparison.Ordinal),
+            IsApplied = pref.ToggleBitMask is not null
+                ? Direction(entry, pref) is { } suppress && pref.IsSuppressed == suppress
+                : string.Equals(pref.CurrentValue, entry.Value, StringComparison.Ordinal),
         };
     }
 
@@ -165,7 +167,7 @@ public sealed class AnnoyancesSetEntryInspector : ISetEntryInspector
         }
 
         var pref = _reader.ReadAll().FirstOrDefault(p => p.Id == entry.SettingId);
-        if (pref is null || Direction(entry, pref) is not { } suppressSingle)
+        if (pref is null || pref.UnavailableReason is not null || Direction(entry, pref) is not { } suppressSingle)
             return null;
 
         // The BingAndEdge section's single toggle (edge-shortcuts) carries the

@@ -52,6 +52,8 @@ public sealed class RestorationCatalogParityTests : IDisposable
     [Fact]
     public void Catalog_lists_every_restorable_single_the_module_emits()
     {
+        _registry.SetString(AnnoyancesRegistryPaths.StickyKeysKeyPath, "Flags", "510");
+        _registry.SetString(AnnoyancesRegistryPaths.KeyboardResponseKeyPath, "Flags", "126");
         // Structural rules from owner-mode-restoration.md: a background restore
         // writes one user-hive, non-policy, DWORD value with an explicit value in
         // both directions and no restart. These two ids meet all of that and are

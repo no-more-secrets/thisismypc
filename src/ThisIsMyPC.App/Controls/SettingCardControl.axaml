@@ -21,6 +21,10 @@
                          Classes.pending-enable="{Binding IsPendingEnable}"
                          Classes.pending-disable="{Binding IsPendingDisable}">
         <StackPanel Spacing="2" IsVisible="{Binding HasVisibleContent}">
+            <TextBlock Text="{Binding UnavailableReason}"
+                       FontSize="11" TextWrapping="Wrap"
+                       Foreground="{DynamicResource InfoBrush}"
+                       IsVisible="{Binding HasUnavailableReason}" />
             <Border Background="{DynamicResource WarningMutedBrush}"
                     CornerRadius="3"
                     Padding="6,1"

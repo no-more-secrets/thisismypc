@@ -41,7 +41,10 @@ public sealed class BuiltInSetsTests
     {
         var desired = new Dictionary<(string, string), string>();
 
-        var reader = new AnnoyancesSettingsReader(new FakeRegistryService());
+        var keyboardRegistry = new StoringFakeRegistryService();
+        keyboardRegistry.WriteString(Modules.Annoyances.AnnoyancesRegistryPaths.StickyKeysKeyPath, "Flags", "510");
+        keyboardRegistry.WriteString(Modules.Annoyances.AnnoyancesRegistryPaths.KeyboardResponseKeyPath, "Flags", "126");
+        var reader = new AnnoyancesSettingsReader(keyboardRegistry);
         foreach (var pref in reader.ReadAll())
         {
             var change = AnnoyanceChangeFactory.CreateToggle(pref, suppress: true);

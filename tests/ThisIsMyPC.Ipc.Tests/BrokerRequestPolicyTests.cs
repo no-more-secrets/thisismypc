@@ -408,7 +408,11 @@ public sealed class BrokerRequestPolicyTests
     {
         public OperationResult<int> ReadDWord(string keyPath, string valueName) => NotFound<int>();
         public OperationResult<string> ReadString(string keyPath, string valueName) =>
-            valueName == "DisplayVersion" ? OperationResult<string>.Success("25H2") : NotFound<string>();
+            valueName == "DisplayVersion" ? OperationResult<string>.Success("25H2")
+            : valueName == "Flags" && keyPath == Modules.Annoyances.AnnoyancesRegistryPaths.StickyKeysKeyPath
+                ? OperationResult<string>.Success("510")
+            : valueName == "Flags" && keyPath == Modules.Annoyances.AnnoyancesRegistryPaths.KeyboardResponseKeyPath
+                ? OperationResult<string>.Success("126") : NotFound<string>();
         public OperationResult<string> ReadExpandString(string keyPath, string valueName) => NotFound<string>();
         public OperationResult<string[]> ReadMultiString(string keyPath, string valueName) => NotFound<string[]>();
         public OperationResult<byte[]> ReadBinary(string keyPath, string valueName) => NotFound<byte[]>();

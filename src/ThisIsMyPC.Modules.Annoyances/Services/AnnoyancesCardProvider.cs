@@ -96,9 +96,8 @@ public sealed class AnnoyancesCardProvider
 
         // Enforcement metadata depends only on the suppress direction, never on live
         // values; derive it from the scan-time preference so BuildCards does no
-        // registry reads, and unconditionally so a factory gaining enforcement later
-        // can never silently lose its badge.
-        var scanTimeEnforcement = driftFragile
+        // registry reads. Unavailable preferences cannot safely produce a descriptor.
+        var scanTimeEnforcement = pref.UnavailableReason is not null ? null : driftFragile
             ? AnnoyanceChangeFactory.CreateDriftFragileToggle(pref, suppress: true).Enforcement
             : AnnoyanceChangeFactory.CreateToggle(pref, suppress: true).Enforcement;
 
@@ -112,7 +111,9 @@ public sealed class AnnoyancesCardProvider
                 Description = pref.Description,
                 ControlType = SettingControlType.Toggle,
                 CurrentValue = pref.IsSuppressed ? "1" : "0",
-                CurrentDisplayValue = pref.IsSuppressed ? "Suppressed" : "Windows default",
+                CurrentDisplayValue = pref.UnavailableReason is not null ? "Unknown"
+                    : pref.IsSuppressed ? "Suppressed" : "Windows default",
+                UnavailableReason = pref.UnavailableReason,
                 RegistryPath = pref.RegistryKeyPath,
                 ValueName = pref.RegistryValueName,
                 RegistryValueType = pref.ValueType.ToString(),

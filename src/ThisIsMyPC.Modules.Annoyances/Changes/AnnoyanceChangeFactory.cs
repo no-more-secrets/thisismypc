@@ -52,13 +52,26 @@ public static class AnnoyanceChangeFactory
 
     /// <summary>
     /// Creates a toggle change. <paramref name="suppress"/> true writes the suppressing
-    /// value; false restores the Windows default. BeforeValue is the preference's live
+    /// value; false restores the Windows default. Bit-field preferences change only their mask.
+    /// BeforeValue is the preference's live
     /// CurrentValue. Catalog DWORD preferences preserve a missing value as empty,
     /// so undo deletes the value. Other preferences keep their existing reader conventions. SettingEnforcement stays null per FR139,
     /// except TierRestrictedSingles ids, which carry the minimum-tier tag on suppress (26-9).
     /// </summary>
     public static ChangeDescriptor CreateToggle(AnnoyancePreference pref, bool suppress)
     {
+        if (pref.UnavailableReason is { } reason)
+            throw new InvalidOperationException(reason);
+
+        var afterValue = suppress ? pref.SuppressedValue : pref.DefaultValue;
+        if (pref.ToggleBitMask is { } mask)
+        {
+            // SKF_HOTKEYACTIVE and FKF_HOTKEYACTIVE are bit 0x4. Preserve every other option.
+            var flags = uint.Parse(pref.CurrentValue, System.Globalization.NumberStyles.None,
+                System.Globalization.CultureInfo.InvariantCulture);
+            afterValue = (suppress ? flags & ~mask : flags | mask)
+                .ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }
         return new ChangeDescriptor
         {
             ModuleId = ModuleId,
@@ -66,7 +79,7 @@ public static class AnnoyanceChangeFactory
             DisplayName = pref.DisplayName,
             SystemLocation = $@"{pref.RegistryKeyPath}\{pref.RegistryValueName}",
             BeforeValue = pref.CurrentValue,
-            AfterValue = suppress ? pref.SuppressedValue : pref.DefaultValue,
+            AfterValue = afterValue,
             BeforeDisplay = pref.IsSuppressed ? "Suppressed" : "Windows default",
             AfterDisplay = suppress ? "Suppressed" : "Windows default",
             ValueType = pref.ValueType,
