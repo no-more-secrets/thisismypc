@@ -52,6 +52,19 @@ They include Pro for third-party suggestions and tailored experiences. These rem
 This does not establish domain or MDM ownership, policy refresh success, or runtime enforcement on every Windows build.
 No new policy editor or Security tab is included. Installed ADMX mappings supply scope and value evidence, not proof of runtime behavior.
 
+### Editable Annoyances policies (2026-10-08)
+
+Windows tips, automatic promoted app installs, and Microsoft consumer features now edit their controlling local computer policies on Enterprise/Education.
+The first two capture both the user preference and any active controlling policy. The consumer-features control edits the policy directly.
+Changing automatic promoted installs can release the shared consumer-features policy. Pending changes show that companion explicitly.
+Ordinary preferences do not create a broader policy when none enforces suppression.
+
+Apply and Undo use the existing local policy transaction, with exact Broker targets and separate saved and live before-values.
+Unrecognized values, mismatches, unreadable sources, and broad deletion instructions remain blocked.
+Two controls cannot queue the same policy simultaneously. Presets report that conflict and preserve the first queued change.
+Preset exports retain the toggle value, rather than the serialized policy snapshot.
+Simulated writes and UI staging do not establish native elevated save behavior or policy enforcement after refresh.
+
 ### Read-only detection tranche (2026-10-07)
 
 `PracticalPolicyCatalog` now maps seven single-DWORD policies. They are detection coverage, not additional editable routes.

@@ -20,6 +20,17 @@ public sealed class PolicyControlStateReader(IRegistryService registry,
 
     public PolicyControlState Read(string moduleId, string settingId, string? ownedLocation = null, ChangeValueType? valueType = null)
     {
+        if (CanEditLocalToggle(moduleId, settingId))
+        {
+            try
+            {
+                var state = ReadLocalToggle(moduleId, settingId);
+                return new(state.Saved is not null || state.Delete ? "Saved local policy" : state.Live == "1" ? "Policy configured" : null,
+                    ToggleState: settingId == "consumer-features" ? state.Live == "1" : state.Live == "1" ? true : null);
+            }
+            catch (Exception ex) when (ex is IOException or InvalidOperationException or UnauthorizedAccessException or System.Security.SecurityException or DecoderFallbackException)
+            { return new(ex.Message, true); }
+        }
         var messages = new List<string>();
         var blocked = false;
         bool? toggle = null;
@@ -131,6 +142,44 @@ public sealed class PolicyControlStateReader(IRegistryService registry,
                 return ReadPowerSetting(setting, parts[3] == "AC");
         }
         return Read(change.ModuleId, change.SettingId, change.SystemLocation, change.ValueType);
+    }
+
+    private bool CanEditLocalToggle(string module, string setting) => HasLocalSourceReader
+        && LocalPolicyToggleCatalog.Location(module, setting) is not null
+        && (capabilityDetector is null || SettingEditionSupport.BlockReason(capabilityDetector.Sku, Core.Modules.WindowsSku.Enterprise) is null);
+
+    private LocalPolicyValue ReadLocalToggle(string module, string setting)
+    {
+        var location = LocalPolicyToggleCatalog.Location(module, setting)!;
+        var value = LocalPolicyValue.Read(location, ChangeValueType.LocalPolicy_DWord, ReadLocalSources(), ReadValue(location));
+        if (!LocalPolicyToggleCatalog.Valid(value)) throw new InvalidOperationException("The policy value is not recognized.");
+        if (value.Saved is not null && value.Saved != value.Live || value.Delete && value.Live != "")
+            throw new InvalidOperationException("Saved local policy differs from the current value. Refresh policy before editing.");
+        return value;
+    }
+
+    /// <summary>Captures the controlling policy with the preference so Apply and Undo update both.</summary>
+    public ChangeGroup PrepareToggleGroup(ChangeGroup group, bool suppress)
+    {
+        if (group.Changes.Count != 1) return group;
+        var primary = group.Changes[0];
+        if (!CanEditLocalToggle(primary.ModuleId, primary.SettingId)) return group;
+        var before = ReadLocalToggle(primary.ModuleId, primary.SettingId);
+        // Ordinary preferences must not introduce a broader consumer policy.
+        if (primary.SettingId != "consumer-features" && before.Live != "1") return group;
+        var after = suppress ? "1" : "0";
+        var location = LocalPolicyToggleCatalog.Location(primary.ModuleId, primary.SettingId)!;
+        var policy = primary with
+        {
+            DisplayName = primary.SettingId == "silent-app-installs" ? "Microsoft consumer features policy" : primary.DisplayName,
+            SystemLocation = location, ValueType = ChangeValueType.LocalPolicy_DWord,
+            BeforeValue = before.Encode(), AfterValue = new LocalPolicyValue(after, after).Encode(),
+            BeforeDisplay = before.Live == "1" ? "Disabled by policy" : "Allowed",
+            AfterDisplay = suppress ? "Disabled by policy" : "Allowed",
+            Enforcement = new Core.Enforcement.SettingEnforcement { SkuRestriction = Core.Modules.WindowsSku.Enterprise },
+        };
+        return group with { Changes = primary.SystemLocation.Equals(location, StringComparison.OrdinalIgnoreCase)
+            ? [policy] : [primary, policy] };
     }
 
     public PolicyControlState ReadPowerSetting(Guid setting, bool ac)

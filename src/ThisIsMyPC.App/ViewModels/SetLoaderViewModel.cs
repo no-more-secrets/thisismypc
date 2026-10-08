@@ -112,6 +112,7 @@ public partial class SetLoaderViewModel : ViewModelBase, IDisposable, ITabbedPag
     private void StageIncluded()
     {
         var staged = 0;
+        var failures = new List<string>();
         // Each Stage/Unstage raises PendingCount; hold the rebuild until the loop is done
         // (BuildPreview would clear the collection being iterated).
         _suppressPendingRefresh = true;
@@ -139,8 +140,15 @@ public partial class SetLoaderViewModel : ViewModelBase, IDisposable, ITabbedPag
                     _pendingChangesService.Unstage(row.Resolution.PendingGroupId);
                 }
 
-                _pendingChangesService.Stage(group);
-                staged++;
+                try
+                {
+                    _pendingChangesService.Stage(group);
+                    staged++;
+                }
+                catch (InvalidOperationException ex)
+                {
+                    failures.Add($"{group.DisplayName}: {ex.Message}");
+                }
             }
         }
         finally
@@ -151,6 +159,8 @@ public partial class SetLoaderViewModel : ViewModelBase, IDisposable, ITabbedPag
         StageMessage = staged == 1
             ? "1 change staged. Review and apply from the pending changes bar."
             : $"{staged} changes staged. Review and apply from the pending changes bar.";
+        if (failures.Count > 0)
+            StageMessage += " " + string.Join(" ", failures);
 
         // Re-resolve: freshly staged rows flip to "already staged" and uncheck.
         BuildPreview();

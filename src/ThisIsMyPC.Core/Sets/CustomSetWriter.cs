@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using ThisIsMyPC.Core.Changes;
+using ThisIsMyPC.Core.Policies;
 using ThisIsMyPC.Core.Sets.Serialization;
 
 namespace ThisIsMyPC.Core.Sets;
@@ -39,7 +40,7 @@ public sealed class CustomSetWriter : ICustomSetWriter
 
             var primary = group.Changes[0];
             var encoder = _encoders.FirstOrDefault(e => e.ModuleId == primary.ModuleId);
-            var value = encoder is null ? primary.AfterValue : encoder.Encode(primary.SettingId,
+            var value = encoder is null ? ExportValue(primary.ValueType, primary.AfterValue) : encoder.Encode(primary.SettingId,
                 group.Changes.Select(c => new SetValue(c.SystemLocation, c.ValueType, c.AfterValue)).ToList());
             if (value is null) { skipped++; continue; }
             entries.Add(new SetEntryDocument
@@ -68,6 +69,7 @@ public sealed class CustomSetWriter : ICustomSetWriter
         // choices need their own complete tuple, even within that batch.
         foreach (var batch in entries.GroupBy(e => e.GroupId ?? $"solo-{e.Id}")
                      .SelectMany(group => group.GroupBy(entry => _encoders.Any(encoder => encoder.ModuleId == entry.ModuleId)
+                         || LocalPolicyToggleCatalog.Location(entry.ModuleId, entry.SettingId) is not null
                          ? (entry.ModuleId, entry.SettingId) : (string.Empty, string.Empty))))
         {
             if (batch.Any(entry => !entry.CanCreateCustomSet))
@@ -87,7 +89,7 @@ public sealed class CustomSetWriter : ICustomSetWriter
             }
 
             var encoder = _encoders.FirstOrDefault(e => e.ModuleId == primary.ModuleId);
-            var value = encoder is null ? primary.AfterValue : encoder.Encode(primary.SettingId,
+            var value = encoder is null ? ExportValue(primary.ValueType, primary.AfterValue) : encoder.Encode(primary.SettingId,
                 batch.Select(c => new SetValue(c.SystemLocation, c.ValueType, c.AfterValue)).ToList());
             if (value is null) { skipped++; continue; }
             documents.Add(new SetEntryDocument
@@ -102,6 +104,9 @@ public sealed class CustomSetWriter : ICustomSetWriter
 
         return Write(metadata, documents, skipped);
     }
+
+    private static string? ExportValue(ChangeValueType type, string? value) => LocalPolicyValue.IsPolicyType(type)
+        ? LocalPolicyValue.Decode(value)?.Live : value;
 
     private CustomSetWriteResult Write(CustomSetMetadata metadata, List<SetEntryDocument> entries, int skipped)
     {

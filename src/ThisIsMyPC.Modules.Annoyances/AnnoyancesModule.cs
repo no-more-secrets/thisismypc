@@ -2,6 +2,7 @@ using ThisIsMyPC.Core.Changes;
 using ThisIsMyPC.Core.Modules;
 using ThisIsMyPC.Core.Results;
 using ThisIsMyPC.Core.Services;
+using ThisIsMyPC.Core.Policies;
 using ThisIsMyPC.Modules.Annoyances.Models;
 using ThisIsMyPC.Modules.Annoyances.Services;
 
@@ -11,11 +12,13 @@ public sealed class AnnoyancesModule : IModule
 {
     private readonly IRegistryService _registryService;
     private readonly AnnoyancesSettingsReader _settingsReader;
+    private readonly ILocalPolicyService? _localPolicies;
 
-    public AnnoyancesModule(IRegistryService registryService)
+    public AnnoyancesModule(IRegistryService registryService, ILocalPolicyService? localPolicies = null)
     {
         _registryService = registryService;
         _settingsReader = new AnnoyancesSettingsReader(registryService);
+        _localPolicies = localPolicies;
     }
 
     public ModuleInfo Info { get; } = new(
@@ -61,6 +64,14 @@ public sealed class AnnoyancesModule : IModule
 
     public Task<OperationResult<bool>> ApplyChangeAsync(ChangeDescriptor change)
     {
+        if (LocalPolicyValue.IsPolicyType(change.ValueType))
+        {
+            if (!LocalPolicyToggleCatalog.Allows(change))
+                return Task.FromResult(OperationResult<bool>.Failure("Unsupported local policy change.", ErrorCategory.ProtectedByPolicy));
+            return Task.Run(() => _localPolicies?.Apply(change.SystemLocation, change.ValueType,
+                LocalPolicyValue.Decode(change.BeforeValue)!, LocalPolicyValue.Decode(change.AfterValue)!)
+                ?? OperationResult<bool>.Failure("The local policy editor is unavailable.", ErrorCategory.ServiceUnavailable));
+        }
         try
         {
             var (keyPath, valueName) = AnnoyancesRegistryPaths.ParseSystemLocation(change.SystemLocation);

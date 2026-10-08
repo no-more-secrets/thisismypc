@@ -270,7 +270,7 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
                 _ownerMode.StateChanged += OnOwnerModeStateChanged;
         }
 
-        _registryIsEnabled = Model.CurrentValue == "1";
+        _registryIsEnabled = _policyState.ToggleState ?? Model.CurrentValue == "1";
         _suppressStaging = true;
         IsEnabled = _policyState.ToggleState ?? _registryIsEnabled;
         _suppressStaging = false;
@@ -325,9 +325,10 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
                 return;
             }
 
-            var currentState = _source.ReadCurrentState();
+            var currentState = _policyState.ToggleState ?? _source.ReadCurrentState();
 
             var group = _source.CreateToggleGroup(desiredState);
+            group = _policyStates?.PrepareToggleGroup(group, desiredState) ?? group;
             _registryIsEnabled = currentState;
 
             _isStagingChange = true;
@@ -399,6 +400,14 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
             }
 
             UpdatePendingState();
+        }
+        if (_stagedGroupId is null && Core.Policies.LocalPolicyToggleCatalog.Location(Model.ModuleId, Model.SettingId) is not null)
+        {
+            RefreshPolicyState();
+            _registryIsEnabled = _policyState.ToggleState ?? _source.ReadCurrentState();
+            _suppressStaging = true;
+            IsEnabled = _registryIsEnabled;
+            _suppressStaging = false;
         }
     }
 

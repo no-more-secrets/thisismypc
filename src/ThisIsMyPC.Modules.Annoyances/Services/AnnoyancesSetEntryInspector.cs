@@ -16,10 +16,12 @@ namespace ThisIsMyPC.Modules.Annoyances.Services;
 public sealed class AnnoyancesSetEntryInspector : ISetEntryInspector
 {
     private readonly AnnoyancesSettingsReader _reader;
+    private readonly Core.Policies.PolicyControlStateReader? _policies;
 
-    public AnnoyancesSetEntryInspector(IRegistryService registryService)
+    public AnnoyancesSetEntryInspector(IRegistryService registryService, Core.Policies.PolicyControlStateReader? policies = null)
     {
         _reader = new AnnoyancesSettingsReader(registryService);
+        _policies = policies;
     }
 
     public string ModuleId => AnnoyanceChangeFactory.ModuleId;
@@ -50,14 +52,17 @@ public sealed class AnnoyancesSetEntryInspector : ISetEntryInspector
         if (pref is null || pref.UnavailableReason is not null)
             return null;
 
+        var policy = _policies?.Read(ModuleId, pref.Id, pref.RegistryKeyPath + "\\" + pref.RegistryValueName, pref.ValueType);
+        var suppressed = policy?.ToggleState ?? pref.IsSuppressed;
         return new SetEntryState
         {
             SettingDisplayName = pref.DisplayName,
-            CurrentValue = pref.CurrentValue,
-            CurrentDisplay = pref.IsSuppressed ? "Suppressed" : "Windows default",
+            CurrentValue = policy?.ToggleState is not null ? suppressed ? pref.SuppressedValue : pref.DefaultValue : pref.CurrentValue,
+            CurrentDisplay = suppressed ? "Suppressed" : "Windows default",
             IsApplied = pref.ToggleBitMask is not null
                 ? Direction(entry, pref) is { } suppress && pref.IsSuppressed == suppress
-                : string.Equals(pref.CurrentValue, entry.Value, StringComparison.Ordinal),
+                : policy?.ToggleState is not null ? Direction(entry, pref) == suppressed
+                    : string.Equals(pref.CurrentValue, entry.Value, StringComparison.Ordinal),
         };
     }
 
@@ -176,13 +181,18 @@ public sealed class AnnoyancesSetEntryInspector : ISetEntryInspector
             ? AnnoyanceChangeFactory.CreateDriftFragileToggle(pref, suppressSingle)
             : AnnoyanceChangeFactory.CreateToggle(pref, suppressSingle);
 
-        return new ChangeGroup
+        var group = new ChangeGroup
         {
             GroupId = Guid.NewGuid().ToString("N"),
             DisplayName = pref.DisplayName,
             Description = pref.Description,
             Changes = [change],
         };
+        if (_policies?.Read(change).BlocksChanges == true) return group;
+        try { return _policies?.PrepareToggleGroup(group, suppressSingle) ?? group; }
+        catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException
+            or System.Security.SecurityException or System.Text.DecoderFallbackException)
+        { return null; }
     }
 
     /// <summary>Maps the entry value to a toggle direction; null = neither direction.</summary>

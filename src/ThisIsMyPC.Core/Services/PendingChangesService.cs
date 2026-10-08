@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using ThisIsMyPC.Core.Policies;
 using ThisIsMyPC.Core.Changes;
 using ThisIsMyPC.Core.Enforcement;
 using ThisIsMyPC.Core.Results;
@@ -145,6 +146,13 @@ public sealed class PendingChangesService : IPendingChangesService
                 throw new InvalidOperationException(
                     $"A group with id '{group.GroupId}' is already staged. Unstage it before staging another under that id.");
             }
+
+            if (group.Changes.Any(change => LocalPolicyValue.IsPolicyType(change.ValueType)
+                && _pendingGroups.SelectMany(g => g.Changes).Any(existing =>
+                    LocalPolicyValue.IsPolicyType(existing.ValueType)
+                    && (existing.ModuleId != change.ModuleId || existing.SettingId != change.SettingId)
+                    && existing.SystemLocation.Equals(change.SystemLocation, StringComparison.OrdinalIgnoreCase))))
+                throw new InvalidOperationException("This local policy already has a pending change. Apply or discard it before changing a related control.");
 
             _pendingGroups.Add(group);
             _appliedGroupIds.Remove(group.GroupId);
