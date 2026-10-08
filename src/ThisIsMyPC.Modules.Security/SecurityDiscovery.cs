@@ -10,7 +10,8 @@ public sealed class SecuritySearchContributor : ISearchSettingsContributor
 {
     public string ModuleId => SecurityCatalog.ModuleId;
     public IReadOnlyList<SearchEntry> GetSearchEntries() => SecurityCatalog.Settings.Select(s =>
-        new SearchEntry(ModuleId, s.Id, s.Title, s.Description, s.Targets.Select(t => t.Name).Append(s.Section).ToList())).ToList();
+        new SearchEntry(ModuleId, s.Id, s.Title, s.Description,
+            s.Targets.Select(t => t.Name).Append(s.Section).Concat(s.Help is null ? [] : new[] { s.Help }).ToList())).ToList();
 }
 
 public sealed class SecuritySetEntryInspector(IRegistryService registry, PolicyControlStateReader? policies = null) : ISetEntryInspector

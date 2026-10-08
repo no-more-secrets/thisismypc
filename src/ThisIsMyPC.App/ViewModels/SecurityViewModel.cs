@@ -32,6 +32,7 @@ public sealed partial class SecurityViewModel : ViewModelBase, ITabbedPage, ISea
         foreach (var row in Rows) row.IsVisible = string.IsNullOrWhiteSpace(value)
             || row.Setting.Title.Contains(value, StringComparison.OrdinalIgnoreCase)
             || row.Setting.Description.Contains(value, StringComparison.OrdinalIgnoreCase)
+            || row.Setting.Help?.Contains(value, StringComparison.OrdinalIgnoreCase) == true
             || row.Setting.Targets.Any(t => t.Name.Contains(value, StringComparison.OrdinalIgnoreCase));
         OnPropertyChanged(nameof(IsSearching));
     }

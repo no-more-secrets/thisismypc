@@ -10,7 +10,17 @@
             <Border Classes="card" Classes.pending-enable="{Binding HasPendingChange}"
                     Padding="14,10" Margin="0,0,0,8" CornerRadius="4" IsVisible="{Binding IsVisible}">
                 <StackPanel Spacing="6">
-                    <TextBlock Text="{Binding Setting.Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    <DockPanel>
+                        <Border DockPanel.Dock="Right" Classes="info-icon" Margin="8,0,0,0"
+                                VerticalAlignment="Top" AutomationProperties.Name="Setting details"
+                                IsVisible="{Binding Setting.Help, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                            <ToolTip.Tip>
+                                <TextBlock Text="{Binding Setting.Help}" MaxWidth="340" TextWrapping="Wrap" />
+                            </ToolTip.Tip>
+                            <icons:FluentIcon Classes="info-icon-glyph" Symbol="Info" />
+                        </Border>
+                        <TextBlock Text="{Binding Setting.Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    </DockPanel>
                     <TextBlock Text="{Binding Setting.Description}" FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
                     <ComboBox ItemsSource="{Binding Choices}" SelectedItem="{Binding SelectedOption}"
                               IsEnabled="{Binding IsControlEnabled}" HorizontalAlignment="Stretch"
@@ -40,8 +50,17 @@
         <controls:ModuleTabControl.Toolbar>
             <StackPanel Margin="0,0,16,8" Spacing="8">
                 <TextBox Text="{Binding SearchText}" Watermark="Search security settings" MinHeight="40" />
-                <TextBlock Text="These controls show configured policies. Active protection can differ because of tamper protection or device management."
-                           FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
+                <DockPanel>
+                    <Border DockPanel.Dock="Right" Classes="info-icon" Margin="8,0,0,0"
+                            AutomationProperties.Name="About security policies">
+                        <ToolTip.Tip>
+                            <TextBlock Text="These controls show configured policies. Active protection can differ because of tamper protection or device management."
+                                       MaxWidth="340" TextWrapping="Wrap" />
+                        </ToolTip.Tip>
+                        <icons:FluentIcon Classes="info-icon-glyph" Symbol="Info" />
+                    </Border>
+                    <TextBlock Text="Security policies" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                </DockPanel>
             </StackPanel>
         </controls:ModuleTabControl.Toolbar>
         <controls:ModuleTabControl.ItemTemplate>

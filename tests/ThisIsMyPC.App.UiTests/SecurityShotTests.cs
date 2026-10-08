@@ -11,12 +11,62 @@ using ThisIsMyPC.Core.Policies;
 using ThisIsMyPC.Core.Changes;
 using ThisIsMyPC.Core.Enforcement;
 using ThisIsMyPC.Core.Results;
+using ThisIsMyPC.Core.Search;
 using ThisIsMyPC.Modules.Security;
 
 namespace ThisIsMyPC.App.UiTests;
 
 public sealed class SecurityShotTests
 {
+    [AvaloniaFact]
+    public void HelpDetails_RemainSearchableWithoutExpandingDescriptions()
+    {
+        var registry = new UiFakeRegistryService();
+        using var vm = new SecurityViewModel(registry, new PendingChangesService(), new CapabilityDetector(registry));
+        vm.SearchText = "NTFS";
+        var row = Assert.Single(vm.Rows.Where(r => r.IsVisible));
+        Assert.Equal("scan-direction", row.Setting.Id);
+        var search = new SettingsSearchService([new SecuritySearchContributor()], _ => (true, null));
+        var result = Assert.Single(search.Search("NTFS"));
+        Assert.Equal(row.Setting.Id, result.Entry.SettingId);
+        Assert.DoesNotContain("NTFS", result.Entry.Description, StringComparison.Ordinal);
+    }
+
+    [AvaloniaFact]
+    public async Task SettingDetails_KeepCaveatsBehindInformationHover()
+    {
+        var registry = new UiFakeRegistryService();
+        registry.WriteString(@"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "EditionID", "Enterprise");
+        using var vm = new SecurityViewModel(registry, new PendingChangesService(), new CapabilityDetector(registry));
+        using var session = UiSession.ForView(new SecurityView(), vm, "security-concise", width: 650, height: 550);
+        foreach (var theme in new[] { ThemeVariant.Dark, ThemeVariant.Light })
+        {
+            session.SetTheme(theme);
+            foreach (var id in new[] { "smartscreen", "phishing-protection" })
+            {
+                var setting = SecurityCatalog.Settings.Single(s => s.Id == id);
+                vm.SearchText = setting.Title;
+                session.Pump();
+                Assert.True(session.IsTextVisible(setting.Description));
+                var info = session.Find<Border>(b => Avalonia.Automation.AutomationProperties.GetName(b) == "Setting details" && b.IsEffectivelyVisible);
+                Assert.False(ToolTip.GetIsOpen(info));
+                session.Screenshot($"{id}-{theme.Key}");
+                session.Hover(info);
+                ToolTip.SetIsOpen(info, true);
+                await Task.Delay(300);
+                session.Pump();
+                var detail = Assert.IsType<TextBlock>(ToolTip.GetTip(info));
+                Assert.Equal(setting.Help, detail.Text);
+                using var frame = TopLevel.GetTopLevel(detail)!.CaptureRenderedFrame();
+                Assert.NotNull(frame);
+                frame.Save(System.IO.Path.Combine(UiSession.FindRepoRoot(), "artifacts", "ui-shots", "security-concise", $"{id}-tooltip-{theme.Key}.png"));
+                session.Hover(session.Find<TextBox>(_ => true));
+                ToolTip.SetIsOpen(info, false);
+                session.Pump();
+            }
+        }
+    }
+
     [AvaloniaFact]
     public void AdditionalDefenderControls_RenderAtNarrowWidth()
     {
