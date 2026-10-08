@@ -19,6 +19,10 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 
 ## Policy coverage and control correctness (2026-10-07)
 
+- DONE October 8: Privacy diagnostic data uses Not configured, Required, and Optional choices on Pro, plus Off on Enterprise/Education. Home retains a disabled control. Values follow [Microsoft's AllowTelemetry policy](https://learn.microsoft.com/en-us/windows/client-management/mdm/policy-csp-system#allowtelemetry).
+- DONE October 8: diagnostic-data choices capture saved and current policy for Apply/Undo and preset export. Competing user policy blocks changes; administrator approval must use the same account. The dropdown does not change DiagTrack service state.
+- DONE October 8: shared cards hide policy values under Technical details. Blocked controls retain a short notice with the reason in their tooltip.
+
 - TODO October 9: determine what pins Windows Update on Sam's PC or prevents update checks. Inspect configured policies, update sources, services, scheduled tasks, and update logs. Identify the controlling setting and distinguish saved configuration from verified behavior before proposing changes.
 - REQUESTED October 8: future integration of [DefenderRemover](https://github.com/ionuttbara/windows-defender-remover), with particular attention to antivirus detections and the reputation of the signed ThisIsMyPC release. This is a planning item, not authorization to remove protection on the development PC.
 - LICENSE BLOCKER checked October 8: upstream's [LICENSE](https://github.com/ionuttbara/windows-defender-remover/blob/main/LICENSE) is CC BY-NC 4.0. Its noncommercial restriction prevents incorporating covered code into this GPLv3 project under those terms. Copying parts or translating scripts to C# does not resolve that restriction. Obtain GPL-compatible permission from the relevant rights holders before source reuse, or implement independently from Windows documentation and independently established behavior. Separate-tool distribution/invocation needs its own licensing assessment and is not an assumed workaround.

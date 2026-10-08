@@ -10,11 +10,16 @@ public sealed class PrivacyModule : IModule
 {
     private readonly IRegistryService _registryService;
     private readonly PrivacySettingsReader _settingsReader;
+    private readonly Core.Policies.ILocalPolicyService? _localPolicies;
+    private readonly Core.Policies.PolicyControlStateReader? _policies;
 
-    public PrivacyModule(IRegistryService registryService)
+    public PrivacyModule(IRegistryService registryService, Core.Policies.ILocalPolicyService? localPolicies = null,
+        Core.Policies.PolicyControlStateReader? policies = null)
     {
         _registryService = registryService;
         _settingsReader = new PrivacySettingsReader(registryService);
+        _localPolicies = localPolicies;
+        _policies = policies;
     }
 
     public ModuleInfo Info { get; } = new(
@@ -52,6 +57,17 @@ public sealed class PrivacyModule : IModule
     /// <summary>Empty AfterValue restores "value absent" (policy Not configured), like PowerModule.</summary>
     public Task<OperationResult<bool>> ApplyChangeAsync(ChangeDescriptor change)
     {
+        if (Core.Policies.LocalPolicyValue.IsPolicyType(change.ValueType))
+        {
+            if (!DiagnosticDataSetting.Allows(change))
+                return Task.FromResult(OperationResult<bool>.Failure("Unsupported privacy policy change.", ErrorCategory.ProtectedByPolicy));
+            try { DiagnosticDataSetting.VerifyUserPolicy(_registryService, _policies); }
+            catch (InvalidOperationException ex)
+            { return Task.FromResult(OperationResult<bool>.Failure(ex.Message, ErrorCategory.ProtectedByPolicy)); }
+            return Task.Run(() => _localPolicies?.Apply(change.SystemLocation, change.ValueType,
+                Core.Policies.LocalPolicyValue.Decode(change.BeforeValue)!, Core.Policies.LocalPolicyValue.Decode(change.AfterValue)!)
+                ?? OperationResult<bool>.Failure("The local policy editor is unavailable.", ErrorCategory.ServiceUnavailable));
+        }
         try
         {
             var (keyPath, valueName) = PrivacyRegistryPaths.ParseSystemLocation(change.SystemLocation);

@@ -23,7 +23,8 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
     private readonly SettingCardSource _source;
     private readonly Core.Policies.PolicyControlStateReader? _policyStates;
     private Core.Policies.PolicyControlState _policyState = Core.Policies.PolicyControlState.None;
-    public string? PolicyStateText => _policyState.Message;
+    public string? PolicyStateText => IsRegistryDataVisible ? _policyState.Message
+        : _policyState.BlocksChanges ? "Controlled by policy" : null;
     public bool HasPolicyState => PolicyStateText is not null;
     private readonly ICapabilityDetector? _capabilityDetector;
     private readonly IOwnerModeLifecycle? _ownerMode;
@@ -40,6 +41,50 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
     public string DisplayName => Model.DisplayName;
     public string Description => Model.Description;
     public bool IsToggle => Model.ControlType == SettingControlType.Toggle;
+    public bool IsDropdown => Model.ControlType == SettingControlType.Dropdown;
+    public IReadOnlyList<SettingOption> Options => Model.AvailableOptions ?? [];
+    public string CurrentChoiceDisplay => Model.CurrentDisplayValue ?? "Unknown";
+    private string _choiceBaseline = "";
+    private SettingOption? _stagedChoice;
+
+    [ObservableProperty]
+    private SettingOption? _selectedOption;
+
+    partial void OnSelectedOptionChanged(SettingOption? value)
+    {
+        if (_suppressStaging || !IsDropdown || value is null) return;
+        try
+        {
+            RefreshPolicyState();
+            if (!IsControlEnabled || !Options.Contains(value))
+                throw new InvalidOperationException(_policyState.Message ?? "This option is unavailable.");
+            var current = _source.ReadCurrentValue!();
+            var group = _source.CreateChoiceGroup!(value.Value);
+            _choiceBaseline = current;
+            _isStagingChange = true;
+            try
+            {
+                if (_stagedGroupId is not null) _pendingChangesService.Unstage(_stagedGroupId);
+                _stagedGroupId = null;
+                if (value.Value != current)
+                {
+                    _pendingChangesService.Stage(group);
+                    _stagedGroupId = group.GroupId;
+                    _stagedChoice = value;
+                }
+            }
+            finally { _isStagingChange = false; }
+            UpdatePendingState();
+        }
+        catch (Exception ex)
+        {
+            _suppressStaging = true;
+            SelectedOption = _stagedGroupId is null ? Options.FirstOrDefault(o => o.Value == _choiceBaseline) : _stagedChoice;
+            _suppressStaging = false;
+            UpdatePendingState();
+            _feedback?.Fail($"Could not change {DisplayName}: {ex.Message}");
+        }
+    }
     public string SystemPath => Model.RegistryPath is null
         ? string.Empty
         : Model.ValueName is null ? Model.RegistryPath : $@"{Model.RegistryPath}\{Model.ValueName}";
@@ -53,9 +98,9 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
     {
         get
         {
-            if (!IsCompact)
-                return Description;
             var lines = new List<string> { Description };
+            if (_policyState.Message is { Length: > 0 } policy) lines.Add(policy);
+            if (!IsCompact) return string.Join(Environment.NewLine, lines);
             if (EnforcementSummary is { Length: > 0 } summary)
                 lines.Add(summary);
             if (ReversionRisksText is { } risks)
@@ -72,7 +117,7 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
 
     /// <summary>The content slot has something to show; hidden otherwise so a compact card stays one line tall.</summary>
     public bool HasVisibleContent =>
-        ShowEnforcementBadge || ShowReversionRisks || HasSkuNotice || HasUnavailableReason || HasPolicyState || IsOwnerModeDegraded
+        IsDropdown || ShowEnforcementBadge || ShowReversionRisks || HasSkuNotice || HasUnavailableReason || HasPolicyState || IsOwnerModeDegraded
         || ShowOwnerModeBadge || IsRegistryDataVisible;
 
     /// <summary>"DWord value, read as Suppressed at the last scan".</summary>
@@ -232,6 +277,8 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
     /// <summary>The technical details panel; closed by default, opened by the page's Technical details box.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasVisibleContent))]
+    [NotifyPropertyChangedFor(nameof(PolicyStateText))]
+    [NotifyPropertyChangedFor(nameof(HasPolicyState))]
     private bool _isRegistryDataVisible;
 
     public SettingCardViewModel(
@@ -273,6 +320,8 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
         _registryIsEnabled = _policyState.ToggleState ?? Model.CurrentValue == "1";
         _suppressStaging = true;
         IsEnabled = _policyState.ToggleState ?? _registryIsEnabled;
+        _choiceBaseline = Model.CurrentValue;
+        SelectedOption = Options.FirstOrDefault(option => option.Value == _choiceBaseline);
         _suppressStaging = false;
 
         _pendingChangesService.PropertyChanged += OnPendingChangesPropertyChanged;
@@ -282,7 +331,7 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
     {
         // Degraded cards must never stage, even via programmatic IsEnabled writes;
         // the disabled ToggleSwitch only blocks UI input.
-        if (_suppressStaging)
+        if (_suppressStaging || !IsToggle)
             return;
 
         RefreshPolicyState();
@@ -386,6 +435,17 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
             var applied = _pendingChangesService.WasApplied(_stagedGroupId);
             _stagedGroupId = null;
 
+            if (IsDropdown)
+            {
+                if (applied) _choiceBaseline = SelectedOption?.Value ?? _choiceBaseline;
+                _suppressStaging = true;
+                SelectedOption = Options.FirstOrDefault(option => option.Value == _choiceBaseline);
+                _suppressStaging = false;
+                RefreshPolicyState();
+                UpdatePendingState();
+                return;
+            }
+
             if (applied)
             {
                 // Applied; keep toggle position, adopt as new baseline.
@@ -414,18 +474,19 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
     private void UpdatePendingState()
     {
         HasPendingChange = _stagedGroupId is not null;
-        IsPendingEnable = HasPendingChange && IsEnabled;
-        IsPendingDisable = HasPendingChange && !IsEnabled;
+        IsPendingEnable = HasPendingChange && (IsDropdown || IsEnabled);
+        IsPendingDisable = HasPendingChange && IsToggle && !IsEnabled;
     }
 
     private void RefreshPolicyState()
     {
-        _policyState = _policyStates?.Read(Model.ModuleId, Model.SettingId, SystemPath,
+        _policyState = _source.ReadPolicyState?.Invoke() ?? _policyStates?.Read(Model.ModuleId, Model.SettingId, SystemPath,
             Enum.TryParse<Core.Changes.ChangeValueType>(Model.RegistryValueType, out var type) ? type : null) ?? Core.Policies.PolicyControlState.None;
         OnPropertyChanged(nameof(PolicyStateText));
         OnPropertyChanged(nameof(HasPolicyState));
         OnPropertyChanged(nameof(HasVisibleContent));
         OnPropertyChanged(nameof(IsControlEnabled));
+        OnPropertyChanged(nameof(TooltipText));
     }
 
     public void Dispose()

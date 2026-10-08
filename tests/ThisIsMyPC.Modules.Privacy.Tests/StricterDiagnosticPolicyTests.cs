@@ -14,16 +14,21 @@ public sealed class StricterDiagnosticPolicyTests
     public void PresetRecognizesARequiredOrStricterPolicy(int value, bool applied, bool covered)
     {
         var registry = new FakeRegistryService();
+        registry.SetString(@"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "EditionID", "Enterprise");
         registry.SetDWord(PrivacyRegistryPaths.DataCollectionPoliciesKeyPath, "AllowTelemetry", value);
         var inspector = new PrivacySetEntryInspector(registry);
         var entry = new SetEntry { ModuleId = inspector.ModuleId, SettingId = "telemetry-level", Value = "1", Description = "Limit data" };
         var state = inspector.Inspect(entry)!;
-        Assert.Equal(applied, state.IsApplied);
+        Assert.Equal(value == 1, state.IsApplied);
         Assert.Equal(covered, state.CoveredByPolicy is not null);
         Assert.Equal(applied, new PrivacySettingsReader(registry).ReadSingles().Single(p => p.Id == "telemetry-level").IsConfigured);
         // Detection preserves the real before-value for explicit changes and undo.
-        var change = Assert.Single(inspector.CreateChangeGroup(entry)!.Changes);
-        Assert.Equal(value.ToString(System.Globalization.CultureInfo.InvariantCulture), change.BeforeValue);
+        if (value == 2) Assert.Null(inspector.CreateChangeGroup(entry));
+        else
+        {
+            var change = Assert.Single(inspector.CreateChangeGroup(entry)!.Changes);
+            Assert.Equal(value.ToString(System.Globalization.CultureInfo.InvariantCulture), change.BeforeValue);
+        }
         Assert.False(inspector.Inspect(entry with { Value = "" })!.IsApplied);
         Assert.Null(inspector.Inspect(entry with { Value = "" })!.CoveredByPolicy);
     }

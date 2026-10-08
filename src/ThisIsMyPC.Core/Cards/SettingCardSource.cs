@@ -20,4 +20,9 @@ public sealed record SettingCardSource
 
     /// <summary>Reads the current live state (registry truth) for the toggle.</summary>
     public required Func<bool> ReadCurrentState { get; init; }
+
+    /// <summary>Dropdowns capture their exact live value when staging.</summary>
+    public Func<string, ChangeGroup>? CreateChoiceGroup { get; init; }
+    public Func<string>? ReadCurrentValue { get; init; }
+    public Func<Policies.PolicyControlState>? ReadPolicyState { get; init; }
 }

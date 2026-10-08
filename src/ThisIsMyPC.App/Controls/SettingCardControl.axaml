@@ -3,6 +3,7 @@
              xmlns:vm="using:ThisIsMyPC.App.ViewModels"
              xmlns:controls="using:ThisIsMyPC.App.Controls"
              xmlns:icons="using:ThisIsMyPC.App.Icons"
+             xmlns:cards="using:ThisIsMyPC.Core.Cards"
              x:Class="ThisIsMyPC.App.Controls.SettingCardControl"
              x:DataType="vm:SettingCardViewModel">
 
@@ -21,6 +22,15 @@
                          Classes.pending-enable="{Binding IsPendingEnable}"
                          Classes.pending-disable="{Binding IsPendingDisable}">
         <StackPanel Spacing="2" IsVisible="{Binding HasVisibleContent}">
+            <ComboBox ItemsSource="{Binding Options}" SelectedItem="{Binding SelectedOption, Mode=TwoWay}"
+                      PlaceholderText="{Binding CurrentChoiceDisplay}" IsVisible="{Binding IsDropdown}"
+                      IsEnabled="{Binding IsControlEnabled}" HorizontalAlignment="Stretch" Margin="0,4,0,2">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="cards:SettingOption">
+                        <TextBlock Text="{Binding DisplayName}" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
             <TextBlock Text="{Binding PolicyStateText}" FontSize="11" TextWrapping="Wrap"
                        Foreground="{DynamicResource InfoBrush}" IsVisible="{Binding HasPolicyState}" />
             <TextBlock Text="{Binding UnavailableReason}"

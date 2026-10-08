@@ -135,7 +135,9 @@ internal sealed class PrivilegedModuleHost : IAsyncDisposable
             string.Equals(location, target.KeyPath + "\\" + target.ValueName, StringComparison.OrdinalIgnoreCase));
         var userPolicy = Core.Policies.LocalPolicyValue.IsPolicyType(change.ValueType)
             && location.StartsWith("HKCU\\", StringComparison.OrdinalIgnoreCase);
-        return !(catalogTarget || userPolicy) || string.Equals(uiUserSid, brokerUserSid, StringComparison.Ordinal);
+        // The diagnostic-data editor checks a competing HKCU policy before applying its HKLM value.
+        var diagnosticData = Modules.Privacy.Services.DiagnosticDataSetting.Allows(change);
+        return !(catalogTarget || userPolicy || diagnosticData) || string.Equals(uiUserSid, brokerUserSid, StringComparison.Ordinal);
     }
 
     internal static async Task<OperationResult<bool>> SaveProtectedChoiceAsync(Action save, Action disableProtection,

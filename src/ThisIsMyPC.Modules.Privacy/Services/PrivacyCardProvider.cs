@@ -25,11 +25,14 @@ public sealed class PrivacyCardProvider
         };
 
     private readonly PrivacySettingsReader _liveReader;
+    private readonly DiagnosticDataSetting _diagnosticData;
 
-    public PrivacyCardProvider(PrivacySettingsReader liveReader)
+    public PrivacyCardProvider(PrivacySettingsReader liveReader, Core.Services.ICapabilityDetector? capabilities = null,
+        Core.Policies.PolicyControlStateReader? policies = null)
     {
         ArgumentNullException.ThrowIfNull(liveReader);
         _liveReader = liveReader;
+        _diagnosticData = new(liveReader.Registry, capabilities, policies);
     }
 
     public IReadOnlyList<SettingCardSource> BuildCards(PrivacyScanData scanData)
@@ -48,7 +51,7 @@ public sealed class PrivacyCardProvider
     private void AddSectionSingles(List<SettingCardSource> cards, PrivacyScanData scanData, PrivacySection section)
     {
         foreach (var pref in scanData.Preferences.Where(p => p.Section == section))
-            cards.Add(SingleCard(pref));
+            cards.Add(pref.Id == "telemetry-level" ? _diagnosticData.CreateCard() : SingleCard(pref));
     }
 
     private SettingCardSource SingleCard(PrivacyPreference pref)

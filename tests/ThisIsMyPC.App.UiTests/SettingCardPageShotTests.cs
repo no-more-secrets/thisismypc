@@ -275,7 +275,7 @@ public class SettingCardPageShotTests
             Assert.Empty(session.FindAll<TextBlock>(t => t.Text is { } text && text.StartsWith("HK", StringComparison.Ordinal)));
             Assert.False(session.IsTextVisible(model.CardGroups[0].Cards[0].Description));
             Assert.False(session.IsTextVisible("Show technical details"));
-            Assert.Equal(model.CardGroups[0].Cards[0].Description,
+            Assert.StartsWith(model.CardGroups[0].Cards[0].Description,
                 session.Find<ToggleCard>(c => c.Title == model.CardGroups[0].Cards[0].DisplayName).Description);
 
             // The second tab opens on a click and shows its own cards.
@@ -355,11 +355,10 @@ public class SettingCardPageShotTests
         using var vm = Privacy(new PendingChangesService());
         using var session = UiSession.ForView(Card(new SettingCardPageView()), vm, "card-pages", width: 1200, height: 800);
         var first = vm.CardGroups[0].Cards[0];
-        var enforced = AllCards(vm).First(c => c.HasEnforcementBadge && c.HasReversionRisks);
+        var enforced = AllCards(vm).First(c => c.HasEnforcementBadge);
         Assert.False(session.IsTextVisible("Show technical details"));
         Assert.False(session.IsTextVisible(first.WrappableSystemPath));
         Assert.True(session.IsTextVisible(enforced.EnforcementSummary!));
-        Assert.True(session.IsTextVisible(enforced.ReversionRisksText!));
 
         var details = session.Find<CheckBox>(c => c.Content as string == "Technical details");
         session.Click(details);
@@ -375,17 +374,17 @@ public class SettingCardPageShotTests
         Assert.False(session.IsTextVisible(first.WrappableSystemPath));
 
         var compact = session.Find<CheckBox>(c => c.Content as string == "Compact");
+        vm.SearchText = enforced.DisplayName;
+        session.Pump();
         var fullHeight = session.Find<ToggleCard>(c => c.Title == enforced.DisplayName).Bounds.Height;
         session.Click(compact);
         Assert.True(vm.IsCompact);
         Assert.All(AllCards(vm), c => Assert.True(c.IsCompact));
         // The informational lines leave the card and ride along in the tooltip; the card gets shorter.
         Assert.False(session.IsTextVisible(enforced.EnforcementSummary!));
-        Assert.False(session.IsTextVisible(enforced.ReversionRisksText!));
         var compactCard = session.Find<ToggleCard>(c => c.Title == enforced.DisplayName);
         Assert.True(compactCard.Bounds.Height < fullHeight, $"compact {compactCard.Bounds.Height} should be shorter than {fullHeight}");
         Assert.Contains(enforced.EnforcementSummary!, compactCard.Description, StringComparison.Ordinal);
-        Assert.Contains(enforced.ReversionRisksText!, compactCard.Description, StringComparison.Ordinal);
         Assert.StartsWith(enforced.Description, compactCard.Description, StringComparison.Ordinal);
         session.Screenshot("privacy-compact");
         session.SetTheme(ThemeVariant.Light);
@@ -393,6 +392,8 @@ public class SettingCardPageShotTests
         session.SetTheme(ThemeVariant.Dark);
 
         // Both boxes together: the densest view still carries the technical lines.
+        vm.SearchText = "";
+        session.Pump();
         session.Click(details);
         Assert.True(session.IsTextVisible(first.WrappableSystemPath));
         session.Screenshot("privacy-compact-details");

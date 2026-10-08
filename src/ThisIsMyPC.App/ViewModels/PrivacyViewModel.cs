@@ -32,7 +32,7 @@ public sealed class PrivacyViewModel : SettingCardPageViewModel
             "privacy",
             // Factories re-read live state at stage time; a scan-time snapshot would bake
             // stale BeforeValues into the descriptors after the first apply.
-            new PrivacyCardProvider(new PrivacySettingsReader(registryService)).BuildCards(scanData),
+            new PrivacyCardProvider(new PrivacySettingsReader(registryService), capabilityDetector, policyStates).BuildCards(scanData),
             SectionSubtitles,
             pendingChangesService,
             displayModeStore,

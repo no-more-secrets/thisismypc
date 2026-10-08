@@ -120,7 +120,7 @@ internal static class BrokerOperationRules
             "Network & Firewall" => Modules.Network.NetworkChanges.Allows(change),
             "Startup & Services" => AllowsStartup(change),
             "Windows Annoyances" => Core.Policies.LocalPolicyToggleCatalog.Allows(change) || AllowsRegistryModule(change, AnnoyanceTargets),
-            "Privacy & Telemetry" => AllowsRegistryModule(change, PrivacyTargets),
+            "Privacy & Telemetry" => Modules.Privacy.Services.DiagnosticDataSetting.Allows(change) || AllowsRegistryModule(change, PrivacyTargets),
             "Security" => Modules.Security.SecurityCatalog.Allows(change),
             "Windows Update" => AllowsRegistryModule(change, WindowsUpdateTargets),
             "Power Plans" => AllowsPower(change),

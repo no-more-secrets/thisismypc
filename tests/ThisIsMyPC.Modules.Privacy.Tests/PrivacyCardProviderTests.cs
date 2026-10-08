@@ -13,7 +13,8 @@ public sealed class PrivacyCardProviderTests
     private IReadOnlyList<SettingCardSource> Build()
     {
         var reader = new PrivacySettingsReader(_registry);
-        return new PrivacyCardProvider(reader).BuildCards(reader.ReadAll());
+        _registry.SetString(@"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "EditionID", "Professional");
+        return new PrivacyCardProvider(reader, new Core.Services.CapabilityDetector(_registry)).BuildCards(reader.ReadAll());
     }
 
     [Fact]
@@ -33,13 +34,14 @@ public sealed class PrivacyCardProviderTests
     }
 
     [Fact]
-    public void TelemetryCard_ShowsTheEnforcedBadge_ForTheDiagTrackCompanion()
+    public void TelemetryCard_UsesPolicyChoicesWithoutChangingTheService()
     {
         var telemetry = Build().Single(c => c.Model.SettingId == "telemetry-level");
 
-        Assert.NotNull(telemetry.Model.Enforcement);
-        Assert.Equal(EnforcementLevel.Enforced, telemetry.Model.Enforcement!.Level);
-        Assert.Null(telemetry.Model.SkuRestriction);
+        Assert.Null(telemetry.Model.Enforcement);
+        Assert.Equal(SettingControlType.Dropdown, telemetry.Model.ControlType);
+        Assert.Equal(WindowsSku.Pro, telemetry.Model.SkuRestriction);
+        Assert.Equal(new[] { "", "1", "3" }, telemetry.Model.AvailableOptions!.Select(o => o.Value));
     }
 
     [Fact]
@@ -64,7 +66,7 @@ public sealed class PrivacyCardProviderTests
         // Registry changes AFTER scan; staging must capture the live before-value.
         _registry.SetDWord(PrivacyRegistryPaths.DataCollectionPoliciesKeyPath, "AllowTelemetry", 3);
 
-        var group = telemetry.CreateToggleGroup(true);
+        var group = telemetry.CreateChoiceGroup!("1");
         Assert.Equal("3", group.Changes.Single().BeforeValue);
 
         var inking = cards.Single(c => c.Model.SettingId == "inking-typing");

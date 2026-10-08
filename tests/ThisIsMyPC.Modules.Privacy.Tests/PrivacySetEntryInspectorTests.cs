@@ -9,7 +9,14 @@ public sealed class PrivacySetEntryInspectorTests
 {
     private readonly FakeRegistryService _registry = new();
 
-    private PrivacySetEntryInspector Inspector => new(_registry);
+    private PrivacySetEntryInspector Inspector
+    {
+        get
+        {
+            _registry.SetString(@"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "EditionID", "Enterprise");
+            return new(_registry);
+        }
+    }
 
     private static SetEntry Entry(string settingId, string value) => new()
     {
@@ -31,13 +38,13 @@ public sealed class PrivacySetEntryInspectorTests
     {
         var state = Inspector.Inspect(Entry("telemetry-level", "1"));
         Assert.NotNull(state);
-        Assert.Equal("Windows default", state!.CurrentDisplay);
+        Assert.Equal("Not configured", state!.CurrentDisplay);
         Assert.False(state.IsApplied);
 
         var group = Inspector.CreateChangeGroup(Entry("telemetry-level", "1"));
         var change = Assert.Single(group!.Changes);
         Assert.Equal("1", change.AfterValue);
-        Assert.Equal(["DiagTrack"], change.Enforcement!.CompanionServices);
+        Assert.Null(change.Enforcement!.CompanionServices);
     }
 
     [Fact]

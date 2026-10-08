@@ -14,16 +14,31 @@ namespace ThisIsMyPC.Modules.Privacy.Services;
 public sealed class PrivacySetEntryInspector : ISetEntryInspector
 {
     private readonly PrivacySettingsReader _reader;
+    private readonly DiagnosticDataSetting _diagnosticData;
 
-    public PrivacySetEntryInspector(IRegistryService registryService)
+    public PrivacySetEntryInspector(IRegistryService registryService, ICapabilityDetector? capabilities = null,
+        Core.Policies.PolicyControlStateReader? policies = null)
     {
         _reader = new PrivacySettingsReader(registryService);
+        _diagnosticData = new(registryService, capabilities ?? new CapabilityDetector(registryService), policies);
     }
 
     public string ModuleId => PrivacyChangeFactory.ModuleId;
 
     public SetEntryState? Inspect(SetEntry entry)
     {
+        if (entry.SettingId == "telemetry-level")
+        {
+            var card = _diagnosticData.CreateCard();
+            var current = card.Model.CurrentValue;
+            return new()
+            {
+                SettingDisplayName = card.Model.DisplayName, CurrentValue = current,
+                CurrentDisplay = card.Model.CurrentDisplayValue!, IsApplied = current == entry.Value,
+                CoveredByPolicy = entry.Value == "1" && current == "0"
+                    ? "The existing diagnostic data policy is stricter than this preset. It will be kept." : null,
+            };
+        }
         if (entry.SettingId == "inking-typing")
         {
             var prefs = _reader.ReadInkingTyping();
@@ -66,6 +81,12 @@ public sealed class PrivacySetEntryInspector : ISetEntryInspector
 
     public ChangeGroup? CreateChangeGroup(SetEntry entry)
     {
+        if (entry.SettingId == "telemetry-level")
+        {
+            if (!_diagnosticData.Options.Any(option => option.Value == entry.Value)) return null;
+            try { return _diagnosticData.Create(entry.Value); }
+            catch (InvalidOperationException) { return null; }
+        }
         if (entry.SettingId == "inking-typing")
         {
             var prefs = _reader.ReadInkingTyping();

@@ -8,6 +8,7 @@ namespace ThisIsMyPC.Modules.Privacy.Services;
 public sealed class PrivacySettingsReader
 {
     private readonly IRegistryService _registryService;
+    internal IRegistryService Registry => _registryService;
 
     public PrivacySettingsReader(IRegistryService registryService)
     {

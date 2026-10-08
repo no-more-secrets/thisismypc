@@ -52,7 +52,7 @@ public sealed class SetLoaderViewModelTests
             [
                 new ShellSetEntryInspector(registry),
                 new AnnoyancesSetEntryInspector(registry),
-                new ThisIsMyPC.Modules.Privacy.Services.PrivacySetEntryInspector(registry),
+                new ThisIsMyPC.Modules.Privacy.Services.PrivacySetEntryInspector(registry, new CapabilityDetector(wuRegistry)),
                 new StartupSetEntryInspector(services, tasks, registry, new FakeStartupFolderService()),
                 new WindowsUpdateSetEntryInspector(wuRegistry),
             ],
