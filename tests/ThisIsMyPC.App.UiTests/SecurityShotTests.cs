@@ -33,8 +33,8 @@ public sealed class SecurityShotTests
         using var session = UiSession.ForView(new SecurityView(), vm, "security-copy", width: 650, height: 550);
         var row = vm.Rows.Single(r => r.Setting.Id == setting.Id);
         var info = session.Find<Border>(b => Avalonia.Automation.AutomationProperties.GetName(b) == "Policy details" && b.IsEffectivelyVisible);
-        Assert.False(row.IsControlEnabled);
-        Assert.True(session.IsTextVisible("Managed by local policy"));
+        Assert.True(row.IsControlEnabled);
+        Assert.True(session.IsTextVisible("Saved local policy"));
         Assert.False(session.IsTextVisible("Policy setting: Off"));
         Assert.DoesNotContain("Application on Pro", row.EditionNotice, StringComparison.Ordinal);
         foreach (var theme in new[] { ThemeVariant.Dark, ThemeVariant.Light })

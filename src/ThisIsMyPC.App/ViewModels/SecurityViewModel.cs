@@ -101,8 +101,8 @@ public sealed partial class SecurityRowViewModel : ObservableObject
             if (readLive) _snapshot = _reader.Read(Setting);
             var state = _snapshot;
             _blocked = _editionBlock ?? state.BlockReason;
-            PolicyText = state.BlockReason;
-            PolicySummary = state.BlockReason is null ? null
+            PolicyText = state.BlockReason ?? state.PolicyNotice;
+            PolicySummary = state.BlockReason is null ? state.PolicyNotice is null ? null : "Saved local policy"
                 : state.BlockReason.StartsWith("Controlled by saved local policy.", StringComparison.Ordinal)
                     ? "Managed by local policy" : "Policy state needs review";
             var existing = _pending.PendingGroups.FirstOrDefault(g => g.Changes.Any(c => c.ModuleId == SecurityCatalog.ModuleId && c.SettingId == Setting.Id));
@@ -110,7 +110,11 @@ public sealed partial class SecurityRowViewModel : ObservableObject
             var values = state.Values.ToArray();
             if (existing is not null)
                 for (var i = 0; i < values.Length; i++)
-                    values[i] = existing.Changes.FirstOrDefault(c => c.SystemLocation == Setting.Targets[i].Location)?.AfterValue ?? values[i];
+                {
+                    var change = existing.Changes.FirstOrDefault(c => c.SystemLocation == Setting.Targets[i].Location);
+                    values[i] = change is null ? values[i] : LocalPolicyValue.IsPolicyType(change.ValueType)
+                        ? LocalPolicyValue.Decode(change.AfterValue)?.Live ?? values[i] : change.AfterValue ?? values[i];
+                }
             SelectedOption = existing is null ? state.Option : Choices.FirstOrDefault(o => o.Values.SequenceEqual(values));
             _displayed = SelectedOption;
             HasPendingChange = existing is not null;

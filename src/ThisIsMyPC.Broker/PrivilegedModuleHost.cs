@@ -50,6 +50,9 @@ internal sealed class PrivilegedModuleHost : IAsyncDisposable
 
         var services = new ServiceCollection();
         services.AddSingleton<IRegistryService, RegistryService>();
+        services.AddSingleton<Core.Policies.ILocalPolicyService, Interop.Com.Policies.LocalPolicyService>();
+        services.AddSingleton(sp => new Core.Policies.PolicyControlStateReader(sp.GetRequiredService<IRegistryService>(),
+            () => Interop.Win32.Policies.LocalPolicyInspector.ReadCurrentSources()));
         services.AddSingleton<IEnvironmentBroadcaster, EnvironmentBroadcaster>();
         services.AddSingleton<IServiceControlService, ServiceControlService>();
         services.AddSingleton<IStartupFolderService, StartupFolderService>();

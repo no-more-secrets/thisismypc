@@ -2,10 +2,11 @@ using ThisIsMyPC.Core.Changes;
 using ThisIsMyPC.Core.Modules;
 using ThisIsMyPC.Core.Results;
 using ThisIsMyPC.Core.Services;
+using ThisIsMyPC.Core.Policies;
 
 namespace ThisIsMyPC.Modules.Security;
 
-public sealed class SecurityModule(IRegistryService registry) : IModule
+public sealed class SecurityModule(IRegistryService registry, ILocalPolicyService? localPolicies = null, PolicyControlStateReader? policies = null) : IModule
 {
     public ModuleInfo Info { get; } = new(SecurityCatalog.ModuleId, "security",
         "Sign-in, antivirus, app protection, and security notifications", [SystemCapability.Registry], ModuleGroup.System, 4);
@@ -17,6 +18,12 @@ public sealed class SecurityModule(IRegistryService registry) : IModule
     public Task<OperationResult<bool>> ApplyChangeAsync(ChangeDescriptor change)
     {
         if (!SecurityCatalog.Allows(change)) return Task.FromResult(OperationResult<bool>.Failure("Unsupported security change.", ErrorCategory.ProtectedByPolicy));
+        if (LocalPolicyValue.IsPolicyType(change.ValueType))
+            return Task.Run(() => localPolicies?.Apply(change.SystemLocation, change.ValueType,
+                LocalPolicyValue.Decode(change.BeforeValue)!, LocalPolicyValue.Decode(change.AfterValue)!)
+                ?? OperationResult<bool>.Failure("The local policy editor is unavailable.", ErrorCategory.ServiceUnavailable));
+        if (policies?.Read(change) is { BlocksChanges: true } blocked)
+            return Task.FromResult(OperationResult<bool>.Failure(blocked.Message!, ErrorCategory.ProtectedByPolicy));
         var split = change.SystemLocation.LastIndexOf('\\');
         var key = change.SystemLocation[..split];
         var name = change.SystemLocation[(split + 1)..];

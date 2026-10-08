@@ -1,5 +1,6 @@
 using ThisIsMyPC.Core.Changes;
 using ThisIsMyPC.Core.Modules;
+using ThisIsMyPC.Core.Policies;
 
 namespace ThisIsMyPC.Modules.Security;
 
@@ -87,14 +88,24 @@ public static class SecurityCatalog
     {
         var setting = Settings.FirstOrDefault(s => s.Id == change.SettingId);
         if (setting is null || change.ModuleId != ModuleId) return false;
-        var index = setting.Targets.ToList().FindIndex(t => t.Location.Equals(change.SystemLocation, StringComparison.OrdinalIgnoreCase) && t.Type == change.ValueType);
+        var local = LocalPolicyValue.IsPolicyType(change.ValueType);
+        if (local && setting.Id == "secure-sign-in") return false;
+        var type = local ? LocalPolicyValue.RegistryType(change.ValueType) : change.ValueType;
+        var index = setting.Targets.ToList().FindIndex(t => t.Location.Equals(change.SystemLocation, StringComparison.OrdinalIgnoreCase) && t.Type == type);
         return index >= 0 && change.Enforcement?.SkuRestriction == setting.Edition
             && !change.Enforcement.AclElevation && !change.Enforcement.OwnerModeRequired
             && change.Enforcement.CompanionServices is not { Count: > 0 }
             && change.Enforcement.CompanionTasks is not { Count: > 0 }
             && change.Enforcement.GPCacheEntries is not { Count: > 0 }
             && change.Enforcement.ReversionVectors is not { Count: > 0 }
-            && setting.Choices.Any(o => o.Values[index] == change.BeforeValue)
-            && setting.Choices.Any(o => o.Values[index] == change.AfterValue);
+            && Valid(change.BeforeValue) && Valid(change.AfterValue);
+
+        bool Valid(string? text)
+        {
+            if (!local) return setting.Choices.Any(o => o.Values[index] == text);
+            var value = LocalPolicyValue.Decode(text);
+            return value is not null && setting.Choices.Any(o => o.Values[index] == value.Live)
+                && (value.Saved is null || value.Saved.Length > 0 && setting.Choices.Any(o => o.Values[index] == value.Saved));
+        }
     }
 }

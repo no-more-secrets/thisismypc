@@ -19,7 +19,8 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 - DONE: shared policy evidence appears on existing Annoyances, Privacy, Windows Update, Explorer, and Power controls. Manual updates are detected through NoAutoUpdate even without AUOptions. Saved local policy, read failures, invalid values, and overrides are checked before staging and applying; presets use the same checks.
 - DONE: Security page adds 16 choices across Sign-in, Defender, App protection, and Notifications. Includes Ctrl+Alt+Delete, typed before-state checks, staged apply/undo, exact Broker targets, edition gating, search, and complete preset export. See [Security](../security-module.md).
 - Pending: domain/MDM provenance, full runtime enforcement testing, and remaining unverified policy relationships.
-- Pending: verify per-policy exceptions and build support, and add writers for saved registry policy and the local security database. Security displays saved policy but blocks direct editing of its values.
+- DONE: Security administrative-template controls queue saved local computer policy and current values together. Windows' policy API saves the GPO; exact target checks, before-state validation, failure restoration, history undo, and preset encoding cover both states.
+- Pending: native elevated Save/undo acceptance, per-policy exceptions and build support, user-policy writers, and the local security database. Broad deletion instructions and conflicting sources still block editing.
 
 - REQUIRED: editable coverage of Sam's practical configured policies and other important policies. See the October 7 requirement in the v1 plan.
 - DONE: expanded read-only inventory across 224 installed ADMX files, 3,552 policy definitions, both applicable registry scopes, and conventional policy roots.

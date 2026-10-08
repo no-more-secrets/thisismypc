@@ -15,6 +15,9 @@ public sealed record PolicyControlState(string? Message = null, bool BlocksChang
 public sealed class PolicyControlStateReader(IRegistryService registry,
     Func<IReadOnlyList<PolicySourceSnapshot>>? readSources = null, ICapabilityDetector? capabilityDetector = null)
 {
+    public bool HasLocalSourceReader => readSources is not null;
+    public IReadOnlyList<PolicySourceSnapshot> ReadLocalSources() => readSources?.Invoke() ?? [];
+
     public PolicyControlState Read(string moduleId, string settingId, string? ownedLocation = null, ChangeValueType? valueType = null)
     {
         var messages = new List<string>();
@@ -110,6 +113,17 @@ public sealed class PolicyControlStateReader(IRegistryService registry,
 
     public PolicyControlState Read(ChangeDescriptor change)
     {
+        if (LocalPolicyValue.IsPolicyType(change.ValueType))
+        {
+            try
+            {
+                var before = LocalPolicyValue.Decode(change.BeforeValue);
+                var current = LocalPolicyValue.Read(change.SystemLocation, change.ValueType, ReadLocalSources(), ReadValue(change.SystemLocation));
+                return before == current ? PolicyControlState.None : new("The saved or current policy changed. Refresh before applying.", true);
+            }
+            catch (Exception ex) when (ex is IOException or InvalidOperationException or UnauthorizedAccessException or System.Security.SecurityException or DecoderFallbackException)
+            { return new(ex.Message, true); }
+        }
         if (change.ValueType == ChangeValueType.PowerPlan_Setting)
         {
             var parts = change.SystemLocation.Split('/');

@@ -25,5 +25,7 @@ public enum ChangeValueType
     /// </summary>
     Autorun_State,
     Shell_NativeSetting,
-    Network_Setting
+    Network_Setting,
+    LocalPolicy_DWord,
+    LocalPolicy_String
 }

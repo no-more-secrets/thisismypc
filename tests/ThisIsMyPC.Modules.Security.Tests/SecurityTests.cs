@@ -139,7 +139,7 @@ public sealed class SecurityTests
     }
 
     [Fact]
-    public void SavedPolicy_KeepsKnownConfigurationVisibleButBlocksDirectWrites()
+    public void SavedPolicy_QueuesSavedAndLiveValuesTogether()
     {
         var registry = RegistryFor("Enterprise");
         var setting = SecurityCatalog.Settings.Single(s => s.Id == "real-time-protection");
@@ -150,8 +150,12 @@ public sealed class SecurityTests
         var policies = new PolicyControlStateReader(registry, () => [source]);
         var reader = new SecuritySettings(registry, policies);
         Assert.Equal("off", reader.Read(setting).Option?.Id);
-        Assert.Contains("saved local policy", reader.Read(setting).BlockReason, StringComparison.Ordinal);
-        Assert.Throws<InvalidOperationException>(() => reader.Create(setting, setting.Choices[0]));
+        Assert.Null(reader.Read(setting).BlockReason);
+        var change = Assert.Single(reader.Create(setting, setting.Choices[0]).Changes);
+        Assert.Equal(ChangeValueType.LocalPolicy_DWord, change.ValueType);
+        Assert.Equal(new LocalPolicyValue("1", "1"), LocalPolicyValue.Decode(change.BeforeValue));
+        Assert.Equal(new LocalPolicyValue(null, ""), LocalPolicyValue.Decode(change.AfterValue));
+        Assert.False(policies.Read(change).BlocksChanges);
     }
 
     [Theory]

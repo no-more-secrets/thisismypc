@@ -43,9 +43,16 @@ editing. Edition checks also apply to presets and the pending queue.
 
 ## Limits
 
-- Saved local registry policies are read and compared. A saved policy, conflicting
-  source, or unreadable source blocks direct editing. This module does not write
-  `Registry.pol`, the local security database, domain policy, or MDM configuration.
+- Administrative-template controls edit saved local computer policy through
+  `IGroupPolicyObject`, which saves `Registry.pol` and updates GPO metadata.
+  Each queued target captures the saved instruction and current registry value.
+  Apply and undo verify both; failures attempt to restore both. Not configured
+  removes the target's saved instruction and current value. Unrelated settings remain.
+- Unknown sources, saved/current conflicts, duplicate instructions, and broad
+  deletion directives block editing. Individual value deletion markers are supported
+  and restored on undo. Changes in another editor before Save are rejected.
+- This module does not write user policy, the local security database, domain
+  policy, or MDM configuration. It does not bypass tamper protection.
 - Ctrl+Alt+Delete reads the current `DisableCAD` registry value. It does not inspect
   the local security database for ownership or a future refresh.
 - Defender tamper protection can reject policy changes. An accepted registry
@@ -69,5 +76,10 @@ without claiming they provide a distinct modern protection level.
 - [Microsoft: controlled folder access](https://learn.microsoft.com/en-us/defender-endpoint/customize-controlled-folders)
 
 Tests use a fake registry for writes, edition gating, before-state checks, undo,
-saved-policy blocking, Broker authorization, and preset export. The live screenshot
+saved-policy transactions, Broker authorization, and preset export. The live screenshot
 test only opens and reads Security; it never applies a choice.
+
+The native writer uses a dedicated STA thread and the Windows machine policy lock.
+Automated tests cover the transaction through a fake policy session. Elevated native
+Save, concurrent Group Policy Editor use, and live undo still need Windows acceptance
+testing; passing unit tests does not establish those results.
