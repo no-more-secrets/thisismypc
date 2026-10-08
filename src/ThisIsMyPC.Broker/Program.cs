@@ -76,10 +76,12 @@ internal static class Program
     }
 
     private static async Task<OperationResult<BrokerRequestPolicy>> OpenSession(
-        NamedPipeClientStream pipe, CancellationToken cancellationToken)
+        NamedPipeClientStream pipe, CancellationToken cancellationToken, IpcEnvelope? provided = null)
     {
-        var frame = await IpcProtocol.ReadFrameAsync(pipe, cancellationToken).ConfigureAwait(false);
-        var envelope = frame is null ? null : IpcSerializer.DeserializeEnvelope(frame);
+        var frame = provided is null
+            ? await IpcProtocol.ReadFrameAsync(pipe, cancellationToken).ConfigureAwait(false)
+            : null;
+        var envelope = provided ?? (frame is null ? null : IpcSerializer.DeserializeEnvelope(frame));
         if (envelope is not { Type: IpcMessageTypes.BrokerSession, PayloadJson: not null })
             return OperationResult<BrokerRequestPolicy>.Failure("The session request is unreadable.", ErrorCategory.AccessDenied);
 
@@ -105,14 +107,21 @@ internal static class Program
             return policy;
         }
 
-        foreach (var page in policy.Value!.BuildConfirmationPages())
+        if (!policy.Value!.Persistent)
         {
-            if (!NativeConfirmation.Confirm(page))
+            var decision = NativeReviewWindow.Show(policy.Value);
+            if (decision != NativeReviewWindow.Decision.Apply)
             {
-                await WriteSessionResponse(pipe, envelope.Nonce, false, "Administrator confirmation was cancelled.", cancellationToken)
-                    .ConfigureAwait(false);
-                return OperationResult<BrokerRequestPolicy>.Failure(
-                    "Administrator confirmation was cancelled.", ErrorCategory.AccessDenied);
+                var discarded = decision == NativeReviewWindow.Decision.Discarded
+                    && policy.Value.HasBatchOperations;
+                var cancelled = decision == NativeReviewWindow.Decision.Cancelled;
+                var message = decision == NativeReviewWindow.Decision.Failed
+                    ? "The administrator review could not open."
+                    : discarded ? "Changes discarded." : "Administrator confirmation was cancelled.";
+                await WriteSessionResponse(pipe, envelope.Nonce, false, message, cancellationToken,
+                    discarded: discarded, cancelled: cancelled).ConfigureAwait(false);
+                return OperationResult<BrokerRequestPolicy>.Failure(message,
+                    discarded ? ErrorCategory.Discarded : cancelled ? ErrorCategory.Cancelled : ErrorCategory.ServiceUnavailable);
             }
         }
 
@@ -123,9 +132,11 @@ internal static class Program
     private static async Task<int> Serve(NamedPipeClientStream pipe, BrokerRequestPolicy policy,
         DeferredModuleHost host, OwnerModeBrokerController ownerMode)
     {
+        var persistent = policy.Persistent;
+        BrokerRequestPolicy? activePolicy = persistent ? null : policy;
         while (pipe.IsConnected)
         {
-            using var idle = new CancellationTokenSource(SessionIdleTimeout);
+            using var idle = persistent ? new CancellationTokenSource() : new CancellationTokenSource(SessionIdleTimeout);
             var frame = await IpcProtocol.ReadFrameAsync(pipe, idle.Token).ConfigureAwait(false);
             if (frame is null)
                 return 0;
@@ -134,6 +145,21 @@ internal static class Program
                 return 3;
             if (envelope.Type == IpcMessageTypes.BrokerClose)
                 return 0;
+            if (persistent && envelope.Type == IpcMessageTypes.BrokerSession)
+            {
+                activePolicy = null;
+                var reviewed = await OpenSession(pipe, idle.Token, envelope).ConfigureAwait(false);
+                if (reviewed.IsSuccess && !reviewed.Value!.Persistent)
+                    activePolicy = reviewed.Value;
+                continue;
+            }
+            if (persistent && envelope.Type == IpcMessageTypes.BrokerEndBatch)
+            {
+                activePolicy = null;
+                await WriteSessionResponse(pipe, envelope.Nonce, true, null, idle.Token,
+                    IpcMessageTypes.BrokerEndBatch).ConfigureAwait(false);
+                continue;
+            }
             if (envelope is not { Type: IpcMessageTypes.BrokerCommand, PayloadJson: not null })
             {
                 await WriteCommandResponse(pipe, envelope.Nonce, Failure("Unexpected broker message."), idle.Token)
@@ -151,7 +177,7 @@ internal static class Program
                 command = null;
             }
             using var operation = new CancellationTokenSource(OperationTimeout);
-            var response = command is null || !policy.Authorizes(command)
+            var response = command is null || activePolicy is null || !activePolicy.Authorizes(command)
                 ? Failure("The command was not approved for this broker session.")
                 : await Execute(command, host, ownerMode, operation.Token).ConfigureAwait(false);
             await WriteCommandResponse(pipe, envelope.Nonce, response, operation.Token).ConfigureAwait(false);
@@ -208,12 +234,13 @@ internal static class Program
     }
 
     private static Task WriteSessionResponse(Stream pipe, string nonce, bool accepted, string? error,
-        CancellationToken cancellationToken) => Write(pipe, new()
+        CancellationToken cancellationToken, string type = IpcMessageTypes.BrokerSession,
+        bool discarded = false, bool cancelled = false) => Write(pipe, new()
     {
-        Type = IpcMessageTypes.BrokerSession,
+        Type = type,
         Nonce = nonce,
         PayloadJson = JsonSerializer.Serialize(
-            new BrokerSessionResponse { Accepted = accepted, ErrorMessage = error },
+            new BrokerSessionResponse { Accepted = accepted, Discarded = discarded, Cancelled = cancelled, ErrorMessage = error },
             IpcJsonContext.Default.BrokerSessionResponse),
     }, cancellationToken);
 

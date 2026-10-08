@@ -33,6 +33,39 @@ public sealed class BrokerRequestPolicyTests
     }
 
     [Fact]
+    public void PersistentStartupGrantsNoOperation()
+    {
+        var policy = BrokerRequestPolicy.Create(new() { Persistent = true });
+
+        Assert.True(policy.IsSuccess);
+        Assert.True(policy.Value!.Persistent);
+        Assert.Empty(policy.Value.BuildConfirmationPages());
+        Assert.False(policy.Value.Authorizes(new() { Kind = BrokerCommandKind.EnableOwnerMode }));
+        Assert.False(BrokerRequestPolicy.Create(new()
+        {
+            Persistent = true,
+            Changes = [Change()],
+        }).IsSuccess);
+    }
+
+    [Fact]
+    public void DesktopUserOperationIsReviewedWithoutGrantingPrivilege()
+    {
+        var policy = BrokerRequestPolicy.Create(new()
+        {
+            ReviewOnly = [new() { DisplayName = "Local setting", Detail = "Off -> On" }],
+        });
+
+        Assert.True(policy.IsSuccess);
+        Assert.Contains("Local setting", policy.Value!.BuildConfirmationPages()[0], StringComparison.Ordinal);
+        Assert.False(policy.Value.Authorizes(new() { Kind = BrokerCommandKind.EnableOwnerMode }));
+        Assert.False(BrokerRequestPolicy.Create(new()
+        {
+            ReviewOnly = [new() { DisplayName = "bad\nname", Detail = "Off -> On" }],
+        }).IsSuccess);
+    }
+
+    [Fact]
     public void NullCollectionsAndEntriesAreRejected()
     {
         Assert.False(BrokerRequestPolicy.Create(new() { Changes = null! }).IsSuccess);

@@ -1842,10 +1842,25 @@ public partial class MainWindowViewModel : ViewModelBase
             // PendingCount counts groups, so a single 6-change set must still trigger.
             // One-way actions count too: a bulk of Appx removals is the least
             // reversible thing in the app and deserves the restore point most.
-            var brokerChanges = _pendingChangesService.PendingGroups.SelectMany(group => group.Changes)
+            var allChanges = _pendingChangesService.PendingGroups.SelectMany(group => group.Changes).ToList();
+            var brokerChanges = allChanges
                 .Where(change => !IsLocalCoolingProfile(change)).ToList();
-            var brokerActions = (_pendingActionsService?.PendingActions ?? [])
+            var allActions = (_pendingActionsService?.PendingActions ?? []).ToList();
+            var brokerActions = allActions
                 .Where(action => !Modules.Software.SoftwareModule.RunsAsDesktopUser(action)).ToList();
+            var reviewOnly = allChanges.Where(IsLocalCoolingProfile)
+                .Select(change => new Ipc.Contracts.BrokerReviewItem
+                {
+                    DisplayName = change.DisplayName,
+                    Detail = $"{change.SystemLocation}: {change.BeforeDisplay} -> {change.AfterDisplay}",
+                })
+                .Concat(allActions.Where(Modules.Software.SoftwareModule.RunsAsDesktopUser)
+                    .Select(action => new Ipc.Contracts.BrokerReviewItem
+                    {
+                        DisplayName = action.DisplayName,
+                        Detail = action.Detail,
+                    }))
+                .ToList();
             var changeCount = brokerChanges.Count
                 + (_pendingActionsService?.PendingCount ?? 0);
             var restorePointDescription = changeCount >= AutoRestorePointThreshold && !_applyWithoutRestorePoint
@@ -1854,16 +1869,24 @@ public partial class MainWindowViewModel : ViewModelBase
 
             IPrivilegeBrokerSession? brokerSession = null;
             if (_privilegeBroker is not null && (brokerChanges.Count > 0
-                || brokerActions.Count > 0 || restorePointDescription is not null))
+                || brokerActions.Count > 0 || reviewOnly.Count > 0 || restorePointDescription is not null))
             {
                 var opened = await _privilegeBroker.OpenSessionAsync(new Ipc.Contracts.BrokerSessionRequest
                 {
                     Changes = brokerChanges,
                     Actions = brokerActions,
+                    ReviewOnly = reviewOnly,
                     RestorePointDescription = restorePointDescription,
                 }, cancellationToken).ConfigureAwait(true);
                 if (!opened.IsSuccess)
                 {
+                    if (opened.ErrorCategory == ErrorCategory.Discarded)
+                    {
+                        await DiscardAllAsync().ConfigureAwait(true);
+                        return;
+                    }
+                    if (opened.ErrorCategory == ErrorCategory.Cancelled)
+                        return;
                     SetStatus(opened.ErrorMessage ?? "Administrator confirmation failed.", StatusSeverity.Error);
                     return;
                 }

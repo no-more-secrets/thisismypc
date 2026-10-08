@@ -2,6 +2,13 @@
 
 Current release scope: [v1 completion plan](v1-completion-plan.md), approved 2026-09-06. It supersedes older post-release hardware assumptions below.
 
+## Broker review at app startup (2026-10-08)
+
+- DONE: The app requests one administrator confirmation at startup and keeps the broker connected until the UI closes.
+- DONE: Apply sends staged operations to a native Win32 broker window. Apply All authorizes the batch; Discard All clears it. Closing the window keeps changes staged.
+- Verified: 3,726 CI-safe tests, native review button tests, rendered review and Apply bar screenshots, fresh review, and a NativeAOT broker publish.
+- Pending: Verify startup UAC, elevated review focus, live Apply, and broker exit on a normal Windows installation.
+
 ## Network & Firewall initial tabs (2026-10-07)
 
 - DONE October 8: expanded adapter rows keep switches beside the header. Selection and hover no longer add gray or black fills or inner outlines.

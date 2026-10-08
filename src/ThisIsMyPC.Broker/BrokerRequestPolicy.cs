@@ -39,14 +39,19 @@ internal sealed class BrokerRequestPolicy
 
     private readonly IReadOnlyList<ChangeDescriptor> _changes;
     private readonly IReadOnlyList<ActionDescriptor> _actions;
+    private readonly IReadOnlyList<BrokerReviewItem> _reviewOnly;
     private readonly string? _restorePointDescription;
     private readonly bool _allowOwnerModeEnable;
     private readonly bool _allowOwnerModeDisable;
+    internal bool Persistent { get; }
+    internal bool HasBatchOperations => _changes.Count + _actions.Count + _reviewOnly.Count > 0;
 
     private BrokerRequestPolicy(BrokerSessionRequest request)
     {
+        Persistent = request.Persistent;
         _changes = request.Changes;
         _actions = request.Actions;
+        _reviewOnly = request.ReviewOnly;
         _restorePointDescription = request.RestorePointDescription;
         _allowOwnerModeEnable = request.AllowOwnerModeEnable;
         _allowOwnerModeDisable = request.AllowOwnerModeDisable;
@@ -55,20 +60,27 @@ internal sealed class BrokerRequestPolicy
     internal static OperationResult<BrokerRequestPolicy> Create(BrokerSessionRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
-        if (request.Changes is null || request.Actions is null
+        if (request.Changes is null || request.Actions is null || request.ReviewOnly is null
             || request.Changes.Any(change => change is null)
-            || request.Actions.Any(action => action is null))
+            || request.Actions.Any(action => action is null)
+            || request.ReviewOnly.Any(item => item is null))
         {
             return Failure("The request contains a null operation collection or entry.");
         }
-        var total = request.Changes.Count + request.Actions.Count;
+        var total = request.Changes.Count + request.Actions.Count + request.ReviewOnly.Count;
         if (total > MaximumOperations)
             return Failure($"The request contains {total} operations. The limit is {MaximumOperations}.");
-        if (total == 0 && request.RestorePointDescription is null
+        if (request.Persistent && (total != 0 || request.RestorePointDescription is not null
+            || request.AllowOwnerModeEnable || request.AllowOwnerModeDisable))
+            return Failure("A persistent broker session cannot authorize operations at startup.");
+        if (!request.Persistent && total == 0 && request.RestorePointDescription is null
             && !request.AllowOwnerModeEnable && !request.AllowOwnerModeDisable)
         {
-            return Failure("The request contains no privileged operation.");
+            return Failure("The request contains no operation.");
         }
+
+        if (request.ReviewOnly.Any(item => !ValidRequired(item.DisplayName) || !ValidRequired(item.Detail)))
+            return Failure("A review item contains invalid or oversized text.");
 
         foreach (var change in request.Changes)
         {
@@ -131,6 +143,7 @@ internal sealed class BrokerRequestPolicy
             {
                 $"{change.ModuleId}: {change.SettingId}",
                 $"Target: {change.SystemLocation}",
+                $"Current value: {DisplayValue(change.BeforeValue)}",
                 $"New value: {DisplayValue(change.AfterValue)}",
             };
             AddEnforcementTargets(lines, change.Enforcement);
@@ -138,8 +151,10 @@ internal sealed class BrokerRequestPolicy
         }
         foreach (var action in _actions)
         {
-            operations.Add([$"{action.ModuleId}: {action.ActionId}"]);
+            operations.Add([$"{action.ModuleId}: {action.ActionId}", action.Detail]);
         }
+        foreach (var item in _reviewOnly)
+            operations.Add([$"Desktop-user operation: {item.DisplayName}", item.Detail]);
         if (_restorePointDescription is not null)
             operations.Add([$"Create restore point: {_restorePointDescription}"]);
         if (_allowOwnerModeEnable)

@@ -10,5 +10,7 @@ public enum ErrorCategory
     HardwareNotPresent,
     EnforcementBlocked,
     SkuRestricted,
-    OwnerModeRequired
+    OwnerModeRequired,
+    Discarded,
+    Cancelled
 }

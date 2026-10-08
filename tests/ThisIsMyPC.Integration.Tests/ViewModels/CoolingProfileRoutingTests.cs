@@ -41,16 +41,18 @@ public sealed class CoolingProfileRoutingTests : IDisposable
 
         Assert.Equal(0, pending.PendingCount);
         Assert.Equal(Profile, await File.ReadAllTextAsync(Path.Combine(_root, "Configurations", "copy.json")));
-        Assert.Equal(mixed ? 1 : 0, broker.Requests.Count);
+        var request = Assert.Single(broker.Requests);
+        Assert.Single(request.ReviewOnly);
         if (mixed)
         {
-            Assert.Equal("SystemTest", Assert.Single(broker.Requests[0].Changes).ModuleId);
+            Assert.Equal("SystemTest", Assert.Single(request.Changes).ModuleId);
             Assert.Equal("SystemTest", Assert.Single(broker.Session.Applied).ModuleId);
         }
+        else Assert.Empty(request.Changes);
     }
 
     [Fact]
-    public async Task ManyLocalProfiles_DoNotRequestElevationOrSystemRestore()
+    public async Task ManyLocalProfiles_RequireReviewWithoutSystemRestore()
     {
         Directory.CreateDirectory(Path.Combine(_root, "Configurations"));
         await File.WriteAllTextAsync(Path.Combine(_root, "Configurations", "source.json"), Profile);
@@ -70,7 +72,10 @@ public sealed class CoolingProfileRoutingTests : IDisposable
         await vm.ApplyAllCommand.ExecuteAsync(null);
 
         Assert.Equal(0, pending.PendingCount);
-        Assert.Empty(broker.Requests);
+        var request = Assert.Single(broker.Requests);
+        Assert.Equal(6, request.ReviewOnly.Count);
+        Assert.Empty(request.Changes);
+        Assert.Null(request.RestorePointDescription);
         Assert.Equal(7, Directory.GetFiles(Path.Combine(_root, "Configurations")).Length);
     }
 

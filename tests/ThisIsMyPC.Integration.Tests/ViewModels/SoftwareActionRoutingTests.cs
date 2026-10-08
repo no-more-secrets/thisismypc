@@ -47,12 +47,14 @@ public sealed class SoftwareActionRoutingTests : IDisposable
 
         Assert.Equal(0, actions.PendingCount);
         Assert.Equal(operation, Assert.Single(winget.Operations));
-        Assert.Equal(mixed ? 1 : 0, broker.Requests.Count);
+        var request = Assert.Single(broker.Requests);
+        Assert.Single(request.ReviewOnly);
         if (mixed)
         {
-            Assert.StartsWith("appx-remove:", Assert.Single(broker.Requests[0].Actions).ActionId);
+            Assert.StartsWith("appx-remove:", Assert.Single(request.Actions).ActionId);
             Assert.StartsWith("appx-remove:", Assert.Single(broker.Session.Actions).ActionId);
         }
+        else Assert.Empty(request.Actions);
     }
 
     public void Dispose()

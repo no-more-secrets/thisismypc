@@ -28,6 +28,7 @@ public static class IpcMessageTypes
     public const string RestorationHistory = "restoration-history";
     public const string BrokerSession = "broker-session";
     public const string BrokerCommand = "broker-command";
+    public const string BrokerEndBatch = "broker-end-batch";
     public const string BrokerClose = "broker-close";
 }
 
@@ -48,11 +49,20 @@ public enum BrokerCommandKind
 /// </summary>
 public sealed record BrokerSessionRequest
 {
+    public bool Persistent { get; init; }
     public IReadOnlyList<Core.Changes.ChangeDescriptor> Changes { get; init; } = [];
     public IReadOnlyList<Core.Actions.ActionDescriptor> Actions { get; init; } = [];
+    public IReadOnlyList<BrokerReviewItem> ReviewOnly { get; init; } = [];
     public string? RestorePointDescription { get; init; }
     public bool AllowOwnerModeEnable { get; init; }
     public bool AllowOwnerModeDisable { get; init; }
+}
+
+/// <summary>A desktop-user operation displayed in the broker without granting privilege.</summary>
+public sealed record BrokerReviewItem
+{
+    public required string DisplayName { get; init; }
+    public required string Detail { get; init; }
 }
 
 /// <summary>One command sent after the elevated broker accepted a session.</summary>
@@ -77,6 +87,8 @@ public sealed record BrokerCommandResponse
 public sealed record BrokerSessionResponse
 {
     public required bool Accepted { get; init; }
+    public bool Discarded { get; init; }
+    public bool Cancelled { get; init; }
     public string? ErrorMessage { get; init; }
 }
 

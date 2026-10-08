@@ -13,6 +13,7 @@ namespace ThisIsMyPC.App;
 sealed class Program
 {
     internal static IInstallationGuard? InstallGuard { get; private set; }
+    internal static PrivilegeBrokerClient? StartupBroker { get; private set; }
 
     [STAThread]
     public static void Main(string[] args)
@@ -100,6 +101,16 @@ sealed class Program
             // Older profile builds stored data under roaming AppData. Copy it once
             // before services open the local UI state.
             LegacyDataMigration.CopyFromUserProfile(dataDir, log);
+
+            var broker = new PrivilegeBrokerClient();
+            var started = broker.StartPersistentAsync().GetAwaiter().GetResult();
+            if (!started.IsSuccess)
+            {
+                log.Error("The privilege broker did not start: {Error}", started.ErrorMessage);
+                Environment.ExitCode = 1;
+                return;
+            }
+            StartupBroker = broker;
 
             BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
         }

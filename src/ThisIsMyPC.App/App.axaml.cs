@@ -291,7 +291,7 @@ public partial class App : Application
         // Owner Mode IPC client (28-1); connects per request; a missing service
         // degrades to ServiceUnavailable, never an error dialog.
         services.AddSingleton<ThisIsMyPC.Ipc.Contracts.IIpcClient>(_ => new ThisIsMyPC.Ipc.Contracts.IpcClient());
-        services.AddSingleton<IPrivilegeBrokerClient, PrivilegeBrokerClient>();
+        services.AddSingleton<IPrivilegeBrokerClient>(_ => Program.StartupBroker ?? new PrivilegeBrokerClient());
 
         // Owner Mode lifecycle (28-2): SCM registration + live capability probe.
         services.AddSingleton<IServiceInstaller, ServiceInstaller>();

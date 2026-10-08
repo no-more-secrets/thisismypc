@@ -34,20 +34,63 @@ public interface IPrivilegeBrokerClient
 /// Starts the signed elevated broker after creating a random callback pipe.
 /// Both ends bind the pipe to the exact process identifiers they opened.
 /// </summary>
-public sealed class PrivilegeBrokerClient : IPrivilegeBrokerClient
+public sealed class PrivilegeBrokerClient : IPrivilegeBrokerClient, IAsyncDisposable
 {
     private static readonly TimeSpan StartTimeout = TimeSpan.FromSeconds(45);
     private readonly string _brokerPath;
+    private readonly SemaphoreSlim _batchGate = new(1, 1);
+    private PrivilegeBrokerSession? _persistentSession;
 
     public PrivilegeBrokerClient(string? brokerPath = null)
     {
         _brokerPath = brokerPath ?? Path.Combine(AppContext.BaseDirectory, "ThisIsMyPC.Broker.exe");
     }
 
+    public async Task<OperationResult<bool>> StartPersistentAsync(CancellationToken cancellationToken = default)
+    {
+        if (_persistentSession is { } existing)
+            return existing.IsUsable
+                ? OperationResult<bool>.Success(true)
+                : OperationResult<bool>.Failure("The privilege broker connection ended. Restart ThisIsMyPC.",
+                    ErrorCategory.ServiceUnavailable);
+        var opened = await OpenSessionAsync(new BrokerSessionRequest { Persistent = true }, cancellationToken)
+            .ConfigureAwait(false);
+        if (!opened.IsSuccess)
+            return OperationResult<bool>.Failure(opened.ErrorMessage ?? "The privilege broker did not start.",
+                opened.ErrorCategory ?? ErrorCategory.ServiceUnavailable, opened.Exception);
+        _persistentSession = (PrivilegeBrokerSession)opened.Value!;
+        return OperationResult<bool>.Success(true);
+    }
+
     public async Task<OperationResult<IPrivilegeBrokerSession>> OpenSessionAsync(
         BrokerSessionRequest request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
+        if (_persistentSession is { } persistent)
+        {
+            if (!persistent.IsUsable)
+                return Failure("The privilege broker connection ended. Restart ThisIsMyPC.");
+            if (request.Persistent)
+                return OperationResult<IPrivilegeBrokerSession>.Failure(
+                    "The broker is already running.", ErrorCategory.AccessDenied);
+            await _batchGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+            var leased = false;
+            try
+            {
+                var reviewed = await persistent.Open(request, cancellationToken).ConfigureAwait(false);
+                if (!reviewed.IsSuccess)
+                    return OperationResult<IPrivilegeBrokerSession>.Failure(
+                        reviewed.ErrorMessage ?? "Administrator review failed.",
+                        reviewed.ErrorCategory ?? ErrorCategory.AccessDenied, reviewed.Exception);
+                leased = true;
+                return OperationResult<IPrivilegeBrokerSession>.Success(new BatchLease(persistent, _batchGate));
+            }
+            finally
+            {
+                if (!leased)
+                    _batchGate.Release();
+            }
+        }
         if (!File.Exists(_brokerPath))
         {
             return OperationResult<IPrivilegeBrokerSession>.Failure(
@@ -95,7 +138,6 @@ public sealed class PrivilegeBrokerClient : IPrivilegeBrokerClient
                     Verb = "runas",
                     UseShellExecute = true,
                     WorkingDirectory = Environment.SystemDirectory,
-                    WindowStyle = ProcessWindowStyle.Hidden,
                 });
             }
             catch (Win32Exception ex) when (ex.NativeErrorCode == 1223)
@@ -153,8 +195,50 @@ public sealed class PrivilegeBrokerClient : IPrivilegeBrokerClient
         }
     }
 
+    public async ValueTask DisposeAsync()
+    {
+        if (_persistentSession is { } session)
+        {
+            _persistentSession = null;
+            await session.DisposeAsync().ConfigureAwait(false);
+        }
+        _batchGate.Dispose();
+    }
+
     private static OperationResult<IPrivilegeBrokerSession> Failure(string message) =>
         OperationResult<IPrivilegeBrokerSession>.Failure(message, ErrorCategory.ServiceUnavailable);
+
+    private sealed class BatchLease(PrivilegeBrokerSession session, SemaphoreSlim batchGate)
+        : IPrivilegeBrokerSession
+    {
+        private int _disposed;
+
+        public Task<OperationResult<bool>> ApplyChangeAsync(ChangeDescriptor change, CancellationToken cancellationToken = default) =>
+            session.ApplyChangeAsync(change, cancellationToken);
+        public Task<OperationResult<bool>> RevertChangeAsync(ChangeDescriptor change, CancellationToken cancellationToken = default) =>
+            session.RevertChangeAsync(change, cancellationToken);
+        public Task<OperationResult<bool>> ExecuteActionAsync(ActionDescriptor action, CancellationToken cancellationToken = default) =>
+            session.ExecuteActionAsync(action, cancellationToken);
+        public Task<RestorePointResult> CreateRestorePointAsync(string description, CancellationToken cancellationToken = default) =>
+            session.CreateRestorePointAsync(description, cancellationToken);
+        public Task<OperationResult<bool>> EnableOwnerModeAsync(CancellationToken cancellationToken = default) =>
+            session.EnableOwnerModeAsync(cancellationToken);
+        public Task<OperationResult<bool>> DisableOwnerModeAsync(CancellationToken cancellationToken = default) =>
+            session.DisableOwnerModeAsync(cancellationToken);
+
+        public async ValueTask DisposeAsync()
+        {
+            if (Interlocked.Exchange(ref _disposed, 1) != 0)
+                return;
+            try
+            {
+                var ended = await session.EndBatch().ConfigureAwait(false);
+                if (!ended.IsSuccess || ended.Value?.Accepted != true)
+                    await session.DisposeAsync().ConfigureAwait(false);
+            }
+            finally { batchGate.Release(); }
+        }
+    }
 
     private sealed class PrivilegeBrokerSession : IPrivilegeBrokerSession
     {
@@ -162,6 +246,7 @@ public sealed class PrivilegeBrokerClient : IPrivilegeBrokerClient
         private readonly Process _process;
         private readonly SemaphoreSlim _gate = new(1, 1);
         private bool _disposed;
+        internal bool IsUsable => !_disposed;
 
         internal PrivilegeBrokerSession(NamedPipeServerStream pipe, Process process)
         {
@@ -172,6 +257,8 @@ public sealed class PrivilegeBrokerClient : IPrivilegeBrokerClient
         internal async Task<OperationResult<bool>> Open(
             BrokerSessionRequest request, CancellationToken cancellationToken)
         {
+            if (!request.Persistent)
+                _ = BrokerWindowFocus.Allow(_process.Id);
             var response = await Exchange(
                 IpcMessageTypes.BrokerSession,
                 JsonSerializer.Serialize(request, IpcJsonContext.Default.BrokerSessionRequest),
@@ -181,8 +268,13 @@ public sealed class PrivilegeBrokerClient : IPrivilegeBrokerClient
                 ? OperationResult<bool>.Success(true)
                 : OperationResult<bool>.Failure(
                     response.Value?.ErrorMessage ?? response.ErrorMessage ?? "The broker session was rejected.",
-                    ErrorCategory.AccessDenied);
+                    response.Value?.Discarded == true ? ErrorCategory.Discarded
+                        : response.Value?.Cancelled == true ? ErrorCategory.Cancelled : ErrorCategory.AccessDenied);
         }
+
+        internal Task<OperationResult<BrokerSessionResponse>> EndBatch() => Exchange(
+            IpcMessageTypes.BrokerEndBatch, "{}", IpcJsonContext.Default.BrokerSessionResponse,
+            CancellationToken.None);
 
         public Task<OperationResult<bool>> ApplyChangeAsync(
             ChangeDescriptor change, CancellationToken cancellationToken = default) =>
@@ -260,16 +352,24 @@ public sealed class PrivilegeBrokerClient : IPrivilegeBrokerClient
                 var response = frame is null ? null : IpcSerializer.DeserializeEnvelope(frame);
                 if (response is null || response.Type != type || response.Nonce != nonce || response.PayloadJson is null)
                 {
+                    Invalidate();
                     return OperationResult<T>.Failure(
                         "The privilege broker returned an invalid response.", ErrorCategory.AccessDenied);
                 }
                 var value = JsonSerializer.Deserialize(response.PayloadJson, responseType);
                 return value is null
-                    ? OperationResult<T>.Failure("The privilege broker returned an empty response.", ErrorCategory.AccessDenied)
+                    ? InvalidResponse<T>("The privilege broker returned an empty response.")
                     : OperationResult<T>.Success(value);
             }
-            catch (Exception ex) when (ex is IOException or InvalidDataException or EndOfStreamException or JsonException)
+            catch (OperationCanceledException)
             {
+                Invalidate();
+                throw;
+            }
+            catch (Exception ex) when (ex is IOException or InvalidDataException or EndOfStreamException
+                                       or JsonException or ObjectDisposedException)
+            {
+                Invalidate();
                 return OperationResult<T>.Failure(
                     "The privilege broker connection failed: " + ex.Message,
                     ErrorCategory.ServiceUnavailable, ex);
@@ -280,8 +380,23 @@ public sealed class PrivilegeBrokerClient : IPrivilegeBrokerClient
             }
         }
 
+        private OperationResult<T> InvalidResponse<T>(string message)
+        {
+            Invalidate();
+            return OperationResult<T>.Failure(message, ErrorCategory.AccessDenied);
+        }
+
+        private void Invalidate()
+        {
+            _disposed = true;
+            _pipe.Dispose();
+            _process.Dispose();
+        }
+
         public async ValueTask DisposeAsync()
         {
+            if (_disposed)
+                return;
             await _gate.WaitAsync().ConfigureAwait(false);
             try
             {
@@ -299,7 +414,7 @@ public sealed class PrivilegeBrokerClient : IPrivilegeBrokerClient
                         _pipe, IpcSerializer.SerializeEnvelope(close), CancellationToken.None).ConfigureAwait(false);
                 }
             }
-            catch (IOException)
+            catch (Exception ex) when (ex is IOException or ObjectDisposedException or InvalidOperationException)
             {
                 // The broker already exited.
             }
