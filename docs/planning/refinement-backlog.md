@@ -44,6 +44,8 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 
 ## Annotation feedback (2026-10-07)
 
+- DONE: Explorer startup preference reads and stages Advanced\LaunchTo, matching Windows. The previous parent-key value caused an off switch while Explorer opened This PC. Historical parent-key changes remain accepted for Undo. Verified opposite-value regression cases and broker validation; live Explorer settings were not changed.
+
 - DONE: renamed Pro Tools to Professional Tools. Added Claude Code CLI with native user-install detection and Spotifast under Multimedia Tools. Catalog: 94 entries and 90 bundled icons.
 - Spotifast has no winget listing. Download opens its official Windows download page without queuing a package-manager install.
 - DONE: Home separates the Windows boot drive from additional storage and puts physical graphics before virtual display drivers. Dedicated VRAM appears beside each GPU, rounded to whole GB above 1 GB.

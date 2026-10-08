@@ -100,7 +100,7 @@ public sealed class ExplorerSettingsReaderTests
         Assert.Equal("Hidden", hidden.RegistryValueName);
 
         var launchTo = prefs.First(p => p.Id == "launch-to");
-        Assert.Equal(ExplorerKeyPath, launchTo.RegistryKeyPath);
+        Assert.Equal(AdvancedKeyPath, launchTo.RegistryKeyPath);
         Assert.Equal("LaunchTo", launchTo.RegistryValueName);
     }
 
@@ -298,6 +298,22 @@ public sealed class ExplorerSettingsReaderTests
         Assert.Equal("__absent__", enabled.DisabledValue);
     }
 
+    [Theory]
+    [InlineData(1, 2, true)]
+    [InlineData(2, 1, false)]
+    [InlineData(0, 1, false)]
+    public void LaunchToReadsWindowsAdvancedValueAndStagesTheSameLocation(int windowsValue, int obsoleteValue, bool enabled)
+    {
+        _registry.SetDWord(AdvancedKeyPath, "LaunchTo", windowsValue);
+        _registry.SetDWord(ExplorerKeyPath, "LaunchTo", obsoleteValue);
+        var preference = _sut.ReadAll().Single(p => p.Id == "launch-to");
+        Assert.Equal(enabled, preference.IsEnabled);
+        var change = ThisIsMyPC.Modules.Shell.Changes.ExplorerChangeFactory.CreateToggle(preference, !enabled);
+        Assert.Equal(AdvancedKeyPath + @"\LaunchTo", change.SystemLocation);
+        Assert.Equal(windowsValue.ToString(System.Globalization.CultureInfo.InvariantCulture), change.BeforeValue);
+        Assert.Equal(enabled ? "2" : "1", change.AfterValue);
+    }
+
     private void SetDefaults()
     {
         _registry.SetDWord(AdvancedKeyPath, "Hidden", 2);
@@ -305,7 +321,7 @@ public sealed class ExplorerSettingsReaderTests
         _registry.SetDWord(AdvancedKeyPath, "ShowSuperHidden", 0);
         _registry.SetDWord(AdvancedKeyPath, "SeparateProcess", 0);
         _registry.SetDWord(AdvancedKeyPath, "ShowSyncProviderNotifications", 1);
-        _registry.SetDWord(ExplorerKeyPath, "LaunchTo", 2);
+        _registry.SetDWord(AdvancedKeyPath, "LaunchTo", 2);
     }
 
     private void SetRemainingDefaults()
@@ -319,7 +335,7 @@ public sealed class ExplorerSettingsReaderTests
             _registry.SetDWord(AdvancedKeyPath, "SeparateProcess", 0);
         if (_registry.ReadDWord(AdvancedKeyPath, "ShowSyncProviderNotifications").ErrorCategory is not null)
             _registry.SetDWord(AdvancedKeyPath, "ShowSyncProviderNotifications", 1);
-        if (_registry.ReadDWord(ExplorerKeyPath, "LaunchTo").ErrorCategory is not null)
-            _registry.SetDWord(ExplorerKeyPath, "LaunchTo", 2);
+        if (_registry.ReadDWord(AdvancedKeyPath, "LaunchTo").ErrorCategory is not null)
+            _registry.SetDWord(AdvancedKeyPath, "LaunchTo", 2);
     }
 }

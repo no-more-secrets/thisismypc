@@ -436,6 +436,8 @@ internal static class BrokerOperationRules
         {
             $@"{ShellRegistryPaths.AdvancedKeyPath}\HideFileExt",
             $@"{ShellRegistryPaths.AdvancedKeyPath}\Hidden",
+            $@"{ShellRegistryPaths.AdvancedKeyPath}\LaunchTo",
+            // Older builds saved this incorrect target in history. Keep exact access for Undo.
             $@"{ShellRegistryPaths.ExplorerKeyPath}\LaunchTo",
             $@"{ShellRegistryPaths.AdvancedKeyPath}\AutoCheckSelect",
             $@"{ShellRegistryPaths.AdvancedKeyPath}\UseCompactMode",
