@@ -133,7 +133,9 @@ internal sealed class PrivilegedModuleHost : IAsyncDisposable
         var location = change.SystemLocation.Replace("HKEY_CURRENT_USER\\", "HKCU\\", StringComparison.OrdinalIgnoreCase);
         var catalogTarget = RestorationCatalog.Default.Targets.Any(target =>
             string.Equals(location, target.KeyPath + "\\" + target.ValueName, StringComparison.OrdinalIgnoreCase));
-        return !catalogTarget || string.Equals(uiUserSid, brokerUserSid, StringComparison.Ordinal);
+        var userPolicy = Core.Policies.LocalPolicyValue.IsPolicyType(change.ValueType)
+            && location.StartsWith("HKCU\\", StringComparison.OrdinalIgnoreCase);
+        return !(catalogTarget || userPolicy) || string.Equals(uiUserSid, brokerUserSid, StringComparison.Ordinal);
     }
 
     internal static async Task<OperationResult<bool>> SaveProtectedChoiceAsync(Action save, Action disableProtection,

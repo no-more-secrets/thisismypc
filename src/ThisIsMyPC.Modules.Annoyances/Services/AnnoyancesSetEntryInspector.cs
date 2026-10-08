@@ -28,6 +28,17 @@ public sealed class AnnoyancesSetEntryInspector : ISetEntryInspector
 
     public SetEntryState? Inspect(SetEntry entry)
     {
+        var state = InspectCore(entry);
+        var policy = _policies?.Read(ModuleId, entry.SettingId);
+        if (state is null || policy?.ToggleState is not { } suppressed) return state;
+        var group = CreateRawChangeGroup(entry);
+        if (group is null) return state;
+        return state with { CurrentDisplay = suppressed ? "Suppressed" : "Windows default",
+            IsApplied = (group.Changes[0].Category == ChangeCategory.Disable) == suppressed };
+    }
+
+    private SetEntryState? InspectCore(SetEntry entry)
+    {
         switch (entry.SettingId)
         {
             case "copilot":
@@ -88,6 +99,16 @@ public sealed class AnnoyancesSetEntryInspector : ISetEntryInspector
     }
 
     public ChangeGroup? CreateChangeGroup(SetEntry entry)
+    {
+        var group = CreateRawChangeGroup(entry);
+        if (group is null || group.Changes.Any(change => _policies?.Read(change).BlocksChanges == true)) return group;
+        try { return _policies?.PrepareToggleGroup(group, group.Changes[0].Category == ChangeCategory.Disable) ?? group; }
+        catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException
+            or System.Security.SecurityException or System.Text.DecoderFallbackException)
+        { return null; }
+    }
+
+    private ChangeGroup? CreateRawChangeGroup(SetEntry entry)
     {
         switch (entry.SettingId)
         {
@@ -188,11 +209,7 @@ public sealed class AnnoyancesSetEntryInspector : ISetEntryInspector
             Description = pref.Description,
             Changes = [change],
         };
-        if (_policies?.Read(change).BlocksChanges == true) return group;
-        try { return _policies?.PrepareToggleGroup(group, suppressSingle) ?? group; }
-        catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException
-            or System.Security.SecurityException or System.Text.DecoderFallbackException)
-        { return null; }
+        return group;
     }
 
     /// <summary>Maps the entry value to a toggle direction; null = neither direction.</summary>

@@ -65,6 +65,18 @@ Two controls cannot queue the same policy simultaneously. Presets report that co
 Preset exports retain the toggle value, rather than the serialized policy snapshot.
 Simulated writes and UI staging do not establish native elevated save behavior or policy enforcement after refresh.
 
+The extension covers 20 controls: Windows tips, consumer features, promoted app installs, welcome experience, Start app suggestions,
+suggested Settings content, tailored experiences, advertising ID, feedback requests, search highlights, Game DVR, Spotlight features,
+desktop Spotlight, Edge sidebar, Edge shortcuts, Bing search, Copilot, activity history, Edge promotions, and preinstalled app promotions.
+The new Spotlight master switch exposes the broader policy separately from its related preferences.
+Mixed policy groups remain partially set. Broader policies remain visible even when a specific policy becomes editable.
+
+User writes create or update the current account's local GPO through
+[OpenLocalMachineGPOForPrincipal](https://learn.microsoft.com/en-us/previous-versions/windows/desktop/policy/igrouppolicyobject2-openlocalmachinegpoforprincipal).
+Common user and applicable group sources are checked but are not rewritten. Undo restores the account instruction and captured live value.
+The Broker rejects user-policy writes when elevation uses another account. Existing edition requirements remain in force.
+Recall is excluded from saved-policy editing because restoring policy values cannot restore deleted snapshots.
+
 ### Read-only detection tranche (2026-10-07)
 
 `PracticalPolicyCatalog` now maps seven single-DWORD policies. They are detection coverage, not additional editable routes.

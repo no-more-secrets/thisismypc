@@ -62,6 +62,15 @@ public sealed class AnnoyancesSettingsReader
                 valueName: "RotatingLockScreenEnabled"),
 
             ReadPreference(
+                id: "spotlight-features",
+                displayName: "Disable Windows Spotlight features",
+                description: "Turn off Windows Spotlight content and suggestions.",
+                keyPath: AnnoyancesRegistryPaths.CloudContentUserPoliciesKeyPath,
+                valueName: "DisableWindowsSpotlightFeatures",
+                suppressedValue: "1",
+                defaultValue: "0"),
+
+            ReadPreference(
                 id: "spotlight-collection-desktop",
                 displayName: "Disable Spotlight collection on the desktop",
                 description: "Removes the Windows Spotlight option from desktop background settings and stops the daily desktop images.",

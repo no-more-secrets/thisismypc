@@ -19,7 +19,10 @@ public sealed record PolicyDefinition(
 
 /// <summary>One local policy source. Missing and unreadable files have different meanings.</summary>
 public sealed record PolicySourceSnapshot(string Name, PolicyScope Scope, PolicyFileStatus Status,
-    ImmutableArray<RegistryPolicyEntry> Entries, string? Error = null);
+    ImmutableArray<RegistryPolicyEntry> Entries, string? Error = null)
+{
+    public bool IsAccountPolicy { get; init; }
+}
 
 public sealed record PolicySourceState(string Name, PolicyState State, string? Error);
 

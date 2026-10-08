@@ -36,7 +36,7 @@ public sealed class LocalPolicyInspector(IRegistryService registry)
             result.Add(ReadFile(admin ? "Administrators policy" : "Non-administrators policy", PolicyScope.User,
                 Path.Combine(system, "GroupPolicyUsers", admin ? "S-1-5-32-544" : "S-1-5-32-545", "User", "Registry.pol")));
         }
-        result.Add(ReadFile("Account policy", PolicyScope.User, Path.Combine(system, "GroupPolicyUsers", sid, "User", "Registry.pol")));
+        result.Add(ReadFile("Account policy", PolicyScope.User, Path.Combine(system, "GroupPolicyUsers", sid, "User", "Registry.pol")) with { IsAccountPolicy = true });
         return result.ToImmutable();
     }
 

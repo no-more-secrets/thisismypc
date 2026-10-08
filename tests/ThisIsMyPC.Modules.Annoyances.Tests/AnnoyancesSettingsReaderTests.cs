@@ -20,7 +20,7 @@ public sealed class AnnoyancesSettingsReaderTests
 
         Assert.Equal(
             ["scoobe-nags", "welcome-experience", "app-suggestions", "windows-tips",
-             "settings-suggestions", "lock-screen-images", "spotlight-collection-desktop",
+             "settings-suggestions", "lock-screen-images", "spotlight-features", "spotlight-collection-desktop",
              "consumer-features", "silent-app-installs", "edge-shortcuts",
              "dynamic-search-box", "advertising-id",
              "tailored-experiences", "language-list-access", "feedback-frequency",
@@ -28,7 +28,7 @@ public sealed class AnnoyancesSettingsReaderTests
              "sticky-keys-shortcut", "filter-keys-shortcut",
              "copilot-button", "edge-sidebar"],
             prefs.Select(p => p.Id));
-        Assert.Equal(9, prefs.Count(p => p.Section == AnnoyanceSection.ScoobeAndWelcome));
+        Assert.Equal(10, prefs.Count(p => p.Section == AnnoyanceSection.ScoobeAndWelcome));
         Assert.Equal(AnnoyanceSection.BingAndEdge, prefs.Single(p => p.Id == "edge-shortcuts").Section);
         Assert.Equal(AnnoyanceSection.BingAndEdge, prefs.Single(p => p.Id == "dynamic-search-box").Section);
         // The original suppression prefs keep the simple shape: DWORD 0/1, no restart
@@ -132,7 +132,7 @@ public sealed class AnnoyancesSettingsReaderTests
             prefs.Single(p => p.Id == "consumer-features").RegistryKeyPath);
         Assert.All(
             prefs.Where(p => p.Section == AnnoyanceSection.ScoobeAndWelcome
-                && p.Id is not "scoobe-nags" and not "spotlight-collection-desktop" and not "consumer-features"),
+                && p.Id is not "scoobe-nags" and not "spotlight-features" and not "spotlight-collection-desktop" and not "consumer-features"),
             p => Assert.Equal(AnnoyancesRegistryPaths.ContentDeliveryManagerKeyPath, p.RegistryKeyPath));
     }
 }

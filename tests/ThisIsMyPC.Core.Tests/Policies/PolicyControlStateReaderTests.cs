@@ -43,7 +43,8 @@ public sealed class PolicyControlStateReaderTests
         const string key = @"Software\Policies\Microsoft\Windows\CloudContent";
         _registry.SetDWord("HKCU\\" + key, "DisableThirdPartySuggestions", 0);
         var sources = new[] { new PolicySourceSnapshot("User policy", PolicyScope.User, PolicyFileStatus.Loaded,
-            [new(key, "DisableThirdPartySuggestions", 4, [0, 0, 0, 0])]) };
+            [new(key, "DisableThirdPartySuggestions", 4, [0, 0, 0, 0])]),
+            new("Account policy", PolicyScope.User, PolicyFileStatus.Missing, []) { IsAccountPolicy = true } };
         var state = new PolicyControlStateReader(_registry, () => sources).Read("Windows Annoyances", "app-suggestions");
         Assert.False(state.BlocksChanges);
         Assert.Null(state.ToggleState);

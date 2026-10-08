@@ -34,6 +34,7 @@ internal static class BrokerOperationRules
         ("windows-tips", AnnoyancesRegistryPaths.ContentDeliveryManagerKeyPath, "SubscribedContent-338389Enabled", ChangeValueType.Registry_DWord),
         ("settings-suggestions", AnnoyancesRegistryPaths.ContentDeliveryManagerKeyPath, "SystemPaneSuggestionsEnabled", ChangeValueType.Registry_DWord),
         ("lock-screen-images", AnnoyancesRegistryPaths.ContentDeliveryManagerKeyPath, "RotatingLockScreenEnabled", ChangeValueType.Registry_DWord),
+        ("spotlight-features", AnnoyancesRegistryPaths.CloudContentUserPoliciesKeyPath, "DisableWindowsSpotlightFeatures", ChangeValueType.Registry_DWord),
         ("spotlight-collection-desktop", AnnoyancesRegistryPaths.CloudContentUserPoliciesKeyPath, "DisableSpotlightCollectionOnDesktop", ChangeValueType.Registry_DWord),
         ("consumer-features", AnnoyancesRegistryPaths.CloudContentMachinePoliciesKeyPath, "DisableWindowsConsumerFeatures", ChangeValueType.Registry_DWord),
         ("silent-app-installs", AnnoyancesRegistryPaths.ContentDeliveryManagerKeyPath, "SilentInstalledAppsEnabled", ChangeValueType.Registry_DWord),

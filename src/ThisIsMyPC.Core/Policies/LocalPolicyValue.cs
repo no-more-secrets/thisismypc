@@ -31,11 +31,12 @@ public sealed record LocalPolicyValue(string? Saved, string Live, bool Delete = 
     public static LocalPolicyValue Read(string location, ChangeValueType type, IReadOnlyList<PolicySourceSnapshot> sources,
         OperationResult<RegistryValueData> live)
     {
-        var machines = sources.Where(s => s.Scope == PolicyScope.Machine).ToArray();
-        if (machines.Length != 1 || machines[0].Status == PolicyFileStatus.Unreadable)
-            throw new InvalidOperationException("Saved local computer policy could not be read.");
-        if (!location.StartsWith("HKLM\\", StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException("Only local computer policies are supported.");
+        var user = location.StartsWith("HKCU\\", StringComparison.OrdinalIgnoreCase);
+        if (!user && !location.StartsWith("HKLM\\", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Only local computer and current-account policies are supported.");
+        var targets = sources.Where(s => user ? s.Scope == PolicyScope.User && s.IsAccountPolicy : s.Scope == PolicyScope.Machine).ToArray();
+        if (targets.Length != 1 || targets[0].Status == PolicyFileStatus.Unreadable)
+            throw new InvalidOperationException("The saved local policy could not be read.");
         var split = location.LastIndexOf('\\');
         var key = location[5..split];
         var name = location[(split + 1)..];
@@ -46,7 +47,7 @@ public sealed record LocalPolicyValue(string? Saved, string Live, bool Delete = 
         string? saved = null;
         var delete = false;
         var count = 0;
-        var source = machines[0];
+        var source = targets[0];
         if (source.Status == PolicyFileStatus.Loaded)
         {
             if (source.Entries.IsDefault) throw new InvalidOperationException("Saved local computer policy is incomplete.");

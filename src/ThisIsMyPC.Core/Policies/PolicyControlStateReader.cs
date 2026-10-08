@@ -24,13 +24,30 @@ public sealed class PolicyControlStateReader(IRegistryService registry,
         {
             try
             {
-                var state = ReadLocalToggle(moduleId, settingId);
-                return new(state.Saved is not null || state.Delete ? "Saved local policy" : state.Live == "1" ? "Policy configured" : null,
-                    ToggleState: settingId == "consumer-features" ? state.Live == "1" : state.Live == "1" ? true : null);
+                var targets = LocalPolicyToggleCatalog.Targets(moduleId, settingId);
+                var states = targets.Select(target => ReadLocalToggle(target)).ToArray();
+                var covered = targets.Select((target, index) => (target, state: states[index]))
+                    .Where(pair => pair.target.CoversControl).ToArray();
+                bool? localToggle = covered.Length == 0 ? null
+                    : covered.All(pair => pair.state.Live == pair.target.Suppressed) ? true
+                    : covered.All(pair => pair.target.Direct && (pair.state.Live == pair.target.Allowed || pair.state.Live.Length == 0)) ? false : null;
+                var local = new PolicyControlState(states.Any(state => state.Saved is not null || state.Delete) ? "Saved local policy"
+                    : states.Any(state => state.Live.Length > 0) ? "Policy configured" : null, ToggleState: localToggle);
+                var other = ReadUnedited(moduleId, settingId, ownedLocation, valueType,
+                    targets.Select(target => target.Location).ToHashSet(StringComparer.OrdinalIgnoreCase));
+                return local with { Message = string.Join(" ", new[] { local.Message, other.Message }.Where(message => message is not null)) is { Length: > 0 } message ? message : null,
+                    BlocksChanges = other.BlocksChanges };
+
             }
             catch (Exception ex) when (ex is IOException or InvalidOperationException or UnauthorizedAccessException or System.Security.SecurityException or DecoderFallbackException)
             { return new(ex.Message, true); }
         }
+        return ReadUnedited(moduleId, settingId, ownedLocation, valueType);
+    }
+
+    private PolicyControlState ReadUnedited(string moduleId, string settingId, string? ownedLocation, ChangeValueType? valueType,
+        HashSet<string>? excluded = null)
+    {
         var messages = new List<string>();
         var blocked = false;
         bool? toggle = null;
@@ -48,7 +65,8 @@ public sealed class PolicyControlStateReader(IRegistryService registry,
             }
         }
 
-        foreach (var rule in PolicyControlCatalog.Rules.Where(r => r.ModuleId == moduleId && r.SettingId == settingId))
+        foreach (var rule in PolicyControlCatalog.Rules.Where(r => r.ModuleId == moduleId && r.SettingId == settingId
+            && !r.Conditions.All(condition => excluded?.Contains(condition.Location) == true)))
         {
             var matches = true;
             var matchedSource = false;
@@ -90,6 +108,7 @@ public sealed class PolicyControlStateReader(IRegistryService registry,
 
         var locations = PolicyControlCatalog.CompanionLocations(moduleId, settingId)
             .Concat(ownedLocation is not null && IsRegistryLocation(ownedLocation) && IsPolicyLocation(ownedLocation) ? [ownedLocation] : [])
+            .Where(location => excluded?.Contains(location) != true)
             .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         var configuredCount = 0;
         foreach (var location in locations)
@@ -145,41 +164,60 @@ public sealed class PolicyControlStateReader(IRegistryService registry,
     }
 
     private bool CanEditLocalToggle(string module, string setting) => HasLocalSourceReader
-        && LocalPolicyToggleCatalog.Location(module, setting) is not null
-        && (capabilityDetector is null || SettingEditionSupport.BlockReason(capabilityDetector.Sku, Core.Modules.WindowsSku.Enterprise) is null);
+        && LocalPolicyToggleCatalog.Targets(module, setting) is { Count: > 0 } targets
+        && (capabilityDetector is null || targets.All(target => SettingEditionSupport.BlockReason(capabilityDetector.Sku, target.Edition) is null));
 
-    private LocalPolicyValue ReadLocalToggle(string module, string setting)
+    private LocalPolicyValue ReadLocalToggle(PolicyToggleTarget target)
     {
-        var location = LocalPolicyToggleCatalog.Location(module, setting)!;
-        var value = LocalPolicyValue.Read(location, ChangeValueType.LocalPolicy_DWord, ReadLocalSources(), ReadValue(location));
+        var sources = ReadLocalSources();
+        var live = ReadValue(target.Location);
+        var value = LocalPolicyValue.Read(target.Location, ChangeValueType.LocalPolicy_DWord, sources, live);
         if (!LocalPolicyToggleCatalog.Valid(value)) throw new InvalidOperationException("The policy value is not recognized.");
-        if (value.Saved is not null && value.Saved != value.Live || value.Delete && value.Live != "")
+        var effective = value;
+        if (target.Location.StartsWith("HKCU\\", StringComparison.OrdinalIgnoreCase))
+        {
+            // Validate the inherited local sources, but only write the account GPO.
+            foreach (var source in sources.Where(source => source.Scope == PolicyScope.User))
+            {
+                var inherited = LocalPolicyValue.Read("HKLM" + target.Location[4..], ChangeValueType.LocalPolicy_DWord,
+                    [source with { Scope = PolicyScope.Machine }], live);
+                if (!LocalPolicyToggleCatalog.Valid(inherited)) throw new InvalidOperationException("An inherited policy value is not recognized.");
+                if (inherited.Saved is not null || inherited.Delete) effective = inherited;
+            }
+        }
+        if (effective.Saved is not null && effective.Saved != value.Live || effective.Delete && value.Live != "")
             throw new InvalidOperationException("Saved local policy differs from the current value. Refresh policy before editing.");
         return value;
     }
 
-    /// <summary>Captures the controlling policy with the preference so Apply and Undo update both.</summary>
+    /// <summary>Captures controlling policies with preferences so Apply and Undo update both.</summary>
     public ChangeGroup PrepareToggleGroup(ChangeGroup group, bool suppress)
     {
-        if (group.Changes.Count != 1) return group;
+        if (group.Changes.Count == 0) return group;
         var primary = group.Changes[0];
         if (!CanEditLocalToggle(primary.ModuleId, primary.SettingId)) return group;
-        var before = ReadLocalToggle(primary.ModuleId, primary.SettingId);
-        // Ordinary preferences must not introduce a broader consumer policy.
-        if (primary.SettingId != "consumer-features" && before.Live != "1") return group;
-        var after = suppress ? "1" : "0";
-        var location = LocalPolicyToggleCatalog.Location(primary.ModuleId, primary.SettingId)!;
-        var policy = primary with
+        var changes = group.Changes.ToList();
+        foreach (var target in LocalPolicyToggleCatalog.Targets(primary.ModuleId, primary.SettingId))
         {
-            DisplayName = primary.SettingId == "silent-app-installs" ? "Microsoft consumer features policy" : primary.DisplayName,
-            SystemLocation = location, ValueType = ChangeValueType.LocalPolicy_DWord,
-            BeforeValue = before.Encode(), AfterValue = new LocalPolicyValue(after, after).Encode(),
-            BeforeDisplay = before.Live == "1" ? "Disabled by policy" : "Allowed",
-            AfterDisplay = suppress ? "Disabled by policy" : "Allowed",
-            Enforcement = new Core.Enforcement.SettingEnforcement { SkuRestriction = Core.Modules.WindowsSku.Enterprise },
-        };
-        return group with { Changes = primary.SystemLocation.Equals(location, StringComparison.OrdinalIgnoreCase)
-            ? [policy] : [primary, policy] };
+            var before = ReadLocalToggle(target);
+            // Preferences only release a policy that already controls them.
+            if (!target.Direct && before.Live != target.Suppressed) continue;
+            var index = changes.FindIndex(change => change.SystemLocation.Equals(target.Location, StringComparison.OrdinalIgnoreCase));
+            var original = index >= 0 ? changes[index] : primary;
+            var after = index >= 0 ? original.AfterValue! : suppress ? target.Suppressed : target.Allowed;
+            var policy = original with
+            {
+                DisplayName = index >= 0 ? original.DisplayName : "Policy: " + target.Location[(target.Location.LastIndexOf('\\') + 1)..],
+                SystemLocation = target.Location, ValueType = ChangeValueType.LocalPolicy_DWord,
+                BeforeValue = before.Encode(), AfterValue = new LocalPolicyValue(after.Length == 0 ? null : after, after, after.Length == 0).Encode(),
+                BeforeDisplay = before.Live == target.Suppressed ? "Suppressed" : "Allowed",
+                AfterDisplay = suppress ? "Suppressed" : "Allowed",
+                Enforcement = new Core.Enforcement.SettingEnforcement { SkuRestriction = target.Edition },
+            };
+            if (index >= 0) changes[index] = policy;
+            else changes.Add(policy);
+        }
+        return group with { Changes = changes };
     }
 
     public PolicyControlState ReadPowerSetting(Guid setting, bool ac)

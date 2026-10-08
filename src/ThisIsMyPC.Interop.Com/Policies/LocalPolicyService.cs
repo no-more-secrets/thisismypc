@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Security.Principal;
 using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 using ThisIsMyPC.Core.Changes;
@@ -25,39 +26,52 @@ public sealed class LocalPolicyService(IRegistryService registry) : ILocalPolicy
     {
         try
         {
-            using var session = new LocalMachinePolicySession();
+            using var session = new LocalMachinePolicySession(location.StartsWith("HKCU\\", StringComparison.OrdinalIgnoreCase));
             return LocalPolicyTransaction.Apply(session, registry, location, type, before, after);
         }
         catch (Exception ex) { return OperationResult<bool>.Failure("Local policy could not be saved: " + ex.Message, ErrorCategory.ServiceUnavailable, ex); }
     }
 }
 
-/// <summary>NativeAOT-safe IGroupPolicyObject vtable from the Windows SDK gpedit.h.</summary>
+/// <summary>NativeAOT-safe IGroupPolicyObject and IGroupPolicyObject2 calls for machine and current-account policies.</summary>
 internal sealed unsafe partial class LocalMachinePolicySession : ILocalPolicySession
 {
-    private readonly string _path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "GroupPolicy", "Machine", "Registry.pol");
+    private readonly string _path;
+    private readonly bool _user;
     private nint _policy;
     private nint _critical;
     private bool _initialized;
     private RegistryKey? _root;
     private LocalPolicySaveGuard? _guard;
 
-    internal LocalMachinePolicySession()
+    internal LocalMachinePolicySession(bool user = false)
     {
+        _user = user;
+        using var identity = WindowsIdentity.GetCurrent();
+        var sid = identity.User?.Value ?? throw new InvalidOperationException("The current account is unavailable.");
+        var system = Environment.GetFolderPath(Environment.SpecialFolder.System);
+        _path = user ? Path.Combine(system, "GroupPolicyUsers", sid, "User", "Registry.pol")
+            : Path.Combine(system, "GroupPolicy", "Machine", "Registry.pol");
         try
         {
             var hr = CoInitializeEx(0, 2);
             if (hr < 0) Marshal.ThrowExceptionForHR(hr);
             _initialized = true;
-            _critical = EnterCriticalPolicySection(1);
+            _critical = EnterCriticalPolicySection(user ? 0 : 1);
             if (_critical == 0) throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
             _guard = new(ReadBytes());
             var clsid = new Guid("EA502722-A23D-11d1-A7D3-0000F87571E3");
-            var iid = new Guid("EA502723-A23D-11d1-A7D3-0000F87571E3");
+            var iid = new Guid(user ? "7E37D5E7-263D-45CF-842B-96A95C63E46C" : "EA502723-A23D-11d1-A7D3-0000F87571E3");
             Check(CoCreateInstance(in clsid, 0, 1, in iid, out _policy));
-            Check(((delegate* unmanaged[Stdcall]<nint, uint, int>)Table[5])(_policy, 1)); // OpenLocalMachineGPO, load registry
+            if (user)
+            {
+                // IGroupPolicyObject2 appends OpenLocalMachineGPOForPrincipal after the 21 base slots.
+                fixed (char* principal = sid)
+                    Check(((delegate* unmanaged[Stdcall]<nint, char*, uint, int>)Table[21])(_policy, principal, 1));
+            }
+            else Check(((delegate* unmanaged[Stdcall]<nint, uint, int>)Table[5])(_policy, 1));
             nint key = 0;
-            Check(((delegate* unmanaged[Stdcall]<nint, uint, nint*, int>)Table[15])(_policy, 2, &key)); // GetRegistryKey, machine
+            Check(((delegate* unmanaged[Stdcall]<nint, uint, nint*, int>)Table[15])(_policy, user ? 1u : 2u, &key)); // GetRegistryKey, user or machine
             _root = RegistryKey.FromHandle(new SafeRegistryHandle(key, true), RegistryView.Registry64);
             EnsureUnchanged();
         }
@@ -70,8 +84,9 @@ internal sealed unsafe partial class LocalMachinePolicySession : ILocalPolicySes
     public PolicySourceSnapshot ReadSource()
     {
         var bytes = ReadBytes();
-        return bytes is null ? new("Local computer policy", PolicyScope.Machine, PolicyFileStatus.Missing, [])
-            : new("Local computer policy", PolicyScope.Machine, PolicyFileStatus.Loaded, RegistryPolicyFile.Parse(bytes));
+        return new(_user ? "Account policy" : "Local computer policy", _user ? PolicyScope.User : PolicyScope.Machine,
+            bytes is null ? PolicyFileStatus.Missing : PolicyFileStatus.Loaded, bytes is null ? [] : RegistryPolicyFile.Parse(bytes))
+            { IsAccountPolicy = _user };
     }
 
     public void WriteSaved(string location, ChangeValueType type, LocalPolicyValue value)
@@ -100,7 +115,7 @@ internal sealed unsafe partial class LocalMachinePolicySession : ILocalPolicySes
         var extension = new Guid("35378EAC-683F-11D2-A89A-00C04FBBCFA2");
         var editor = new Guid("0F6B957D-509E-11D1-A7CC-0000F87571E3");
         // Save updates Registry.pol, gpt.ini and registry-extension registration together.
-        var hr = ((delegate* unmanaged[Stdcall]<nint, int, int, Guid*, Guid*, int>)Table[7])(_policy, 1, HasValues(_root!) ? 1 : 0, &extension, &editor);
+        var hr = ((delegate* unmanaged[Stdcall]<nint, int, int, Guid*, Guid*, int>)Table[7])(_policy, _user ? 0 : 1, HasValues(_root!) ? 1 : 0, &extension, &editor);
         var actual = ReadBytes();
         // A failed Save can still write. Only adopt a complete, verified result;
         // otherwise the loaded hive is stale and must never be used to overwrite it.
