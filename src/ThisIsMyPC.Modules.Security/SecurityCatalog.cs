@@ -56,8 +56,34 @@ public static class SecurityCatalog
             [.. Modes(), new("disk-block", "Block disk changes only", "3"), new("disk-audit", "Audit disk changes only", "4")]);
         Single("network-protection", "Network protection", "Blocks or records connections to malicious destinations. Requires Microsoft Defender Antivirus.",
             "Defender", Defender + @"\Windows Defender Exploit Guard\Network Protection", "EnableNetworkProtection", Modes());
+        Single("behavior-monitoring", "Monitor program behavior", "Detects threats through suspicious program behavior. Requires Microsoft Defender Antivirus.",
+            "Defender", Defender + @"\Real-Time Protection", "DisableBehaviorMonitoring", Boolean(true));
+        Single("file-activity-monitoring", "Monitor file and program activity", "Checks file and program activity through real-time protection. Requires Microsoft Defender Antivirus.",
+            "Defender", Defender + @"\Real-Time Protection", "DisableOnAccessProtection", Boolean(true));
+        Single("download-scanning", "Scan downloads and attachments", "Checks downloaded files and attachments. Also required for block at first sight.",
+            "Defender", Defender + @"\Real-Time Protection", "DisableIOAVProtection", Boolean(true));
+        Single("script-scanning", "Scan scripts", "Checks scripts for malicious content. Requires Microsoft Defender Antivirus.",
+            "Defender", Defender + @"\Real-Time Protection", "DisableScriptScanning", Boolean(true));
+        Single("scan-on-protection-enable", "Scan processes when protection resumes", "Scans running processes when real-time protection turns on again.",
+            "Defender", Defender + @"\Real-Time Protection", "DisableScanOnRealtimeEnable", Boolean(true));
+        Single("cloud-block-level", "Cloud blocking level", "Requires cloud protection. Higher levels can block legitimate apps; zero tolerance blocks all unknown executables.",
+            "Defender", Defender + @"\MpEngine", "MpCloudBlockLevel",
+            [new("normal", "Default blocking", "0"), new("moderate", "Moderate", "1"), new("high", "High", "2"),
+             new("high-plus", "High plus", "4"), new("zero-tolerance", "Zero tolerance", "6")]);
         Single("low-priority-scans", "Low CPU priority for scheduled scans", "Lets other applications take priority over scheduled antivirus scans.",
-            "Defender", Defender + @"\Scan", "LowCpuPriority", Boolean());
+            "Scanning", Defender + @"\Scan", "LowCpuPriority", Boolean());
+        Single("heuristic-detection", "Detect unfamiliar threats", "Uses heuristic analysis to identify suspicious files beyond known threat signatures.",
+            "Scanning", Defender + @"\Scan", "DisableHeuristics", Boolean(true));
+        Single("archive-scanning", "Scan archive files", "Scans contents of ZIP, CAB, and other archives. Direct scans of archives still scan their contents when this is off.",
+            "Scanning", Defender + @"\Scan", "DisableArchiveScanning", Boolean(true));
+        Single("network-file-scanning", "Scan network files", "Scans files on network shares. Does not add mapped network drives to full scans.",
+            "Scanning", Defender + @"\Scan", "DisableScanningNetworkFiles", Boolean(true));
+        Single("update-before-scan", "Check for updates before scheduled scans", "Checks for new threat definitions before scheduled scans. Does not affect manually started scans.",
+            "Scanning", Defender + @"\Scan", "CheckForSignaturesBeforeRunningScan", Boolean());
+        Single("intelligence-on-battery", "Allow threat updates on battery", "Allows Defender security intelligence updates while running on battery power.",
+            "Threat updates", Defender + @"\Signature Updates", "DisableScheduledSignatureUpdateOnBattery", Boolean(true));
+        Single("intelligence-on-startup", "Check for threat updates at startup", "Checks for new security intelligence when the Defender service starts.",
+            "Threat updates", Defender + @"\Signature Updates", "UpdateOnStartUp", Boolean());
         settings.Add(new("smartscreen", "Downloaded app reputation checks", "Warns about unrecognized downloaded apps. Block mode prevents bypassing the warning.",
             "App protection", WindowsSku.Enterprise,
             [new(WindowsSystem, "EnableSmartScreen"), new(WindowsSystem, "ShellSmartScreenLevel", ChangeValueType.Registry_String)],

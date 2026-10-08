@@ -148,6 +148,8 @@ public sealed class PolicyControlStateReader(IRegistryService registry,
 
     private static bool IsKnownValue(string location, int value)
     {
+        if (location.Equals(@"HKLM\SOFTWARE\Policies\Microsoft\Windows Defender\MpEngine\MpCloudBlockLevel", StringComparison.OrdinalIgnoreCase))
+            return value is 0 or 1 or 2 or 4 or 6;
         if (location.EndsWith("\\PUAProtection", StringComparison.OrdinalIgnoreCase)
             || location.EndsWith("\\SpynetReporting", StringComparison.OrdinalIgnoreCase)
             || location.EndsWith("\\EnableNetworkProtection", StringComparison.OrdinalIgnoreCase)) return value is 0 or 1 or 2;

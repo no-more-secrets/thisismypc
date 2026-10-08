@@ -18,6 +18,40 @@ namespace ThisIsMyPC.App.UiTests;
 public sealed class SecurityShotTests
 {
     [AvaloniaFact]
+    public void AdditionalDefenderControls_RenderAtNarrowWidth()
+    {
+        var registry = new UiFakeRegistryService();
+        registry.WriteString(@"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "EditionID", "Enterprise");
+        var detector = new CapabilityDetector(registry);
+        var pending = new PendingChangesService(capabilityDetector: detector);
+        using var vm = new SecurityViewModel(registry, pending, detector);
+        using var session = UiSession.ForView(new SecurityView(), vm, "security-additions", width: 590, height: 580);
+        string[] ids = ["behavior-monitoring", "file-activity-monitoring", "download-scanning", "script-scanning",
+            "scan-on-protection-enable", "cloud-block-level", "heuristic-detection", "archive-scanning",
+            "network-file-scanning", "update-before-scan", "intelligence-on-battery", "intelligence-on-startup"];
+        foreach (var theme in new[] { ThemeVariant.Dark, ThemeVariant.Light })
+        {
+            session.SetTheme(theme);
+            foreach (var id in ids)
+            {
+                var row = vm.Rows.Single(r => r.Setting.Id == id);
+                vm.SearchText = row.Setting.Title;
+                session.Pump();
+                Assert.True(session.IsTextVisible(row.Setting.Title));
+                Assert.True(row.IsControlEnabled);
+                session.Screenshot($"{id}-{theme.Key}");
+            }
+        }
+        vm.SearchText = "Cloud blocking level";
+        session.Pump();
+        session.Click(session.Find<ComboBox>(c => c.IsEffectivelyVisible));
+        session.ClickText("High plus");
+        session.Pump();
+        Assert.Equal("4", Assert.Single(Assert.Single(pending.PendingGroups).Changes).AfterValue);
+        session.Screenshot("cloud-level-staged");
+    }
+
+    [AvaloniaFact]
     public async Task ManagedPolicy_UsesShortNoticeAndInformationHover()
     {
         var registry = new UiFakeRegistryService();
@@ -146,7 +180,7 @@ public sealed class SecurityShotTests
         card.Bind(Border.BackgroundProperty, card.GetResourceObservable("RaisedBrush"));
         card.Bind(Border.BorderBrushProperty, card.GetResourceObservable("OutlineBrush"));
         using var session = UiSession.ForView(card, vm, "security", width: 1040, height: 850);
-        Assert.Equal(16, vm.Rows.Count);
+        Assert.Equal(28, vm.Rows.Count);
         foreach (var theme in new[] { ThemeVariant.Dark, ThemeVariant.Light })
         {
             session.SetTheme(theme);

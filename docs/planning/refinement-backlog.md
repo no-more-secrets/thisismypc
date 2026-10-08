@@ -24,6 +24,7 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 - DONE: Security page adds 16 choices across Sign-in, Defender, App protection, and Notifications. Includes Ctrl+Alt+Delete, typed before-state checks, staged apply/undo, exact Broker targets, edition gating, search, and complete preset export. See [Security](../security-module.md).
 - Pending: domain/MDM provenance, full runtime enforcement testing, and remaining unverified policy relationships.
 - DONE: Security administrative-template controls queue saved local computer policy and current values together. Windows' policy API saves the GPO; exact target checks, before-state validation, failure restoration, history undo, and preset encoding cover both states.
+- DONE: twelve additional Defender controls cover program/file monitoring, downloads, scripts, process scans when protection resumes, cloud blocking level, heuristic/archive/network scans, and intelligence updates before scans, on battery, and at startup. Security now has 28 controls across six sections. All new controls use saved policy editing, undo, edition gating, search, and preset export. Mapping details are in [Security](../security-module.md).
 - Pending: native elevated Save/undo acceptance, per-policy exceptions and build support, user-policy writers, and the local security database. Broad deletion instructions and conflicting sources still block editing.
 
 - REQUIRED: editable coverage of Sam's practical configured policies and other important policies. See the October 7 requirement in the v1 plan.
