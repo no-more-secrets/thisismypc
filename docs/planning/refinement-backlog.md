@@ -17,6 +17,11 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 
 ## Policy coverage and control correctness (2026-10-07)
 
+- REQUESTED October 8: future integration of [DefenderRemover](https://github.com/ionuttbara/windows-defender-remover), with particular attention to antivirus detections and the reputation of the signed ThisIsMyPC release. This is a planning item, not authorization to remove protection on the development PC.
+- Integration research must pin and audit source, dependencies, license obligations, and supported Windows builds. Follow the repository rule against executing opaque utility bundles; identify narrowly scoped operations that can be represented explicitly in ThisIsMyPC.
+- Define Defender engine removal separately from changes to Windows Security, UAC, SmartScreen, VBS, and other protections mentioned by upstream. Show the exact selected scope. Reversible changes need captured state and verified restoration; removal actions must use the action pipeline and must not promise normal history undo without proven recovery.
+- Investigate detections using vendor classification and submission channels. Removal behavior can be intentionally detected, so do not assume every result is a false positive. Keep existing malware-scanning and signing gates; obfuscation, automatic exclusions, and silent security changes are not the integration strategy. Verify recovery, interrupted operations, and update behavior in disposable Windows test systems before release.
+
 - DONE: edition requirements stay visible on shared setting cards. Home keeps policy controls visible with disabled switches; presets skip unavailable entries.
 - DONE: the interactive queue checks every descriptor at staging and before applying. Microsoft policy paths default to Pro unless support is explicitly verified on Home.
 - DONE: conservative Defender gating, known consumer-content exclusions, and diagnostic data Off require Enterprise/Education. Required diagnostic data stays available on Pro.
