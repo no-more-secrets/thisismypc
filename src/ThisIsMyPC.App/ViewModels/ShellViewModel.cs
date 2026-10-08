@@ -158,7 +158,7 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, ISearch
         IPendingChangesService pendingChangesService,
         IRegistryService registryService,
         IPendingActionsService? pendingActionsService = null,
-        Core.Policies.PolicyControlStateReader? policyStates = null)
+        Core.Policies.PolicyControlStateReader? policyStates = null, IShellNativeSettings? nativeSettings = null)
     {
         // Explorer preferences, each on its own tab
         foreach (var pref in scanData.ExplorerPreferences)
@@ -193,7 +193,7 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, ISearch
         }
         foreach (var setting in scanData.ExplorerPatcherSettings)
         {
-            if (!setting.IsAvailable)
+            if (!setting.IsAvailable && setting.UnavailableReason is null)
                 continue;
 
             var captured = setting;
@@ -228,14 +228,21 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, ISearch
                     captured.SystemLocation,
                     captured.IsOn,
                     pendingChangesService,
-                    changeFactory: on => ExplorerPatcherChangeFactory.Create(captured, ReadLive(), captured.ValueFor(on)),
+                    groupFactory: on => ExplorerPatcherStartChanges.Create(registryService, captured, captured.ValueFor(on)),
                     readRegistryState: () =>
                     {
                         var live = ReadLive() ?? captured.DefaultValue;
                         return captured.Kind == Modules.Shell.Models.ExplorerPatcherSettingKind.InvertedToggle
                             ? live == 0
                             : live != 0;
-                    }));
+                    }, rehydrateSettingId: ExplorerPatcherChangeFactory.SettingIdPrefix + captured.RegistryValueName));
+            }
+            if (rows.LastOrDefault() is ShellSettingViewModel toggle)
+                toggle.SetAvailability(captured.UnavailableReason);
+            if (rows.LastOrDefault() is ShellChoiceSettingViewModel choice)
+            {
+                choice.SetAvailability(captured.UnavailableReason);
+                choice.SetGroupFactory(value => ExplorerPatcherStartChanges.Create(registryService, captured, value));
             }
         }
 
@@ -267,6 +274,8 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, ISearch
                 var result = registryService.ReadDWord(AdvancedKeyPath, "TaskbarDa");
                 return result.IsSuccess && result.Value == 1;
             }));
+
+        AddIntegrationRows(scanData, pendingChangesService, registryService, nativeSettings ?? new ThisIsMyPC.Interop.Win32.Shell.ShellNativeSettings());
 
         TaskbarChoiceSettings.Add(new ShellChoiceSettingViewModel(
             label: "Taskbar search",

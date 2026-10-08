@@ -136,8 +136,13 @@ internal static class BrokerOperationRules
 
     private static bool AllowsExplorer(ChangeDescriptor change)
     {
+        if (ShellIntegrationChanges.Allows(change)) return true;
         if (change.ValueType is not (ChangeValueType.Registry_DWord or ChangeValueType.Registry_String))
             return false;
+        if (change.SettingId.StartsWith(ExplorerPatcherChangeFactory.SettingIdPrefix, StringComparison.Ordinal)
+            && ExplorerPatcherStartChanges.IsMirrored(change.SettingId[ExplorerPatcherChangeFactory.SettingIdPrefix.Length..])
+            && change.SystemLocation == ExplorerPatcherStartChanges.StartKey + "\\" + change.SettingId[ExplorerPatcherChangeFactory.SettingIdPrefix.Length..])
+            return change.ValueType == ChangeValueType.Registry_DWord;
         if (!ExplorerLocations.Contains(change.SystemLocation))
             return false;
 
@@ -145,7 +150,9 @@ internal static class BrokerOperationRules
         {
             return ExplorerPatcherCatalog.Entries.Any(setting =>
                 change.SettingId == ExplorerPatcherChangeFactory.SettingIdPrefix + setting.RegistryValueName
-                && change.SystemLocation.Equals(setting.SystemLocation, StringComparison.OrdinalIgnoreCase));
+                && (change.SystemLocation.Equals(setting.SystemLocation, StringComparison.OrdinalIgnoreCase)
+                    || ExplorerPatcherStartChanges.IsMirrored(setting.RegistryValueName)
+                        && change.SystemLocation.Equals(ExplorerPatcherStartChanges.StartKey + "\\" + setting.RegistryValueName, StringComparison.OrdinalIgnoreCase)));
         }
 
         return !change.SettingId.Contains(':', StringComparison.Ordinal);

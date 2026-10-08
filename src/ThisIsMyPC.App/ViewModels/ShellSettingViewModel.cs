@@ -13,9 +13,25 @@ public sealed partial class ShellSettingViewModel : ViewModelBase, IDisposable, 
     private static readonly NLog.Logger Log = NLog.LogManager.GetLogger("ThisIsMyPC.App.ViewModels.ShellSettingViewModel");
 
     // IToggleSettingRow members this row type never uses (template hides them).
-    public bool IsToggleEnabled => !_policyState.BlocksChanges;
-    public bool IsInactive => false;
-    public string? InactiveReason => null;
+    public bool IsToggleEnabled => _unavailableReason is null && !_policyState.BlocksChanges;
+    public bool IsInactive => _unavailableReason is not null;
+    private string? _unavailableReason;
+    public string? InactiveReason => _unavailableReason;
+    public void SetAvailability(string? reason)
+    {
+        _unavailableReason = reason;
+        OnPropertyChanged(nameof(IsToggleEnabled));
+        OnPropertyChanged(nameof(IsInactive));
+        OnPropertyChanged(nameof(InactiveReason));
+    }
+    private bool CheckAvailability()
+    {
+        if (_unavailableReason is null) return true;
+        _suppressStaging = true;
+        IsEnabled = _registryIsEnabled;
+        _suppressStaging = false;
+        return false;
+    }
     public string? WarningText => _policyState.Message;
     private Core.Policies.PolicyControlState _policyState = Core.Policies.PolicyControlState.None;
     private Func<Core.Policies.PolicyControlState>? _readPolicyState;
@@ -197,6 +213,7 @@ public sealed partial class ShellSettingViewModel : ViewModelBase, IDisposable, 
 
     partial void OnIsEnabledChanged(bool value)
     {
+        if (!_suppressStaging && !CheckAvailability()) return;
         if (!_suppressStaging && !RefreshPolicyState()) return;
         if (_suppressStaging)
             return;
@@ -224,6 +241,7 @@ public sealed partial class ShellSettingViewModel : ViewModelBase, IDisposable, 
             if (_disposed)
                 return;
 
+            if (!CheckAvailability()) return;
             if (!RefreshPolicyState()) return;
 
             // Refresh baseline from registry (source of truth)

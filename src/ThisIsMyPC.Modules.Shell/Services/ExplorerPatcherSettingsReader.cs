@@ -169,12 +169,25 @@ public sealed class ExplorerPatcherSettingsReader
                 if (inForce != (live ?? setting.DefaultValue))
                     adjusted = inForce;
             }
+            var available = Applies(setting.Condition, taskbarStyle);
+            string? reason = !available && setting.Section == ShellSection.StartMenu
+                ? setting.Condition == "DoesWindows10StartMenuExist" ? "Windows 10 Start menu files are not available on this Windows build."
+                    : "Requires the matching Start menu style. Apply the style, then refresh this page." : null;
+            if (setting.RegistryValueName is "ShrinkExplorerAddressBar" or "HideExplorerSearchBar" or "MicaEffectOnTitlebar" or "DisableImmersiveContextMenu")
+            {
+                if (!Changes.ShellIntegrationChanges.IsRegistered(_registryService))
+                {
+                    available = false;
+                    reason = "Requires ExplorerPatcher shell-extension registration. Enable it in General, then refresh this page.";
+                }
+            }
             settings.Add(setting with
             {
                 CurrentValue = live,
                 AdjustedValue = adjusted,
                 Options = OptionsFor(setting),
-                IsAvailable = Applies(setting.Condition, taskbarStyle),
+                IsAvailable = available,
+                UnavailableReason = reason,
             });
         }
 
@@ -249,15 +262,15 @@ public sealed class ExplorerPatcherSettingsReader
     }
 
     /// <summary>The Windows 10 Start menu is only available while its host DLL is still shipped.</summary>
-    private static bool Windows10StartMenuExists()
+    private bool Windows10StartMenuExists()
     {
-        if (Environment.OSVersion.Version.Build < 22000)
+        if (_buildNumber < 22000)
             return true;
         var path = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.Windows),
             "SystemApps",
             "Microsoft.Windows.StartMenuExperienceHost_cw5n1h2txyewy",
             "StartUI.dll");
-        return File.Exists(path);
+        return _fileExists(path) || _fileExists(Path.Combine(Path.GetDirectoryName(path)!, "StartUI_.dll"));
     }
 }

@@ -23,5 +23,6 @@ public enum ChangeValueType
     /// AutorunsDisabled value, tasks flip Enabled. Before/After are "Enabled"
     /// or "Disabled"; SystemLocation names the item (see AutorunTarget).
     /// </summary>
-    Autorun_State
+    Autorun_State,
+    Shell_NativeSetting
 }

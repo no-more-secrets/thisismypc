@@ -51,6 +51,8 @@ public sealed record ExplorerPatcherSetting(
     bool IsAvailable = true,
     int? AdjustedValue = null)
 {
+    public string? UnavailableReason { get; init; }
+
     /// <summary>Where the value lives, in the "key\value" form the change pipeline uses.</summary>
     public string SystemLocation => $@"{RegistryKeyPath}\{RegistryValueName}";
 

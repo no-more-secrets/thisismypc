@@ -34,6 +34,14 @@ public sealed partial class ShellChoiceSettingViewModel : ViewModelBase, IDispos
     public string Description { get; }
     public string SystemPath { get; }
     public IReadOnlyList<ShellChoiceOption> Options { get; }
+    private string? _unavailableReason;
+    public void SetAvailability(string? reason)
+    {
+        _unavailableReason = reason;
+        RefreshPolicyState();
+    }
+    private Func<int, ChangeGroup>? _groupFactory;
+    public void SetGroupFactory(Func<int, ChangeGroup> factory) => _groupFactory = factory;
     private Func<Core.Policies.PolicyControlState>? _readPolicyState;
     public string? PolicyStateText { get; private set; }
     public bool IsControlEnabled { get; private set; } = true;
@@ -47,8 +55,8 @@ public sealed partial class ShellChoiceSettingViewModel : ViewModelBase, IDispos
     private bool RefreshPolicyState()
     {
         var state = _readPolicyState?.Invoke() ?? Core.Policies.PolicyControlState.None;
-        PolicyStateText = state.Message;
-        IsControlEnabled = !state.BlocksChanges;
+        PolicyStateText = _unavailableReason ?? state.Message;
+        IsControlEnabled = _unavailableReason is null && !state.BlocksChanges;
         OnPropertyChanged(nameof(PolicyStateText));
         OnPropertyChanged(nameof(IsControlEnabled));
         if (IsControlEnabled) return true;
@@ -166,7 +174,7 @@ public sealed partial class ShellChoiceSettingViewModel : ViewModelBase, IDispos
             _registryValue = _readRegistryValue();
 
             var change = _changeFactory(desiredValue);
-            var group = new ChangeGroup
+            var group = _groupFactory?.Invoke(desiredValue) ?? new ChangeGroup
             {
                 GroupId = Guid.NewGuid().ToString("N"),
                 DisplayName = change.DisplayName,

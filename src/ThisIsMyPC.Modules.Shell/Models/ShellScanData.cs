@@ -12,6 +12,10 @@ public sealed record ShellScanData(
     string ExplorerPatcherVersion = "",
     string ExplorerPatcherCatalogVersion = "")
 {
+    public string? TaskbarAutoHideState { get; init; }
+    public string? RoundedCornersState { get; init; }
+    public bool ShellExtensionRegistered { get; init; }
+
     public IReadOnlyList<ExplorerPatcherSetting> ExplorerPatcherSettings { get; init; } =
         ExplorerPatcherSettings ?? [];
 

@@ -46,6 +46,11 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 
 ## Annotation feedback (2026-10-07)
 
+- DONE: Explorer keeps unavailable Start menu controls visible with reasons and adds six missing Start options. Mirrored ExplorerPatcher values capture both original locations for Undo.
+- DONE: General offers ExplorerPatcher shell-extension registration and square window corners. Dependent File Explorer controls show the registration requirement and stay disabled until registration is applied and the page refreshes.
+- DONE: Taskbar offers automatic hiding through the Windows appbar API. Changes preserve the other appbar flag. The DWM service restores its previous configuration on failure or Undo.
+- Verified: typed registration snapshots, broker boundaries, service failure restoration, staged-state revisits, and dark/light screenshots. Explorer edges remain 25/23/59/10. Live applies remain untested.
+
 - DONE: Explorer startup preference reads and stages Advanced\LaunchTo, matching Windows. The previous parent-key value caused an off switch while Explorer opened This PC. Historical parent-key changes remain accepted for Undo. Verified opposite-value regression cases and broker validation; live Explorer settings were not changed.
 
 - DONE: renamed Pro Tools to Professional Tools. Added Claude Code CLI with native user-install detection and Spotifast under Multimedia Tools. Catalog: 94 entries and 90 bundled icons.

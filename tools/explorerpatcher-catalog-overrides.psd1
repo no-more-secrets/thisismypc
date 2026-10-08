@@ -196,6 +196,12 @@
         'HideIconAndTitleInExplorer'      = 'Whether File Explorer windows show the folder icon and name in the title bar. New windows only.'
         'MicaEffectOnTitlebar'            = 'Tint the navigation bar of File Explorer windows with the Mica effect when the Windows 7 command bar is in use. New windows only.'
         # Start menu
+        'Start_MaximumFrequentApps' = 'Maximum number of frequently used apps shown in Start.'
+        'StartDocked_DisableRecommendedSection' = 'Remove the Recommended section from the Windows 11 Start menu.'
+        'StartUI_ShowMoreTiles' = 'Show additional tiles in the Windows 10 Start menu.'
+        'StartUI_EnableRoundedCorners' = 'Choose the corner shape of the Windows 10 Start menu.'
+        'ForceStartSize' = 'Choose the default, full-screen, or menu size for Windows 10 Start.'
+        'NoStartMenuMorePrograms' = 'Choose how the Windows 10 Start menu shows the app list.'
         'Start_ShowClassicMode'           = 'Windows 10 opens the Windows 10 Start menu, which needs its code to still be present in this Windows build.'
         'MonitorOverride'                 = 'With more than one display, which monitor the Start menu opens on when you press the Windows key.'
         'MakeAllAppsDefault'              = 'Open the Windows 11 Start menu on the All apps list instead of Pinned.'

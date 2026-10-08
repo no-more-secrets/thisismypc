@@ -2285,6 +2285,224 @@
                          "options":  [
 
                                      ]
-                     }
-                 ]
+                     },
+{
+    "id": "ep:Start_MaximumFrequentApps",
+    "name": "Maximum number of frequent apps to show",
+    "description": "Maximum number of frequently used apps shown in Start.",
+    "group": "",
+    "page": "Start menu",
+    "section": "StartMenu",
+    "key": "HKCU\\Software\\ExplorerPatcher",
+    "value": "Start_MaximumFrequentApps",
+    "kind": "choice",
+    "default": 6,
+    "restart": false,
+    "condition": "",
+    "options": [
+        {
+            "value": 0,
+            "name": "None"
+        },
+        {
+            "value": 1,
+            "name": "1"
+        },
+        {
+            "value": 2,
+            "name": "2"
+        },
+        {
+            "value": 3,
+            "name": "3"
+        },
+        {
+            "value": 4,
+            "name": "4"
+        },
+        {
+            "value": 5,
+            "name": "5"
+        },
+        {
+            "value": 6,
+            "name": "6 (default)"
+        },
+        {
+            "value": 7,
+            "name": "7"
+        },
+        {
+            "value": 8,
+            "name": "8"
+        },
+        {
+            "value": 9,
+            "name": "9"
+        },
+        {
+            "value": 10,
+            "name": "10"
+        },
+        {
+            "value": 11,
+            "name": "11"
+        },
+        {
+            "value": 12,
+            "name": "12"
+        },
+        {
+            "value": 13,
+            "name": "13"
+        },
+        {
+            "value": 14,
+            "name": "14"
+        },
+        {
+            "value": 15,
+            "name": "15"
+        },
+        {
+            "value": 16,
+            "name": "16"
+        },
+        {
+            "value": 17,
+            "name": "17"
+        },
+        {
+            "value": 18,
+            "name": "18"
+        },
+        {
+            "value": 19,
+            "name": "19"
+        },
+        {
+            "value": 20,
+            "name": "20"
+        },
+        {
+            "value": 99999,
+            "name": "Unlimited"
+        }
+    ]
+},
+{
+    "id": "ep:StartDocked_DisableRecommendedSection",
+    "name": "Disable the \"Recommended\" section",
+    "description": "Remove the Recommended section from the Windows 11 Start menu.",
+    "group": "",
+    "page": "Start menu",
+    "section": "StartMenu",
+    "key": "HKCU\\Software\\ExplorerPatcher",
+    "value": "StartDocked_DisableRecommendedSection",
+    "kind": "toggle",
+    "default": 0,
+    "restart": false,
+    "condition": "!IsWindows10StartMenu",
+    "options": []
+},
+{
+    "id": "ep:StartUI_ShowMoreTiles",
+    "name": "Show more tiles",
+    "description": "Show additional tiles in the Windows 10 Start menu.",
+    "group": "",
+    "page": "Start menu",
+    "section": "StartMenu",
+    "key": "HKCU\\Software\\ExplorerPatcher",
+    "value": "StartUI_ShowMoreTiles",
+    "kind": "toggle",
+    "default": 0,
+    "restart": false,
+    "condition": "IsWindows10StartMenu",
+    "options": []
+},
+{
+    "id": "ep:StartUI_EnableRoundedCorners",
+    "name": "Corner preference",
+    "description": "Choose the corner shape of the Windows 10 Start menu.",
+    "group": "",
+    "page": "Start menu",
+    "section": "StartMenu",
+    "key": "HKCU\\Software\\ExplorerPatcher",
+    "value": "StartUI_EnableRoundedCorners",
+    "kind": "choice",
+    "default": 0,
+    "restart": false,
+    "condition": "IsWindows10StartMenu",
+    "options": [
+        {
+            "value": 1,
+            "name": "Rounded corners, floating menu"
+        },
+        {
+            "value": 2,
+            "name": "Rounded corners, docked menu"
+        },
+        {
+            "value": 0,
+            "name": "Not rounded"
+        }
+    ]
+},
+{
+    "id": "ep:ForceStartSize",
+    "name": "Display mode",
+    "description": "Choose the default, full-screen, or menu size for Windows 10 Start.",
+    "group": "",
+    "page": "Start menu",
+    "section": "StartMenu",
+    "key": "HKCU\\Software\\Policies\\Microsoft\\Windows\\Explorer",
+    "value": "ForceStartSize",
+    "kind": "choice",
+    "default": 0,
+    "restart": false,
+    "condition": "IsWindows10StartMenu",
+    "options": [
+        {
+            "value": 0,
+            "name": "Default"
+        },
+        {
+            "value": 1,
+            "name": "Start menu"
+        },
+        {
+            "value": 2,
+            "name": "Full screen Start"
+        }
+    ]
+},
+{
+    "id": "ep:NoStartMenuMorePrograms",
+    "name": "App list",
+    "description": "Choose how the Windows 10 Start menu shows the app list.",
+    "group": "",
+    "page": "Start menu",
+    "section": "StartMenu",
+    "key": "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Policies\\Explorer",
+    "value": "NoStartMenuMorePrograms",
+    "kind": "choice",
+    "default": 0,
+    "restart": false,
+    "condition": "IsWindows10StartMenu",
+    "options": [
+        {
+            "value": 0,
+            "name": "Display"
+        },
+        {
+            "value": 3,
+            "name": "Hide"
+        },
+        {
+            "value": 1,
+            "name": "Disable"
+        }
+    ]
+}
+]
 }

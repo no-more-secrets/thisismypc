@@ -48,7 +48,7 @@ public sealed class ShellViewModelTests
         var registryService = new Fakes.FakeRegistryService();
         var vm = new ShellViewModel(MakeScanData(), pendingService, registryService);
 
-        Assert.Equal(2, vm.TaskbarSettings.Count);
+        Assert.Equal(3, vm.TaskbarSettings.Count);
     }
 
     [Fact]

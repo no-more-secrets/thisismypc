@@ -16,10 +16,12 @@ public sealed class ShellSetEntryInspector : ISetEntryInspector
     private readonly ExplorerSettingsReader _explorerReader;
     private readonly TaskbarSettingsReader _taskbarReader;
     private readonly ExplorerPatcherSettingsReader _patcherReader;
+    private readonly IRegistryService _registry;
 
     /// <param name="patcherReader">The ExplorerPatcher reader to resolve rows with; a live one when null. Tests pin its build.</param>
     public ShellSetEntryInspector(IRegistryService registryService, ExplorerPatcherSettingsReader? patcherReader = null)
     {
+        _registry = registryService;
         _explorerReader = new ExplorerSettingsReader(registryService);
         _taskbarReader = new TaskbarSettingsReader(registryService);
         _patcherReader = patcherReader ?? new ExplorerPatcherSettingsReader(registryService);
@@ -117,9 +119,10 @@ public sealed class ShellSetEntryInspector : ISetEntryInspector
         {
             if (entry.Value == ShellRegistryPaths.AbsentValue)
                 return null;   // "leave it unset" is not something a set applies
+            if (!patcher.IsAvailable) return null;
             return int.TryParse(entry.Value, System.Globalization.NumberStyles.Integer,
                 System.Globalization.CultureInfo.InvariantCulture, out var target)
-                ? Wrap(ExplorerPatcherChangeFactory.Create(patcher, patcher.CurrentValue, target))
+                ? ExplorerPatcherStartChanges.Create(_registry, patcher, target)
                 : null;
         }
 

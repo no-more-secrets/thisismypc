@@ -65,7 +65,7 @@ $AlreadyOurs = @(
 
 # ExplorerPatcher marks pseudo-values with a Virtualized_ prefix. Its GUI
 # translates these to real values under HKCU\Software\ExplorerPatcher.
-$ImportedVirtualizedValues = @('FileExplorerCommandUI')
+$ImportedVirtualizedValues = @('FileExplorerCommandUI', 'Start_MaximumFrequentApps', 'StartDocked_DisableRecommendedSection', 'StartUI_ShowMoreTiles', 'StartUI_EnableRoundedCorners', 'ForceStartSize', 'NoStartMenuMorePrograms')
 
 # ExplorerPatcher pages that uninstall it or just show version text.
 $SkipPages = @('Settings and uninstall', 'About')
@@ -235,7 +235,11 @@ foreach ($rawLine in ($settingsReg -split "`r?`n")) {
         $data = $Matches[2].Trim()
 
         if ($virtualized) {
-            $key = 'HKCU\Software\ExplorerPatcher'
+            $key = switch ($valueName) {
+                'ForceStartSize' { 'HKCU\Software\Policies\Microsoft\Windows\Explorer' }
+                'NoStartMenuMorePrograms' { 'HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer' }
+                default { 'HKCU\Software\ExplorerPatcher' }
+            }
         }
 
         if (-not $pendingKind) { continue }

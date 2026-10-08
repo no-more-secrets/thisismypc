@@ -10,13 +10,15 @@ namespace ThisIsMyPC.Modules.Shell;
 public sealed class ShellModule : IModule
 {
 
+    private readonly IShellNativeSettings _native;
     private readonly IRegistryService _registryService;
     private readonly ExplorerSettingsReader _explorerSettingsReader;
     private readonly TaskbarSettingsReader _taskbarSettingsReader;
 
-    public ShellModule(IRegistryService registryService)
+    public ShellModule(IRegistryService registryService, IShellNativeSettings? native = null)
     {
         _registryService = registryService;
+        _native = native ?? new Interop.Win32.Shell.ShellNativeSettings();
         _explorerSettingsReader = new ExplorerSettingsReader(registryService);
         _taskbarSettingsReader = new TaskbarSettingsReader(registryService);
     }
@@ -54,7 +56,12 @@ public sealed class ShellModule : IModule
                     ExplorerPatcherSettings: explorerPatcherInstalled ? explorerPatcherReader.ReadAll() : [],
                     ExplorerPatcherInstalled: explorerPatcherInstalled,
                     ExplorerPatcherVersion: explorerPatcherInstalled ? explorerPatcherReader.InstalledVersion() : "",
-                    ExplorerPatcherCatalogVersion: ExplorerPatcherCatalog.Version);
+                    ExplorerPatcherCatalogVersion: ExplorerPatcherCatalog.Version)
+                {
+                    TaskbarAutoHideState = _native.ReadTaskbarState().Value,
+                    RoundedCornersState = explorerPatcherInstalled ? _native.ReadRoundedCornersState().Value : null,
+                    ShellExtensionRegistered = Changes.ShellIntegrationChanges.IsRegistered(_registryService),
+                };
 
                 return OperationResult<object>.Success(scanData);
             }
@@ -71,6 +78,18 @@ public sealed class ShellModule : IModule
     {
         try
         {
+            if (change.ValueType == ChangeValueType.Shell_NativeSetting)
+            {
+                if (!Changes.ShellIntegrationChanges.Allows(change))
+                    return Task.FromResult(OperationResult<bool>.Failure("Invalid shell operation.", ErrorCategory.AccessDenied));
+                return change.SystemLocation == Changes.ShellIntegrationChanges.Taskbar
+                    ? Task.FromResult(_native.WriteTaskbarState(change.AfterValue!))
+                    : _native.WriteRoundedCornersStateAsync(change.AfterValue!);
+            }
+            if ((change.SettingId.StartsWith(Changes.ShellIntegrationChanges.Registration, StringComparison.Ordinal)
+                    || change.SettingId == Changes.ShellIntegrationChanges.Navigation)
+                && !Changes.ShellIntegrationChanges.Allows(change))
+                return Task.FromResult(OperationResult<bool>.Failure("Invalid shell registration.", ErrorCategory.AccessDenied));
             // CLSID InprocServer32 override toggles (key presence-based, not value-based)
             if (change.SystemLocation == ShellRegistryPaths.ClassicContextMenuKeyPath)
             {
@@ -88,10 +107,18 @@ public sealed class ShellModule : IModule
 
             // AbsentValue restores "value absent" for delete-to-restore preferences
             // (shortcut-suffix); the CLSID key-presence toggles are handled above.
-            if (change.AfterValue == ShellRegistryPaths.AbsentValue)
+            if (change.AfterValue == ShellRegistryPaths.AbsentValue
+                || change.AfterValue == Changes.ShellIntegrationChanges.AbsentRegistrationKey
+                    && (change.SettingId.StartsWith(Changes.ShellIntegrationChanges.Registration, StringComparison.Ordinal)
+                        || change.SettingId == Changes.ShellIntegrationChanges.Navigation))
             {
                 var (absentKeyPath, absentValueName) = ParseSystemLocation(change.SystemLocation);
-                return Task.FromResult(_registryService.DeleteValue(absentKeyPath, absentValueName));
+                var deleted = _registryService.DeleteValue(absentKeyPath, absentValueName);
+                if (deleted.IsSuccess && change.AfterValue == Changes.ShellIntegrationChanges.AbsentRegistrationKey
+                    && _registryService.EnumerateValues(absentKeyPath) is { IsSuccess: true, Value.Count: 0 }
+                    && _registryService.EnumerateSubKeys(absentKeyPath) is { IsSuccess: true, Value.Count: 0 })
+                    deleted = _registryService.DeleteKey(absentKeyPath);
+                return Task.FromResult(deleted);
             }
 
             var result = change.ValueType switch
