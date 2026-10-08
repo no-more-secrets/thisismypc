@@ -10,8 +10,8 @@ public record SettingEnforcement
     public IReadOnlyList<string>? ReversionVectors { get; init; }
     /// <summary>
     /// Minimum edition tier that honors the policy (Home &lt; Pro &lt;
-    /// Enterprise/Education). Editions below it apply the write but Windows ignores it.
-    /// Informational only; never gates staging (FR129).
+    /// Enterprise/Education). The interactive queue blocks editions below this tier.
+    /// An explicit Home value records verified support through the applied method.
     /// </summary>
     public WindowsSku? SkuRestriction { get; init; }
     public bool OwnerModeRequired { get; init; }

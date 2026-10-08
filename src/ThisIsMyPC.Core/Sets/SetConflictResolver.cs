@@ -61,7 +61,11 @@ public sealed class SetConflictResolver
                 $"Will be skipped: the value '{entry.Value}' is not valid for this setting.");
         }
 
-        var skuNotice = BuildSkuNotice(stageable);
+        var skuNotice = stageable.Changes
+            .Select(change => SettingEditionSupport.BlockReason(_capabilityDetector?.Sku, change))
+            .FirstOrDefault(reason => reason is not null);
+        if (skuNotice is not null)
+            return Skipped(entry, skuNotice) with { State = state, SkuNotice = skuNotice };
 
         // First pending descriptor targeting the same setting. Factories list a group
         // toggle's primary value first, so the first match compares against the same
@@ -99,24 +103,6 @@ public sealed class SetConflictResolver
             Conflict = state.IsApplied ? SetEntryConflict.AlreadyApplied : SetEntryConflict.None,
             SkuNotice = skuNotice,
         };
-    }
-
-    /// <summary>
-    /// Informational only: distinguish unknown edition support from a known
-    /// minimum-tier restriction. Neither notice prevents staging or undo.
-    /// </summary>
-    private string? BuildSkuNotice(ChangeGroup stageable)
-    {
-        if (_capabilityDetector?.Sku is null)
-            return stageable.Changes.Any(c => c.Enforcement?.SkuRestriction is not null)
-                ? "Windows edition is unknown. Support for this setting is unverified."
-                : null;
-
-        var restricted = stageable.Changes.Any(
-            c => _capabilityDetector.IsSkuRestricted(c.Enforcement?.SkuRestriction));
-        return restricted
-            ? $"No effect on your Windows edition ({_capabilityDetector.Sku}). The value is still applied and undoable."
-            : null;
     }
 
     private static SetEntryResolution Skipped(SetEntry entry, string reason) => new()

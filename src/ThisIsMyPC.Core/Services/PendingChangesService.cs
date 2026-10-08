@@ -26,10 +26,12 @@ public sealed class PendingChangesService : IPendingChangesService
     private readonly object _lock = new();
     private readonly IReversibleChangeExecutor _executor;
     private bool _isApplying;
+    private readonly ICapabilityDetector? _capabilityDetector;
 
-    public PendingChangesService(IEnforcementExecutor? enforcementExecutor = null)
+    public PendingChangesService(IEnforcementExecutor? enforcementExecutor = null, ICapabilityDetector? capabilityDetector = null)
         : this(new ReversibleChangeExecutor(enforcementExecutor))
     {
+        _capabilityDetector = capabilityDetector;
     }
 
     private PendingChangesService(IReversibleChangeExecutor executor)
@@ -115,6 +117,10 @@ public sealed class PendingChangesService : IPendingChangesService
 
         foreach (var change in group.Changes)
         {
+            if (_capabilityDetector is not null
+                && SettingEditionSupport.BlockReason(_capabilityDetector.Sku, change) is { } editionReason)
+                throw new InvalidOperationException(editionReason);
+
             if (change.BeforeValue is null)
             {
                 throw new ArgumentException(
@@ -261,6 +267,18 @@ public sealed class PendingChangesService : IPendingChangesService
             }
 
             snapshot = [.. _pendingGroups];
+            if (_capabilityDetector is not null)
+            {
+                foreach (var change in snapshot.SelectMany(group => group.Changes))
+                {
+                    if (SettingEditionSupport.BlockReason(_capabilityDetector.Sku, change) is { } reason)
+                        return new MutationResult
+                        {
+                            IsSuccess = false, Applied = [], RolledBack = [], Failed = change,
+                            ErrorMessage = reason, ErrorCategory = ErrorCategory.SkuRestricted,
+                        };
+                }
+            }
 
             // An enforced change with no executor is a DI misconfiguration; fail before
             // any change is applied, not mid-batch.

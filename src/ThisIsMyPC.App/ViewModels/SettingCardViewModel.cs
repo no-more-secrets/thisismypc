@@ -112,9 +112,10 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
     public bool ShowReversionRisks => HasReversionRisks && !IsCompact;
 
     /// <summary>
-    /// SKU callout: informational only; the setting stays toggleable (8-4 rule).
+    /// Edition requirements stay visible in every display mode.
     /// </summary>
     public bool HasSkuNotice { get; }
+    public bool IsEditionBlocked { get; }
     public string? SkuNotice { get; }
 
     /// <summary>
@@ -136,7 +137,7 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
     public bool HasUnavailableReason => Model.UnavailableReason is not null;
     public string? UnavailableReason => Model.UnavailableReason;
     /// <summary>Keep the card readable when its control cannot safely change the setting.</summary>
-    public bool IsControlEnabled => !IsOwnerModeDegraded && !HasUnavailableReason;
+    public bool IsControlEnabled => !IsOwnerModeDegraded && !HasUnavailableReason && !IsEditionBlocked;
 
     /// <summary>The callout button needs the lifecycle service to act.</summary>
     public bool CanTurnOnOwnerMode => IsOwnerModeDegraded && _ownerMode is not null;
@@ -244,21 +245,11 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
         _feedback = feedback;
         Model = source.Model;
 
-        // Unknown edition is not proof of policy support. Keep the setting available
-        // but distinguish unverified support from a known minimum-tier restriction.
-        if (Model.SkuRestriction is not null && capabilityDetector?.Sku is null)
-        {
-            HasSkuNotice = true;
-            SkuNotice = "Windows edition is unknown. Support for this setting is unverified.";
-        }
-        else if (capabilityDetector?.IsSkuRestricted(Model.SkuRestriction) == true)
-        {
-            HasSkuNotice = true;
-            var required = Model.SkuRestriction == Core.Modules.WindowsSku.Education
-                ? "Enterprise or Education"
-                : $"{Model.SkuRestriction} or higher";
-            SkuNotice = $"Requires {required}. No effect on this edition.";
-        }
+        var required = SettingEditionSupport.RequiredEdition(SystemPath, Model.SkuRestriction);
+        var editionReason = SettingEditionSupport.BlockReason(capabilityDetector?.Sku, SystemPath, Model.SkuRestriction);
+        IsEditionBlocked = editionReason is not null;
+        SkuNotice = editionReason ?? SettingEditionSupport.RequirementLabel(required);
+        HasSkuNotice = SkuNotice is not null;
 
         // Owner Mode degradation: no detector means the service can't be reached;
         // treat as unavailable (safe default). The lifecycle event keeps the state

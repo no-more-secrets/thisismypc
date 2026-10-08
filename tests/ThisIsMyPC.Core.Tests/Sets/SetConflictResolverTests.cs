@@ -209,7 +209,7 @@ public sealed class SetConflictResolverTests
     };
 
     [Fact]
-    public void SkuBelowTheMinimumTier_ProducesCosmeticNotice_StillIncluded()
+    public void SkuBelowTheMinimumTier_IsSkipped()
     {
         var resolver = new SetConflictResolver(
             [SkuRestrictedInspector(WindowsSku.Pro)],
@@ -219,11 +219,11 @@ public sealed class SetConflictResolverTests
         var resolution = resolver.Resolve(Definition(Entry()), []).Single();
 
         Assert.NotNull(resolution.SkuNotice);
-        Assert.Contains("Home", resolution.SkuNotice, StringComparison.Ordinal);
-        Assert.Contains("No effect", resolution.SkuNotice, StringComparison.Ordinal);
-        // Informational only: the entry stays stageable and included by default
-        Assert.False(resolution.IsSkipped);
-        Assert.True(resolution.IncludedByDefault);
+        Assert.Equal("Requires Windows Pro", resolution.SkuNotice);
+
+        // Unsupported entries remain visible, but cannot be selected.
+        Assert.True(resolution.IsSkipped);
+        Assert.False(resolution.IncludedByDefault);
     }
 
     [Fact]

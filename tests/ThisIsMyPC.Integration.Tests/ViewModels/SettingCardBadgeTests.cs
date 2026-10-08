@@ -102,15 +102,18 @@ public sealed class SettingCardBadgeTests
     }
 
     [Fact]
-    public void SkuBelowTheMinimumTier_ShowsNotice_ToggleStaysEnabled()
+    public void SkuBelowTheMinimumTier_ShowsNotice_AndRejectsToggle()
     {
         var vm = CreateVm(
             skuRestriction: WindowsSku.Pro,
             detector: new StubDetector { Sku = WindowsSku.Home });
 
         Assert.True(vm.HasSkuNotice);
-        Assert.Contains("Requires Pro or higher", vm.SkuNotice, StringComparison.Ordinal);
-        Assert.True(vm.IsControlEnabled);
+        Assert.Contains("Requires Windows Pro", vm.SkuNotice, StringComparison.Ordinal);
+        Assert.False(vm.IsControlEnabled);
+        vm.IsEnabled = true;
+        Assert.False(vm.IsEnabled);
+        Assert.Empty(_pending.PendingGroups);
     }
 
     [Fact]
@@ -127,13 +130,14 @@ public sealed class SettingCardBadgeTests
     [Theory]
     [InlineData(WindowsSku.Pro)]       // meets the minimum
     [InlineData(WindowsSku.Education)] // above the minimum
-    public void SkuAtOrAboveTheMinimum_NoNotice(WindowsSku? detectedSku)
+    public void SkuAtOrAboveTheMinimum_ShowsRequirement(WindowsSku? detectedSku)
     {
         var vm = CreateVm(
             skuRestriction: WindowsSku.Pro,
             detector: new StubDetector { Sku = detectedSku });
 
-        Assert.False(vm.HasSkuNotice);
+        Assert.True(vm.HasSkuNotice);
+        Assert.True(vm.IsControlEnabled);
     }
 
     [Fact]
@@ -143,7 +147,7 @@ public sealed class SettingCardBadgeTests
 
         Assert.True(vm.HasSkuNotice);
         Assert.Contains("unverified", vm.SkuNotice, StringComparison.Ordinal);
-        Assert.True(vm.IsControlEnabled);
+        Assert.False(vm.IsControlEnabled);
     }
 
     [Fact]
@@ -155,7 +159,7 @@ public sealed class SettingCardBadgeTests
         Assert.True(vm.HasSkuNotice);
         Assert.True(vm.HasVisibleContent);
         Assert.Contains("unverified", vm.SkuNotice, StringComparison.Ordinal);
-        Assert.True(vm.IsControlEnabled);
+        Assert.False(vm.IsControlEnabled);
     }
 
     [Fact]

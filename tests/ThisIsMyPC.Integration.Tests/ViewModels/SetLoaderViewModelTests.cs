@@ -45,6 +45,7 @@ public sealed class SetLoaderViewModelTests
         // the pin on machines where it can't be read).
         var wuRegistry = new StoringFakeRegistryService();
         wuRegistry.WriteString(WindowsUpdateRegistryPaths.CurrentVersionKeyPath, "DisplayVersion", "24H2");
+        wuRegistry.WriteString(WindowsUpdateRegistryPaths.CurrentVersionKeyPath, "EditionID", "Enterprise");
 
         return new SetLoaderViewModel(
             load,
@@ -56,7 +57,8 @@ public sealed class SetLoaderViewModelTests
                 new WindowsUpdateSetEntryInspector(wuRegistry),
             ],
             availabilityLookup ?? (_ => Available),
-            pendingChangesService ?? new PendingChangesService());
+            pendingChangesService ?? new PendingChangesService(),
+            capabilityDetector: new CapabilityDetector(wuRegistry));
     }
 
     private static SetDefinition Definition(params SetEntry[] entries) => new()

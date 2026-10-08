@@ -42,9 +42,8 @@ public sealed record SetEntryResolution
     public string? PendingDisplay { get; init; }
 
     /// <summary>
-    /// Informational notice when the entry is cosmetic on the current Windows edition
-    /// (SettingEnforcement.SkuRestriction matches the detected SKU). Never blocks
-    /// staging or changes the default inclusion.
+    /// Edition restriction shown alongside the skip reason. Restricted entries remain
+    /// visible but cannot be staged.
     /// </summary>
     public string? SkuNotice { get; init; }
 

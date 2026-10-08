@@ -2,18 +2,26 @@
 
 Which shipped tweaks are edition-dependent, per the **official Policy CSP edition
 tables** (learn.microsoft.com, fetched 2026-08-29). These feed the
-`SettingEnforcement.SkuRestriction` tags. These informational tags drive card callouts
+`SettingEnforcement.SkuRestriction` tags. These tags drive card requirements
 and set-preview notices. Successful writes remain undoable but do not establish policy support.
 
-## Current implementation (2026-09-21)
+## Current implementation (2026-10-07)
 
 `SkuRestriction` stores the minimum supported edition tier: Home < Pro < Enterprise/Education.
 Enterprise and Education are equivalent for this product. A Pro minimum excludes Home;
 an Enterprise or Education minimum excludes Home and Pro.
 
-Cards and set previews show a restriction notice below the required tier. An unknown
-edition shows an unverified-support notice for tagged settings, including when detection is unavailable.
-Notices do not prevent staging or undo. A successful registry write does not prove policy enforcement.
+Cards show the required edition and disable their switches below that tier. Descriptions remain readable.
+An unknown edition disables policy controls with an unverified-support notice.
+Presets skip restricted entries. The interactive queue checks every descriptor before staging and again before applying.
+Undo and the restoration executor remain separate from the interactive queue checks.
+
+Untagged Microsoft policy registry paths default to a Pro requirement. This is a conservative product rule,
+not evidence that Home ignores every policy. An explicit Home tag requires evidence for the specific method.
+Ordinary preferences remain available. Defender policy paths default to Enterprise/Education until Pro support is verified.
+Consumer-content exclusions and diagnostic data Off require Enterprise/Education. Required diagnostic data remains available on Pro.
+Group controls must declare restrictions for companion policies, including Bing search.
+A successful registry write does not prove policy enforcement. New policy editors and build-specific support remain pending.
 
 The source table below records the 2026-08-29 research, not a complete current coverage audit.
 The CSP tables describe managed-policy applicability; direct registry behavior can differ.

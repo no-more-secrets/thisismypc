@@ -238,6 +238,8 @@ public sealed class AnnoyancesCardProvider
             CurrentValue = scanData.BingSearch.IsSuppressed ? "1" : "0",
             CurrentDisplayValue = scanData.BingSearch.IsSuppressed ? "Suppressed" : "Windows default",
             RegistryPath = AnnoyancesRegistryPaths.SearchKeyPath,
+            // The group also writes the Explorer search-suggestions policy.
+            SkuRestriction = Core.Modules.WindowsSku.Pro,
             ValueName = "BingSearchEnabled",
             RegistryValueType = nameof(ChangeValueType.Registry_DWord),
             GroupId = SectionGroups[AnnoyanceSection.BingAndEdge],

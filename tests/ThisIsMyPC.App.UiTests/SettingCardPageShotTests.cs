@@ -24,7 +24,38 @@ namespace ThisIsMyPC.App.UiTests;
 /// </summary>
 public class SettingCardPageShotTests
 {
-    private static AnnoyancesViewModel Annoyances(IPendingChangesService pending)
+    [AvaloniaFact]
+    public void HomePolicy_RemainsReadableButCannotBeToggled()
+    {
+        var registry = new UiFakeRegistryService();
+        registry.WriteString(@"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "EditionID", "Core");
+        var detector = new CapabilityDetector(registry);
+        var pending = new PendingChangesService(capabilityDetector: detector);
+        using var vm = new WindowsUpdateViewModel(new WindowsUpdateSettingsReader(registry).ReadAll(), pending, registry, capabilityDetector: detector);
+        var policy = AllCards(vm).First(card => card.Model.SkuRestriction is not null);
+        vm.SearchText = policy.DisplayName;
+        using var session = UiSession.ForView(Card(new SettingCardPageView()), vm, "card-pages", width: 800, height: 650);
+        foreach (var theme in new[] { ThemeVariant.Dark, ThemeVariant.Light })
+        {
+            session.SetTheme(theme);
+            foreach (var compact in new[] { false, true })
+            {
+                vm.IsCompact = compact;
+                session.Pump();
+                Assert.True(session.IsTextVisible(policy.DisplayName));
+                Assert.True(session.IsTextVisible("Requires Windows Pro"));
+                Assert.False(policy.IsControlEnabled);
+                var card = session.Find<ToggleCard>(card => card.Title == policy.DisplayName);
+                Assert.False(card.IsSwitchEnabled);
+                Assert.False(string.IsNullOrWhiteSpace(card.Description));
+                policy.IsEnabled = !policy.IsEnabled;
+                Assert.Empty(pending.PendingGroups);
+                session.Screenshot($"home-policy-{theme.Key}-{(compact ? "compact" : "full")}");
+            }
+        }
+    }
+
+    private static AnnoyancesViewModel Annoyances(IPendingChangesService pending, ICapabilityDetector? detector = null)
     {
         var registry = new UiFakeRegistryService();
         var reader = new AnnoyancesSettingsReader(registry);
@@ -32,7 +63,22 @@ public class SettingCardPageShotTests
             reader.ReadAll(), reader.ReadBingSearch(), reader.ReadSettingsSuggestedContent(),
             reader.ReadCopilotPolicy(), reader.ReadRecall(), reader.ReadLockScreenAds(),
             reader.ReadPreinstalledApps(), reader.ReadEdgeDebloat(), reader.ReadActivityHistory());
-        return new AnnoyancesViewModel(scan, pending, registry);
+        return new AnnoyancesViewModel(scan, pending, registry, capabilityDetector: detector);
+    }
+
+    [AvaloniaFact]
+    public void HomeBingSearch_DisablesTheControlForItsCompanionPolicy()
+    {
+        var registry = new UiFakeRegistryService();
+        registry.WriteString(@"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "EditionID", "Core");
+        var detector = new CapabilityDetector(registry);
+        var pending = new PendingChangesService(capabilityDetector: detector);
+        using var vm = Annoyances(pending, detector);
+        var bing = AllCards(vm).Single(card => card.Model.SettingId == "bing-search");
+        Assert.False(bing.IsControlEnabled);
+        Assert.Equal("Requires Windows Pro", bing.SkuNotice);
+        bing.IsEnabled = !bing.IsEnabled;
+        Assert.Empty(pending.PendingGroups);
     }
 
     private static PrivacyViewModel Privacy(IPendingChangesService pending)
@@ -143,7 +189,7 @@ public class SettingCardPageShotTests
                 vm.IsCompact = compact;
                 session.Pump();
                 Assert.True(restricted.HasSkuNotice);
-                Assert.True(restricted.IsControlEnabled);
+                Assert.False(restricted.IsControlEnabled);
                 Assert.True(session.IsTextVisible("Windows edition is unknown. Support for this setting is unverified."));
                 session.Screenshot($"unknown-edition-{theme.Key}-{(compact ? "compact" : "full")}");
             }

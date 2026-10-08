@@ -12,7 +12,7 @@ namespace ThisIsMyPC.Integration.Tests.Sets;
 
 /// <summary>
 /// Story 8.4 AC 1-2 proof: a set staged from the Set Loader applies through the standard
-/// pending-changes pipeline — enforcement-carrying entries route via the executor, the
+/// pending-changes pipeline ; enforcement-carrying entries route via the executor, the
 /// registry writes land, and undo has faithful before-values. Pure fakes, no live system.
 /// </summary>
 public sealed class SetApplicationEndToEndTests
@@ -21,6 +21,7 @@ public sealed class SetApplicationEndToEndTests
     public async Task NukeCopilot_StagedFromSetLoader_AppliesThroughThePipeline()
     {
         var registry = new StoringFakeRegistryService();
+        registry.WriteString(@"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "EditionID", "Enterprise");
         var module = new AnnoyancesModule(registry);
         var pending = new PendingChangesService(
             new EnforcementExecutor(new FakeServiceControlService()));
@@ -32,7 +33,7 @@ public sealed class SetApplicationEndToEndTests
             loadResult,
             [new AnnoyancesSetEntryInspector(registry), new ShellSetEntryInspector(registry)],
             _ => new ModuleAvailability(IsAvailable: true),
-            pending);
+            pending, capabilityDetector: new CapabilityDetector(registry));
 
         vm.SelectSetCommand.Execute(vm.TweakSets.Single(s => s.Name == "NukeCopilot"));
         vm.StageIncludedCommand.Execute(null);

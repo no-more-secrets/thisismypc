@@ -4,6 +4,11 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 
 ## Policy coverage and control correctness (2026-10-07)
 
+- DONE: edition requirements stay visible on shared setting cards. Home keeps policy controls visible with disabled switches; presets skip unavailable entries.
+- DONE: the interactive queue checks every descriptor at staging and before applying. Microsoft policy paths default to Pro unless support is explicitly verified on Home.
+- DONE: conservative Defender gating, known consumer-content exclusions, and diagnostic data Off require Enterprise/Education. Required diagnostic data stays available on Pro.
+- Pending: verify per-policy exceptions and build support, add policy editors, and connect Ctrl+Alt+Delete sign-in control.
+
 - REQUIRED: editable coverage of Sam's practical configured policies and other important policies. See the October 7 requirement in the v1 plan.
 - DONE: expanded read-only inventory across 224 installed ADMX files, 3,552 policy definitions, both applicable registry scopes, and conventional policy roots.
 - Found: eight additional ADMX candidates, 116 values without installed ADMX mappings, and eight exported records with scope mismatches. See [audit](../research/policy-audit-2026-10-07.md).
