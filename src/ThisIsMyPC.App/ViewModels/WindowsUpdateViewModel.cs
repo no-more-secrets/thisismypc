@@ -32,7 +32,7 @@ public sealed class WindowsUpdateViewModel : SettingCardPageViewModel
             "windows-update",
             // Factories re-read live state at stage time; a scan-time snapshot would bake
             // stale BeforeValues into the descriptors after the first apply.
-            new WindowsUpdateCardProvider(new WindowsUpdateSettingsReader(registryService)).BuildCards(scanData),
+            new WindowsUpdateCardProvider(new WindowsUpdateSettingsReader(registryService), capabilityDetector, policyStates).BuildCards(scanData),
             SectionSubtitles,
             pendingChangesService,
             displayModeStore,

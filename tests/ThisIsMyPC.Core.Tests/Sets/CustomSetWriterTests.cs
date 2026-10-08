@@ -71,6 +71,22 @@ public sealed class CustomSetWriterTests : IDisposable
         };
 
     [Fact]
+    public void History_AutomaticUpdatesChoiceSurvivesCombinedApplyBatch()
+    {
+        var policy = HistoryEntry(2, "combined", "automatic-updates") with
+        {
+            ModuleId = "Windows Update", ValueType = ChangeValueType.LocalPolicy_DWord,
+            AfterValue = new ThisIsMyPC.Core.Policies.LocalPolicyValue("1", "1").Encode(),
+        };
+        var result = CreateSut().WriteFromHistory(Metadata(), [HistoryEntry(1, "combined", "unrelated"), policy]);
+        Assert.True(result.Success);
+        Assert.Equal(2, result.EntryCount);
+        using var document = System.Text.Json.JsonDocument.Parse(File.ReadAllText(result.FilePath!));
+        var entry = document.RootElement.GetProperty("entries").EnumerateArray().Single(e => e.GetProperty("settingId").GetString() == "automatic-updates");
+        Assert.Equal("1", entry.GetProperty("value").GetString());
+    }
+
+    [Fact]
     public void PendingGroups_WritesLoadableUserSet_WithMappedFields()
     {
         var result = CreateSut().WriteFromPendingGroups(Metadata(), [Group()]);

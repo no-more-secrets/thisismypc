@@ -25,6 +25,10 @@ public sealed class WindowsUpdateSearchContributor : ISearchSettingsContributor
             .ToList();
 
         entries.Add(new SearchEntry(
+            ModuleId, AutomaticUpdatesSetting.Id, "Automatic Updates", "Enable automatic updates or keep updates manual.",
+            ["NoAutoUpdate", "Enabled", "Disabled", "manual updates"]));
+
+        entries.Add(new SearchEntry(
             ModuleId, "version-pin", "Stay on the current Windows version",
             "Pins the machine to its current feature release until you remove the pin.",
             ["TargetReleaseVersion", "feature update", "upgrade", "24H2", "25H2"]));

@@ -16,17 +16,26 @@ public sealed class WindowsUpdateSetEntryInspector : ISetEntryInspector
 {
     private readonly WindowsUpdateSettingsReader _reader;
     private readonly IRegistryService _registryService;
+    private readonly AutomaticUpdatesSetting _automaticUpdates;
 
-    public WindowsUpdateSetEntryInspector(IRegistryService registryService)
+    public WindowsUpdateSetEntryInspector(IRegistryService registryService, ICapabilityDetector? capabilities = null,
+        Core.Policies.PolicyControlStateReader? policies = null)
     {
         _reader = new WindowsUpdateSettingsReader(registryService);
         _registryService = registryService;
+        _automaticUpdates = new(registryService, capabilities, policies);
     }
 
     public string ModuleId => WindowsUpdateChangeFactory.ModuleId;
 
     public SetEntryState? Inspect(SetEntry entry)
     {
+        if (entry.SettingId == AutomaticUpdatesSetting.Id)
+        {
+            var card = _automaticUpdates.CreateCard();
+            return new() { SettingDisplayName = card.Model.DisplayName, CurrentValue = card.Model.CurrentValue,
+                CurrentDisplay = card.Model.CurrentDisplayValue!, IsApplied = entry.Value is "0" or "1" && card.Model.CurrentValue == entry.Value };
+        }
         if (entry.SettingId == "version-pin")
         {
             var pin = _reader.ReadVersionPin();
@@ -76,6 +85,8 @@ public sealed class WindowsUpdateSetEntryInspector : ISetEntryInspector
 
     public ChangeGroup? CreateChangeGroup(SetEntry entry)
     {
+        if (entry.SettingId == AutomaticUpdatesSetting.Id)
+            return entry.Value is "0" or "1" ? _automaticUpdates.Create(entry.Value) : null;
         if (entry.SettingId == "version-pin")
         {
             var pin = _reader.ReadVersionPin();

@@ -19,11 +19,14 @@ public sealed class WindowsUpdateCardProvider
     private const string UpdateExperienceGroup = "Update Experience";
 
     private readonly WindowsUpdateSettingsReader _liveReader;
+    private readonly AutomaticUpdatesSetting _automaticUpdates;
 
-    public WindowsUpdateCardProvider(WindowsUpdateSettingsReader liveReader)
+    public WindowsUpdateCardProvider(WindowsUpdateSettingsReader liveReader, Core.Services.ICapabilityDetector? capabilities = null,
+        Core.Policies.PolicyControlStateReader? policies = null)
     {
         ArgumentNullException.ThrowIfNull(liveReader);
         _liveReader = liveReader;
+        _automaticUpdates = new(liveReader.Registry, capabilities, policies);
     }
 
     public IReadOnlyList<SettingCardSource> BuildCards(WindowsUpdateScanData scanData)
@@ -33,6 +36,8 @@ public sealed class WindowsUpdateCardProvider
 
         if (scanData.VersionPin.Count > 0)
             cards.Add(VersionPinCard(scanData.VersionPin));
+
+        cards.Add(_automaticUpdates.CreateCard());
 
         foreach (var setting in scanData.Settings.Where(s => s.Id != "delivery-optimization"))
             cards.Add(SingleCard(setting, UpdateBehaviorGroup, gpCache: true));

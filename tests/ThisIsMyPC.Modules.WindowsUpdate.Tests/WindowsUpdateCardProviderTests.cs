@@ -18,7 +18,7 @@ public class WindowsUpdateCardProviderTests
         var cards = provider.BuildCards(reader.ReadAll());
 
         Assert.Equal(
-            ["version-pin", "auto-update-mode", "no-auto-reboot", "exclude-drivers", "delivery-optimization",
+            ["version-pin", "automatic-updates", "auto-update-mode", "no-auto-reboot", "exclude-drivers", "delivery-optimization",
              "restart-notifications", "active-hours-manual", "continuous-innovation"],
             cards.Select(c => c.Model.SettingId));
     }
@@ -32,7 +32,7 @@ public class WindowsUpdateCardProviderTests
         var cards = provider.BuildCards(reader.ReadAll());
 
         Assert.DoesNotContain("version-pin", cards.Select(c => c.Model.SettingId));
-        Assert.Equal(7, cards.Count);
+        Assert.Equal(8, cards.Count);
     }
 
     [Fact]
@@ -47,7 +47,7 @@ public class WindowsUpdateCardProviderTests
         {
             // SKU-only enforcement (DO) and plain UX state values must not render a
             // bogus "known to revert" badge
-            if (card.Model.SettingId == "delivery-optimization" || card.Model.GroupId == "Update Experience")
+            if (card.Model.SettingId is "delivery-optimization" or "automatic-updates" || card.Model.GroupId == "Update Experience")
                 Assert.Null(card.Model.Enforcement);
             else
                 Assert.Equal(EnforcementLevel.Enforced, card.Model.Enforcement!.Level);

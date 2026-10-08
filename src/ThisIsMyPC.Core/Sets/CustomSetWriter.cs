@@ -69,6 +69,7 @@ public sealed class CustomSetWriter : ICustomSetWriter
         // choices need their own complete tuple, even within that batch.
         foreach (var batch in entries.GroupBy(e => e.GroupId ?? $"solo-{e.Id}")
                      .SelectMany(group => group.GroupBy(entry => _encoders.Any(encoder => encoder.ModuleId == entry.ModuleId)
+                         || LocalPolicyValue.IsPolicyType(entry.ValueType)
                          || LocalPolicyToggleCatalog.Location(entry.ModuleId, entry.SettingId) is not null
                          ? (entry.ModuleId, entry.SettingId) : (string.Empty, string.Empty))))
         {

@@ -10,10 +10,12 @@ public sealed class WindowsUpdateModule : IModule
 {
     private readonly IRegistryService _registryService;
     private readonly WindowsUpdateSettingsReader _settingsReader;
+    private readonly Core.Policies.ILocalPolicyService? _localPolicies;
 
-    public WindowsUpdateModule(IRegistryService registryService)
+    public WindowsUpdateModule(IRegistryService registryService, Core.Policies.ILocalPolicyService? localPolicies = null)
     {
         _registryService = registryService;
+        _localPolicies = localPolicies;
         _settingsReader = new WindowsUpdateSettingsReader(registryService);
     }
 
@@ -51,6 +53,14 @@ public sealed class WindowsUpdateModule : IModule
     /// <summary>Empty AfterValue restores "value absent" (policy Not configured), like PowerModule.</summary>
     public Task<OperationResult<bool>> ApplyChangeAsync(ChangeDescriptor change)
     {
+        if (Core.Policies.LocalPolicyValue.IsPolicyType(change.ValueType))
+        {
+            if (!AutomaticUpdatesSetting.Allows(change))
+                return Task.FromResult(OperationResult<bool>.Failure("Unsupported automatic updates policy change.", ErrorCategory.ProtectedByPolicy));
+            return Task.Run(() => _localPolicies?.Apply(change.SystemLocation, change.ValueType,
+                Core.Policies.LocalPolicyValue.Decode(change.BeforeValue)!, Core.Policies.LocalPolicyValue.Decode(change.AfterValue)!)
+                ?? OperationResult<bool>.Failure("The local policy editor is unavailable.", ErrorCategory.ServiceUnavailable));
+        }
         try
         {
             var (keyPath, valueName) = WindowsUpdateRegistryPaths.ParseSystemLocation(change.SystemLocation);

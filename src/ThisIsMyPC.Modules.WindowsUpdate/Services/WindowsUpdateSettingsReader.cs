@@ -8,6 +8,7 @@ namespace ThisIsMyPC.Modules.WindowsUpdate.Services;
 public sealed class WindowsUpdateSettingsReader
 {
     private readonly IRegistryService _registryService;
+    internal IRegistryService Registry => _registryService;
 
     public WindowsUpdateSettingsReader(IRegistryService registryService)
     {

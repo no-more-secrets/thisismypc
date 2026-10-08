@@ -17,6 +17,7 @@ using ThisIsMyPC.Modules.Software.Services;
 using ThisIsMyPC.Modules.Startup.Changes;
 using ThisIsMyPC.Modules.Startup.Services;
 using ThisIsMyPC.Modules.WindowsUpdate;
+using ThisIsMyPC.Modules.WindowsUpdate.Services;
 
 namespace ThisIsMyPC.Broker;
 
@@ -122,7 +123,7 @@ internal static class BrokerOperationRules
             "Windows Annoyances" => Core.Policies.LocalPolicyToggleCatalog.Allows(change) || AllowsRegistryModule(change, AnnoyanceTargets),
             "Privacy & Telemetry" => Modules.Privacy.Services.DiagnosticDataSetting.Allows(change) || AllowsRegistryModule(change, PrivacyTargets),
             "Security" => Modules.Security.SecurityCatalog.Allows(change),
-            "Windows Update" => AllowsRegistryModule(change, WindowsUpdateTargets),
+            "Windows Update" => AutomaticUpdatesSetting.Allows(change) || AllowsRegistryModule(change, WindowsUpdateTargets),
             "Power Plans" => AllowsPower(change),
             _ => false,
         };
