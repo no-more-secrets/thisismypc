@@ -513,6 +513,9 @@ Open design decisions carried forward:
 
 ## Release signing: SSL.com OV through eSigner
 
+- DONE October 8: the interactive release launcher records build time in `artifacts/diagnostics/release-build-times.log`, excluding PowerShell input waits.
+- Pending: CodeSignTool's OTP wait remains included in signed build time. Its prompt runs inside the vendor process.
+
 Consequences, verified against the code and upstream:
 - **Hardware modules stay feasible**: use the upstream-signed PawnIO release
   (what FanControl/LHM ship): no cert needed on our side. Constraint: never

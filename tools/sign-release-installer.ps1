@@ -32,12 +32,23 @@ param(
     [ValidateNotNullOrEmpty()]
     [string]$SigningDescription = 'ThisIsMyPC',
 
-    [string]$TimestampUrl = 'http://ts.ssl.com'
+    [string]$TimestampUrl = 'http://ts.ssl.com',
+
+    [System.Diagnostics.Stopwatch]$BuildStopwatch
 )
 
 $ErrorActionPreference = 'Stop'
 Import-Module Microsoft.PowerShell.Utility -ErrorAction Stop
 Import-Module Microsoft.PowerShell.Security -ErrorAction Stop
+
+function Read-SigningInput {
+    param([string]$Prompt, [switch]$AsSecureString)
+
+    $wasRunning = $null -ne $BuildStopwatch -and $BuildStopwatch.IsRunning
+    if ($wasRunning) { $BuildStopwatch.Stop() }
+    try { return Read-Host $Prompt -AsSecureString:$AsSecureString }
+    finally { if ($wasRunning) { $BuildStopwatch.Start() } }
+}
 
 & (Join-Path $PSScriptRoot 'assert-production-signing-inputs.ps1') `
     -AssetDirectory $AssetDirectory -StagingDirectory $StagingDirectory -InstallerStub $InstallerStub
@@ -72,7 +83,7 @@ if ([string]::IsNullOrWhiteSpace($ESignerUsername)) {
         [EnvironmentVariableTarget]::User)
 }
 if ([string]::IsNullOrWhiteSpace($ESignerUsername)) {
-    $ESignerUsername = Read-Host 'SSL.com eSigner username'
+    $ESignerUsername = Read-SigningInput 'SSL.com eSigner username'
 }
 if ([string]::IsNullOrWhiteSpace($ESignerUsername)) {
     throw 'SSL.com eSigner username is required.'
@@ -149,7 +160,7 @@ if ($LASTEXITCODE -ne 0 -or $actualSdk -ne $buildEnvironment.dotnetSdk) {
     throw "Expected .NET SDK $($buildEnvironment.dotnetSdk); found $actualSdk."
 }
 if (-not $securePassword) {
-    $securePassword = Read-Host 'SSL.com eSigner account password' -AsSecureString
+    $securePassword = Read-SigningInput 'SSL.com eSigner account password' -AsSecureString
 }
 
 $temporaryRoot = Join-Path ([IO.Path]::GetTempPath()) `

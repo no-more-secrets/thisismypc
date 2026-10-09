@@ -26,6 +26,16 @@ param(
 $ErrorActionPreference = 'Stop'
 Import-Module Microsoft.PowerShell.Security -ErrorAction Stop
 $Host.UI.RawUI.WindowTitle = 'ThisIsMyPC release build'
+$buildStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+
+function Read-BuildInput {
+    param([string]$Prompt)
+
+    $wasRunning = $buildStopwatch.IsRunning
+    if ($wasRunning) { $buildStopwatch.Stop() }
+    try { return Read-Host $Prompt }
+    finally { if ($wasRunning) { $buildStopwatch.Start() } }
+}
 
 function Read-RequiredValue {
     param(
@@ -40,7 +50,7 @@ function Read-RequiredValue {
     )
 
     while ($true) {
-        $value = Read-Host $Prompt
+        $value = Read-BuildInput $Prompt
         if ($null -eq $value) {
             throw 'The input stream closed before the prompt was answered.'
         }
@@ -61,7 +71,7 @@ function Read-DefaultValue {
         [string]$DefaultValue
     )
 
-    $value = Read-Host "$Prompt [$DefaultValue]"
+    $value = Read-BuildInput "$Prompt [$DefaultValue]"
     if ($null -eq $value) {
         throw 'The input stream closed before the prompt was answered.'
     }
@@ -79,6 +89,7 @@ function ConvertTo-ReleaseVersionInput {
 }
 
 $releaseBuildFailed = $false
+$buildStatus = 'Canceled'
 try {
 if ([string]::IsNullOrWhiteSpace($Version)) {
     $Version = Read-RequiredValue `
@@ -188,7 +199,7 @@ if ($Mode -eq 'Signed') {
     }
 
     if (-not $PSBoundParameters.ContainsKey('CodeSignToolArchive')) {
-        $CodeSignToolArchive = Read-Host 'CodeSignTool ZIP override [automatic verified cache]'
+        $CodeSignToolArchive = Read-BuildInput 'CodeSignTool ZIP override [automatic verified cache]'
     }
     if (-not [string]::IsNullOrWhiteSpace($CodeSignToolArchive)) {
         if (-not (Test-Path -LiteralPath $CodeSignToolArchive -PathType Leaf)) {
@@ -243,6 +254,7 @@ if ($confirmation -notmatch '^(?i:y|yes)$') {
     return
 }
 
+$buildParameters.BuildStopwatch = $buildStopwatch
 & (Join-Path $PSScriptRoot 'build-release.ps1') @buildParameters
 
 $repoRoot = Split-Path $PSScriptRoot -Parent
@@ -250,14 +262,32 @@ $buildName = if ($Mode -eq 'DebugRelease') { "debug-release_$Version" } else { $
 $installer = Join-Path $repoRoot "artifacts\releases\$buildName\ThisIsMyPC-Installer-$Version.exe"
 Write-Host ''
 Write-Host "Release build completed: $installer" -ForegroundColor Green
+$buildStatus = 'Succeeded'
 }
 catch {
     $releaseBuildFailed = $true
+    $buildStatus = 'Failed'
     Write-Host ''
     Write-Host 'Release build failed:' -ForegroundColor Red
     Write-Host ($_ | Out-String)
 }
 finally {
+    $buildStopwatch.Stop()
+    $repoRoot = Split-Path $PSScriptRoot -Parent
+    $timingDirectory = Join-Path $repoRoot 'artifacts\diagnostics'
+    $timingLog = Join-Path $timingDirectory 'release-build-times.log'
+    $elapsed = $buildStopwatch.Elapsed
+    $elapsedText = '{0:00}:{1:00}:{2:00}' -f [math]::Floor($elapsed.TotalHours), $elapsed.Minutes, $elapsed.Seconds
+    $logLine = "{0:o}`t{1}`t{2}`t{3}`t{4:F3}" -f (Get-Date), $Version, $Mode, $buildStatus, $elapsed.TotalSeconds
+    Write-Host "Build time excluding script prompts: $elapsedText ($buildStatus)."
+    try {
+        New-Item -ItemType Directory -Force -Path $timingDirectory | Out-Null
+        Add-Content -LiteralPath $timingLog -Value $logLine -Encoding utf8
+        Write-Host "Timing log: $timingLog"
+    }
+    catch {
+        Write-Warning "Could not save the build timing log: $_"
+    }
     Write-Host ''
     [void](Read-Host 'Press Enter to close')
 }

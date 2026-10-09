@@ -212,6 +212,11 @@ Run the interactive launcher for a local signed or unsigned build:
 
 The launcher prompts for every omitted option. Passed parameters skip their
 matching prompts. `build-release.ps1` remains the noninteractive CI entry point.
+The launcher prints build time and appends it to
+`artifacts/diagnostics/release-build-times.log`. It excludes time spent
+answering PowerShell prompts. CodeSignTool's own OTP wait remains included in
+signed builds. The log records version, mode, outcome, and seconds for
+successful, failed, and canceled runs.
 
 Use the credential ID beside the eSigner code-signing certificate, not the
 document eSeal ID. The local command prompts privately for the SSL.com account

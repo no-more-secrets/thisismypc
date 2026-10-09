@@ -44,7 +44,9 @@ param(
     [string]$SigningDescription = 'ThisIsMyPC',
 
     # RFC 3161 timestamp server used with -SignThumbprint.
-    [string]$TimestampUrl = 'http://ts.ssl.com'
+    [string]$TimestampUrl = 'http://ts.ssl.com',
+
+    [System.Diagnostics.Stopwatch]$BuildStopwatch
 )
 
 $ErrorActionPreference = 'Stop'
@@ -336,7 +338,8 @@ if ($SignThumbprint) {
         -CodeSignToolArchive $CodeSignToolArchive `
         -ESignerUsername $ESignerUsername `
         -SigningDescription $SigningDescription `
-        -TimestampUrl $TimestampUrl
+        -TimestampUrl $TimestampUrl `
+        -BuildStopwatch $BuildStopwatch
 } else {
     Write-Host 'Writing SHA256SUMS...'
     if ($DebugRelease) {
