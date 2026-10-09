@@ -52,18 +52,18 @@
         <controls:TitleBarControl.CenterContent>
             <!-- 5-3: cross-module search. Results drop down in the overlay
                  below (SearchResultsPanel), aligned on the same centre line. -->
-            <TextBox x:Name="SearchBox"
+            <controls:SearchTextBox x:Name="SearchBox"
                      Classes="bar-search"
                      Text="{Binding SearchQuery, Mode=TwoWay}"
                      Watermark="Search settings and apps..."
                      Width="440">
-                <TextBox.InnerLeftContent>
+                <controls:SearchTextBox.InnerLeftContent>
                     <icons:FluentIcon Symbol="Search"
                               Width="20" Height="20"
                               Margin="12,0,0,0"
                               Foreground="{DynamicResource TextSecondaryBrush}" />
-                </TextBox.InnerLeftContent>
-            </TextBox>
+                </controls:SearchTextBox.InnerLeftContent>
+            </controls:SearchTextBox>
         </controls:TitleBarControl.CenterContent>
         <controls:TitleBarControl.TrailingContent>
             <!-- Shortcuts: Settings, bug report, GitHub, About -->

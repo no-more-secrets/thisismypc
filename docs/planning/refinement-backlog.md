@@ -4,6 +4,7 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 
 ## Explicit Windows choices (2026-10-08)
 
+- DONE October 9: all search fields have a clear button. It appears for entered text, clears the bound search, and returns keyboard focus to the field.
 - DONE: Update installation, Update sharing, Active hours, Open File Explorer to, and Taskbar alignment use dropdowns.
 - Scheduled installation reveals day and time. Manual active hours reveal start and end times, including overnight ranges.
 - Dependent values stage together and retain exact before-state for undo. Presets retain schedule values and accept existing mode-only entries.

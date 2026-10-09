@@ -49,7 +49,7 @@
                                SelectedIndex="{Binding SelectedTabIndex}" ShowTabs="{Binding !IsSearching}">
         <controls:ModuleTabControl.Toolbar>
             <StackPanel Margin="0,0,16,8" Spacing="8">
-                <TextBox Text="{Binding SearchText}" Watermark="Search security settings" MinHeight="40" />
+                <controls:SearchTextBox Text="{Binding SearchText}" Watermark="Search security settings" MinHeight="40" />
                 <DockPanel>
                     <Border DockPanel.Dock="Right" Classes="info-icon" Margin="8,0,0,0"
                             AutomationProperties.Name="About security policies">

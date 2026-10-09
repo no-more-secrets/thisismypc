@@ -414,7 +414,7 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
     {
         try
         {
-            await Task.Delay(250, token).ConfigureAwait(true);
+            await Task.Delay(25, token).ConfigureAwait(true);
         }
         catch (TaskCanceledException)
         {

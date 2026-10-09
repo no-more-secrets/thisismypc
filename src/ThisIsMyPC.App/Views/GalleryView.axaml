@@ -139,7 +139,7 @@
                 <ComboBox ItemsSource="{Binding SampleOptions}" SelectedItem="{Binding SelectedOption}"
                           MinWidth="160" Margin="0,0,10,10" />
             </WrapPanel>
-            <TextBox Text="{Binding SampleText}" Watermark="Search settings" Margin="0,0,0,10" />
+            <controls:SearchTextBox Text="{Binding SampleText}" Watermark="Search settings" Margin="0,0,0,10" />
             <ProgressBar IsIndeterminate="True" Height="4" Margin="0,0,0,4" />
             <ProgressBar Minimum="0" Maximum="100" Value="60" Height="4" Margin="0,0,0,4" />
             <TextBlock Text="Progress: indeterminate (the module scan overlay) and determinate" FontSize="12"

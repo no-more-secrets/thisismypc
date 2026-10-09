@@ -1,4 +1,5 @@
 <UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:controls="using:ThisIsMyPC.App.Controls"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ThisIsMyPC.App.ViewModels"
              xmlns:network="using:ThisIsMyPC.Core.Network"
@@ -46,7 +47,7 @@
         <TabItem Header="Connections">
             <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="0,0,0,24">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="0,0,16,8">
-                    <TextBox Classes="filter" Watermark="Search all adapters" Text="{Binding AdapterSearch}" />
+                    <controls:SearchTextBox Classes="filter" Watermark="Search all adapters" Text="{Binding AdapterSearch}" />
                     <ComboBox Grid.Column="1" ItemsSource="{Binding AdapterScopes}" SelectedIndex="{Binding AdapterScope}" MinWidth="150" />
                 </Grid>
                 <TextBlock Grid.Row="1" Text="{Binding AdapterError}" IsVisible="{Binding HasAdapterError}" Margin="0,0,16,8" />
@@ -70,7 +71,7 @@
         <TabItem Header="DNS">
             <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="0,0,0,24">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="0,0,16,8">
-                    <TextBox Classes="filter" Watermark="Search all adapters" Text="{Binding AdapterSearch}" />
+                    <controls:SearchTextBox Classes="filter" Watermark="Search all adapters" Text="{Binding AdapterSearch}" />
                     <ComboBox Grid.Column="1" ItemsSource="{Binding AdapterScopes}" SelectedIndex="{Binding AdapterScope}" MinWidth="150" />
                 </Grid>
                 <TextBlock Grid.Row="1" Text="{Binding AdapterError}" IsVisible="{Binding HasAdapterError}" Margin="0,0,16,8" />
@@ -105,7 +106,7 @@
                 <Expander Grid.Row="1" Header="Firewall profiles" HorizontalAlignment="Stretch" Margin="0,0,16,8">
                     <ScrollViewer MaxHeight="200" HorizontalScrollBarVisibility="Disabled"><ItemsControl ItemsSource="{Binding Profiles}" Margin="0,8,16,0" /></ScrollViewer>
                 </Expander>
-                <TextBox Grid.Row="2" Classes="filter" Watermark="Search all rules, applications, ports, and services" Text="{Binding RuleSearch}" Margin="0,0,16,8" />
+                <controls:SearchTextBox Grid.Row="2" Classes="filter" Watermark="Search all rules, applications, ports, and services" Text="{Binding RuleSearch}" Margin="0,0,16,8" />
                 <TabControl Grid.Row="3" ItemsSource="{Binding RuleCategories}" SelectedIndex="{Binding RuleCategory}" IsVisible="{Binding IsBrowsingRules}" Margin="0,0,16,8">
                     <TabControl.ContentTemplate><DataTemplate><Panel /></DataTemplate></TabControl.ContentTemplate>
                 </TabControl>

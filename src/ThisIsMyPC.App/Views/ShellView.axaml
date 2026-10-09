@@ -10,7 +10,7 @@
 
     <UserControl.Resources>
         <DataTemplate x:Key="ExplorerSearchTemplate" x:DataType="vm:ShellViewModel">
-            <TextBox Text="{Binding SearchText, Mode=TwoWay}"
+            <controls:SearchTextBox Text="{Binding SearchText, Mode=TwoWay}"
                      Watermark="Search settings" Margin="0,0,0,8"
                      AutomationProperties.Name="Search Explorer settings" />
         </DataTemplate>

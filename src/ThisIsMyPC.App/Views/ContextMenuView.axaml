@@ -23,7 +23,7 @@
                               OnContent=""
                               VerticalAlignment="Center" />
                 </StackPanel>
-                <TextBox Text="{Binding SearchText}"
+                <controls:SearchTextBox Text="{Binding SearchText}"
                          Watermark="Search entries across every tab" />
             </DockPanel>
         </controls:ModuleTabControl.Toolbar>

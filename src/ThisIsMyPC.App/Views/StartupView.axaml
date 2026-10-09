@@ -190,7 +190,7 @@
                 <CheckBox Grid.Row="1" Grid.Column="0" Content="Windows" IsChecked="{Binding ShowWindowsEntries}" />
                 <CheckBox Grid.Row="1" Grid.Column="1" Content="Microsoft" IsChecked="{Binding ShowMicrosoftEntries}" />
             </Grid>
-            <TextBox Classes="filter"
+            <controls:SearchTextBox Classes="filter"
                      Text="{Binding AutorunFilterText}"
                      Watermark="Search by name, description, publisher, file, or location" />
         </DockPanel>

@@ -25,7 +25,7 @@
                                   Margin="0,0,8,0"
                                   ItemsSource="{Binding InstallStateFilters}"
                                   SelectedItem="{Binding SelectedInstallStateFilter}" />
-                        <TextBox Text="{Binding SearchText}"
+                        <controls:SearchTextBox Text="{Binding SearchText}"
                                  Watermark="Search apps"
                                  Margin="0,0,8,0" />
                     </DockPanel>
@@ -128,7 +128,7 @@
                                    Margin="8,0"
                                    VerticalAlignment="Center"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
-                        <TextBox Text="{Binding UpdatesSearchText}"
+                        <controls:SearchTextBox Text="{Binding UpdatesSearchText}"
                                  Watermark="Search updates"
                                  IsVisible="{Binding HasUpdates}" />
                     </DockPanel>
@@ -198,7 +198,7 @@
         <TabItem Header="Windows Apps">
             <DockPanel>
                 <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="0,0,16,8">
-                    <TextBox Text="{Binding WindowsAppsSearchText}"
+                    <controls:SearchTextBox Text="{Binding WindowsAppsSearchText}"
                              Watermark="Search Windows apps" />
                     <TextBlock Text="Removal deletes the app for all users and stops it from auto-installing for new accounts. Apps with a Store listing can be reinstalled here."
                                FontSize="12"

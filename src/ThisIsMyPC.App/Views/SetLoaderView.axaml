@@ -1,5 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:icons="using:ThisIsMyPC.App.Icons"
+             xmlns:controls="using:ThisIsMyPC.App.Controls"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ThisIsMyPC.App.ViewModels"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -163,7 +164,7 @@
                     <TextBlock Text="{Binding SelectedSet.Name}" FontSize="18" FontWeight="SemiBold"
                                TextTrimming="CharacterEllipsis" Margin="0,0,16,10"
                                ToolTip.Tip="{Binding SelectedSet.Description}" />
-                    <TextBox Grid.Row="1" x:Name="PresetSearch" Text="{Binding SearchText, Mode=TwoWay}"
+                    <controls:SearchTextBox Grid.Row="1" x:Name="PresetSearch" Text="{Binding SearchText, Mode=TwoWay}"
                              Watermark="Search changes" Margin="0,0,16,8" />
                     <Panel Grid.Row="2">
                         <ScrollViewer HorizontalScrollBarVisibility="Disabled">

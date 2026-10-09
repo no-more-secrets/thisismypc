@@ -34,7 +34,7 @@ public class ContextMenuWindowsTabShotTests
         var row = viewModel.WindowsEntries.First(e => e.Label == "Extract all on MSI installers");
         row.IsEnabled = !row.IsEnabled;
         session.Pump();
-        Thread.Sleep(400); // toggle staging is debounced by 250 ms
+        Thread.Sleep(400); // Allow toggle staging to finish before capturing the card.
         session.Pump();
         session.Screenshot("after-toggle");
 
