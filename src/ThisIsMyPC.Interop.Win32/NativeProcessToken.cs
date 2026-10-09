@@ -69,6 +69,19 @@ internal static unsafe partial class NativeProcessToken
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     internal static partial nint GetCurrentProcess();
 
+    internal const int WTSUserName = 5;
+    internal const int WTSDomainName = 7;
+
+    [LibraryImport("wtsapi32.dll", EntryPoint = "WTSQuerySessionInformationW", SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool WTSQuerySessionInformation(
+        nint server, uint sessionId, int informationClass, out nint buffer, out uint bytesReturned);
+
+    [LibraryImport("wtsapi32.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    internal static partial void WTSFreeMemory(nint memory);
+
     [LibraryImport("kernel32.dll", SetLastError = true)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     [return: MarshalAs(UnmanagedType.Bool)]
@@ -126,6 +139,13 @@ internal static unsafe partial class NativeProcessToken
     [return: MarshalAs(UnmanagedType.Bool)]
     internal static partial bool LookupAccountSidW(
         string? systemName, nint sid, char* name, ref uint cchName, char* referencedDomain, ref uint cchReferencedDomain, out int use);
+
+    [LibraryImport("advapi32.dll", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool LookupAccountNameW(
+        string? systemName, string accountName, byte* sid, ref uint cbSid,
+        char* referencedDomain, ref uint cchReferencedDomain, out int use);
 
     [LibraryImport("kernel32.dll", SetLastError = true)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]

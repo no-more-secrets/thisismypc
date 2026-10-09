@@ -35,10 +35,10 @@ public sealed unsafe class DesktopUserContext : IInteractiveUserContext
         get
         {
             if (!NativeProcessToken.OpenProcessToken(NativeProcessToken.GetCurrentProcess(), NativeProcessToken.TOKEN_QUERY, out var token))
-                return false;
+                return true;
             try
             {
-                return ElevationTypeOf(token) == NativeProcessToken.TokenElevationTypeFull;
+                return !IsUnelevated(token);
             }
             finally
             {
@@ -130,6 +130,48 @@ public sealed unsafe class DesktopUserContext : IInteractiveUserContext
         }
     }
 
+    public static string? GetSessionUserSid()
+    {
+        using var self = Process.GetCurrentProcess();
+        if (self.SessionId < 0)
+            return null;
+        var sessionId = checked((uint)self.SessionId);
+        var userName = ReadSessionText(sessionId, NativeProcessToken.WTSUserName);
+        var domain = ReadSessionText(sessionId, NativeProcessToken.WTSDomainName);
+        if (string.IsNullOrWhiteSpace(userName) || domain is null)
+            return null;
+        var expectedAccount = domain.Length == 0 ? userName : $@"{domain}\{userName}";
+        return LookupAccountSid(expectedAccount);
+    }
+
+    public OperationResult<bool> LaunchAsSessionUser(string applicationPath, string workingDirectory, string expectedSid)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(applicationPath);
+        ArgumentException.ThrowIfNullOrWhiteSpace(workingDirectory);
+        ArgumentException.ThrowIfNullOrWhiteSpace(expectedSid);
+
+        var token = CaptureSessionUserToken(out var source);
+        if (token == 0)
+            return OperationResult<bool>.Failure("The signed-in desktop user is unavailable.", ErrorCategory.ServiceUnavailable);
+        try
+        {
+            if (!string.Equals(ReadSid(token), expectedSid, StringComparison.OrdinalIgnoreCase))
+                return OperationResult<bool>.Failure("The signed-in desktop user changed.", ErrorCategory.AccessDenied);
+            StartWithToken(token, applicationPath, arguments: null, workingDirectory);
+            Log.Info("Started {App} as the desktop user (token from {Source})", applicationPath, source);
+            return OperationResult<bool>.Success(true);
+        }
+        catch (Win32Exception ex)
+        {
+            return OperationResult<bool>.Failure($"Could not start {Path.GetFileName(applicationPath)} without elevation: {ex.Message}",
+                ErrorCategory.ServiceUnavailable, ex);
+        }
+        finally
+        {
+            NativeProcessToken.CloseHandle(token);
+        }
+    }
+
     public OperationResult<T> RunAsUser<T>(Func<T> action)
     {
         ArgumentNullException.ThrowIfNull(action);
@@ -205,6 +247,72 @@ public sealed unsafe class DesktopUserContext : IInteractiveUserContext
         return 0;
     }
 
+    private static nint CaptureSessionUserToken(out string source)
+    {
+        source = string.Empty;
+        using var self = Process.GetCurrentProcess();
+        var expectedSid = GetSessionUserSid();
+        if (expectedSid is null)
+            return 0;
+        foreach (var name in TokenSources)
+        {
+            foreach (var candidate in Process.GetProcessesByName(name))
+            {
+                using (candidate)
+                {
+                    try
+                    {
+                        if (candidate.SessionId != self.SessionId || !TryBorrow(candidate, out var token, out source))
+                            continue;
+                        if (string.Equals(ReadSid(token), expectedSid, StringComparison.OrdinalIgnoreCase))
+                            return token;
+                        NativeProcessToken.CloseHandle(token);
+                    }
+                    catch (Exception ex) when (ex is Win32Exception or InvalidOperationException)
+                    {
+                        Log.Debug(ex, "Could not inspect a desktop token source");
+                    }
+                }
+            }
+        }
+        return 0;
+    }
+
+    private static string? ReadSessionText(uint sessionId, int informationClass)
+    {
+        if (!NativeProcessToken.WTSQuerySessionInformation(0, sessionId, informationClass, out var buffer, out _))
+            return null;
+        try
+        {
+            return buffer == 0 ? null : Marshal.PtrToStringUni(buffer);
+        }
+        finally
+        {
+            if (buffer != 0)
+                NativeProcessToken.WTSFreeMemory(buffer);
+        }
+    }
+
+    private static string? LookupAccountSid(string accountName)
+    {
+        var sid = stackalloc byte[256];
+        var domain = stackalloc char[256];
+        uint sidLength = 256;
+        uint domainLength = 256;
+        if (!NativeProcessToken.LookupAccountNameW(null, accountName, sid, ref sidLength, domain, ref domainLength, out _))
+            return null;
+        if (!NativeProcessToken.ConvertSidToStringSidW((nint)sid, out var stringSid) || stringSid == 0)
+            return null;
+        try
+        {
+            return Marshal.PtrToStringUni(stringSid);
+        }
+        finally
+        {
+            NativeProcessToken.LocalFree(stringSid);
+        }
+    }
+
     private static bool TryBorrow(Process process, out nint primaryToken, out string source)
     {
         primaryToken = 0;
@@ -220,7 +328,7 @@ public sealed unsafe class DesktopUserContext : IInteractiveUserContext
                 Log.Debug("OpenProcessToken on {Name} ({Pid}) failed (Win32 {Code})", process.ProcessName, process.Id, Marshal.GetLastPInvokeError());
                 return false;
             }
-            if (ElevationTypeOf(processToken) == NativeProcessToken.TokenElevationTypeFull)
+            if (!IsUnelevated(processToken))
             {
                 Log.Debug("{Name} ({Pid}) runs elevated; not borrowing its token", process.ProcessName, process.Id);
                 return false;
@@ -250,7 +358,7 @@ public sealed unsafe class DesktopUserContext : IInteractiveUserContext
         }
     }
 
-    private static void StartWithToken(nint primaryToken, string applicationPath, string? arguments)
+    private static void StartWithToken(nint primaryToken, string applicationPath, string? arguments, string? workingDirectory = null)
     {
         var startup = new NativeProcessToken.STARTUPINFOW { cb = (uint)sizeof(NativeProcessToken.STARTUPINFOW) };
         NativeProcessToken.PROCESS_INFORMATION info;
@@ -260,19 +368,18 @@ public sealed unsafe class DesktopUserContext : IInteractiveUserContext
         fixed (char* commandLinePtr = commandLine)
         {
             if (!NativeProcessToken.CreateProcessWithTokenW(
-                    primaryToken, NativeProcessToken.LOGON_WITH_PROFILE, null, commandLinePtr, 0, 0, null, &startup, &info))
+                    primaryToken, NativeProcessToken.LOGON_WITH_PROFILE, null, commandLinePtr, 0, 0, workingDirectory, &startup, &info))
                 throw new Win32Exception(Marshal.GetLastPInvokeError(), "CreateProcessWithTokenW");
         }
         NativeProcessToken.CloseHandle(info.hThread);
         NativeProcessToken.CloseHandle(info.hProcess);
     }
 
-    private static int ElevationTypeOf(nint token)
+    private static bool IsUnelevated(nint token)
     {
-        int elevationType;
-        return NativeProcessToken.GetTokenInformation(token, NativeProcessToken.TokenElevationType, &elevationType, sizeof(int), out _)
-            ? elevationType
-            : NativeProcessToken.TokenElevationTypeDefault;
+        int elevated;
+        return NativeProcessToken.GetTokenInformation(token, NativeProcessToken.TokenElevation, &elevated, sizeof(int), out _)
+            && elevated == 0;
     }
 
     private static InteractiveUser? ResolveFromOwnToken()

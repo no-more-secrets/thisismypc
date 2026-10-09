@@ -33,6 +33,18 @@ public sealed class DesktopUserContextTests
 
     [Fact]
     [Trait("Category", "Integration")]
+    public void Session_user_matches_the_signed_in_user()
+    {
+        var context = new DesktopUserContext();
+        var sessionUserSid = DesktopUserContext.GetSessionUserSid();
+
+        Assert.NotNull(sessionUserSid);
+        if (!context.IsCallerElevated)
+            Assert.Equal(WindowsIdentity.GetCurrent().User!.Value, sessionUserSid);
+    }
+
+    [Fact]
+    [Trait("Category", "Integration")]
     public void RunAsUser_runs_the_action_and_returns_its_value()
     {
         var ran = false;

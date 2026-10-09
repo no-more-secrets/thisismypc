@@ -4,6 +4,7 @@ using System.Globalization;
 using Microsoft.Win32;
 using ThisIsMyPC.Core;
 using ThisIsMyPC.Core.Settings;
+using ThisIsMyPC.Interop.Win32;
 using ThisIsMyPC.Interop.Win32.Security;
 
 namespace ThisIsMyPC.Installer.Services;
@@ -16,6 +17,7 @@ namespace ThisIsMyPC.Installer.Services;
 public sealed class MsiInstallEngine : IInstallEngine
 {
     private readonly EmbeddedPackage _package;
+    private string? _installedUserSid;
 
     public MsiInstallEngine(EmbeddedPackage package)
     {
@@ -33,6 +35,10 @@ public sealed class MsiInstallEngine : IInstallEngine
         var folderCheck = InstallFolderRules.Check(options.InstallFolder);
         if (!folderCheck.IsValid)
             return new InstallOutcome(false, false, folderCheck.Error, null);
+
+        var desktopUserSid = DesktopUserContext.GetSessionUserSid();
+        if (desktopUserSid is null)
+            return new InstallOutcome(false, false, "The signed-in desktop user is unavailable.", null);
 
         // The data directory is the app's; hardening it first means the
         // unpacked MSI, the install log, and settings.json are
@@ -81,7 +87,8 @@ public sealed class MsiInstallEngine : IInstallEngine
                 RemoveShortcut(Environment.SpecialFolder.CommonDesktopDirectory);
             if (!options.StartMenuShortcut)
                 RemoveShortcut(Environment.SpecialFolder.CommonPrograms);
-            WritePendingSettings(options);
+            WritePendingSettings(options, desktopUserSid);
+            _installedUserSid = desktopUserSid;
 
             return new InstallOutcome(true, result.RebootRequired, null, logPath);
         }
@@ -174,7 +181,11 @@ public sealed class MsiInstallEngine : IInstallEngine
         if (!trust.IsSuccess)
             return;
 #endif
-        using var process = Process.Start(new ProcessStartInfo(stub) { UseShellExecute = true, WorkingDirectory = installFolder });
+        if (_installedUserSid is null)
+            throw new InvalidOperationException("The signed-in desktop user is unavailable.");
+        var launched = new DesktopUserContext().LaunchAsSessionUser(stub, installFolder, _installedUserSid);
+        if (!launched.IsSuccess)
+            throw new InvalidOperationException(launched.ErrorMessage ?? "Could not start ThisIsMyPC without elevation.");
     }
 
     /// <summary>
@@ -255,9 +266,11 @@ public sealed class MsiInstallEngine : IInstallEngine
     /// removes them. The elevated installer never writes into a user-controlled
     /// profile directory, which could contain a reparse point.
     /// </summary>
-    private static void WritePendingSettings(InstallOptions options)
+    private static void WritePendingSettings(InstallOptions options, string userSid)
     {
-        using var key = Registry.CurrentUser.CreateSubKey(@"Software\No More Secrets\ThisIsMyPC\InstallOptions", writable: true);
+        using var userKey = Registry.Users.OpenSubKey(userSid, writable: true)
+            ?? throw new InvalidOperationException("The signed-in user's settings are unavailable.");
+        using var key = userKey.CreateSubKey(@"Software\No More Secrets\ThisIsMyPC\InstallOptions", writable: true);
         key.SetValue(AppSettingKeys.AutoStart, options.StartWithWindows ? "1" : "0", RegistryValueKind.String);
         key.SetValue(AppSettingKeys.TrayMode, options.StartWithWindows ? "1" : "0", RegistryValueKind.String);
         key.SetValue(AppSettingKeys.UpdateCheck, options.CheckForUpdates ? "1" : "0", RegistryValueKind.String);
