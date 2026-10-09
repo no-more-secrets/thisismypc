@@ -14,8 +14,9 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 
 - DONE: The app requests one administrator confirmation at startup and keeps the broker connected until the UI closes.
 - DONE: Apply sends staged operations to a native Win32 broker window. Apply All authorizes the batch; Discard All clears it. Closing the window keeps changes staged.
-- Verified: 3,726 CI-safe tests, native review button tests, rendered review and Apply bar screenshots, fresh review, and a NativeAOT broker publish.
-- Pending: Verify startup UAC, elevated review focus, live Apply, and broker exit on a normal Windows installation.
+- DONE: The broker finds the verified UI window and places its review above the Apply bar, with the Apply buttons aligned. Saved UI zoom adjusts placement.
+- Verified: CI-safe tests, native review button and placement tests, rendered review and Apply bar screenshots, fresh review, and a NativeAOT broker publish.
+- Pending: Verify startup UAC, elevated review focus, live Apply, broker exit, and mixed-DPI placement on a normal Windows installation.
 
 ## Network & Firewall initial tabs (2026-10-07)
 

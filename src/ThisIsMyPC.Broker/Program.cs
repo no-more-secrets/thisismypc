@@ -48,13 +48,13 @@ internal static class Program
                 return Fail(uiSid.ErrorMessage ?? "The ThisIsMyPC UI account is not trusted.");
 
             using var open = new CancellationTokenSource(ConnectTimeout);
-            var opened = await OpenSession(pipe, open.Token).ConfigureAwait(false);
+            var opened = await OpenSession(pipe, expectedServerProcessId, uiSid.Value!, open.Token).ConfigureAwait(false);
             if (!opened.IsSuccess)
                 return Fail(opened.ErrorMessage ?? "The broker session was rejected.");
 
             await using var host = new DeferredModuleHost(uiSid.Value!);
             var ownerMode = new OwnerModeBrokerController(uiUserSid: uiSid.Value!);
-            return await Serve(pipe, opened.Value!, host, ownerMode).ConfigureAwait(false);
+            return await Serve(pipe, expectedServerProcessId, uiSid.Value!, opened.Value!, host, ownerMode).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
@@ -76,7 +76,8 @@ internal static class Program
     }
 
     private static async Task<OperationResult<BrokerRequestPolicy>> OpenSession(
-        NamedPipeClientStream pipe, CancellationToken cancellationToken, IpcEnvelope? provided = null)
+        NamedPipeClientStream pipe, int uiProcessId, string uiSid, CancellationToken cancellationToken,
+        IpcEnvelope? provided = null)
     {
         var frame = provided is null
             ? await IpcProtocol.ReadFrameAsync(pipe, cancellationToken).ConfigureAwait(false)
@@ -109,7 +110,7 @@ internal static class Program
 
         if (!policy.Value!.Persistent)
         {
-            var decision = NativeReviewWindow.Show(policy.Value);
+            var decision = NativeReviewWindow.Show(policy.Value, uiProcessId, uiSid);
             if (decision != NativeReviewWindow.Decision.Apply)
             {
                 var discarded = decision == NativeReviewWindow.Decision.Discarded
@@ -129,8 +130,8 @@ internal static class Program
         return policy;
     }
 
-    private static async Task<int> Serve(NamedPipeClientStream pipe, BrokerRequestPolicy policy,
-        DeferredModuleHost host, OwnerModeBrokerController ownerMode)
+    private static async Task<int> Serve(NamedPipeClientStream pipe, int uiProcessId, string uiSid,
+        BrokerRequestPolicy policy, DeferredModuleHost host, OwnerModeBrokerController ownerMode)
     {
         var persistent = policy.Persistent;
         BrokerRequestPolicy? activePolicy = persistent ? null : policy;
@@ -148,7 +149,7 @@ internal static class Program
             if (persistent && envelope.Type == IpcMessageTypes.BrokerSession)
             {
                 activePolicy = null;
-                var reviewed = await OpenSession(pipe, idle.Token, envelope).ConfigureAwait(false);
+                var reviewed = await OpenSession(pipe, uiProcessId, uiSid, idle.Token, envelope).ConfigureAwait(false);
                 if (reviewed.IsSuccess && !reviewed.Value!.Persistent)
                     activePolicy = reviewed.Value;
                 continue;

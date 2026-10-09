@@ -67,7 +67,7 @@ internal static unsafe partial class NativeReviewWindow
 
     private static ReviewState? _current;
 
-    internal static Decision Show(BrokerRequestPolicy policy)
+    internal static Decision Show(BrokerRequestPolicy policy, int uiProcessId = 0, string? uiSid = null)
     {
         ArgumentNullException.ThrowIfNull(policy);
         var pages = policy.BuildConfirmationPages();
@@ -96,8 +96,9 @@ internal static unsafe partial class NativeReviewWindow
             {
                 var width = Math.Min(480, Math.Max(320, GetSystemMetrics(0) - 40));
                 var height = Math.Min(540, Math.Max(330, GetSystemMetrics(1) - 40));
-                var x = Math.Max(0, (GetSystemMetrics(0) - width) / 2);
-                var y = Math.Max(0, (GetSystemMetrics(1) - height) / 2);
+                var placement = BrokerReviewPlacement.ForUiProcess(uiProcessId, width, height, uiSid);
+                var x = placement?.X ?? Math.Max(0, (GetSystemMetrics(0) - width) / 2);
+                var y = placement?.Y ?? Math.Max(0, (GetSystemMetrics(1) - height) / 2);
                 var window = CreateWindowExW(0, ClassName, "Review Pending Changes - ThisIsMyPC",
                     WsPopup | WsVScroll, x, y, width, height, 0, 0, windowClass.Instance, 0);
                 if (window == 0)

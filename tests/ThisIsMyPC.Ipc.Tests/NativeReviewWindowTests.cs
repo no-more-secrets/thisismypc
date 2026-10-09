@@ -8,6 +8,7 @@ using ThisIsMyPC.Ipc.Contracts;
 
 namespace ThisIsMyPC.Ipc.Tests;
 
+[Collection("NativeReviewWindow")]
 public sealed partial class NativeReviewWindowTests
 {
     [Fact]

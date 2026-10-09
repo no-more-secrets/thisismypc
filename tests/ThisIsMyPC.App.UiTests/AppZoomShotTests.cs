@@ -16,6 +16,32 @@ namespace ThisIsMyPC.App.UiTests;
 
 public class AppZoomShotTests
 {
+    [AvaloniaFact]
+    [Trait("Category", "Diagnostic")]
+    public void ApplyBarPositionMatchesBrokerAnchorAtDifferentZoomLevels()
+    {
+        using var session = UiSession.ForMainWindow("broker-anchor");
+        session.Window.Width = 1200;
+        session.Window.Height = 800;
+        var vm = (MainWindowViewModel)session.Window.DataContext!;
+        foreach (var zoom in new[] { 100, 150 })
+        {
+            vm.ChangeZoom(0);
+            for (var i = 100; i < zoom; i += 10)
+                vm.ChangeZoom(1);
+            session.Pump();
+            var bar = session.Find<Border>(b => b.Name == "ApplyBar");
+            var apply = bar.GetVisualDescendants().OfType<Button>()
+                .Single(button => button.Classes.Contains("apply-bar-apply"));
+            var barTop = bar.TranslatePoint(default, session.Window)!.Value.Y;
+            var applyRight = apply.TranslatePoint(new Point(apply.Bounds.Width, 0), session.Window)!.Value.X;
+            var scale = zoom / 100.0;
+            Assert.InRange(session.Window.ClientSize.Width - applyRight, 41 * scale - 2, 41 * scale + 2);
+            Assert.InRange(session.Window.ClientSize.Height - barTop, 74 * scale - 2, 74 * scale + 2);
+            session.Screenshot($"apply-anchor-{zoom}");
+        }
+    }
+
     [AvaloniaFact(Timeout = 300_000)]
     [Trait("Category", "Diagnostic")]
     public async Task ZoomKeysReflowTheWholeApp_KeepCaptionsVisible_AndPersist()
