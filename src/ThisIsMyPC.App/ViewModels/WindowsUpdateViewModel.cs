@@ -15,7 +15,7 @@ public sealed class WindowsUpdateViewModel : SettingCardPageViewModel
         new Dictionary<string, string>
         {
             ["Update Behavior"] = "Update install timing, forced restarts, driver replacement, and feature-release pinning. Applied with the Update Orchestrator cache cleared so they stick",
-            ["Delivery Optimization"] = "Stop update peer-to-peer sharing from consuming background bandwidth",
+            ["Delivery Optimization"] = "Choose which PCs can share updates",
             ["Update Experience"] = "How Windows Update looks and behaves while it runs",
         };
 

@@ -17,6 +17,7 @@ public sealed class WindowsUpdateSetEntryInspector : ISetEntryInspector
     private readonly WindowsUpdateSettingsReader _reader;
     private readonly IRegistryService _registryService;
     private readonly AutomaticUpdatesSetting _automaticUpdates;
+    private readonly WindowsUpdateChoiceSettings _choices;
 
     public WindowsUpdateSetEntryInspector(IRegistryService registryService, ICapabilityDetector? capabilities = null,
         Core.Policies.PolicyControlStateReader? policies = null)
@@ -24,12 +25,24 @@ public sealed class WindowsUpdateSetEntryInspector : ISetEntryInspector
         _reader = new WindowsUpdateSettingsReader(registryService);
         _registryService = registryService;
         _automaticUpdates = new(registryService, capabilities, policies);
+        _choices = new(registryService, capabilities, policies);
     }
 
     public string ModuleId => WindowsUpdateChangeFactory.ModuleId;
 
     public SetEntryState? Inspect(SetEntry entry)
     {
+        if (WindowsUpdateChoiceSettings.Supports(entry.SettingId)
+            && !(entry.SettingId == "active-hours-manual" && entry.Value == "")
+            && !(entry.SettingId == "auto-update-mode" && entry.Value == "2"
+                && _registryService.ReadDWord(WindowsUpdateRegistryPaths.AuPoliciesKeyPath, "NoAutoUpdate") is { IsSuccess: true, Value: 1 }))
+        {
+            var card = _choices.CreateCard(entry.SettingId);
+            var valid = WindowsUpdateSetValueEncoder.TryDecode(entry.SettingId, entry.Value, out var mode, out var fields);
+            return new() { SettingDisplayName = card.Model.DisplayName, CurrentValue = card.Model.CurrentValue,
+                CurrentDisplay = card.Model.CurrentDisplayValue!, IsApplied = valid && !card.ReadPolicyState!().BlocksChanges && card.Model.CurrentValue == mode
+                    && fields.All(pair => _choices.Fields(entry.SettingId).Single(field => field.Id == pair.Key).ReadCurrentValue() == pair.Value) };
+        }
         if (entry.SettingId == AutomaticUpdatesSetting.Id)
         {
             var card = _automaticUpdates.CreateCard();
@@ -85,6 +98,11 @@ public sealed class WindowsUpdateSetEntryInspector : ISetEntryInspector
 
     public ChangeGroup? CreateChangeGroup(SetEntry entry)
     {
+        if (WindowsUpdateChoiceSettings.Supports(entry.SettingId) && WindowsUpdateSetValueEncoder.TryDecode(entry.SettingId, entry.Value, out var mode, out var fields))
+        {
+            try { return _choices.CreateForPreset(entry.SettingId, mode, fields); }
+            catch (Exception ex) when (ex is InvalidOperationException or ArgumentException) { return null; }
+        }
         if (entry.SettingId == AutomaticUpdatesSetting.Id)
             return entry.Value is "0" or "1" ? _automaticUpdates.Create(entry.Value) : null;
         if (entry.SettingId == "version-pin")

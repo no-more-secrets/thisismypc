@@ -22,8 +22,8 @@ public sealed class WindowsUpdateSettingsReader
         [
             ReadSetting(
                 id: "auto-update-mode",
-                displayName: "Notify before downloading updates",
-                description: "Windows Update announces available updates instead of installing them on its own schedule (AUOptions = 2). You choose when to download and install.",
+                displayName: "Update installation",
+                description: "Choose when updates download and install.",
                 keyPath: WindowsUpdateRegistryPaths.AuPoliciesKeyPath,
                 valueName: "AUOptions",
                 configuredValue: "2"),
@@ -46,8 +46,8 @@ public sealed class WindowsUpdateSettingsReader
 
             ReadSetting(
                 id: "delivery-optimization",
-                displayName: "Disable update peer-to-peer sharing",
-                description: "Downloads updates from Microsoft's servers only (DODownloadMode = 0). Stops Delivery Optimization from uploading update chunks to other PCs on your connection.",
+                displayName: "Update sharing",
+                description: "Choose which PCs can share updates.",
                 keyPath: WindowsUpdateRegistryPaths.DeliveryOptimizationPoliciesKeyPath,
                 valueName: "DODownloadMode",
                 configuredValue: "0"),
@@ -116,8 +116,8 @@ public sealed class WindowsUpdateSettingsReader
 
             ReadSetting(
                 id: "active-hours-manual",
-                displayName: "Set active hours manually",
-                description: "Stops Windows from adjusting active hours based on usage. Set the hours in Windows Settings.",
+                displayName: "Active hours",
+                description: "Choose automatic active hours or set a manual time range.",
                 keyPath: WindowsUpdateRegistryPaths.UxSettingsKeyPath,
                 valueName: "SmartActiveHoursState",
                 configuredValue: "2"),

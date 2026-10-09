@@ -45,7 +45,7 @@ public sealed class ExplorerSettingsReader
         // Launch Explorer to: Advanced\LaunchTo 1=This PC, 2=Home/Quick Access.
         preferences.Add(ReadPreference(
             id: "launch-to",
-            displayName: "Open Explorer to This PC",
+            displayName: "Open File Explorer to",
             description: "Launch Explorer to 'This PC' instead of Home/Quick Access",
             keyPath: ShellRegistryPaths.AdvancedKeyPath,
             valueName: "LaunchTo",

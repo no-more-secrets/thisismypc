@@ -101,7 +101,7 @@ public class ShellTaskbarShotTests
         var viewModel = new ShellViewModel(CreateScanData(), queue, Registry);
         using var session = UiSession.ForView(new ShellView(), viewModel, "shell-taskbar", height: 1100);
 
-        var search = viewModel.TaskbarChoiceSettings[0];
+        var search = viewModel.TaskbarChoiceSettings.Single(row => row.Label == "Taskbar search");
         var liveValue = search.SelectedOption!.Value;
         search.SelectedOption = search.Options.First(o => o.Value != liveValue);
 

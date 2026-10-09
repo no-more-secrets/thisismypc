@@ -293,7 +293,7 @@ public class ExplorerEdgeTabShotTests
         await session.WaitForAsync(() => vm.CurrentContent is ShellViewModel { SearchText.Length: > 0 },
             timeoutMs: 120_000, what: "Explorer search destination");
         Assert.Equal(2, session.Find<TabControl>(t => t.IsEffectivelyVisible).SelectedIndex);
-        Assert.True(session.IsTextVisible("Taskbar alignment (Left)"));
+        Assert.True(session.IsTextVisible("Taskbar alignment"));
         session.Screenshot("global-search-taskbar");
         session.ClickText("Home");
         session.Pump();

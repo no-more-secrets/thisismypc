@@ -2,6 +2,14 @@
 
 Current release scope: [v1 completion plan](v1-completion-plan.md), approved 2026-09-06. It supersedes older post-release hardware assumptions below.
 
+## Explicit Windows choices (2026-10-08)
+
+- DONE: Update installation, Update sharing, Active hours, Open File Explorer to, and Taskbar alignment use dropdowns.
+- Scheduled installation reveals day and time. Manual active hours reveal start and end times, including overnight ranges.
+- Dependent values stage together and retain exact before-state for undo. Presets retain schedule values and accept existing mode-only entries.
+- Verification: regression tests cover staging, discard, invalid ranges, policy blockers, preset round trips, broker targets, and absent-value restoration. Dark and light renders are inspected.
+- Pending: live Windows Apply and undo acceptance on a test PC.
+
 ## Broker review at app startup (2026-10-08)
 
 - DONE: The app requests one administrator confirmation at startup and keeps the broker connected until the UI closes.

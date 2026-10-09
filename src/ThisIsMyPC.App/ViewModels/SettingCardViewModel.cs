@@ -46,12 +46,17 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
     public string CurrentChoiceDisplay => Model.CurrentDisplayValue ?? "Unknown";
     private string _choiceBaseline = "";
     private SettingOption? _stagedChoice;
+    public IReadOnlyList<SettingChoiceFieldViewModel> ChoiceFields { get; private set; } = [];
+    private Dictionary<string, string> _stagedFields = [];
+    private bool _editingChoiceField;
+    [ObservableProperty] private string? _choiceError;
 
     [ObservableProperty]
     private SettingOption? _selectedOption;
 
     partial void OnSelectedOptionChanged(SettingOption? value)
     {
+        foreach (var field in ChoiceFields) field.IsVisible = field.Field.ModeValue == value?.Value;
         if (_suppressStaging || !IsDropdown || value is null) return;
         try
         {
@@ -59,18 +64,23 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
             if (!IsControlEnabled || !Options.Contains(value))
                 throw new InvalidOperationException(_policyState.Message ?? "This option is unavailable.");
             var current = _source.ReadCurrentValue!();
-            var group = _source.CreateChoiceGroup!(value.Value);
+            var fields = ChoiceFields.ToDictionary(field => field.Field.Id, field => field.SelectedOption?.Value ?? "");
+            var group = _source.CreateConfiguredChoiceGroup?.Invoke(value.Value, fields)
+                ?? _source.CreateChoiceGroup!(value.Value);
+            ChoiceError = null;
             _choiceBaseline = current;
             _isStagingChange = true;
             try
             {
                 if (_stagedGroupId is not null) _pendingChangesService.Unstage(_stagedGroupId);
                 _stagedGroupId = null;
-                if (value.Value != current)
+                if (_source.CreateConfiguredChoiceGroup is not null
+                    ? group.Changes.Any(change => change.BeforeValue != change.AfterValue) : value.Value != current)
                 {
                     _pendingChangesService.Stage(group);
                     _stagedGroupId = group.GroupId;
                     _stagedChoice = value;
+                    _stagedFields = fields;
                 }
             }
             finally { _isStagingChange = false; }
@@ -78,8 +88,27 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
         }
         catch (Exception ex)
         {
+            if (_editingChoiceField && ex is ArgumentException)
+            {
+                _isStagingChange = true;
+                try
+                {
+                    if (_stagedGroupId is not null) _pendingChangesService.Unstage(_stagedGroupId);
+                    _stagedGroupId = null;
+                }
+                finally { _isStagingChange = false; }
+                ChoiceError = ex.Message;
+                UpdatePendingState();
+                _feedback?.Fail($"Could not change {DisplayName}: {ex.Message}");
+                return;
+            }
             _suppressStaging = true;
             SelectedOption = _stagedGroupId is null ? Options.FirstOrDefault(o => o.Value == _choiceBaseline) : _stagedChoice;
+            foreach (var field in ChoiceFields)
+            {
+                if (_stagedGroupId is null) field.Reload();
+                else field.SelectedOption = field.Options.FirstOrDefault(option => option.Value == _stagedFields.GetValueOrDefault(field.Field.Id));
+            }
             _suppressStaging = false;
             UpdatePendingState();
             _feedback?.Fail($"Could not change {DisplayName}: {ex.Message}");
@@ -319,12 +348,44 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
 
         _registryIsEnabled = _policyState.ToggleState ?? Model.CurrentValue == "1";
         _suppressStaging = true;
+        ChoiceFields = source.ChoiceFields.Select(field => new SettingChoiceFieldViewModel(field)).ToArray();
+        foreach (var field in ChoiceFields) field.PropertyChanged += OnChoiceFieldChanged;
         IsEnabled = _policyState.ToggleState ?? _registryIsEnabled;
         _choiceBaseline = Model.CurrentValue;
         SelectedOption = Options.FirstOrDefault(option => option.Value == _choiceBaseline);
         _suppressStaging = false;
 
         _pendingChangesService.PropertyChanged += OnPendingChangesPropertyChanged;
+        if (source.CreateConfiguredChoiceGroup is not null)
+        {
+            var staged = pendingChangesService.PendingGroups.FirstOrDefault(group => group.Changes.Count > 0
+                && group.Changes.All(change => change.ModuleId == Model.ModuleId && change.SettingId == Model.SettingId));
+            if (staged is not null)
+            {
+                _suppressStaging = true;
+                SelectedOption = Options.FirstOrDefault(option => option.Value == staged.Changes[0].AfterValue);
+                foreach (var field in ChoiceFields)
+                {
+                    var change = staged.Changes.FirstOrDefault(change => change.SystemLocation.EndsWith("\\" + field.Field.Id, StringComparison.Ordinal));
+                    if (change is not null) field.SelectedOption = field.Options.FirstOrDefault(option => option.Value == change.AfterValue);
+                }
+                _stagedGroupId = staged.GroupId;
+                _stagedChoice = SelectedOption;
+                _stagedFields = ChoiceFields.ToDictionary(field => field.Field.Id, field => field.SelectedOption?.Value ?? "");
+                _suppressStaging = false;
+                UpdatePendingState();
+            }
+        }
+    }
+
+    private void OnChoiceFieldChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(SettingChoiceFieldViewModel.SelectedOption) && !_suppressStaging)
+        {
+            _editingChoiceField = true;
+            try { OnSelectedOptionChanged(SelectedOption); }
+            finally { _editingChoiceField = false; }
+        }
     }
 
     partial void OnIsEnabledChanged(bool value)
@@ -440,6 +501,7 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
                 if (applied) _choiceBaseline = SelectedOption?.Value ?? _choiceBaseline;
                 _suppressStaging = true;
                 SelectedOption = Options.FirstOrDefault(option => option.Value == _choiceBaseline);
+                if (!applied) foreach (var field in ChoiceFields) field.Reload();
                 _suppressStaging = false;
                 RefreshPolicyState();
                 UpdatePendingState();
@@ -493,6 +555,7 @@ public sealed partial class SettingCardViewModel : ViewModelBase, IDisposable
     {
         _disposed = true;
         _pendingChangesService.PropertyChanged -= OnPendingChangesPropertyChanged;
+        foreach (var field in ChoiceFields) field.PropertyChanged -= OnChoiceFieldChanged;
         if (_ownerMode is not null)
             _ownerMode.StateChanged -= OnOwnerModeStateChanged;
         _debounceCts?.Cancel();

@@ -25,4 +25,11 @@ public sealed record SettingCardSource
     public Func<string, ChangeGroup>? CreateChoiceGroup { get; init; }
     public Func<string>? ReadCurrentValue { get; init; }
     public Func<Policies.PolicyControlState>? ReadPolicyState { get; init; }
+
+    /// <summary>Optional fields staged atomically with the selected mode.</summary>
+    public IReadOnlyList<SettingChoiceField> ChoiceFields { get; init; } = [];
+    public Func<string, IReadOnlyDictionary<string, string>, ChangeGroup>? CreateConfiguredChoiceGroup { get; init; }
 }
+
+public sealed record SettingChoiceField(string Id, string DisplayName, string ModeValue,
+    IReadOnlyList<SettingOption> Options, Func<string> ReadCurrentValue);

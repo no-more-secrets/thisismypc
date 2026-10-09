@@ -27,12 +27,12 @@ public sealed class ShellChoiceSettingViewModelTests
         var pending = new PendingChangesService();
         var vm = new ShellViewModel(MakeScanData(), pending, new Fakes.FakeRegistryService());
 
-        Assert.Equal(2, vm.TaskbarChoiceSettings.Count);
-        Assert.Equal("Taskbar search", vm.TaskbarChoiceSettings[0].Label);
-        Assert.Equal(4, vm.TaskbarChoiceSettings[0].Options.Count);
-        Assert.Equal("Combine taskbar buttons", vm.TaskbarChoiceSettings[1].Label);
-        Assert.Equal(3, vm.TaskbarChoiceSettings[1].Options.Count);
-        Assert.Equal("Search box", vm.TaskbarChoiceSettings[0].SelectedOption?.DisplayName);
+        Assert.Equal(3, vm.TaskbarChoiceSettings.Count);
+        Assert.Equal("Taskbar search", vm.TaskbarChoiceSettings[1].Label);
+        Assert.Equal(4, vm.TaskbarChoiceSettings[1].Options.Count);
+        Assert.Equal("Combine taskbar buttons", vm.TaskbarChoiceSettings[2].Label);
+        Assert.Equal(3, vm.TaskbarChoiceSettings[2].Options.Count);
+        Assert.Equal("Search box", vm.TaskbarChoiceSettings[1].SelectedOption?.DisplayName);
     }
 
     [Fact]
@@ -40,7 +40,7 @@ public sealed class ShellChoiceSettingViewModelTests
     {
         var pending = new PendingChangesService();
         var vm = new ShellViewModel(MakeScanData(), pending, new Fakes.FakeRegistryService());
-        var search = vm.TaskbarChoiceSettings[0];
+        var search = vm.TaskbarChoiceSettings[1];
 
         search.SelectedOption = search.Options.First(o => o.Value == 0); // Hidden
         await WaitForStagingAsync(pending, 1);
@@ -57,7 +57,7 @@ public sealed class ShellChoiceSettingViewModelTests
     {
         var pending = new PendingChangesService();
         var vm = new ShellViewModel(MakeScanData(), pending, new Fakes.FakeRegistryService());
-        var search = vm.TaskbarChoiceSettings[0];
+        var search = vm.TaskbarChoiceSettings[1];
 
         search.SelectedOption = search.Options.First(o => o.Value == 1);
         await WaitForStagingAsync(pending, 1);
@@ -72,7 +72,7 @@ public sealed class ShellChoiceSettingViewModelTests
     {
         var pending = new PendingChangesService();
         var vm = new ShellViewModel(MakeScanData(), pending, new Fakes.FakeRegistryService());
-        var combining = vm.TaskbarChoiceSettings[1];
+        var combining = vm.TaskbarChoiceSettings[2];
 
         combining.SelectedOption = combining.Options.First(o => o.Value == 2); // Never
         await WaitForStagingAsync(pending, 1);

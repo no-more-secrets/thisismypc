@@ -19,6 +19,7 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, ISearch
 
     public ObservableCollection<ShellSettingViewModel> GeneralSettings { get; } = [];
     public ObservableCollection<ShellSettingViewModel> FileExplorerSettings { get; } = [];
+    public ObservableCollection<ShellChoiceSettingViewModel> FileExplorerChoiceSettings { get; } = [];
     public ObservableCollection<ShellSettingViewModel> TaskbarSettings { get; } = [];
     public ObservableCollection<ShellChoiceSettingViewModel> TaskbarChoiceSettings { get; } = [];
     public ObservableCollection<ShellSettingViewModel> DesktopSettings { get; } = [];
@@ -76,7 +77,7 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, ISearch
         GeneralSettings.Concat(FileExplorerSettings).Concat(TaskbarSettings).Concat(DesktopSettings).Concat(StartMenuSettings);
 
     private IEnumerable<ShellChoiceSettingViewModel> ChoiceRows =>
-        TaskbarChoiceSettings.Concat(PatcherChoices);
+        FileExplorerChoiceSettings.Concat(TaskbarChoiceSettings).Concat(PatcherChoices);
 
     private ObservableCollection<ExplorerPatcherGroupViewModel> PatcherGroupsFor(ShellSection section) => section switch
     {
@@ -165,6 +166,25 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, ISearch
         {
             var capturedPref = pref;
             _searchTabs[pref.Id] = TabIndex(pref.Section);
+            if (pref.Id == "launch-to")
+            {
+                int ReadDestination() => registryService.ReadDWord(pref.RegistryKeyPath, pref.RegistryValueName) is { IsSuccess: true } result ? result.Value : 2;
+                var row = new ShellChoiceSettingViewModel("Open File Explorer to", "Choose the starting location for File Explorer.",
+                    $@"{pref.RegistryKeyPath}\{pref.RegistryValueName}", [new(2, "Home"), new(1, "This PC")],
+                    int.Parse(pref.CurrentValue, System.Globalization.CultureInfo.InvariantCulture), pendingChangesService,
+                    value =>
+                    {
+                        var read = registryService.ReadValue(pref.RegistryKeyPath, pref.RegistryValueName);
+                        if (!read.IsSuccess && read.ErrorCategory != Core.Results.ErrorCategory.NotFound || read.IsSuccess && read.Value!.Kind != RegistryValueDataKind.DWord)
+                            throw new InvalidOperationException("The Explorer destination could not be read.");
+                        return ExplorerChangeFactory.CreateToggle(pref with { CurrentValue = read.IsSuccess ? read.Value!.Data : "", IsEnabled = ReadDestination() == 1 }, value == 1)
+                            with { DisplayName = "Open File Explorer to", BeforeDisplay = ReadDestination() == 1 ? "This PC" : "Home",
+                                AfterDisplay = value == 1 ? "This PC" : "Home", Category = Core.Changes.ChangeCategory.Modify };
+                    }, ReadDestination, rehydrateSettingId: pref.Id);
+                if (pref.CurrentValue is not ("1" or "2")) row.SetAvailability("This Explorer destination is not supported by this control.");
+                FileExplorerChoiceSettings.Add(row);
+                continue;
+            }
             RowsFor(pref.Section).Add(new ShellSettingViewModel(
                 capturedPref,
                 pendingChangesService,
@@ -249,18 +269,27 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, ISearch
         var taskbar = scanData.Taskbar;
         // Taskbar settings
 
-        TaskbarSettings.Add(new ShellSettingViewModel(
-            label: "Taskbar alignment (Left)",
-            description: "Align taskbar icons to the left instead of center",
+        TaskbarChoiceSettings.Add(new ShellChoiceSettingViewModel(
+            label: "Taskbar alignment",
+            description: "Choose the position of taskbar icons.",
             systemPath: $@"{AdvancedKeyPath}\TaskbarAl",
-            isEnabled: taskbar.Alignment == 0,
+            options: [new(0, "Left"), new(1, "Center")],
+            currentValue: taskbar.Alignment,
             pendingChangesService: pendingChangesService,
-            changeFactory: enable => TaskbarChangeFactory.CreateAlignmentChange(taskbar, enable ? 0 : 1),
-            readRegistryState: () =>
+            changeFactory: value =>
+            {
+                var read = registryService.ReadValue(AdvancedKeyPath, "TaskbarAl");
+                if (!read.IsSuccess && read.ErrorCategory != Core.Results.ErrorCategory.NotFound || read.IsSuccess && read.Value!.Kind != RegistryValueDataKind.DWord)
+                    throw new InvalidOperationException("Taskbar alignment could not be read.");
+                var live = read.IsSuccess ? read.Value!.AsDWord() : 1;
+                return TaskbarChangeFactory.CreateAlignmentChange(taskbar with { Alignment = live }, value)
+                    with { BeforeValue = read.IsSuccess ? read.Value!.Data : "" };
+            },
+            readRegistryValue: () =>
             {
                 var result = registryService.ReadDWord(AdvancedKeyPath, "TaskbarAl");
-                return result.IsSuccess && result.Value == 0;
-            }));
+                return result.IsSuccess ? result.Value : 1;
+            }, rehydrateSettingId: "taskbar-alignment"));
 
         TaskbarSettings.Add(new ShellSettingViewModel(
             label: "Taskbar widgets",

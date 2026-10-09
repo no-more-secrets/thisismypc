@@ -245,6 +245,8 @@ public sealed class PolicyControlStateReader(IRegistryService registry,
         if (location.EndsWith("\\SubmitSamplesConsent", StringComparison.OrdinalIgnoreCase)) return value is >= 0 and <= 3;
         if (location.EndsWith("\\EnableControlledFolderAccess", StringComparison.OrdinalIgnoreCase)) return value is >= 0 and <= 4;
         if (location.EndsWith("\\AUOptions", StringComparison.OrdinalIgnoreCase)) return value is 2 or 3 or 4 or 5 or 7;
+        if (location.EndsWith("\\ScheduledInstallDay", StringComparison.OrdinalIgnoreCase)) return value is >= 0 and <= 7;
+        if (location.EndsWith("\\ScheduledInstallTime", StringComparison.OrdinalIgnoreCase)) return value is >= 0 and <= 23;
         if (location.EndsWith("\\AllowTelemetry", StringComparison.OrdinalIgnoreCase)) return value is 0 or 1 or 3;
         if (location.EndsWith("\\DODownloadMode", StringComparison.OrdinalIgnoreCase)) return value is 0 or 1 or 2 or 3 or 99 or 100;
         if (location.Contains(@"\abfc2519-3608-4c2a-94ea-171b0ed546ab\", StringComparison.OrdinalIgnoreCase)) return value is 0 or 1;

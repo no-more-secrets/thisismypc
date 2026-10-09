@@ -31,6 +31,25 @@
                     </DataTemplate>
                 </ComboBox.ItemTemplate>
             </ComboBox>
+            <ItemsControl ItemsSource="{Binding ChoiceFields}" IsEnabled="{Binding IsControlEnabled}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:SettingChoiceFieldViewModel">
+                        <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,2" IsVisible="{Binding IsVisible}">
+                            <TextBlock Text="{Binding DisplayName}" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,8,0" />
+                            <ComboBox Grid.Column="1" ItemsSource="{Binding Options}" SelectedItem="{Binding SelectedOption, Mode=TwoWay}" MinWidth="115">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate x:DataType="cards:SettingOption">
+                                        <TextBlock Text="{Binding DisplayName}" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <icons:FluentIcon Classes="issue-marker" Symbol="Info" ToolTip.Tip="{Binding ChoiceError}"
+                              HorizontalAlignment="Right"
+                              IsVisible="{Binding ChoiceError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
             <TextBlock Text="{Binding PolicyStateText}" FontSize="11" TextWrapping="Wrap"
                        Foreground="{DynamicResource InfoBrush}" IsVisible="{Binding HasPolicyState}" />
             <TextBlock Text="{Binding UnavailableReason}"

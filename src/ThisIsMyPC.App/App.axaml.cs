@@ -319,6 +319,7 @@ public partial class App : Application
             Path.Combine(AppConstants.UserDataDirectoryPath, "sets")));
         // Custom set creation (8.5) writes into the same user sets directory.
         services.AddSingleton<ISetValueEncoder, ThisIsMyPC.Modules.Security.SecuritySetValueEncoder>();
+        services.AddSingleton<ISetValueEncoder, ThisIsMyPC.Modules.WindowsUpdate.Services.WindowsUpdateSetValueEncoder>();
         services.AddSingleton<ICustomSetWriter>(sp => new CustomSetWriter(
             Path.Combine(AppConstants.UserDataDirectoryPath, "sets"), sp.GetServices<ISetValueEncoder>()));
         // Per-tab display-mode persistence (10.2).

@@ -94,6 +94,8 @@ internal static class BrokerOperationRules
     private static readonly HashSet<string> WindowsUpdateTargets = RegistryTargets(
     [
         ("auto-update-mode", WindowsUpdateRegistryPaths.AuPoliciesKeyPath, "AUOptions", ChangeValueType.Registry_DWord),
+        ("auto-update-mode", WindowsUpdateRegistryPaths.AuPoliciesKeyPath, "ScheduledInstallDay", ChangeValueType.Registry_DWord),
+        ("auto-update-mode", WindowsUpdateRegistryPaths.AuPoliciesKeyPath, "ScheduledInstallTime", ChangeValueType.Registry_DWord),
         ("no-auto-reboot", WindowsUpdateRegistryPaths.AuPoliciesKeyPath, "NoAutoRebootWithLoggedOnUsers", ChangeValueType.Registry_DWord),
         ("exclude-drivers", WindowsUpdateRegistryPaths.WindowsUpdatePoliciesKeyPath, "ExcludeWUDriversInQualityUpdate", ChangeValueType.Registry_DWord),
         ("delivery-optimization", WindowsUpdateRegistryPaths.DeliveryOptimizationPoliciesKeyPath, "DODownloadMode", ChangeValueType.Registry_DWord),
@@ -102,6 +104,8 @@ internal static class BrokerOperationRules
         ("version-pin", WindowsUpdateRegistryPaths.WindowsUpdatePoliciesKeyPath, "TargetReleaseVersionInfo", ChangeValueType.Registry_String),
         ("restart-notifications", WindowsUpdateRegistryPaths.UxSettingsKeyPath, "RestartNotificationsAllowed2", ChangeValueType.Registry_DWord),
         ("active-hours-manual", WindowsUpdateRegistryPaths.UxSettingsKeyPath, "SmartActiveHoursState", ChangeValueType.Registry_DWord),
+        ("active-hours-manual", WindowsUpdateRegistryPaths.UxSettingsKeyPath, "ActiveHoursStart", ChangeValueType.Registry_DWord),
+        ("active-hours-manual", WindowsUpdateRegistryPaths.UxSettingsKeyPath, "ActiveHoursEnd", ChangeValueType.Registry_DWord),
         ("continuous-innovation", WindowsUpdateRegistryPaths.UxSettingsKeyPath, "IsContinuousInnovationOptedIn", ChangeValueType.Registry_DWord),
     ]);
 

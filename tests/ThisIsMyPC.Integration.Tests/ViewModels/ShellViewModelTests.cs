@@ -48,7 +48,7 @@ public sealed class ShellViewModelTests
         var registryService = new Fakes.FakeRegistryService();
         var vm = new ShellViewModel(MakeScanData(), pendingService, registryService);
 
-        Assert.Equal(3, vm.TaskbarSettings.Count);
+        Assert.Equal(2, vm.TaskbarSettings.Count);
     }
 
     [Fact]
@@ -80,7 +80,7 @@ public sealed class ShellViewModelTests
         var registryService = new Fakes.FakeRegistryService();
         var vm = new ShellViewModel(MakeScanData(), pendingService, registryService);
 
-        Assert.Equal("Taskbar alignment (Left)", vm.TaskbarSettings[0].Label);
+        Assert.Equal("Taskbar alignment", vm.TaskbarChoiceSettings[0].Label);
     }
 
     [Fact]
@@ -91,7 +91,7 @@ public sealed class ShellViewModelTests
         var scanData = MakeScanData(taskbar: new TaskbarSettings(0, true, false, false));
         var vm = new ShellViewModel(scanData, pendingService, registryService);
 
-        Assert.True(vm.TaskbarSettings[0].IsEnabled); // alignment 0 = left
+        Assert.Equal(0, vm.TaskbarChoiceSettings[0].SelectedOption!.Value);
     }
 
     [Fact]
@@ -102,7 +102,7 @@ public sealed class ShellViewModelTests
         var scanData = MakeScanData(taskbar: new TaskbarSettings(1, false, false, false));
         var vm = new ShellViewModel(scanData, pendingService, registryService);
 
-        Assert.False(vm.TaskbarSettings[1].IsEnabled); // widgets disabled
+        Assert.False(vm.TaskbarSettings[0].IsEnabled); // widgets disabled
     }
 
     [Fact]

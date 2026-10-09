@@ -20,6 +20,7 @@ public sealed class WindowsUpdateCardProvider
 
     private readonly WindowsUpdateSettingsReader _liveReader;
     private readonly AutomaticUpdatesSetting _automaticUpdates;
+    private readonly WindowsUpdateChoiceSettings _choices;
 
     public WindowsUpdateCardProvider(WindowsUpdateSettingsReader liveReader, Core.Services.ICapabilityDetector? capabilities = null,
         Core.Policies.PolicyControlStateReader? policies = null)
@@ -27,6 +28,7 @@ public sealed class WindowsUpdateCardProvider
         ArgumentNullException.ThrowIfNull(liveReader);
         _liveReader = liveReader;
         _automaticUpdates = new(liveReader.Registry, capabilities, policies);
+        _choices = new(liveReader.Registry, capabilities, policies);
     }
 
     public IReadOnlyList<SettingCardSource> BuildCards(WindowsUpdateScanData scanData)
@@ -40,13 +42,13 @@ public sealed class WindowsUpdateCardProvider
         cards.Add(_automaticUpdates.CreateCard());
 
         foreach (var setting in scanData.Settings.Where(s => s.Id != "delivery-optimization"))
-            cards.Add(SingleCard(setting, UpdateBehaviorGroup, gpCache: true));
+            cards.Add(WindowsUpdateChoiceSettings.Supports(setting.Id) ? _choices.CreateCard(setting.Id) : SingleCard(setting, UpdateBehaviorGroup, gpCache: true));
 
         foreach (var setting in scanData.Settings.Where(s => s.Id == "delivery-optimization"))
-            cards.Add(SingleCard(setting, DeliveryOptimizationGroup, gpCache: false));
+            cards.Add(_choices.CreateCard(setting.Id));
 
         foreach (var setting in scanData.UxSettings)
-            cards.Add(UxCard(setting));
+            cards.Add(WindowsUpdateChoiceSettings.Supports(setting.Id) ? _choices.CreateCard(setting.Id) : UxCard(setting));
 
         return cards;
     }
