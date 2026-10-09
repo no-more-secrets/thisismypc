@@ -11,8 +11,7 @@ internal static unsafe partial class NativeReviewWindow
     internal enum Decision { Failed, Cancelled, Discarded, Apply }
 
     private const string ClassName = "ThisIsMyPCBrokerReview";
-    private const uint WsCaption = 0x00C00000;
-    private const uint WsSysMenu = 0x00080000;
+    private const uint WsPopup = 0x80000000;
     private const uint WsChild = 0x40000000;
     private const uint WsVisible = 0x10000000;
     private const uint WsTabStop = 0x00010000;
@@ -25,10 +24,13 @@ internal static unsafe partial class NativeReviewWindow
     private const uint WmClose = 0x0010;
     private const uint WmEraseBackground = 0x0014;
     private const uint WmDrawItem = 0x002B;
+    private const uint WmNcHitTest = 0x0084;
     private const uint WmPrintClient = 0x0318;
     private const uint WmCommand = 0x0111;
     private const uint WmVScroll = 0x0115;
     private const uint WmMouseWheel = 0x020A;
+    private const uint WmKeyDown = 0x0100;
+    private const nuint VkEscape = 0x1B;
     private const uint DtLeft = 0;
     private const uint DtRight = 2;
     private const uint DtVCenter = 4;
@@ -42,6 +44,9 @@ internal static unsafe partial class NativeReviewWindow
     private const uint SifTrackPos = 0x10;
     private const int ApplyButton = 1001;
     private const int DiscardButton = 1002;
+    private const int CloseButton = 1003;
+    private const nint HtClient = 1;
+    private const nint HtCaption = 2;
     private const int HeaderHeight = 47;
     private const int FooterHeight = 59;
     private const int NoteHeight = 38;
@@ -94,7 +99,7 @@ internal static unsafe partial class NativeReviewWindow
                 var x = Math.Max(0, (GetSystemMetrics(0) - width) / 2);
                 var y = Math.Max(0, (GetSystemMetrics(1) - height) / 2);
                 var window = CreateWindowExW(0, ClassName, "Review Pending Changes - ThisIsMyPC",
-                    WsCaption | WsSysMenu | WsVScroll, x, y, width, height, 0, 0, windowClass.Instance, 0);
+                    WsPopup | WsVScroll, x, y, width, height, 0, 0, windowClass.Instance, 0);
                 if (window == 0)
                     return Decision.Failed;
 
@@ -120,7 +125,11 @@ internal static unsafe partial class NativeReviewWindow
                     WsChild | WsVisible | WsTabStop | BsOwnerDraw,
                     state.ClientWidth - 128, footerTop + 11, 112, 36,
                     window, (nint)ApplyButton, windowClass.Instance, 0);
-                if (state.Discard == 0 || state.Apply == 0)
+                state.Close = CreateWindowExW(0, "BUTTON", "Close review",
+                    WsChild | WsVisible | WsTabStop | BsOwnerDraw,
+                    state.ClientWidth - 37, 8, 28, 28,
+                    window, (nint)CloseButton, windowClass.Instance, 0);
+                if (state.Discard == 0 || state.Apply == 0 || state.Close == 0)
                 {
                     state.Result = Decision.Failed;
                     _ = DestroyWindow(window);
@@ -145,6 +154,11 @@ internal static unsafe partial class NativeReviewWindow
                 state.LoopStarted = true;
                 while (GetMessageW(out var message, 0, 0, 0) > 0)
                 {
+                    if (message.Id == WmKeyDown && message.WParam == VkEscape)
+                    {
+                        _ = DestroyWindow(window);
+                        continue;
+                    }
                     if (IsDialogMessageW(window, ref message))
                         continue;
                     _ = TranslateMessage(in message);
@@ -207,14 +221,30 @@ internal static unsafe partial class NativeReviewWindow
             _ = DestroyWindow(window);
             return 0;
         }
+        if (message == WmCommand && ((wParam >> 16) & 0xffff) == 0 && (wParam & 0xffff) == CloseButton)
+        {
+            _ = DestroyWindow(window);
+            return 0;
+        }
         if (message == WmDrawItem && lParam != 0)
         {
             var item = (DrawItem*)lParam;
-            if (item->ControlId is ApplyButton or DiscardButton)
+            if (item->ControlId is ApplyButton or DiscardButton or CloseButton)
             {
                 DrawButton(state, item);
                 return 1;
             }
+        }
+        if (message == WmNcHitTest)
+        {
+            var hit = DefWindowProcW(window, message, wParam, lParam);
+            if (hit != HtClient)
+                return hit;
+            var point = new Point { X = (short)(lParam & 0xffff), Y = (short)((lParam >> 16) & 0xffff) };
+            if (!ScreenToClient(window, ref point))
+                return hit;
+            return point.Y >= 0 && point.Y < HeaderHeight && point.X >= 0
+                && point.X < state.ClientWidth - 45 ? HtCaption : hit;
         }
         if (message == WmEraseBackground)
             return 1;
@@ -355,18 +385,22 @@ internal static unsafe partial class NativeReviewWindow
         var width = state.ClientWidth;
         var height = state.ClientHeight;
         Fill(hdc, new Rect { Right = width, Bottom = height }, Raised);
+        Fill(hdc, new Rect { Right = width, Bottom = 1 }, Outline);
+        Fill(hdc, new Rect { Right = 1, Bottom = height }, Outline);
+        Fill(hdc, new Rect { Left = width - 1, Right = width, Bottom = height }, Outline);
+        Fill(hdc, new Rect { Top = height - 1, Right = width, Bottom = height }, Outline);
         Fill(hdc, new Rect { Top = HeaderHeight - 1, Right = width, Bottom = HeaderHeight }, Outline);
         Fill(hdc, new Rect { Top = height - FooterHeight, Right = width, Bottom = height - FooterHeight + 1 }, Outline);
 
         var compact = width < 420;
-        var countLeft = compact ? width - 52 : width - 125;
+        var countLeft = compact ? width - 80 : width - 153;
         Text(hdc, state.TitleFont, White, "Review Pending Changes",
             new Rect { Left = 16, Top = 12, Right = countLeft - 8, Bottom = 35 }, DtSingleLine | DtNoPrefix);
         var count = compact ? $"{state.Cards.Count}"
             : !state.Batch ? state.Cards.Count == 1 ? "1 operation" : $"{state.Cards.Count} operations"
             : state.Cards.Count == 1 ? "1 change" : $"{state.Cards.Count} changes";
         Text(hdc, state.DetailFont, Tertiary, count,
-            new Rect { Left = countLeft, Top = 15, Right = width - 16, Bottom = 34 }, DtSingleLine | DtRight | DtNoPrefix);
+            new Rect { Left = countLeft, Top = 15, Right = width - 48, Bottom = 34 }, DtSingleLine | DtRight | DtNoPrefix);
         Text(hdc, state.DetailFont, Secondary, "Approve only if every target matches your selected changes.",
             new Rect { Left = 16, Top = HeaderHeight + 7, Right = width - 24, Bottom = HeaderHeight + NoteHeight },
             DtWordBreak | DtNoPrefix);
@@ -426,6 +460,15 @@ internal static unsafe partial class NativeReviewWindow
 
     private static void DrawButton(ReviewState state, DrawItem* item)
     {
+        if (item->ControlId == CloseButton)
+        {
+            Fill(item->Hdc, item->Bounds, Raised);
+            Text(item->Hdc, state.TitleFont, Secondary, "×", item->Bounds,
+                DtSingleLine | DtVCenter | DtNoPrefix | 1);
+            if ((item->ItemState & 0x10) != 0)
+                _ = DrawFocusRect(item->Hdc, in item->Bounds);
+            return;
+        }
         var apply = item->ControlId == ApplyButton;
         var selected = (item->ItemState & 1) != 0;
         var background = apply ? selected ? 0xA8683F : Accent : selected ? 0x6A4C4C : Overlay;
@@ -553,6 +596,7 @@ internal static unsafe partial class NativeReviewWindow
         internal nint Window;
         internal nint Discard;
         internal nint Apply;
+        internal nint Close;
         internal nint TitleFont;
         internal nint CardFont;
         internal nint DetailFont;
@@ -698,6 +742,10 @@ internal static unsafe partial class NativeReviewWindow
     [return: MarshalAs(UnmanagedType.Bool)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static partial bool GetClientRect(nint window, out Rect rectangle);
+    [LibraryImport("user32.dll", EntryPoint = "ScreenToClient")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial bool ScreenToClient(nint window, ref Point point);
     [LibraryImport("user32.dll", EntryPoint = "SetForegroundWindow")]
     [return: MarshalAs(UnmanagedType.Bool)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]

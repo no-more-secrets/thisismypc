@@ -58,6 +58,57 @@ public sealed partial class NativeReviewWindowTests
 
     [Fact]
     [Trait("Category", "Diagnostic")]
+    public async Task CloseButtonKeepsTheReviewPending()
+    {
+        var policy = BrokerRequestPolicy.Create(new BrokerSessionRequest
+        {
+            ReviewOnly = [new() { DisplayName = "Local setting", Detail = "Off -> On" }],
+        }).Value!;
+        var review = Task.Run(() => NativeReviewWindow.Show(policy));
+        nint window = 0;
+        for (var attempt = 0; attempt < 100 && window == 0; attempt++)
+        {
+            window = FindWindowW("ThisIsMyPCBrokerReview", null);
+            await Task.Delay(50);
+        }
+        Assert.NotEqual(0, window);
+        Assert.Equal(0, GetWindowLongW(window, -16) & 0x00C00000);
+        Assert.True(GetWindowRect(window, out var bounds));
+        var headerPoint = (nint)((((bounds.Top + 20) & 0xffff) << 16) | ((bounds.Left + 40) & 0xffff));
+        Assert.Equal((nint)2, SendMessageW(window, 0x0084, 0, headerPoint));
+        var button = GetDlgItem(window, 1003);
+        Assert.NotEqual(0, button);
+        Assert.True(PostMessageW(button, 0x0201, 1, (nint)((14 << 16) | 14)));
+        Assert.True(PostMessageW(button, 0x0202, 0, (nint)((14 << 16) | 14)));
+
+        Assert.Equal(NativeReviewWindow.Decision.Cancelled, await review);
+    }
+
+    [Fact]
+    [Trait("Category", "Diagnostic")]
+    public async Task EscapeKeepsTheReviewPending()
+    {
+        var policy = BrokerRequestPolicy.Create(new BrokerSessionRequest
+        {
+            ReviewOnly = [new() { DisplayName = "Local setting", Detail = "Off -> On" }],
+        }).Value!;
+        var review = Task.Run(() => NativeReviewWindow.Show(policy));
+        nint window = 0;
+        for (var attempt = 0; attempt < 100 && window == 0; attempt++)
+        {
+            window = FindWindowW("ThisIsMyPCBrokerReview", null);
+            await Task.Delay(50);
+        }
+        Assert.NotEqual(0, window);
+        var button = GetDlgItem(window, 1002);
+        Assert.NotEqual(0, button);
+        Assert.True(PostMessageW(button, 0x0100, 0x1B, 0));
+
+        Assert.Equal(NativeReviewWindow.Decision.Cancelled, await review);
+    }
+
+    [Fact]
+    [Trait("Category", "Diagnostic")]
     public async Task CloseCancelsTheNativeReview()
     {
         var policy = BrokerRequestPolicy.Create(new BrokerSessionRequest
@@ -182,6 +233,10 @@ public sealed partial class NativeReviewWindowTests
     [return: MarshalAs(UnmanagedType.Bool)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static partial bool GetWindowRect(nint window, out Rect rectangle);
+
+    [LibraryImport("user32.dll", EntryPoint = "GetWindowLongW")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial int GetWindowLongW(nint window, int index);
 
     [LibraryImport("user32.dll", EntryPoint = "PrintWindow")]
     [return: MarshalAs(UnmanagedType.Bool)]
