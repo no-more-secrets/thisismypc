@@ -2,6 +2,8 @@ using System.Runtime.InteropServices;
 using System.Drawing;
 using System.Drawing.Imaging;
 using ThisIsMyPC.Broker;
+using ThisIsMyPC.Core.Changes;
+using ThisIsMyPC.Core.Enforcement;
 using ThisIsMyPC.Ipc.Contracts;
 
 namespace ThisIsMyPC.Ipc.Tests;
@@ -60,6 +62,24 @@ public sealed partial class NativeReviewWindowTests
     {
         var policy = BrokerRequestPolicy.Create(new BrokerSessionRequest
         {
+            Changes = [new ChangeDescriptor
+            {
+                ModuleId = "Windows Update",
+                SettingId = "no-auto-reboot",
+                DisplayName = "Do not restart for updates while signed in",
+                SystemLocation = @"HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU\NoAutoRebootWithLoggedOnUsers",
+                BeforeValue = "0",
+                AfterValue = "1",
+                BeforeDisplay = "Off",
+                AfterDisplay = "On",
+                ValueType = ChangeValueType.Registry_DWord,
+                Enforcement = new SettingEnforcement
+                {
+                    GPCacheEntries = [@"HKLM\SOFTWARE\Microsoft\WindowsUpdate\UpdatePolicy\GPCache"],
+                    ReversionVectors = ["Group Policy refresh"],
+                    SkuRestriction = ThisIsMyPC.Core.Modules.WindowsSku.Pro,
+                },
+            }],
             ReviewOnly =
             [
                 new() { DisplayName = "Protect sign-in passwords", Detail = "Off -> On" },
@@ -101,6 +121,34 @@ public sealed partial class NativeReviewWindowTests
         Assert.Equal(NativeReviewWindow.Decision.Cancelled, decision);
     }
 
+    [Fact]
+    [Trait("Category", "Diagnostic")]
+    public async Task LongReviewCanScrollToItsLastCard()
+    {
+        var policy = BrokerRequestPolicy.Create(new BrokerSessionRequest
+        {
+            ReviewOnly = Enumerable.Range(1, 30).Select(index => new BrokerReviewItem
+            {
+                DisplayName = $"Desktop change {index}",
+                Detail = $"Review operation {index}",
+            }).ToList(),
+        }).Value!;
+        var review = Task.Run(() => NativeReviewWindow.Show(policy));
+        nint window = 0;
+        for (var attempt = 0; attempt < 100 && window == 0; attempt++)
+        {
+            window = FindWindowW("ThisIsMyPCBrokerReview", null);
+            await Task.Delay(50);
+        }
+        Assert.NotEqual(0, window);
+        _ = SendMessageW(window, 0x0115, 7, 0);
+        var scroll = new ScrollInfo { Size = (uint)Marshal.SizeOf<ScrollInfo>(), Mask = 4 };
+        Assert.True(GetScrollInfo(window, 1, ref scroll));
+        Assert.True(scroll.Position > 0);
+        Assert.True(PostMessageW(window, 0x0010, 0, 0));
+        Assert.Equal(NativeReviewWindow.Decision.Cancelled, await review);
+    }
+
     [LibraryImport("user32.dll", EntryPoint = "FindWindowW", StringMarshalling = StringMarshalling.Utf16)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static partial nint FindWindowW(string className, string? title);
@@ -112,6 +160,23 @@ public sealed partial class NativeReviewWindowTests
 
     [StructLayout(LayoutKind.Sequential)]
     private struct Rect { internal int Left; internal int Top; internal int Right; internal int Bottom; }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct ScrollInfo
+    {
+        internal uint Size;
+        internal uint Mask;
+        internal int Minimum;
+        internal int Maximum;
+        internal uint Page;
+        internal int Position;
+        internal int TrackPosition;
+    }
+
+    [LibraryImport("user32.dll", EntryPoint = "GetScrollInfo")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial bool GetScrollInfo(nint window, int bar, ref ScrollInfo info);
 
     [LibraryImport("user32.dll", EntryPoint = "GetWindowRect")]
     [return: MarshalAs(UnmanagedType.Bool)]

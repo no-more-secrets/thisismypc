@@ -325,6 +325,23 @@ public sealed class BrokerRequestPolicyTests
     }
 
     [Fact]
+    public void ReviewCardsKeepDisplayNamesAndExactTargets()
+    {
+        var change = Change();
+        var policy = BrokerRequestPolicy.Create(new() { Changes = [change] }).Value!;
+
+        var card = Assert.Single(policy.BuildReviewCards());
+
+        Assert.Equal(change.DisplayName, card.Title);
+        Assert.Equal(change.Category, card.Category);
+        Assert.Contains(card.Lines, line => line.Contains(change.SettingId, StringComparison.Ordinal));
+        Assert.Contains(card.Lines, line => line.Contains(change.SystemLocation, StringComparison.Ordinal));
+        Assert.Contains(card.Lines, line => line.Contains("Current value: 0", StringComparison.Ordinal));
+        Assert.Contains(card.Lines, line => line.Contains("New value: 1", StringComparison.Ordinal));
+        Assert.Contains(card.Lines, line => line.Contains("Reversion vector: Windows feature updates", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void OversizedEnforcementTargetSetIsRejected()
     {
         var change = Change() with

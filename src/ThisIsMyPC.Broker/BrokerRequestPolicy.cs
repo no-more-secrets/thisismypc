@@ -185,6 +185,40 @@ internal sealed class BrokerRequestPolicy
         return pages;
     }
 
+    internal IReadOnlyList<BrokerReviewCard> BuildReviewCards()
+    {
+        var cards = new List<BrokerReviewCard>();
+        foreach (var change in _changes)
+        {
+            var lines = new List<string>
+            {
+                $"{change.ModuleId}: {change.SettingId}",
+                $"{change.BeforeDisplay ?? DisplayValue(change.BeforeValue)}  →  {change.AfterDisplay ?? DisplayValue(change.AfterValue)}",
+                $"Target: {change.SystemLocation}",
+                $"Current value: {DisplayValue(change.BeforeValue)}",
+                $"New value: {DisplayValue(change.AfterValue)}",
+            };
+            AddEnforcementTargets(lines, change.Enforcement);
+            cards.Add(new BrokerReviewCard(change.DisplayName, lines, change.Category));
+        }
+        foreach (var action in _actions)
+        {
+            var lines = new List<string> { $"{action.ModuleId}: {action.ActionId}", action.Detail };
+            if (!string.IsNullOrEmpty(action.UndoHint))
+                lines.Add(action.UndoHint);
+            cards.Add(new BrokerReviewCard(action.DisplayName, lines, null));
+        }
+        foreach (var item in _reviewOnly)
+            cards.Add(new BrokerReviewCard(item.DisplayName, ["Desktop-user operation", item.Detail], null));
+        if (_restorePointDescription is not null)
+            cards.Add(new BrokerReviewCard("Create restore point", [_restorePointDescription], null));
+        if (_allowOwnerModeEnable)
+            cards.Add(new BrokerReviewCard("Enable Owner Mode", ["Install and start the Owner Mode service."], null));
+        if (_allowOwnerModeDisable)
+            cards.Add(new BrokerReviewCard("Disable Owner Mode", ["Pause and stop the Owner Mode service."], null));
+        return cards;
+    }
+
     private static bool MatchesEitherDirection(ChangeDescriptor authorized, ChangeDescriptor requested)
     {
         if (!string.Equals(authorized.ModuleId, requested.ModuleId, StringComparison.Ordinal)
