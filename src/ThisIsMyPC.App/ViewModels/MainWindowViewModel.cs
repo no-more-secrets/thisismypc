@@ -1871,6 +1871,7 @@ public partial class MainWindowViewModel : ViewModelBase
             if (_privilegeBroker is not null && (brokerChanges.Count > 0
                 || brokerActions.Count > 0 || reviewOnly.Count > 0 || restorePointDescription is not null))
             {
+                SetStatus("Review pending changes in the administrator window.", StatusSeverity.Warning);
                 var opened = await _privilegeBroker.OpenSessionAsync(new Ipc.Contracts.BrokerSessionRequest
                 {
                     Changes = brokerChanges,
@@ -1883,15 +1884,20 @@ public partial class MainWindowViewModel : ViewModelBase
                     if (opened.ErrorCategory == ErrorCategory.Discarded)
                     {
                         await DiscardAllAsync().ConfigureAwait(true);
+                        SetStatus("Pending changes discarded.", StatusSeverity.Success);
                         return;
                     }
                     if (opened.ErrorCategory == ErrorCategory.Cancelled)
+                    {
+                        SetStatus("Review closed. Changes remain pending.", StatusSeverity.Warning);
                         return;
+                    }
                     SetStatus(opened.ErrorMessage ?? "Administrator confirmation failed.", StatusSeverity.Error);
                     return;
                 }
                 brokerSession = opened.Value!;
                 _activeBrokerSession = brokerSession;
+                SetStatus("Applying changes...", StatusSeverity.Warning);
             }
 
             await using var brokerScope = brokerSession;

@@ -17,6 +17,42 @@ public sealed class SoftwareActionRoutingTests : IDisposable
     private readonly string _root = Path.Combine(Path.GetTempPath(), "tipc-software-routing-" + Guid.NewGuid().ToString("N"));
 
     [Theory]
+    [InlineData(ErrorCategory.Cancelled, 1, "Review closed. Changes remain pending.")]
+    [InlineData(ErrorCategory.Discarded, 0, "Pending changes discarded.")]
+    public async Task PendingBrokerReview_ExplainsDisabledButtons_AndRestoresThemAfterDecision(
+        ErrorCategory decision, int remaining, string finalStatus)
+    {
+        var changes = new PendingChangesService();
+        var actions = new PendingActionsService();
+        var broker = new Broker
+        {
+            ReviewGate = new TaskCompletionSource<OperationResult<IPrivilegeBrokerSession>>(
+                TaskCreationOptions.RunContinuationsAsynchronously),
+        };
+        var writer = new Core.Sets.CustomSetWriter(Path.Combine(_root, "review-sets"));
+        var vm = new MainWindowViewModel(new NavigationService([new SoftwareModule(new Winget(), new Appx())]),
+            changes, new Fakes.FakeChangeHistoryService(), new Fakes.FakeRegistryService(),
+            new Fakes.FakeExplorerRestartService(), new ReviewPanelViewModel(changes, writer),
+            new Fakes.FakeSetProvider(), [], writer, new Fakes.FakeRestorePointService(),
+            pendingActionsService: actions, privilegeBroker: broker);
+        await vm.InitializeAsync();
+        actions.Stage(SoftwareActionFactory.CreateInstall(SoftwareCatalog.Entries.Single(e => e.Id == "cursor")));
+
+        var apply = vm.ApplyAllCommand.ExecuteAsync(null);
+        Assert.True(vm.IsApplying);
+        Assert.Equal(1, vm.TotalPendingCount);
+        Assert.False(vm.CanModifyPending);
+        Assert.Equal("Review pending changes in the administrator window.", vm.StatusMessage);
+
+        broker.ReviewGate.SetResult(OperationResult<IPrivilegeBrokerSession>.Failure("Review closed.", decision));
+        await apply;
+        Assert.False(vm.IsApplying);
+        Assert.Equal(remaining, vm.TotalPendingCount);
+        Assert.Equal(remaining > 0, vm.CanModifyPending);
+        Assert.Equal(finalStatus, vm.StatusMessage);
+    }
+
+    [Theory]
     [InlineData("install", false)]
     [InlineData("uninstall", false)]
     [InlineData("upgrade", false)]
@@ -94,10 +130,11 @@ public sealed class SoftwareActionRoutingTests : IDisposable
     {
         public List<BrokerSessionRequest> Requests { get; } = [];
         public Session Session { get; } = new();
+        public TaskCompletionSource<OperationResult<IPrivilegeBrokerSession>>? ReviewGate { get; init; }
         public Task<OperationResult<IPrivilegeBrokerSession>> OpenSessionAsync(BrokerSessionRequest request, CancellationToken cancellationToken = default)
         {
             Requests.Add(request);
-            return Task.FromResult(OperationResult<IPrivilegeBrokerSession>.Success(Session));
+            return ReviewGate?.Task ?? Task.FromResult(OperationResult<IPrivilegeBrokerSession>.Success(Session));
         }
     }
 
