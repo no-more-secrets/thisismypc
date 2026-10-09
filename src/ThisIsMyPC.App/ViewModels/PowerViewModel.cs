@@ -419,6 +419,8 @@ public sealed partial class PowerViewModel : ObservableObject, ISearchNavigation
     private List<ShellSettingViewModel> BuildSystemPowerRows(PowerScanData scanData)
     {
         var rows = new List<ShellSettingViewModel>();
+        var policyEditor = _registryService is not null && _policyStates?.HasLocalSourceReader == true
+            ? new PowerPolicySettings(_registryService, _policyStates) : null;
 
         if (_registryService is not null && scanData.SleepPolicy is { } sleepAtScan)
         {
@@ -436,10 +438,12 @@ public sealed partial class PowerViewModel : ObservableObject, ISearchNavigation
                 PowerPlanChangeFactory.AllowStandbyPolicyKeyPath,
                 sleepAtScan.AllowsSleep,
                 _pendingChangesService,
-                groupFactory: allow => PowerPlanChangeFactory.CreateAllowSleepToggle(lastKnownSleep, allow),
+                groupFactory: allow => policyEditor?.CreateSleep(allow) ?? PowerPlanChangeFactory.CreateAllowSleepToggle(lastKnownSleep, allow),
                 readRegistryState: ReadSleep,
                 rehydrateSettingId: PowerPlanChangeFactory.AllowSleepSettingId));
-            rows[^1].SetPolicySource(() => _policyStates?.Read("Power", "allow-sleep") ?? Core.Policies.PolicyControlState.None);
+            rows[^1].SetPolicySource(() => policyEditor?.State(sleep: true)
+                ?? _policyStates?.Read("Power", "allow-sleep") ?? Core.Policies.PolicyControlState.None);
+            if (policyEditor is not null) rows[^1].SetAvailability(policyEditor.UnavailableReason);
         }
 
         if (_registryService is not null && scanData.HibernateEnabled is { } hibernateAtScan)
@@ -482,12 +486,13 @@ public sealed partial class PowerViewModel : ObservableObject, ISearchNavigation
                 PowerPlanChangeFactory.ActivePlanPolicyKeyPath + "\\" + PowerPlanChangeFactory.ActivePlanPolicyValueName,
                 true,
                 _pendingChangesService,
-                groupFactory: keep => WrapChange(PowerPlanChangeFactory.CreatePolicyPinToggle(pin, keep)),
+                groupFactory: keep => policyEditor?.CreatePin(pin, keep) ?? WrapChange(PowerPlanChangeFactory.CreatePolicyPinToggle(pin, keep)),
                 readRegistryState: ReadPin,
                 rehydrateSettingId: PowerPlanChangeFactory.ActivePlanPolicyPinSettingId));
             var location = rows[^1].SystemPath;
-            rows[^1].SetPolicySource(() => _policyStates?.Read("Power", PowerPlanChangeFactory.ActivePlanPolicyPinSettingId,
+            rows[^1].SetPolicySource(() => policyEditor?.State(sleep: false) ?? _policyStates?.Read("Power", PowerPlanChangeFactory.ActivePlanPolicyPinSettingId,
                 location, ChangeValueType.Registry_String) ?? Core.Policies.PolicyControlState.None);
+            if (policyEditor is not null) rows[^1].SetAvailability(policyEditor.UnavailableReason);
         }
 
         return rows;

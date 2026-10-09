@@ -54,11 +54,13 @@ public sealed class PowerModule : IActionModule
     }
     private readonly IPowerService _powerService;
     private readonly IRegistryService _registryService;
+    private readonly Core.Policies.ILocalPolicyService? _localPolicies;
 
-    public PowerModule(IPowerService powerService, IRegistryService registryService)
+    public PowerModule(IPowerService powerService, IRegistryService registryService, Core.Policies.ILocalPolicyService? localPolicies = null)
     {
         _powerService = powerService;
         _registryService = registryService;
+        _localPolicies = localPolicies;
     }
 
     public ModuleInfo Info { get; } = new(
@@ -128,7 +130,18 @@ public sealed class PowerModule : IActionModule
         });
     }
 
-    public Task<OperationResult<bool>> ApplyChangeAsync(ChangeDescriptor change) => Task.FromResult(ApplyChange(change));
+    public Task<OperationResult<bool>> ApplyChangeAsync(ChangeDescriptor change)
+    {
+        if (Core.Policies.LocalPolicyValue.IsPolicyType(change.ValueType))
+        {
+            if (!PowerPolicySettings.Allows(change))
+                return Task.FromResult(OperationResult<bool>.Failure("Unsupported power policy change.", ErrorCategory.ProtectedByPolicy));
+            return Task.Run(() => _localPolicies?.Apply(change.SystemLocation, change.ValueType,
+                Core.Policies.LocalPolicyValue.Decode(change.BeforeValue)!, Core.Policies.LocalPolicyValue.Decode(change.AfterValue)!)
+                ?? OperationResult<bool>.Failure("The local policy editor is unavailable.", ErrorCategory.ServiceUnavailable));
+        }
+        return Task.FromResult(ApplyChange(change));
+    }
 
     private OperationResult<bool> ApplyChange(ChangeDescriptor change)
     {

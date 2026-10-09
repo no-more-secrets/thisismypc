@@ -292,6 +292,8 @@ internal static class BrokerOperationRules
 
     private static bool AllowsPower(ChangeDescriptor change)
     {
+        if (Modules.Power.Services.PowerPolicySettings.Allows(change))
+            return true;
         if (change.Enforcement is not null)
             return false;
         if (change.ValueType == ChangeValueType.Registry_DWord)
