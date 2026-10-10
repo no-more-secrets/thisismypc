@@ -7,11 +7,11 @@ Save this file, then tell Codex to refine the tutorial notes. These drafts do no
 Welcome
 ============================================================
 
-Start with Software to find apps you do not use. Then check what launches at sign-in and turn off Windows promotions.
+Windows hides things from you, puts promotions everywhere, lets installed apps fight over your PC, and does many things without giving you a choice. ThisIsMyPC exists to give you those choices back.
 
-Use Open module to try a page's controls. Return through Home > Setup guide to continue. Include in pack selects that module's recommendations for the final review.
+Here, every control has been brought into one place. This tutorial will help you understand what Windows is doing to your personal computer, and what you can do about it with the help of this software (and others like it).
 
-The Desktop Grand Pack combines the four tweak sets with selected Windows 10-ify settings and app removals. You can review them together at the end.
+Try out settings as you go through the tutorial. Examples are provided of what they will change. At the end, a preset called the Desktop Grand Pack has bundled many cleanup settings for your PC. You will be able to customize it thoroughly before applying, and the vast majority of changes are entirely reversible if you wish to go back.
 
 YOUR NOTES:
 
@@ -22,11 +22,15 @@ YOUR NOTES:
 Software
 ============================================================
 
-Open Software, then select Windows Apps. Search for an app you recognize and read its description before choosing Remove. Review the pending action before applying it.
+Not everything installed on your PC is there because you wanted it. Windows includes apps of its own, and your PC manufacturer may have added more. An app you never open can still add background services, startup entries, and scheduled tasks.
 
-The pack selects Clipchamp, News, Weather, Copilot, and Microsoft 365 Hub for removal when installed. Clear any you want to keep.
+Start with Windows Apps. Read through the apps and decide which ones you use. If you do not use Clipchamp to edit videos, for example, you can remove it. You do not need to remove an app just because it came with Windows.
 
-These removals affect every user and stop the apps being added automatically to new user accounts. Save app data first. History cannot undo a removal; you must reinstall the app.
+Choose Remove to add an app to the pending list. These removals affect every account on the PC and prevent Windows from adding the app to new accounts. Save anything you need from the app before applying. History cannot undo an uninstall; apps with a Store listing have a reinstall option here.
+
+App Catalog lets you find and install other software. Select Installed to find supported apps you already have. Updates lists available updates for apps managed through Windows Package Manager.
+
+The Desktop Grand Pack selects Clipchamp, News, Weather, Copilot, and Microsoft 365 Hub for removal when installed. You can keep any of them. After removing unwanted apps, continue to Startup & Services to check what the remaining software runs in the background.
 
 YOUR NOTES:
 

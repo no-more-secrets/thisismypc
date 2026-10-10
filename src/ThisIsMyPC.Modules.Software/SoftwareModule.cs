@@ -36,8 +36,8 @@ public sealed class SoftwareModule : IActionModule
         Icon: "software",
         Description: "Install and uninstall apps from a curated catalog through the Windows Package Manager",
         RequiredCapabilities: [SystemCapability.NativeApi],
-        Group: ModuleGroup.System,
-        LoadOrder: 4);
+        Group: ModuleGroup.Core,
+        LoadOrder: 0);
 
     public async Task<ModuleAvailability> CheckAvailabilityAsync()
     {
