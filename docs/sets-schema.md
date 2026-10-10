@@ -30,9 +30,9 @@ The preview states this scope and the lack of undo. Inventory failure blocks the
 Reinstall actions already in the queue block a conflicting removal. Older versions ignore these fields and cannot enforce desktop scope;
 do not distribute desktop-only packs for use with older builds.
 
-## Desktop setup guide
+## Desktop intro guide
 
-Home > Setup guide introduces every registered module, including unavailable modules.
+Home > Intro guide introduces every registered module, including unavailable modules.
 Welcome introduces the tutorial. Each module uses its sidebar icon and gives concrete steps for trying its controls.
 Draft additions belong in `docs/planning/tutorial-notes.txt`; saving that notebook does not change runtime lesson text.
 Module availability is not a claim that its settings were scanned. Open module performs the existing module inspection.

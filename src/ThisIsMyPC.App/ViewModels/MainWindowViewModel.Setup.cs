@@ -15,7 +15,7 @@ public partial class MainWindowViewModel
         (CurrentContent as IDisposable)?.Dispose();
         _setupGuide ??= new SetupGuideViewModel(_navigationService.Modules, _hardwareDetection,
             excluded => _ = OpenDesktopPackAsync(excluded), NavigateToModuleByName, OpenHome);
-        ContentTitle = "Setup guide";
+        ContentTitle = "Intro guide";
         ContentDescription = "Learn each module, choose your changes, and keep control";
         CurrentContent = _setupGuide;
         IsHomeActive = false;

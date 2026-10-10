@@ -37,7 +37,7 @@ public sealed partial class SetupGuideViewModel : ViewModelBase
         var lessons = new List<SetupLessonViewModel>
         {
             new("Welcome", "Welcome",
-                "Start with Software to find apps you do not use. Then check what launches at sign-in and turn off Windows promotions.\n\nUse Open module to try a page's controls. Return through Home > Setup guide to continue. Include in pack selects that module's recommendations for the final review.\n\nThe Desktop Grand Pack combines the four tweak sets with selected Windows 10-ify settings and app removals. You can review them together at the end.") { IconSymbol = FluentSymbol.Home }
+                "Start with Software to find apps you do not use. Then check what launches at sign-in and turn off Windows promotions.\n\nUse Open module to try a page's controls. Return through Home > Intro guide to continue. Include in pack selects that module's recommendations for the final review.\n\nThe Desktop Grand Pack combines the four tweak sets with selected Windows 10-ify settings and app removals. You can review them together at the end.") { IconSymbol = FluentSymbol.Home }
         };
         string[] order = ["Software", "Startup & Services", "Windows Annoyances", "Privacy & Telemetry",
             "Explorer", "Context Menus", "Windows Update", "Security", "Network & Firewall", "Environment",

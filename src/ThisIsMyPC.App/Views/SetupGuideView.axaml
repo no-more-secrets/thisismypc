@@ -44,13 +44,13 @@
                         <TextBlock Text="Include in pack" />
                     </CheckBox>
                     <Button Content="Open module" Command="{Binding OpenModuleCommand}" IsVisible="{Binding CanOpenModule}"
-                            HorizontalAlignment="Left" ToolTip.Tip="Return from Home to continue setup" />
+                            HorizontalAlignment="Left" ToolTip.Tip="Return from Home to continue the guide" />
                 </StackPanel>
             </ScrollViewer>
         </Grid>
         <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,*,Auto,Auto" Margin="0,12,16,0">
             <Button Content="Back" Command="{Binding PreviousCommand}" IsEnabled="{Binding HasPrevious}" />
-            <Button Grid.Column="1" Content="Leave setup" Command="{Binding CloseCommand}" Margin="8,0,0,0" ToolTip.Tip="Return from Home to continue this guide" />
+            <Button Grid.Column="1" Content="Leave guide" Command="{Binding CloseCommand}" Margin="8,0,0,0" ToolTip.Tip="Return from Home to continue this guide" />
             <TextBlock Grid.Column="2" Text="{Binding Progress}" VerticalAlignment="Center" HorizontalAlignment="Center" />
             <Button Grid.Column="3" Content="Next" Command="{Binding NextCommand}" IsVisible="{Binding HasNext}" />
             <Button Grid.Column="4" Content="Review pack" Classes="apply-bar-apply" Command="{Binding ReviewPackCommand}"

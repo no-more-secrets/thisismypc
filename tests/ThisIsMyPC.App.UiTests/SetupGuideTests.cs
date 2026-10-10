@@ -28,7 +28,7 @@ public class SetupGuideTests
             services.AddSingleton<IHardwareDetectionService>(new Hardware(3)));
         var main = (MainWindowViewModel)session.Window.DataContext!;
         await session.WaitForAsync(() => main.SidebarGroups.Count > 0, what: "sidebar");
-        session.ClickText("Setup guide");
+        session.ClickText("Intro guide");
         await session.WaitForAsync(() => main.CurrentContent is SetupGuideViewModel { IsDesktop: true }, what: "guide");
         var guide = (SetupGuideViewModel)main.CurrentContent!;
         var measurements = new List<string>();
@@ -111,7 +111,7 @@ public class SetupGuideTests
         session.OpenModule("Windows Annoyances");
         await session.WaitForAsync(() => !main.IsModuleLoading && main.CurrentContent is SettingCardPageViewModel, what: "annoyances");
         session.ClickText("Home");
-        session.ClickText("Setup guide");
+        session.ClickText("Intro guide");
         await session.WaitForAsync(() => main.CurrentContent is SetupGuideViewModel { IsDesktop: true }, what: "guide");
         var guide = (SetupGuideViewModel)main.CurrentContent!;
         guide.SelectedIndex = guide.Lessons.ToList().FindIndex(l => l.ModuleName == "Windows Annoyances");
@@ -129,7 +129,7 @@ public class SetupGuideTests
         session.ClickText("Open module");
         await session.WaitForAsync(() => !main.IsModuleLoading && main.CurrentContent is SettingCardPageViewModel, what: "same module");
         session.ClickText("Home");
-        session.ClickText("Setup guide");
+        session.ClickText("Intro guide");
         await session.WaitForAsync(() => main.CurrentContent is SetupGuideViewModel, what: "resume");
         Assert.Same(guide, main.CurrentContent);
         guide.SelectedIndex = guide.Lessons.Count - 1;

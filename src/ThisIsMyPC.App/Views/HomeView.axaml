@@ -15,9 +15,9 @@
             <Border Classes="card" CornerRadius="8" Padding="20,16">
                 <StackPanel Spacing="8">
                     <TextBlock Text="Make this PC yours" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" />
-                    <TextBlock Text="Learn each module, reduce clutter, and keep your choices. Start or continue the desktop setup guide."
+                    <TextBlock Text="Learn each module, reduce clutter, and keep your choices. Start or continue the desktop intro guide."
                                TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" />
-                    <Button Content="Setup guide" HorizontalAlignment="Left"
+                    <Button Content="Intro guide" HorizontalAlignment="Left"
                             Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).OpenSetupGuideCommand}" />
                 </StackPanel>
             </Border>
