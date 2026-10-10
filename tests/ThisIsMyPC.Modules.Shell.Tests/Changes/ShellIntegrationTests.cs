@@ -74,7 +74,7 @@ public class ShellIntegrationTests
     public void MissingRegistrationDisablesDependentRowsAndStartStyleStaysVisible()
     {
         var registry = new FakeRegistryService();
-        var rows = new ExplorerPatcherSettingsReader(registry, 26100, _ => false).ReadAll();
+        var rows = new ExplorerPatcherSettingsReader(registry, 26100, _ => false, () => (true, true, false)).ReadAll();
         foreach (var name in new[] { "ShrinkExplorerAddressBar", "HideExplorerSearchBar" })
         {
             var row = rows.Single(e => e.RegistryValueName == name);

@@ -16,11 +16,30 @@ namespace ThisIsMyPC.App.UiTests;
 public class ShellIntegrationShotTests
 {
     [AvaloniaFact]
+    [Trait("Category", "Diagnostic")]
+    public async Task ExplorerAnnotationsOnLiveReadOnlyScan()
+    {
+        using var session = UiSession.ForMainWindow("explorer-annotations-live");
+        var main = (MainWindowViewModel)session.Window.DataContext!;
+        session.OpenModule("Explorer");
+        await session.WaitForAsync(() => main.CurrentContent is ShellViewModel, what: "Explorer scan");
+        foreach (var tab in new[] { "File Explorer", "Start Menu", "Desktop" })
+        {
+            session.ClickText(tab);
+            session.Screenshot(tab.Replace(' ', '-'));
+        }
+        var power = session.Find<ComboBox>(b => b.DataContext is ShellChoiceSettingViewModel r
+            && r.Label.StartsWith("Alt+F4", StringComparison.Ordinal));
+        session.Click(power);
+        session.Screenshot("power-options");
+    }
+
+    [AvaloniaFact]
     public async Task AnnotatedPagesShowMissingControlsAndExplainDisabledRows()
     {
         var registry = new UiFakeRegistryService();
         var scan = new ShellScanData([], new(1, true, false, false),
-            new ExplorerPatcherSettingsReader(registry, 26100, _ => false).ReadAll(), true)
+            new ExplorerPatcherSettingsReader(registry, 26100, _ => false, () => (false, false, false)).ReadAll(), true)
             { TaskbarAutoHideState = "2", RoundedCornersState = "absent" };
         var queue = new PendingChangesService();
         using var vm = new ShellViewModel(scan, queue, registry, nativeSettings: new FakeNative());
@@ -32,15 +51,21 @@ public class ShellIntegrationShotTests
         foreach (var theme in new[] { ThemeVariant.Dark, ThemeVariant.Light })
         {
             session.SetTheme(theme);
-            foreach (var tab in new[] { "General", "File Explorer", "Taskbar", "Start Menu" })
+            foreach (var tab in new[] { "General", "File Explorer", "Taskbar", "Start Menu", "Desktop" })
             {
                 session.ClickText(tab);
                 session.Screenshot(theme.Key + "-" + tab.Replace(' ', '-'));
             }
+            var power = session.Find<ComboBox>(b => b.DataContext is ShellChoiceSettingViewModel r && r.Label.StartsWith("Alt+F4", StringComparison.Ordinal));
+            session.Click(power);
+            session.Screenshot(theme.Key + "-power-options");
+            power.IsDropDownOpen = false;
         }
         var navigation = vm.PatcherToggles.Single(r => r.Label == "Disable navigation bar");
         Assert.False(navigation.IsToggleEnabled);
-        Assert.Contains("General", navigation.InactiveReason);
+        Assert.Equal("Requires shell-extension registration.", navigation.InactiveReason);
+        Assert.DoesNotContain(vm.GeneralPatcherGroups.SelectMany(g => g.Toggles), r => r.Label.StartsWith("Register ExplorerPatcher", StringComparison.Ordinal));
+        Assert.StartsWith("Register ExplorerPatcher", vm.FileExplorerPatcherGroups.First(g => g.Heading.Length == 0).Toggles.First().Label);
         navigation.IsEnabled = true;
         Assert.False(navigation.IsEnabled);
         var style = vm.PatcherChoices.Single(r => r.Label == "Start menu style");

@@ -16,6 +16,7 @@
                 Margin="0,2"
                 CornerRadius="6"
                 Classes="card"
+                Classes.inactive="{Binding !IsControlEnabled}"
                 IsVisible="{Binding IsSearchVisible}"
                 Classes.pending-modify="{Binding HasPendingChange}">
             <StackPanel Spacing="6">
@@ -47,8 +48,8 @@
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
                 </ComboBox>
-                <TextBlock Text="{Binding PolicyStateText}" FontSize="11" TextWrapping="Wrap"
-                           Foreground="{DynamicResource InfoBrush}"
+                <TextBlock Text="{Binding PolicyStateText}" FontSize="12" TextWrapping="Wrap" FontStyle="Italic"
+                           Foreground="{DynamicResource TextTertiaryBrush}"
                            IsVisible="{Binding PolicyStateText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
             </StackPanel>
         </Border>

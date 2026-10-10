@@ -25,19 +25,20 @@ public sealed partial class ShellViewModel
             "Hide the taskbar until the pointer reaches its screen edge.", scan.TaskbarAutoHideState));
         if (!scan.ExplorerPatcherInstalled) return;
         var general = (GeneralPatcherGroups.FirstOrDefault(g => g.Heading.Length == 0) ?? PatcherGroupFor(ShellSection.General, "")).Rows;
-        general.Insert(0, new ShellSettingViewModel("Register ExplorerPatcher as a shell extension",
+        var explorer = (FileExplorerPatcherGroups.FirstOrDefault(g => g.Heading.Length == 0) ?? PatcherGroupFor(ShellSection.FileExplorer, "")).Rows;
+        explorer.Insert(0, new ShellSettingViewModel("Register ExplorerPatcher as a shell extension",
             "Enable ExplorerPatcher in Open and Save dialogs. Affects other apps. Restart those apps after changing registration.",
             ShellIntegrationChanges.Registration, scan.ShellExtensionRegistered, queue,
             groupFactory: on => ShellIntegrationChanges.Register(registry, on),
             readRegistryState: () => ShellIntegrationChanges.IsRegistered(registry), rehydrateSettingId: ShellIntegrationChanges.Registration + "0"));
-        general.Insert(1, NativeRow(ShellIntegrationChanges.Corners, "Disable rounded corners for application windows",
+        general.Insert(0, NativeRow(ShellIntegrationChanges.Corners, "Disable rounded corners for application windows",
             "Use ExplorerPatcher's installed Desktop Window Manager service for square window corners.", scan.RoundedCornersState));
         var navigation = new ShellSettingViewModel("Disable navigation bar",
             "Remove the navigation bar from Open and Save dialogs. Requires ExplorerPatcher shell-extension registration.",
             ShellIntegrationChanges.NavigationKey, ShellIntegrationChanges.NavigationDisabled(registry), queue,
             groupFactory: on => Wrap(ShellIntegrationChanges.NavigationChange(registry, on)),
             readRegistryState: () => ShellIntegrationChanges.NavigationDisabled(registry), rehydrateSettingId: ShellIntegrationChanges.Navigation);
-        navigation.SetAvailability(scan.ShellExtensionRegistered ? null : "Requires ExplorerPatcher shell-extension registration. Enable it in General, then refresh this page.");
-        (FileExplorerPatcherGroups.FirstOrDefault(g => g.Heading.Length == 0) ?? PatcherGroupFor(ShellSection.FileExplorer, "")).Rows.Add(navigation);
+        navigation.SetAvailability(scan.ShellExtensionRegistered ? null : "Requires shell-extension registration.");
+        explorer.Add(navigation);
     }
 }

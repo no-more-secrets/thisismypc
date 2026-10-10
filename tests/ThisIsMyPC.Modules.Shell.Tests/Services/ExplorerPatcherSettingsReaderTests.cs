@@ -14,6 +14,39 @@ namespace ThisIsMyPC.Modules.Shell.Tests.Services;
 /// </summary>
 public sealed class ExplorerPatcherSettingsReaderTests
 {
+    [Theory]
+    [InlineData(false, false, "Sleep (unavailable)", "Hibernate (unavailable)")]
+    [InlineData(true, true, "Sleep", "Hibernate")]
+    [InlineData(null, null, "Sleep (availability unknown)", "Hibernate (availability unknown)")]
+    public void PowerChoicesKeepSavedValueAndReportAvailability(bool? sleep, bool? hibernate, string sleepLabel, string hibernateLabel)
+    {
+        var registry = new FakeRegistryService();
+        registry.SetDWord(ShellRegistryPaths.AdvancedKeyPath, "Start_PowerButtonAction", 64);
+        var setting = new ExplorerPatcherSettingsReader(registry, 26100, _ => false, () => (sleep, hibernate, false))
+            .ReadAll().Single(s => s.RegistryValueName == "Start_PowerButtonAction");
+        Assert.Equal(64, setting.EffectiveValue);
+        Assert.Equal(sleepLabel, setting.Options.Single(o => o.Value == 16).DisplayName);
+        Assert.Equal(hibernateLabel, setting.Options.Single(o => o.Value == 64).DisplayName);
+        Assert.Equal(6, setting.Options.Count);
+    }
+
+    [Theory]
+    [InlineData(0, 0, "Sleep (disabled by policy)")]
+    [InlineData(0, 1, "Sleep (disabled when plugged in)")]
+    [InlineData(1, 0, "Sleep (disabled on battery)")]
+    [InlineData(1, 1, "Sleep")]
+    [InlineData(0, 0, "Sleep", true)]
+    public void PowerChoicesReportSleepPolicyForEachPowerSource(int ac, int dc, string label, bool modernStandby = false)
+    {
+        var registry = new FakeRegistryService();
+        const string key = @"HKLM\SOFTWARE\Policies\Microsoft\Power\PowerSettings\abfc2519-3608-4c2a-94ea-171b0ed546ab";
+        registry.SetDWord(key, "ACSettingIndex", ac);
+        registry.SetDWord(key, "DCSettingIndex", dc);
+        var setting = new ExplorerPatcherSettingsReader(registry, 26100, _ => false, () => (true, true, modernStandby))
+            .ReadAll().Single(s => s.RegistryValueName == "Start_PowerButtonAction");
+        Assert.Equal(label, setting.Options.Single(o => o.Value == 16).DisplayName);
+    }
+
     private readonly FakeRegistryService _registry = new();
     private readonly ExplorerPatcherSettingsReader _sut;
 
@@ -24,7 +57,7 @@ public sealed class ExplorerPatcherSettingsReaderTests
     private const int Build25H2 = 26200;
 
     private ExplorerPatcherSettingsReader ReaderFor(int build, bool taskbarDll = true) =>
-        new(_registry, build, _ => taskbarDll);
+        new(_registry, build, _ => taskbarDll, () => (true, true, false));
 
     public ExplorerPatcherSettingsReaderTests()
     {

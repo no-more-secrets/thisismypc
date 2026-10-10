@@ -43,17 +43,20 @@ public sealed class ExplorerPatcherSettingsReader
     private readonly IRegistryService _registryService;
     private readonly int _buildNumber;
     private readonly Func<string, bool> _fileExists;
+    private readonly Func<(bool? Sleep, bool? Hibernate, bool ModernStandby)> _powerAvailability;
 
     /// <param name="buildNumber">Windows build to evaluate against; this machine's when null. Tests pin it.</param>
     /// <param name="fileExists">Probe for ExplorerPatcher's own files; the file system when null.</param>
     public ExplorerPatcherSettingsReader(
         IRegistryService registryService,
         int? buildNumber = null,
-        Func<string, bool>? fileExists = null)
+        Func<string, bool>? fileExists = null,
+        Func<(bool? Sleep, bool? Hibernate, bool ModernStandby)>? powerAvailability = null)
     {
         _registryService = registryService;
         _buildNumber = buildNumber ?? Environment.OSVersion.Version.Build;
         _fileExists = fileExists ?? File.Exists;
+        _powerAvailability = powerAvailability ?? ThisIsMyPC.Interop.Win32.Power.PowerActionAvailability.Read;
     }
 
     /// <summary>
@@ -118,6 +121,25 @@ public sealed class ExplorerPatcherSettingsReader
     {
         switch (setting.RegistryValueName)
         {
+            case "Start_PowerButtonAction":
+                var power = _powerAvailability();
+                const string standby = @"HKLM\SOFTWARE\Policies\Microsoft\Power\PowerSettings\abfc2519-3608-4c2a-94ea-171b0ed546ab";
+                var ac = !power.ModernStandby && _registryService.ReadDWord(standby, "ACSettingIndex") is { IsSuccess: true, Value: 0 };
+                var dc = !power.ModernStandby && _registryService.ReadDWord(standby, "DCSettingIndex") is { IsSuccess: true, Value: 0 };
+                string Suffix(bool? available) => available switch
+                {
+                    false => " (unavailable)",
+                    null => " (availability unknown)",
+                    _ => "",
+                };
+                var sleepSuffix = power.Sleep == false ? Suffix(false)
+                    : ac && dc ? " (disabled by policy)"
+                    : ac ? " (disabled when plugged in)"
+                    : dc ? " (disabled on battery)" : Suffix(power.Sleep);
+                return setting.Options.Select(o => o with
+                {
+                    DisplayName = o.DisplayName + (o.Value == 16 ? sleepSuffix : o.Value == 64 ? Suffix(power.Hibernate) : ""),
+                }).ToArray();
             case OldTaskbarValueName:
                 return setting.Options
                     .Where(o => o.Value != StockWindows10Taskbar || _buildNumber < Windows11Build || StockWindows10TaskbarAvailable())
@@ -172,13 +194,14 @@ public sealed class ExplorerPatcherSettingsReader
             var available = Applies(setting.Condition, taskbarStyle);
             string? reason = !available && setting.Section == ShellSection.StartMenu
                 ? setting.Condition == "DoesWindows10StartMenuExist" ? "Windows 10 Start menu files are not available on this Windows build."
-                    : "Requires the matching Start menu style. Apply the style, then refresh this page." : null;
+                    : setting.Condition == "!IsWindows10StartMenu" ? "Requires Windows 11 Start menu style."
+                    : "Requires Windows 10 Start menu style." : null;
             if (setting.RegistryValueName is "ShrinkExplorerAddressBar" or "HideExplorerSearchBar" or "MicaEffectOnTitlebar" or "DisableImmersiveContextMenu")
             {
                 if (!Changes.ShellIntegrationChanges.IsRegistered(_registryService))
                 {
                     available = false;
-                    reason = "Requires ExplorerPatcher shell-extension registration. Enable it in General, then refresh this page.";
+                    reason = "Requires shell-extension registration.";
                 }
             }
             settings.Add(setting with
@@ -188,6 +211,9 @@ public sealed class ExplorerPatcherSettingsReader
                 Options = OptionsFor(setting),
                 IsAvailable = available,
                 UnavailableReason = reason,
+                Description = setting.RegistryValueName == "Start_PowerButtonAction"
+                    ? setting.Description + " Unavailable actions may be absent from the Windows dialog. Choosing a default does not enable sleep or hibernation. Refresh this page after changing power settings."
+                    : setting.Description,
             });
         }
 
