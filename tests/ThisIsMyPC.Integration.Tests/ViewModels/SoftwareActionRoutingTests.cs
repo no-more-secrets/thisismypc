@@ -19,7 +19,7 @@ public sealed class SoftwareActionRoutingTests : IDisposable
     [Theory]
     [InlineData(ErrorCategory.Cancelled, 1, "Review closed. Changes remain pending.")]
     [InlineData(ErrorCategory.Discarded, 0, "Pending changes discarded.")]
-    public async Task PendingBrokerReview_ExplainsDisabledButtons_AndRestoresThemAfterDecision(
+    public async Task PendingBrokerReview_DisablesButtonsWithoutShowingStatus_AndRestoresThemAfterDecision(
         ErrorCategory decision, int remaining, string finalStatus)
     {
         var changes = new PendingChangesService();
@@ -42,7 +42,7 @@ public sealed class SoftwareActionRoutingTests : IDisposable
         Assert.True(vm.IsApplying);
         Assert.Equal(1, vm.TotalPendingCount);
         Assert.False(vm.CanModifyPending);
-        Assert.Equal("Review pending changes in the administrator window.", vm.StatusMessage);
+        Assert.Equal(string.Empty, vm.StatusMessage);
 
         broker.ReviewGate.SetResult(OperationResult<IPrivilegeBrokerSession>.Failure("Review closed.", decision));
         await apply;

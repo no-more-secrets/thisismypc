@@ -18,6 +18,8 @@ internal static unsafe partial class NativeReviewWindow
     private const uint WsVScroll = 0x00200000;
     private const uint BsOwnerDraw = 0x0000000B;
     private const uint DwmWindowCornerPreference = 33;
+    private const uint DwmBorderColor = 34;
+    private const int DwmColorNone = unchecked((int)0xFFFFFFFE);
     private const int DwmRoundCorners = 2;
     private const uint WmCreate = 0x0001;
     private const uint WmDestroy = 0x0002;
@@ -28,6 +30,9 @@ internal static unsafe partial class NativeReviewWindow
     private const uint WmClose = 0x0010;
     private const uint WmEraseBackground = 0x0014;
     private const uint WmDrawItem = 0x002B;
+    private const uint WmNcDestroy = 0x0082;
+    private const uint WmMouseMove = 0x0200;
+    private const uint WmMouseLeave = 0x02A3;
     private const uint WmNcHitTest = 0x0084;
     private const uint WmPrintClient = 0x0318;
     private const uint WmCommand = 0x0111;
@@ -65,7 +70,14 @@ internal static unsafe partial class NativeReviewWindow
     private const uint Secondary = 0xD0CACA;
     private const uint Tertiary = 0xA5A0A0;
     private const uint Accent = 0xD98D5B;
+    private const uint AccentHover = 0xC0784A;
+    private const uint AccentPressed = 0xA8683F;
     private const uint AccentOutline = 0xE3A67F;
+    private const uint ControlHover = 0x5E4242;
+    private const uint ControlPressed = 0x6A4C4C;
+    private const uint OutlineStrong = 0x7C5656;
+    private const uint CloseHover = 0x1C2BC4;
+    private const uint ClosePressed = 0x1B2AB1;
     private const uint SuccessMuted = 0x2E4A2D;
     private const uint DangerMuted = 0x20204A;
     private const uint WarningMuted = 0x1E3A4A;
@@ -151,11 +163,21 @@ internal static unsafe partial class NativeReviewWindow
                     _ = DestroyWindow(window);
                     return state.Result;
                 }
+                if (!SetWindowSubclass(state.Discard, &ButtonProc, (nuint)DiscardButton, 0)
+                    || !SetWindowSubclass(state.Apply, &ButtonProc, (nuint)ApplyButton, 0)
+                    || !SetWindowSubclass(state.Close, &ButtonProc, (nuint)CloseButton, 0))
+                {
+                    state.Result = Decision.Failed;
+                    _ = DestroyWindow(window);
+                    return state.Result;
+                }
 
                 var dark = 1;
                 _ = DwmSetWindowAttribute(window, 20, in dark, sizeof(int));
                 var round = DwmRoundCorners;
                 _ = DwmSetWindowAttribute(window, DwmWindowCornerPreference, in round, sizeof(int));
+                var border = DwmColorNone;
+                _ = DwmSetWindowAttribute(window, DwmBorderColor, in border, sizeof(int));
                 _ = SetWindowTheme(window, "DarkMode_Explorer", null);
                 try { Layout(state); }
                 catch
@@ -228,6 +250,42 @@ internal static unsafe partial class NativeReviewWindow
                 _ = DestroyWindow(window);
             else
                 PostQuitMessage(0);
+            return 0;
+        }
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
+    private static nint ButtonProc(nint window, uint message, nuint wParam, nint lParam,
+        nuint subclassId, nuint reference)
+    {
+        try
+        {
+            var state = _current;
+            if (state is not null && message == WmMouseMove && state.HoveredButton != window)
+            {
+                var previous = state.HoveredButton;
+                state.HoveredButton = window;
+                if (previous != 0) _ = InvalidateRect(previous, 0, false);
+                var tracking = new TrackMouseEventInfo
+                {
+                    Size = (uint)sizeof(TrackMouseEventInfo), Flags = 2, Window = window,
+                };
+                _ = TrackMouseEvent(ref tracking);
+                _ = InvalidateRect(window, 0, false);
+            }
+            else if (state is not null && message == WmMouseLeave && state.HoveredButton == window)
+            {
+                state.HoveredButton = 0;
+                _ = InvalidateRect(window, 0, false);
+            }
+            if (message == WmNcDestroy)
+                _ = RemoveWindowSubclass(window, &ButtonProc, subclassId);
+            return DefSubclassProc(window, message, wParam, lParam);
+        }
+        catch
+        {
+            if (_current is { } state) state.Result = Decision.Failed;
+            _ = DestroyWindow(_current?.Window ?? window);
             return 0;
         }
     }
@@ -492,7 +550,8 @@ internal static unsafe partial class NativeReviewWindow
         var compact = width < P(420);
         var countLeft = compact ? width - P(80) : width - P(153);
         Text(hdc, state.TitleFont, White, "Review Pending Changes",
-            new Rect { Left = P(16), Top = P(12), Right = countLeft - P(8), Bottom = P(35) }, DtSingleLine | DtNoPrefix);
+            new Rect { Left = P(16), Top = P(7), Right = countLeft - P(8), Bottom = P(42) },
+            DtSingleLine | DtVCenter | DtNoPrefix);
         var count = compact ? $"{state.Cards.Count}"
             : !state.Batch ? state.Cards.Count == 1 ? "1 operation" : $"{state.Cards.Count} operations"
             : state.Cards.Count == 1 ? "1 change" : $"{state.Cards.Count} changes";
@@ -558,19 +617,22 @@ internal static unsafe partial class NativeReviewWindow
 
     private static void DrawButton(ReviewState state, DrawItem* item)
     {
+        var hovered = state.HoveredButton == item->Window;
+        var selected = (item->ItemState & 1) != 0;
         if (item->ControlId == CloseButton)
         {
-            Fill(item->Hdc, item->Bounds, Raised);
-            Text(item->Hdc, state.TitleFont, Secondary, "×", item->Bounds,
+            Fill(item->Hdc, item->Bounds, selected ? ClosePressed : hovered ? CloseHover : Raised);
+            Text(item->Hdc, state.TitleFont, hovered || selected ? White : Secondary, "×", item->Bounds,
                 DtSingleLine | DtVCenter | DtNoPrefix | 1);
             return;
         }
         var apply = item->ControlId == ApplyButton;
-        var selected = (item->ItemState & 1) != 0;
-        var background = apply ? selected ? 0xA8683F : Accent : selected ? 0x6A4C4C : Overlay;
+        var background = apply ? selected ? AccentPressed : hovered ? AccentHover : Accent
+            : selected ? ControlPressed : hovered ? ControlHover : Overlay;
+        var outline = apply ? AccentOutline : hovered || selected ? OutlineStrong : Outline;
         Fill(item->Hdc, item->Bounds, Raised);
-        RoundFill(item->Hdc, item->Bounds, background, apply ? AccentOutline : Outline, state.Px(4));
-        Text(item->Hdc, state.DetailFont, apply ? White : Secondary,
+        RoundFill(item->Hdc, item->Bounds, background, outline, state.Px(4));
+        Text(item->Hdc, state.DetailFont, apply || hovered || selected ? White : Secondary,
             apply ? state.Batch ? "Apply All" : "Confirm" : state.Batch ? "Discard All" : "Cancel",
             item->Bounds, DtSingleLine | DtVCenter | DtNoPrefix | 1);
     }
@@ -684,6 +746,7 @@ internal static unsafe partial class NativeReviewWindow
         internal nint Discard;
         internal nint Apply;
         internal nint Close;
+        internal nint HoveredButton;
         internal nint TitleFont;
         internal nint CardFont;
         internal nint DetailFont;
@@ -757,6 +820,14 @@ internal static unsafe partial class NativeReviewWindow
         internal nint Hdc;
         internal Rect Bounds;
         internal nuint Data;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    private struct TrackMouseEventInfo
+    {
+        internal uint Size;
+        internal uint Flags;
+        internal nint Window;
+        internal uint HoverTime;
     }
     [StructLayout(LayoutKind.Sequential)]
     private struct ScrollInfo
@@ -928,4 +999,22 @@ internal static unsafe partial class NativeReviewWindow
     [LibraryImport("uxtheme.dll", EntryPoint = "SetWindowTheme", StringMarshalling = StringMarshalling.Utf16)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static partial int SetWindowTheme(nint window, string? subAppName, string? subIdList);
+    [LibraryImport("comctl32.dll", EntryPoint = "SetWindowSubclass")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial bool SetWindowSubclass(nint window,
+        delegate* unmanaged[Stdcall]<nint, uint, nuint, nint, nuint, nuint, nint> callback,
+        nuint subclassId, nuint reference);
+    [LibraryImport("comctl32.dll", EntryPoint = "RemoveWindowSubclass")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial bool RemoveWindowSubclass(nint window,
+        delegate* unmanaged[Stdcall]<nint, uint, nuint, nint, nuint, nuint, nint> callback, nuint subclassId);
+    [LibraryImport("comctl32.dll", EntryPoint = "DefSubclassProc")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial nint DefSubclassProc(nint window, uint message, nuint wParam, nint lParam);
+    [LibraryImport("user32.dll", EntryPoint = "TrackMouseEvent")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial bool TrackMouseEvent(ref TrackMouseEventInfo tracking);
 }

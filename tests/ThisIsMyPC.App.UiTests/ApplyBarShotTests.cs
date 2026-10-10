@@ -48,14 +48,12 @@ public class ApplyBarShotTests
         Assert.True(session.IsTextVisible("Apply"));
         Assert.True(session.IsTextVisible("1"));
 
+        viewModel.StatusMessage = string.Empty;
         viewModel.IsApplying = true;
-        viewModel.StatusMessage = "Review pending changes in the administrator window.";
-        viewModel.StatusSeverity = StatusSeverity.Warning;
         session.Pump();
-        Assert.True(session.IsTextVisible(viewModel.StatusMessage));
+        Assert.Equal(string.Empty, viewModel.StatusMessage);
         session.Screenshot("explorer-review-pending");
         viewModel.IsApplying = false;
-        viewModel.StatusMessage = string.Empty;
 
         session.Click(first);
         await session.WaitForAsync(() => !viewModel.HasPendingChanges, timeoutMs: 10_000, what: "change unstaged");

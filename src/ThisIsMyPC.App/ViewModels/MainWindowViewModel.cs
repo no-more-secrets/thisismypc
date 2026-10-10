@@ -1870,7 +1870,6 @@ public partial class MainWindowViewModel : ViewModelBase
             if (_privilegeBroker is not null && (brokerChanges.Count > 0
                 || brokerActions.Count > 0 || reviewOnly.Count > 0 || restorePointDescription is not null))
             {
-                SetStatus("Review pending changes in the administrator window.", StatusSeverity.Warning);
                 var opened = await _privilegeBroker.OpenSessionAsync(new Ipc.Contracts.BrokerSessionRequest
                 {
                     Changes = brokerChanges,
