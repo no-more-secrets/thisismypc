@@ -16,10 +16,9 @@ internal static unsafe partial class NativeReviewWindow
     private const uint WsVisible = 0x10000000;
     private const uint WsVScroll = 0x00200000;
     private const uint BsOwnerDraw = 0x0000000B;
-    private const uint DwmWindowCornerPreference = 33;
-    private const uint DwmBorderColor = 34;
-    private const int DwmColorNone = unchecked((int)0xFFFFFFFE);
-    private const int DwmRoundCorners = 2;
+    private const uint DwmNcRenderingPolicy = 2;
+    private const int DwmNcRenderingDisabled = 1;
+    private const int RgnDiff = 4;
     private const uint WmCreate = 0x0001;
     private const uint WmDestroy = 0x0002;
     private const uint WmSize = 0x0005;
@@ -175,11 +174,15 @@ internal static unsafe partial class NativeReviewWindow
 
                 var dark = 1;
                 _ = DwmSetWindowAttribute(window, 20, in dark, sizeof(int));
-                var round = DwmRoundCorners;
-                _ = DwmSetWindowAttribute(window, DwmWindowCornerPreference, in round, sizeof(int));
-                var border = DwmColorNone;
-                _ = DwmSetWindowAttribute(window, DwmBorderColor, in border, sizeof(int));
+                var noFrame = DwmNcRenderingDisabled;
                 _ = SetWindowTheme(window, "DarkMode_Explorer", null);
+                if (DwmSetWindowAttribute(window, DwmNcRenderingPolicy, in noFrame, sizeof(int)) != 0
+                    || !ApplyWindowRegion(state))
+                {
+                    state.Result = Decision.Failed;
+                    _ = DestroyWindow(window);
+                    return state.Result;
+                }
                 try { Layout(state); }
                 catch
                 {
@@ -397,7 +400,13 @@ internal static unsafe partial class NativeReviewWindow
             }
             var x = Math.Clamp(bounds.Left, work!.Value.Left, work.Value.Right - size.Value.Width);
             var y = Math.Clamp(bounds.Top, work.Value.Top, work.Value.Bottom - size.Value.Height);
-            _ = SetWindowPos(window, 0, x, y, size.Value.Width, size.Value.Height, 0x0014);
+            if (!SetWindowPos(window, 0, x, y, size.Value.Width, size.Value.Height, 0x0014)
+                || !ApplyWindowRegion(state))
+            {
+                state.Result = Decision.Failed;
+                _ = DestroyWindow(window);
+                return 0;
+            }
             if (GetClientRect(window, out var client))
             {
                 state.ClientWidth = client.Right;
@@ -596,6 +605,22 @@ internal static unsafe partial class NativeReviewWindow
         finally { restored = RestoreDC(hdc, saved); }
         if (!restored)
             throw new InvalidOperationException("Could not restore the review canvas.");
+        var borderCanvas = SaveDC(hdc);
+        if (borderCanvas == 0)
+            throw new InvalidOperationException("Could not save the review border canvas.");
+        bool borderRestored;
+        try
+        {
+            var hasScrollbar = !GetWindowRect(state.Window, out var windowBounds)
+                || windowBounds.Right - windowBounds.Left - width > 2;
+            if (hasScrollbar && IntersectClipRect(hdc, 0, 0, state.Px(16), height) == 0)
+                throw new InvalidOperationException("Could not clip the review border.");
+            DrawBorderRing(hdc, new Rect { Left = -1, Top = -1, Right = width + 1, Bottom = height + 1 },
+                state.Px(16));
+        }
+        finally { borderRestored = RestoreDC(hdc, borderCanvas); }
+        if (!borderRestored)
+            throw new InvalidOperationException("Could not restore the review border canvas.");
     }
 
     private static void DrawCard(nint hdc, ReviewState state, BrokerReviewCard card, CardLayout layout, int top)
@@ -732,12 +757,50 @@ internal static unsafe partial class NativeReviewWindow
             var height = bounds.Bottom - bounds.Top;
             if (width <= 1 || height <= 1)
                 return;
-            Fill(hdc, new Rect { Right = width, Bottom = 1 }, Outline);
-            Fill(hdc, new Rect { Top = height - 1, Right = width, Bottom = height }, Outline);
-            Fill(hdc, new Rect { Top = 1, Right = 1, Bottom = height - 1 }, Outline);
-            Fill(hdc, new Rect { Left = width - 1, Top = 1, Right = width, Bottom = height - 1 }, Outline);
+            var diameter = Scale(16, _current?.Dpi ?? GetDpiForWindow(window));
+            DrawBorderRing(hdc, new Rect { Right = width, Bottom = height }, diameter);
         }
         finally { _ = ReleaseDC(window, hdc); }
+    }
+
+    private static void DrawBorderRing(nint hdc, Rect bounds, int diameter)
+    {
+        var outer = CreateRoundRectRgn(bounds.Left, bounds.Top, bounds.Right, bounds.Bottom,
+            diameter, diameter);
+        var inner = CreateRoundRectRgn(bounds.Left + 1, bounds.Top + 1, bounds.Right - 1, bounds.Bottom - 1,
+            Math.Max(2, diameter - 2), Math.Max(2, diameter - 2));
+        var brush = CreateSolidBrush(Outline);
+        try
+        {
+            if (outer == 0 || inner == 0 || brush == 0
+                || CombineRgn(outer, outer, inner, RgnDiff) == 0
+                || !FillRgn(hdc, outer, brush))
+                throw new InvalidOperationException("Could not draw the review border.");
+        }
+        finally
+        {
+            if (outer != 0) _ = DeleteObject(outer);
+            if (inner != 0) _ = DeleteObject(inner);
+            if (brush != 0) _ = DeleteObject(brush);
+        }
+    }
+
+    private static bool ApplyWindowRegion(ReviewState state)
+    {
+        if (!GetWindowRect(state.Window, out var bounds))
+            return false;
+        var width = bounds.Right - bounds.Left;
+        var height = bounds.Bottom - bounds.Top;
+        if (width <= 0 || height <= 0)
+            return false;
+        var diameter = state.Px(16);
+        var region = CreateRoundRectRgn(0, 0, width, height, diameter, diameter);
+        if (region == 0)
+            return false;
+        if (SetWindowRgn(state.Window, region, true) != 0)
+            return true; // The window owns the region after a successful call.
+        _ = DeleteObject(region);
+        return false;
     }
 
     private static void DrawCloseGlyph(nint hdc, Rect bounds, int halfSize, int thickness, uint color)
@@ -979,6 +1042,12 @@ internal static unsafe partial class NativeReviewWindow
     [LibraryImport("user32.dll", EntryPoint = "GetWindowDC")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static partial nint GetWindowDC(nint window);
+    [LibraryImport("user32.dll", EntryPoint = "GetDpiForWindow")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial uint GetDpiForWindow(nint window);
+    [LibraryImport("user32.dll", EntryPoint = "SetWindowRgn")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial int SetWindowRgn(nint window, nint region, [MarshalAs(UnmanagedType.Bool)] bool redraw);
     [LibraryImport("user32.dll", EntryPoint = "ScreenToClient")]
     [return: MarshalAs(UnmanagedType.Bool)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
@@ -1037,6 +1106,17 @@ internal static unsafe partial class NativeReviewWindow
     [return: MarshalAs(UnmanagedType.Bool)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static partial bool RoundRect(nint hdc, int left, int top, int right, int bottom, int width, int height);
+    [LibraryImport("gdi32.dll", EntryPoint = "CreateRoundRectRgn")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial nint CreateRoundRectRgn(int left, int top, int right, int bottom,
+        int ellipseWidth, int ellipseHeight);
+    [LibraryImport("gdi32.dll", EntryPoint = "CombineRgn")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial int CombineRgn(nint destination, nint first, nint second, int mode);
+    [LibraryImport("gdi32.dll", EntryPoint = "FillRgn")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial bool FillRgn(nint hdc, nint region, nint brush);
     [LibraryImport("gdi32.dll", EntryPoint = "MoveToEx")]
     [return: MarshalAs(UnmanagedType.Bool)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]

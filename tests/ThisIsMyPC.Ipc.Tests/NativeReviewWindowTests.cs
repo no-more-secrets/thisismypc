@@ -85,10 +85,30 @@ public sealed partial class NativeReviewWindowTests
         Assert.NotEqual(0, window);
         Assert.Equal(0, GetWindowLongW(window, -16) & 0x00C00000);
         Assert.Equal(0, GetWindowLongW(window, -16) & 0x00040000);
-        Assert.Equal(0, DwmGetWindowAttribute(window, 33, out var corners, sizeof(int)));
-        Assert.Equal(2, corners);
+        Assert.Equal(0, DwmGetWindowAttribute(window, 1, out var nonclientRendering, sizeof(int)));
+        Assert.Equal(0, nonclientRendering);
+        var region = CreateRectRgn(0, 0, 1, 1);
+        Assert.NotEqual(0, region);
+        try
+        {
+            Assert.True(GetWindowRgn(window, region) >= 2);
+            Assert.True(GetRgnBox(region, out var regionBounds) >= 2);
+            Assert.False(PtInRegion(region, 0, 0));
+            Assert.True(PtInRegion(region, regionBounds.Right / 2, 0));
+        }
+        finally { _ = DeleteObject(region); }
         Assert.Equal(2, GetAwarenessFromDpiAwarenessContext(GetWindowDpiAwarenessContext(window)));
         Assert.True(GetWindowRect(window, out var bounds));
+        using (var bitmap = new Bitmap(bounds.Right - bounds.Left, bounds.Bottom - bounds.Top))
+        using (var graphics = Graphics.FromImage(bitmap))
+        {
+            var device = graphics.GetHdc();
+            try { Assert.True(PrintWindow(window, device, 2)); }
+            finally { graphics.ReleaseHdc(device); }
+            var curvedOutline = Color.FromArgb(63, 63, 90);
+            Assert.Contains(curvedOutline, Enumerable.Range(2, 14)
+                .SelectMany(x => Enumerable.Range(2, 14).Select(y => bitmap.GetPixel(x, y))));
+        }
         var headerPoint = (nint)((((bounds.Top + 20) & 0xffff) << 16) | ((bounds.Left + 40) & 0xffff));
         Assert.Equal((nint)2, SendMessageW(window, 0x0084, 0, headerPoint));
         var button = GetDlgItem(window, 1003);
@@ -407,6 +427,23 @@ public sealed partial class NativeReviewWindowTests
     [LibraryImport("dwmapi.dll", EntryPoint = "DwmGetWindowAttribute")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static partial int DwmGetWindowAttribute(nint window, uint attribute, out int value, uint size);
+    [LibraryImport("gdi32.dll", EntryPoint = "CreateRectRgn")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial nint CreateRectRgn(int left, int top, int right, int bottom);
+    [LibraryImport("user32.dll", EntryPoint = "GetWindowRgn")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial int GetWindowRgn(nint window, nint region);
+    [LibraryImport("gdi32.dll", EntryPoint = "GetRgnBox")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial int GetRgnBox(nint region, out Rect bounds);
+    [LibraryImport("gdi32.dll", EntryPoint = "PtInRegion")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial bool PtInRegion(nint region, int x, int y);
+    [LibraryImport("gdi32.dll", EntryPoint = "DeleteObject")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial bool DeleteObject(nint objectHandle);
     [LibraryImport("user32.dll", EntryPoint = "GetWindowDpiAwarenessContext")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static partial nint GetWindowDpiAwarenessContext(nint window);
