@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Styling;
 using Avalonia.VisualTree;
@@ -19,6 +20,50 @@ namespace ThisIsMyPC.App.UiTests;
 
 public class SetupGuideTests
 {
+    [AvaloniaFact]
+    [Trait("Category", "Diagnostic")]
+    public async Task MainWindow_LongLessonsRemainReadableAndScrollToActions()
+    {
+        using var session = UiSession.ForMainWindow("setup-guide-long-lessons", services =>
+            services.AddSingleton<IHardwareDetectionService>(new Hardware(3)));
+        var main = (MainWindowViewModel)session.Window.DataContext!;
+        await session.WaitForAsync(() => main.SidebarGroups.Count > 0, what: "sidebar");
+        session.ClickText("Setup guide");
+        await session.WaitForAsync(() => main.CurrentContent is SetupGuideViewModel { IsDesktop: true }, what: "guide");
+        var guide = (SetupGuideViewModel)main.CurrentContent!;
+        var measurements = new List<string>();
+        foreach (var height in new[] { 800, 700 })
+        {
+            session.Window.Height = height;
+            foreach (var name in new[] { "Software", "Startup & Services" })
+            {
+                var lesson = guide.Lessons.Single(l => l.ModuleName == name);
+                session.Click(session.Find<Button>(b => ReferenceEquals(b.DataContext, lesson)));
+                session.Pump();
+                var scroll = session.Find<ScrollViewer>(s => s.Name == "DetailScroll");
+                Assert.Equal(0, scroll.Offset.Y);
+                Assert.True(scroll.Extent.Height > scroll.Viewport.Height);
+                measurements.Add($"{name}: {session.Window.Width}x{height}, {lesson.Body.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length} words, content {scroll.Extent.Height:F0}px, viewport {scroll.Viewport.Height:F0}px, {scroll.Extent.Height / scroll.Viewport.Height:F2} screens");
+                var label = name == "Software" ? "software" : "startup";
+                session.Screenshot($"{label}-{height}-top");
+                var point = scroll.TranslatePoint(new Point(scroll.Bounds.Width / 2, scroll.Bounds.Height / 2), session.Window)!.Value;
+                for (var page = 1; scroll.Offset.Y + scroll.Viewport.Height < scroll.Extent.Height - 1; page++)
+                {
+                    Assert.True(page < 20, "Lesson did not reach its end.");
+                    var before = scroll.Offset.Y;
+                    session.Window.MouseWheel(point, new Vector(0, -8));
+                    session.Pump();
+                    Assert.True(scroll.Offset.Y > before);
+                    session.Screenshot($"{label}-{height}-scroll-{page}");
+                }
+                var action = session.Find<Button>(b => Equals(b.Content, "Open module"));
+                var origin = action.TranslatePoint(default, scroll)!.Value;
+                Assert.InRange(origin.Y, 0, scroll.Viewport.Height - action.Bounds.Height);
+            }
+        }
+        File.WriteAllLines(Path.Combine(session.ShotDirectory, "measurements.txt"), measurements);
+    }
+
     [AvaloniaFact]
     public void OptionalPackEntry_RequiresSelectionBeforeStaging()
     {
