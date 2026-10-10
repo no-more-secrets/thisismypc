@@ -29,6 +29,7 @@ internal sealed class BrokerRequestPolicy
         "Security",
         "Windows Update",
         "Power Plans",
+        DebugSampleChange.ModuleId,
     };
 
     private static readonly HashSet<string> ActionModules = new(StringComparer.Ordinal)

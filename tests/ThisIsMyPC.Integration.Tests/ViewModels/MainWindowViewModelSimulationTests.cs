@@ -269,6 +269,9 @@ public sealed class MainWindowViewModelSimulationTests
         var first = pending.PendingGroups[0].Changes[0];
         Assert.Equal("DebugModule", first.ModuleId);
         Assert.Equal(ChangeCategory.Disable, first.Category);
+        Assert.Equal("No system target (Debug sample)", first.SystemLocation);
+        Assert.Equal("1", first.BeforeValue);
+        Assert.Equal("0", first.AfterValue);
         Assert.Equal("Enabled", first.BeforeDisplay);
         Assert.Equal("Value B", pending.PendingGroups[1].Changes[0].AfterDisplay);
     }

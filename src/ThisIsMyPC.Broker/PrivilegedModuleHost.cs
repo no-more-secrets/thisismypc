@@ -98,6 +98,8 @@ internal sealed class PrivilegedModuleHost : IAsyncDisposable
     internal Task<OperationResult<bool>> Apply(
         ChangeDescriptor change, bool revert, CancellationToken cancellationToken)
     {
+        if (change.ModuleId == DebugSampleChange.ModuleId)
+            return DebugSampleChange.Apply(change);
         if (!_modules.TryGetValue(change.ModuleId, out var module))
         {
             return Task.FromResult(OperationResult<bool>.Failure(

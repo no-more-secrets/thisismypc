@@ -129,6 +129,7 @@ internal static class BrokerOperationRules
             "Security" => Modules.Security.SecurityCatalog.Allows(change),
             "Windows Update" => AutomaticUpdatesSetting.Allows(change) || AllowsRegistryModule(change, WindowsUpdateTargets),
             "Power Plans" => AllowsPower(change),
+            DebugSampleChange.ModuleId => DebugSampleChange.Allows(change),
             _ => false,
         };
 

@@ -1521,9 +1521,8 @@ public partial class MainWindowViewModel : ViewModelBase
     private int _debugChangeCounter;
 
     /// <summary>
-    /// Stages a sample change against a module that does not exist, so the
-    /// apply bar, badge, and review panel can be exercised and an Apply fails
-    /// harmlessly. F5 to F7 and the Debug page both come here.
+    /// Stages a sample change that the Debug broker accepts without changing Windows.
+    /// F5 to F7 and the Debug page both come here.
     /// </summary>
     public void StageDebugChange(ChangeCategory category)
     {
@@ -1537,9 +1536,9 @@ public partial class MainWindowViewModel : ViewModelBase
             ModuleId = "DebugModule",
             SettingId = $"debug-setting-{_debugChangeCounter}",
             DisplayName = $"Test Setting {_debugChangeCounter}",
-            SystemLocation = @$"HKLM\SOFTWARE\Debug\Setting{_debugChangeCounter}",
-            BeforeValue = "0",
-            AfterValue = "1",
+            SystemLocation = "No system target (Debug sample)",
+            BeforeValue = disable ? "1" : "0",
+            AfterValue = disable ? "0" : "1",
             BeforeDisplay = enable ? "Disabled" : disable ? "Enabled" : "Value A",
             AfterDisplay = enable ? "Enabled" : disable ? "Disabled" : "Value B",
             ValueType = ChangeValueType.Registry_DWord,
@@ -1861,7 +1860,7 @@ public partial class MainWindowViewModel : ViewModelBase
                         Detail = action.Detail,
                     }))
                 .ToList();
-            var changeCount = brokerChanges.Count
+            var changeCount = brokerChanges.Count(change => change.ModuleId != "DebugModule")
                 + (_pendingActionsService?.PendingCount ?? 0);
             var restorePointDescription = changeCount >= AutoRestorePointThreshold && !_applyWithoutRestorePoint
                 ? $"ThisIsMyPC: Before applying {changeCount} changes"

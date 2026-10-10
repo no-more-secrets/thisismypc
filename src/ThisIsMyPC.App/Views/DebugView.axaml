@@ -87,7 +87,7 @@
               <StackPanel>
                 <TextBlock Classes="debug-section" Text="Pending changes" />
                 <TextBlock Classes="debug-hint"
-                           Text="Stages a sample change so the apply bar, badge, and review panel can be checked. F5, F6, F7, and F8 do the same from any page." />
+                           Text="Stages a sample change for the broker review and Apply flow. No Windows setting changes. F5, F6, F7, and F8 work from any page." />
                 <WrapPanel>
                   <Button Classes="debug-action" Content="Stage sample enable" Command="{Binding StageSampleEnableCommand}" Margin="0,0,8,8" />
                   <Button Classes="debug-action" Content="Stage sample disable" Command="{Binding StageSampleDisableCommand}" Margin="0,0,8,8" />
