@@ -24,9 +24,9 @@ Software
 
 Not everything installed on your PC is there because you wanted it. Windows includes apps of its own, and your PC manufacturer may have added more. An app you never open can still add background services, startup entries, and scheduled tasks. You also may have installed apps over time that you do not want or need anymore.
 
-You do not have to uninstall an app to stop it slowing down your PC. Apps register ways to launch themselves at boot, at sign-in, on a schedule, or when another event occurs. Disabling those automatic launches can leave the app available without having it run when you did not ask for it.
+You do not have to uninstall an app to stop it slowing down your PC. Apps register ways to launch themselves at boot, at sign-in, on a schedule, or when another event occurs. Disabling those automatic launches can leave the app available without having it run when you did not ask it to.
 
-Use Software and Startup & Services together. For example, you might use a game launcher on weekends but have it running all week. Check its startup entries, services, and scheduled tasks in Startup & Services. Turn off the automatic launches you do not need. You can still open the launcher to play. If you no longer use it, return to Software to uninstall it.
+Use Software and Startup & Services together. For example, you might use a game launcher on weekends, but it runs in the background all week. Check its startup entries, services, and scheduled tasks in Startup & Services. Turn off the automatic launches you do not need. You can still open the launcher to play. If you no longer use it, return to Software to uninstall it.
 
 Windows Apps lists apps included with Windows. Read through them and decide which ones you use. If you do not use Clipchamp to edit videos, for example, you can remove it.
 
@@ -46,6 +46,16 @@ Startup & Services
 ============================================================
 
 Installing software often also gives it ways to run without you opening it. That can mean launching at boot or sign-in, running a background service, or scheduling tasks for particular times and events. These entries accumulate as you install more software.
+
+Task Manager's Startup apps page is the familiar place to disable apps that launch when you sign in. Disabling an entry leaves the app installed. But this page does not list every way software can start itself. An app disabled here can still have a service or scheduled task.
+
+The tray beside the clock shows icons for some running apps. Others run without an icon, and some icons sit inside the tray's overflow menu. Hiding an icon does not stop its app. Choosing Exit may close that app now, but does not necessarily prevent it starting again.
+
+Task Scheduler holds another set of automatic launches. A task can run at boot, at sign-in, at a set time, while the PC is idle, or when a particular event occurs. It may run briefly and disappear before you notice it. These tasks are separate from Task Manager's Startup apps list.
+
+Services can run in the background without a window or tray icon, including before you sign in. There are also startup folders, registry entries, drivers, and extensions that load inside other programs. These are less visible in everyday Windows use. Not every entry runs continuously, and an unfamiliar name alone does not mean it is unwanted.
+
+Startup & Services brings these automatic-launch entries into one view, grouped by type. Use it to check beyond Task Manager's Startup apps page. Task Manager's Processes page shows what is running now; it does not explain every way those programs can return later.
 
 Take the game launcher from Software. Look for its entries across startup, services, and scheduled tasks. Check the publisher, file location, and trigger to understand what runs and when. One app can have several entries, so disabling its sign-in entry may leave other automatic launches active.
 
