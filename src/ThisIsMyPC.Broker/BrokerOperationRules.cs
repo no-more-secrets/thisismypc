@@ -374,7 +374,9 @@ internal static class BrokerOperationRules
 
     private static bool ValidValues(ChangeDescriptor change) => change.ValueType switch
     {
-        ChangeValueType.Registry_DWord => NumericOrAbsent(change.BeforeValue) && NumericOrAbsent(change.AfterValue),
+        ChangeValueType.Registry_DWord => NumericOrAbsent(change.BeforeValue) && NumericOrAbsent(change.AfterValue)
+            // Registration preserves a missing key separately from a missing value for exact Undo.
+            || change.ModuleId == "Explorer" && ShellIntegrationChanges.Allows(change),
         ChangeValueType.Registry_Binary => HexOrEmpty(change.BeforeValue) && HexOrEmpty(change.AfterValue),
         ChangeValueType.Service_StartType => EnumValue<ServiceStartType>(change.BeforeValue)
                                              && EnumValue<ServiceStartType>(change.AfterValue),
