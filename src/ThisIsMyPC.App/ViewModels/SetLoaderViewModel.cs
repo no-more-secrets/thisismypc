@@ -56,8 +56,10 @@ public partial class SetLoaderViewModel : ViewModelBase, IDisposable, ITabbedPag
     public bool HasOptimizationPacks => OptimizationPacks.Count > 0;
     public bool HasNoSets => TweakSets.Count == 0 && OptimizationPacks.Count == 0;
     public bool HasNoSelection => SelectedSet is null;
-    public bool HasIncludedEntries => IncludedCount > 0;
-    public string StageButtonText => IncludedCount == 1
+    public bool HasIncludedEntries => IncludedCount > 0 && CanStagePack;
+    public string StageButtonText => AppRemovals.Any(r => r.IsIncluded && r.CanInclude)
+        ? $"Stage {IncludedCount} selection{(IncludedCount == 1 ? "" : "s")}"
+        : IncludedCount == 1
         ? "Stage 1 change"
         : $"Stage {IncludedCount} changes";
 
@@ -68,12 +70,20 @@ public partial class SetLoaderViewModel : ViewModelBase, IDisposable, ITabbedPag
         IPendingChangesService pendingChangesService,
         ICapabilityDetector? capabilityDetector = null,
         Action<string, string, string>? navigateToSetting = null,
-        Core.Policies.PolicyControlStateReader? policyStates = null)
+        Core.Policies.PolicyControlStateReader? policyStates = null,
+        Core.Hardware.IHardwareDetectionService? hardwareDetection = null,
+        Core.Packages.IAppxPackageService? appxPackages = null,
+        IPendingActionsService? pendingActions = null)
     {
         _inspectors = inspectors.ToList();
         _conflictResolver = new SetConflictResolver(_inspectors, moduleAvailabilityLookup, capabilityDetector, policyStates);
         _pendingChangesService = pendingChangesService;
         _navigateToSetting = navigateToSetting;
+        _packHardware = hardwareDetection;
+        _packPackages = appxPackages;
+        _packActions = pendingActions;
+        _packModuleAvailability = moduleAvailabilityLookup;
+        if (_packActions is not null) _packActions.PropertyChanged += OnPackActionsChanged;
 
         foreach (var set in loadResult.Sets.OrderBy(s => s.Name, StringComparer.OrdinalIgnoreCase))
         {
@@ -86,7 +96,13 @@ public partial class SetLoaderViewModel : ViewModelBase, IDisposable, ITabbedPag
         _pendingChangesService.PropertyChanged += OnPendingChangesChanged;
     }
 
-    public void Dispose() => _pendingChangesService.PropertyChanged -= OnPendingChangesChanged;
+    public void Dispose()
+    {
+        _packDisposed = true;
+        _pendingChangesService.PropertyChanged -= OnPendingChangesChanged;
+        if (_packActions is not null) _packActions.PropertyChanged -= OnPackActionsChanged;
+        _packGeneration++;
+    }
 
     private void OnPendingChangesChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
@@ -103,6 +119,7 @@ public partial class SetLoaderViewModel : ViewModelBase, IDisposable, ITabbedPag
             set.IsSelected = ReferenceEquals(set, item);
 
         SelectedSet = item;
+        PackInspection = InspectPackAsync();
         SearchText = string.Empty;
         StageMessage = string.Empty;
         BuildPreview();
@@ -111,6 +128,7 @@ public partial class SetLoaderViewModel : ViewModelBase, IDisposable, ITabbedPag
     [RelayCommand]
     private void StageIncluded()
     {
+        if (!CanStagePack || _pendingChangesService.IsApplying || _packActions?.IsApplying == true) return;
         var staged = 0;
         var failures = new List<string>();
         // Each Stage/Unstage raises PendingCount; hold the rebuild until the loop is done
@@ -156,11 +174,13 @@ public partial class SetLoaderViewModel : ViewModelBase, IDisposable, ITabbedPag
             _suppressPendingRefresh = false;
         }
 
+        var removals = StagePackRemovals();
         StageMessage = staged == 1
             ? "1 change staged. Review and apply from the pending changes bar."
             : $"{staged} changes staged. Review and apply from the pending changes bar.";
         if (failures.Count > 0)
             StageMessage += " " + string.Join(" ", failures);
+        if (removals > 0) StageMessage += $" {removals} app removals staged. Removals have no undo.";
 
         // Re-resolve: freshly staged rows flip to "already staged" and uncheck.
         BuildPreview();
@@ -194,6 +214,9 @@ public partial class SetLoaderViewModel : ViewModelBase, IDisposable, ITabbedPag
             PreviewGroups.Add(groupVm);
         }
 
+        foreach (var row in PreviewGroups.SelectMany(g => g.Entries))
+            if (_excludedPackModules.Contains(row.Entry.ModuleId)) row.IsIncluded = false;
+
         RecountIncluded();
         FilterPreview();
     }
@@ -212,6 +235,11 @@ public partial class SetLoaderViewModel : ViewModelBase, IDisposable, ITabbedPag
             if (group.HasHeader) rows.Add(group);
             rows.AddRange(entries);
         }
+        var removals = AppRemovals.Where(row => query.Length == 0 ||
+            row.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+            row.Description.Contains(query, StringComparison.OrdinalIgnoreCase)).ToList();
+        if (removals.Count > 0) rows.Add(new SetPreviewGroupViewModel("App removals · No undo"));
+        rows.AddRange(removals);
         VisibleRows = rows;
         OnPropertyChanged(nameof(VisibleRows));
         OnPropertyChanged(nameof(HasNoSearchResults));
@@ -220,5 +248,5 @@ public partial class SetLoaderViewModel : ViewModelBase, IDisposable, ITabbedPag
     private void RecountIncluded()
         => IncludedCount = PreviewGroups
             .SelectMany(g => g.Entries)
-            .Count(e => e.IsIncluded && !e.IsSkipped);
+            .Count(e => e.IsIncluded && e.CanToggle) + AppRemovals.Count(r => r.IsIncluded && r.CanInclude);
 }

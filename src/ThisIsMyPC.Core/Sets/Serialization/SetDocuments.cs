@@ -15,6 +15,8 @@ public sealed record SetDocument
     public string? Version { get; init; }
     public string? Author { get; init; }
     public IReadOnlyList<SetEntryDocument>? Entries { get; init; }
+    public bool DesktopOnly { get; init; }
+    public IReadOnlyList<string>? AppRemovals { get; init; }
 }
 
 public sealed record SetEntryDocument

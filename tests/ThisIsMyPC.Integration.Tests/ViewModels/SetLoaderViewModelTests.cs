@@ -81,7 +81,7 @@ public sealed class SetLoaderViewModelTests
         Assert.Equal(
             ["Clean Boot", "NukeCopilot", "Privacy Baseline", "Windows Update Control"],
             vm.TweakSets.Select(s => s.Name).OrderBy(n => n, StringComparer.Ordinal));
-        Assert.Equal(["Windows 10-ify"], vm.OptimizationPacks.Select(s => s.Name));
+        Assert.Equal(["Desktop Grand Pack", "Windows 10-ify"], vm.OptimizationPacks.Select(s => s.Name));
         Assert.False(vm.HasNoSets);
         Assert.True(vm.HasNoSelection);
     }
@@ -90,7 +90,7 @@ public sealed class SetLoaderViewModelTests
     public void SetCard_ShowsCountAndModulesAffected()
     {
         var vm = CreateWithBundledSets();
-        var pack = vm.OptimizationPacks.Single();
+        var pack = vm.OptimizationPacks.Single(s => s.Name == "Windows 10-ify");
 
         Assert.Contains("changes", pack.MetaLine, StringComparison.Ordinal);
         Assert.Contains("Explorer", pack.ModulesAffected, StringComparison.Ordinal);
@@ -103,7 +103,7 @@ public sealed class SetLoaderViewModelTests
     {
         var vm = CreateWithBundledSets();
 
-        vm.SelectSetCommand.Execute(vm.OptimizationPacks.Single());
+        vm.SelectSetCommand.Execute(vm.OptimizationPacks.Single(s => s.Name == "Windows 10-ify"));
 
         Assert.Equal(
             ["Classic shell", "Taskbar", "Tips & suggestions", "NukeCopilot"],
@@ -356,7 +356,7 @@ public sealed class SetLoaderViewModelTests
     {
         // taskbar-widgets scans as already hidden against the empty fake registry
         var vm = CreateWithBundledSets();
-        vm.SelectSetCommand.Execute(vm.OptimizationPacks.Single());
+        vm.SelectSetCommand.Execute(vm.OptimizationPacks.Single(s => s.Name == "Windows 10-ify"));
 
         var row = vm.PreviewGroups.SelectMany(g => g.Entries)
             .Single(e => e.Entry.SettingId == "taskbar-widgets");

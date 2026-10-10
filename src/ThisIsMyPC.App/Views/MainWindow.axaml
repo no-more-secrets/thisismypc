@@ -547,6 +547,9 @@
                             <DataTemplate DataType="{x:Type vm:SetLoaderViewModel}">
                                 <views:SetLoaderView />
                             </DataTemplate>
+                            <DataTemplate DataType="{x:Type vm:SetupGuideViewModel}">
+                                <views:SetupGuideView />
+                            </DataTemplate>
                             <DataTemplate DataType="{x:Type vm:HomeViewModel}">
                                 <views:HomeView />
                             </DataTemplate>

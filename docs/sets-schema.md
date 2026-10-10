@@ -20,6 +20,39 @@ skipped with a warning: it never breaks loading of other sets.
 | `version` | string | yes | Author-managed, e.g. `"1.0.0"` |
 | `author` | string | yes | e.g. `"ThisIsMyPC"` for built-ins |
 | `entries` | array | yes, non-empty | See below. One invalid entry invalidates the whole file (partial sets are unsafe) |
+| `desktopOnly` | bool | no | Requires a verified desktop before staging. Unknown and portable form factors remain blocked. Defaults to false. |
+| `appRemovals` | string[] | no | Windows app catalog IDs, reviewed as one-way actions. Empty IDs invalidate the file; unknown IDs cannot stage. Defaults to empty. |
+
+App removals use the existing Software action queue. They never create before-values or undo history.
+The preview enumerates packages for the current user and selects matching installed apps by default.
+The existing removal action affects all users and deprovisions the app for new profiles.
+The preview states this scope and the lack of undo. Inventory failure blocks the pack instead of reporting no installed apps.
+Reinstall actions already in the queue block a conflicting removal. Older versions ignore these fields and cannot enforce desktop scope;
+do not distribute desktop-only packs for use with older builds.
+
+## Desktop setup guide
+
+Home > Setup guide introduces every registered module, including unavailable modules.
+Each lesson explains the controls, the behavior behind them, recommended choices, and ongoing maintenance.
+Module availability is not a claim that its settings were scanned. Open module performs the existing module inspection.
+Returning through Home resumes the lesson and selections during the current app session.
+
+Desktop-only support applies to this guide's pack workflow, not the rest of the app.
+Portable and unknown machines can read lessons but cannot open the pack from the guide or stage it in Presets.
+The final Review pack button selects the bundled Desktop Grand Pack and carries excluded module recommendations forward.
+The pack separately reviews live settings and recommended app removals; no lesson applies changes.
+
+The first pass includes Windows promotion, optional tracking, Copilot, and Widgets recommendations,
+plus removals for Clipchamp, News, Weather, Copilot, and the Microsoft 365 hub when installed.
+It does not disable updates, security protections, arbitrary services, or hardware controls.
+Those modules receive teaching and links for individual review. This is not a claim that every cleanup setting is covered.
+
+Teaching references: Microsoft's [diagnostic data explanation](https://support.microsoft.com/en-us/windows/privacy/diagnostics-feedback-and-privacy-in-windows)
+and [connected experiences explanation](https://support.microsoft.com/en-us/windows/experience/essential-services-and-connected-experiences-for-windows).
+Device, module, and removal claims follow the app's existing classifiers, availability checks, and action factories.
+
+Remaining refinements: saved progress across app restarts, per-setting lessons within modules, richer live findings,
+and a post-apply guided results page. First-pass entry is the persistent Home invitation.
 
 ## Entry object
 

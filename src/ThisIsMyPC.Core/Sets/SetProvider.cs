@@ -111,6 +111,8 @@ public sealed class SetProvider : ISetProvider
             problems.Add("missing 'author'");
         if (document.Entries is not { Count: > 0 })
             problems.Add("missing or empty 'entries'");
+        if (document.AppRemovals?.Any(string.IsNullOrWhiteSpace) == true)
+            problems.Add("appRemovals contains an empty catalog ID");
 
         var entries = new List<SetEntry>();
         for (var i = 0; i < (document.Entries?.Count ?? 0); i++)
@@ -159,6 +161,8 @@ public sealed class SetProvider : ISetProvider
             Version = document.Version!,
             Author = document.Author!,
             Entries = entries,
+            DesktopOnly = document.DesktopOnly,
+            AppRemovals = document.AppRemovals?.Distinct(StringComparer.OrdinalIgnoreCase).ToArray() ?? [],
             Source = source,
             FilePath = file,
         };

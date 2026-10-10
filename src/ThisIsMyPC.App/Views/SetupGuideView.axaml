@@ -1,0 +1,66 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ThisIsMyPC.App.ViewModels"
+             x:Class="ThisIsMyPC.App.Views.SetupGuideView"
+             x:DataType="vm:SetupGuideViewModel">
+    <UserControl.Styles>
+        <Style Selector="TextBlock">
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        </Style>
+        <Style Selector="TextBlock.lesson-heading">
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+            <Setter Property="Margin" Value="0,10,0,0" />
+        </Style>
+    </UserControl.Styles>
+    <Grid RowDefinitions="Auto,*,Auto" Margin="0,4,0,0">
+        <Grid ColumnDefinitions="*,Auto" Margin="0,0,16,12">
+            <StackPanel Spacing="4">
+                <TextBlock Text="Your PC, your choices" FontSize="22" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding DeviceStatus}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+            </StackPanel>
+            <Button Grid.Column="1" Content="Leave setup" Command="{Binding CloseCommand}" VerticalAlignment="Top"
+                    ToolTip.Tip="Return from Home to continue this guide" />
+        </Grid>
+        <Grid Grid.Row="1" ColumnDefinitions="180,20,*">
+            <ListBox ItemsSource="{Binding Lessons}" SelectedIndex="{Binding SelectedIndex, Mode=TwoWay}"
+                     Background="Transparent" BorderThickness="0" Padding="0"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                     AutomationProperties.Name="Setup modules">
+                <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:SetupLessonViewModel">
+                        <TextBlock Text="{Binding Label}" FontSize="13" Margin="0,5" />
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+            <ScrollViewer Grid.Column="2" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Spacing="10" Margin="0,0,16,24">
+                    <TextBlock Text="{Binding Current.Title}" FontSize="22" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding Current.Availability}" FontSize="12" Foreground="{DynamicResource TextTertiaryBrush}" />
+                    <TextBlock Classes="lesson-heading" Text="What you control" />
+                    <TextBlock Text="{Binding Current.Controls}" />
+                    <TextBlock Classes="lesson-heading" Text="Why it matters" />
+                    <TextBlock Text="{Binding Current.Behavior}" />
+                    <TextBlock Classes="lesson-heading" Text="Your choice" />
+                    <TextBlock Text="{Binding Current.Choice}" />
+                    <CheckBox IsVisible="{Binding Current.HasRecommendations}" IsEnabled="{Binding IsDesktop}"
+                              IsChecked="{Binding Current.IncludeRecommendations}">
+                        <TextBlock Text="Include this module's pack recommendations" />
+                    </CheckBox>
+                    <TextBlock Classes="lesson-heading" Text="Keep control" />
+                    <TextBlock Text="{Binding Current.Upkeep}" />
+                    <Button Content="Open module" Command="{Binding OpenModuleCommand}" IsVisible="{Binding CanOpenModule}"
+                            HorizontalAlignment="Left" ToolTip.Tip="Inspect live settings. Return from Home to continue setup." />
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+        <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,12,16,0">
+            <Button Content="Back" Command="{Binding PreviousCommand}" IsEnabled="{Binding HasPrevious}" />
+            <TextBlock Grid.Column="1" Text="{Binding Progress}" VerticalAlignment="Center" HorizontalAlignment="Center" />
+            <Button Grid.Column="2" Content="Next" Command="{Binding NextCommand}" IsVisible="{Binding HasNext}" />
+            <Button Grid.Column="3" Content="Review pack" Classes="apply-bar-apply" Command="{Binding ReviewPackCommand}"
+                    IsVisible="{Binding IsLast}" IsEnabled="{Binding IsDesktop}" />
+        </Grid>
+    </Grid>
+</UserControl>

@@ -311,7 +311,7 @@ public class SetLoaderViewShotTests
         session.ClickText("Presets");
         await session.WaitForAsync(() => main.CurrentContent is SetLoaderViewModel, what: "Presets");
         var vm = (SetLoaderViewModel)main.CurrentContent!;
-        var preset = vm.OptimizationPacks.First(s => s.Definition.Entries.Any(e => e.ModuleId == "Explorer"));
+        var preset = vm.OptimizationPacks.Single(s => s.Name == "Windows 10-ify");
         session.ClickText("Packs");
         session.ClickText(preset.Name);
         var card = session.Find<Border>(b => b.Name == "ModuleContentHost");

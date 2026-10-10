@@ -166,7 +166,7 @@ public sealed class BuiltInSetsTests
     {
         Assert.Empty(_result.Warnings);
         Assert.Equal(
-            ["Clean Boot", "NukeCopilot", "Privacy Baseline", "Windows 10-ify", "Windows Update Control"],
+            ["Clean Boot", "Desktop Grand Pack", "NukeCopilot", "Privacy Baseline", "Windows 10-ify", "Windows Update Control"],
             _result.Sets.Select(s => s.Name).OrderBy(n => n, StringComparer.Ordinal));
         Assert.All(_result.Sets, s => Assert.Equal(SetSource.BuiltIn, s.Source));
     }
@@ -199,6 +199,17 @@ public sealed class BuiltInSetsTests
                     $"{set.Name}/{entry.SettingId}: value '{entry.Value}' != factory desired value '{expectedValue}'");
             }
         }
+    }
+
+    [Fact]
+    public void DesktopGrandPack_RequiresDesktop_AndUsesReinstallableCatalogApps()
+    {
+        var pack = _result.Sets.Single(s => s.Name == "Desktop Grand Pack");
+        Assert.True(pack.DesktopOnly);
+        Assert.NotEmpty(pack.AppRemovals);
+        Assert.All(pack.AppRemovals, id => Assert.True(
+            ThisIsMyPC.Modules.Software.Services.WindowsAppsCatalog.Entries.Single(e => e.Id == id).CanReinstall));
+        Assert.DoesNotContain(pack.Entries, e => e.ModuleId is "Security" or "Windows Update" or "Network & Firewall");
     }
 
     [Fact]

@@ -46,6 +46,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private DriftSectionViewModel? _driftSection;
     private readonly IExplorerRestartService _explorerRestartService;
     private readonly Core.Sets.ISetProvider _setProvider;
+    private readonly Core.Packages.IAppxPackageService? _appxPackages;
     private readonly IReadOnlyList<Core.Sets.ISetEntryInspector> _setEntryInspectors;
     private readonly ICapabilityDetector? _capabilityDetector;
     private readonly Core.Settings.ISettingsService? _settingsService;
@@ -385,8 +386,10 @@ public partial class MainWindowViewModel : ViewModelBase
         Core.Hardware.Lighting.ILightingBackend? lightingBackend = null,
         Func<Core.Hardware.Sensors.IHardwareSensorBackend>? sensorBackendFactory = null,
         Services.UserFeedbackHub? userFeedback = null,
-        Core.Policies.PolicyControlStateReader? policyStates = null)
+        Core.Policies.PolicyControlStateReader? policyStates = null,
+        Core.Packages.IAppxPackageService? appxPackages = null)
     {
+        _appxPackages = appxPackages;
         _userFeedback = userFeedback;
         if (_userFeedback is not null)
         {
@@ -1166,6 +1169,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private void RefreshPage()
     {
         if (IsModuleLoading) return;
+        if (CurrentContent is SetupGuideViewModel guide) { _ = guide.CheckDesktopAsync(); return; }
         _refreshTabState = CurrentContent is ITabbedPage page
             ? new RefreshTabState(_contentEpoch + 1, CurrentContent.GetType(), page.SelectedTabIndex,
                 (CurrentContent as PowerViewModel)?.SettingsPlan?.Plan.PlanGuid,
@@ -1206,6 +1210,7 @@ public partial class MainWindowViewModel : ViewModelBase
         var wasSetLoaderActive = IsSetLoaderActive;
         var wasHomeActive = IsHomeActive;
         var wasSettingsActive = IsSettingsActive;
+        var wasSetupActive = CurrentContent is SetupGuideViewModel;
         // Captured BEFORE navigating: afterwards CurrentModule always equals the target,
         // which would double-trigger the rebuild for cross-module navigation (the
         // PropertyChanged event already fired for that case).
@@ -1220,7 +1225,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         // Returning from the Set Loader, Home, or Settings to the module that is still
         // CurrentModule: the navigation setter guards equality, so rebuild explicitly.
-        if ((wasSetLoaderActive || wasHomeActive || wasSettingsActive) && previousModule == item.Module)
+        if ((wasSetLoaderActive || wasHomeActive || wasSettingsActive || wasSetupActive) && previousModule == item.Module)
         {
             OnNavigationPropertyChanged(
                 _navigationService,
@@ -1248,7 +1253,8 @@ public partial class MainWindowViewModel : ViewModelBase
             loadResult, _setEntryInspectors, LookupModuleAvailability, _pendingChangesService,
             _capabilityDetector,
             (module, setting, name) => SelectSearchResult(new SearchResultViewModel(new(
-                new(module, setting, name, string.Empty, []), true, null))), _policyStates);
+                new(module, setting, name, string.Empty, []), true, null))), _policyStates,
+            _hardwareDetection, _appxPackages, _pendingActionsService);
         IsSetLoaderActive = true;
         IsHomeActive = false;
         IsSettingsActive = false;

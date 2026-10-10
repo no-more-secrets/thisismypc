@@ -13,6 +13,7 @@ public sealed partial class SetItemViewModel : ViewModelBase
             .Select(e => e.ModuleId)
             .Distinct(StringComparer.Ordinal));
         MetaLine = $"{definition.Entries.Count} change{(definition.Entries.Count == 1 ? "" : "s")}"
+            + (definition.AppRemovals.Count > 0 ? $" · {definition.AppRemovals.Count} app removals" : "")
             + $" · {ModulesAffected}"
             + $" · {(definition.Source == SetSource.BuiltIn ? "Built-in" : "User")} v{definition.Version}";
     }

@@ -2,6 +2,17 @@
 
 Current release scope: [v1 completion plan](v1-completion-plan.md), approved 2026-09-06. It supersedes older post-release hardware assumptions below.
 
+## Desktop setup guide and grand pack (2026-10-10)
+
+- First pass: Home offers a guide explaining every module, Windows and app behavior, choices, and ongoing maintenance.
+- The guide carries module exclusions into the Desktop Grand Pack in Presets. Individual entries remain editable before staging.
+- The pack includes promotion and optional tracking controls, Copilot and Widgets choices, and five recommended Windows app removals.
+- Installed removal candidates start selected. Removals use the one-way action queue and explicitly state all-user scope and no undo.
+- Desktop classification gates this guide's pack workflow and direct pack staging. Other app modules retain laptop support.
+- Remaining: persistent guide progress, richer live findings, per-setting lessons, and guided post-apply results.
+- Verified: 3,782 CI-safe tests and 19 focused tests passed. Dark and light screenshots, compact layout, edge geometry, and fresh review passed.
+- Design and schema: [sets schema](../sets-schema.md). Live elevated apply, removal, and reinstall acceptance remain pending.
+
 ## Explicit Windows choices (2026-10-08)
 
 - DONE October 10: Explorer dropdowns match disabled toggle styling. Shell-extension registration sits in File Explorer. Alt+F4 defaults show sleep and hibernation availability without changing the saved default.

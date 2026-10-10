@@ -31,7 +31,7 @@ public sealed partial class SetEntryPreviewViewModel : ViewModelBase
     {
         Resolution = resolution;
         _includeChanged = includeChanged;
-        _isIncluded = resolution.IncludedByDefault;
+        _isIncluded = resolution.IncludedByDefault && resolution.State?.CoveredByPolicy is null;
         OpenSettingCommand = new RelayCommand(() => navigateToSetting?.Invoke(Entry.ModuleId, Entry.SettingId, SettingName),
             () => navigateToSetting is not null && !IsSkipped);
     }
@@ -56,7 +56,8 @@ public sealed partial class SetEntryPreviewViewModel : ViewModelBase
 
     public bool IsSkipped => Resolution.IsSkipped;
     public string? SkipReason => Resolution.SkipReason;
-    public bool IsApplied => Resolution.Conflict == SetEntryConflict.AlreadyApplied;
+    public bool IsApplied => Resolution.Conflict == SetEntryConflict.AlreadyApplied ||
+        !IsSkipped && Resolution.State?.CoveredByPolicy is not null;
     public bool IsAlreadyStaged => Resolution.Conflict == SetEntryConflict.PendingSameValue;
     public bool HasConflict => Resolution.Conflict == SetEntryConflict.PendingDifferentValue;
     public bool CanToggle => !IsSkipped && Resolution.State?.CoveredByPolicy is null;

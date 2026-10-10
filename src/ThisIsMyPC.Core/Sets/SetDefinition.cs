@@ -9,6 +9,12 @@ public sealed record SetDefinition
     public required string Author { get; init; }
     public required IReadOnlyList<SetEntry> Entries { get; init; }
 
+    /// <summary>Require a verified desktop before staging this set.</summary>
+    public bool DesktopOnly { get; init; }
+
+    /// <summary>Windows app catalog IDs. These are one-way actions, never reversible settings.</summary>
+    public IReadOnlyList<string> AppRemovals { get; init; } = [];
+
     /// <summary>Assigned by the provider from the directory the file was found in.</summary>
     public required SetSource Source { get; init; }
 
