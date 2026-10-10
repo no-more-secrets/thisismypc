@@ -12,14 +12,18 @@ internal static unsafe partial class NativeReviewWindow
 
     private const string ClassName = "ThisIsMyPCBrokerReview";
     private const uint WsPopup = 0x80000000;
+    private const uint WsThickFrame = 0x00040000;
     private const uint WsChild = 0x40000000;
     private const uint WsVisible = 0x10000000;
-    private const uint WsTabStop = 0x00010000;
     private const uint WsVScroll = 0x00200000;
     private const uint BsOwnerDraw = 0x0000000B;
+    private const uint DwmWindowCornerPreference = 33;
+    private const int DwmRoundCorners = 2;
     private const uint WmCreate = 0x0001;
     private const uint WmDestroy = 0x0002;
     private const uint WmSize = 0x0005;
+    private const uint WmNcCalcSize = 0x0083;
+    private const uint WmDpiChanged = 0x02E0;
     private const uint WmPaint = 0x000F;
     private const uint WmClose = 0x0010;
     private const uint WmEraseBackground = 0x0014;
@@ -47,6 +51,7 @@ internal static unsafe partial class NativeReviewWindow
     private const int CloseButton = 1003;
     private const nint HtClient = 1;
     private const nint HtCaption = 2;
+    private const nint HtVScroll = 7;
     private const int HeaderHeight = 47;
     private const int FooterHeight = 59;
     private const int NoteHeight = 38;
@@ -77,10 +82,15 @@ internal static unsafe partial class NativeReviewWindow
         var state = new ReviewState(policy.BuildReviewCards(), policy.HasBatchOperations);
         if (state.Cards.Count == 0)
             return Decision.Failed;
-        _current = state;
-        var className = Marshal.StringToHGlobalUni(ClassName);
+        var previousDpiContext = SetThreadDpiAwarenessContext((nint)(-4));
+        if (previousDpiContext == 0)
+            return Decision.Failed;
+        nint className = 0;
         try
         {
+            state.Dpi = BrokerReviewPlacement.DpiForUiProcess(uiProcessId);
+            _current = state;
+            className = Marshal.StringToHGlobalUni(ClassName);
             var windowClass = new WindowClass
             {
                 Size = (uint)sizeof(WindowClass),
@@ -94,20 +104,24 @@ internal static unsafe partial class NativeReviewWindow
                 return Decision.Failed;
             try
             {
-                var width = Math.Min(480, Math.Max(320, GetSystemMetrics(0) - 40));
-                var height = Math.Min(540, Math.Max(330, GetSystemMetrics(1) - 40));
+                var work = BrokerReviewPlacement.WorkAreaForUiProcess(uiProcessId)
+                    ?? new BrokerReviewPlacement.WorkArea(0, 0, GetSystemMetrics(0), GetSystemMetrics(1));
+                var size = FitToWorkArea(state.Dpi, work.Width, work.Height);
+                if (size is null)
+                    return Decision.Failed;
+                var (width, height) = size.Value;
                 var placement = BrokerReviewPlacement.ForUiProcess(uiProcessId, width, height, uiSid);
                 var x = placement?.X ?? Math.Max(0, (GetSystemMetrics(0) - width) / 2);
                 var y = placement?.Y ?? Math.Max(0, (GetSystemMetrics(1) - height) / 2);
                 var window = CreateWindowExW(0, ClassName, "Review Pending Changes - ThisIsMyPC",
-                    WsPopup | WsVScroll, x, y, width, height, 0, 0, windowClass.Instance, 0);
+                    WsPopup | WsThickFrame | WsVScroll, x, y, width, height, 0, 0, windowClass.Instance, 0);
                 if (window == 0)
                     return Decision.Failed;
 
                 state.Window = window;
-                state.TitleFont = CreateFont(-17, 600);
-                state.CardFont = CreateFont(-15, 600);
-                state.DetailFont = CreateFont(-13, 400);
+                state.TitleFont = CreateFont(-state.Px(17), 600);
+                state.CardFont = CreateFont(-state.Px(15), 600);
+                state.DetailFont = CreateFont(-state.Px(13), 400);
                 if (state.TitleFont == 0 || state.CardFont == 0 || state.DetailFont == 0
                     || !GetClientRect(window, out var client))
                 {
@@ -118,17 +132,18 @@ internal static unsafe partial class NativeReviewWindow
 
                 state.ClientWidth = client.Right;
                 state.ClientHeight = client.Bottom;
-                var footerTop = state.ClientHeight - FooterHeight;
+                var footerTop = state.ClientHeight - state.Px(FooterHeight);
                 state.Discard = CreateWindowExW(0, "BUTTON", state.Batch ? "Discard All" : "Cancel",
-                    WsChild | WsVisible | WsTabStop | BsOwnerDraw,
-                    16, footerTop + 11, 112, 36, window, (nint)DiscardButton, windowClass.Instance, 0);
+                    WsChild | WsVisible | BsOwnerDraw,
+                    state.Px(16), footerTop + state.Px(11), state.Px(112), state.Px(36),
+                    window, (nint)DiscardButton, windowClass.Instance, 0);
                 state.Apply = CreateWindowExW(0, "BUTTON", state.Batch ? "Apply All" : "Confirm",
-                    WsChild | WsVisible | WsTabStop | BsOwnerDraw,
-                    state.ClientWidth - 128, footerTop + 11, 112, 36,
+                    WsChild | WsVisible | BsOwnerDraw,
+                    state.ClientWidth - state.Px(128), footerTop + state.Px(11), state.Px(112), state.Px(36),
                     window, (nint)ApplyButton, windowClass.Instance, 0);
                 state.Close = CreateWindowExW(0, "BUTTON", "Close review",
-                    WsChild | WsVisible | WsTabStop | BsOwnerDraw,
-                    state.ClientWidth - 37, 8, 28, 28,
+                    WsChild | WsVisible | BsOwnerDraw,
+                    state.ClientWidth - state.Px(37), state.Px(8), state.Px(28), state.Px(28),
                     window, (nint)CloseButton, windowClass.Instance, 0);
                 if (state.Discard == 0 || state.Apply == 0 || state.Close == 0)
                 {
@@ -139,6 +154,8 @@ internal static unsafe partial class NativeReviewWindow
 
                 var dark = 1;
                 _ = DwmSetWindowAttribute(window, 20, in dark, sizeof(int));
+                var round = DwmRoundCorners;
+                _ = DwmSetWindowAttribute(window, DwmWindowCornerPreference, in round, sizeof(int));
                 _ = SetWindowTheme(window, "DarkMode_Explorer", null);
                 try { Layout(state); }
                 catch
@@ -150,7 +167,7 @@ internal static unsafe partial class NativeReviewWindow
                 _ = ShowWindow(window, 5);
                 _ = UpdateWindow(window);
                 _ = SetForegroundWindow(window);
-                _ = SetFocus(state.Discard);
+                _ = SetFocus(window);
 
                 state.LoopStarted = true;
                 while (GetMessageW(out var message, 0, 0, 0) > 0)
@@ -160,8 +177,6 @@ internal static unsafe partial class NativeReviewWindow
                         _ = DestroyWindow(window);
                         continue;
                     }
-                    if (IsDialogMessageW(window, ref message))
-                        continue;
                     _ = TranslateMessage(in message);
                     _ = DispatchMessageW(in message);
                 }
@@ -177,10 +192,24 @@ internal static unsafe partial class NativeReviewWindow
         }
         finally
         {
-            Marshal.FreeHGlobal(className);
+            if (className != 0)
+                Marshal.FreeHGlobal(className);
             _current = null;
+            if (previousDpiContext != 0)
+                _ = SetThreadDpiAwarenessContext(previousDpiContext);
         }
     }
+
+    internal static (int Width, int Height)? FitToWorkArea(uint dpi, int workWidth, int workHeight)
+    {
+        var width = Math.Min(Scale(480, dpi), workWidth - Scale(40, dpi));
+        var height = Math.Min(Scale(540, dpi), workHeight - Scale(40, dpi));
+        return width >= Scale(320, dpi) && height >= Scale(260, dpi)
+            ? (width, height)
+            : null;
+    }
+
+    private static int Scale(int logical, uint dpi) => Math.Max(1, (int)Math.Round(logical * dpi / 96.0));
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
     private static nint WindowProc(nint window, uint message, nuint wParam, nint lParam)
@@ -205,6 +234,8 @@ internal static unsafe partial class NativeReviewWindow
 
     private static nint HandleMessage(nint window, uint message, nuint wParam, nint lParam)
     {
+        if (message == WmNcCalcSize)
+            return 0;
         if (message == WmCreate)
             return 0;
         var state = _current;
@@ -238,14 +269,14 @@ internal static unsafe partial class NativeReviewWindow
         }
         if (message == WmNcHitTest)
         {
-            var hit = DefWindowProcW(window, message, wParam, lParam);
-            if (hit != HtClient)
-                return hit;
+            var systemHit = DefWindowProcW(window, message, wParam, lParam);
+            if (systemHit == HtVScroll)
+                return systemHit;
             var point = new Point { X = (short)(lParam & 0xffff), Y = (short)((lParam >> 16) & 0xffff) };
             if (!ScreenToClient(window, ref point))
-                return hit;
-            return point.Y >= 0 && point.Y < HeaderHeight && point.X >= 0
-                && point.X < state.ClientWidth - 45 ? HtCaption : hit;
+                return HtClient;
+            return point.Y >= 0 && point.Y < state.Px(HeaderHeight) && point.X >= 0
+                && point.X < state.ClientWidth - state.Px(45) ? HtCaption : HtClient;
         }
         if (message == WmEraseBackground)
             return 1;
@@ -271,7 +302,34 @@ internal static unsafe partial class NativeReviewWindow
             {
                 state.ClientWidth = client.Right;
                 state.ClientHeight = client.Bottom;
+                PositionButtons(state);
                 Layout(state);
+            }
+            return 0;
+        }
+        if (message == WmDpiChanged && lParam != 0)
+        {
+            state.Dpi = (uint)(wParam & 0xffff);
+            RecreateFonts(state);
+            var bounds = *(Rect*)lParam;
+            var work = BrokerReviewPlacement.WorkAreaForRect(bounds.Left, bounds.Top, bounds.Right, bounds.Bottom);
+            var size = work is null ? null : FitToWorkArea(state.Dpi, work.Value.Width, work.Value.Height);
+            if (size is null)
+            {
+                state.Result = Decision.Failed;
+                _ = DestroyWindow(window);
+                return 0;
+            }
+            var x = Math.Clamp(bounds.Left, work!.Value.Left, work.Value.Right - size.Value.Width);
+            var y = Math.Clamp(bounds.Top, work.Value.Top, work.Value.Bottom - size.Value.Height);
+            _ = SetWindowPos(window, 0, x, y, size.Value.Width, size.Value.Height, 0x0014);
+            if (GetClientRect(window, out var client))
+            {
+                state.ClientWidth = client.Right;
+                state.ClientHeight = client.Bottom;
+                PositionButtons(state);
+                Layout(state);
+                _ = InvalidateRect(window, 0, false);
             }
             return 0;
         }
@@ -283,7 +341,7 @@ internal static unsafe partial class NativeReviewWindow
         if (message == WmMouseWheel)
         {
             var delta = (short)((wParam >> 16) & 0xffff);
-            SetScroll(state, state.ScrollOffset - delta / 120 * 54);
+            SetScroll(state, state.ScrollOffset - delta / 120 * state.Px(54));
             return 0;
         }
         if (message == WmClose)
@@ -307,30 +365,63 @@ internal static unsafe partial class NativeReviewWindow
             throw new InvalidOperationException("Could not create the review layout.");
         try
         {
-            var textWidth = Math.Max(100, state.ClientWidth - 64);
+            var textWidth = Math.Max(state.Px(100), state.ClientWidth - state.Px(64));
             var y = 0;
             state.Layouts.Clear();
             foreach (var card in state.Cards)
             {
-                var titleText = Wrap(hdc, state.CardFont, card.Title, textWidth);
+                var titleText = Wrap(hdc, state.CardFont, card.Title, textWidth, state.Px(4));
                 var titleHeight = Measure(hdc, state.CardFont, titleText, textWidth);
                 var lines = new int[card.Lines.Count];
                 var lineText = new string[card.Lines.Count];
-                var height = 17 + titleHeight;
+                var height = state.Px(17) + titleHeight;
                 for (var index = 0; index < lines.Length; index++)
                 {
-                    lineText[index] = Wrap(hdc, state.DetailFont, card.Lines[index], textWidth);
+                    lineText[index] = Wrap(hdc, state.DetailFont, card.Lines[index], textWidth, state.Px(4));
                     lines[index] = Measure(hdc, state.DetailFont, lineText[index], textWidth);
-                    height = checked(height + lines[index] + 3);
+                    height = checked(height + lines[index] + state.Px(3));
                 }
-                height = checked(height + 7);
+                height = checked(height + state.Px(7));
                 state.Layouts.Add(new CardLayout(y, height, titleHeight, titleText, lines, lineText));
-                y = checked(y + height + CardGap);
+                y = checked(y + height + state.Px(CardGap));
             }
             state.ContentHeight = y;
             UpdateScroll(state);
         }
         finally { _ = ReleaseDC(state.Window, hdc); }
+    }
+
+    private static void PositionButtons(ReviewState state)
+    {
+        if (state.Discard == 0 || state.Apply == 0 || state.Close == 0)
+            return;
+        var footerTop = state.ClientHeight - state.Px(FooterHeight);
+        _ = MoveWindow(state.Discard, state.Px(16), footerTop + state.Px(11),
+            state.Px(112), state.Px(36), true);
+        _ = MoveWindow(state.Apply, state.ClientWidth - state.Px(128), footerTop + state.Px(11),
+            state.Px(112), state.Px(36), true);
+        _ = MoveWindow(state.Close, state.ClientWidth - state.Px(37), state.Px(8),
+            state.Px(28), state.Px(28), true);
+    }
+
+    private static void RecreateFonts(ReviewState state)
+    {
+        var title = CreateFont(-state.Px(17), 600);
+        var card = CreateFont(-state.Px(15), 600);
+        var detail = CreateFont(-state.Px(13), 400);
+        if (title == 0 || card == 0 || detail == 0)
+        {
+            if (title != 0) _ = DeleteObject(title);
+            if (card != 0) _ = DeleteObject(card);
+            if (detail != 0) _ = DeleteObject(detail);
+            throw new InvalidOperationException("Could not scale review fonts.");
+        }
+        if (state.TitleFont != 0) _ = DeleteObject(state.TitleFont);
+        if (state.CardFont != 0) _ = DeleteObject(state.CardFont);
+        if (state.DetailFont != 0) _ = DeleteObject(state.DetailFont);
+        state.TitleFont = title;
+        state.CardFont = card;
+        state.DetailFont = detail;
     }
 
     private static int Measure(nint hdc, nint font, string text, int width)
@@ -339,16 +430,20 @@ internal static unsafe partial class NativeReviewWindow
         try
         {
             if (text.Length == 0)
-                return 16;
+            {
+                if (!GetTextExtentExPointW(hdc, "M", 1, width, out _, 0, out var size))
+                    throw new InvalidOperationException("Could not measure review text.");
+                return size.Height;
+            }
             var rect = new Rect { Right = width };
             if (DrawTextW(hdc, text, text.Length, ref rect, DtLeft | DtWordBreak | DtCalcRect | DtNoPrefix) == 0)
                 throw new InvalidOperationException("Could not measure review text.");
-            return Math.Max(16, rect.Bottom);
+            return Math.Max(1, rect.Bottom);
         }
         finally { _ = SelectObject(hdc, old); }
     }
 
-    private static string Wrap(nint hdc, nint font, string value, int width)
+    private static string Wrap(nint hdc, nint font, string value, int width, int margin)
     {
         var old = SelectObject(hdc, font);
         try
@@ -358,7 +453,7 @@ internal static unsafe partial class NativeReviewWindow
             while (offset < value.Length)
             {
                 var remaining = value[offset..];
-                if (!GetTextExtentExPointW(hdc, remaining, remaining.Length, Math.Max(32, width - 4),
+                if (!GetTextExtentExPointW(hdc, remaining, remaining.Length, Math.Max(margin * 8, width - margin),
                         out var fit, 0, out _))
                     throw new InvalidOperationException("Could not measure review text.");
                 if (fit >= remaining.Length)
@@ -385,29 +480,30 @@ internal static unsafe partial class NativeReviewWindow
     {
         var width = state.ClientWidth;
         var height = state.ClientHeight;
+        int P(int value) => state.Px(value);
         Fill(hdc, new Rect { Right = width, Bottom = height }, Raised);
-        Fill(hdc, new Rect { Right = width, Bottom = 1 }, Outline);
-        Fill(hdc, new Rect { Right = 1, Bottom = height }, Outline);
-        Fill(hdc, new Rect { Left = width - 1, Right = width, Bottom = height }, Outline);
-        Fill(hdc, new Rect { Top = height - 1, Right = width, Bottom = height }, Outline);
-        Fill(hdc, new Rect { Top = HeaderHeight - 1, Right = width, Bottom = HeaderHeight }, Outline);
-        Fill(hdc, new Rect { Top = height - FooterHeight, Right = width, Bottom = height - FooterHeight + 1 }, Outline);
+        Fill(hdc, new Rect { Right = width, Bottom = P(1) }, Outline);
+        Fill(hdc, new Rect { Right = P(1), Bottom = height }, Outline);
+        Fill(hdc, new Rect { Left = width - P(1), Right = width, Bottom = height }, Outline);
+        Fill(hdc, new Rect { Top = height - P(1), Right = width, Bottom = height }, Outline);
+        Fill(hdc, new Rect { Top = P(HeaderHeight - 1), Right = width, Bottom = P(HeaderHeight) }, Outline);
+        Fill(hdc, new Rect { Top = height - P(FooterHeight), Right = width, Bottom = height - P(FooterHeight) + P(1) }, Outline);
 
-        var compact = width < 420;
-        var countLeft = compact ? width - 80 : width - 153;
+        var compact = width < P(420);
+        var countLeft = compact ? width - P(80) : width - P(153);
         Text(hdc, state.TitleFont, White, "Review Pending Changes",
-            new Rect { Left = 16, Top = 12, Right = countLeft - 8, Bottom = 35 }, DtSingleLine | DtNoPrefix);
+            new Rect { Left = P(16), Top = P(12), Right = countLeft - P(8), Bottom = P(35) }, DtSingleLine | DtNoPrefix);
         var count = compact ? $"{state.Cards.Count}"
             : !state.Batch ? state.Cards.Count == 1 ? "1 operation" : $"{state.Cards.Count} operations"
             : state.Cards.Count == 1 ? "1 change" : $"{state.Cards.Count} changes";
         Text(hdc, state.DetailFont, Tertiary, count,
-            new Rect { Left = countLeft, Top = 15, Right = width - 48, Bottom = 34 }, DtSingleLine | DtRight | DtNoPrefix);
+            new Rect { Left = countLeft, Top = P(15), Right = width - P(48), Bottom = P(34) }, DtSingleLine | DtRight | DtNoPrefix);
         Text(hdc, state.DetailFont, Secondary, "Approve only if every target matches your selected changes.",
-            new Rect { Left = 16, Top = HeaderHeight + 7, Right = width - 24, Bottom = HeaderHeight + NoteHeight },
+            new Rect { Left = P(16), Top = P(HeaderHeight + 7), Right = width - P(24), Bottom = P(HeaderHeight + NoteHeight) },
             DtWordBreak | DtNoPrefix);
 
-        var listTop = HeaderHeight + NoteHeight;
-        var listBottom = height - FooterHeight;
+        var listTop = P(HeaderHeight + NoteHeight);
+        var listBottom = height - P(FooterHeight);
         var saved = SaveDC(hdc);
         if (saved == 0)
             throw new InvalidOperationException("Could not save the review canvas.");
@@ -432,8 +528,9 @@ internal static unsafe partial class NativeReviewWindow
 
     private static void DrawCard(nint hdc, ReviewState state, BrokerReviewCard card, CardLayout layout, int top)
     {
-        var left = 8;
-        var right = state.ClientWidth - 24;
+        int P(int value) => state.Px(value);
+        var left = P(8);
+        var right = state.ClientWidth - P(24);
         var color = card.Category switch
         {
             ChangeCategory.Enable or ChangeCategory.Create => SuccessMuted,
@@ -442,20 +539,20 @@ internal static unsafe partial class NativeReviewWindow
             _ => Raised,
         };
         RoundFill(hdc, new Rect { Left = left, Top = top, Right = right, Bottom = top + layout.Height },
-            color, card.Category is null ? Outline : color, 5);
-        var x = left + 12;
-        var textRight = right - 12;
-        var y = top + 8;
+            color, card.Category is null ? Outline : color, P(5));
+        var x = left + P(12);
+        var textRight = right - P(12);
+        var y = top + P(8);
         Text(hdc, state.CardFont, White, layout.TitleText,
             new Rect { Left = x, Top = y, Right = textRight, Bottom = y + layout.TitleHeight }, DtWordBreak | DtNoPrefix);
-        y += layout.TitleHeight + 5;
+        y += layout.TitleHeight + P(5);
         for (var index = 0; index < card.Lines.Count; index++)
         {
             var colorForLine = index == 1 && card.Category is not null ? White : index == 0 ? Secondary : Tertiary;
             Text(hdc, state.DetailFont, colorForLine, layout.LineText[index],
                 new Rect { Left = x, Top = y, Right = textRight, Bottom = y + layout.LineHeights[index] },
                 DtWordBreak | DtNoPrefix);
-            y += layout.LineHeights[index] + 3;
+            y += layout.LineHeights[index] + P(3);
         }
     }
 
@@ -466,36 +563,25 @@ internal static unsafe partial class NativeReviewWindow
             Fill(item->Hdc, item->Bounds, Raised);
             Text(item->Hdc, state.TitleFont, Secondary, "×", item->Bounds,
                 DtSingleLine | DtVCenter | DtNoPrefix | 1);
-            if ((item->ItemState & 0x10) != 0)
-                _ = DrawFocusRect(item->Hdc, in item->Bounds);
             return;
         }
         var apply = item->ControlId == ApplyButton;
         var selected = (item->ItemState & 1) != 0;
         var background = apply ? selected ? 0xA8683F : Accent : selected ? 0x6A4C4C : Overlay;
         Fill(item->Hdc, item->Bounds, Raised);
-        RoundFill(item->Hdc, item->Bounds, background, apply ? AccentOutline : Outline, 4);
+        RoundFill(item->Hdc, item->Bounds, background, apply ? AccentOutline : Outline, state.Px(4));
         Text(item->Hdc, state.DetailFont, apply ? White : Secondary,
             apply ? state.Batch ? "Apply All" : "Confirm" : state.Batch ? "Discard All" : "Cancel",
             item->Bounds, DtSingleLine | DtVCenter | DtNoPrefix | 1);
-        if ((item->ItemState & 0x10) != 0)
-        {
-            var focus = item->Bounds;
-            focus.Left += 3;
-            focus.Top += 3;
-            focus.Right -= 3;
-            focus.Bottom -= 3;
-            _ = DrawFocusRect(item->Hdc, in focus);
-        }
     }
 
     private static void Scroll(ReviewState state, int command)
     {
-        var viewport = Math.Max(1, state.ClientHeight - FooterHeight - HeaderHeight - NoteHeight);
+        var viewport = Math.Max(1, state.ClientHeight - state.Px(FooterHeight + HeaderHeight + NoteHeight));
         var next = command switch
         {
-            0 => state.ScrollOffset - 30,
-            1 => state.ScrollOffset + 30,
+            0 => state.ScrollOffset - state.Px(30),
+            1 => state.ScrollOffset + state.Px(30),
             2 => state.ScrollOffset - viewport,
             3 => state.ScrollOffset + viewport,
             4 or 5 => TrackPosition(state),
@@ -514,7 +600,7 @@ internal static unsafe partial class NativeReviewWindow
 
     private static void SetScroll(ReviewState state, int position)
     {
-        var viewport = Math.Max(1, state.ClientHeight - FooterHeight - HeaderHeight - NoteHeight);
+        var viewport = Math.Max(1, state.ClientHeight - state.Px(FooterHeight + HeaderHeight + NoteHeight));
         var clamped = Math.Clamp(position, 0, Math.Max(0, state.ContentHeight - viewport));
         if (clamped == state.ScrollOffset)
             return;
@@ -525,7 +611,7 @@ internal static unsafe partial class NativeReviewWindow
 
     private static void UpdateScroll(ReviewState state)
     {
-        var viewport = Math.Max(1, state.ClientHeight - FooterHeight - HeaderHeight - NoteHeight);
+        var viewport = Math.Max(1, state.ClientHeight - state.Px(FooterHeight + HeaderHeight + NoteHeight));
         var info = new ScrollInfo
         {
             Size = (uint)sizeof(ScrollInfo),
@@ -606,6 +692,9 @@ internal static unsafe partial class NativeReviewWindow
         internal int ContentHeight;
         internal int ScrollOffset;
         internal bool LoopStarted;
+        internal uint Dpi = 96;
+
+        internal int Px(int logical) => Scale(logical, Dpi);
     }
 
     private sealed record CardLayout(int Top, int Height, int TitleHeight, string TitleText,
@@ -705,10 +794,6 @@ internal static unsafe partial class NativeReviewWindow
     [LibraryImport("user32.dll", EntryPoint = "GetMessageW")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static partial int GetMessageW(out Message message, nint window, uint min, uint max);
-    [LibraryImport("user32.dll", EntryPoint = "IsDialogMessageW")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    private static partial bool IsDialogMessageW(nint window, ref Message message);
     [LibraryImport("user32.dll", EntryPoint = "TranslateMessage")]
     [return: MarshalAs(UnmanagedType.Bool)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
@@ -730,6 +815,19 @@ internal static unsafe partial class NativeReviewWindow
     [LibraryImport("user32.dll", EntryPoint = "SetFocus")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static partial nint SetFocus(nint window);
+    [LibraryImport("user32.dll", EntryPoint = "SetThreadDpiAwarenessContext")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial nint SetThreadDpiAwarenessContext(nint context);
+    [LibraryImport("user32.dll", EntryPoint = "SetWindowPos")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial bool SetWindowPos(nint window, nint insertAfter, int x, int y,
+        int width, int height, uint flags);
+    [LibraryImport("user32.dll", EntryPoint = "MoveWindow")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial bool MoveWindow(nint window, int x, int y, int width, int height,
+        [MarshalAs(UnmanagedType.Bool)] bool repaint);
     [LibraryImport("user32.dll", EntryPoint = "GetSystemMetrics")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static partial int GetSystemMetrics(int index);
@@ -775,10 +873,6 @@ internal static unsafe partial class NativeReviewWindow
     [LibraryImport("user32.dll", EntryPoint = "FillRect")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static partial int FillRect(nint hdc, in Rect rect, nint brush);
-    [LibraryImport("user32.dll", EntryPoint = "DrawFocusRect")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    private static partial bool DrawFocusRect(nint hdc, in Rect rect);
     [LibraryImport("user32.dll", EntryPoint = "InvalidateRect")]
     [return: MarshalAs(UnmanagedType.Bool)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]

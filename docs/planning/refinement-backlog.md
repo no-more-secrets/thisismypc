@@ -16,7 +16,9 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 - DONE: The app requests one administrator confirmation at startup and keeps the broker connected until the UI closes.
 - DONE: Apply sends staged operations to a native Win32 broker window. Apply All authorizes the batch; Discard All clears it. Closing the window keeps changes staged.
 - DONE: The broker finds the verified UI window and places its review above the Apply bar, with the Apply buttons aligned. Saved UI zoom adjusts placement.
+- DONE October 9: the native review follows monitor scaling, sizes itself to the UI monitor, redraws on DPI changes, and requests rounded corners. Arrow keys no longer select its buttons.
 - Verified: CI-safe tests, native review button and placement tests, rendered review and Apply bar screenshots, fresh review, and a NativeAOT broker publish.
+- Verified October 9: native review tests cover DPI changes, small monitor bounds, scrollbar hit testing, keyboard behavior, and the DWM corner setting. The NativeAOT broker publish embeds PerMonitorV2 awareness.
 - Pending: Verify startup UAC, elevated review focus, live Apply, broker exit, and mixed-DPI placement on a normal Windows installation.
 
 ## Network & Firewall initial tabs (2026-10-07)

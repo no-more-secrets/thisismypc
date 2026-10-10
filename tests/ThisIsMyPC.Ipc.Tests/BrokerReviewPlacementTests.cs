@@ -12,20 +12,24 @@ public sealed partial class BrokerReviewPlacementTests
     [Fact]
     public void ReviewApplyButtonLinesUpWithAppApplyButton()
     {
-        var position = BrokerReviewPlacement.Align(1200, 800, 1, 480, 540, 0, 0, 1920, 1080);
+        var position = BrokerReviewPlacement.Align(1200, 800, 1, 1, 480, 540, 0, 0, 1920, 1080);
 
         Assert.Equal(1159, position.X + 480 - 16);
         Assert.Equal(726 - 8, position.Y + 540);
 
-        var scaled = BrokerReviewPlacement.Align(1800, 1200, 1.5, 480, 540, 0, 0, 2400, 1600);
-        Assert.Equal(1800 - (int)Math.Round(41 * 1.5), scaled.X + 480 - 16);
-        Assert.Equal(1200 - (int)Math.Round(82 * 1.5), scaled.Y + 540);
+        var scaled = BrokerReviewPlacement.Align(1800, 1200, 1.5, 1.5, 720, 810, 0, 0, 2400, 1600);
+        Assert.Equal(1800 - (int)Math.Round(41 * 1.5), scaled.X + 720 - 24);
+        Assert.Equal(1200 - (int)Math.Round(82 * 1.5), scaled.Y + 810);
+
+        var zoomed = BrokerReviewPlacement.Align(1800, 1200, 1.5, 1, 480, 540, 0, 0, 2400, 1600);
+        Assert.Equal(1800 - (int)Math.Round(41 * 1.5), zoomed.X + 480 - 16);
+        Assert.Equal(1200 - (int)Math.Round(74 * 1.5) - 8, zoomed.Y + 540);
     }
 
     [Fact]
     public void ReviewStaysInsideTheMonitorWorkArea()
     {
-        var position = BrokerReviewPlacement.Align(950, 650, 1, 480, 540, 300, 200, 900, 700);
+        var position = BrokerReviewPlacement.Align(950, 650, 1, 1, 480, 540, 300, 200, 900, 700);
 
         Assert.Equal(420, position.X);
         Assert.Equal(200, position.Y);
@@ -85,12 +89,22 @@ public sealed partial class BrokerReviewPlacementTests
                 Thread.Sleep(50);
             }
             Assert.NotEqual(0, reviewWindow);
-            Assert.True(GetWindowRect(reviewWindow, out var bounds));
-            var expected = BrokerReviewPlacement.ForUiProcess(Environment.ProcessId,
-                bounds.Right - bounds.Left, bounds.Bottom - bounds.Top);
-            Assert.NotNull(expected);
-            Assert.Equal(expected.Value.X, bounds.Left);
-            Assert.Equal(expected.Value.Y, bounds.Top);
+            var previousDpiContext = SetThreadDpiAwarenessContext((nint)(-4));
+            Rect bounds;
+            try
+            {
+                Assert.True(GetWindowRect(reviewWindow, out bounds));
+                var expected = BrokerReviewPlacement.ForUiProcess(Environment.ProcessId,
+                    bounds.Right - bounds.Left, bounds.Bottom - bounds.Top);
+                Assert.NotNull(expected);
+                Assert.Equal(expected.Value.X, bounds.Left);
+                Assert.Equal(expected.Value.Y, bounds.Top);
+            }
+            finally
+            {
+                if (previousDpiContext != 0)
+                    _ = SetThreadDpiAwarenessContext(previousDpiContext);
+            }
             if (Environment.GetEnvironmentVariable("TIPC_PLACEMENT_SHOT") is { Length: > 0 } imagePath)
             {
                 Thread.Sleep(250);
@@ -150,4 +164,7 @@ public sealed partial class BrokerReviewPlacementTests
     [return: MarshalAs(UnmanagedType.Bool)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static partial bool PrintWindow(nint window, nint device, uint flags);
+    [LibraryImport("user32.dll", EntryPoint = "SetThreadDpiAwarenessContext")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial nint SetThreadDpiAwarenessContext(nint context);
 }
