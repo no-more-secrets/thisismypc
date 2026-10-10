@@ -20,6 +20,22 @@ namespace ThisIsMyPC.App.UiTests;
 public class SetupGuideTests
 {
     [AvaloniaFact]
+    public void OptionalPackEntry_RequiresSelectionBeforeStaging()
+    {
+        var row = new SetEntryPreviewViewModel(new()
+        {
+            Entry = new() { ModuleId = "Startup & Services", SettingId = "service-starttype:WSearch",
+                Value = "Disabled", Description = "Disable indexing", SelectedByDefault = false },
+            State = new() { SettingDisplayName = "Windows Search", CurrentValue = "Automatic", CurrentDisplay = "Automatic", IsApplied = false },
+            SkipReason = null, Conflict = SetEntryConflict.None,
+        }, () => { });
+        Assert.False(row.IsIncluded);
+        Assert.True(row.CanToggle);
+        row.IsIncluded = true;
+        Assert.True(row.IsIncluded);
+    }
+
+    [AvaloniaFact]
     public void StricterPolicy_IsShownAsCoveredAndNotSelected()
     {
         var entry = new SetEntry { ModuleId = "Privacy & Telemetry", SettingId = "telemetry-level", Value = "1", Description = "Required diagnostics" };
@@ -104,6 +120,9 @@ public class SetupGuideTests
         var guide = new SetupGuideViewModel(modules, new Hardware(3), e => excluded = e, _ => { }, () => { });
         await guide.CheckDesktopAsync();
         Assert.True(guide.IsDesktop);
+        Assert.Equal("Welcome", guide.Lessons[0].Label);
+        Assert.All(modules, module => Assert.Equal(SidebarItemViewModel.GetIconSymbol(module.Module.Info.Icon),
+            guide.Lessons.Single(l => l.ModuleName == module.Module.Info.Name).IconSymbol));
         Assert.Equal(modules.Length + 3, guide.Lessons.Count);
         Assert.All(guide.Lessons.Where(l => l.ModuleName is not null), lesson =>
             Assert.NotEqual(modules.Single(m => m.Module.Info.Name == lesson.ModuleName).Module.Info.Description, lesson.Body));

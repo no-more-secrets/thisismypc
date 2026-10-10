@@ -33,7 +33,8 @@ do not distribute desktop-only packs for use with older builds.
 ## Desktop setup guide
 
 Home > Setup guide introduces every registered module, including unavailable modules.
-Each lesson explains the controls, the behavior behind them, recommended choices, and ongoing maintenance.
+Welcome introduces the tutorial. Each module uses its sidebar icon and gives concrete steps for trying its controls.
+Draft additions belong in `docs/planning/tutorial-notes.txt`; saving that notebook does not change runtime lesson text.
 Module availability is not a claim that its settings were scanned. Open module performs the existing module inspection.
 Returning through Home resumes the lesson and selections during the current app session.
 
@@ -42,13 +43,17 @@ Portable and unknown machines can read lessons but cannot open the pack from the
 The final Review pack button selects the bundled Desktop Grand Pack and carries excluded module recommendations forward.
 The pack separately reviews live settings and recommended app removals; no lesson applies changes.
 
-The first pass includes Windows promotion, optional tracking, Copilot, and Widgets recommendations,
-plus removals for Clipchamp, News, Weather, Copilot, and the Microsoft 365 hub when installed.
-It does not disable updates, security protections, arbitrary services, or hardware controls.
-Those modules receive teaching and links for individual review. This is not a claim that every cleanup setting is covered.
+The pack contains all entries from Clean Boot, NukeCopilot, Privacy Baseline, and Windows Update Control.
+It adds Widgets and the classic context menu from Windows 10-ify, plus optional Windows Search startup disabling.
+There are 58 settings and five app removals: Clipchamp, News, Weather, Copilot, and Microsoft 365 Hub when installed.
+The Search entry starts unchecked. It changes the service startup type, does not stop an already-running service,
+and does not delete the index. Indexed file and Outlook searches are affected after the service stops or Windows restarts.
+The update set pins the current feature release and selects notification before download; users must check updates and release support.
+Defender engine removal remains a requested extension, not an implemented pack action. It needs a supported implementation and recovery tests.
 
 Teaching references: Microsoft's [diagnostic data explanation](https://support.microsoft.com/en-us/windows/privacy/diagnostics-feedback-and-privacy-in-windows)
 and [connected experiences explanation](https://support.microsoft.com/en-us/windows/experience/essential-services-and-connected-experiences-for-windows).
+Search scope follows Microsoft's [search indexing documentation](https://support.microsoft.com/en-US/Windows/Experience/Performance-Optimization/search-indexing-in-windows).
 Device, module, and removal claims follow the app's existing classifiers, availability checks, and action factories.
 
 Remaining refinements: saved progress across app restarts, per-setting lessons within modules, richer live findings,
@@ -64,6 +69,7 @@ and a post-apply guided results page. First-pass entry is the persistent Home in
 | `description` | string | yes | Human-readable explanation shown in the preview |
 | `displayValue` | string | no | Human-readable rendering of `value`, e.g. `"Hidden"` |
 | `group` | string | no | Constituent-set label; optimization pack previews group entries by this |
+| `selectedByDefault` | boolean | no | Defaults to `true`. Set `false` for an optional entry that starts unchecked. Conflict and availability checks still apply. |
 | `enforcement` | object | no | See below |
 
 ## Enforcement object (mirrors `SettingEnforcement`)

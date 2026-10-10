@@ -1,8 +1,8 @@
 {
   "name": "Desktop Grand Pack",
-  "description": "Reduce Windows promotions and optional tracking. Review recommended app removals before applying.",
+  "description": "All four tweak sets, selected Explorer changes, and recommended app removals.",
   "category": "OptimizationPack",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": "ThisIsMyPC",
   "desktopOnly": true,
   "appRemovals": [
@@ -14,108 +14,260 @@
   ],
   "entries": [
     {
-      "moduleId": "Privacy & Telemetry",
-      "settingId": "telemetry-level",
-      "value": "1",
-      "displayValue": "Required only",
-      "description": "Limits optional Windows diagnostic data. Required diagnostic data can still be sent.",
-      "group": "Privacy & Telemetry"
-    },
-    {
-      "moduleId": "Privacy & Telemetry",
-      "settingId": "app-launch-tracking",
-      "value": "0",
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:DiagTrack",
+      "value": "Disabled",
       "displayValue": "Disabled",
-      "description": "Stops Windows from recording which apps you start.",
-      "group": "Privacy & Telemetry"
+      "description": "Connected User Experiences and Telemetry - the main Windows diagnostic-data collection service.",
+      "group": "Clean Boot"
     },
     {
-      "moduleId": "Windows Annoyances",
-      "settingId": "advertising-id",
-      "value": "0",
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:dptftcs",
+      "value": "Disabled",
       "displayValue": "Disabled",
-      "description": "Stops apps from using your per-user Advertising ID to build a cross-app profile for targeted ads.",
-      "group": "Windows Annoyances"
+      "description": "Intel Dynamic Tuning telemetry collection service (skipped automatically on machines without it).",
+      "group": "Clean Boot"
     },
     {
-      "moduleId": "Windows Annoyances",
-      "settingId": "activity-history",
-      "value": "0",
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:DusmSvc",
+      "value": "Disabled",
       "displayValue": "Disabled",
-      "description": "Stops Windows from collecting your local application activity history (Timeline/Activity Feed).",
-      "group": "Windows Annoyances"
+      "description": "Data Usage tracking service - meters per-app network usage for the Settings app.",
+      "group": "Clean Boot"
     },
     {
-      "moduleId": "Windows Annoyances",
-      "settingId": "recall",
-      "value": "0",
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:TrkWks",
+      "value": "Disabled",
       "displayValue": "Disabled",
-      "description": "Blocks Windows Recall snapshots and AI analysis of your activity (three WindowsAI policies set together).",
-      "group": "Windows Annoyances"
+      "description": "Distributed Link Tracking Client - tracks NTFS file links across machines; unused on standalone PCs.",
+      "group": "Clean Boot"
     },
     {
-      "moduleId": "Windows Annoyances",
-      "settingId": "app-suggestions",
-      "value": "0",
-      "displayValue": "Suppressed",
-      "description": "Stops Windows from suggesting Store apps to install in the Start menu.",
-      "group": "Windows Annoyances"
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:WdiServiceHost",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "description": "Diagnostic Service Host - runs background Windows troubleshooting diagnostics.",
+      "group": "Clean Boot"
     },
     {
-      "moduleId": "Windows Annoyances",
-      "settingId": "windows-tips",
-      "value": "0",
-      "displayValue": "Suppressed",
-      "description": "Stops tip notifications and \"Get the most out of Windows\" prompts.",
-      "group": "Windows Annoyances"
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:WdiSystemHost",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "description": "Diagnostic System Host - system-level companion to the diagnostic service host.",
+      "group": "Clean Boot"
     },
     {
-      "moduleId": "Windows Annoyances",
-      "settingId": "settings-suggestions",
-      "value": "0",
-      "displayValue": "Suppressed",
-      "description": "Stops the suggestion entries Windows injects into the Settings app and Start pane.",
-      "group": "Windows Annoyances"
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:PcaSvc",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "description": "Program Compatibility Assistant - monitors every program launch for legacy compatibility issues.",
+      "group": "Clean Boot"
     },
     {
-      "moduleId": "Windows Annoyances",
-      "settingId": "settings-suggested-content",
-      "value": "0",
-      "displayValue": "Suppressed",
-      "description": "Stops the ad-like \"suggested content\" tiles in the Settings app (three ContentDeliveryManager values set together).",
-      "group": "Windows Annoyances"
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:InventorySvc",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "description": "Inventory and Compatibility Appraisal service - scans installed software for upgrade telemetry.",
+      "group": "Clean Boot"
     },
     {
-      "moduleId": "Windows Annoyances",
-      "settingId": "lock-screen-ads",
-      "value": "0",
-      "displayValue": "Suppressed",
-      "description": "Removes tips, fun facts, and ads from the lock screen. Spotlight wallpapers keep working.",
-      "group": "Windows Annoyances"
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:MapsBroker",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "description": "Downloaded Maps Manager - only needed by apps that use offline Windows Maps data.",
+      "group": "Clean Boot"
     },
     {
-      "moduleId": "Windows Annoyances",
-      "settingId": "preinstalled-apps",
-      "value": "0",
-      "displayValue": "Suppressed",
-      "description": "Stops promotions for OEM and preinstalled apps and the related feature tips.",
-      "group": "Windows Annoyances"
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:PhoneSvc",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "description": "Phone Service - telephony state backing for the Your Phone / calling stack.",
+      "group": "Clean Boot"
     },
     {
-      "moduleId": "Windows Annoyances",
-      "settingId": "silent-app-installs",
-      "value": "0",
-      "displayValue": "Suppressed",
-      "description": "Stops Windows from silently installing suggested Store apps onto the Start menu.",
-      "group": "Windows Annoyances"
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:WpcMonSvc",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "description": "Parental Controls monitoring service - unused when no child accounts are configured.",
+      "group": "Clean Boot"
     },
     {
-      "moduleId": "Windows Annoyances",
-      "settingId": "bing-search",
-      "value": "0",
-      "displayValue": "Suppressed",
-      "description": "Stops Start Menu search from sending your queries to Bing; results stay local (may require an Explorer restart).",
-      "group": "Windows Annoyances"
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:RemoteRegistry",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "description": "Remote Registry - lets remote users modify this machine's registry; disabling it also hardens the system.",
+      "group": "Clean Boot"
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:RemoteAccess",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "description": "Routing and Remote Access - dial-up/VPN routing server components; unused on desktops.",
+      "group": "Clean Boot"
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:NetTcpPortSharing",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "description": "Net.Tcp Port Sharing - WCF port-sharing for server workloads; unused on client machines.",
+      "group": "Clean Boot"
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:WSAIFabricSvc",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "description": "Windows AI fabric service - backing service for on-device Windows AI workloads.",
+      "group": "Clean Boot"
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:MsKeyboardFilter",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "description": "Microsoft Keyboard Filter - kiosk-mode key suppression; unused outside assigned-access setups.",
+      "group": "Clean Boot"
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:AssignedAccessManagerSvc",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "description": "Assigned Access Manager - kiosk-mode configuration service.",
+      "group": "Clean Boot"
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:shpamsvc",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "description": "Shared PC Account Manager - shared-device account cleanup; unused on personal machines.",
+      "group": "Clean Boot"
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:AppVClient",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "description": "Microsoft App-V Client - enterprise application virtualization; unused outside managed deployments.",
+      "group": "Clean Boot"
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:UevAgentService",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "description": "User Experience Virtualization agent - enterprise settings roaming; unused outside managed deployments.",
+      "group": "Clean Boot"
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:DialogBlockingService",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "description": "Dialog Blocking Service - suppresses dialogs on managed/kiosk devices; unused on personal machines.",
+      "group": "Clean Boot"
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:edgeupdate",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "description": "Disables an Edge update service. Restore the service before updating Edge.",
+      "group": "Clean Boot"
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:edgeupdatem",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "description": "Disables the second Edge update service. Restore both services before updating Edge.",
+      "group": "Clean Boot"
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "scheduled-task:\\Microsoft\\Windows\\Application Experience\\Microsoft Compatibility Appraiser Exp",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "description": "Compatibility Appraiser - scans installed software and uploads upgrade-readiness telemetry.",
+      "group": "Clean Boot"
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "scheduled-task:\\Microsoft\\Windows\\Application Experience\\ProgramDataUpdater",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "description": "Application Experience program data collector and uploader.",
+      "group": "Clean Boot"
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "scheduled-task:\\Microsoft\\Windows\\Application Experience\\MareBackup",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "description": "Application Experience compatibility backup task.",
+      "group": "Clean Boot"
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "scheduled-task:\\Microsoft\\Windows\\Customer Experience Improvement Program\\Consolidator",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "description": "Customer Experience Improvement Program data consolidator and uploader.",
+      "group": "Clean Boot"
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "scheduled-task:\\Microsoft\\Windows\\Customer Experience Improvement Program\\UsbCeip",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "description": "Customer Experience Improvement Program USB device telemetry collector.",
+      "group": "Clean Boot"
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "scheduled-task:\\Microsoft\\Windows\\Autochk\\Proxy",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "description": "Uploads autochk (disk check) results to the Software Quality Management telemetry pipeline.",
+      "group": "Clean Boot"
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "scheduled-task:\\Microsoft\\Windows\\DiskDiagnostic\\Microsoft-Windows-DiskDiagnosticDataCollector",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "description": "Disk diagnostic telemetry collector for the Windows Disk Diagnostic program.",
+      "group": "Clean Boot"
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "scheduled-task:\\Microsoft\\Windows\\DiskDiagnostic\\Microsoft-Windows-DiskDiagnosticResolver",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "description": "Disk diagnostic user-notification resolver (companion to the data collector).",
+      "group": "Clean Boot"
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "scheduled-task:\\Microsoft\\Windows\\Maps\\MapsUpdateTask",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "description": "Background updater for offline Windows Maps data (pairs with disabling MapsBroker).",
+      "group": "Clean Boot"
     },
     {
       "moduleId": "Windows Annoyances",
@@ -123,7 +275,7 @@
       "value": "1",
       "displayValue": "Disabled",
       "description": "Disables the Windows Copilot assistant by policy in both machine and user scope (may require an Explorer restart).",
-      "group": "Windows Annoyances"
+      "group": "NukeCopilot"
     },
     {
       "moduleId": "Windows Annoyances",
@@ -131,7 +283,7 @@
       "value": "0",
       "displayValue": "Hidden",
       "description": "Removes the Copilot button from the taskbar (may require an Explorer restart).",
-      "group": "Windows Annoyances"
+      "group": "NukeCopilot"
     },
     {
       "moduleId": "Windows Annoyances",
@@ -139,15 +291,192 @@
       "value": "0",
       "displayValue": "Disabled",
       "description": "Removes Microsoft Edge's Hubs sidebar, including its Copilot rail. Takes effect the next time Edge restarts.",
-      "group": "Windows Annoyances"
+      "group": "NukeCopilot"
+    },
+    {
+      "moduleId": "Privacy & Telemetry",
+      "settingId": "telemetry-level",
+      "value": "1",
+      "displayValue": "Required only",
+      "description": "Limits optional diagnostic data.",
+      "group": "Privacy Baseline"
+    },
+    {
+      "moduleId": "Privacy & Telemetry",
+      "settingId": "error-reporting",
+      "value": "1",
+      "displayValue": "Disabled",
+      "description": "Stops crash reports from being sent to Microsoft.",
+      "group": "Privacy Baseline"
+    },
+    {
+      "moduleId": "Privacy & Telemetry",
+      "settingId": "app-launch-tracking",
+      "value": "0",
+      "displayValue": "Disabled",
+      "description": "Stops Windows from recording which apps you start.",
+      "group": "Privacy Baseline"
+    },
+    {
+      "moduleId": "Privacy & Telemetry",
+      "settingId": "inking-typing",
+      "value": "1",
+      "displayValue": "Disabled",
+      "description": "Stops handwriting, typing history, and contact collection for the personal dictionary.",
+      "group": "Privacy Baseline"
+    },
+    {
+      "moduleId": "Windows Annoyances",
+      "settingId": "advertising-id",
+      "value": "0",
+      "displayValue": "Disabled",
+      "description": "Stops apps from using your per-user Advertising ID to build a cross-app profile for targeted ads.",
+      "group": "Privacy Baseline"
+    },
+    {
+      "moduleId": "Windows Annoyances",
+      "settingId": "activity-history",
+      "value": "0",
+      "displayValue": "Disabled",
+      "description": "Stops Windows from collecting your local application activity history (Timeline/Activity Feed).",
+      "group": "Privacy Baseline"
+    },
+    {
+      "moduleId": "Windows Annoyances",
+      "settingId": "recall",
+      "value": "0",
+      "displayValue": "Disabled",
+      "description": "Blocks Windows Recall snapshots and AI analysis of your activity (three WindowsAI policies set together).",
+      "group": "Privacy Baseline"
+    },
+    {
+      "moduleId": "Windows Annoyances",
+      "settingId": "app-suggestions",
+      "value": "0",
+      "displayValue": "Suppressed",
+      "description": "Stops Windows from suggesting Store apps to install in the Start menu.",
+      "group": "Privacy Baseline"
+    },
+    {
+      "moduleId": "Windows Annoyances",
+      "settingId": "windows-tips",
+      "value": "0",
+      "displayValue": "Suppressed",
+      "description": "Stops tip notifications and \"Get the most out of Windows\" prompts.",
+      "group": "Privacy Baseline"
+    },
+    {
+      "moduleId": "Windows Annoyances",
+      "settingId": "settings-suggestions",
+      "value": "0",
+      "displayValue": "Suppressed",
+      "description": "Stops the suggestion entries Windows injects into the Settings app and Start pane.",
+      "group": "Privacy Baseline"
+    },
+    {
+      "moduleId": "Windows Annoyances",
+      "settingId": "settings-suggested-content",
+      "value": "0",
+      "displayValue": "Suppressed",
+      "description": "Stops the ad-like \"suggested content\" tiles in the Settings app (three ContentDeliveryManager values set together).",
+      "group": "Privacy Baseline"
+    },
+    {
+      "moduleId": "Windows Annoyances",
+      "settingId": "lock-screen-ads",
+      "value": "0",
+      "displayValue": "Suppressed",
+      "description": "Removes tips, fun facts, and ads from the lock screen. Spotlight wallpapers keep working.",
+      "group": "Privacy Baseline"
+    },
+    {
+      "moduleId": "Windows Annoyances",
+      "settingId": "preinstalled-apps",
+      "value": "0",
+      "displayValue": "Suppressed",
+      "description": "Stops promotions for OEM and preinstalled apps and the related feature tips.",
+      "group": "Privacy Baseline"
+    },
+    {
+      "moduleId": "Windows Annoyances",
+      "settingId": "silent-app-installs",
+      "value": "0",
+      "displayValue": "Suppressed",
+      "description": "Stops Windows from silently installing suggested Store apps onto the Start menu.",
+      "group": "Privacy Baseline"
+    },
+    {
+      "moduleId": "Windows Annoyances",
+      "settingId": "bing-search",
+      "value": "0",
+      "displayValue": "Suppressed",
+      "description": "Stops Start Menu search from sending your queries to Bing; results stay local (may require an Explorer restart).",
+      "group": "Privacy Baseline"
+    },
+    {
+      "moduleId": "Windows Update",
+      "settingId": "version-pin",
+      "value": "1",
+      "displayValue": "Pinned to current release",
+      "description": "Pins the machine to its current Windows feature release (TargetReleaseVersion + ProductVersion + TargetReleaseVersionInfo set together from the live OS version). Remove the pin before the release reaches end of servicing.",
+      "group": "Windows Update Control"
+    },
+    {
+      "moduleId": "Windows Update",
+      "settingId": "auto-update-mode",
+      "value": "2",
+      "displayValue": "Notify before download",
+      "description": "Windows Update announces available updates instead of downloading and installing on its own schedule (AUOptions = 2). Updates then wait for you - check in regularly.",
+      "group": "Windows Update Control"
+    },
+    {
+      "moduleId": "Windows Update",
+      "settingId": "no-auto-reboot",
+      "value": "1",
+      "displayValue": "No auto-restart while signed in",
+      "description": "Stops Windows Update from rebooting the machine while a user is signed in.",
+      "group": "Windows Update Control"
+    },
+    {
+      "moduleId": "Windows Update",
+      "settingId": "exclude-drivers",
+      "value": "1",
+      "displayValue": "Drivers excluded",
+      "description": "Keeps quality updates from replacing OEM GPU/audio/chipset drivers with generic WHQL versions.",
+      "group": "Windows Update Control"
+    },
+    {
+      "moduleId": "Windows Update",
+      "settingId": "delivery-optimization",
+      "value": "0",
+      "displayValue": "HTTP only",
+      "description": "Update downloads come from Microsoft servers only - no peer-to-peer upload/download with other PCs.",
+      "group": "Windows Update Control"
+    },
+    {
+      "moduleId": "Explorer",
+      "settingId": "classic-context-menu",
+      "value": "",
+      "displayValue": "Classic (Windows 10) menu",
+      "description": "Shows the full right-click menu. May require an Explorer restart.",
+      "group": "Windows 10-ify"
     },
     {
       "moduleId": "Explorer",
       "settingId": "taskbar-widgets",
       "value": "0",
       "displayValue": "Hidden",
-      "description": "Removes the Widgets button and its news-and-interests feed from the taskbar.",
-      "group": "Explorer"
+      "description": "Hides Widgets from the taskbar.",
+      "group": "Windows 10-ify"
+    },
+    {
+      "moduleId": "Startup & Services",
+      "settingId": "service-starttype:WSearch",
+      "value": "Disabled",
+      "displayValue": "Disabled",
+      "description": "Disables indexing after the service stops or Windows restarts. Affects indexed file and Outlook searches. Keeps the existing index.",
+      "group": "Search indexing (optional)",
+      "selectedByDefault": false
     }
   ]
 }

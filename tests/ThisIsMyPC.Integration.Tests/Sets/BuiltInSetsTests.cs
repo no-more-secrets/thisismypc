@@ -209,7 +209,19 @@ public sealed class BuiltInSetsTests
         Assert.NotEmpty(pack.AppRemovals);
         Assert.All(pack.AppRemovals, id => Assert.True(
             ThisIsMyPC.Modules.Software.Services.WindowsAppsCatalog.Entries.Single(e => e.Id == id).CanReinstall));
-        Assert.DoesNotContain(pack.Entries, e => e.ModuleId is "Security" or "Windows Update" or "Network & Firewall");
+        Assert.DoesNotContain(pack.Entries, e => e.ModuleId is "Security" or "Network & Firewall");
+        foreach (var set in _result.Sets.Where(s => s.Category == SetCategory.TweakSet))
+        {
+            foreach (var entry in set.Entries)
+            {
+                var included = Assert.Single(pack.Entries, p => p.ModuleId == entry.ModuleId && p.SettingId == entry.SettingId);
+                Assert.Equal(entry.Value, included.Value);
+                Assert.True(included.SelectedByDefault);
+            }
+        }
+        var search = Assert.Single(pack.Entries, e => e.SettingId == "service-starttype:WSearch");
+        Assert.False(search.SelectedByDefault);
+        Assert.Equal("Disabled", search.Value);
     }
 
     [Fact]

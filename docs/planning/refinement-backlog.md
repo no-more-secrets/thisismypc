@@ -7,7 +7,10 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 - First pass: Home offers a guide explaining every module, Windows and app behavior, choices, and ongoing maintenance.
 - Revised after review: concrete examples replace the four repeated lesson headings. Cleanup modules come first. Navigation shares Presets card styles and keeps the selected card visible, with tested scrollbar clearance.
 - The guide carries module exclusions into the Desktop Grand Pack in Presets. Individual entries remain editable before staging.
-- The pack includes promotion and optional tracking controls, Copilot and Widgets choices, and five recommended Windows app removals.
+- The pack includes all four tweak sets, Widgets and the classic context menu from Windows 10-ify, five app removals, and optional Search startup disabling.
+- Tutorial starts at Welcome, uses sidebar icons, and includes steps for trying controls. Prose additions live in `tutorial-notes.txt` for refinement before runtime integration.
+- The pack has 58 settings. Windows Search starts unchecked; its setting changes startup type without deleting the index or immediately stopping the service.
+- Defender engine removal is a requested optional pack extension, selected separately. Implementation and recovery remain pending; it is not represented by a security toggle.
 - Installed removal candidates start selected. Removals use the one-way action queue and explicitly state all-user scope and no undo.
 - Desktop classification gates this guide's pack workflow and direct pack staging. Other app modules retain laptop support.
 - Remaining: persistent guide progress, richer live findings, per-setting lessons, and guided post-apply results.

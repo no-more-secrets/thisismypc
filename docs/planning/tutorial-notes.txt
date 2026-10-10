@@ -1,0 +1,271 @@
+THISISMYPC TUTORIAL NOTES
+
+Write under YOUR NOTES, or edit a draft directly. Rough prose and examples are fine.
+Save this file, then tell Codex to refine the tutorial notes. These drafts do not change the app until reviewed and added to it.
+
+============================================================
+Welcome
+============================================================
+
+Start with Software to find apps you do not use. Then check what launches at sign-in and turn off Windows promotions.
+
+Use Open module to try a page's controls. Return through Home > Setup guide to continue. Include in pack selects that module's recommendations for the final review.
+
+The Desktop Grand Pack combines the four tweak sets with selected Windows 10-ify settings and app removals. You can review them together at the end.
+
+YOUR NOTES:
+
+
+
+
+============================================================
+Software
+============================================================
+
+Open Software, then select Windows Apps. Search for an app you recognize and read its description before choosing Remove. Review the pending action before applying it.
+
+The pack selects Clipchamp, News, Weather, Copilot, and Microsoft 365 Hub for removal when installed. Clear any you want to keep.
+
+These removals affect every user and stop the apps being added automatically to new user accounts. Save app data first. History cannot undo a removal; you must reinstall the app.
+
+YOUR NOTES:
+
+
+
+
+============================================================
+Startup & Services
+============================================================
+
+An app can start at sign-in even if you never open it. Disable its startup entry if you prefer to open it yourself. This leaves the app installed.
+
+Open this module and search for an app you recognize. Check its publisher and file location before disabling its startup entry.
+
+The pack also includes Clean Boot's service and scheduled-task changes. Windows Search is a separate, unchecked choice: disabling its startup stops future indexing after the service stops or Windows restarts. Indexed file and Outlook searches are affected.
+
+YOUR NOTES:
+
+
+
+
+============================================================
+Windows Annoyances
+============================================================
+
+A suggestion to try another Microsoft product is an advertisement, even when it appears in Settings. Windows puts promotions in several places, each with its own switch.
+
+Open this module and search for suggestions. Read the matching setting, change it, and check the pending change before applying.
+
+If another promotion appears later, note where it appeared. Start, Settings, and the lock screen have separate controls.
+
+YOUR NOTES:
+
+
+
+
+============================================================
+Privacy & Telemetry
+============================================================
+
+Windows separates required diagnostic data from optional data. This module also controls activity tracking and advertising personalization.
+
+Open this module and find Diagnostic data. Compare the current value with the available choices; some depend on your Windows edition.
+
+The pack limits optional collection. Check privacy settings inside newly installed apps too, because Windows cannot control every app's own collection.
+
+YOUR NOTES:
+
+
+
+
+============================================================
+Explorer
+============================================================
+
+File extensions distinguish files such as photo.jpg and photo.exe. Show extensions if you want to see the file type in its name.
+
+Open this module and find the file-extension setting. Enable it, apply the change, then open a folder to compare the names.
+
+The pack hides Widgets and restores the full right-click menu. Some changes may require an Explorer restart.
+
+YOUR NOTES:
+
+
+
+
+============================================================
+Context Menus
+============================================================
+
+Apps add shortcuts to the menu you see when you right-click a file. Disabling an unused shortcut removes it from the menu without uninstalling the app.
+
+Open this module and find an entry from an app you recognize. Disable it, apply the change, then right-click the same file again to check the result. Keep shortcuts you use often.
+
+YOUR NOTES:
+
+
+
+
+============================================================
+Windows Update
+============================================================
+
+The pack selects Notify before download, keeps Windows on its current feature release, excludes drivers, and limits automatic restarts.
+
+Open this module to review those choices. If you keep the release pin, remove it before that release stops receiving security fixes. Check for updates regularly when downloads wait for you.
+
+Set active hours around when you use the PC to reduce restart interruptions.
+
+YOUR NOTES:
+
+
+
+
+============================================================
+Security
+============================================================
+
+Use this module to check antivirus, sign-in, and app protection settings. An antivirus scan can use CPU and disk while doing necessary work.
+
+Turning off a warning does not fix what caused it. Check the named protection before dismissing the warning.
+
+YOUR NOTES:
+
+
+
+
+============================================================
+Network & Firewall
+============================================================
+
+Connections lists your network adapters. DNS controls which service looks up website addresses. Firewall shows the profiles and rules controlling network access.
+
+VPN software can add adapters and change DNS. An unfamiliar adapter may belong to your VPN, so identify it before disabling it.
+
+YOUR NOTES:
+
+
+
+
+============================================================
+Environment
+============================================================
+
+PATH is a list of folders Windows searches when you run a command. An installer can add its folder; an uninstaller can leave that entry behind.
+
+Use this module to inspect variables and correct known problems, such as a command opening the wrong version. Leave unfamiliar entries alone.
+
+YOUR NOTES:
+
+
+
+
+============================================================
+Power Plans
+============================================================
+
+Choose when the screen turns off and when the PC sleeps. Power plans also affect processor behavior, heat, and energy use.
+
+Compare performance during your usual workload before keeping a plan change. If the active plan changes unexpectedly, check your hardware utilities too.
+
+YOUR NOTES:
+
+
+
+
+============================================================
+Display
+============================================================
+
+Adjust brightness or switch inputs on supported monitors without reaching for their buttons. You can link brightness across displays.
+
+Available controls depend on the monitor. If a control is unavailable here, use the monitor's own menu.
+
+YOUR NOTES:
+
+
+
+
+============================================================
+System Control
+============================================================
+
+Manufacturer software may combine promotions with useful hardware controls. Check which functions you need before uninstalling it.
+
+System Control provides supported manufacturer controls and companion options. Many target laptops, so this module may have little to offer on a desktop.
+
+YOUR NOTES:
+
+
+
+
+============================================================
+Lighting
+============================================================
+
+Choose colors and effects for supported lighting devices here. Running two lighting controllers for the same device can make their settings conflict.
+
+If a color keeps changing back, check whether another lighting app starts with Windows.
+
+YOUR NOTES:
+
+
+
+
+============================================================
+Cooling
+============================================================
+
+Cooling uses supported fan controls and FanControl integration. A fan curve sets fan speed in response to a temperature sensor.
+
+Identify each fan and sensor before changing a curve. Check temperatures under load afterward. A curve copied from another PC may not suit your cooling.
+
+YOUR NOTES:
+
+
+
+
+============================================================
+Monitoring
+============================================================
+
+Compare load, temperatures, and fan speeds while doing the same task before and after a change. A reading taken at idle cannot show whether a game runs better.
+
+A missing sensor means no reading is available. It does not mean the temperature or fan speed is zero.
+
+YOUR NOTES:
+
+
+
+
+============================================================
+After cleanup
+============================================================
+
+After installing an app, check Startup & Services and Context Menus for entries you did not ask for. After a major Windows update, check your promotion and privacy settings.
+
+History can undo supported setting changes. Owner Mode can restore selected settings when they change; check its supported choices in Settings before enabling it.
+
+YOUR NOTES:
+
+
+
+
+============================================================
+Your pack
+============================================================
+
+The pack includes Clean Boot, NukeCopilot, Privacy Baseline, and Windows Update Control, plus selected Windows 10-ify settings and app removals. You do not need to run those sets separately.
+
+Choose Review pack. Check each group's current values, clear anything you want to keep, then stage your selections. Entries unavailable on this PC are skipped.
+
+The update settings require regular checks for updates and release support. App removals affect all users and have no undo.
+
+YOUR NOTES:
+
+
+
+PACK IDEAS
+Current scope: all four tweak sets, Widgets, the full right-click menu, five app removals, and optional Windows Search indexing startup.
+Defender engine removal: optional and selected separately. Implementation and recovery remain pending.
+Other Windows 10-ify choices or removals to include:

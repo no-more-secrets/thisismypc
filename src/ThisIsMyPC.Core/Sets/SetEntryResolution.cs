@@ -50,5 +50,5 @@ public sealed record SetEntryResolution
     public bool IsSkipped => SkipReason is not null;
 
     /// <summary>Checked by default only when stageable with nothing in the way.</summary>
-    public bool IncludedByDefault => !IsSkipped && Conflict == SetEntryConflict.None;
+    public bool IncludedByDefault => Entry.SelectedByDefault && !IsSkipped && Conflict == SetEntryConflict.None;
 }

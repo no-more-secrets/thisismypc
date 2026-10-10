@@ -142,6 +142,7 @@ public sealed class SetProvider : ISetProvider
                 Value = entry.Value,
                 Description = entry.Description,
                 DisplayValue = entry.DisplayValue,
+                SelectedByDefault = entry.SelectedByDefault ?? true,
                 Group = entry.Group,
                 Enforcement = MapEnforcement(entry.Enforcement),
             });

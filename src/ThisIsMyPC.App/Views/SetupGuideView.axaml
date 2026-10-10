@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ThisIsMyPC.App.ViewModels"
+             xmlns:icons="using:ThisIsMyPC.App.Icons"
              x:Class="ThisIsMyPC.App.Views.SetupGuideView"
              x:DataType="vm:SetupGuideViewModel">
     <UserControl.Styles>
@@ -20,7 +21,11 @@
                                     Command="{Binding $parent[UserControl].((vm:SetupGuideViewModel)DataContext).SelectLessonCommand}"
                                     CommandParameter="{Binding}" AutomationProperties.Name="{Binding Label}">
                                 <Border Classes="set-card-body" Classes.selected="{Binding IsSelected}">
-                                    <TextBlock Text="{Binding Label}" FontSize="14" FontWeight="SemiBold" />
+                                    <Grid ColumnDefinitions="Auto,*">
+                                        <icons:FluentIcon Symbol="{Binding IconSymbol}" Width="18" Height="18" Margin="0,0,10,0"
+                                                          VerticalAlignment="Center" Foreground="{DynamicResource TextPrimaryBrush}" />
+                                        <TextBlock Grid.Column="1" Text="{Binding Label}" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                    </Grid>
                                 </Border>
                             </Button>
                         </DataTemplate>

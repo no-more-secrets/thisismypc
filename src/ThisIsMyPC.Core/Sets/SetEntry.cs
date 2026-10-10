@@ -26,5 +26,8 @@ public sealed record SetEntry
     /// </summary>
     public string? Group { get; init; }
 
+    /// <summary>Whether a stageable entry starts checked in the preset preview.</summary>
+    public bool SelectedByDefault { get; init; } = true;
+
     public SettingEnforcement? Enforcement { get; init; }
 }

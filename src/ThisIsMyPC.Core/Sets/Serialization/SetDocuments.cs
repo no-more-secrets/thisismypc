@@ -27,6 +27,7 @@ public sealed record SetEntryDocument
     public string? Description { get; init; }
     public string? DisplayValue { get; init; }
     public string? Group { get; init; }
+    public bool? SelectedByDefault { get; init; }
     public SetEnforcementDocument? Enforcement { get; init; }
 }
 

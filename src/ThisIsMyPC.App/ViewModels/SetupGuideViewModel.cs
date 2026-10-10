@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ThisIsMyPC.App.Services;
 using ThisIsMyPC.Core.Hardware;
+using ThisIsMyPC.App.Icons;
 
 namespace ThisIsMyPC.App.ViewModels;
 
@@ -35,8 +36,8 @@ public sealed partial class SetupGuideViewModel : ViewModelBase
         CloseCommand = new RelayCommand(close);
         var lessons = new List<SetupLessonViewModel>
         {
-            new("Start here", "Remove unwanted apps and Windows promotions",
-                "Start with apps you do not use, programs that launch at sign-in, and Windows promotions. This guide explains where to change each of them.\n\nIt also covers the other modules, so you can find settings for your files, hardware, and network. At the end, the Desktop Grand Pack brings the recommended cleanup changes together.")
+            new("Welcome", "Welcome",
+                "Start with Software to find apps you do not use. Then check what launches at sign-in and turn off Windows promotions.\n\nUse Open module to try a page's controls. Return through Home > Setup guide to continue. Include in pack selects that module's recommendations for the final review.\n\nThe Desktop Grand Pack combines the four tweak sets with selected Windows 10-ify settings and app removals. You can review them together at the end.") { IconSymbol = FluentSymbol.Home }
         };
         string[] order = ["Software", "Startup & Services", "Windows Annoyances", "Privacy & Telemetry",
             "Explorer", "Context Menus", "Windows Update", "Security", "Network & Firewall", "Environment",
@@ -49,6 +50,7 @@ public sealed partial class SetupGuideViewModel : ViewModelBase
         {
             var lesson = SetupLessons.For(module.Module.Info.Name, module.Module.Info.Description);
             lesson.ModuleName = module.Module.Info.Name;
+            lesson.IconSymbol = SidebarItemViewModel.GetIconSymbol(module.Module.Info.Icon);
             lesson.IsAvailable = module.Availability.IsAvailable;
             lesson.Availability = module.Availability.IsAvailable
                 ? ""
@@ -56,9 +58,9 @@ public sealed partial class SetupGuideViewModel : ViewModelBase
             lessons.Add(lesson);
         }
         lessons.Add(new("After cleanup", "Check what new software adds",
-            "After installing an app, check Startup & Services and Context Menus for entries you did not ask for. After a major Windows update, check your promotion and privacy settings.\n\nHistory can undo supported setting changes. Owner Mode can restore selected settings when they change; check its supported choices in Settings before enabling it."));
+            "After installing an app, check Startup & Services and Context Menus for entries you did not ask for. After a major Windows update, check your promotion and privacy settings.\n\nClean Boot disables the Edge updater services. Restore both services before updating Edge. With Notify before download selected, check Windows Update regularly and remove the release pin before support ends.\n\nHistory can undo supported setting changes. Owner Mode can restore selected settings when they change; check its supported choices in Settings before enabling it.") { IconSymbol = FluentSymbol.History });
         lessons.Add(new("Your pack", "Review your desktop pack",
-            "The pack combines promotion, privacy, Copilot, and Widgets settings with five optional app removals. Modules you excluded stay unchecked.\n\nChoose Review pack to see each setting and installed app. Clear anything you want to keep, then stage the remaining selections. App removals affect all users and have no undo."));
+            "The pack includes Clean Boot, NukeCopilot, Privacy Baseline, and Windows Update Control, plus selected Windows 10-ify settings and app removals. You do not need to run those sets separately.\n\nChoose Review pack. Check each group's current values, clear anything you want to keep, then stage your selections. Entries unavailable on this PC are skipped.\n\nThe update settings require regular checks for updates and release support. App removals affect all users and have no undo.") { IconSymbol = FluentSymbol.Box });
         Lessons = lessons;
         Lessons[0].IsSelected = true;
     }
@@ -114,11 +116,12 @@ public sealed partial class SetupLessonViewModel(string label, string title, str
     public string Label { get; } = label;
     public string Title { get; } = title;
     public string Body { get; } = body;
+    public FluentSymbol IconSymbol { get; set; } = FluentSymbol.Info;
     public string? ModuleName { get; set; }
     public bool IsAvailable { get; set; }
     public string Availability { get; set; } = "";
     public bool HasAvailability => Availability.Length > 0;
     [ObservableProperty] private bool _isSelected;
-    public bool HasRecommendations => ModuleName is "Windows Annoyances" or "Privacy & Telemetry" or "Explorer" or "Software";
+    public bool HasRecommendations => ModuleName is "Windows Annoyances" or "Privacy & Telemetry" or "Explorer" or "Software" or "Startup & Services" or "Windows Update";
     [ObservableProperty] private bool _includeRecommendations = true;
 }

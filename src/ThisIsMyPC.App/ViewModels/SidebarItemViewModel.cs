@@ -37,7 +37,9 @@ public partial class SidebarItemViewModel : ViewModelBase
     [ObservableProperty]
     private bool _isActive;
 
-    public FluentSymbol IconSymbol => Icons.GetValueOrDefault(Icon, FluentSymbol.Box);
+    public FluentSymbol IconSymbol => GetIconSymbol(Icon);
+
+    public static FluentSymbol GetIconSymbol(string icon) => Icons.GetValueOrDefault(icon, FluentSymbol.Box);
 
     public string TooltipText
     {
