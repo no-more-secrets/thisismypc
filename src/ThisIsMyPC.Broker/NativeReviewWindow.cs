@@ -12,7 +12,6 @@ internal static unsafe partial class NativeReviewWindow
 
     private const string ClassName = "ThisIsMyPCBrokerReview";
     private const uint WsPopup = 0x80000000;
-    private const uint WsThickFrame = 0x00040000;
     private const uint WsChild = 0x40000000;
     private const uint WsVisible = 0x10000000;
     private const uint WsVScroll = 0x00200000;
@@ -25,6 +24,8 @@ internal static unsafe partial class NativeReviewWindow
     private const uint WmDestroy = 0x0002;
     private const uint WmSize = 0x0005;
     private const uint WmNcCalcSize = 0x0083;
+    private const uint WmNcPaint = 0x0085;
+    private const uint WmNcActivate = 0x0086;
     private const uint WmDpiChanged = 0x02E0;
     private const uint WmPaint = 0x000F;
     private const uint WmClose = 0x0010;
@@ -126,7 +127,7 @@ internal static unsafe partial class NativeReviewWindow
                 var x = placement?.X ?? Math.Max(0, (GetSystemMetrics(0) - width) / 2);
                 var y = placement?.Y ?? Math.Max(0, (GetSystemMetrics(1) - height) / 2);
                 var window = CreateWindowExW(0, ClassName, "Review Pending Changes - ThisIsMyPC",
-                    WsPopup | WsThickFrame | WsVScroll, x, y, width, height, 0, 0, windowClass.Instance, 0);
+                    WsPopup | WsVScroll, x, y, width, height, 0, 0, windowClass.Instance, 0);
                 if (window == 0)
                     return Decision.Failed;
 
@@ -293,7 +294,23 @@ internal static unsafe partial class NativeReviewWindow
     private static nint HandleMessage(nint window, uint message, nuint wParam, nint lParam)
     {
         if (message == WmNcCalcSize)
+        {
+            if (lParam != 0)
+            {
+                // DWM needs a real nonclient edge to round a custom frame.
+                var client = (Rect*)lParam;
+                client->Left++;
+                client->Top++;
+                client->Right--;
+                client->Bottom--;
+            }
             return 0;
+        }
+        if (message is WmNcPaint or WmNcActivate)
+        {
+            PaintNonclientBorder(window);
+            return message == WmNcActivate ? 1 : 0;
+        }
         if (message == WmCreate)
             return 0;
         var state = _current;
@@ -540,10 +557,6 @@ internal static unsafe partial class NativeReviewWindow
         var height = state.ClientHeight;
         int P(int value) => state.Px(value);
         Fill(hdc, new Rect { Right = width, Bottom = height }, Raised);
-        Fill(hdc, new Rect { Right = width, Bottom = P(1) }, Outline);
-        Fill(hdc, new Rect { Right = P(1), Bottom = height }, Outline);
-        Fill(hdc, new Rect { Left = width - P(1), Right = width, Bottom = height }, Outline);
-        Fill(hdc, new Rect { Top = height - P(1), Right = width, Bottom = height }, Outline);
         Fill(hdc, new Rect { Top = P(HeaderHeight - 1), Right = width, Bottom = P(HeaderHeight) }, Outline);
         Fill(hdc, new Rect { Top = height - P(FooterHeight), Right = width, Bottom = height - P(FooterHeight) + P(1) }, Outline);
 
@@ -622,8 +635,8 @@ internal static unsafe partial class NativeReviewWindow
         if (item->ControlId == CloseButton)
         {
             Fill(item->Hdc, item->Bounds, selected ? ClosePressed : hovered ? CloseHover : Raised);
-            Text(item->Hdc, state.TitleFont, hovered || selected ? White : Secondary, "×", item->Bounds,
-                DtSingleLine | DtVCenter | DtNoPrefix | 1);
+            DrawCloseGlyph(item->Hdc, item->Bounds, state.Px(5), state.Px(2),
+                hovered || selected ? White : Secondary);
             return;
         }
         var apply = item->ControlId == ApplyButton;
@@ -631,7 +644,14 @@ internal static unsafe partial class NativeReviewWindow
             : selected ? ControlPressed : hovered ? ControlHover : Overlay;
         var outline = apply ? AccentOutline : hovered || selected ? OutlineStrong : Outline;
         Fill(item->Hdc, item->Bounds, Raised);
-        RoundFill(item->Hdc, item->Bounds, background, outline, state.Px(4));
+        var borderWidth = state.Px(1);
+        var inset = borderWidth / 2;
+        var bounds = item->Bounds;
+        bounds.Left += inset;
+        bounds.Top += inset;
+        bounds.Right -= inset;
+        bounds.Bottom -= inset;
+        RoundFill(item->Hdc, bounds, background, outline, state.Px(4), borderWidth);
         Text(item->Hdc, state.DetailFont, apply || hovered || selected ? White : Secondary,
             apply ? state.Batch ? "Apply All" : "Confirm" : state.Batch ? "Discard All" : "Cancel",
             item->Bounds, DtSingleLine | DtVCenter | DtNoPrefix | 1);
@@ -699,10 +719,50 @@ internal static unsafe partial class NativeReviewWindow
         finally { _ = DeleteObject(brush); }
     }
 
-    private static void RoundFill(nint hdc, Rect rect, uint fill, uint stroke, int radius)
+    private static void PaintNonclientBorder(nint window)
+    {
+        if (!GetWindowRect(window, out var bounds))
+            return;
+        var hdc = GetWindowDC(window);
+        if (hdc == 0)
+            return;
+        try
+        {
+            var width = bounds.Right - bounds.Left;
+            var height = bounds.Bottom - bounds.Top;
+            if (width <= 1 || height <= 1)
+                return;
+            Fill(hdc, new Rect { Right = width, Bottom = 1 }, Outline);
+            Fill(hdc, new Rect { Top = height - 1, Right = width, Bottom = height }, Outline);
+            Fill(hdc, new Rect { Top = 1, Right = 1, Bottom = height - 1 }, Outline);
+            Fill(hdc, new Rect { Left = width - 1, Top = 1, Right = width, Bottom = height - 1 }, Outline);
+        }
+        finally { _ = ReleaseDC(window, hdc); }
+    }
+
+    private static void DrawCloseGlyph(nint hdc, Rect bounds, int halfSize, int thickness, uint color)
+    {
+        var pen = CreatePen(0, thickness, color);
+        if (pen == 0)
+            throw new InvalidOperationException("Could not draw the review close button.");
+        var oldPen = SelectObject(hdc, pen);
+        var centerX = (bounds.Left + bounds.Right) / 2;
+        var centerY = (bounds.Top + bounds.Bottom) / 2;
+        var first = MoveToEx(hdc, centerX - halfSize, centerY - halfSize, 0)
+            && LineTo(hdc, centerX + halfSize + 1, centerY + halfSize + 1);
+        var second = MoveToEx(hdc, centerX + halfSize, centerY - halfSize, 0)
+            && LineTo(hdc, centerX - halfSize - 1, centerY + halfSize + 1);
+        _ = SelectObject(hdc, oldPen);
+        _ = DeleteObject(pen);
+        if (!first || !second)
+            throw new InvalidOperationException("Could not draw the review close button.");
+    }
+
+    private static void RoundFill(nint hdc, Rect rect, uint fill, uint stroke, int radius,
+        int strokeWidth = 1)
     {
         var brush = CreateSolidBrush(fill);
-        var pen = CreatePen(0, 1, stroke);
+        var pen = CreatePen(0, strokeWidth, stroke);
         if (brush == 0 || pen == 0)
         {
             if (brush != 0) _ = DeleteObject(brush);
@@ -912,6 +972,13 @@ internal static unsafe partial class NativeReviewWindow
     [return: MarshalAs(UnmanagedType.Bool)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static partial bool GetClientRect(nint window, out Rect rectangle);
+    [LibraryImport("user32.dll", EntryPoint = "GetWindowRect")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial bool GetWindowRect(nint window, out Rect rectangle);
+    [LibraryImport("user32.dll", EntryPoint = "GetWindowDC")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial nint GetWindowDC(nint window);
     [LibraryImport("user32.dll", EntryPoint = "ScreenToClient")]
     [return: MarshalAs(UnmanagedType.Bool)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
@@ -970,6 +1037,14 @@ internal static unsafe partial class NativeReviewWindow
     [return: MarshalAs(UnmanagedType.Bool)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static partial bool RoundRect(nint hdc, int left, int top, int right, int bottom, int width, int height);
+    [LibraryImport("gdi32.dll", EntryPoint = "MoveToEx")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial bool MoveToEx(nint hdc, int x, int y, nint previous);
+    [LibraryImport("gdi32.dll", EntryPoint = "LineTo")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial bool LineTo(nint hdc, int x, int y);
     [LibraryImport("gdi32.dll", EntryPoint = "SelectObject")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static partial nint SelectObject(nint hdc, nint objectHandle);

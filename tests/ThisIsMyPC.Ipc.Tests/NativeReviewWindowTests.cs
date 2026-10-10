@@ -84,6 +84,7 @@ public sealed partial class NativeReviewWindowTests
         }
         Assert.NotEqual(0, window);
         Assert.Equal(0, GetWindowLongW(window, -16) & 0x00C00000);
+        Assert.Equal(0, GetWindowLongW(window, -16) & 0x00040000);
         Assert.Equal(0, DwmGetWindowAttribute(window, 33, out var corners, sizeof(int)));
         Assert.Equal(2, corners);
         Assert.Equal(2, GetAwarenessFromDpiAwarenessContext(GetWindowDpiAwarenessContext(window)));
@@ -158,9 +159,11 @@ public sealed partial class NativeReviewWindowTests
         Assert.Equal(NativeReviewWindow.Decision.Cancelled, await review);
     }
 
-    [Fact]
+    [Theory]
+    [InlineData(144)]
+    [InlineData(192)]
     [Trait("Category", "Diagnostic")]
-    public async Task DpiChangeResizesTheReviewButtons()
+    public async Task DpiChangeResizesTheReviewButtons(int dpi)
     {
         var policy = BrokerRequestPolicy.Create(new BrokerSessionRequest
         {
@@ -186,12 +189,12 @@ public sealed partial class NativeReviewWindowTests
                 Right = bounds.Left + 960,
                 Bottom = bounds.Top + 1080,
             }, suggested, false);
-            _ = SendMessageW(window, 0x02E0, (nuint)(192 | (192 << 16)), suggested);
+            _ = SendMessageW(window, 0x02E0, (nuint)(dpi | (dpi << 16)), suggested);
             var apply = GetDlgItem(window, 1001);
             Assert.NotEqual(0, apply);
             Assert.True(GetClientRect(apply, out var button));
-            Assert.Equal(224, button.Right);
-            Assert.Equal(72, button.Bottom);
+            Assert.Equal((int)Math.Round(112 * dpi / 96.0), button.Right);
+            Assert.Equal((int)Math.Round(36 * dpi / 96.0), button.Bottom);
             Assert.True(GetWindowRect(window, out var scaledBounds));
             var work = BrokerReviewPlacement.WorkAreaForRect(scaledBounds.Left, scaledBounds.Top,
                 scaledBounds.Right, scaledBounds.Bottom);
@@ -200,6 +203,7 @@ public sealed partial class NativeReviewWindowTests
             Assert.InRange(scaledBounds.Top, work.Value.Top, work.Value.Bottom - 1);
             Assert.True(scaledBounds.Right <= work.Value.Right);
             Assert.True(scaledBounds.Bottom <= work.Value.Bottom);
+            _ = UpdateWindow(window);
             if (Environment.GetEnvironmentVariable("TIPC_REVIEW_DPI_SHOT") is { Length: > 0 } imagePath)
             {
                 using var bitmap = new Bitmap(scaledBounds.Right - scaledBounds.Left,
@@ -209,7 +213,8 @@ public sealed partial class NativeReviewWindowTests
                 try { Assert.True(PrintWindow(window, device, 2)); }
                 finally { graphics.ReleaseHdc(device); }
                 Directory.CreateDirectory(Path.GetDirectoryName(imagePath)!);
-                bitmap.Save(imagePath, ImageFormat.Png);
+                bitmap.Save(Path.Combine(Path.GetDirectoryName(imagePath)!,
+                    $"{Path.GetFileNameWithoutExtension(imagePath)}-{dpi}.png"), ImageFormat.Png);
             }
         }
         finally
@@ -387,6 +392,10 @@ public sealed partial class NativeReviewWindowTests
     [return: MarshalAs(UnmanagedType.Bool)]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static partial bool PrintWindow(nint window, nint device, uint flags);
+    [LibraryImport("user32.dll", EntryPoint = "UpdateWindow")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static partial bool UpdateWindow(nint window);
 
     [LibraryImport("user32.dll", EntryPoint = "GetDlgItem")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
