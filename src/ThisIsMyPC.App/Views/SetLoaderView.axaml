@@ -10,57 +10,7 @@
              x:DataType="vm:SetLoaderViewModel">
 
     <UserControl.Styles>
-        <!-- A preset card is a button whose only paint is the inner card
-             body: the stock button hover and press washes stay off the
-             square presenter, or they would peek past the rounded card. -->
-        <Style Selector="Button.set-card">
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="HorizontalAlignment" Value="Stretch" />
-            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-            <Setter Property="Margin" Value="0,0,0,8" />
-        </Style>
-        <Style Selector="Button.set-card /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderThickness" Value="0" />
-        </Style>
-        <Style Selector="Button.set-card:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="Transparent" />
-        </Style>
-        <Style Selector="Button.set-card:pressed /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="Transparent" />
-        </Style>
-        <!-- The card body wears the shared clickable states: Surface at
-             rest, the control hover wash and strong outline under the
-             pointer, the pressed tint on click, and the same active tint
-             and accent ring the sidebar and dropdown rows use when chosen.
-             A chosen card keeps its tint under the pointer. -->
-        <Style Selector="Border.set-card-body">
-            <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource OutlineBrush}" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="CornerRadius" Value="8" />
-            <Setter Property="Padding" Value="12" />
-        </Style>
-        <Style Selector="Button.set-card:pointerover Border.set-card-body">
-            <Setter Property="Background" Value="{DynamicResource ControlHoverBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource OutlineStrongBrush}" />
-        </Style>
-        <Style Selector="Button.set-card:pressed Border.set-card-body">
-            <Setter Property="Background" Value="{DynamicResource ControlPressedBrush}" />
-        </Style>
-        <Style Selector="Border.set-card-body.selected">
-            <Setter Property="Background" Value="{DynamicResource SidebarItemActiveBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource AccentOutlineBrush}" />
-        </Style>
-        <Style Selector="Button.set-card:pointerover Border.set-card-body.selected">
-            <Setter Property="Background" Value="{DynamicResource SidebarItemActiveBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource AccentOutlineBrush}" />
-        </Style>
-        <Style Selector="Button.set-card:pressed Border.set-card-body.selected">
-            <Setter Property="Background" Value="{DynamicResource SidebarItemActiveBrush}" />
-        </Style>
+        <StyleInclude Source="/Styles/SelectionCards.axaml" />
     </UserControl.Styles>
 
     <UserControl.DataTemplates>

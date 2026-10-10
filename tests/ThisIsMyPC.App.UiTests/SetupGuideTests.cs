@@ -1,6 +1,8 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Styling;
+using Avalonia.VisualTree;
 using Microsoft.Extensions.DependencyInjection;
 using ThisIsMyPC.App.Services;
 using ThisIsMyPC.App.ViewModels;
@@ -57,6 +59,10 @@ public class SetupGuideTests
         session.Window.Height = 700;
         session.Pump();
         session.Screenshot("guide-compact");
+        var selectedCard = session.Find<Border>(b => b.Classes.Contains("set-card-body") && ReferenceEquals(b.DataContext, guide.Current));
+        var lessonScroll = selectedCard.FindAncestorOfType<ScrollViewer>()!;
+        Assert.InRange(selectedCard.TranslatePoint(default, lessonScroll)!.Value.Y,
+            -0.5, lessonScroll.Bounds.Height - selectedCard.Bounds.Height + 0.5);
         session.Window.Height = 800;
         session.Pump();
         session.ClickText("Open module");
@@ -100,7 +106,7 @@ public class SetupGuideTests
         Assert.True(guide.IsDesktop);
         Assert.Equal(modules.Length + 3, guide.Lessons.Count);
         Assert.All(guide.Lessons.Where(l => l.ModuleName is not null), lesson =>
-            Assert.NotEqual("Available controls depend on this PC and its installed software.", lesson.Behavior));
+            Assert.NotEqual(modules.Single(m => m.Module.Info.Name == lesson.ModuleName).Module.Info.Description, lesson.Body));
         using var session = UiSession.ForView(new SetupGuideView(), guide, "setup-guide", width: 960, height: 660);
         foreach (var theme in new[] { ThemeVariant.Dark, ThemeVariant.Light })
         {
@@ -109,7 +115,14 @@ public class SetupGuideTests
             for (var i = 0; i < guide.Lessons.Count; i++)
             {
                 Assert.Equal(i, guide.SelectedIndex);
+                Assert.Single(guide.Lessons, l => l.IsSelected);
+                Assert.True(guide.Current.IsSelected);
                 session.Screenshot($"{theme.Key}-{i:D2}");
+                var card = session.Find<Border>(b => b.Classes.Contains("set-card-body") && ReferenceEquals(b.DataContext, guide.Current));
+                var scroller = card.FindAncestorOfType<ScrollViewer>()!;
+                var origin = card.TranslatePoint(default, scroller)!.Value;
+                Assert.InRange(origin.Y, -0.5, scroller.Bounds.Height - card.Bounds.Height + 0.5);
+                Assert.Equal(16, scroller.Bounds.Width - origin.X - card.Bounds.Width, 0.5);
                 if (guide.HasNext) session.ClickText("Next");
             }
         }

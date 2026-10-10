@@ -4,62 +4,51 @@
              x:Class="ThisIsMyPC.App.Views.SetupGuideView"
              x:DataType="vm:SetupGuideViewModel">
     <UserControl.Styles>
+        <StyleInclude Source="/Styles/SelectionCards.axaml" />
         <Style Selector="TextBlock">
             <Setter Property="TextWrapping" Value="Wrap" />
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
         </Style>
-        <Style Selector="TextBlock.lesson-heading">
-            <Setter Property="FontWeight" Value="SemiBold" />
-            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
-            <Setter Property="Margin" Value="0,10,0,0" />
-        </Style>
     </UserControl.Styles>
-    <Grid RowDefinitions="Auto,*,Auto" Margin="0,4,0,0">
-        <Grid ColumnDefinitions="*,Auto" Margin="0,0,16,12">
-            <StackPanel Spacing="4">
-                <TextBlock Text="Your PC, your choices" FontSize="22" FontWeight="SemiBold" />
-                <TextBlock Text="{Binding DeviceStatus}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
-            </StackPanel>
-            <Button Grid.Column="1" Content="Leave setup" Command="{Binding CloseCommand}" VerticalAlignment="Top"
-                    ToolTip.Tip="Return from Home to continue this guide" />
-        </Grid>
-        <Grid Grid.Row="1" ColumnDefinitions="180,20,*">
-            <ListBox ItemsSource="{Binding Lessons}" SelectedIndex="{Binding SelectedIndex, Mode=TwoWay}"
-                     Background="Transparent" BorderThickness="0" Padding="0"
-                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                     AutomationProperties.Name="Setup modules">
-                <ListBox.ItemTemplate>
-                    <DataTemplate x:DataType="vm:SetupLessonViewModel">
-                        <TextBlock Text="{Binding Label}" FontSize="13" Margin="0,5" />
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
-            <ScrollViewer Grid.Column="2" HorizontalScrollBarVisibility="Disabled">
-                <StackPanel Spacing="10" Margin="0,0,16,24">
+    <Grid RowDefinitions="*,Auto" Margin="0,4,0,0">
+        <Grid ColumnDefinitions="240,16,*">
+            <ScrollViewer x:Name="LessonScroll" HorizontalScrollBarVisibility="Disabled">
+                <ItemsControl ItemsSource="{Binding Lessons}" Margin="0,0,16,24">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:SetupLessonViewModel">
+                            <Button Classes="set-card"
+                                    Command="{Binding $parent[UserControl].((vm:SetupGuideViewModel)DataContext).SelectLessonCommand}"
+                                    CommandParameter="{Binding}" AutomationProperties.Name="{Binding Label}">
+                                <Border Classes="set-card-body" Classes.selected="{Binding IsSelected}">
+                                    <TextBlock Text="{Binding Label}" FontSize="14" FontWeight="SemiBold" />
+                                </Border>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+            <ScrollViewer x:Name="DetailScroll" Grid.Column="2" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Spacing="16" Margin="0,0,16,24">
+                    <TextBlock Text="{Binding DeviceStatus}" IsVisible="{Binding HasDeviceStatus}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
                     <TextBlock Text="{Binding Current.Title}" FontSize="22" FontWeight="SemiBold" />
-                    <TextBlock Text="{Binding Current.Availability}" FontSize="12" Foreground="{DynamicResource TextTertiaryBrush}" />
-                    <TextBlock Classes="lesson-heading" Text="What you control" />
-                    <TextBlock Text="{Binding Current.Controls}" />
-                    <TextBlock Classes="lesson-heading" Text="Why it matters" />
-                    <TextBlock Text="{Binding Current.Behavior}" />
-                    <TextBlock Classes="lesson-heading" Text="Your choice" />
-                    <TextBlock Text="{Binding Current.Choice}" />
+                    <TextBlock Text="{Binding Current.Availability}" IsVisible="{Binding Current.HasAvailability}"
+                               FontSize="12" Foreground="{DynamicResource TextTertiaryBrush}" />
+                    <TextBlock Text="{Binding Current.Body}" FontSize="14" LineHeight="23" />
                     <CheckBox IsVisible="{Binding Current.HasRecommendations}" IsEnabled="{Binding IsDesktop}"
                               IsChecked="{Binding Current.IncludeRecommendations}">
-                        <TextBlock Text="Include this module's pack recommendations" />
+                        <TextBlock Text="Include in pack" />
                     </CheckBox>
-                    <TextBlock Classes="lesson-heading" Text="Keep control" />
-                    <TextBlock Text="{Binding Current.Upkeep}" />
                     <Button Content="Open module" Command="{Binding OpenModuleCommand}" IsVisible="{Binding CanOpenModule}"
-                            HorizontalAlignment="Left" ToolTip.Tip="Inspect live settings. Return from Home to continue setup." />
+                            HorizontalAlignment="Left" ToolTip.Tip="Return from Home to continue setup" />
                 </StackPanel>
             </ScrollViewer>
         </Grid>
-        <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,12,16,0">
+        <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,*,Auto,Auto" Margin="0,12,16,0">
             <Button Content="Back" Command="{Binding PreviousCommand}" IsEnabled="{Binding HasPrevious}" />
-            <TextBlock Grid.Column="1" Text="{Binding Progress}" VerticalAlignment="Center" HorizontalAlignment="Center" />
-            <Button Grid.Column="2" Content="Next" Command="{Binding NextCommand}" IsVisible="{Binding HasNext}" />
-            <Button Grid.Column="3" Content="Review pack" Classes="apply-bar-apply" Command="{Binding ReviewPackCommand}"
+            <Button Grid.Column="1" Content="Leave setup" Command="{Binding CloseCommand}" Margin="8,0,0,0" ToolTip.Tip="Return from Home to continue this guide" />
+            <TextBlock Grid.Column="2" Text="{Binding Progress}" VerticalAlignment="Center" HorizontalAlignment="Center" />
+            <Button Grid.Column="3" Content="Next" Command="{Binding NextCommand}" IsVisible="{Binding HasNext}" />
+            <Button Grid.Column="4" Content="Review pack" Classes="apply-bar-apply" Command="{Binding ReviewPackCommand}"
                     IsVisible="{Binding IsLast}" IsEnabled="{Binding IsDesktop}" />
         </Grid>
     </Grid>

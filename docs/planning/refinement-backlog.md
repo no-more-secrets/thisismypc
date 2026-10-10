@@ -5,6 +5,7 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 ## Desktop setup guide and grand pack (2026-10-10)
 
 - First pass: Home offers a guide explaining every module, Windows and app behavior, choices, and ongoing maintenance.
+- Revised after review: concrete examples replace the four repeated lesson headings. Cleanup modules come first. Navigation shares Presets card styles and keeps the selected card visible, with tested scrollbar clearance.
 - The guide carries module exclusions into the Desktop Grand Pack in Presets. Individual entries remain editable before staging.
 - The pack includes promotion and optional tracking controls, Copilot and Widgets choices, and five recommended Windows app removals.
 - Installed removal candidates start selected. Removals use the one-way action queue and explicitly state all-user scope and no undo.

@@ -17,7 +17,8 @@ public sealed partial class SetupGuideViewModel : ViewModelBase
 
     [ObservableProperty] private int _selectedIndex;
     [ObservableProperty] private bool _isDesktop;
-    [ObservableProperty] private string _deviceStatus = "Checking desktop support…";
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(HasDeviceStatus))] private string _deviceStatus = "Checking desktop support…";
+    public bool HasDeviceStatus => DeviceStatus.Length > 0;
     public SetupLessonViewModel Current => Lessons[SelectedIndex];
     public string Progress => $"{SelectedIndex + 1} of {Lessons.Count}";
     public bool HasPrevious => SelectedIndex > 0;
@@ -34,33 +35,32 @@ public sealed partial class SetupGuideViewModel : ViewModelBase
         CloseCommand = new RelayCommand(close);
         var lessons = new List<SetupLessonViewModel>
         {
-            new("Start here", "Make this PC yours",
-                "Windows, the PC manufacturer, and installed apps all make choices about your PC. This guide helps you review those choices.",
-                "Promotions, bundled apps, and background activity can serve their publisher's goals rather than yours. Some also provide features you need.",
-                "Visit each module, learn the tradeoffs, and choose recommendations. Nothing changes until you review, stage, and apply the pack.",
-                "You can leave and return from Home. Settings can support undo; removing an app requires a separate reinstall.")
+            new("Start here", "Remove unwanted apps and Windows promotions",
+                "Start with apps you do not use, programs that launch at sign-in, and Windows promotions. This guide explains where to change each of them.\n\nIt also covers the other modules, so you can find settings for your files, hardware, and network. At the end, the Desktop Grand Pack brings the recommended cleanup changes together.")
         };
-        foreach (var module in modules)
+        string[] order = ["Software", "Startup & Services", "Windows Annoyances", "Privacy & Telemetry",
+            "Explorer", "Context Menus", "Windows Update", "Security", "Network & Firewall", "Environment",
+            "Power Plans", "Display", "System Control", "Lighting", "Cooling", "Monitoring"];
+        foreach (var module in modules.OrderBy(m =>
+        {
+            var index = Array.IndexOf(order, m.Module.Info.Name);
+            return index < 0 ? int.MaxValue : index;
+        }))
         {
             var lesson = SetupLessons.For(module.Module.Info.Name, module.Module.Info.Description);
             lesson.ModuleName = module.Module.Info.Name;
             lesson.IsAvailable = module.Availability.IsAvailable;
             lesson.Availability = module.Availability.IsAvailable
-                ? "Module available. Open it to inspect this PC's current settings."
+                ? ""
                 : module.Availability.Reason ?? "This module is unavailable on this PC.";
             lessons.Add(lesson);
         }
-        lessons.Add(new("Keep control", "Keep your choices",
-            "A cleanup is a starting point. Check your choices after installing software or making a major Windows update.",
-            "Apps can add startup entries or menu items. Defaults and available controls can change. A changed setting alone does not prove the cause.",
-            "Use Home to review reported changes and History for reversible changes. Owner Mode can restore supported choices when you explicitly enable it.",
-            "Owner Mode covers a supported catalog, not every setting or app. Review its status and scope in Settings before enabling it."));
+        lessons.Add(new("After cleanup", "Check what new software adds",
+            "After installing an app, check Startup & Services and Context Menus for entries you did not ask for. After a major Windows update, check your promotion and privacy settings.\n\nHistory can undo supported setting changes. Owner Mode can restore selected settings when they change; check its supported choices in Settings before enabling it."));
         lessons.Add(new("Your pack", "Review your desktop pack",
-            "The Desktop Grand Pack combines cleanup recommendations. Your module choices decide which recommendations start selected.",
-            "A single preset cannot decide which apps you need. Review every app removal and keep anything you use.",
-            "Review pack opens Presets. Check the live values, deselect individual entries, then stage your choices for final review.",
-            "Removals affect all users and can delete app data. They have no undo. Save what you need before applying; reinstall separately."));
+            "The pack combines promotion, privacy, Copilot, and Widgets settings with five optional app removals. Modules you excluded stay unchecked.\n\nChoose Review pack to see each setting and installed app. Clear anything you want to keep, then stage the remaining selections. App removals affect all users and have no undo."));
         Lessons = lessons;
+        Lessons[0].IsSelected = true;
     }
 
     public async Task CheckDesktopAsync()
@@ -72,23 +72,30 @@ public sealed partial class SetupGuideViewModel : ViewModelBase
             IsDesktop = factor == MachineFormFactor.Desktop;
             DeviceStatus = factor switch
             {
-                MachineFormFactor.Desktop => "Desktop verified. Changes wait for your review.",
-                MachineFormFactor.Laptop => "This guide and pack support desktops only. All other app modules remain available.",
-                _ => "Desktop type could not be verified. You can read the guide, but the pack is unavailable.",
+                MachineFormFactor.Desktop => "",
+                MachineFormFactor.Laptop => "The cleanup pack requires a desktop PC.",
+                _ => "PC type unknown. The cleanup pack is unavailable.",
             };
         }
         catch (Exception ex)
         {
             NLog.LogManager.GetCurrentClassLogger().Warn(ex, "Setup desktop check failed");
             IsDesktop = false;
-            DeviceStatus = "Desktop check failed. Reopen the guide to retry. Other modules remain available.";
+            DeviceStatus = "Desktop check failed. Reopen the guide to retry.";
         }
     }
 
     partial void OnSelectedIndexChanged(int value)
     {
+        for (var i = 0; i < Lessons.Count; i++) Lessons[i].IsSelected = i == value;
         foreach (var property in new[] { nameof(Current), nameof(Progress), nameof(HasPrevious), nameof(HasNext), nameof(IsLast), nameof(CanOpenModule) })
             OnPropertyChanged(property);
+    }
+
+    [RelayCommand] private void SelectLesson(SetupLessonViewModel lesson)
+    {
+        var index = Lessons.ToList().IndexOf(lesson);
+        if (index >= 0) SelectedIndex = index;
     }
 
     [RelayCommand] private void Previous() { if (HasPrevious) SelectedIndex--; }
@@ -102,17 +109,16 @@ public sealed partial class SetupGuideViewModel : ViewModelBase
 }
 
 /// <summary>Plain language teaching and an optional recommendation choice for one module.</summary>
-public sealed partial class SetupLessonViewModel(string label, string title, string controls, string behavior, string choice, string upkeep) : ViewModelBase
+public sealed partial class SetupLessonViewModel(string label, string title, string body) : ViewModelBase
 {
     public string Label { get; } = label;
     public string Title { get; } = title;
-    public string Controls { get; } = controls;
-    public string Behavior { get; } = behavior;
-    public string Choice { get; } = choice;
-    public string Upkeep { get; } = upkeep;
+    public string Body { get; } = body;
     public string? ModuleName { get; set; }
     public bool IsAvailable { get; set; }
-    public string Availability { get; set; } = "Read each lesson, or choose a module from the list.";
+    public string Availability { get; set; } = "";
+    public bool HasAvailability => Availability.Length > 0;
+    [ObservableProperty] private bool _isSelected;
     public bool HasRecommendations => ModuleName is "Windows Annoyances" or "Privacy & Telemetry" or "Explorer" or "Software";
     [ObservableProperty] private bool _includeRecommendations = true;
 }
