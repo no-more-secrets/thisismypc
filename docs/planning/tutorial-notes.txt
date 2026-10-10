@@ -22,11 +22,11 @@ YOUR NOTES:
 Software
 ============================================================
 
-Not everything installed on your PC is there because you wanted it. Windows includes apps of its own, and your PC manufacturer may have added more. An app you never open can still add background services, startup entries, and scheduled tasks. You also may have installed many apps over time that you do not want or need anymore.
+Not everything installed on your PC is there because you wanted it. Windows includes apps of its own, and your PC manufacturer may have added more. An app you never open can still add background services, startup entries, and scheduled tasks. You also may have installed apps over time that you do not want or need anymore.
 
-You do not have to uninstall an app to stop it slowing down your PC. Often, disabling its startup entry is enough. The app stays installed, but you open it when you need it instead of having it run at every sign-in.
+You do not have to uninstall an app to stop it slowing down your PC. Apps register ways to launch themselves at boot, at sign-in, on a schedule, or when another event occurs. Disabling those automatic launches can leave the app available without having it run when you did not ask for it.
 
-Use Software and Startup & Services together. For example, you might use a game launcher on weekends but have it running all week. Find its entry in Startup & Services and disable startup. You can still open the launcher to play. If you no longer use it, return to Software to uninstall it.
+Use Software and Startup & Services together. For example, you might use a game launcher on weekends but have it running all week. Check its startup entries, services, and scheduled tasks in Startup & Services. Turn off the automatic launches you do not need. You can still open the launcher to play. If you no longer use it, return to Software to uninstall it.
 
 Windows Apps lists apps included with Windows. Read through them and decide which ones you use. If you do not use Clipchamp to edit videos, for example, you can remove it.
 
@@ -45,13 +45,13 @@ YOUR NOTES:
 Startup & Services
 ============================================================
 
-An installed app does not need to be a running app. Many programs start with Windows and stay in the background until you shut down. You can often stop that daily resource use without losing the program.
+Installing software often also gives it ways to run without you opening it. That can mean launching at boot or sign-in, running a background service, or scheduling tasks for particular times and events. These entries accumulate as you install more software.
 
-Take the game launcher from Software. Search for its startup entry here. Check the publisher and file location to confirm which app it belongs to, then disable the entry. This stops that entry launching it at future sign-ins; it does not close the app if it is already running.
+Take the game launcher from Software. Look for its entries across startup, services, and scheduled tasks. Check the publisher, file location, and trigger to understand what runs and when. One app can have several entries, so disabling its sign-in entry may leave other automatic launches active.
 
-Open the launcher yourself when you want to play. If you prefer it to start with Windows again, enable its startup entry. If you decide you do not want it at all, return to Software to uninstall it.
+Disable the automatic launches you do not need, then open the launcher yourself when you want to play. Disabling an entry does not necessarily stop something already running. You can enable the entry again, or return to Software to uninstall an app you no longer want.
 
-Some apps also add services or scheduled tasks. Disabling one startup entry may leave those running. Check what each entry does before changing it: an updater or hardware service can have a purpose even when its app is closed.
+Check what each entry does before changing it. An updater or hardware service can have a purpose even when its app is closed.
 
 The pack also includes Clean Boot's service and scheduled-task changes. Windows Search is a separate, unchecked choice: disabling its startup stops future indexing after the service stops or Windows restarts. Indexed file and Outlook searches are affected.
 
