@@ -22,15 +22,19 @@ YOUR NOTES:
 Software
 ============================================================
 
-Not everything installed on your PC is there because you wanted it. Windows includes apps of its own, and your PC manufacturer may have added more. An app you never open can still add background services, startup entries, and scheduled tasks.
+Not everything installed on your PC is there because you wanted it. Windows includes apps of its own, and your PC manufacturer may have added more. An app you never open can still add background services, startup entries, and scheduled tasks. You also may have installed many apps over time that you do not want or need anymore.
 
-Start with Windows Apps. Read through the apps and decide which ones you use. If you do not use Clipchamp to edit videos, for example, you can remove it. You do not need to remove an app just because it came with Windows.
+You do not have to uninstall an app to stop it slowing down your PC. Often, disabling its startup entry is enough. The app stays installed, but you open it when you need it instead of having it run at every sign-in.
+
+Use Software and Startup & Services together. For example, you might use a game launcher on weekends but have it running all week. Find its entry in Startup & Services and disable startup. You can still open the launcher to play. If you no longer use it, return to Software to uninstall it.
+
+Windows Apps lists apps included with Windows. Read through them and decide which ones you use. If you do not use Clipchamp to edit videos, for example, you can remove it.
 
 Choose Remove to add an app to the pending list. These removals affect every account on the PC and prevent Windows from adding the app to new accounts. Save anything you need from the app before applying. History cannot undo an uninstall; apps with a Store listing have a reinstall option here.
 
 App Catalog lets you find and install other software. Select Installed to find supported apps you already have. Updates lists available updates for apps managed through Windows Package Manager.
 
-The Desktop Grand Pack selects Clipchamp, News, Weather, Copilot, and Microsoft 365 Hub for removal when installed. You can keep any of them. After removing unwanted apps, continue to Startup & Services to check what the remaining software runs in the background.
+The Desktop Grand Pack selects Clipchamp, News, Weather, Copilot, and Microsoft 365 Hub for removal when installed. You can keep any of them. Continue to Startup & Services to check the background activity of apps you want to keep.
 
 YOUR NOTES:
 
@@ -41,9 +45,13 @@ YOUR NOTES:
 Startup & Services
 ============================================================
 
-An app can start at sign-in even if you never open it. Disable its startup entry if you prefer to open it yourself. This leaves the app installed.
+An installed app does not need to be a running app. Many programs start with Windows and stay in the background until you shut down. You can often stop that daily resource use without losing the program.
 
-Open this module and search for an app you recognize. Check its publisher and file location before disabling its startup entry.
+Take the game launcher from Software. Search for its startup entry here. Check the publisher and file location to confirm which app it belongs to, then disable the entry. This stops that entry launching it at future sign-ins; it does not close the app if it is already running.
+
+Open the launcher yourself when you want to play. If you prefer it to start with Windows again, enable its startup entry. If you decide you do not want it at all, return to Software to uninstall it.
+
+Some apps also add services or scheduled tasks. Disabling one startup entry may leave those running. Check what each entry does before changing it: an updater or hardware service can have a purpose even when its app is closed.
 
 The pack also includes Clean Boot's service and scheduled-task changes. Windows Search is a separate, unchecked choice: disabling its startup stops future indexing after the service stops or Windows restarts. Indexed file and Outlook searches are affected.
 
