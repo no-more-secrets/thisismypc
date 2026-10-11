@@ -37,7 +37,7 @@ public sealed partial class SetupGuideViewModel : ViewModelBase
         var lessons = new List<SetupLessonViewModel>
         {
             new("Welcome", "Welcome",
-                "Start with Software to find apps you do not use. Then check what launches at sign-in and turn off Windows promotions.\n\nUse Open module to try a page's controls. Return through Home > Intro guide to continue. Include in pack selects that module's recommendations for the final review.\n\nThe Desktop Grand Pack combines the four tweak sets with selected Windows 10-ify settings and app removals. You can review them together at the end.") { IconSymbol = FluentSymbol.Home }
+                "Windows hides things from you, puts promotions everywhere, lets installed apps fight over your PC, and does many things without giving you a choice. ThisIsMyPC exists to give you those choices back.\n\nHere, every control has been brought into one place. This tutorial will help you understand what Windows is doing to your personal computer, and what you can do about it with the help of this software (and others like it).\n\nTry out settings as you go through the tutorial. Examples are provided of what they will change. At the end, a preset called the Desktop Grand Pack has bundled many cleanup settings for your PC. You will be able to customize it thoroughly before applying, and the vast majority of changes are entirely reversible if you wish to go back.") { IconSymbol = FluentSymbol.Home }
         };
         string[] order = ["Software", "Startup & Services", "Windows Annoyances", "Privacy & Telemetry",
             "Explorer", "Context Menus", "Windows Update", "Security", "Network & Firewall", "Environment",
