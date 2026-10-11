@@ -37,6 +37,8 @@ Welcome introduces the tutorial. Each module uses its sidebar icon and gives con
 Draft additions belong in `docs/planning/tutorial-notes.txt`; saving that notebook does not change runtime lesson text.
 Module availability is not a claim that its settings were scanned. Open module performs the existing module inspection.
 Returning through Home resumes the lesson and selections during the current app session.
+Opening a module from the guide shows Return to guide in the page header. It restores the same lesson and selections.
+Navigating elsewhere clears that return button; Home > Intro guide still resumes the guide.
 
 Desktop-only support applies to this guide's pack workflow, not the rest of the app.
 Portable and unknown machines can read lessons but cannot open the pack from the guide or stage it in Presets.

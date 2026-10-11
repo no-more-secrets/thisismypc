@@ -2,11 +2,12 @@
 
 Current release scope: [v1 completion plan](v1-completion-plan.md), approved 2026-09-06. It supersedes older post-release hardware assumptions below.
 
-## Desktop setup guide and grand pack (2026-10-10)
+## Desktop Intro guide and grand pack (2026-10-10)
 
 - First pass: Home offers a guide explaining every module, Windows and app behavior, choices, and ongoing maintenance.
 - Revised after review: concrete examples replace the four repeated lesson headings. Cleanup modules come first. Navigation shares Presets card styles and keeps the selected card visible, with tested scrollbar clearance.
 - The guide carries module exclusions into the Desktop Grand Pack in Presets. Individual entries remain editable before staging.
+- Modules opened from the guide show Return to guide in their header, restoring the same lesson and selections.
 - The pack includes all four tweak sets, Widgets and the classic context menu from Windows 10-ify, five app removals, and optional Search startup disabling.
 - Tutorial starts at Welcome, uses sidebar icons, and includes steps for trying controls. Prose additions live in `tutorial-notes.txt` for refinement before runtime integration.
 - The pack has 58 settings. Windows Search starts unchecked; its setting changes startup type without deleting the index or immediately stopping the service.

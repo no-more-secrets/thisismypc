@@ -281,6 +281,10 @@
                             Command="{Binding DownloadOrRestartUpdateCommand}"
                             ToolTip.Tip="{Binding UpdateBadgeText}"
                             Padding="12,6" />
+                    <Button Content="Return to guide"
+                            Height="32" Padding="12,6"
+                            IsVisible="{Binding CanReturnToGuide}"
+                            Command="{Binding OpenSetupGuideCommand}" />
                     <!-- Explorer page only: always there, loud while applied changes wait for it. -->
                     <Button x:Name="RestartExplorerButton"
                             Content="Restart Explorer"

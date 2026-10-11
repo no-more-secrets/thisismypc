@@ -44,7 +44,7 @@
                         <TextBlock Text="Include in pack" />
                     </CheckBox>
                     <Button Content="Open module" Command="{Binding OpenModuleCommand}" IsVisible="{Binding CanOpenModule}"
-                            HorizontalAlignment="Left" ToolTip.Tip="Return from Home to continue the guide" />
+                            HorizontalAlignment="Left" ToolTip.Tip="Use Return to guide to continue this lesson" />
                 </StackPanel>
             </ScrollViewer>
         </Grid>
