@@ -85,7 +85,7 @@ Disabling Windows Search indexing reduces that work, but searches that depend on
 
 The pack leaves Windows Search unchecked. Selecting it changes the service's Startup Type to Disabled. It does not delete the existing index or immediately stop a running service. Its effect on indexing begins when the service stops or Windows restarts.
 
-IMPLEMENTATION NOTE (not tutorial text): Replace the generic launcher exercise with a randomly selected suitable entry from the user's PC. Show its real name, publisher, category, and available launch details. Explain that entry before offering Keep enabled, Disable, or Show another example. Disable must use the pending-changes pipeline. Use a clearly labeled sample if no suitable entry is available. Software and Startup & Services need direct links to each other. This interaction is planned, not implemented.
+IMPLEMENTATION NOTE (not tutorial text): Software and Startup & Services now offer a randomly selected live sign-in entry, with its name, publisher or unknown-publisher status, launch command, and registration location. The guide explains Run keys or Startup folders before offering Keep enabled, Disable, or Show another example. Disable checks the entry again and stages through Pending changes. A labeled sample appears when no suitable entry exists. Task and service examples and direct links between these two modules remain pending.
 
 YOUR NOTES:
 

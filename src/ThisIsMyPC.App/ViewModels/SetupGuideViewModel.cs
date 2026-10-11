@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using ThisIsMyPC.App.Services;
 using ThisIsMyPC.Core.Hardware;
 using ThisIsMyPC.App.Icons;
+using ThisIsMyPC.Core.Services;
 
 namespace ThisIsMyPC.App.ViewModels;
 
@@ -15,9 +16,15 @@ public sealed partial class SetupGuideViewModel : ViewModelBase
     private readonly Action<string> _openModule;
     public IReadOnlyList<SetupLessonViewModel> Lessons { get; }
     public IRelayCommand CloseCommand { get; }
+    public GuideAutorunExampleViewModel? AutorunExample { get; }
+    public bool HasLiveExample => IsDesktop && AutorunExample is not null && Current.IsAvailable
+        && Current.ModuleName is "Software" or "Startup & Services";
+    public string Introduction => HasLiveExample ? Current.Body.Split("\n\n", 2)[0] : Current.Body;
+    public string RemainingBody => HasLiveExample && Current.Body.Contains("\n\n", StringComparison.Ordinal)
+        ? Current.Body[(Current.Body.IndexOf("\n\n", StringComparison.Ordinal) + 2)..] : "";
 
     [ObservableProperty] private int _selectedIndex;
-    [ObservableProperty] private bool _isDesktop;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(HasLiveExample)), NotifyPropertyChangedFor(nameof(Introduction)), NotifyPropertyChangedFor(nameof(RemainingBody))] private bool _isDesktop;
     [ObservableProperty, NotifyPropertyChangedFor(nameof(HasDeviceStatus))] private string _deviceStatus = "Checking desktop support…";
     public bool HasDeviceStatus => DeviceStatus.Length > 0;
     public SetupLessonViewModel Current => Lessons[SelectedIndex];
@@ -28,12 +35,17 @@ public sealed partial class SetupGuideViewModel : ViewModelBase
     public bool CanOpenModule => Current.ModuleName is not null && Current.IsAvailable;
 
     public SetupGuideViewModel(IEnumerable<ModuleRegistration> modules, IHardwareDetectionService? hardware,
-        Action<IReadOnlyList<string>> review, Action<string> openModule, Action close)
+        Action<IReadOnlyList<string>> review, Action<string> openModule, Action close,
+        IPendingChangesService? pending = null, IUserFeedback? feedback = null, AutorunEnrichment? enrichment = null)
     {
         _hardware = hardware;
         _review = review;
         _openModule = openModule;
         CloseCommand = new RelayCommand(close);
+        var registrations = modules.ToArray();
+        var startup = registrations.FirstOrDefault(m => m.Module.Info.Name == "Startup & Services" && m.Availability.IsAvailable);
+        if (startup is not null && pending is not null)
+            AutorunExample = new(startup.Module.ScanSystemStateAsync, pending, feedback, () => IsDesktop, enrichment);
         var lessons = new List<SetupLessonViewModel>
         {
             new("Welcome", "Welcome",
@@ -42,7 +54,7 @@ public sealed partial class SetupGuideViewModel : ViewModelBase
         string[] order = ["Software", "Startup & Services", "Windows Annoyances", "Privacy & Telemetry",
             "Explorer", "Context Menus", "Windows Update", "Security", "Network & Firewall", "Environment",
             "Power Plans", "Display", "System Control", "Lighting", "Cooling", "Monitoring"];
-        foreach (var module in modules.OrderBy(m =>
+        foreach (var module in registrations.OrderBy(m =>
         {
             var index = Array.IndexOf(order, m.Module.Info.Name);
             return index < 0 ? int.MaxValue : index;
@@ -90,7 +102,7 @@ public sealed partial class SetupGuideViewModel : ViewModelBase
     partial void OnSelectedIndexChanged(int value)
     {
         for (var i = 0; i < Lessons.Count; i++) Lessons[i].IsSelected = i == value;
-        foreach (var property in new[] { nameof(Current), nameof(Progress), nameof(HasPrevious), nameof(HasNext), nameof(IsLast), nameof(CanOpenModule) })
+        foreach (var property in new[] { nameof(Current), nameof(Progress), nameof(HasPrevious), nameof(HasNext), nameof(IsLast), nameof(CanOpenModule), nameof(HasLiveExample), nameof(Introduction), nameof(RemainingBody) })
             OnPropertyChanged(property);
     }
 

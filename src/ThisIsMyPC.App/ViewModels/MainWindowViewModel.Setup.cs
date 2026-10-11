@@ -31,7 +31,7 @@ public partial class MainWindowViewModel
         IsModuleLoading = false;
         (CurrentContent as IDisposable)?.Dispose();
         _setupGuide ??= new SetupGuideViewModel(_navigationService.Modules, _hardwareDetection,
-            excluded => _ = OpenDesktopPackAsync(excluded), OpenModuleFromGuide, OpenHome);
+            excluded => _ = OpenDesktopPackAsync(excluded), OpenModuleFromGuide, OpenHome, _pendingChangesService, _userFeedback, _autorunEnrichment);
         ContentTitle = "Intro guide";
         ContentDescription = "Learn each module, choose your changes, and keep control";
         CurrentContent = _setupGuide;

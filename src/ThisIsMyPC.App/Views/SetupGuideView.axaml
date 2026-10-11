@@ -10,6 +10,9 @@
             <Setter Property="TextWrapping" Value="Wrap" />
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
         </Style>
+        <Style Selector="Border.set-card-body.pending-disable">
+            <Setter Property="Background" Value="{DynamicResource DangerMutedBrush}" />
+        </Style>
     </UserControl.Styles>
     <Grid RowDefinitions="*,Auto" Margin="0,4,0,0">
         <Grid ColumnDefinitions="240,16,*">
@@ -38,7 +41,26 @@
                     <TextBlock Text="{Binding Current.Title}" FontSize="22" FontWeight="SemiBold" />
                     <TextBlock Text="{Binding Current.Availability}" IsVisible="{Binding Current.HasAvailability}"
                                FontSize="12" Foreground="{DynamicResource TextTertiaryBrush}" />
-                    <TextBlock Text="{Binding Current.Body}" FontSize="14" LineHeight="23" />
+                    <TextBlock Text="{Binding Introduction}" FontSize="14" LineHeight="23" />
+                    <Border IsVisible="{Binding HasLiveExample}" Classes="set-card-body" Classes.pending-disable="{Binding AutorunExample.IsStaged}">
+                        <StackPanel DataContext="{Binding AutorunExample}" x:DataType="vm:GuideAutorunExampleViewModel" Spacing="12">
+                            <TextBlock Text="A sign-in entry on your PC" FontSize="18" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding EmptyText}" IsVisible="{Binding !HasEntry}" FontSize="14" LineHeight="23" />
+                            <StackPanel IsVisible="{Binding HasEntry}" Spacing="12">
+                                <TextBlock Text="{Binding Entry.Name}" FontSize="16" FontWeight="SemiBold" />
+                                <TextBlock Text="{Binding Explanation}" FontSize="14" LineHeight="23" />
+                                <TextBlock Text="{Binding SourceText}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                <WrapPanel>
+                                    <Button Content="Keep enabled" Command="{Binding KeepEnabledCommand}" IsEnabled="{Binding CanChoose}" Margin="0,0,8,8" />
+                                    <Button Content="Disable" Command="{Binding DisableCommand}" IsEnabled="{Binding CanChoose}" Margin="0,0,8,8" />
+                                </WrapPanel>
+                            </StackPanel>
+                            <Button Content="Try live example" Command="{Binding ShowAnotherCommand}" IsVisible="{Binding !HasEntry}" IsEnabled="{Binding !IsBusy}" HorizontalAlignment="Left" />
+                            <Button Content="Show another example" Command="{Binding ShowAnotherCommand}" IsVisible="{Binding HasEntry}" IsEnabled="{Binding !IsBusy}" HorizontalAlignment="Left" />
+                            <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}" Height="3" />
+                        </StackPanel>
+                    </Border>
+                    <TextBlock Text="{Binding RemainingBody}" IsVisible="{Binding HasLiveExample}" FontSize="14" LineHeight="23" />
                     <CheckBox IsVisible="{Binding Current.HasRecommendations}" IsEnabled="{Binding IsDesktop}"
                               IsChecked="{Binding Current.IncludeRecommendations}">
                         <TextBlock Text="Include in pack" />

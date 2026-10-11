@@ -16,6 +16,7 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 - Revised after review: concrete examples replace the four repeated lesson headings. Cleanup modules come first. Navigation shares Presets card styles and keeps the selected card visible, with tested scrollbar clearance.
 - The guide carries module exclusions into the Desktop Grand Pack in Presets. Individual entries remain editable before staging.
 - Modules opened from the guide show Return to guide in their header, restoring the same lesson and selections.
+- Software and Startup & Services offer random live sign-in examples, explain the launch route, and stage individual disabling choices. The guide checks the entry again before staging. Run and Startup folder entries qualify; Windows files and known Microsoft publishers are excluded. Unknown publishers stay labeled as unknown. A labeled sample covers PCs without a suitable entry.
 - The pack includes all four tweak sets, Widgets and the classic context menu from Windows 10-ify, five app removals, and optional Search startup disabling.
 - Tutorial starts at Welcome, uses sidebar icons, and includes steps for trying controls. Prose additions live in `tutorial-notes.txt` for refinement before runtime integration.
 - The pack has 58 settings. Windows Search starts unchecked; its setting changes startup type without deleting the index or immediately stopping the service.
