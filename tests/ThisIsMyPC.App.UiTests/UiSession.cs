@@ -269,7 +269,7 @@ public sealed class UiSession : IDisposable
                 var wheelPoint = CenterOf(scroller);
                 Window.MouseMove(wheelPoint);
                 Window.MouseWheel(wheelPoint, new Vector(0, point.Y < 0 ? 3 : -3));
-                Pump();
+                WaitForScrollToSettle(scroller);
                 if (scroller.Offset == offset)
                     break;
             }
@@ -278,6 +278,23 @@ public sealed class UiSession : IDisposable
         }
 
         Click(target);
+    }
+
+    private void WaitForScrollToSettle(ScrollViewer scroller)
+    {
+        var deadline = Environment.TickCount64 + 1500;
+        var previous = scroller.Offset;
+        var stableFrames = 0;
+        while (Environment.TickCount64 < deadline)
+        {
+            // Pump real animation frames before measuring the next mouse target.
+            Thread.Sleep(10);
+            Pump();
+            stableFrames = scroller.Offset == previous ? stableFrames + 1 : 0;
+            if (stableFrames >= 3) return;
+            previous = scroller.Offset;
+        }
+        throw new TimeoutException("Scrolling did not settle before the click.");
     }
 
     /// <summary>Clicks into a control and types, keystroke by keystroke.</summary>

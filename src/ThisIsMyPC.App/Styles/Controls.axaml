@@ -1,6 +1,11 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:icons="using:ThisIsMyPC.App.Icons"
+        xmlns:controls="using:ThisIsMyPC.App.Controls"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Style Selector="ScrollViewer /template/ ScrollContentPresenter">
+        <Setter Property="controls:SmoothWheelScroll.IsEnabled" Value="True" />
+    </Style>
 
     <!-- Dropdowns and flyouts follow the app layout scale. -->
     <Style Selector="Popup, Control /template/ Popup">

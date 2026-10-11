@@ -2,6 +2,14 @@
 
 Current release scope: [v1 completion plan](v1-completion-plan.md), approved 2026-09-06. It supersedes older post-release hardware assumptions below.
 
+## Wheel scrolling (2026-10-10)
+
+- Pixel scrolling uses frame-timed exponential ease-out. Repeated input within 120 ms adds an 8% ramp per step, capped at 24%.
+- Reversing direction drops queued travel. Direct scrolling, content changes, and detached views cancel the animation.
+- Native wheel routing retains nested scrolling and Shift-wheel behavior. Logical scrolling and snap points keep native movement.
+- Regression tests cover timing, ramp limits, reversal at boundaries, nested scrolling, cancellation, and view reattachment.
+- Verified: Release build, 3,794 CI-safe tests, rendered scroll frames, and fresh review. The sight harness waits for scrolling to settle before clicking.
+
 ## Desktop Intro guide and grand pack (2026-10-10)
 
 - First pass: Home offers a guide explaining every module, Windows and app behavior, choices, and ongoing maintenance.
