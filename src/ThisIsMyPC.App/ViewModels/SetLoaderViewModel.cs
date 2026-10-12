@@ -122,7 +122,7 @@ public partial class SetLoaderViewModel : ViewModelBase, IDisposable, ITabbedPag
         PackInspection = InspectPackAsync();
         SearchText = string.Empty;
         StageMessage = string.Empty;
-        BuildPreview();
+        BuildPreview(preserveChoices: false);
     }
 
     [RelayCommand]
@@ -186,8 +186,13 @@ public partial class SetLoaderViewModel : ViewModelBase, IDisposable, ITabbedPag
         BuildPreview();
     }
 
-    private void BuildPreview()
+    private void BuildPreview(bool preserveChoices = true)
     {
+        // Keep review choices by position, including duplicate entries in user sets.
+        var choices = preserveChoices ? PreviewGroups.SelectMany(g => g.Entries)
+            .Select(r => (Included: r.CanToggle && !r.IsApplied && !r.IsAlreadyStaged
+                && (!r.HasConflict || r.IsIncluded) ? (bool?)r.IsIncluded : null,
+                r.Resolution.Conflict, r.Resolution.PendingGroupId, r.Resolution.PendingValue)).ToArray() : [];
         PreviewGroups.Clear();
         if (SelectedSet is null)
         {
@@ -214,8 +219,17 @@ public partial class SetLoaderViewModel : ViewModelBase, IDisposable, ITabbedPag
             PreviewGroups.Add(groupVm);
         }
 
+        var index = 0;
         foreach (var row in PreviewGroups.SelectMany(g => g.Entries))
+        {
+            if (index < choices.Length && choices[index].Included is { } included && row.CanToggle
+                && !row.IsApplied && !row.IsAlreadyStaged && (!included ||
+                    row.Resolution.Conflict == choices[index].Conflict
+                    && row.Resolution.PendingGroupId == choices[index].PendingGroupId
+                    && row.Resolution.PendingValue == choices[index].PendingValue)) row.IsIncluded = included;
             if (_excludedPackModules.Contains(row.Entry.ModuleId)) row.IsIncluded = false;
+            index++;
+        }
 
         RecountIncluded();
         FilterPreview();

@@ -25,6 +25,9 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 
 ## Desktop Intro guide and grand pack (2026-10-10)
 
+- October 12 preview: the guide saves its lesson and module exclusions across app restarts. Welcome emphasizes the owner's first paragraph. Short lessons retain their overview and show a placeholder for guided examples.
+- Pack review keeps individual choices when unrelated pending changes refresh the list. New conflicts require explicit selection before replacing another pending choice.
+- Verified the bundled 58-setting pack through real-window review, staging, and discard with no Apply. Windows Search remains optional; app removals remain separate actions. Saved Software lessons retain all paragraphs after desktop detection.
 - First pass: Home offers a guide explaining every module, Windows and app behavior, choices, and ongoing maintenance.
 - Revised after review: concrete examples replace the four repeated lesson headings. Cleanup modules come first. Navigation shares Presets card styles and keeps the selected card visible, with tested scrollbar clearance.
 - The guide carries module exclusions into the Desktop Grand Pack in Presets. Individual entries remain editable before staging.
@@ -36,7 +39,7 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 - Defender engine removal is a requested optional pack extension, selected separately. Implementation and recovery remain pending; it is not represented by a security toggle.
 - Installed removal candidates start selected. Removals use the one-way action queue and explicitly state all-user scope and no undo.
 - Desktop classification gates this guide's pack workflow and direct pack staging. Other app modules retain laptop support.
-- Remaining: persistent guide progress, richer live findings, per-setting lessons, and guided post-apply results.
+- Remaining: richer live findings, per-setting lessons, and guided post-apply results.
 - Verified: 3,782 CI-safe tests and 19 focused tests passed. Dark and light screenshots, compact layout, edge geometry, and fresh review passed.
 - Design and schema: [sets schema](../sets-schema.md). Live elevated apply, removal, and reinstall acceptance remain pending.
 

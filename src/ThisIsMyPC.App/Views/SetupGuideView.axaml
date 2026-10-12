@@ -10,6 +10,9 @@
             <Setter Property="TextWrapping" Value="Wrap" />
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
         </Style>
+        <Style Selector="TextBlock.welcome-introduction">
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
         <Style Selector="Border.set-card-body.pending-disable">
             <Setter Property="Background" Value="{DynamicResource DangerMutedBrush}" />
         </Style>
@@ -39,9 +42,11 @@
                 <StackPanel Spacing="16" Margin="0,0,16,24">
                     <TextBlock Text="{Binding DeviceStatus}" IsVisible="{Binding HasDeviceStatus}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
                     <TextBlock Text="{Binding Current.Title}" FontSize="22" FontWeight="SemiBold" />
+                    <TextBlock Text="Guided examples are still being written for this lesson."
+                               IsVisible="{Binding HasLessonPlaceholder}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
                     <TextBlock Text="{Binding Current.Availability}" IsVisible="{Binding Current.HasAvailability}"
                                FontSize="12" Foreground="{DynamicResource TextTertiaryBrush}" />
-                    <TextBlock Text="{Binding Introduction}" FontSize="14" LineHeight="23" />
+                    <TextBlock Text="{Binding Introduction}" Classes.welcome-introduction="{Binding IsWelcome}" FontSize="14" LineHeight="23" />
                     <Border IsVisible="{Binding HasLiveExample}" Classes="set-card-body" Classes.pending-disable="{Binding AutorunExample.IsStaged}">
                         <StackPanel DataContext="{Binding AutorunExample}" x:DataType="vm:GuideAutorunExampleViewModel" Spacing="12">
                             <TextBlock Text="A sign-in entry on your PC" FontSize="18" FontWeight="SemiBold" />
@@ -60,7 +65,7 @@
                             <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}" Height="3" />
                         </StackPanel>
                     </Border>
-                    <TextBlock Text="{Binding RemainingBody}" IsVisible="{Binding HasLiveExample}" FontSize="14" LineHeight="23" />
+                    <TextBlock Text="{Binding RemainingBody}" IsVisible="{Binding HasSplitBody}" FontSize="14" LineHeight="23" />
                     <CheckBox IsVisible="{Binding Current.HasRecommendations}" IsEnabled="{Binding IsDesktop}"
                               IsChecked="{Binding Current.IncludeRecommendations}">
                         <TextBlock Text="Include in pack" />

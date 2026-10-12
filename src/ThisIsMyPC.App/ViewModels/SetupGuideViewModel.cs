@@ -4,6 +4,7 @@ using ThisIsMyPC.App.Services;
 using ThisIsMyPC.Core.Hardware;
 using ThisIsMyPC.App.Icons;
 using ThisIsMyPC.Core.Services;
+using ThisIsMyPC.Core.Settings;
 
 namespace ThisIsMyPC.App.ViewModels;
 
@@ -14,17 +15,22 @@ public sealed partial class SetupGuideViewModel : ViewModelBase
     private readonly IHardwareDetectionService? _hardware;
     private readonly Action<IReadOnlyList<string>> _review;
     private readonly Action<string> _openModule;
+    private readonly ISettingsService? _settings;
+    private const string ProgressScope = "Intro guide";
     public IReadOnlyList<SetupLessonViewModel> Lessons { get; }
     public IRelayCommand CloseCommand { get; }
     public GuideAutorunExampleViewModel? AutorunExample { get; }
     public bool HasLiveExample => IsDesktop && AutorunExample is not null && Current.IsAvailable
         && Current.ModuleName is "Software" or "Startup & Services";
-    public string Introduction => HasLiveExample ? Current.Body.Split("\n\n", 2)[0] : Current.Body;
-    public string RemainingBody => HasLiveExample && Current.Body.Contains("\n\n", StringComparison.Ordinal)
+    public bool IsWelcome => Current.ModuleName is null && SelectedIndex == 0;
+    public bool HasSplitBody => IsWelcome || HasLiveExample;
+    public bool HasLessonPlaceholder => Current.ModuleName is not null && Current.ModuleName is not ("Software" or "Startup & Services");
+    public string Introduction => HasSplitBody ? Current.Body.Split("\n\n", 2)[0] : Current.Body;
+    public string RemainingBody => HasSplitBody && Current.Body.Contains("\n\n", StringComparison.Ordinal)
         ? Current.Body[(Current.Body.IndexOf("\n\n", StringComparison.Ordinal) + 2)..] : "";
 
     [ObservableProperty] private int _selectedIndex;
-    [ObservableProperty, NotifyPropertyChangedFor(nameof(HasLiveExample)), NotifyPropertyChangedFor(nameof(Introduction)), NotifyPropertyChangedFor(nameof(RemainingBody))] private bool _isDesktop;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(HasLiveExample)), NotifyPropertyChangedFor(nameof(HasSplitBody)), NotifyPropertyChangedFor(nameof(Introduction)), NotifyPropertyChangedFor(nameof(RemainingBody))] private bool _isDesktop;
     [ObservableProperty, NotifyPropertyChangedFor(nameof(HasDeviceStatus))] private string _deviceStatus = "Checking desktop support…";
     public bool HasDeviceStatus => DeviceStatus.Length > 0;
     public SetupLessonViewModel Current => Lessons[SelectedIndex];
@@ -36,7 +42,8 @@ public sealed partial class SetupGuideViewModel : ViewModelBase
 
     public SetupGuideViewModel(IEnumerable<ModuleRegistration> modules, IHardwareDetectionService? hardware,
         Action<IReadOnlyList<string>> review, Action<string> openModule, Action close,
-        IPendingChangesService? pending = null, IUserFeedback? feedback = null, AutorunEnrichment? enrichment = null)
+        IPendingChangesService? pending = null, IUserFeedback? feedback = null, AutorunEnrichment? enrichment = null,
+        ISettingsService? settings = null)
     {
         _hardware = hardware;
         _review = review;
@@ -75,6 +82,19 @@ public sealed partial class SetupGuideViewModel : ViewModelBase
             "The pack includes Clean Boot, NukeCopilot, Privacy Baseline, and Windows Update Control, plus selected Windows 10-ify settings and app removals. You do not need to run those sets separately.\n\nChoose Review pack. Check each group's current values, clear anything you want to keep, then stage your selections. Entries unavailable on this PC are skipped.\n\nThe update settings require regular checks for updates and release support. App removals affect all users and have no undo.") { IconSymbol = FluentSymbol.Box });
         Lessons = lessons;
         Lessons[0].IsSelected = true;
+        foreach (var lesson in Lessons.Where(l => l.HasRecommendations))
+        {
+            lesson.IncludeRecommendations = settings?.GetModule(ProgressScope, "include:" + lesson.ModuleName) != "0";
+            lesson.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(SetupLessonViewModel.IncludeRecommendations))
+                    SaveProgress("include:" + lesson.ModuleName, lesson.IncludeRecommendations ? "1" : "0");
+            };
+        }
+        var savedLesson = settings?.GetModule(ProgressScope, "lesson");
+        var savedIndex = lessons.FindIndex(l => (l.ModuleName ?? l.Label) == savedLesson);
+        if (savedIndex >= 0) SelectedIndex = savedIndex;
+        _settings = settings;
     }
 
     public async Task CheckDesktopAsync()
@@ -102,8 +122,15 @@ public sealed partial class SetupGuideViewModel : ViewModelBase
     partial void OnSelectedIndexChanged(int value)
     {
         for (var i = 0; i < Lessons.Count; i++) Lessons[i].IsSelected = i == value;
-        foreach (var property in new[] { nameof(Current), nameof(Progress), nameof(HasPrevious), nameof(HasNext), nameof(IsLast), nameof(CanOpenModule), nameof(HasLiveExample), nameof(Introduction), nameof(RemainingBody) })
+        foreach (var property in new[] { nameof(Current), nameof(Progress), nameof(HasPrevious), nameof(HasNext), nameof(IsLast), nameof(CanOpenModule), nameof(HasLiveExample), nameof(IsWelcome), nameof(HasSplitBody), nameof(HasLessonPlaceholder), nameof(Introduction), nameof(RemainingBody) })
             OnPropertyChanged(property);
+        SaveProgress("lesson", Current.ModuleName ?? Current.Label);
+    }
+
+    private void SaveProgress(string key, string value)
+    {
+        try { _settings?.SetModule(ProgressScope, key, value); }
+        catch (Exception ex) { NLog.LogManager.GetCurrentClassLogger().Warn(ex, "Guide progress could not be saved"); }
     }
 
     [RelayCommand] private void SelectLesson(SetupLessonViewModel lesson)

@@ -21,6 +21,142 @@ namespace ThisIsMyPC.App.UiTests;
 public class SetupGuideTests
 {
     [AvaloniaFact]
+    public async Task Guide_RestoresLessonAndModuleChoicesAfterRestart()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"tipc-guide-{Guid.NewGuid():N}.json");
+        try
+        {
+            var services = new ServiceCollection();
+            App.ConfigureServices(services);
+            await using var provider = services.BuildServiceProvider();
+            var modules = provider.GetServices<IModule>().Select(m => new ModuleRegistration(m, new(true))).ToArray();
+            var settings = new Core.Settings.SettingsService(path);
+            settings.Initialize();
+            var guide = new SetupGuideViewModel(modules, new Hardware(3), _ => { }, _ => { }, () => { }, settings: settings);
+            guide.Lessons.Single(l => l.ModuleName == "Software").IncludeRecommendations = false;
+            guide.SelectedIndex = guide.Lessons.ToList().FindIndex(l => l.ModuleName == "Explorer");
+            var restartedSettings = new Core.Settings.SettingsService(path);
+            restartedSettings.Initialize();
+            IReadOnlyList<string>? excluded = null;
+            var resumed = new SetupGuideViewModel(modules, new Hardware(3), e => excluded = e, _ => { }, () => { }, settings: restartedSettings);
+            Assert.Equal("Explorer", resumed.Current.ModuleName);
+            Assert.Single(resumed.Lessons, l => l.IsSelected);
+            Assert.False(resumed.Lessons.Single(l => l.ModuleName == "Software").IncludeRecommendations);
+            await resumed.CheckDesktopAsync();
+            resumed.ReviewPackCommand.Execute(null);
+            Assert.Equal(["Software"], excluded);
+            restartedSettings.SetModule("Intro guide", "lesson", "Removed lesson");
+            var fallback = new SetupGuideViewModel(modules, null, _ => { }, _ => { }, () => { }, settings: restartedSettings);
+            Assert.True(fallback.IsWelcome);
+            Assert.False(fallback.HasLessonPlaceholder);
+        }
+        finally { File.Delete(path); }
+    }
+
+    [AvaloniaFact]
+    [Trait("Category", "Diagnostic")]
+    public async Task MainWindow_SavedSoftwareLessonShowsRemainingBodyAfterDesktopCheck()
+    {
+        var hardware = new DelayedHardware();
+        using var session = UiSession.ForMainWindow("guide-resume-live", services =>
+            services.AddSingleton<IHardwareDetectionService>(hardware));
+        var main = (MainWindowViewModel)session.Window.DataContext!;
+        await session.WaitForAsync(() => main.SidebarGroups.Count > 0, what: "sidebar");
+        session.Services!.GetRequiredService<Core.Settings.ISettingsService>().SetModule("Intro guide", "lesson", "Software");
+        var opening = main.OpenSetupGuideCommand.ExecuteAsync(null);
+        session.Pump();
+        var guide = Assert.IsType<SetupGuideViewModel>(main.CurrentContent);
+        Assert.Equal("Software", guide.Current.ModuleName);
+        Assert.False(guide.HasSplitBody);
+        hardware.Result.SetResult(Hardware.Snapshot(3));
+        await opening;
+        session.Pump();
+        Assert.True(guide.HasSplitBody);
+        var remaining = session.Find<TextBlock>(t => t.Text == guide.RemainingBody);
+        Assert.True(remaining.IsVisible);
+        Assert.Contains("Continue to Startup & Services", remaining.Text, StringComparison.Ordinal);
+        session.Screenshot("restored-software");
+    }
+
+    [AvaloniaFact]
+    public async Task Pack_IndividualChoicesSurviveUnrelatedPendingChangesAndDiscard()
+    {
+        using var pack = CreatePack(new Hardware(3), new Packages(), out var pending, out _);
+        pack.SelectSetCommand.Execute(pack.OptimizationPacks[0]);
+        await pack.PackInspection;
+        pack.PreviewGroups[0].Entries[0].IsIncluded = false;
+        var unrelated = new Inspector().CreateChangeGroup(pack.PreviewGroups[0].Entries[0].Entry) with
+        {
+            GroupId = "unrelated", Changes = [new Inspector().CreateChangeGroup(pack.PreviewGroups[0].Entries[0].Entry).Changes[0] with { SettingId = "unrelated" }],
+        };
+        pending.Stage(unrelated);
+        Assert.False(pack.PreviewGroups[0].Entries[0].IsIncluded);
+        pending.DiscardAll();
+        Assert.False(pack.PreviewGroups[0].Entries[0].IsIncluded);
+        pack.SelectSetCommand.Execute(pack.OptimizationPacks[0]);
+        await pack.PackInspection;
+        Assert.True(pack.PreviewGroups[0].Entries[0].IsIncluded);
+    }
+
+    [AvaloniaFact]
+    public async Task Pack_NewConflictingPendingChoiceRequiresExplicitSelection()
+    {
+        using var pack = CreatePack(new Hardware(3), new Packages(), out var pending, out _);
+        pack.SelectSetCommand.Execute(pack.OptimizationPacks[0]);
+        await pack.PackInspection;
+        var entry = pack.PreviewGroups[0].Entries[0].Entry;
+        var different = new Inspector().CreateChangeGroup(entry with { Value = "1" });
+        pending.Stage(different);
+        Assert.True(pack.PreviewGroups[0].Entries[0].HasConflict);
+        Assert.False(pack.PreviewGroups[0].Entries[0].IsIncluded);
+        pack.StageIncludedCommand.Execute(null);
+        Assert.Equal("1", Assert.Single(pending.PendingGroups).Changes[0].AfterValue);
+        pack.PreviewGroups[0].Entries[0].IsIncluded = true;
+        var unrelated = new Inspector().CreateChangeGroup(entry with { SettingId = "unrelated" }) with { GroupId = "unrelated" };
+        pending.Stage(unrelated);
+        Assert.True(pack.PreviewGroups[0].Entries[0].IsIncluded);
+        pack.StageIncludedCommand.Execute(null);
+        Assert.Equal("0", pending.PendingGroups.Single(g => g.GroupId == different.GroupId).Changes[0].AfterValue);
+    }
+
+    [AvaloniaFact]
+    [Trait("Category", "Diagnostic")]
+    public async Task MainWindow_BundledPackStagesReviewedSelectionsAndDiscardsWithoutApplying()
+    {
+        using var session = UiSession.ForMainWindow("desktop-pack-staging", services =>
+        {
+            services.AddSingleton<IHardwareDetectionService>(new Hardware(3));
+            services.AddSingleton<IAppxPackageService>(new Packages());
+        });
+        var main = (MainWindowViewModel)session.Window.DataContext!;
+        await session.WaitForAsync(() => main.SidebarGroups.Count > 0, what: "sidebar");
+        session.ClickText("Intro guide");
+        await session.WaitForAsync(() => main.CurrentContent is SetupGuideViewModel { IsDesktop: true }, what: "guide");
+        var guide = (SetupGuideViewModel)main.CurrentContent!;
+        guide.SelectedIndex = guide.Lessons.Count - 1;
+        session.Pump();
+        session.ClickText("Review pack");
+        await session.WaitForAsync(() => main.CurrentContent is SetLoaderViewModel { CanStagePack: true, SelectedSet: not null }, what: "pack");
+        var pack = (SetLoaderViewModel)main.CurrentContent!;
+        Assert.Equal(58, pack.PreviewGroups.Sum(g => g.Entries.Count));
+        Assert.False(pack.PreviewGroups.SelectMany(g => g.Entries).Single(r => r.Entry.SettingId == "service-starttype:WSearch").IsIncluded);
+        var expected = pack.IncludedCount;
+        Assert.True(expected > 0);
+        session.Screenshot("review");
+        session.ClickText(pack.StageButtonText);
+        var pending = session.Services!.GetRequiredService<IPendingChangesService>();
+        var actions = session.Services!.GetRequiredService<IPendingActionsService>();
+        Assert.Equal(expected, pending.PendingGroups.Count + actions.PendingActions.Count);
+        Assert.All(pending.PendingGroups.SelectMany(g => g.Changes), change => Assert.NotNull(change.BeforeValue));
+        session.Screenshot("staged");
+        pending.DiscardAll();
+        actions.DiscardAll();
+        Assert.Empty(pending.PendingGroups);
+        Assert.Empty(actions.PendingActions);
+        session.Screenshot("discarded");
+    }
+
+    [AvaloniaFact]
     [Trait("Category", "Diagnostic")]
     public async Task MainWindow_LongLessonsRemainReadableAndScrollToActions()
     {
