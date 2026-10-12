@@ -70,13 +70,20 @@ public sealed class OwnerModeStatusShotTests
         Assert.True(session.IsTextVisible("Enabled"));
         Assert.True(session.IsTextVisible(real.Status.Detail));
         Assert.True(section.IsRestorationEnabled);
+        Assert.Equal("Pause", section.OwnerModeButtonText);
         session.Screenshot("enabled");
 
         real.Status = new() { State = RestorationServiceState.Paused, Detail = "Restoration is paused." };
         session.ClickText("Refresh");
         await session.WaitForAsync(() => section.StateText == "Paused", what: "live paused status");
         Assert.False(section.IsRestorationEnabled);
+        Assert.Equal("Enable Owner Mode", section.OwnerModeButtonText);
         Assert.True(session.IsTextVisible(real.Status.Detail));
         session.Screenshot("paused");
+
+        real.Status = new() { State = RestorationServiceState.Unavailable, ConsentGranted = true };
+        session.ClickText("Refresh");
+        await session.WaitForAsync(() => section.StateText == "Unavailable", what: "unavailable status with saved consent");
+        Assert.Equal("Pause", section.OwnerModeButtonText);
     }
 }

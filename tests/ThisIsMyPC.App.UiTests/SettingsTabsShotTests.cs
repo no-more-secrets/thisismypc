@@ -198,12 +198,16 @@ public class SettingsTabsShotTests
             service.Restoration = RestorationServiceState.Conflict;
             await section.RefreshRestorationCommand.ExecuteAsync(null);
             Assert.Equal("Conflict", section.StateText);
+            Assert.Equal("Pause", section.OwnerModeButtonText);
             session.Screenshot($"owner-mode-conflict-{theme.Key}");
 
             // Disable through the button: the fake flips to Disabled.
             session.ClickText("Pause");
             await session.WaitForAsync(() => !section.IsBusy && !section.IsRunning, what: "service disabled");
             Assert.True(session.IsTextVisible("Installed, disabled"));
+            Assert.Equal("Enable Owner Mode", section.OwnerModeButtonText);
+            var toggle = session.Find<Button>(b => ReferenceEquals(b.Command, section.ToggleCommand));
+            var buttonWidth = toggle.Bounds.Width;
             session.Screenshot($"owner-mode-disabled-{theme.Key}");
 
             // Enable that hangs: the busy bar shows while the fake waits.
@@ -211,6 +215,7 @@ public class SettingsTabsShotTests
             session.ClickText("Enable Owner Mode");
             await session.WaitForAsync(() => section.IsBusy, what: "busy state");
             Assert.True(session.Find<ProgressBar>(_ => true).IsEffectivelyVisible);
+            Assert.False(toggle.IsEffectivelyEnabled);
             session.Screenshot($"owner-mode-busy-{theme.Key}");
 
             // The enable fails: the card keeps its height. The failure goes to the
@@ -236,7 +241,15 @@ public class SettingsTabsShotTests
             await session.WaitForAsync(() => section.IsRunning, what: "service running");
             Assert.Equal("", section.ErrorText);
             Assert.True(session.IsTextVisible("Service running"));
+            Assert.Equal("Pause", section.OwnerModeButtonText);
+            session.Pump();
+            Assert.Equal(buttonWidth, toggle.Bounds.Width);
             session.Screenshot($"owner-mode-enabled-{theme.Key}");
+
+            session.ClickText("Pause");
+            await session.WaitForAsync(() => section.StateText == "Paused", what: "restoration paused");
+            Assert.Equal("Enable Owner Mode", section.OwnerModeButtonText);
+            Assert.True(toggle.IsEffectivelyEnabled);
 
             Border OwnerModeCard() => session.Find<Border>(b =>
                 b.Classes.Contains("card") && b.Child is StackPanel { DataContext: OwnerModeSectionViewModel });

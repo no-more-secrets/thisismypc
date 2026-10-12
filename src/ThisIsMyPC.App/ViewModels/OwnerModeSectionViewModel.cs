@@ -32,6 +32,7 @@ public partial class OwnerModeSectionViewModel : ViewModelBase
     private int _refreshGeneration;
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ToggleCommand))]
     private bool _isBusy;
 
     [ObservableProperty]
@@ -60,6 +61,14 @@ public partial class OwnerModeSectionViewModel : ViewModelBase
     }
 
     public Task Initialization { get; }
+
+    private bool ShouldPause => _consentGranted || StateText == "Conflict";
+    public string OwnerModeButtonText => ShouldPause ? "Pause" : "Enable Owner Mode";
+
+    private bool CanToggle() => !IsBusy;
+
+    [RelayCommand(CanExecute = nameof(CanToggle))]
+    private Task ToggleAsync() => ShouldPause ? DisableAsync() : EnableAsync();
 
     [RelayCommand]
     private async Task RefreshRestorationAsync()
@@ -91,6 +100,7 @@ public partial class OwnerModeSectionViewModel : ViewModelBase
         }
         EnableCommand.NotifyCanExecuteChanged();
         DisableCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(OwnerModeButtonText));
     }
 
     private void RefreshState()
