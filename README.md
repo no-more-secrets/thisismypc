@@ -1,18 +1,22 @@
 <div align="center">
 
+<img src="assets/ThisIsMyPC_Icon-256-AlphaBG_v1.png" width="112" alt="ThisIsMyPC" />
+
 # ThisIsMyPC
 
-### Your PC. Your rules.
+### Debloat Windows entirely. Stop anything unwanted, control updates and telemetry, and manage all your hardware. Take control of your PC.
 
-Control Windows settings, software, and hardware from one app.
+[![Windows 11 x64](https://img.shields.io/badge/Windows_11-x64-0078D4?style=flat-square)](#quick-start)
+[![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?style=flat-square&logo=dotnet&logoColor=white)](global.json)
+[![Avalonia 11](https://img.shields.io/badge/Avalonia-11-8B44AC?style=flat-square)](CONTRIBUTING.md)
+[![License GPLv3](https://img.shields.io/badge/license-GPLv3-A42E2B?style=flat-square&logo=gnu&logoColor=white)](LICENSE)
+[![CI](https://github.com/samboland/thisismypc/actions/workflows/ci.yml/badge.svg)](https://github.com/samboland/thisismypc/actions/workflows/ci.yml)
 
-**Windows 11 · Native desktop app · Free and open source · GPLv3**
+Native Windows app. Free and open source.
 
 [Quick start](#quick-start) · [What you can control](#what-you-can-control) · [How changes work](#how-changes-work) · [FAQ](#faq) · [Contributing](CONTRIBUTING.md)
 
 ![ThisIsMyPC Presets page with a selected Windows 10-ify pack and individual settings](docs/assets/thisismypc-presets.png)
-
-<sub>App UI captured by the headless screenshot harness.</sub>
 
 </div>
 
@@ -54,7 +58,7 @@ Use Windows 11 x64, Git, and the exact .NET SDK in [global.json](global.json), c
 In PowerShell:
 
 ```powershell
-git clone https://github.com/No-More-Secrets/thisismypc.git
+git clone https://github.com/samboland/thisismypc.git
 cd thisismypc
 .\Setup.ps1
 dotnet run --project src/ThisIsMyPC.App
@@ -69,7 +73,7 @@ Changes stay staged until you review and approve them.
 Start by browsing the pages and trying staging and discard.
 See [preview testing](docs/testing/preview-testing.md) for checks and useful bug reports.
 
-Signed installers will appear on the [Releases page](https://github.com/No-More-Secrets/thisismypc/releases).
+Signed installers will appear on the [Releases page](https://github.com/samboland/thisismypc/releases).
 
 ## What you can control
 
@@ -193,7 +197,7 @@ Hardware controls depend on device support; unavailable controls show a reason.
 
 ## Contributing
 
-[Report a bug](https://github.com/No-More-Secrets/thisismypc/issues/new?template=bug-report.md), suggest a change, or help test a preview.
+[Report a bug](https://github.com/samboland/thisismypc/issues/new?template=bug-report.md), suggest a change, or help test a preview.
 Include what you clicked, what you expected, and what happened.
 Screenshots of confusing controls are useful too.
 

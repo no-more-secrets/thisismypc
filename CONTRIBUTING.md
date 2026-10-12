@@ -5,12 +5,12 @@ You do not need to write code to report a problem.
 
 ## Report a problem
 
-Use the [bug report](https://github.com/No-More-Secrets/thisismypc/issues/new?template=bug-report.md).
+Use the [bug report](https://github.com/samboland/thisismypc/issues/new?template=bug-report.md).
 Include what you clicked, what you expected, and what happened.
 Add your Windows edition and app version, or the source commit for a local build.
 Remove personal information from screenshots and error text.
 
-For a new setting or feature, use the [change proposal](https://github.com/No-More-Secrets/thisismypc/issues/new?template=change-proposal.md).
+For a new setting or feature, use the [change proposal](https://github.com/samboland/thisismypc/issues/new?template=change-proposal.md).
 Describe the user-visible result first. Technical details can follow during the discussion.
 Agree substantial changes in the issue before writing code.
 
@@ -23,7 +23,7 @@ Sign in with `gh auth login`.
 To contribute, fork and clone:
 
 ```powershell
-gh repo fork No-More-Secrets/thisismypc --clone
+gh repo fork samboland/thisismypc --clone
 cd thisismypc
 .\Setup.ps1
 ```

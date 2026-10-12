@@ -43,7 +43,7 @@ the before-state/undo guarantees break.
 matching path for the whole session:
 
 ```
-gh repo view No-More-Secrets/thisismypc --json viewerPermission -q .viewerPermission
+gh repo view samboland/thisismypc --json viewerPermission -q .viewerPermission
 ```
 
 - **Owner session** (`ADMIN` or `WRITE`): you work for the repo owner (Sam). Commit
@@ -51,9 +51,9 @@ gh repo view No-More-Secrets/thisismypc --json viewerPermission -q .viewerPermis
   Update `refinement-backlog.md` when a change closes or adds an item.
 - **Contributor session** (`READ`, `NONE`, an error, or `origin` is a fork):
   you work for a contributor. Never commit to `main`. For anything beyond a
-  small fix, open or pick an issue on `No-More-Secrets/thisismypc` first and
+  small fix, open or pick an issue on `samboland/thisismypc` first and
   get the approach agreed there. Branch from `main`, and finish with a PR
-  against `No-More-Secrets/thisismypc` using the PR template. Mention the
+  against `samboland/thisismypc` using the PR template. Mention the
   backlog item the PR touches instead of editing the backlog.
 
 The cycle is the same in both roles: implement, full test suite, sight harness

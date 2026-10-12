@@ -51,7 +51,7 @@ Check whether the lessons explain each choice before asking you to make it.
 
 ## Report what happened
 
-Open a [bug report](https://github.com/No-More-Secrets/thisismypc/issues/new?template=bug-report.md).
+Open a [bug report](https://github.com/samboland/thisismypc/issues/new?template=bug-report.md).
 Include the page, the clicks, the expected result, and the actual result.
 Add a screenshot if the problem is visual.
 Copy error text when the app shows an error.

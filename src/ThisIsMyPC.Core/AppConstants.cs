@@ -22,7 +22,7 @@ public static class AppConstants
         Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
         "ThisIsMyPC");
 
-    public const string RepositoryUrl = "https://github.com/No-More-Secrets/thisismypc";
+    public const string RepositoryUrl = "https://github.com/samboland/thisismypc";
     public const string UpdateUrl = RepositoryUrl + "/releases";
     public const string BugReportUrl = RepositoryUrl + "/issues/new?template=bug-report.md";
 

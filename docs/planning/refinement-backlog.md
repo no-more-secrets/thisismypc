@@ -4,6 +4,9 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 
 ## Public repository introduction (2026-10-12)
 
+- Public repository transferred to `samboland/thisismypc`. The earlier private repository remains private at `samboland/thisismypc-private-archive`.
+- Repository, release, bug-report, setup, and source-verification links use the personal repository. No More Secrets, LLC remains the signing identity.
+- Header uses the existing app icon, the owner's subtitle, and platform, framework, license, and CI badges. Screenshot-process caption removed.
 - README follows REA's entry structure: product promise, screenshot, quick start, agent prompt, capabilities, examples, FAQ, and contribution links.
 - The approved ownership pitch remains. Current pages replace the outdated ten-module list.
 - Development preview status appears before setup. No installer is advertised as available before a published release exists.
@@ -858,7 +861,7 @@ prep here.
   guides carry the one-command clean-clone procedure so any agent can execute
   it consistently. The public README explains the trust model.
 - **PUBLISHED 2026-09-01** at `github.com/No-More-Secrets/thisismypc`;
-  `AppConstants.UpdateUrl` points there.
+  transferred to `github.com/samboland/thisismypc` on 2026-10-12. `AppConstants.UpdateUrl` uses the personal repository.
 
 ## Binary hardening: DONE 2026-09-06
 

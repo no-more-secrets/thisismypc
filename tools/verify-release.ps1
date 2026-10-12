@@ -35,7 +35,7 @@ try {
 
     Write-Host "Cloning exact tag v$version into a disposable directory..."
     git clone --branch "v$version" --depth 1 --recurse-submodules --shallow-submodules `
-        https://github.com/No-More-Secrets/thisismypc.git $cloneRoot
+        https://github.com/samboland/thisismypc.git $cloneRoot
     if ($LASTEXITCODE -ne 0) { throw "Could not clone release tag v$version." }
 
     Push-Location $cloneRoot

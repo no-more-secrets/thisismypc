@@ -83,13 +83,13 @@ if ($LASTEXITCODE -ne 0) {
 Step 'Role'
 $role = 'contributor'
 if ($gh) {
-    $perm = & gh repo view No-More-Secrets/thisismypc --json viewerPermission -q .viewerPermission 2>$null
+    $perm = & gh repo view samboland/thisismypc --json viewerPermission -q .viewerPermission 2>$null
     if ($LASTEXITCODE -eq 0 -and ($perm -eq 'ADMIN' -or $perm -eq 'WRITE')) { $role = 'owner' }
 }
 if ($role -eq 'owner') {
     Ok 'Owner session: commit straight to main, push after every commit, keep the backlog current.'
 } else {
-    Ok 'Contributor session: never commit to main. Issue first for anything beyond a small fix, branch, then PR against No-More-Secrets/thisismypc.'
+    Ok 'Contributor session: never commit to main. Issue first for anything beyond a small fix, branch, then PR against samboland/thisismypc.'
 }
 
 if ($problems.Count -gt 0) {

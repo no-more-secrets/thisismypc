@@ -397,7 +397,7 @@ The [pinned toolchain](pinned-toolchain.md) now has a separate Build Tools insta
   MSI, and the outer installer while preserving public source verification
   through the canonical release tree. Builds without `-SignThumbprint` are
   unsigned test builds.
-- `AppConstants.UpdateUrl` points at github.com/No-More-Secrets/thisismypc
+- `AppConstants.UpdateUrl` points at github.com/samboland/thisismypc
   (public since 2026-09-01).
 - NativeAOT: `build-release.ps1` publishes the App (~38 MB exe, zero
   trim warnings since the shared row templates gained compiled bindings) and
