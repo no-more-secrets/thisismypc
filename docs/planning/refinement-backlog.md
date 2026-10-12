@@ -57,6 +57,7 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 
 ## Broker review at app startup (2026-10-08)
 
+- October 12: the broker uses the app icon and the owner's Windows description, ThisIsMyPC (administrator access).
 - DONE: The app requests one administrator confirmation at startup and keeps the broker connected until the UI closes.
 - DONE: Apply sends staged operations to a native Win32 broker window. Apply All authorizes the batch; Discard All clears it. Closing the window keeps changes staged.
 - DONE: The broker finds the verified UI window and places its review above the Apply bar, with the Apply buttons aligned. Saved UI zoom adjusts placement.

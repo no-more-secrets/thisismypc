@@ -4,8 +4,9 @@
     <OutputType>WinExe</OutputType>
     <UseAppHost Condition="'$(AotPublish)' == 'true'">false</UseAppHost>
     <TargetExt Condition="'$(AotPublish)' == 'true'">.exe</TargetExt>
-    <AssemblyTitle>ThisIsMyPC Privilege Broker</AssemblyTitle>
+    <AssemblyTitle>ThisIsMyPC (administrator access)</AssemblyTitle>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>..\ThisIsMyPC.App\Assets\ThisIsMyPC.ico</ApplicationIcon>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PublishAot Condition="'$(AotPublish)' == 'true'">true</PublishAot>
     <ControlFlowGuard Condition="'$(AotPublish)' == 'true'">Guard</ControlFlowGuard>
