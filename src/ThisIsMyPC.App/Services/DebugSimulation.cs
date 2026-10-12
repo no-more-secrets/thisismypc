@@ -1,6 +1,7 @@
 using ThisIsMyPC.Core.Modules;
 using ThisIsMyPC.Core.Results;
 using ThisIsMyPC.Core.Services;
+using ThisIsMyPC.Ipc.Contracts;
 
 namespace ThisIsMyPC.App.Services;
 
@@ -330,6 +331,11 @@ public sealed class SimulatedOwnerModeControl : IOwnerModeServiceControl
     public event EventHandler? StateChanged;
 
     public OwnerModeState GetState() => _simulation.OwnerModeState ?? _real.GetState();
+
+    public Task<RestorationStatusResponse> GetRestorationStatusAsync(CancellationToken cancellationToken = default)
+        => _simulation.OwnerModeState is null
+            ? _real.GetRestorationStatusAsync(cancellationToken)
+            : Task.FromResult(new RestorationStatusResponse { Detail = "Owner Mode service state is simulated." });
 
     public async Task<OperationResult<bool>> EnableAsync(CancellationToken cancellationToken = default)
     {
