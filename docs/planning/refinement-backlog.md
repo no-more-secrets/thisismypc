@@ -8,6 +8,7 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 - Repository, release, bug-report, setup, and source-verification links use the personal repository. No More Secrets, LLC remains the signing identity.
 - Header uses the existing app icon, the owner's subtitle, and platform, framework, license, and CI badges. Screenshot-process caption removed.
 - README follows REA's entry structure: product promise, screenshot, quick start, agent prompt, capabilities, examples, FAQ, and contribution links.
+- The header invites contributors to reverse engineer Windows components with REA. CONTRIBUTING explains how to submit evidence, tests, and controls.
 - The approved ownership pitch remains. Current pages replace the outdated ten-module list.
 - Development preview status appears before setup. No installer is advertised as available before a published release exists.
 - CONTRIBUTING and preview testing cover source setup, agent-assisted work, staging and discard, and useful bug reports.

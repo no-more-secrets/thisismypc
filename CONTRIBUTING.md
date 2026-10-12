@@ -3,6 +3,20 @@
 Bug reports, screenshots, preview testing, and code changes all help.
 You do not need to write code to report a problem.
 
+## Reverse engineer Windows components
+
+Use [REA](https://github.com/morluto/rea) with your coding agent to investigate a Windows component or behavior this app does not yet control.
+Help find what starts it, what it does, and which settings or APIs control it.
+
+Open a [change proposal](https://github.com/samboland/thisismypc/issues/new?template=change-proposal.md) with the behavior you want to control and your findings.
+Include the Windows edition and build, component version, evidence, and anything you could not verify.
+A registry value alone does not prove that Windows honors it.
+
+Findings are useful even without a code change.
+If you add a control, capture its before-state, support undo where possible, and test its behavior and supported Windows versions.
+Use a disposable Windows test machine for changes to Windows components.
+Agree the approach in the issue before implementing substantial changes.
+
 ## Report a problem
 
 Use the [bug report](https://github.com/samboland/thisismypc/issues/new?template=bug-report.md).

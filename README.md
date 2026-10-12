@@ -14,6 +14,9 @@
 
 Native Windows app. Free and open source.
 
+**Help reverse engineer Windows components with [REA](https://github.com/morluto/rea).**
+[Contribute findings, tests, and new controls](CONTRIBUTING.md#reverse-engineer-windows-components) so more of Windows becomes something you can control.
+
 [Quick start](#quick-start) · [What you can control](#what-you-can-control) · [How changes work](#how-changes-work) · [FAQ](#faq) · [Contributing](CONTRIBUTING.md)
 
 ![ThisIsMyPC Presets page with a selected Windows 10-ify pack and individual settings](docs/assets/thisismypc-presets.png)
