@@ -1,6 +1,7 @@
 using ThisIsMyPC.Installer.Services;
 using ThisIsMyPC.Installer.ViewModels;
 using ThisIsMyPC.Installer.Win32;
+using ThisIsMyPC.Interop.Win32;
 using ThisIsMyPC.Interop.Win32.Security;
 
 namespace ThisIsMyPC.Installer;
@@ -10,6 +11,9 @@ sealed class Program
     [STAThread]
     public static int Main(string[] args)
     {
+        if (!WindowsStartupGuard.Check())
+            return 1;
+
 #if ACG_ENABLED
         if (!DynamicCodeHardening.Apply() || !DynamicCodeHardening.IsEnabled())
             Environment.FailFast("Arbitrary Code Guard could not be enabled.");

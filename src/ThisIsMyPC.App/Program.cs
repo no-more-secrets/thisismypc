@@ -18,6 +18,12 @@ sealed class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        if (!WindowsStartupGuard.Check())
+        {
+            Environment.ExitCode = 1;
+            return;
+        }
+
 #if ACG_ENABLED
         // Guarded NativeAOT builds forbid new executable memory before UI startup.
         // Patched Avalonia and SkiaSharp use static unmanaged callbacks.
