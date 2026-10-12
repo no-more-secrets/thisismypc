@@ -76,6 +76,12 @@ public sealed class MsiInstallEngine : IInstallEngine
                     logPath);
 #endif
 
+            progress.Report("Closing ThisIsMyPC...");
+            var previous = InstalledAppDetector.Detect();
+            var folders = previous is not null && IsExpectedUninstaller(previous)
+                ? new[] { options.InstallFolder, previous.InstallFolder }
+                : new[] { options.InstallFolder };
+            await InstalledAppProcesses.StopAsync(folders, cancellationToken).ConfigureAwait(false);
             progress.Report("Installing ThisIsMyPC...");
             var exitCode = await RunMsiExecAsync(msiPath, options.InstallFolder, logPath, options.Reinstall, cancellationToken).ConfigureAwait(false);
             var result = MsiExitCodes.Describe(exitCode);
@@ -146,6 +152,7 @@ public sealed class MsiInstallEngine : IInstallEngine
                     "The Windows Installer registration could not be verified. Remove ThisIsMyPC from Settings, Apps, Installed apps.", null);
             var logDirectory = HardenedDataDirectory.EnsureChildDirectory("logs");
             logPath = Path.Combine(logDirectory, $"uninstall-{DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture)}.log");
+            await InstalledAppProcesses.StopAsync([installed.InstallFolder], cancellationToken).ConfigureAwait(false);
             var start = new ProcessStartInfo
             {
                 FileName = Path.Combine(Environment.SystemDirectory, "msiexec.exe"),
