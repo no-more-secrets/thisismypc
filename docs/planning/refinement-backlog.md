@@ -2,6 +2,16 @@
 
 Current release scope: [v1 completion plan](v1-completion-plan.md), approved 2026-09-06. It supersedes older post-release hardware assumptions below.
 
+## Public repository introduction (2026-10-12)
+
+- README follows REA's entry structure: product promise, screenshot, quick start, agent prompt, capabilities, examples, FAQ, and contribution links.
+- The approved ownership pitch remains. Current pages replace the outdated ten-module list.
+- Development preview status appears before setup. No installer is advertised as available before a published release exists.
+- CONTRIBUTING and preview testing cover source setup, agent-assisted work, staging and discard, and useful bug reports.
+- Issue templates accept reports from people without requiring an agent or technical details they cannot yet supply.
+- Verified: 3,800 CI-safe tests passed. The preview screenshot comes from the headless sight harness.
+- Pending: a published installer and the existing installed-release acceptance checks before inviting download-only testers.
+
 ## Wheel scrolling (2026-10-10)
 
 - Pixel scrolling uses frame-timed exponential ease-out. Repeated input within 120 ms adds an 8% ramp per step, capped at 24%.

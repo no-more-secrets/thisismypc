@@ -1,6 +1,22 @@
+<div align="center">
+
 # ThisIsMyPC
 
-**Your PC. Your rules.**
+### Your PC. Your rules.
+
+Control Windows settings, software, and hardware from one app.
+
+**Windows 11 · Native desktop app · Free and open source · GPLv3**
+
+[Quick start](#quick-start) · [What you can control](#what-you-can-control) · [How changes work](#how-changes-work) · [FAQ](#faq) · [Contributing](CONTRIBUTING.md)
+
+![ThisIsMyPC Presets page with a selected Windows 10-ify pack and individual settings](docs/assets/thisismypc-presets.png)
+
+<sub>App UI captured by the headless screenshot harness.</sub>
+
+</div>
+
+---
 
 You paid for it. Maybe you even built it yourself. Controlling it should not take a dozen apps and a digital sparring match with a multibillion dollar corporation.
 
@@ -11,372 +27,197 @@ Open source, free and yours forever. No accounts, no telemetry. Only the things 
 Say it with me.<br>
 **This is MY PC.**
 
-This repository is developed with AI coding agents under the human owner, Sam Boland.
-The documentation includes agent-written material. The operating rules an agent needs are in
-[AGENTS.md](AGENTS.md), the shared source. [CLAUDE.md](CLAUDE.md) and
-[GEMINI.md](GEMINI.md) are one-line imports for clients using native filenames. The doc index with what
-each file is for is [docs/README.md](docs/README.md).
+## Quick start
 
-## What it does
+**Development preview. The first release is still in development. There is no published installer yet.**
 
-Ten modules currently, each one is a page in the .exe app:
+You can build the app, explore the code, and help test it now.
+Live installation, hardware coverage, and some Apply and undo checks remain pending.
+The [backlog](docs/planning/refinement-backlog.md) records completed work and remaining checks.
 
-| Group | Module | What it manages |
+### Ask your coding agent
+
+Open this repository in your coding agent and ask:
+
+```text
+Set up ThisIsMyPC on this Windows PC. Read AGENTS.md, check prerequisites,
+run Setup.ps1, and run the CI-safe tests. Explain any failed checks.
+Do not launch the app or apply Windows changes until I ask.
+```
+
+The repo includes shared instructions for coding agents.
+Your agent can inspect the setup, build the app, and help investigate problems using the same source.
+
+### Build it yourself
+
+Use Windows 11 x64, Git, and the exact .NET SDK in [global.json](global.json), currently `10.0.400`.
+In PowerShell:
+
+```powershell
+git clone https://github.com/No-More-Secrets/thisismypc.git
+cd thisismypc
+.\Setup.ps1
+dotnet run --project src/ThisIsMyPC.App
+```
+
+Setup checks prerequisites, initializes the OpenRGB submodule, installs repo hooks, builds the .NET solution, and runs CI-safe tests.
+The C++ lighting engine needs a separate build with the Visual Studio C++ tools.
+See [development setup](CONTRIBUTING.md) and the [lighting build guide](docs/lighting-controllers.md#build).
+
+The app requests administrator permission for its Broker at startup.
+Changes stay staged until you review and approve them.
+Start by browsing the pages and trying staging and discard.
+See [preview testing](docs/testing/preview-testing.md) for checks and useful bug reports.
+
+Signed installers will appear on the [Releases page](https://github.com/No-More-Secrets/thisismypc/releases).
+
+## What you can control
+
+| Area | Pages | What you can do |
 |---|---|---|
-| Core | Explorer | Taskbar, context menu style, Explorer preferences, shell settings |
-| Core | Context Menus | Every registered right-click handler: COM extensions, static verbs, drag-drop handlers, modern packaged handlers. Shows source file, publisher, and classification; toggles across all registration surfaces |
-| Core | Environment | System and user environment variables, with a PATH editor |
-| Core | Power Plans | Discover, switch, and adjust power plans |
-| Core | Startup & Services | Every autostart location in Autoruns' categories, switched off the way Autoruns does it |
-| System | Windows Annoyances | Nag screens, suggestions, ads, and upsell prompts |
-| System | Windows Update | Update installs, forced restarts, driver overwrites, feature upgrades |
-| System | Privacy & Telemetry | Diagnostic data, error reporting, tracking, personalization |
-| System | Software | Install and uninstall apps from a curated catalog through winget; remove inbox apps; manage winget upgrades |
-| Hardware | Display | Brightness, contrast, and input source over DDC/CI |
+| Windows desktop | Explorer, Context Menus | Change taskbar and Explorer preferences; inspect and disable registered right-click handlers. |
+| Apps and startup | Software, Startup & Services | Install, remove, and update apps through winget; inspect startup entries and services. |
+| Environment and power | Environment, Power Plans | Edit user and system variables, including PATH; choose and adjust power plans. |
+| Windows behavior | Windows Annoyances, Windows Update, Privacy & Telemetry | Control suggestions, ads, update behavior, and supported privacy settings. |
+| Security | Security | Manage supported sign-in, antivirus, app protection, and notification settings. |
+| Network | Network & Firewall | Inspect adapters and firewall rules; stage connection state, IPv4 DNS, and firewall profile changes. |
+| Display | Display | Adjust supported monitors through DDC/CI. |
+| Laptop controls | System Control | Open maintained G-Helper controls on supported laptops. |
+| RGB lighting | Lighting | Control supported devices through the bundled engine built from OpenRGB. |
+| Fan profiles | Cooling | Edit saved FanControl profiles; runtime activation still needs verification. |
+| Sensors | Monitoring | View supported memory, NVIDIA GPU, and basic battery readings with short history graphs. |
 
-Module definitions: `src/ThisIsMyPC.Modules.*`, registered in
-`src/ThisIsMyPC.App/App.axaml.cs`.
+Availability depends on your Windows edition, policy state, and hardware.
+Monitoring does not yet cover CPU, motherboard, storage, AMD GPU, or Intel GPU sensors.
+Network & Firewall includes initial controls; complete firewall rule editing remains planned.
 
-Tweak sets bundle related changes into one apply: Clean Boot, Nuke Copilot,
-Privacy Baseline, Windows 10-ify, Windows Update Control. A set stages its
-changes like any other edit; nothing is written until the user reviews and
-applies. Sets are JSON files in `src/ThisIsMyPC.App/sets/`; the format is in
-[docs/sets-schema.md](docs/sets-schema.md).
+### Start with a preset
+
+Presets group related choices, including **Nuke Copilot**, **Privacy Baseline**, **Windows 10-ify**, and **Windows Update Control**.
+You can inspect and change each choice before staging it.
+
+On desktop PCs, the **Intro guide** explains the modules and helps build a **Desktop Grand Pack**.
+The pack combines 58 settings and five app removal choices.
+App removals use a separate action queue and do not support undo.
+
+### Make one change
+
+Find a setting by page or search, choose its value, and review the pending list.
+The app captures the previous value before staging a reversible change.
+After Apply, History records its result and provides undo for reversible changes.
+
+### Keep supported choices applied
+
+Optional **Owner Mode** restores explicitly chosen, supported preferences through a SYSTEM service.
+Consent defaults off, and saved choices belong to one verified Windows account.
+The current catalog includes eleven non-policy DWORD preferences from Windows Annoyances.
+
+Owner Mode can restore outside edits too. Pause it before changing a protected preference with another tool.
+Installed-service live evaluation remains pending.
+See [Owner Mode controls](docs/owner-mode-service-controls.md) for its limits.
 
 ## How changes work
 
-- Every edit is staged in a pending-changes list. The user sees the registry
-  key, service, or task that will be touched and can deselect any item.
-- Every change carries its before-state. `ChangeDescriptor` rejects a null
-  `BeforeValue`, so a write without one cannot be staged.
-- Apply runs as a group with rollback: if one change fails, the ones already
-  applied are reverted.
-- Change history persists in a SQLite database with undo.
-- Installs and uninstalls are one-way, so they run through a separate actions
-  queue (`IPendingActionsService`) with no fabricated before-state and no
-  history entry.
-- A system restore point is created before applying a batch of five or more
-  changes, and the user can create one at any time from the review panel.
+1. **Choose.** Edits enter a pending list with their captured before-state.
+2. **Review.** Inspect the settings and system locations before approving the batch.
+3. **Apply.** Each reversible change group rolls back if it fails. Earlier completed groups remain applied.
+4. **Undo.** History stores reversible changes and their previous values.
 
-## Owner Mode
+Installs, uninstalls, and upgrades run through a separate action queue.
+They have no fabricated before-state or generic undo.
+The app requests a restore point when at least five eligible changes and actions are pending.
 
-Owner Mode is an optional SYSTEM service that restores explicitly chosen,
-supported settings. Its catalog contains eleven non-policy DWORD preferences
-from Windows Annoyances. Each saved choice belongs to one verified Windows
-account. Only eligible choices are restored; managed, unknown, unsupported,
-or unloaded-profile states block automatic writes.
+The UI runs unelevated. A separate elevated Broker performs privileged changes.
+Owner Mode uses a service and shares protected recovery with the Broker.
 
-Consent defaults off. Apply a supported setting, then enable Owner Mode in
-Settings. Pause saves consent-off before stopping the service. Protected
-changes made outside ThisIsMyPC can also be restored, so pause before making
-external edits. Owner Mode cannot identify whether Windows or a person made them.
-Each protected setting permits at most three restoration attempts in seven days.
+### Inspect the source behind a release
 
-The unelevated UI requests privileged operations from a separate elevated
-Broker. Broker changes and service restoration share a machine lock and
-trusted recovery. Restoration records appear in History with their outcome;
-they do not support generic undo. Software integration is complete; an
-installed-service live evaluation remains untested.
-
-See [service controls](docs/owner-mode-service-controls.md) and the
-[single-user plan](docs/planning/owner-mode-single-user-plan.md).
-
-## Defaults
-
-- No startup entry, no tray icon, no notifications, no background monitoring
-  unless enabled in Settings.
-- Network use: the update check against GitHub Releases (on by default, one
-  toggle to turn off) and winget when the user installs software. Nothing else.
-- UI settings and history live in `%LocalAppData%\ThisIsMyPC`. Trusted Owner
-  Mode state stays in protected `%ProgramData%\ThisIsMyPC` storage.
-- Updates are verified against a GPG-signed manifest before they are applied
-  (`GpgManifestUpdateVerifier`; process in
-  [docs/release/update-signing.md](docs/release/update-signing.md)).
-- The two trusted release-key fingerprints and their combined public key ring
-  are published in
-  [docs/release/update-signing.md](docs/release/update-signing.md).
-
-## Requirements
-
-- Windows 11, x64. The manifest also declares Windows 10 compatibility, but
-  nothing has been tested there.
-- Administrator rights for changes. Browsing and staging run without elevation.
-- Installed per machine from an MSI into `Program Files`. No per-user install,
-  no portable build.
-
-## Install
-
-1. Download `ThisIsMyPC-Installer-<version>.exe` from the
-   [Releases page](https://github.com/No-More-Secrets/thisismypc/releases).
-2. Double-click it. Windows asks for permission; click Yes.
-3. Read the license, choose the folder and the options you want, click
-   Install.
-4. Open ThisIsMyPC from the Start menu. Windows asks for permission only when
-   you apply changes or use another privileged command.
-
-The same page also carries `ThisIsMyPC-win.msi`, the plain Windows Installer
-package inside the exe, for winget and for administrators who deploy with
-their own tools. Use the exe to move between prerelease builds with the same
-numeric version. The MSI blocks that ambiguous transition.
-
-Updates arrive inside the app. Each one is checked against a signed manifest
-before it is applied, and an update that fails the check is refused
-(details in [docs/release/update-signing.md](docs/release/update-signing.md)).
-
-## Independently verify a release
-
-A successful verification proves that the signed installer's complete
-functional contents came from its public tagged source. In that concrete sense,
-the source of every verified signed installer is fully transparent. This
-project does not ask users to trust an installer solely because Windows shows a
-verified publisher. Release installers are deterministic and reproducible from
-the corresponding tagged source. The repository pins the .NET SDK, NuGet
-dependency graphs, release tools, Windows SDK, linker, Visual Studio toolchain,
-Windows build, and Windows Installer engine that affect the result.
-
-Anyone, or any coding agent, can verify a downloaded `.exe` with one command:
+Release tooling pins the inputs that affect installer contents.
+The verifier checks signatures and compares installed files against a build of the exact source tag.
+It does not run or modify the downloaded installer.
 
 ```powershell
-.\tools\verify-release.ps1 `
-  -ReleasedInstaller "C:\path\to\ThisIsMyPC-Installer-1.0.0.exe"
+.\tools\verify-release.ps1 -ReleasedInstaller "C:\path\to\ThisIsMyPC-Installer-<version>.exe"
 ```
 
-The script reads the version and build type from the installer, clones that
-exact tag into a disposable directory, validates the pinned build environment,
-builds it, and compares the complete logical install tree. It validates the
-outer installer, embedded MSI, app, service, and Velopack helper signatures.
-It removes only structurally valid Authenticode certificate tables from
-temporary copies before hashing. It never modifies or runs the download. A
-match proves that every installed file came from the tagged source apart from
-its signature metadata. For automation, success is exit code 0 together with an
-output line beginning `Reproducible release verified:`. Any failed signature,
-environment, structure, or content check terminates with a nonzero exit code.
+Verification requires the pinned Windows build environment.
+See [release packaging](docs/release/packaging.md) for prerequisites, evidence, and failure meanings.
+The release keys are published in [update signing](docs/release/update-signing.md).
 
-The certificate-removal foundation is tested, not only designed. On September
-3, 2026, an outer installer signed by SSL.com for No More Secrets, LLC and RFC
-3161 timestamped matched its clean unsigned build after its certificate was
-removed. The all-PE path passed on September 7 with test version
-`1.0.1-test-06`. All twenty signature locations were valid and timestamped,
-and the signed-to-unsigned comparison matched. The evidence is recorded in
-[packaging.md](docs/release/packaging.md).
+## FAQ
 
-For an already prepared clean clone, the lower-level comparison is:
+<details>
+<summary><strong>Can I download an installer today?</strong></summary>
 
-```powershell
-$version = "1.0.0"
-.\tools\test-reproducible-build-environment.ps1
-.\tools\build-release.ps1 -Version $version
-.\tools\compare-reproducible-installer.ps1 `
-  -ReleasedInstaller "C:\path\to\ThisIsMyPC-Installer-$version.exe" `
-  -LocalInstaller ".\artifacts\releases\$version\ThisIsMyPC-Installer-$version.exe"
-```
+There is no published release yet. Use the source setup above for preview testing.
+The first release still needs the checks recorded in the backlog.
 
-The exact clean-clone procedure, canonical tree design, environment
-requirements, expected outputs, and failure meanings are in
-[docs/release/packaging.md](docs/release/packaging.md). Passing
-`-AllowUnsignedRelease` is only for testing the comparison machinery, never
-for verifying a public release.
+</details>
 
-Run `.\tools\start-release-build.ps1` for an interactive signed or unsigned
-build. Each omitted release option becomes a prompt.
+<details>
+<summary><strong>Do I need an AI app to use ThisIsMyPC?</strong></summary>
 
-## Development
+No. ThisIsMyPC is a native Windows app. Coding agents help develop, build, and investigate it.
+You can also build it with the commands above.
 
-This project uses coding agents and expects contributors to work the
-same way: a person sets direction and reviews, their agent does the work. The
-sections below are written so the agent can follow them directly. Everything
-here is also in [AGENTS.md](AGENTS.md), which the agent loads on its own when
-it opens the repo; that file is the authority if the two ever differ.
+</details>
 
-Avalonia's optional build telemetry package is explicitly excluded from all
-build assets. Its task and collector are never imported or executed.
+<details>
+<summary><strong>Does it upload my PC data?</strong></summary>
 
-### Prerequisites
+The app has no account requirement or telemetry.
+The app checks GitHub Releases for updates by default; Settings lets you disable that check.
+Software operations use winget, and companion applications have their own network behavior.
+UI settings and History stay in your user data folder.
+Owner Mode state stays in protected machine storage.
 
-- Windows 11 x64. The app, the Integration tests, and the Diagnostic tests
-  read and write the live system. The CI-safe test tier runs on any Windows
-  machine.
-- .NET 10 SDK. Visual Studio 2026 is optional (XAML preview, debugging);
-  `dotnet` from a terminal is enough.
-- Normal app browsing and staging run without elevation. Privileged changes
-  use the Broker. Integration tests that require administrator access need
-  an elevated terminal.
-- A coding agent with the GitHub CLI (`gh`) signed in. The agent uses `gh` to
-  tell whether it is working for the owner or a contributor, and for issues
-  and PRs.
+</details>
 
-### Get the code
+<details>
+<summary><strong>Does every action support undo?</strong></summary>
 
-```
-gh repo fork No-More-Secrets/thisismypc --clone    # contributor
-git clone https://github.com/No-More-Secrets/thisismypc.git   # read-only
-.\Setup.ps1                                        # once per clone
-```
+Reversible settings capture their previous state and support History undo.
+Software installs, removals, and upgrades do not.
+Owner Mode restoration records also do not support generic undo.
 
-`Setup.ps1` checks the prerequisites, installs the git hooks, verifies the
-agent instruction loaders, reports whether this clone is an owner or contributor
-session, then builds and runs the CI-safe tests. `-SkipBuild` stops after
-the checks. The hooks point git at `tools/git-hooks`; the pre-commit hook
-keeps `CLAUDE.md` and `GEMINI.md` as imports of `AGENTS.md`, and CI rejects
-an invalid loader, so skipping the hook only moves the failure later.
+</details>
 
-### Build and test
+<details>
+<summary><strong>Does it support Windows 10 or every PC?</strong></summary>
 
-```
-dotnet build --configuration Release
-dotnet test --filter "Category!=Integration&Category!=Diagnostic"   # what CI runs
-dotnet test --filter "Category=Integration"                         # live registry, elevated
-dotnet test --filter "Category=Diagnostic"                          # live-system dumps, elevated
-```
+The current target is Windows 11 x64.
+Windows 10 is declared in the manifest but remains untested.
+Hardware controls depend on device support; unavailable controls show a reason.
 
-Three tiers. CI-safe tests use fakes from `tests/ThisIsMyPC.Core.Tests/Fakes/`
-and must stay green on every commit. Integration tests write to sandbox keys
-under HKCU and read the real registry. Diagnostic tests dump what the app
-would show for the current machine; see
-[docs/testing/context-menu-diagnostics.md](docs/testing/context-menu-diagnostics.md).
-
-One test project per module, mirroring `src/`. A new dependency gets its
-version in `Directory.Packages.props` and a versionless `PackageReference` in
-the csproj. The TIPC001 analyzer applies to every project and fails the build
-on unsafe DLL search paths.
-
-### UI changes
-
-Any XAML or view-model change is verified by looking at rendered pixels, not
-by reasoning about XAML:
-
-```
-dotnet test tests/ThisIsMyPC.App.UiTests --configuration Release --filter "Category!=Diagnostic"  # single views, fake data
-dotnet test tests/ThisIsMyPC.App.UiTests --configuration Release --filter "Category=Diagnostic"   # full app walkthrough, ~8s
-```
-
-The harness renders the real UI headlessly (Avalonia.Headless + Skia), drives
-it with real mouse and keyboard events, and writes PNGs to
-`artifacts/ui-shots/<suite>/`. The agent reads the PNGs as images and iterates
-until the screenshot is right. `tools/measure-edge-geometry.ps1` checks the
-page margin contract in pixels. New views get a screenshot test; the
-walkthrough picks up new sidebar modules on its own. Nothing in this loop
-needs a human to launch the app.
-
-### The work cycle
-
-1. The agent reads `AGENTS.md` and determines its role with
-   `gh repo view No-More-Secrets/thisismypc --json viewerPermission`. Write
-   access means it works for the owner and commits to `main`. Anything else
-   means it works for a contributor: branch, then PR.
-2. Pick the work. Owner sessions take items from
-   [docs/planning/refinement-backlog.md](docs/planning/refinement-backlog.md).
-   Contributor sessions start from an issue; for anything beyond a small fix,
-   open the issue first and get the approach agreed before writing code.
-3. Implement under the architecture rules below.
-4. Run the full CI-safe suite, plus Integration for anything touching the
-   registry or services, plus the sight harness for anything visual.
-5. Run a fresh-context code review (`/code-review` in Claude Code) for
-   anything substantial and fix what it finds.
-6. Commit. Owner sessions push to `main`. Contributor sessions push the
-   branch and open a PR with the template filled in.
-
-### Issues and pull requests
-
-Issues are the design conversation. A useful issue names the module, the
-setting or behavior, the registry or API surface involved, and how the
-before-state would be captured. The templates under `.github/ISSUE_TEMPLATE`
-ask for exactly that so an agent can fill them.
-
-A PR is reviewed by a fresh-context agent and by the owner. The template
-checklist is what they check:
-
-- CI-safe tests green; Integration run locally if the change touches the
-  live system.
-- Screenshots attached for any UI change.
-- Every reversible change goes through the pending-changes pipeline with a
-  real before-state; one-way operations go through the actions queue.
-- No new opaque binaries; recipes are ported into set definitions or modules.
-- No em dashes in code, comments, docs, or the commit message.
-- The backlog item the PR closes or adds is named in the description; the
-  owner edits the backlog itself.
-
-Naming, branding, and anything irreversible on a user machine are the
-owner's decisions; raise them in the issue rather than deciding in the PR.
-
-Release builds are packed by `tools/build-release.ps1` and published only as
-NativeAOT ([docs/release/packaging.md](docs/release/packaging.md)). Releases are
-cut by the owner only.
-
-## Architecture
-
-.NET 10, C# 14, Avalonia 11, CommunityToolkit.Mvvm. P/Invoke through CsWin32,
-COM through hand-rolled vtables so the app stays NativeAOT-clean. SQLite for
-history, NLog for logs, Velopack for updates, xUnit for tests.
-
-```
-src/
-  ThisIsMyPC.App             Avalonia host: navigation, pending changes UI, settings
-  ThisIsMyPC.Core            Module contract, change pipeline, history, sets. No Win32 calls
-  ThisIsMyPC.Interop.Win32   CsWin32 P/Invoke: SCM, power, DDC/CI, restore points
-  ThisIsMyPC.Interop.Com     Task Scheduler, shell extension probing
-  ThisIsMyPC.Interop.Sensors Read-only memory, battery, and supported NVIDIA sensors
-  ThisIsMyPC.Interop.Wmi     WMI queries
-  ThisIsMyPC.Modules.*       Shell, Startup, Power, Annoyances, WindowsUpdate, Privacy, Software, Display
-  ThisIsMyPC.Service         Owner Mode service (Session 0)
-  ThisIsMyPC.Ipc.Contracts   Named-pipe message envelope shared by app and service
-analyzers/                   Roslyn analyzer (TIPC001) that blocks unsafe DLL search paths
-tests/                       One test project per module plus security, IPC, integration, UI
-```
-
-A module implements `IModule` (`src/ThisIsMyPC.Core/Modules/IModule.cs`:
-info, availability, scan, apply, revert) and is registered explicitly with
-`AddSingleton<IModule, X>()`. No reflection scanning, because NativeAOT.
-Modules do not reference each other; shared system access goes through the
-interop projects. A module that cannot run on the current machine shows up
-disabled with the reason, not hidden. Reference implementations:
-`Modules.Shell` for a custom view, `Modules.Annoyances` for the card renderer.
-
-## Status
-
-The first release is still in development. Cooling runtime verification, wider
-sensor coverage, System policy verification, and installed release checks remain.
-Release signing and the release-key ceremony are in place. Current list:
-[docs/planning/refinement-backlog.md](docs/planning/refinement-backlog.md).
-
-Hardware work includes native Lighting, saved FanControl profile editing, and
-read-only Monitoring. Monitoring shows memory, supported NVIDIA GPU sensors,
-and basic battery readings, with statistics and short history graphs.
-CPU, motherboard, storage, AMD and Intel GPU sensors remain unavailable.
-G-Helper and FanControl remain maintained companion applications.
-
-Further work includes network and firewall, exportable PC profiles, and
-OneDrive and Edge removal. See the backlog for scope and verification limits.
+</details>
 
 ## Contributing
 
-The workflow is under Development above. Modules are the extension point:
-implement `IModule`, register it, add a test project mirroring `src/`. Set
-definitions are the second extension point and need no code. The rules that
-reviews enforce, in one place:
+[Report a bug](https://github.com/No-More-Secrets/thisismypc/issues/new?template=bug-report.md), suggest a change, or help test a preview.
+Include what you clicked, what you expected, and what happened.
+Screenshots of confusing controls are useful too.
 
-- Every reversible change goes through the pending-changes pipeline with a
-  real before-state. That rule is what makes undo trustworthy.
-- One-way operations go through the actions queue, never the change pipeline.
-- Core stays pure: no Win32, COM, or WMI calls outside the `Interop.*`
-  projects.
-- Never shell out to opaque third-party binaries; port their registry or API
-  recipes into set definitions or modules instead.
-- No em dashes anywhere in the repo, including commit messages.
+For code changes, start with [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md).
+Agents use the same build, test, and screenshot workflow as the maintainer.
+Agree substantial changes in an issue before implementing them.
 
-## License
+This repository is developed with AI coding agents under Sam Boland's direction.
+The documentation includes agent-written material.
 
-[GPLv3](LICENSE), version 3 only, for every component, including the Owner
-Mode service. Version 3 so that Apache 2.0 code (Bulk Crap Uninstaller) and
-GPLv3 code (G-Helper) can be ported in; the "or later" option is not offered,
-so the terms stay the ones in LICENSE. Open source makes the code
-inspectable; it is not a substitute for an audit. See
-[docs/why-gplv3.md](docs/why-gplv3.md).
+## Documentation
 
-The Lighting tab is built on [OpenRGB](https://openrgb.org) (GPL-2.0-or-later),
-compiled from the pinned source in `third-party/OpenRGB` into the bundled
-lighting engine; see [docs/lighting-controllers.md](docs/lighting-controllers.md).
-The engine carries the [PawnIO](https://pawnio.eu) SMBus modules for chipset
-devices.
+- [Documentation index](docs/README.md): design notes, system behavior, and testing guides.
+- [Development setup](CONTRIBUTING.md): prerequisites, builds, tests, and contribution workflow.
+- [Preview testing](docs/testing/preview-testing.md): checks you can try and how to report a problem.
+- [Backlog](docs/planning/refinement-backlog.md): current progress and unverified behavior.
+- [Release plan](docs/planning/v1-completion-plan.md): the scope of the first release.
+- [Release packaging](docs/release/packaging.md): signing and source verification.
 
+## License and credits
+
+[GPLv3, version 3 only](LICENSE), for every component, including the Owner Mode service.
 Copyright (c) 2026 No More Secrets, LLC. See [NOTICE](NOTICE).
+
+Lighting uses [OpenRGB](https://openrgb.org), built from pinned source under GPL-2.0-or-later, and includes PawnIO SMBus modules.
+[G-Helper](https://github.com/seerge/g-helper) and [FanControl](https://github.com/Rem0o/FanControl.Releases) remain maintained companion applications.
+See [why GPLv3](docs/why-gplv3.md), [lighting controllers](docs/lighting-controllers.md), and [hardware integration](docs/research/hardware-integration-boundaries.md) for attribution and boundaries.

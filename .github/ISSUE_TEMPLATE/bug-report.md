@@ -5,7 +5,8 @@ title: ""
 labels: bug
 ---
 
-<!-- Written for an agent to fill from the user's machine. -->
+You can fill this in yourself or ask your coding agent to help.
+Remove personal information from screenshots, error text, and logs.
 
 ## What happened
 
@@ -24,12 +25,16 @@ whether Owner Mode was on.
 
 ## Environment
 
-- Windows build (`winver`) and SKU (Home, Pro, Enterprise, Education)
-- App version (Apps & Features, or the file version of ThisIsMyPC.App.exe)
-- Installed from the MSI or a local build
+- Windows version and edition (Settings > System > About)
+- App version shown in the window, or source commit if known
+- Installed build or local build
 - Owner Mode on or off
 
-## Log
+## Error text or screenshot
+
+Copy any error text shown by the app. Add a screenshot for a visual problem.
+
+## Log (optional)
 
 `%ProgramData%\ThisIsMyPC\logs\`, the lines around the failure. Remove
 anything personal before pasting.

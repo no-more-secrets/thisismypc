@@ -5,14 +5,12 @@ title: ""
 labels: proposal
 ---
 
-<!-- Written for an agent to fill. Every field is something the reviewer needs before saying yes. -->
+Start with the behavior you want. Your coding agent can help with technical details.
+Leave a technical field as "unknown" if you cannot answer it yet.
 
 ## Module
 
-Which module this belongs to (Explorer, Context Menus, Environment, Power
-Plans, Startup & Services, Windows Annoyances, Windows Update, Privacy &
-Telemetry, Software, Display), or "new module" with the group it would join
-(Core, System, Hardware).
+Name the page this belongs to, or say "new page".
 
 ## The setting or behavior
 
