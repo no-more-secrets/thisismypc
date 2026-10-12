@@ -50,9 +50,9 @@ The launcher offers three build modes:
 
 Run `tools/start-release-build.ps1 -Mode DebugRelease`, or use the noninteractive
 `tools/build-release.ps1 -Version 0.1.2-test-01 -DebugRelease`.
-DebugRelease uses Release optimization, NativeAOT, ACG, CIG, and the pinned toolchain.
-Protected installation paths, native dependency hashes, module inventory, vendor
-signatures, IPC identity checks, and signed update verification remain enforced.
+DebugRelease uses Release optimization, NativeAOT, and the pinned toolchain.
+Its unelevated App uses Avalonia's platform renderer; the Broker, Service, and
+Installer retain ACG. Protected installation paths and IPC identity checks remain enforced.
 There is no runtime switch that disables signature checks in normal releases.
 
 Outputs go to `artifacts/releases/debug-release_<version>`, staging uses the same
@@ -174,19 +174,19 @@ and Service sit beside the App in the package. The script then packs the MSI
 and writes `SHA256SUMS`. Follow
 `update-signing.md` for signing and upload.
 
-All four release executables enable Arbitrary Code Guard before application
+The Broker, Service, and Installer enable Arbitrary Code Guard before application
 startup. The installer UI uses only Windows Win32 and GDI APIs. The App's
 local Avalonia.Win32 and SkiaSharp packages under
 `third-party/acg` replace runtime-generated native callback thunks with static
 unmanaged callbacks. Rebuild them with `tools/build-acg-dependencies.ps1`.
 Run `tools/AcgLauncher` from an elevated terminal to test loader-time ACG.
 The launcher also rejects a window whose captured frame contains no visible pixels.
-The App uses Avalonia's software renderer in ACG builds. ANGLE creates its
-window under strict ACG but presents black frames on the tested host.
-`AotPublish=true` alone creates an unsigned NativeAOT diagnostic build without
-ACG or CIG. Add `DynamicCodeGuard=true` to test ACG without signing.
-Non-ACG App development builds retain Avalonia's normal platform detection.
-Release builds validate the four native DLLs against pinned SHA-256 values.
+The unelevated release App omits ACG and CIG so Avalonia can use its normal
+platform renderer. ACG App diagnostics use software rendering because ANGLE
+presented black frames under strict ACG on the tested host.
+`AotPublish=true` alone creates a NativeAOT build without ACG or CIG.
+Add `DynamicCodeGuard=true` to test ACG without signing.
+Opt-in CIG App builds validate four native DLLs against pinned SHA-256 values.
 The App bakes their canonical hashes into its NativeAOT image. Signing changes
 only the terminal Authenticode certificate table, so the same values remain valid.
 The release build also rejects App, Broker, or Service PE identity fields that

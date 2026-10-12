@@ -151,7 +151,7 @@ if ($DebugRelease) {
     $aotArgs += @('--artifacts-path', (Join-Path $repoRoot 'artifacts\diagnostics\debug-release-build'))
 }
 $guardedAotArgs = @($aotArgs) + '-p:DynamicCodeGuard=true'
-$appAotArgs = @($guardedAotArgs) + '-p:CodeIntegrityGuard=true'
+$appAotArgs = @($aotArgs)
 
 Write-Host "Publishing App ($Version, win-x64, self-contained, NativeAOT)..."
 dotnet publish (Join-Path $repoRoot 'src\ThisIsMyPC.App\ThisIsMyPC.App.csproj') `

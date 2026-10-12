@@ -144,7 +144,7 @@ Detection must record a `NotInstalled` observation for every companion it looked
 - FanControl on laptops: whether it can drive EC fans on the ASUS laptop is unverified; the policy still offers it and lets the person decide.
 - Armoury Crate coexistence with G-Helper: G-Helper's own guidance about Armoury Crate services is the reason it sits in the likely-interferer list. Unverified link: https://github.com/seerge/g-helper (unverified).
 - OpenRGB's "close other RGB software" guidance is why OpenRGB, SignalRGB and Armoury Crate sit in Lighting's likely-interferer list: https://openrgb.org/ (unverified).
-- The release build under Code Integrity Guard with NvAPI mapped before the policy: exercised by `NvApiUnderCigTests` in the test host; the installed NativeAOT app has not been run through the GPU path yet.
+- The installed NativeAOT app's GPU renderer and NvAPI path have not been tested on a physical display. `NvApiUnderCigTests` covers the separate opt-in CIG diagnostic path.
 
 ## Non-goals so far
 

@@ -340,23 +340,23 @@ Replaces the bundled OpenRGB of the same day (Sam: "native is the better choice,
 - Review follow-ups kept for later: one companion table shared with the inventory (the module layer merges the inventory's sightings for now), table-driven companion specs, one process snapshot per pass, and an async SDK probe.
 - Resolved 2026-09-21: the Privacy walkthrough timeout was a clipped sidebar click in the test harness. Both complete walkthroughs pass after scrolling.
 
-## NativeAOT ACG renderer compatibility (2026-09-08)
+## NativeAOT renderer and mitigation compatibility (2026-09-08)
 
-- DONE: the App uses Avalonia's software renderer under ACG. The NativeAOT installer uses Win32 and GDI without Avalonia.
-- Non-ACG development builds keep Avalonia's normal platform renderer selection.
+- Current release policy (2026-10-12): the unelevated App omits ACG and CIG and uses Avalonia's platform renderer. The Broker, Service, and Installer retain ACG. Installed GPU scrolling remains to be checked.
+- Optional ACG App diagnostics use Avalonia's software renderer. The NativeAOT installer uses Win32 and GDI without Avalonia.
 - Verified: policy test, full suite, and a visible App under strict ACG. The Win32 installer passed headless GDI rendering and PE mitigation checks.
 - Verified: signed `1.0.1-test-09` upgraded the installed test release on its first run and opened normally.
 - Installed runtime testing confirmed active ACG, hardened payloads, valid signatures, protected files, and fake Broker caller rejection.
 - A same-user process still injected an unsigned disk DLL into the unelevated UI. ACG blocked RWX allocation inside that DLL.
-- DONE: NativeAOT App startup verifies and preloads its four signed native DLLs, then enables Microsoft-only CIG before Avalonia starts.
-- DONE: each native DLL must match its baked canonical SHA-256 and exact loaded path. A pre-CIG inventory rejects other non-Windows modules.
+- Opt-in CIG App diagnostics verify and preload four signed native DLLs before Avalonia starts.
+- In those diagnostics, each native DLL must match its baked canonical SHA-256 and exact loaded path. A pre-CIG inventory rejects other non-Windows modules.
 - DONE: NativeAOT App, Broker, and Service PE identity fields now use their `.exe` names. The release build rejects `.dll` identities.
 - The live NativeAOT probe kept ACG and CIG active, scanned a physical display, and rejected unsigned DLL injection.
 - CIG blocks Apple Bonjour's Winsock provider. Critical-error dialog suppression lets Winsock skip it without blocking App startup.
 - Pending: verify the signed installed App across all modules, updates, accessibility, input methods, and overlays.
 - CIG starts at managed entry. Process-creation enforcement remains incompatible with the required OV-signed native DLLs.
-- Ordinary NativeAOT builds omit ACG and CIG for unsigned diagnostics. ACG can
-  be tested unsigned with `DynamicCodeGuard=true`. Release builds enable both explicitly.
+- The release App and ordinary NativeAOT builds omit ACG and CIG. ACG can
+  be tested unsigned with `DynamicCodeGuard=true`.
 - DONE: Broker requests are limited to each module's target schema and value type. Autoruns can use only shipped locations.
 - Confirmation pages show immutable setting and action identifiers. Unicode controls, formatting marks, malformed text, and category changes are rejected.
 - Verified: 64 Broker policy tests, full CI-safe suite, Release build, NativeAOT Broker publish, and the complete PE mitigation gate.
