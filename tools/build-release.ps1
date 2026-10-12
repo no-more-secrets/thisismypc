@@ -174,8 +174,8 @@ if ($LASTEXITCODE -ne 0) { throw 'Privilege broker publish failed' }
 if (-not (Test-Path (Join-Path $staging 'ThisIsMyPC.Service.exe'))) {
     throw 'ThisIsMyPC.Service.exe missing from staging; Owner Mode enable would break'
 }
-if (-not (Test-Path (Join-Path $staging 'ThisIsMyPC.Broker.exe'))) {
-    throw 'ThisIsMyPC.Broker.exe missing from staging; privileged changes would break'
+if (-not (Test-Path (Join-Path $staging 'ThisIsMyPC (administrator access).exe'))) {
+    throw 'ThisIsMyPC (administrator access).exe missing from staging; privileged changes would break'
 }
 
 # Windows Installer compares component key files by their Windows file version.
@@ -220,13 +220,13 @@ if ($engineVersionInfo.OriginalFilename -ne 'ThisIsMyPC-LightingEngine.exe' -or 
     throw "The lighting engine version resource is wrong: OriginalFilename '$($engineVersionInfo.OriginalFilename)', ProductVersion '$($engineVersionInfo.ProductVersion)'."
 }
 
-foreach ($exe in 'ThisIsMyPC.App.exe', 'ThisIsMyPC.Service.exe', 'ThisIsMyPC.Broker.exe') {
+foreach ($exe in 'ThisIsMyPC.App.exe', 'ThisIsMyPC.Service.exe', 'ThisIsMyPC (administrator access).exe') {
     & (Join-Path $PSScriptRoot 'set-version-language.ps1') -Path (Join-Path $staging $exe)
 }
 
 # NativeAOT uses the IL module name for both fields unless the project publishes
 # directly to an exe target. Reject .dll metadata before it reaches a launcher.
-foreach ($exe in 'ThisIsMyPC.App.exe', 'ThisIsMyPC.Service.exe', 'ThisIsMyPC.Broker.exe') {
+foreach ($exe in 'ThisIsMyPC.App.exe', 'ThisIsMyPC.Service.exe', 'ThisIsMyPC (administrator access).exe') {
     $versionInfo = (Get-Item -LiteralPath (Join-Path $staging $exe)).VersionInfo
     if ($versionInfo.OriginalFilename -ne $exe -or $versionInfo.InternalName -ne $exe) {
         throw "$exe has incorrect PE identity metadata. OriginalFilename='$($versionInfo.OriginalFilename)', InternalName='$($versionInfo.InternalName)'."
@@ -322,8 +322,8 @@ Add-InstallerPayload -StubPath $installerExe -PayloadPath $msiPath -OutputPath $
 Write-Host 'Checking exploit mitigations on the shipped binaries...'
 & (Join-Path $PSScriptRoot 'check-binary-hardening.ps1') `
     (Join-Path $staging 'ThisIsMyPC.App.exe') (Join-Path $staging 'ThisIsMyPC.Service.exe') `
-    (Join-Path $staging 'ThisIsMyPC.Broker.exe') (Join-Path $staging 'lighting-engine\ThisIsMyPC-LightingEngine.exe') $installerAsset `
-    -Require 'ThisIsMyPC.App.exe', 'ThisIsMyPC.Service.exe', 'ThisIsMyPC.Broker.exe', 'ThisIsMyPC-LightingEngine.exe', (Split-Path $installerAsset -Leaf)
+    (Join-Path $staging 'ThisIsMyPC (administrator access).exe') (Join-Path $staging 'lighting-engine\ThisIsMyPC-LightingEngine.exe') $installerAsset `
+    -Require 'ThisIsMyPC.App.exe', 'ThisIsMyPC.Service.exe', 'ThisIsMyPC (administrator access).exe', 'ThisIsMyPC-LightingEngine.exe', (Split-Path $installerAsset -Leaf)
 if ($LASTEXITCODE -ne 0) { throw 'A shipped binary is missing an exploit mitigation; see the table above.' }
 
 if ($SignThumbprint) {

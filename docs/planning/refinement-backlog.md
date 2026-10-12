@@ -5,6 +5,7 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 ## Public repository introduction (2026-10-12)
 
 - App and installer reject Windows versions below Windows 11 22H2 before startup, with a clear minimum-version message.
+- Administrator helper executable uses the approved name `ThisIsMyPC (administrator access).exe`, with matching launch and release checks.
 - Public repository transferred to `samboland/thisismypc`. The earlier private repository remains private at `samboland/thisismypc-private-archive`.
 - Repository, release, bug-report, setup, and source-verification links use the personal repository. No More Secrets, LLC remains the signing identity.
 - Header uses the existing app icon, the owner's subtitle, and platform, framework, license, and CI badges. Screenshot-process caption removed.

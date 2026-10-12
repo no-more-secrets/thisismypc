@@ -132,7 +132,7 @@
   <Target Name="CopyPrivilegeBroker" AfterTargets="Build"
           Condition="'$(AotPublish)' != 'true'">
     <ItemGroup>
-      <PrivilegeBrokerFiles Include="..\ThisIsMyPC.Broker\bin\$(Configuration)\$(TargetFramework)\ThisIsMyPC.Broker.*" />
+      <PrivilegeBrokerFiles Include="..\ThisIsMyPC.Broker\bin\$(Configuration)\$(TargetFramework)\ThisIsMyPC (administrator access).*" />
     </ItemGroup>
     <Copy SourceFiles="@(PrivilegeBrokerFiles)" DestinationFolder="$(TargetDir)"
           SkipUnchangedFiles="true" />

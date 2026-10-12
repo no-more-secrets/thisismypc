@@ -43,7 +43,7 @@ public sealed class PrivilegeBrokerClient : IPrivilegeBrokerClient, IAsyncDispos
 
     public PrivilegeBrokerClient(string? brokerPath = null)
     {
-        _brokerPath = brokerPath ?? Path.Combine(AppContext.BaseDirectory, "ThisIsMyPC.Broker.exe");
+        _brokerPath = brokerPath ?? Path.Combine(AppContext.BaseDirectory, AppConstants.AdministratorAccessExecutableName);
     }
 
     public async Task<OperationResult<bool>> StartPersistentAsync(CancellationToken cancellationToken = default)

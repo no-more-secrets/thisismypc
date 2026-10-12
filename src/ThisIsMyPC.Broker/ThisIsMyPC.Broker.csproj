@@ -2,6 +2,8 @@
   <ItemGroup><ProjectReference Include="..\ThisIsMyPC.Modules.Network\ThisIsMyPC.Modules.Network.csproj" /></ItemGroup>
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
+    <AssemblyName>ThisIsMyPC (administrator access)</AssemblyName>
+    <RootNamespace>ThisIsMyPC.Broker</RootNamespace>
     <UseAppHost Condition="'$(AotPublish)' == 'true'">false</UseAppHost>
     <TargetExt Condition="'$(AotPublish)' == 'true'">.exe</TargetExt>
     <AssemblyTitle>ThisIsMyPC (administrator access)</AssemblyTitle>

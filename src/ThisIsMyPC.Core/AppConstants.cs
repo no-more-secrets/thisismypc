@@ -2,6 +2,9 @@ namespace ThisIsMyPC.Core;
 
 public static class AppConstants
 {
+    /// <summary>Executable used for the approved administrator-access helper.</summary>
+    public const string AdministratorAccessExecutableName = "ThisIsMyPC (administrator access).exe";
+
     /// <summary>
     /// UI-owned settings, history, sets, monitoring state, and logs. The unelevated
     /// Avalonia process may parse this data. Privileged code must never trust it.

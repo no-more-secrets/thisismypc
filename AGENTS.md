@@ -20,6 +20,8 @@ C# / .NET (`net10.0-windows10.0.22621.0`), Avalonia 11 + CommunityToolkit.Mvvm, 
 The UI runs unelevated. Startup requests permission for a persistent elevated Broker.
 The Broker performs privileged changes and uses the app icon with the Windows
 file description `ThisIsMyPC (administrator access)`.
+Its executable is `ThisIsMyPC (administrator access).exe`; keep launch, copy,
+packaging, and hardening checks aligned with that filename.
 Owner Mode runs as a SYSTEM service. Installation is per machine; UI data is per user.
 Owner Mode binds saved choices to one verified account. Do not add profile enumeration
 or hive loading without an explicit scope change.
