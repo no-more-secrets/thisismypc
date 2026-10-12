@@ -17,10 +17,22 @@ zoo (winutil / O&O ShutUp10 / Autoruns / ShellExView / UniGetUI territory) with
 before-state capture and undo for reversible changes. Hardware modules use maintained
 companions where appropriate, including G-Helper and FanControl.
 C# / .NET (`net10.0-windows10.0.22621.0`), Avalonia 11 + CommunityToolkit.Mvvm, xUnit.
-The UI runs unelevated. An on-demand elevated Broker performs privileged changes.
+The UI runs unelevated. Startup requests permission for a persistent elevated Broker.
+The Broker performs privileged changes and uses the app icon with the Windows
+file description `ThisIsMyPC (administrator access)`.
 Owner Mode runs as a SYSTEM service. Installation is per machine; UI data is per user.
 Owner Mode binds saved choices to one verified account. Do not add profile enumeration
 or hive loading without an explicit scope change.
+
+Keep the shared Windows version guard before app and installer startup. The minimum
+is Windows 11 22H2, build 22621. The app rejects older builds before starting the
+Broker. Windows handles the installer's elevation prompt before its version check.
+The version cutoff does not establish tested compatibility on every later build.
+
+The release App omits ACG and CIG and uses Avalonia's platform renderer. Preserve
+ACG for the Broker, Service, and Installer. Guarded service startup uses
+`NativeServiceHost` and `ScmHostLifetime`; do not restore managed SCM callback
+thunks that ACG blocks. Opt-in App mitigation probes remain diagnostic builds.
 
 ## Roadmap
 

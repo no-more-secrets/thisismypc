@@ -1,6 +1,6 @@
 # Installer acceptance
 
-Use signed test packages in a disposable Windows test machine. Keep the regular development installation separate.
+Use signed test packages in a disposable Windows virtual machine or test PC. Keep the regular development installation separate.
 Record the package version, Windows version, display scale, result, and screenshot for each check.
 Automated tests cover fake installation outcomes. They do not prove that the signed package installs correctly.
 
@@ -20,11 +20,28 @@ Keep a snapshot of the clean test machine before installing.
 5. Clear the desktop shortcut and startup choices.
 6. Finish the installation.
 7. Open ThisIsMyPC from Start.
-8. Check that it opens without an administrator prompt.
-9. Check that no desktop shortcut appeared.
-10. Check that Settings shows the choices you made during installation.
+8. Check that Windows requests administrator permission for the Broker.
+9. Check the app icon, the administrator-access description, and No More Secrets, LLC as the verified publisher.
+10. Approve the Windows permission prompt.
+11. Check that the app opens.
+12. Check that no desktop shortcut appeared.
+13. Check that Settings shows the choices you made during installation.
 
 Expected: one installed application, working launch, and matching choices.
+
+## Unsupported Windows versions
+
+The minimum is Windows 11 22H2, build 22621. Boundary tests cover the cutoff.
+Live rejection on Windows 10 remains unverified. The version check does not prove compatibility with every later Windows build.
+
+1. Open the test installer in a Windows 10 virtual machine.
+2. Approve the Windows permission prompt.
+3. Check that it shows "ThisIsMyPC requires Windows 11 22H2 or later."
+4. Close the message.
+5. Check that the installer did not install ThisIsMyPC.
+
+Windows handles installer elevation before the executable can check its version.
+The app also checks the version, before starting the Broker.
 
 ## Upgrade, reinstall, and older versions
 

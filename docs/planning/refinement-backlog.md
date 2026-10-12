@@ -14,7 +14,7 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 - Development preview status appears before setup. No installer is advertised as available before a published release exists.
 - CONTRIBUTING and preview testing cover source setup, agent-assisted work, staging and discard, and useful bug reports.
 - Issue templates accept reports from people without requiring an agent or technical details they cannot yet supply.
-- Verified: 3,800 CI-safe tests passed. The preview screenshot comes from the headless sight harness.
+- Verified: introduction checks passed 3,800 CI-safe tests. The later Windows version guard run passed 3,815 tests after a UI screenshot-lock recheck.
 - Pending: a published installer and the existing installed-release acceptance checks before inviting download-only testers.
 
 ## Wheel scrolling (2026-10-10)

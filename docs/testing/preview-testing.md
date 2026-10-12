@@ -3,6 +3,8 @@
 ThisIsMyPC is still in development. There is no published installer yet.
 The [README setup](../../README.md#quick-start) explains how to build a preview.
 These checks need no coding knowledge once the app is open.
+The preview needs Windows 11 22H2 or later on an x64 PC.
+The app requests administrator permission for its Broker when it starts.
 
 ## Explore the preview
 

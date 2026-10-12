@@ -57,7 +57,7 @@ Your agent can inspect the setup, build the app, and help investigate problems u
 
 ### Build it yourself
 
-Use Windows 11 x64, Git, and the exact .NET SDK in [global.json](global.json), currently `10.0.400`.
+Use Windows 11 22H2 or later (x64), Git, and the exact .NET SDK in [global.json](global.json), currently `10.0.400`.
 In PowerShell:
 
 ```powershell
