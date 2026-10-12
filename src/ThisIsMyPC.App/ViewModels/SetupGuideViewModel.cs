@@ -21,13 +21,15 @@ public sealed partial class SetupGuideViewModel : ViewModelBase
     public IRelayCommand CloseCommand { get; }
     public GuideAutorunExampleViewModel? AutorunExample { get; }
     public bool HasLiveExample => IsDesktop && AutorunExample is not null && Current.IsAvailable
-        && Current.ModuleName is "Software" or "Startup & Services";
+        && Current.ModuleName == "Startup & Services";
     public bool IsWelcome => Current.ModuleName is null && SelectedIndex == 0;
     public bool HasSplitBody => IsWelcome || HasLiveExample;
     public bool HasLessonPlaceholder => Current.ModuleName is not null && Current.ModuleName is not ("Software" or "Startup & Services");
     public string Introduction => HasSplitBody ? Current.Body.Split("\n\n", 2)[0] : Current.Body;
     public string RemainingBody => HasSplitBody && Current.Body.Contains("\n\n", StringComparison.Ordinal)
         ? Current.Body[(Current.Body.IndexOf("\n\n", StringComparison.Ordinal) + 2)..] : "";
+    public string WelcomeBeforePack => IsWelcome ? RemainingBody.Split(PackName, 2)[0] : "";
+    public string WelcomeAfterPack => IsWelcome ? RemainingBody.Split(PackName, 2).ElementAtOrDefault(1) ?? "" : "";
 
     [ObservableProperty] private int _selectedIndex;
     [ObservableProperty, NotifyPropertyChangedFor(nameof(HasLiveExample)), NotifyPropertyChangedFor(nameof(HasSplitBody)), NotifyPropertyChangedFor(nameof(Introduction)), NotifyPropertyChangedFor(nameof(RemainingBody))] private bool _isDesktop;
@@ -56,7 +58,7 @@ public sealed partial class SetupGuideViewModel : ViewModelBase
         var lessons = new List<SetupLessonViewModel>
         {
             new("Welcome", "Welcome",
-                "Windows hides things from you, puts promotions everywhere, lets installed apps fight over your PC, and does many things without giving you a choice. ThisIsMyPC exists to give you those choices back.\n\nHere, every control has been brought into one place. This tutorial will help you understand what Windows is doing to your personal computer, and what you can do about it with the help of this software (and others like it).\n\nTry out settings as you go through the tutorial. Examples are provided of what they will change. At the end, a preset called the Desktop Grand Pack has bundled many cleanup settings for your PC. You will be able to customize it thoroughly before applying, and the vast majority of changes are entirely reversible if you wish to go back.") { IconSymbol = FluentSymbol.Home }
+                "This guide will help you to understand what runs on your PC and decide what belongs there. You will learn how Windows and installed apps use resources, then try changes on your own PC as you go.\n\nWindows hides things from you, puts promotions everywhere, lets installed apps fight over your PC, and does many things without giving you a choice. ThisIsMyPC exists to give you those choices back.\n\nHere, controls from across Windows have been brought into one place. This tutorial will help you understand how Windows affects your PC, and what you can do about it with this software and others like it.\n\nTry out settings as you go through the tutorial. Examples show what they will change. At the end, a preset called the Desktop Grand Pack brings together many cleanup settings for your PC. You will be able to customize it thoroughly before applying, and most setting changes are reversible if you wish to go back.") { IconSymbol = FluentSymbol.Home }
         };
         string[] order = ["Software", "Startup & Services", "Windows Annoyances", "Privacy & Telemetry",
             "Explorer", "Context Menus", "Windows Update", "Security", "Network & Firewall", "Environment",
@@ -125,6 +127,8 @@ public sealed partial class SetupGuideViewModel : ViewModelBase
         foreach (var property in new[] { nameof(Current), nameof(Progress), nameof(HasPrevious), nameof(HasNext), nameof(IsLast), nameof(CanOpenModule), nameof(HasLiveExample), nameof(IsWelcome), nameof(HasSplitBody), nameof(HasLessonPlaceholder), nameof(Introduction), nameof(RemainingBody) })
             OnPropertyChanged(property);
         SaveProgress("lesson", Current.ModuleName ?? Current.Label);
+        OnPropertyChanged(nameof(WelcomeBeforePack));
+        OnPropertyChanged(nameof(WelcomeAfterPack));
     }
 
     private void SaveProgress(string key, string value)

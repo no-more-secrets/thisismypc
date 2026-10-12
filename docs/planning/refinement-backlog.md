@@ -26,14 +26,14 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 
 ## Desktop Intro guide and grand pack (2026-10-10)
 
-- October 12 preview: the guide saves its lesson and module exclusions across app restarts. Welcome emphasizes the owner's first paragraph. Short lessons retain their overview and show a placeholder for guided examples.
+- October 12 preview: the guide saves its lesson and module exclusions across app restarts. Welcome uses the approved four paragraphs, with its opening paragraph and Desktop Grand Pack emphasized. Short lessons retain their overview and show a placeholder for guided examples.
 - Pack review keeps individual choices when unrelated pending changes refresh the list. New conflicts require explicit selection before replacing another pending choice.
 - Verified the bundled 58-setting pack through real-window review, staging, and discard with no Apply. Windows Search remains optional; app removals remain separate actions. Saved Software lessons retain all paragraphs after desktop detection.
 - First pass: Home offers a guide explaining every module, Windows and app behavior, choices, and ongoing maintenance.
 - Revised after review: concrete examples replace the four repeated lesson headings. Cleanup modules come first. Navigation shares Presets card styles and keeps the selected card visible, with tested scrollbar clearance.
 - The guide carries module exclusions into the Desktop Grand Pack in Presets. Individual entries remain editable before staging.
 - Modules opened from the guide show Return to guide in their header, restoring the same lesson and selections.
-- Software and Startup & Services offer random live sign-in examples, explain the launch route, and stage individual disabling choices. The guide checks the entry again before staging. Run and Startup folder entries qualify; Windows files and known Microsoft publishers are excluded. Unknown publishers stay labeled as unknown. A labeled sample covers PCs without a suitable entry.
+- Startup & Services offers random live sign-in examples, explains the launch route, and stages individual disabling choices. Software has no sign-in preview. The guide checks the entry again before staging. Run and Startup folder entries qualify; Windows files and known Microsoft publishers are excluded. Unknown publishers stay labeled as unknown. A labeled sample covers PCs without a suitable entry.
 - The pack includes all four tweak sets, Widgets and the classic context menu from Windows 10-ify, five app removals, and optional Search startup disabling.
 - Tutorial starts at Welcome, uses sidebar icons, and includes steps for trying controls. Prose additions live in `tutorial-notes.txt` for refinement before runtime integration.
 - The pack has 58 settings. Windows Search starts unchecked; its setting changes startup type without deleting the index or immediately stopping the service.

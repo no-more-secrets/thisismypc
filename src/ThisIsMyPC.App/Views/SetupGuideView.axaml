@@ -42,7 +42,7 @@
                 <StackPanel Spacing="16" Margin="0,0,16,24">
                     <TextBlock Text="{Binding DeviceStatus}" IsVisible="{Binding HasDeviceStatus}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
                     <TextBlock Text="{Binding Current.Title}" FontSize="22" FontWeight="SemiBold" />
-                    <TextBlock Text="Guided examples are still being written for this lesson."
+                    <TextBlock Text="This section does not yet have a guided lesson with live examples."
                                IsVisible="{Binding HasLessonPlaceholder}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
                     <TextBlock Text="{Binding Current.Availability}" IsVisible="{Binding Current.HasAvailability}"
                                FontSize="12" Foreground="{DynamicResource TextTertiaryBrush}" />
@@ -65,7 +65,10 @@
                             <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}" Height="3" />
                         </StackPanel>
                     </Border>
-                    <TextBlock Text="{Binding RemainingBody}" IsVisible="{Binding HasSplitBody}" FontSize="14" LineHeight="23" />
+                    <Panel IsVisible="{Binding HasSplitBody}">
+                        <TextBlock Text="{Binding RemainingBody}" IsVisible="{Binding !IsWelcome}" FontSize="14" LineHeight="23" />
+                        <TextBlock IsVisible="{Binding IsWelcome}" FontSize="14" LineHeight="23"><Run Text="{Binding WelcomeBeforePack}" /><Run Text="Desktop Grand Pack" FontWeight="Bold" /><Run Text="{Binding WelcomeAfterPack}" /></TextBlock>
+                    </Panel>
                     <CheckBox IsVisible="{Binding Current.HasRecommendations}" IsEnabled="{Binding IsDesktop}"
                               IsChecked="{Binding Current.IncludeRecommendations}">
                         <TextBlock Text="Include in pack" />
