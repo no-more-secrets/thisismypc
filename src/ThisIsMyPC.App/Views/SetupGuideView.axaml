@@ -50,6 +50,8 @@
                     <Border IsVisible="{Binding HasLiveExample}" Classes="set-card-body" Classes.pending-disable="{Binding AutorunExample.IsStaged}">
                         <StackPanel DataContext="{Binding AutorunExample}" x:DataType="vm:GuideAutorunExampleViewModel" Spacing="12">
                             <TextBlock Text="A sign-in entry on your PC" FontSize="18" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding DisabledSummary}" IsVisible="{Binding HasDisabledSummary}" FontSize="14" LineHeight="23"
+                                       ToolTip.Tip="Counts disabled sign-in entries stored using the Autoruns disable mechanism. One app can have several entries. Task Manager disables are separate." />
                             <TextBlock Text="{Binding EmptyText}" IsVisible="{Binding !HasEntry}" FontSize="14" LineHeight="23" />
                             <StackPanel IsVisible="{Binding HasEntry}" Spacing="12">
                                 <TextBlock Text="{Binding Entry.Name}" FontSize="16" FontWeight="SemiBold" />

@@ -72,6 +72,51 @@ public class GuideAutorunExampleTests
         public SignatureInfo Check(string path) => new(SignatureState.Verified, "Example publisher");
     }
 
+    [AvaloniaFact]
+    public async Task DisabledSummaryCountsParkedLogonEntriesBeforeEnrichment_AndClearsOnFailure()
+    {
+        var fail = false;
+        var disabled = Example("Disabled chat") with { IsEnabled = false, Publisher = null };
+        var entries = new[] { Example(), disabled,
+            disabled with { Name = "Disabled shortcut", Kind = AutorunItemKind.StartupFile },
+            disabled with { Name = "Disabled task", Category = AutorunCategory.ScheduledTasks, Kind = AutorunItemKind.ScheduledTask },
+            Example("Off in Task Manager") with { Note = "Off in Task Manager" },
+            Example("Re-registered") with { LiveSnapshot = "snapshot" } };
+        var vm = new GuideAutorunExampleViewModel(() => Task.FromResult(fail
+            ? OperationResult<object>.Failure("Unavailable", ErrorCategory.ServiceUnavailable)
+            : OperationResult<object>.Success(new StartupScanData([], [], Autoruns: entries))),
+            new PendingChangesService(), null, () => true, new AutorunEnrichment(signatures: new Signatures()));
+        await vm.ShowAnotherCommand.ExecuteAsync(null);
+        Assert.Contains("2 sign-in entries", vm.DisabledSummary, StringComparison.Ordinal);
+        Assert.True(vm.HasDisabledSummary);
+        Assert.NotNull(vm.Entry);
+        fail = true;
+        await vm.DisableCommand.ExecuteAsync(null);
+        Assert.Empty(vm.DisabledSummary);
+        Assert.False(vm.HasDisabledSummary);
+        fail = false;
+        await vm.ShowAnotherCommand.ExecuteAsync(null);
+        Assert.True(vm.HasDisabledSummary);
+        fail = true;
+        await vm.ShowAnotherCommand.ExecuteAsync(null);
+        Assert.Empty(vm.DisabledSummary);
+        Assert.False(vm.HasDisabledSummary);
+    }
+
+    [AvaloniaTheory]
+    [InlineData(0, "No sign-in entries")]
+    [InlineData(1, "1 sign-in entry disabled")]
+    public async Task DisabledSummaryAppearsWithoutAnActiveExample(int count, string expected)
+    {
+        var entries = count == 0 ? Array.Empty<AutorunEntry>() : [Example() with { IsEnabled = false }];
+        var vm = new GuideAutorunExampleViewModel(() => Task.FromResult(OperationResult<object>.Success(
+            new StartupScanData([], [], Autoruns: entries))), new PendingChangesService(), null, () => true);
+        await vm.ShowAnotherCommand.ExecuteAsync(null);
+        Assert.Null(vm.Entry);
+        Assert.Contains(expected, vm.DisabledSummary, StringComparison.Ordinal);
+        Assert.True(vm.HasDisabledSummary);
+    }
+
     private static AutorunEntry Example(string name = "Chat application") => new()
     {
         Name = name, Publisher = "Example publisher", ImagePath = @"C:\Program Files\Example\chat.exe",
@@ -184,12 +229,26 @@ public class GuideAutorunExampleTests
         session.Screenshot("staged");
     }
 
-    private sealed class Startup : IModule
+    [AvaloniaFact]
+    public async Task DisabledSummaryRendersInCompactEmptyExample()
+    {
+        var guide = new SetupGuideViewModel([new(new Startup([]), new(true))], null, _ => { }, _ => { }, () => { },
+            new PendingChangesService()) { IsDesktop = true, SelectedIndex = 1 };
+        using var session = UiSession.ForView(new SetupGuideView(), guide, "guide-disabled-empty", width: 800, height: 600);
+        session.ClickText("Try live example");
+        await session.WaitForAsync(() => guide.AutorunExample!.HasDisabledSummary, what: "disabled count");
+        Assert.False(guide.AutorunExample!.HasEntry);
+        Assert.Contains("No sign-in entries are already disabled", session.DescribeVisibleText(), StringComparison.Ordinal);
+        session.Screenshot("empty-count");
+    }
+
+    private sealed class Startup(AutorunEntry[]? entries = null) : IModule
     {
         public ModuleInfo Info { get; } = new("Startup & Services", "startup", "Startup", [], ModuleGroup.Core, 4);
         public Task<ModuleAvailability> CheckAvailabilityAsync() => Task.FromResult(new ModuleAvailability(true));
         public Task<OperationResult<object>> ScanSystemStateAsync() => Task.FromResult(OperationResult<object>.Success(
-            new StartupScanData([], [], Autoruns: [Example()])));
+            new StartupScanData([], [], Autoruns: entries ?? [Example(), Example("Previously disabled") with { IsEnabled = false },
+                Example("Another disabled entry") with { IsEnabled = false }])));
         public Task<OperationResult<bool>> ApplyChangeAsync(ChangeDescriptor change) => throw new InvalidOperationException("Must not apply");
         public Task<OperationResult<bool>> RevertChangeAsync(ChangeDescriptor change) => throw new InvalidOperationException("Must not revert");
     }

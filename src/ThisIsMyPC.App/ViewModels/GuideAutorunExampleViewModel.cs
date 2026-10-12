@@ -50,6 +50,9 @@ public sealed partial class GuideAutorunExampleViewModel : ViewModelBase
         NotifyPropertyChangedFor(nameof(Explanation)), NotifyPropertyChangedFor(nameof(SourceText))]
     private AutorunEntry? _entry;
     [ObservableProperty] private string _emptyText = "Choose Try live example to find a sign-in entry on this PC.";
+    [ObservableProperty] private string _disabledSummary = "";
+    public bool HasDisabledSummary => DisabledSummary.Length > 0;
+    partial void OnDisabledSummaryChanged(string value) => OnPropertyChanged(nameof(HasDisabledSummary));
     public bool HasEntry => Entry is not null;
     public bool CanChoose => HasEntry && !IsBusy && !IsStaged && !pending.IsApplying && supported();
     public string SourceText => Entry is { } e ? $"Publisher: {e.Publisher}\nLaunch command: {e.Data}\nRegistered at: {e.Location}" : "";
@@ -82,6 +85,14 @@ public sealed partial class GuideAutorunExampleViewModel : ViewModelBase
             throw new InvalidOperationException(result.ErrorMessage ?? "Startup entries could not be read.");
         if (data.AutorunsScanError is { } error)
             throw new InvalidOperationException(error);
+        var disabledCount = data.Autoruns.Count(e => e.Category == AutorunCategory.Logon && !e.IsEnabled
+            && e.Kind is AutorunItemKind.RegistryValue or AutorunItemKind.RegistryKey or AutorunItemKind.StartupFile);
+        DisabledSummary = disabledCount switch
+        {
+            0 => "No sign-in entries are already disabled in Autoruns.",
+            1 => "You already have 1 sign-in entry disabled in Autoruns. It stays disabled while you review this example.",
+            _ => $"You already have {disabledCount} sign-in entries disabled in Autoruns. They stay disabled while you review this example.",
+        };
         if (enrichment is null) return data;
         var entries = new List<AutorunEntry>();
         foreach (var entry in data.Autoruns.Where(Candidate))
@@ -104,6 +115,7 @@ public sealed partial class GuideAutorunExampleViewModel : ViewModelBase
         if (IsBusy || !supported()) return;
         IsBusy = true;
         IsStaged = false;
+        DisabledSummary = "";
         try
         {
             var previous = Entry;
@@ -123,6 +135,7 @@ public sealed partial class GuideAutorunExampleViewModel : ViewModelBase
         catch (Exception ex)
         {
             Entry = null;
+            DisabledSummary = "";
             EmptyText = "Startup entries could not be read. Try live example again to retry.";
             feedback?.Fail($"Could not load the guide example: {ex.Message}");
         }
@@ -158,7 +171,11 @@ public sealed partial class GuideAutorunExampleViewModel : ViewModelBase
             IsStaged = true;
             feedback?.Report(shown.Name, "Disable added to Pending changes.");
         }
-        catch (Exception ex) { feedback?.Fail($"Could not stage the guide example: {ex.Message}"); }
+        catch (Exception ex)
+        {
+            DisabledSummary = "";
+            feedback?.Fail($"Could not stage the guide example: {ex.Message}");
+        }
         finally { IsBusy = false; }
     }
 }
