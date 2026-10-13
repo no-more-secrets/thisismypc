@@ -11,13 +11,14 @@ namespace ThisIsMyPC.Interop.Win32.Restore;
 /// restore point already exists within SystemRestorePointCreationFrequency minutes
 /// (default 1440), which would silently defeat the pre-debloat safety net; so the
 /// frequency value is forced to 0 for the duration of the call and restored afterward.
+/// Disabled protection is enabled on the Windows drive before one creation retry.
 /// Transient operational registry state, same category as the 26-8 GPCache clears;
 /// deliberately not staged through the pending-changes pipeline.
 /// </summary>
 public sealed class RestorePointService : IRestorePointService
 {
     private const string SystemRestoreDisabledMessage =
-        "System Restore is disabled. Enable it in System Properties > System Protection";
+        "System Restore is disabled";
 
     // Serializes creations so two concurrent FrequencyOverride scopes can never
     // interleave and clobber the real SystemRestorePointCreationFrequency value.
@@ -53,47 +54,7 @@ public sealed class RestorePointService : IRestorePointService
         {
             using var frequencyOverride = new FrequencyOverride(_logger);
 
-            var info = new RESTOREPOINTINFOW
-            {
-                dwEventType = BEGIN_SYSTEM_CHANGE,
-                dwRestorePtType = MODIFY_SETTINGS,
-                llSequenceNumber = 0,
-            };
-            CopyDescription(description, ref info);
-
-            STATEMGRSTATUS status;
-            var succeeded = SRSetRestorePointW(&info, &status);
-
-            if (!succeeded || status.nStatus != ERROR_SUCCESS)
-            {
-                if (status.nStatus == ERROR_SERVICE_DISABLED)
-                {
-                    _logger.Warn("Restore point creation refused: System Restore is disabled");
-                    return new RestorePointResult
-                    {
-                        Outcome = RestorePointOutcome.SystemRestoreDisabled,
-                        Message = SystemRestoreDisabledMessage,
-                    };
-                }
-
-                _logger.Warn("SRSetRestorePoint failed with status {Status}", status.nStatus);
-                return new RestorePointResult
-                {
-                    Outcome = RestorePointOutcome.Failed,
-                    Message = $"Restore point creation failed (Windows error {status.nStatus})",
-                };
-            }
-
-            var sequenceNumber = status.llSequenceNumber;
-            EndSystemChange(sequenceNumber);
-
-            _logger.Info(
-                "Restore point {SequenceNumber} created: {Description}", sequenceNumber, description);
-            return new RestorePointResult
-            {
-                Outcome = RestorePointOutcome.Created,
-                SequenceNumber = sequenceNumber,
-            };
+            return CreateWithProtection(description, TryCreateNative, EnableSystemDriveProtection);
         }
         catch (DllNotFoundException)
         {
@@ -122,6 +83,105 @@ public sealed class RestorePointService : IRestorePointService
             };
         }
 #pragma warning restore CA1031
+    }
+
+    // Enable protection only after Windows reports it disabled, then retry once.
+    // This coordinator is tested without calling Windows or changing the registry.
+    internal static RestorePointResult CreateWithProtection(
+        string description,
+        Func<string, RestorePointResult> create,
+        Func<uint> enableProtection)
+    {
+        var result = create(description);
+        if (result.Outcome != RestorePointOutcome.SystemRestoreDisabled)
+            return result;
+
+        var status = enableProtection();
+        if (status != ERROR_SUCCESS)
+        {
+            return new RestorePointResult
+            {
+                Outcome = RestorePointOutcome.SystemRestoreDisabled,
+                Message = status == ERROR_ACCESS_DISABLED_BY_POLICY
+                    ? "System Restore is disabled by administrator policy"
+                    : $"Could not enable System Restore (Windows error {status})",
+            };
+        }
+
+        return create(description);
+    }
+
+    private uint EnableSystemDriveProtection()
+    {
+        // Respect administrator policy. Never remove or replace its values.
+        using var policy = WinRegistry.LocalMachine.OpenSubKey(
+            @"SOFTWARE\Policies\Microsoft\Windows NT\SystemRestore");
+        if (policy?.GetValue("DisableSR") is int disableRestore && disableRestore != 0
+            || policy?.GetValue("DisableConfig") is int disableConfig && disableConfig != 0)
+            return ERROR_ACCESS_DISABLED_BY_POLICY;
+
+        var drive = Path.GetPathRoot(Environment.SystemDirectory);
+        if (string.IsNullOrWhiteSpace(drive))
+            return ERROR_INVALID_DRIVE;
+
+        var status = EnableSR(drive);
+        _logger.Info("System Restore enable request on {Drive}: Windows status {Status}", drive, status);
+        return status;
+    }
+
+    private unsafe RestorePointResult TryCreateNative(string description)
+    {
+        var info = new RESTOREPOINTINFOW
+        {
+            dwEventType = BEGIN_SYSTEM_CHANGE,
+            dwRestorePtType = MODIFY_SETTINGS,
+            llSequenceNumber = 0,
+        };
+        CopyDescription(description, ref info);
+
+        STATEMGRSTATUS status;
+        var succeeded = SRSetRestorePointW(&info, &status);
+
+        var result = ReadCreationResult(succeeded, status.nStatus, status.llSequenceNumber);
+        if (!result.IsSuccess)
+        {
+            _logger.Warn("Restore point creation refused: {Message}", result.Message);
+            return result;
+        }
+
+        EndSystemChange(status.llSequenceNumber);
+        _logger.Info("Restore point {SequenceNumber} created: {Description}", status.llSequenceNumber, description);
+        return result;
+    }
+
+    internal static RestorePointResult ReadCreationResult(bool succeeded, uint status, long sequenceNumber)
+    {
+        // A successful status without a sequence does not identify a restore point.
+        if (status == ERROR_SERVICE_DISABLED)
+        {
+            return new RestorePointResult
+            {
+                Outcome = RestorePointOutcome.SystemRestoreDisabled,
+                Message = SystemRestoreDisabledMessage,
+            };
+        }
+
+        if (!succeeded || status != ERROR_SUCCESS || sequenceNumber <= 0)
+        {
+            return new RestorePointResult
+            {
+                Outcome = RestorePointOutcome.Failed,
+                Message = succeeded && status == ERROR_SUCCESS
+                    ? "Windows did not return a restore point sequence number"
+                    : $"Restore point creation failed (Windows error {status})",
+            };
+        }
+
+        return new RestorePointResult
+        {
+            Outcome = RestorePointOutcome.Created,
+            SequenceNumber = sequenceNumber,
+        };
     }
 
     // MSDN-recommended pairing: close the BEGIN_SYSTEM_CHANGE bracket so the point is

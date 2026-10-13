@@ -29,6 +29,8 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 
 ## Desktop Intro guide and grand pack (2026-10-10)
 
+- DONE October 12: restore-point creation enables disabled System Restore protection on the Windows drive, respects administrator policy, and retries once. Correct native packing preserves the real restore-point sequence. [Evidence and limits](../research/system-restore-enablement.md).
+
 - October 12 preview: the guide saves its lesson and module exclusions across app restarts. Welcome uses the approved four paragraphs, with its opening paragraph and Desktop Grand Pack emphasized. Short lessons retain their overview and show a placeholder for guided examples.
 - Pack review keeps individual choices when unrelated pending changes refresh the list. New conflicts require explicit selection before replacing another pending choice.
 - Verified the bundled 58-setting pack through real-window review, staging, and discard with no Apply. Windows Search remains optional; app removals remain separate actions. Saved Software lessons retain all paragraphs after desktop detection.
