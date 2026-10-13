@@ -9,5 +9,6 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="ThisIsMyPC.Security.Tests" />
+    <InternalsVisibleTo Include="ThisIsMyPC.Integration.Tests" />
   </ItemGroup>
 </Project>

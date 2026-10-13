@@ -29,6 +29,8 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 
 ## Desktop Intro guide and grand pack (2026-10-10)
 
+- DONE October 12: Windows app removal and deprovisioning avoid dynamic completion callbacks blocked by the administrator helper's security guard. NativeAOT removal passed in the separate VM with the guard enabled. [Evidence and limits](../research/appx-deployment-hardening.md).
+
 - DONE October 12: restore-point creation enables disabled System Restore protection on the Windows drive, respects administrator policy, and retries once. Correct native packing preserves the real restore-point sequence. [Evidence and limits](../research/system-restore-enablement.md).
 
 - October 12 preview: the guide saves its lesson and module exclusions across app restarts. Welcome uses the approved four paragraphs, with its opening paragraph and Desktop Grand Pack emphasized. Short lessons retain their overview and show a placeholder for guided examples.

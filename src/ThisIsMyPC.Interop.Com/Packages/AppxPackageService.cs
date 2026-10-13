@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 using ThisIsMyPC.Core.Packages;
 using ThisIsMyPC.Core.Results;
 using Windows.ApplicationModel;
+using Windows.Foundation;
 using Windows.Management.Deployment;
 
 namespace ThisIsMyPC.Interop.Com.Packages;
@@ -75,7 +76,7 @@ public sealed class AppxPackageService : IAppxPackageService
             var operation = allUsers
                 ? manager.RemovePackageAsync(packageFullName, RemovalOptions.RemoveForAllUsers)
                 : manager.RemovePackageAsync(packageFullName);
-            var result = await operation.AsTask(CancellationToken.None).ConfigureAwait(false);
+            var result = await WaitForDeploymentAsync(operation).ConfigureAwait(false);
             return CompleteDeployment(result, $"package '{packageFullName}'", "remove");
         }
         catch (OperationCanceledException)
@@ -96,8 +97,8 @@ public sealed class AppxPackageService : IAppxPackageService
         {
             cancellationToken.ThrowIfCancellationRequested();
             var manager = new PackageManager();
-            var result = await manager.DeprovisionPackageForAllUsersAsync(packageFamilyName)
-                .AsTask(CancellationToken.None).ConfigureAwait(false);
+            var operation = manager.DeprovisionPackageForAllUsersAsync(packageFamilyName);
+            var result = await WaitForDeploymentAsync(operation).ConfigureAwait(false);
             return CompleteDeployment(result, $"package family '{packageFamilyName}'", "deprovision");
         }
         catch (OperationCanceledException)
@@ -108,6 +109,28 @@ public sealed class AppxPackageService : IAppxPackageService
         {
             var (category, message) = AppxErrorMapper.Map(ex.HResult, $"package family '{packageFamilyName}'", "deprovision");
             return OperationResult<bool>.Failure(AppendErrorText(message, ex), category, ex);
+        }
+    }
+
+    private static Task<DeploymentResult> WaitForDeploymentAsync(
+        IAsyncOperationWithProgress<DeploymentResult, DeploymentProgress> operation)
+        => WaitForDeploymentAsync(() => operation.Status, operation.GetResults, operation.Close);
+
+    // AsTask registers a managed completion callback, which requires a dynamic thunk.
+    // Poll the native operation instead so removal works with Arbitrary Code Guard.
+    // Once deployment starts, wait for its final result even if the caller cancels.
+    internal static async Task<T> WaitForDeploymentAsync<T>(
+        Func<AsyncStatus> readStatus, Func<T> getResults, Action close)
+    {
+        try
+        {
+            while (readStatus() == AsyncStatus.Started)
+                await Task.Delay(50).ConfigureAwait(false);
+            return getResults();
+        }
+        finally
+        {
+            close();
         }
     }
 
