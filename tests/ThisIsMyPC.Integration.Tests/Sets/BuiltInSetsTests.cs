@@ -115,7 +115,7 @@ public sealed class BuiltInSetsTests
             desired[(change.ModuleId, change.SettingId)] = change.AfterValue!;
         }
 
-        foreach (var id in new[] { "task-view-button", "dark-apps", "dark-windows", "hide-settings-home" })
+        foreach (var id in new[] { "task-view-button", "dark-apps", "dark-windows", "hide-settings-home", "allow-widgets" })
         {
             var entry = new SetEntry { ModuleId = "Explorer", SettingId = id,
                 Value = id == "hide-settings-home" ? "1" : "0", Description = "" };

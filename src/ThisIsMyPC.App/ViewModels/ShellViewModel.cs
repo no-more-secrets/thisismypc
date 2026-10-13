@@ -160,7 +160,8 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, ISearch
         IPendingChangesService pendingChangesService,
         IRegistryService registryService,
         IPendingActionsService? pendingActionsService = null,
-        Core.Policies.PolicyControlStateReader? policyStates = null, IShellNativeSettings? nativeSettings = null)
+        Core.Policies.PolicyControlStateReader? policyStates = null, IShellNativeSettings? nativeSettings = null,
+        Core.Modules.WindowsSku? windowsSku = null)
     {
         // Explorer preferences, each on its own tab
         foreach (var pref in scanData.ExplorerPreferences)
@@ -186,9 +187,9 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, ISearch
                 FileExplorerChoiceSettings.Add(row);
                 continue;
             }
-            if (pref.Id is "hide-settings-home" or "dark-apps" or "dark-windows")
+            if (pref.Id is "hide-settings-home" or "dark-apps" or "dark-windows" or "allow-widgets")
             {
-                RowsFor(pref.Section).Add(new ShellSettingViewModel(
+                var row = new ShellSettingViewModel(
                     pref.DisplayName, pref.Description, $@"{pref.RegistryKeyPath}\{pref.RegistryValueName}",
                     pref.IsEnabled, pendingChangesService,
                     groupFactory: enabled => new ShellSetEntryInspector(registryService).CreateChangeGroup(new Core.Sets.SetEntry
@@ -199,7 +200,10 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, ISearch
                     }) ?? throw new InvalidOperationException("The visibility policy changed. Reopen Explorer to refresh its controls."),
                     readRegistryState: () => new ExplorerSettingsReader(registryService).ReadAll()
                         .FirstOrDefault(p => p.Id == capturedPref.Id)?.IsEnabled ?? false,
-                    rehydrateSettingId: capturedPref.Id));
+                    rehydrateSettingId: capturedPref.Id);
+                if (pref.Id == "allow-widgets")
+                    row.SetAvailability(SettingEditionSupport.BlockReason(windowsSku, Core.Modules.WindowsSku.Pro));
+                RowsFor(pref.Section).Add(row);
                 continue;
             }
             RowsFor(pref.Section).Add(new ShellSettingViewModel(

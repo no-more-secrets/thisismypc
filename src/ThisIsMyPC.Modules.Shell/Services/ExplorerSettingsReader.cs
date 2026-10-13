@@ -309,6 +309,20 @@ public sealed class ExplorerSettingsReader
             defaultValue: "1",
             restart: RestartRequirement.None));
 
+        const string widgetsKey = @"HKLM\SOFTWARE\Policies\Microsoft\Dsh";
+        var widgetsPolicy = _registryService.ReadValue(widgetsKey, "AllowNewsAndInterests");
+        if ((widgetsPolicy.IsSuccess && widgetsPolicy.Value!.Kind == RegistryValueDataKind.DWord
+                && widgetsPolicy.Value.AsDWord() is 0 or 1)
+            || widgetsPolicy.ErrorCategory == ErrorCategory.NotFound)
+        {
+            preferences.Add(new ExplorerPreference(
+                "allow-widgets", "Allow Widgets", "Allow the Widgets board and weather button for all users on this PC.",
+                widgetsKey, "AllowNewsAndInterests", ChangeValueType.Registry_DWord,
+                widgetsPolicy.IsSuccess ? widgetsPolicy.Value!.Data : ShellRegistryPaths.AbsentValue,
+                "1", "0", !widgetsPolicy.IsSuccess || widgetsPolicy.Value!.AsDWord() == 1,
+                RestartRequirement.ExplorerRefresh, ShellSection.Taskbar));
+        }
+
         const string personalize = @"HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
         foreach (var (id, label, valueName, restart) in new[]
         {

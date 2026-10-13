@@ -35,6 +35,7 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 - Verified: 3,868 CI-safe tests, rendered controls, the Home Apply/Show cycle, and fresh review passed. Live Windows appearance remains pending in the guest.
 - Pending desktop appearance: unpin Edge, Store, and Outlook; remove the Edge desktop shortcut; put OneDrive in the hidden-icons menu; verify Widgets hiding and the Microsoft 365/OneDrive Settings header in the guest.
 - DONE October 12: absent `TaskbarDa` now means Widgets are shown, matching the clean Windows guest. Grand Pack stages hiding instead of skipping it. Undo restores the absent value. The manual toggle reads fresh state before staging.
+- October 12 real Apply found Windows blocks `TaskbarDa` despite writable key access. Grand Pack 1.2.1 uses **Allow Widgets** off instead, disabling the board and weather button for this PC. The documented policy write succeeded in the Pro guest. Exact policy Undo and fresh toggle state have regression tests. [Evidence and limits](../research/widgets-policy.md).
 
 - DONE October 12: restore-point creation enables disabled System Restore protection on the Windows drive, respects administrator policy, and retries once. Correct native packing preserves the real restore-point sequence. [Evidence and limits](../research/system-restore-enablement.md).
 

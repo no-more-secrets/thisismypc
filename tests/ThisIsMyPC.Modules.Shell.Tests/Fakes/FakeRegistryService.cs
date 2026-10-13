@@ -76,6 +76,22 @@ public sealed class FakeRegistryService : IRegistryService
         return OperationResult<int>.Failure("Not found", ErrorCategory.NotFound);
     }
 
+    public OperationResult<RegistryValueData> ReadValue(string keyPath, string valueName)
+    {
+        if (_readFailures.TryGetValue(MakeKey(keyPath, valueName), out var error))
+            return OperationResult<RegistryValueData>.Failure("Read failed", error);
+        if (!_values.TryGetValue(MakeKey(keyPath, valueName), out var value))
+            return OperationResult<RegistryValueData>.Failure("Not found", ErrorCategory.NotFound);
+        return value switch
+        {
+            int number => OperationResult<RegistryValueData>.Success(RegistryValueData.FromDWord(number)),
+            string text => OperationResult<RegistryValueData>.Success(RegistryValueData.FromString(text)),
+            byte[] bytes => OperationResult<RegistryValueData>.Success(RegistryValueData.FromBinary(bytes)),
+            string[] lines => OperationResult<RegistryValueData>.Success(RegistryValueData.FromMultiString(lines)),
+            _ => OperationResult<RegistryValueData>.Failure("Unsupported type", ErrorCategory.ServiceUnavailable),
+        };
+    }
+
     public OperationResult<string> ReadString(string keyPath, string valueName)
     {
         if (_readFailures.TryGetValue(MakeKey(keyPath, valueName), out var error))

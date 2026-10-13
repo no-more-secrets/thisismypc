@@ -2,7 +2,7 @@
   "name": "Desktop Grand Pack",
   "description": "All four tweak sets, selected Explorer changes, and recommended app removals.",
   "category": "OptimizationPack",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "author": "ThisIsMyPC",
   "desktopOnly": true,
   "appRemovals": [
@@ -463,10 +463,10 @@
     },
     {
       "moduleId": "Explorer",
-      "settingId": "taskbar-widgets",
+      "settingId": "allow-widgets",
       "value": "0",
-      "displayValue": "Hidden",
-      "description": "Hides Widgets from the taskbar.",
+      "displayValue": "Disabled for this PC",
+      "description": "Disables the Widgets board and weather button for all users on this PC.",
       "group": "Windows 10-ify"
     },
     {

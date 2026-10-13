@@ -572,7 +572,8 @@ public partial class MainWindowViewModel : ViewModelBase
                     {
                         ContentTitle = current.Module.Info.Name;
                         ContentDescription = current.Module.Info.Description;
-                        CurrentContent = new ShellViewModel(scanData, _pendingChangesService, _registryService, _pendingActionsService, _policyStates);
+                        CurrentContent = new ShellViewModel(scanData, _pendingChangesService, _registryService, _pendingActionsService, _policyStates,
+                            windowsSku: _capabilityDetector?.Sku);
                     }
                     else
                     {

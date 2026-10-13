@@ -482,6 +482,7 @@ internal static class BrokerOperationRules
             @"HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize\AppsUseLightTheme",
             @"HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize\SystemUsesLightTheme",
             @"HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer\SettingsPageVisibility",
+            @"HKLM\SOFTWARE\Policies\Microsoft\Dsh\AllowNewsAndInterests",
             $@"{ShellRegistryPaths.AdvancedKeyPath}\TaskbarAl",
             $@"{ShellRegistryPaths.SearchKeyPath}\SearchboxTaskbarMode",
             $@"{ShellRegistryPaths.AdvancedKeyPath}\TaskbarGlomLevel",
