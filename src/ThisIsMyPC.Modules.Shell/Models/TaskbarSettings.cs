@@ -6,4 +6,7 @@ public sealed record TaskbarSettings(
     bool ClassicContextMenu,
     bool ClassicCommandBar,
     int SearchboxMode = 3,     // Win11 default: search box
-    int ButtonCombining = 0);  // default: always combine, hide labels
+    int ButtonCombining = 0)  // default: always combine, hide labels
+{
+    public bool WidgetsValueAbsent { get; init; }
+}

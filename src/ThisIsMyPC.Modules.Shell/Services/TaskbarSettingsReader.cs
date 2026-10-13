@@ -1,4 +1,5 @@
 using ThisIsMyPC.Core.Services;
+using ThisIsMyPC.Core.Results;
 using ThisIsMyPC.Modules.Shell.Models;
 
 namespace ThisIsMyPC.Modules.Shell.Services;
@@ -19,7 +20,8 @@ public sealed class TaskbarSettingsReader
         var alignment = alignmentResult.IsSuccess ? alignmentResult.Value! : 1; // default Center
 
         var widgetsResult = _registryService.ReadDWord(ShellRegistryPaths.AdvancedKeyPath, "TaskbarDa");
-        var widgetsEnabled = widgetsResult.IsSuccess && widgetsResult.Value! == 1;
+        var widgetsValueAbsent = !widgetsResult.IsSuccess && widgetsResult.ErrorCategory == ErrorCategory.NotFound;
+        var widgetsEnabled = widgetsValueAbsent || (widgetsResult.IsSuccess && widgetsResult.Value! == 1);
 
         var classicMenuResult = _registryService.KeyExists(ShellRegistryPaths.ClassicContextMenuKeyPath);
         var classicContextMenu = classicMenuResult.IsSuccess && classicMenuResult.Value!;
@@ -37,6 +39,6 @@ public sealed class TaskbarSettingsReader
 
         return new TaskbarSettings(
             alignment, widgetsEnabled, classicContextMenu, classicCommandBar,
-            searchboxMode, buttonCombining);
+            searchboxMode, buttonCombining) { WidgetsValueAbsent = widgetsValueAbsent };
     }
 }

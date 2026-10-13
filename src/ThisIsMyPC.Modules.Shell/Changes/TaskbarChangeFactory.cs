@@ -104,7 +104,8 @@ public static class TaskbarChangeFactory
             SettingId = "taskbar-widgets",
             DisplayName = "Taskbar widgets",
             SystemLocation = $@"{ShellRegistryPaths.AdvancedKeyPath}\TaskbarDa",
-            BeforeValue = current.WidgetsEnabled ? "1" : "0",
+            BeforeValue = current.WidgetsValueAbsent
+                ? ShellRegistryPaths.AbsentValue : current.WidgetsEnabled ? "1" : "0",
             AfterValue = enable ? "1" : "0",
             BeforeDisplay = current.WidgetsEnabled ? "Shown" : "Hidden",
             AfterDisplay = enable ? "Shown" : "Hidden",

@@ -24,9 +24,12 @@ public sealed class SetLoaderViewModelTests
 
     private static SetLoaderViewModel CreateWithBundledSets(
         Func<string, ModuleAvailability?>? availabilityLookup = null,
-        Core.Services.IPendingChangesService? pendingChangesService = null)
+        Core.Services.IPendingChangesService? pendingChangesService = null,
+        bool widgetsHidden = false)
     {
-        var registry = new FakeRegistryService();
+        var registry = new StoringFakeRegistryService();
+        if (widgetsHidden)
+            registry.WriteDWord(ThisIsMyPC.Modules.Shell.ShellRegistryPaths.AdvancedKeyPath, "TaskbarDa", 0);
         var load = LoadBundledSets();
 
         // Seed the Startup fakes with every service/task the bundled sets reference, so
@@ -111,12 +114,7 @@ public sealed class SetLoaderViewModelTests
         Assert.All(vm.PreviewGroups, g => Assert.True(g.HasHeader));
         var entries = vm.PreviewGroups.SelectMany(g => g.Entries).ToList();
         Assert.All(entries, e => Assert.False(e.IsSkipped));
-        // Fake registry = Windows defaults, so nothing reads as applied — except
-        // taskbar-widgets, whose reader treats the missing value as already hidden.
-        Assert.All(
-            entries.Where(e => e.Entry.SettingId != "taskbar-widgets"),
-            e => Assert.False(e.IsApplied));
-        Assert.True(entries.Single(e => e.Entry.SettingId == "taskbar-widgets").IsApplied);
+        Assert.All(entries, e => Assert.False(e.IsApplied));
     }
 
     [Fact]
@@ -354,8 +352,7 @@ public sealed class SetLoaderViewModelTests
     [Fact]
     public void AlreadyAppliedEntry_ExcludedByDefault_ButIncludable()
     {
-        // taskbar-widgets scans as already hidden against the empty fake registry
-        var vm = CreateWithBundledSets();
+        var vm = CreateWithBundledSets(widgetsHidden: true);
         vm.SelectSetCommand.Execute(vm.OptimizationPacks.Single(s => s.Name == "Windows 10-ify"));
 
         var row = vm.PreviewGroups.SelectMany(g => g.Entries)

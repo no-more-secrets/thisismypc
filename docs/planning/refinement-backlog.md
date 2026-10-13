@@ -34,6 +34,7 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 - DONE October 12: the pack hides the search bar, Task View, and Settings Home, and selects dark mode for Windows and apps. Every choice remains editable. Settings Home preserves other hidden pages and leaves show-only policies alone. Apply and Undo preserve missing theme values.
 - Verified: 3,868 CI-safe tests, rendered controls, the Home Apply/Show cycle, and fresh review passed. Live Windows appearance remains pending in the guest.
 - Pending desktop appearance: unpin Edge, Store, and Outlook; remove the Edge desktop shortcut; put OneDrive in the hidden-icons menu; verify Widgets hiding and the Microsoft 365/OneDrive Settings header in the guest.
+- DONE October 12: absent `TaskbarDa` now means Widgets are shown, matching the clean Windows guest. Grand Pack stages hiding instead of skipping it. Undo restores the absent value. The manual toggle reads fresh state before staging.
 
 - DONE October 12: restore-point creation enables disabled System Restore protection on the Windows drive, respects administrator policy, and retries once. Correct native packing preserves the real restore-point sequence. [Evidence and limits](../research/system-restore-enablement.md).
 

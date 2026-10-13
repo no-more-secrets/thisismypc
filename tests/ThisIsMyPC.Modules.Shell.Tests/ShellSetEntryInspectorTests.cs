@@ -80,14 +80,14 @@ public sealed class ShellSetEntryInspectorTests
     }
 
     [Fact]
-    public void TaskbarWidgets_MissingValueScansAsHidden_HideEntryApplied()
+    public void TaskbarWidgets_MissingValueScansAsShown_HideEntryNotApplied()
     {
-        // TaskbarSettingsReader treats a missing TaskbarDa as widgets-off
+        // Clean Windows shows Widgets when TaskbarDa is absent.
         var state = Inspector.Inspect(Entry("taskbar-widgets", "0"));
 
-        Assert.Equal("Hidden", state!.CurrentDisplay);
-        Assert.Equal("0", state.CurrentValue);
-        Assert.True(state.IsApplied);
+        Assert.Equal("Shown", state!.CurrentDisplay);
+        Assert.Equal("1", state.CurrentValue);
+        Assert.False(state.IsApplied);
 
         _registry.SetDWord(ShellRegistryPaths.AdvancedKeyPath, "TaskbarDa", 1);
         var shown = Inspector.Inspect(Entry("taskbar-widgets", "0"));

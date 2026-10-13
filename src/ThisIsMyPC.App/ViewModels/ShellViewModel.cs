@@ -314,12 +314,9 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, ISearch
             systemPath: $@"{AdvancedKeyPath}\TaskbarDa",
             isEnabled: taskbar.WidgetsEnabled,
             pendingChangesService: pendingChangesService,
-            changeFactory: enable => TaskbarChangeFactory.CreateWidgetsToggle(taskbar, enable),
-            readRegistryState: () =>
-            {
-                var result = registryService.ReadDWord(AdvancedKeyPath, "TaskbarDa");
-                return result.IsSuccess && result.Value == 1;
-            }));
+            changeFactory: enable => TaskbarChangeFactory.CreateWidgetsToggle(
+                new TaskbarSettingsReader(registryService).Read(), enable),
+            readRegistryState: () => new TaskbarSettingsReader(registryService).Read().WidgetsEnabled));
 
         AddIntegrationRows(scanData, pendingChangesService, registryService, nativeSettings ?? new ThisIsMyPC.Interop.Win32.Shell.ShellNativeSettings());
 
