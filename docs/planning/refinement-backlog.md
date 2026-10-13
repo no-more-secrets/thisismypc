@@ -31,6 +31,10 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 
 - DONE October 12: Windows app removal and deprovisioning avoid dynamic completion callbacks blocked by the administrator helper's security guard. NativeAOT removal passed in the separate VM with the guard enabled. [Evidence and limits](../research/appx-deployment-hardening.md).
 
+- DONE October 12: the pack hides the search bar, Task View, and Settings Home, and selects dark mode for Windows and apps. Every choice remains editable. Settings Home preserves other hidden pages and leaves show-only policies alone. Apply and Undo preserve missing theme values.
+- Verified: 3,868 CI-safe tests, rendered controls, the Home Apply/Show cycle, and fresh review passed. Live Windows appearance remains pending in the guest.
+- Pending desktop appearance: unpin Edge, Store, and Outlook; remove the Edge desktop shortcut; put OneDrive in the hidden-icons menu; verify Widgets hiding and the Microsoft 365/OneDrive Settings header in the guest.
+
 - DONE October 12: restore-point creation enables disabled System Restore protection on the Windows drive, respects administrator policy, and retries once. Correct native packing preserves the real restore-point sequence. [Evidence and limits](../research/system-restore-enablement.md).
 
 - October 12 preview: the guide saves its lesson and module exclusions across app restarts. Welcome uses the approved four paragraphs, with its opening paragraph and Desktop Grand Pack emphasized. Short lessons retain their overview and show a placeholder for guided examples.
@@ -43,7 +47,7 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 - Startup & Services offers random live sign-in examples, explains the launch route, and stages individual disabling choices. Software has no sign-in preview. The guide checks the entry again before staging. Run and Startup folder entries qualify; Windows files and known Microsoft publishers are excluded. Unknown publishers stay labeled as unknown. A labeled sample covers PCs without a suitable entry.
 - The pack includes all four tweak sets, Widgets and the classic context menu from Windows 10-ify, five app removals, and optional Search startup disabling.
 - Tutorial starts at Welcome, uses sidebar icons, and includes steps for trying controls. Prose additions live in `tutorial-notes.txt` for refinement before runtime integration.
-- The pack has 58 settings. Windows Search starts unchecked; its setting changes startup type without deleting the index or immediately stopping the service.
+- The pack has 63 settings. Windows Search starts unchecked; its setting changes startup type without deleting the index or immediately stopping the service.
 - Defender engine removal is a requested optional pack extension, selected separately. Implementation and recovery remain pending; it is not represented by a security toggle.
 - Installed removal candidates start selected. Removals use the one-way action queue and explicitly state all-user scope and no undo.
 - Desktop classification gates this guide's pack workflow and direct pack staging. Other app modules retain laptop support.

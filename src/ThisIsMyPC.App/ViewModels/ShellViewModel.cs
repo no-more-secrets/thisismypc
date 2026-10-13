@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using ThisIsMyPC.Core.Services;
 using ThisIsMyPC.Modules.Shell.Changes;
 using ThisIsMyPC.Modules.Shell.Models;
+using ThisIsMyPC.Modules.Shell.Services;
 using ThisIsMyPC.Modules.Software.Services;
 
 namespace ThisIsMyPC.App.ViewModels;
@@ -185,6 +186,22 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, ISearch
                 FileExplorerChoiceSettings.Add(row);
                 continue;
             }
+            if (pref.Id is "hide-settings-home" or "dark-apps" or "dark-windows")
+            {
+                RowsFor(pref.Section).Add(new ShellSettingViewModel(
+                    pref.DisplayName, pref.Description, $@"{pref.RegistryKeyPath}\{pref.RegistryValueName}",
+                    pref.IsEnabled, pendingChangesService,
+                    groupFactory: enabled => new ShellSetEntryInspector(registryService).CreateChangeGroup(new Core.Sets.SetEntry
+                    {
+                        ModuleId = "Explorer", SettingId = capturedPref.Id, Description = capturedPref.Description,
+                        Value = capturedPref.Id == "hide-settings-home" ? (enabled ? "1" : "0")
+                            : enabled ? capturedPref.EnabledValue : capturedPref.DisabledValue,
+                    }) ?? throw new InvalidOperationException("The visibility policy changed. Reopen Explorer to refresh its controls."),
+                    readRegistryState: () => new ExplorerSettingsReader(registryService).ReadAll()
+                        .FirstOrDefault(p => p.Id == capturedPref.Id)?.IsEnabled ?? false,
+                    rehydrateSettingId: capturedPref.Id));
+                continue;
+            }
             RowsFor(pref.Section).Add(new ShellSettingViewModel(
                 capturedPref,
                 pendingChangesService,
@@ -359,7 +376,8 @@ public partial class ShellViewModel : ViewModelBase, ISearchFocusTarget, ISearch
         {
             var id = scanData.ExplorerPreferences.FirstOrDefault(pref => $@"{pref.RegistryKeyPath}\{pref.RegistryValueName}" == row.SystemPath)?.Id
                 ?? (row.SystemPath.EndsWith("\\TaskbarDa", StringComparison.Ordinal) ? "taskbar-widgets" : "");
-            row.SetPolicySource(() => policies.Read("Explorer", id, row.SystemPath));
+            row.SetPolicySource(() => policies.Read("Explorer", id, row.SystemPath,
+                id == "hide-settings-home" ? Core.Changes.ChangeValueType.Registry_String : null));
         }
         foreach (var row in ChoiceRows)
         {

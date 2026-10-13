@@ -109,11 +109,19 @@ public sealed class BuiltInSetsTests
                      TaskbarChangeFactory.CreateWidgetsToggle(taskbar, enable: false),
                      TaskbarChangeFactory.CreateClassicContextMenuToggle(taskbar, enable: true),
                      TaskbarChangeFactory.CreateCommandBarToggle(taskbar, enable: true),
+                     TaskbarChangeFactory.CreateSearchboxModeChange(taskbar, newMode: 0),
                  })
         {
             desired[(change.ModuleId, change.SettingId)] = change.AfterValue!;
         }
 
+        foreach (var id in new[] { "task-view-button", "dark-apps", "dark-windows", "hide-settings-home" })
+        {
+            var entry = new SetEntry { ModuleId = "Explorer", SettingId = id,
+                Value = id == "hide-settings-home" ? "1" : "0", Description = "" };
+            var change = new ThisIsMyPC.Modules.Shell.Services.ShellSetEntryInspector(keyboardRegistry).CreateChangeGroup(entry)!.Changes[0];
+            desired[(change.ModuleId, change.SettingId)] = id == "hide-settings-home" ? "1" : change.AfterValue!;
+        }
         return desired;
     }
 

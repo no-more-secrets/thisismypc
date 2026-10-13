@@ -33,6 +33,12 @@ public sealed class ShellSetEntryInspector : ISetEntryInspector
     {
         switch (entry.SettingId)
         {
+            case "taskbar-search-mode":
+            {
+                var mode = _taskbarReader.Read().SearchboxMode;
+                return Resolve("Taskbar search", mode.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    mode switch { 0 => "Hidden", 1 => "Icon only", 2 => "Icon and label", _ => "Search box" }, entry);
+            }
             case "taskbar-alignment":
             {
                 var taskbar = _taskbarReader.Read();
@@ -73,9 +79,12 @@ public sealed class ShellSetEntryInspector : ISetEntryInspector
         var pref = _explorerReader.ReadAll().FirstOrDefault(p => p.Id == entry.SettingId);
         if (pref is null)
             return null;
+        if (pref.Id == "hide-settings-home" && SettingsHomeTarget(entry.Value) is null)
+            return null;
 
-        return Resolve(pref.DisplayName, pref.CurrentValue,
-            pref.IsEnabled ? "Enabled" : "Disabled", entry);
+        return Resolve(pref.DisplayName, pref.Id == "hide-settings-home" ? (pref.IsEnabled ? "1" : "0") : pref.CurrentValue,
+            pref.IsEnabled ? "Enabled" : "Disabled", pref.Id == "hide-settings-home"
+                ? entry with { Value = SettingsHomeTarget(entry.Value) == true ? "1" : "0" } : entry);
     }
 
     /// <summary>The catalogued ExplorerPatcher setting a set entry names, with its live value.</summary>
@@ -96,6 +105,11 @@ public sealed class ShellSetEntryInspector : ISetEntryInspector
     {
         switch (entry.SettingId)
         {
+            case "taskbar-search-mode":
+                return entry.Value is "0" or "1" or "2" or "3"
+                    ? Wrap(TaskbarChangeFactory.CreateSearchboxModeChange(_taskbarReader.Read(),
+                        int.Parse(entry.Value, System.Globalization.CultureInfo.InvariantCulture)))
+                    : null;
             case "taskbar-alignment":
                 return entry.Value is "0" or "1"
                     ? Wrap(TaskbarChangeFactory.CreateAlignmentChange(
@@ -130,7 +144,8 @@ public sealed class ShellSetEntryInspector : ISetEntryInspector
         if (pref is null)
             return null;
 
-        var enable = string.Equals(entry.Value, pref.EnabledValue, StringComparison.Ordinal) ? true
+        var enable = pref.Id == "hide-settings-home" ? SettingsHomeTarget(entry.Value)
+            : string.Equals(entry.Value, pref.EnabledValue, StringComparison.Ordinal) ? true
             : string.Equals(entry.Value, pref.DisabledValue, StringComparison.Ordinal) ? false
             : (bool?)null;
         return enable is { } direction
@@ -145,6 +160,16 @@ public sealed class ShellSetEntryInspector : ISetEntryInspector
         Description = description ?? change.DisplayName,
         Changes = [change],
     };
+
+    private static bool? SettingsHomeTarget(string value)
+        => value switch
+        {
+            "1" => true,
+            "0" or "" or ShellRegistryPaths.AbsentValue => false,
+            _ when value.StartsWith("hide:", StringComparison.OrdinalIgnoreCase)
+                => value[5..].Split(';', StringSplitOptions.RemoveEmptyEntries).Contains("home", StringComparer.OrdinalIgnoreCase),
+            _ => null,
+        };
 
     private static SetEntryState Resolve(
         string displayName, string currentValue, string currentDisplay, SetEntry entry)

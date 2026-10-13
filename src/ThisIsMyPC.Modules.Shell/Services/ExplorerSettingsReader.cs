@@ -1,5 +1,6 @@
 using ThisIsMyPC.Core.Changes;
 using ThisIsMyPC.Core.Services;
+using ThisIsMyPC.Core.Results;
 using ThisIsMyPC.Modules.Shell.Models;
 
 namespace ThisIsMyPC.Modules.Shell.Services;
@@ -307,6 +308,44 @@ public sealed class ExplorerSettingsReader
             disabledValue: "1",
             defaultValue: "1",
             restart: RestartRequirement.None));
+
+        const string personalize = @"HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
+        foreach (var (id, label, valueName, restart) in new[]
+        {
+            ("dark-apps", "Use dark mode in apps", "AppsUseLightTheme", RestartRequirement.None),
+            ("dark-windows", "Use dark mode in Windows", "SystemUsesLightTheme", RestartRequirement.ExplorerRefresh),
+        })
+        {
+            var theme = _registryService.ReadDWord(personalize, valueName);
+            if (!theme.IsSuccess && theme.ErrorCategory != ErrorCategory.NotFound
+                || theme.IsSuccess && theme.Value is not (0 or 1))
+                continue;
+            preferences.Add(new ExplorerPreference(id, label, "", personalize, valueName,
+                ChangeValueType.Registry_DWord,
+                theme.IsSuccess ? theme.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : ShellRegistryPaths.AbsentValue,
+                "0", "1", theme.IsSuccess && theme.Value == 0, restart, ShellSection.Desktop));
+        }
+
+        // Preserve other hidden pages. A show-only policy defines a different scope;
+        // do not replace it with a hide policy or broaden its permitted pages.
+        const string visibilityKey = @"HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer";
+        var visibility = _registryService.ReadString(visibilityKey, "SettingsPageVisibility");
+        var current = visibility.IsSuccess ? visibility.Value! : ShellRegistryPaths.AbsentValue;
+        if ((visibility.IsSuccess || visibility.ErrorCategory == ErrorCategory.NotFound)
+            && (current == ShellRegistryPaths.AbsentValue || current.Length == 0
+                || current.StartsWith("hide:", StringComparison.OrdinalIgnoreCase)))
+        {
+            var pages = current.StartsWith("hide:", StringComparison.OrdinalIgnoreCase)
+                ? current[5..].Split(';', StringSplitOptions.RemoveEmptyEntries) : [];
+            var hidden = pages.Contains("home", StringComparer.OrdinalIgnoreCase);
+            var otherPages = pages.Where(p => !p.Equals("home", StringComparison.OrdinalIgnoreCase)).ToArray();
+            preferences.Add(new ExplorerPreference(
+                "hide-settings-home", "Hide Settings Home", "",
+                visibilityKey, "SettingsPageVisibility", ChangeValueType.Registry_String, current,
+                hidden ? current : "hide:" + string.Join(';', pages.Append("home")),
+                hidden ? (otherPages.Length == 0 ? ShellRegistryPaths.AbsentValue : "hide:" + string.Join(';', otherPages)) : current,
+                hidden, RestartRequirement.None, ShellSection.General));
+        }
 
         return preferences;
     }

@@ -23,7 +23,7 @@ public sealed class ExplorerSettingsReaderTests
     {
         SetDefaults();
         var prefs = _sut.ReadAll();
-        Assert.Equal(23, prefs.Count);
+        Assert.Equal(26, prefs.Count);
         Assert.Equal(prefs.Count, prefs.Select(p => p.Id).Distinct().Count());
     }
 

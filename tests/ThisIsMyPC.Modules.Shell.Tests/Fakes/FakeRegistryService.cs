@@ -13,6 +13,10 @@ public sealed class FakeRegistryService : IRegistryService
     private readonly HashSet<string> _keys = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, ErrorCategory> _writeFailures = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, ErrorCategory> _deleteFailures = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, ErrorCategory> _readFailures = new(StringComparer.OrdinalIgnoreCase);
+
+    public void SetReadFailure(string keyPath, string valueName, ErrorCategory error)
+        => _readFailures[MakeKey(keyPath, valueName)] = error;
 
     /// <summary>
     /// Configures a key path to fail on write operations with the specified error category.
@@ -65,6 +69,8 @@ public sealed class FakeRegistryService : IRegistryService
 
     public OperationResult<int> ReadDWord(string keyPath, string valueName)
     {
+        if (_readFailures.TryGetValue(MakeKey(keyPath, valueName), out var error))
+            return OperationResult<int>.Failure("Read failed", error);
         if (_values.TryGetValue(MakeKey(keyPath, valueName), out var val) && val is int intVal)
             return OperationResult<int>.Success(intVal);
         return OperationResult<int>.Failure("Not found", ErrorCategory.NotFound);
@@ -72,6 +78,8 @@ public sealed class FakeRegistryService : IRegistryService
 
     public OperationResult<string> ReadString(string keyPath, string valueName)
     {
+        if (_readFailures.TryGetValue(MakeKey(keyPath, valueName), out var error))
+            return OperationResult<string>.Failure("Read failed", error);
         if (_values.TryGetValue(MakeKey(keyPath, valueName), out var val) && val is string strVal)
             return OperationResult<string>.Success(strVal);
         return OperationResult<string>.Failure("Not found", ErrorCategory.NotFound);

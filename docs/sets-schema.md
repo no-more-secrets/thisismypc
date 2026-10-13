@@ -47,7 +47,9 @@ The pack separately reviews live settings and recommended app removals; no lesso
 
 The pack contains all entries from Clean Boot, NukeCopilot, Privacy Baseline, and Windows Update Control.
 It adds Widgets and the classic context menu from Windows 10-ify, plus optional Windows Search startup disabling.
-There are 58 settings and five app removals: Clipchamp, News, Weather, Copilot, and Microsoft 365 Hub when installed.
+There are 63 settings and five app removals: Clipchamp, News, Weather, Copilot, and Microsoft 365 Hub when installed.
+The pack hides the taskbar search bar, Task View, and Settings Home, and selects dark mode for Windows and apps.
+Settings Home preserves other hidden pages. Existing show-only policies and unreadable appearance values are skipped.
 The Search entry starts unchecked. It changes the service startup type, does not stop an already-running service,
 and does not delete the index. Indexed file and Outlook searches are affected after the service stops or Windows restarts.
 The update set pins the current feature release and selects notification before download; users must check updates and release support.

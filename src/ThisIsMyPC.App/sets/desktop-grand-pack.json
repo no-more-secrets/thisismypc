@@ -2,7 +2,7 @@
   "name": "Desktop Grand Pack",
   "description": "All four tweak sets, selected Explorer changes, and recommended app removals.",
   "category": "OptimizationPack",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "author": "ThisIsMyPC",
   "desktopOnly": true,
   "appRemovals": [
@@ -477,6 +477,46 @@
       "description": "Disables indexing after the service stops or Windows restarts. Affects indexed file and Outlook searches. Keeps the existing index.",
       "group": "Search indexing (optional)",
       "selectedByDefault": false
+    },
+    {
+      "moduleId": "Explorer",
+      "settingId": "taskbar-search-mode",
+      "value": "0",
+      "displayValue": "Hidden",
+      "description": "Hide the search bar. Search remains available from Start.",
+      "group": "Desktop appearance"
+    },
+    {
+      "moduleId": "Explorer",
+      "settingId": "task-view-button",
+      "value": "0",
+      "displayValue": "Hidden",
+      "description": "Hide Task View from the taskbar.",
+      "group": "Desktop appearance"
+    },
+    {
+      "moduleId": "Explorer",
+      "settingId": "dark-apps",
+      "value": "0",
+      "displayValue": "Dark",
+      "description": "Use dark mode in Settings and supported apps.",
+      "group": "Desktop appearance"
+    },
+    {
+      "moduleId": "Explorer",
+      "settingId": "dark-windows",
+      "value": "0",
+      "displayValue": "Dark",
+      "description": "Use a dark taskbar and Start menu.",
+      "group": "Desktop appearance"
+    },
+    {
+      "moduleId": "Explorer",
+      "settingId": "hide-settings-home",
+      "value": "1",
+      "displayValue": "Hidden",
+      "description": "Hide Home in Windows Settings.",
+      "group": "Desktop appearance"
     }
   ]
 }
