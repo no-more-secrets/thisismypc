@@ -2,6 +2,11 @@
 
 Current release scope: [v1 completion plan](v1-completion-plan.md), approved 2026-09-06. It supersedes older post-release hardware assumptions below.
 
+## Product website (2026-10-15)
+
+- Local static product site in `website/` reuses RE Universe surfaces, cream text, purple materials, and corner geometry. Includes the real app screenshot, feature tabs, and source-build instructions.
+- Build, types, keyboard tab navigation, copied commands, and responsive layout checks passed. Public domain setup and redirect verification remain pending.
+
 ## Public repository introduction (2026-10-12)
 
 - App and installer reject Windows versions below Windows 11 22H2 before startup, with a clear minimum-version message.
