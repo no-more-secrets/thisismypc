@@ -17,6 +17,7 @@ param(
 $ErrorActionPreference = 'Stop'
 Import-Module (Join-Path $PSScriptRoot 'InstallerBundle.psm1') -Force
 Import-Module (Join-Path $PSScriptRoot 'MsiPayload.psm1') -Force
+Import-Module (Join-Path $PSScriptRoot 'ReleaseVendorSignatures.psm1') -Force
 $releasedPath = (Resolve-Path -LiteralPath $ReleasedInstaller).Path
 $localPath = (Resolve-Path -LiteralPath $LocalInstaller).Path
 
@@ -54,10 +55,12 @@ function Get-CanonicalRecords([string]$root, [string]$temporaryRoot, [bool]$requ
         $path = Join-Path $root $relative.Replace('/', '\')
         $bytes = [IO.File]::ReadAllBytes($path)
         $isPe = $bytes.Length -ge 64 -and $bytes[0] -eq 0x4D -and $bytes[1] -eq 0x5A
-        if ($requirePeSignatures -and $isPe) {
-            Assert-TrustedSignature $path "Installed PE file $relative"
+        $isVendorRuntime = Test-ReleaseVendorPath $relative
+        if ($requirePeSignatures) {
+            if ($isVendorRuntime) { Assert-ReleaseVendorSignature $path }
+            elseif ($isPe) { Assert-TrustedSignature $path "Installed PE file $relative" }
         }
-        if ($isPe) {
+        if ($isPe -and -not $isVendorRuntime) {
             $canonical = Join-Path $temporaryRoot ([guid]::NewGuid().ToString('N') + '.pe')
             & (Join-Path $PSScriptRoot 'normalize-authenticode-pe.ps1') `
                 -Path $path -OutputPath $canonical -Quiet | Out-Null

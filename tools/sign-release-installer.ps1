@@ -40,6 +40,7 @@ param(
 $ErrorActionPreference = 'Stop'
 Import-Module Microsoft.PowerShell.Utility -ErrorAction Stop
 Import-Module Microsoft.PowerShell.Security -ErrorAction Stop
+Import-Module (Join-Path $PSScriptRoot 'ReleaseVendorSignatures.psm1') -Force
 
 function Read-SigningInput {
     param([string]$Prompt, [switch]$AsSecureString)
@@ -92,6 +93,7 @@ if ([string]::IsNullOrWhiteSpace($ESignerUsername)) {
 $assetRoot = (Resolve-Path -LiteralPath $AssetDirectory).Path
 $stagingRoot = (Resolve-Path -LiteralPath $StagingDirectory).Path
 $stubPath = (Resolve-Path -LiteralPath $InstallerStub).Path
+$preservedVendorFiles = @(Get-ReleaseVendorFiles -Root $stagingRoot)
 $installerAsset = Join-Path $assetRoot "ThisIsMyPC-Installer-$Version.exe"
 if (-not (Test-Path -LiteralPath $installerAsset -PathType Leaf)) {
     throw "Unsigned release installer is missing: $installerAsset"
@@ -183,6 +185,7 @@ try {
         codeSignToolArchive = (Resolve-Path -LiteralPath $CodeSignToolArchive).Path
         credentialId = $ESignerCredentialId
         passwordFile = $passwordFile
+        preservedVendorFiles = $preservedVendorFiles
         signingDescription = $SigningDescription
         thumbprint = $thumbprint
         timestampUrl = $TimestampUrl
@@ -190,7 +193,7 @@ try {
     } | ConvertTo-Json | Set-Content -LiteralPath $configurationFile -Encoding UTF8
 
     # Velopack creates privileged helpers in addition to copying the payload.
-    # Its callback scans and signs every PE byte sequence it will install.
+    # Its callback preserves validated Microsoft CRT files and signs our PE files.
     $signTemplate = "`"$powerShell`" -NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$wrapper`" -ConfigurationFile `"$configurationFile`" -VelopackCallback {{file...}}"
     $signExclude = '(?i)^(?!.*\.(?:exe|dll)$).*$'
     Write-Host 'Repacking while scanning and signing every installed first-party EXE and DLL...'

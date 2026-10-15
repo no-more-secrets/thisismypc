@@ -154,6 +154,8 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 
 ## Beta release environment (2026-10-07)
 
+- DONE October 15: preserve the four Microsoft CRT signatures in the lighting payload. Signing validates their publisher, timestamp, and staged hashes. Release comparison checks their complete bytes. Other pre-signed files still fail. Regression checks run in CI.
+
 - DONE: updated the Windows pins to Sam's current host: build `26300.9457` and Windows Installer `5.0.26100.9444`.
 - Verified: the full release environment check passes. Compiler and SDK pins are unchanged.
 - Pending: complete release build and reproducibility comparison under the updated Windows environment.

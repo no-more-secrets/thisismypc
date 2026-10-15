@@ -46,3 +46,7 @@ jobs:
         # Excludes registry-dependent integration tests and diagnostic tests
         # that require a live Windows system with specific handlers installed.
         # Security tests, analyzer tests, core tests, and module unit tests all run.
+
+      - name: Release vendor signatures
+        shell: powershell
+        run: ./tools/test-release-vendor-signatures.ps1

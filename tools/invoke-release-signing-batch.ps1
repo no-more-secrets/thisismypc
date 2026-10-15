@@ -15,8 +15,8 @@ param(
 $ErrorActionPreference = 'Stop'
 Import-Module Microsoft.PowerShell.Utility -ErrorAction Stop
 Import-Module Microsoft.PowerShell.Security -ErrorAction Stop
+Import-Module (Join-Path $PSScriptRoot 'ReleaseVendorSignatures.psm1') -Force
 $configuration = Get-Content -LiteralPath $ConfigurationFile -Raw | ConvertFrom-Json
-$password = Import-Clixml -LiteralPath $configuration.passwordFile
 $inputPaths = @($InputFile | ForEach-Object { (Resolve-Path -LiteralPath $_).Path })
 
 if ($VelopackCallback) {
@@ -34,6 +34,10 @@ if ($VelopackCallback) {
         $name = Split-Path $_ -Leaf
         $name -notlike '*-Setup.exe' -and $name -ne 'ThisIsMyPC-win.msi'
     })
+    # Keep the exact staged Microsoft CRT bytes and their existing signatures.
+    $inputPaths = @($inputPaths | Where-Object {
+        -not (Test-PreservedReleaseVendorFile -Path $_ -Records @($configuration.preservedVendorFiles))
+    })
     if ($inputPaths.Count -eq 0) { return }
 }
 
@@ -49,6 +53,7 @@ foreach ($path in $inputPaths) {
     }
 }
 
+$password = Import-Clixml -LiteralPath $configuration.passwordFile
 $isMsiContainer = $Container -and $inputPaths.Count -eq 1 -and
     [IO.Path]::GetExtension($inputPaths[0]) -eq '.msi'
 if (-not $isMsiContainer) {

@@ -245,10 +245,17 @@ environment variable before starting any child process. This prevents build
 tools, SignTool, and later children from inheriting it. `build-release.ps1`
 refuses to start if the password is already in its environment.
 
-The script repacks through Velopack's signing callback. Each installed EXE and
+The script repacks through Velopack's signing callback. Each first-party EXE and
 DLL is malware-scanned immediately before the pinned SignTool signs it. This
 includes the four locally built native dependency DLLs and Velopack helpers.
 CKA signs these PE files and the outer installer without another OTP.
+
+The app-local Microsoft CRT in `lighting-engine/` retains its existing embedded
+signature and timestamp. Only `msvcp140.dll`, `msvcp140_codecvt_ids.dll`,
+`vcruntime140.dll`, and `vcruntime140_1.dll` qualify. Staging must contain valid,
+timestamped Microsoft signatures. The callback requires the exact staged SHA-256
+for each preserved file. Release comparison validates Microsoft trust and compares
+every byte, including the certificate table. Other pre-signed inputs still fail.
 
 The MSI uses CodeSignTool's integrated scan and sign command. Enter one current
 eSigner OTP when it asks. This path is required because SSL.com's separate
