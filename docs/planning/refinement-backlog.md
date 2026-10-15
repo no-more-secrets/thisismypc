@@ -5,7 +5,7 @@ Current release scope: [v1 completion plan](v1-completion-plan.md), approved 202
 ## Product website (2026-10-15)
 
 - Local static product site in `website/` reuses RE Universe surfaces, cream text, purple materials, and corner geometry. Includes the real app screenshot, feature tabs, and source-build instructions.
-- Build, types, keyboard tab navigation, copied commands, and responsive layout checks passed. Public domain setup and redirect verification remain pending.
+- Build, types, keyboard tab navigation, copied commands, and responsive layout checks passed. Live at thisismypc.com on Cloudflare Pages. Both existing company hostnames redirect to it; seven policy, legal, and SMS routes remain available.
 
 ## Public repository introduction (2026-10-12)
 

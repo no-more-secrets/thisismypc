@@ -1,6 +1,6 @@
 # ThisIsMyPC website
 
-Local product-site preview for thisismypc.com. The static build deploys to the dedicated Cloudflare Pages project `thisismypc`. The custom domain is thisismypc.com.
+Static product site for https://thisismypc.com. The static build deploys to the dedicated Cloudflare Pages project `thisismypc`. The custom domain is thisismypc.com.
 
 Run `npm ci`, then `npm run dev` from this directory. Preview: http://127.0.0.1:3220/.
 
