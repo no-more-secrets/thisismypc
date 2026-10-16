@@ -1,6 +1,7 @@
 "use client";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Surface } from "./surface";
+import { PatternBackground } from "./pattern-background";
 const repo = "https://github.com/samboland/thisismypc";
 const groups = [
     { name: "Windows", title: "Make Windows behave your way.", items: [["Windows Annoyances", "Control suggestions, ads, and unwanted features."], ["Privacy & Telemetry", "Choose supported privacy settings."], ["Windows Update", "Control update behavior."], ["Explorer & Context Menus", "Change preferences and disable registered right-click handlers."]] },
@@ -19,10 +20,19 @@ function Panel({ children, className = "" }: {
 }) { return <Surface as="div" className={"design-glass " + className}><span className="design-tint"/>{children}</Surface>; }
 export function Site() {
     const [group, setGroup] = useState(0);
+    const [backgroundEnabled, setBackgroundEnabled] = useState<boolean | null>(null);
+    useEffect(() => {
+        try { setBackgroundEnabled(localStorage.getItem("thisismypc.background.enabled") !== "0"); }
+        catch { setBackgroundEnabled(true); }
+    }, []);
+    function changeBackground(enabled: boolean) {
+        setBackgroundEnabled(enabled);
+        try { localStorage.setItem("thisismypc.background.enabled", enabled ? "1" : "0"); } catch {}
+    }
     const [copied, setCopied] = useState(false);
     const selected = groups[group];
     const command = ["git clone https://github.com/samboland/thisismypc.git", "cd thisismypc", ".\\Setup.ps1"].join("\n");
-    return <div className="design-root tipc-site"><div className="site-pattern" aria-hidden="true"/><a href="#main" className="skip">Skip to content</a>
+    return <div className="design-root tipc-site"><PatternBackground enabled={backgroundEnabled === true} /><a href="#main" className="skip">Skip to content</a>
     <header className="site-header"><div className="container header-inner"><a href="#" className="brand"><img src="/icon.png" alt="" width="44" height="44"/><span>ThisIsMyPC</span></a><nav aria-label="Main navigation"><a href="#the-app">The app</a><a href="#controls">What you control</a><a href={repo}>GitHub ↗</a></nav><Button href="#get-started">Get started</Button></div></header>
     <main id="main"><section className="container hero" aria-labelledby="hero-title"><div className="hero-intro"><div className="eyebrow"><span className="status-dot"/>FREE. OPEN SOURCE. YOURS.</div><h1 id="hero-title">This is <em>MY</em> PC.</h1><p className="hero-pitch">Debloat Windows entirely. Stop anything unwanted, control updates and telemetry, and manage all your hardware.</p><div className="hero-actions"><Button href="#get-started" primary>Take control</Button><a href={repo} className="text-link">Explore the source <span aria-hidden="true">↗</span></a></div><p className="requirements">For Windows 11 · Native desktop app · No accounts. No telemetry.</p></div><Panel className="ownership-note"><span className="note-number">01 / OWNERSHIP</span><p>You paid for it. Maybe you even built it yourself.</p><span>Controlling it should not take a dozen apps and a digital sparring match with a multibillion dollar corporation.</span></Panel></section>
     <section id="the-app" className="container app-section" aria-labelledby="app-heading"><div className="section-line"><h2 id="app-heading">Set it up your way.</h2><span>Inspect. Stage. Apply.</span></div><Panel className="app-frame"><img src="/thisismypc-presets.png" alt="ThisIsMyPC Presets page showing the Windows 10-ify pack and individual settings." width="1200" height="800" fetchPriority="high"/><div className="screenshot-caption"><span>THE ACTUAL APP</span><p>Presets bring related choices together. Every setting stays yours to change.</p></div></Panel></section>
@@ -44,5 +54,5 @@ export function Site() {
     catch {
         setCopied(false);
     } }}>{copied ? "Copied" : "Copy"}</button></div><pre><code>{command}</code></pre><p>Setup checks prerequisites and builds the app. See the quick start before launching it.</p><a className="text-link" href={repo + "/blob/main/CONTRIBUTING.md"}>Development setup ↗</a><span className="sr-only" role="status">{copied ? "Setup commands copied." : ""}</span></div></Panel></section>
-    </main><footer className="site-footer"><div className="container"><a href="#" className="brand"><img src="/icon.png" alt="" width="32" height="32"/><span>ThisIsMyPC</span></a><p>Free, open source, and yours forever.</p><nav aria-label="Footer"><a href={repo}>Source</a><a href={repo + "/issues"}>Support</a><a href={repo + "/blob/main/CONTRIBUTING.md"}>Contribute</a><a href={repo + "#license-and-credits"}>Credits</a></nav><span>© Sam Boland 2026</span></div></footer></div>;
+    </main><footer className="site-footer"><div className="container"><a href="#" className="brand"><img src="/icon.png" alt="" width="32" height="32"/><span>ThisIsMyPC</span></a><p>Free, open source, and yours forever.</p><nav aria-label="Footer"><a href={repo}>Source</a><a href={repo + "/issues"}>Support</a><a href={repo + "/blob/main/CONTRIBUTING.md"}>Contribute</a><a href={repo + "#license-and-credits"}>Credits</a></nav><label className="background-toggle"><input type="checkbox" checked={backgroundEnabled === true} disabled={backgroundEnabled === null} onChange={event => changeBackground(event.target.checked)} /><span>Animated background</span></label><span>© Sam Boland 2026</span></div></footer></div>;
 }
